@@ -17,8 +17,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.LightType;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class HostileEntity extends MobEntityWithAi implements Monster {
 	protected HostileEntity(EntityType<? extends HostileEntity> entityType, World world) {
@@ -46,11 +46,8 @@ public abstract class HostileEntity extends MobEntityWithAi implements Monster {
 	}
 
 	@Override
-	public void tick() {
-		super.tick();
-		if (!this.world.isClient && this.world.getDifficulty() == Difficulty.field_5801) {
-			this.remove();
-		}
+	protected boolean method_23734() {
+		return true;
 	}
 
 	@Override
@@ -84,33 +81,35 @@ public abstract class HostileEntity extends MobEntityWithAi implements Monster {
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos blockPos, ViewableWorld viewableWorld) {
-		return 0.5F - viewableWorld.getBrightness(blockPos);
+	public float getPathfindingFavor(BlockPos blockPos, WorldView worldView) {
+		return 0.5F - worldView.getBrightness(blockPos);
 	}
 
-	public static boolean method_20679(IWorld iWorld, BlockPos blockPos, Random random) {
+	public static boolean isSpawnDark(IWorld iWorld, BlockPos blockPos, Random random) {
 		if (iWorld.getLightLevel(LightType.field_9284, blockPos) > random.nextInt(32)) {
 			return false;
 		} else {
-			int i = iWorld.getWorld().isThundering() ? iWorld.method_8603(blockPos, 10) : iWorld.getLightLevel(blockPos);
+			int i = iWorld.getWorld().isThundering() ? iWorld.getLightLevel(blockPos, 10) : iWorld.getLightLevel(blockPos);
 			return i <= random.nextInt(8);
 		}
 	}
 
-	public static boolean method_20680(EntityType<? extends HostileEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+	public static boolean canSpawnInDark(EntityType<? extends HostileEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
 		return iWorld.getDifficulty() != Difficulty.field_5801
-			&& method_20679(iWorld, blockPos, random)
-			&& method_20636(entityType, iWorld, spawnType, blockPos, random);
+			&& isSpawnDark(iWorld, blockPos, random)
+			&& canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
 	}
 
-	public static boolean method_20681(EntityType<? extends HostileEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		return iWorld.getDifficulty() != Difficulty.field_5801 && method_20636(entityType, iWorld, spawnType, blockPos, random);
+	public static boolean canSpawnIgnoreLightLevel(
+		EntityType<? extends HostileEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random
+	) {
+		return iWorld.getDifficulty() != Difficulty.field_5801 && canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
 	}
 
 	@Override
 	protected void initAttributes() {
 		super.initAttributes();
-		this.getAttributeContainer().register(EntityAttributes.ATTACK_DAMAGE);
+		this.getAttributes().register(EntityAttributes.ATTACK_DAMAGE);
 	}
 
 	@Override

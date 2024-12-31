@@ -52,12 +52,12 @@ public class PotionUtil {
 	}
 
 	public static void getCustomPotionEffects(@Nullable CompoundTag compoundTag, List<StatusEffectInstance> list) {
-		if (compoundTag != null && compoundTag.containsKey("CustomPotionEffects", 9)) {
+		if (compoundTag != null && compoundTag.contains("CustomPotionEffects", 9)) {
 			ListTag listTag = compoundTag.getList("CustomPotionEffects", 10);
 
 			for (int i = 0; i < listTag.size(); i++) {
-				CompoundTag compoundTag2 = listTag.getCompoundTag(i);
-				StatusEffectInstance statusEffectInstance = StatusEffectInstance.deserialize(compoundTag2);
+				CompoundTag compoundTag2 = listTag.getCompound(i);
+				StatusEffectInstance statusEffectInstance = StatusEffectInstance.fromTag(compoundTag2);
 				if (statusEffectInstance != null) {
 					list.add(statusEffectInstance);
 				}
@@ -67,7 +67,7 @@ public class PotionUtil {
 
 	public static int getColor(ItemStack itemStack) {
 		CompoundTag compoundTag = itemStack.getTag();
-		if (compoundTag != null && compoundTag.containsKey("CustomPotionColor", 99)) {
+		if (compoundTag != null && compoundTag.contains("CustomPotionColor", 99)) {
 			return compoundTag.getInt("CustomPotionColor");
 		} else {
 			return getPotion(itemStack) == Potions.field_8984 ? 16253176 : getColor(getPotionEffects(itemStack));
@@ -119,7 +119,7 @@ public class PotionUtil {
 	}
 
 	public static ItemStack setPotion(ItemStack itemStack, Potion potion) {
-		Identifier identifier = Registry.POTION.getId(potion);
+		Identifier identifier = Registry.field_11143.getId(potion);
 		if (potion == Potions.field_8984) {
 			itemStack.removeSubTag("Potion");
 		} else {
@@ -137,7 +137,7 @@ public class PotionUtil {
 			ListTag listTag = compoundTag.getList("CustomPotionEffects", 9);
 
 			for (StatusEffectInstance statusEffectInstance : collection) {
-				listTag.add(statusEffectInstance.serialize(new CompoundTag()));
+				listTag.add(statusEffectInstance.toTag(new CompoundTag()));
 			}
 
 			compoundTag.put("CustomPotionEffects", listTag);
@@ -160,7 +160,7 @@ public class PotionUtil {
 						EntityAttributeModifier entityAttributeModifier = (EntityAttributeModifier)entry.getValue();
 						EntityAttributeModifier entityAttributeModifier2 = new EntityAttributeModifier(
 							entityAttributeModifier.getName(),
-							statusEffect.method_5563(statusEffectInstance.getAmplifier(), entityAttributeModifier),
+							statusEffect.adjustModifierAmount(statusEffectInstance.getAmplifier(), entityAttributeModifier),
 							entityAttributeModifier.getOperation()
 						);
 						list3.add(new Pair<>(((EntityAttribute)entry.getKey()).getId(), entityAttributeModifier2));

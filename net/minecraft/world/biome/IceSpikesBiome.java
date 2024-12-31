@@ -32,17 +32,19 @@ public final class IceSpikesBiome extends Biome {
 				.waterFogColor(329011)
 				.parent("snowy_tundra")
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.STRONGHOLD, FeatureConfig.DEFAULT);
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.STRONGHOLD.configure(FeatureConfig.DEFAULT));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);
 		DefaultBiomeFeatures.addDungeons(this);
 		this.addFeature(
-			GenerationStep.Feature.field_13173, configureFeature(Feature.field_13562, FeatureConfig.DEFAULT, Decorator.field_14238, new CountDecoratorConfig(3))
+			GenerationStep.Feature.field_13173,
+			Feature.field_13562.configure(FeatureConfig.DEFAULT).createDecoratedFeature(Decorator.field_14238.configure(new CountDecoratorConfig(3)))
 		);
 		this.addFeature(
-			GenerationStep.Feature.field_13173, configureFeature(Feature.field_13551, new IcePatchFeatureConfig(2), Decorator.field_14238, new CountDecoratorConfig(2))
+			GenerationStep.Feature.field_13173,
+			Feature.field_13551.configure(new IcePatchFeatureConfig(2)).createDecoratedFeature(Decorator.field_14238.configure(new CountDecoratorConfig(2)))
 		);
 		DefaultBiomeFeatures.addMineables(this);
 		DefaultBiomeFeatures.addDefaultOres(this);

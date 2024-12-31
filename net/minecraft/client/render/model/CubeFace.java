@@ -1,6 +1,6 @@
 package net.minecraft.client.render.model;
 
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Direction;
 
 public enum CubeFace {
@@ -41,7 +41,7 @@ public enum CubeFace {
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.NORTH)
 	);
 
-	private static final CubeFace[] field_3958 = SystemUtil.consume(new CubeFace[6], cubeFaces -> {
+	private static final CubeFace[] DIRECTION_LOOKUP = Util.make(new CubeFace[6], cubeFaces -> {
 		cubeFaces[CubeFace.DirectionIds.DOWN] = field_3965;
 		cubeFaces[CubeFace.DirectionIds.UP] = field_3960;
 		cubeFaces[CubeFace.DirectionIds.NORTH] = field_3962;
@@ -51,8 +51,8 @@ public enum CubeFace {
 	});
 	private final CubeFace.Corner[] corners;
 
-	public static CubeFace method_3163(Direction direction) {
-		return field_3958[direction.getId()];
+	public static CubeFace getFace(Direction direction) {
+		return DIRECTION_LOOKUP[direction.getId()];
 	}
 
 	private CubeFace(CubeFace.Corner... corners) {

@@ -24,9 +24,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.LowercaseEnumTypeAdapterFactory;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 public interface Text extends Message, Iterable<Text> {
 	Text setStyle(Style style);
@@ -167,7 +168,7 @@ public interface Text extends Message, Iterable<Text> {
 	}
 
 	public static class Serializer implements JsonDeserializer<Text>, JsonSerializer<Text> {
-		private static final Gson GSON = SystemUtil.get(() -> {
+		private static final Gson GSON = Util.make(() -> {
 			GsonBuilder gsonBuilder = new GsonBuilder();
 			gsonBuilder.disableHtmlEscaping();
 			gsonBuilder.registerTypeHierarchyAdapter(Text.class, new Text.Serializer());
@@ -175,7 +176,7 @@ public interface Text extends Message, Iterable<Text> {
 			gsonBuilder.registerTypeAdapterFactory(new LowercaseEnumTypeAdapterFactory());
 			return gsonBuilder.create();
 		});
-		private static final Field JSON_READER_POS = SystemUtil.get(() -> {
+		private static final Field JSON_READER_POS = Util.make(() -> {
 			try {
 				new JsonReader(new StringReader(""));
 				Field field = JsonReader.class.getDeclaredField("pos");
@@ -185,7 +186,7 @@ public interface Text extends Message, Iterable<Text> {
 				throw new IllegalStateException("Couldn't get field 'pos' for JsonReader", var1);
 			}
 		});
-		private static final Field JSON_READER_LINE_START = SystemUtil.get(() -> {
+		private static final Field JSON_READER_LINE_START = Util.make(() -> {
 			try {
 				new JsonReader(new StringReader(""));
 				Field field = JsonReader.class.getDeclaredField("lineStart");
@@ -196,24 +197,24 @@ public interface Text extends Message, Iterable<Text> {
 			}
 		});
 
-		public Text method_10871(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public Text deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonPrimitive()) {
 				return new LiteralText(jsonElement.getAsString());
 			} else if (!jsonElement.isJsonObject()) {
 				if (jsonElement.isJsonArray()) {
 					JsonArray jsonArray3 = jsonElement.getAsJsonArray();
-					Text text12 = null;
+					Text text13 = null;
 
 					for (JsonElement jsonElement2 : jsonArray3) {
-						Text text13 = this.method_10871(jsonElement2, jsonElement2.getClass(), jsonDeserializationContext);
-						if (text12 == null) {
-							text12 = text13;
+						Text text14 = this.deserialize(jsonElement2, jsonElement2.getClass(), jsonDeserializationContext);
+						if (text13 == null) {
+							text13 = text14;
 						} else {
-							text12.append(text13);
+							text13.append(text14);
 						}
 					}
 
-					return text12;
+					return text13;
 				} else {
 					throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 				}
@@ -229,7 +230,7 @@ public interface Text extends Message, Iterable<Text> {
 						Object[] objects = new Object[jsonArray.size()];
 
 						for (int i = 0; i < objects.length; i++) {
-							objects[i] = this.method_10871(jsonArray.get(i), type, jsonDeserializationContext);
+							objects[i] = this.deserialize(jsonArray.get(i), type, jsonDeserializationContext);
 							if (objects[i] instanceof LiteralText) {
 								LiteralText literalText = (LiteralText)objects[i];
 								if (literalText.getStyle().isEmpty() && literalText.getSiblings().isEmpty()) {
@@ -265,12 +266,14 @@ public interface Text extends Message, Iterable<Text> {
 					boolean bl = JsonHelper.getBoolean(jsonObject, "interpret", false);
 					if (jsonObject.has("block")) {
 						text = new NbtText.BlockNbtText(string2, bl, JsonHelper.getString(jsonObject, "block"));
+					} else if (jsonObject.has("entity")) {
+						text = new NbtText.EntityNbtText(string2, bl, JsonHelper.getString(jsonObject, "entity"));
 					} else {
-						if (!jsonObject.has("entity")) {
+						if (!jsonObject.has("storage")) {
 							throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 						}
 
-						text = new NbtText.EntityNbtText(string2, bl, JsonHelper.getString(jsonObject, "entity"));
+						text = new NbtText.StorageNbtText(string2, bl, new Identifier(JsonHelper.getString(jsonObject, "storage")));
 					}
 				}
 
@@ -281,7 +284,7 @@ public interface Text extends Message, Iterable<Text> {
 					}
 
 					for (int j = 0; j < jsonArray2.size(); j++) {
-						text.append(this.method_10871(jsonArray2.get(j), type, jsonDeserializationContext));
+						text.append(this.deserialize(jsonArray2.get(j), type, jsonDeserializationContext));
 					}
 				}
 
@@ -301,7 +304,7 @@ public interface Text extends Message, Iterable<Text> {
 			}
 		}
 
-		public JsonElement method_10874(Text text, Type type, JsonSerializationContext jsonSerializationContext) {
+		public JsonElement serialize(Text text, Type type, JsonSerializationContext jsonSerializationContext) {
 			JsonObject jsonObject = new JsonObject();
 			if (!text.getStyle().isEmpty()) {
 				this.addStyle(text.getStyle(), jsonObject, jsonSerializationContext);
@@ -311,7 +314,7 @@ public interface Text extends Message, Iterable<Text> {
 				JsonArray jsonArray = new JsonArray();
 
 				for (Text text2 : text.getSiblings()) {
-					jsonArray.add(this.method_10874(text2, text2.getClass(), jsonSerializationContext));
+					jsonArray.add(this.serialize(text2, text2.getClass(), jsonSerializationContext));
 				}
 
 				jsonObject.add("extra", jsonArray);
@@ -327,7 +330,7 @@ public interface Text extends Message, Iterable<Text> {
 
 					for (Object object : translatableText.getArgs()) {
 						if (object instanceof Text) {
-							jsonArray2.add(this.method_10874((Text)object, object.getClass(), jsonSerializationContext));
+							jsonArray2.add(this.serialize((Text)object, object.getClass(), jsonSerializationContext));
 						} else {
 							jsonArray2.add(new JsonPrimitive(String.valueOf(object)));
 						}
@@ -359,13 +362,16 @@ public interface Text extends Message, Iterable<Text> {
 				if (text instanceof NbtText.BlockNbtText) {
 					NbtText.BlockNbtText blockNbtText = (NbtText.BlockNbtText)text;
 					jsonObject.addProperty("block", blockNbtText.getPos());
+				} else if (text instanceof NbtText.EntityNbtText) {
+					NbtText.EntityNbtText entityNbtText = (NbtText.EntityNbtText)text;
+					jsonObject.addProperty("entity", entityNbtText.getSelector());
 				} else {
-					if (!(text instanceof NbtText.EntityNbtText)) {
+					if (!(text instanceof NbtText.StorageNbtText)) {
 						throw new IllegalArgumentException("Don't know how to serialize " + text + " as a Component");
 					}
 
-					NbtText.EntityNbtText entityNbtText = (NbtText.EntityNbtText)text;
-					jsonObject.addProperty("entity", entityNbtText.getSelector());
+					NbtText.StorageNbtText storageNbtText = (NbtText.StorageNbtText)text;
+					jsonObject.addProperty("storage", storageNbtText.method_23728().toString());
 				}
 			}
 
@@ -402,7 +408,7 @@ public interface Text extends Message, Iterable<Text> {
 				Text text = (Text)GSON.getAdapter(Text.class).read(jsonReader);
 				stringReader.setCursor(stringReader.getCursor() + getPosition(jsonReader));
 				return text;
-			} catch (IOException var3) {
+			} catch (StackOverflowError | IOException var3) {
 				throw new JsonParseException(var3);
 			}
 		}

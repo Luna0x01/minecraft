@@ -20,15 +20,17 @@ public enum PathNodeType {
 	field_23(-1.0F),
 	field_8(-1.0F),
 	field_16(4.0F),
-	field_6(-1.0F);
+	field_6(-1.0F),
+	field_21326(8.0F),
+	field_21516(0.0F);
 
-	private final float weight;
+	private final float defaultPenalty;
 
 	private PathNodeType(float f) {
-		this.weight = f;
+		this.defaultPenalty = f;
 	}
 
-	public float getWeight() {
-		return this.weight;
+	public float getDefaultPenalty() {
+		return this.defaultPenalty;
 	}
 }

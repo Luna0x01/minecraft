@@ -18,7 +18,7 @@ public class WeightedPicker {
 
 	public static <T extends WeightedPicker.Entry> T getRandom(Random random, List<T> list, int i) {
 		if (i <= 0) {
-			throw new IllegalArgumentException();
+			throw (IllegalArgumentException)Util.throwOrPause((T)(new IllegalArgumentException()));
 		} else {
 			int j = random.nextInt(i);
 			return getAt(list, j);

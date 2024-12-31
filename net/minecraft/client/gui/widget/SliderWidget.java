@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.widget;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.resource.language.I18n;
@@ -34,7 +34,7 @@ public abstract class SliderWidget extends AbstractButtonWidget {
 	@Override
 	protected void renderBg(MinecraftClient minecraftClient, int i, int j) {
 		minecraftClient.getTextureManager().bindTexture(WIDGETS_LOCATION);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		int k = (this.isHovered() ? 2 : 1) * 20;
 		this.blit(this.x + (int)(this.value * (double)(this.width - 8)), this.y, 0, 46 + k, 4, 20);
 		this.blit(this.x + (int)(this.value * (double)(this.width - 8)) + 4, this.y, 196, 46 + k, 4, 20);

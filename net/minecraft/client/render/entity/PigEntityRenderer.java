@@ -13,7 +13,7 @@ public class PigEntityRenderer extends MobEntityRenderer<PigEntity, PigEntityMod
 		this.addFeature(new PigSaddleFeatureRenderer(this));
 	}
 
-	protected Identifier method_4087(PigEntity pigEntity) {
+	public Identifier getTexture(PigEntity pigEntity) {
 		return SKIN;
 	}
 }

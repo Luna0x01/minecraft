@@ -1,12 +1,12 @@
 package net.minecraft.client.gui.screen.ingame;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.container.ShulkerBoxContainer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class ShulkerBoxScreen extends AbstractContainerScreen<ShulkerBoxContainer> {
+public class ShulkerBoxScreen extends ContainerScreen<ShulkerBoxContainer> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/shulker_box.png");
 
 	public ShulkerBoxScreen(ShulkerBoxContainer shulkerBoxContainer, PlayerInventory playerInventory, Text text) {
@@ -29,7 +29,7 @@ public class ShulkerBoxScreen extends AbstractContainerScreen<ShulkerBoxContaine
 
 	@Override
 	protected void drawBackground(float f, int i, int j) {
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.minecraft.getTextureManager().bindTexture(TEXTURE);
 		int k = (this.width - this.containerWidth) / 2;
 		int l = (this.height - this.containerHeight) / 2;

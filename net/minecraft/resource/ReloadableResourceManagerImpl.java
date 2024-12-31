@@ -5,7 +5,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -34,13 +33,12 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 		this.mainThread = thread;
 	}
 
-	@Override
 	public void addPack(ResourcePack resourcePack) {
 		for (String string : resourcePack.getNamespaces(this.type)) {
 			this.namespaces.add(string);
 			NamespaceResourceManager namespaceResourceManager = (NamespaceResourceManager)this.namespaceManagers.get(string);
 			if (namespaceResourceManager == null) {
-				namespaceResourceManager = new NamespaceResourceManager(this.type);
+				namespaceResourceManager = new NamespaceResourceManager(this.type, string);
 				this.namespaceManagers.put(string, namespaceResourceManager);
 			}
 
@@ -114,18 +112,13 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 	) {
 		ResourceReloadMonitor resourceReloadMonitor;
 		if (LOGGER.isDebugEnabled()) {
-			resourceReloadMonitor = new ProfilingResourceReloader(this, new ArrayList(list), executor, executor2, completableFuture);
+			resourceReloadMonitor = new ProfilingResourceReloader(this, Lists.newArrayList(list), executor, executor2, completableFuture);
 		} else {
-			resourceReloadMonitor = ResourceReloader.create(this, new ArrayList(list), executor, executor2, completableFuture);
+			resourceReloadMonitor = ResourceReloader.create(this, Lists.newArrayList(list), executor, executor2, completableFuture);
 		}
 
 		this.initialListeners.clear();
 		return resourceReloadMonitor;
-	}
-
-	@Override
-	public ResourceReloadMonitor beginInitialMonitoredReload(Executor executor, Executor executor2, CompletableFuture<Unit> completableFuture) {
-		return this.beginReloadInner(executor, executor2, this.initialListeners, completableFuture);
 	}
 
 	@Override
@@ -134,9 +127,63 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 		LOGGER.info("Reloading ResourceManager: {}", list.stream().map(ResourcePack::getName).collect(Collectors.joining(", ")));
 
 		for (ResourcePack resourcePack : list) {
-			this.addPack(resourcePack);
+			try {
+				this.addPack(resourcePack);
+			} catch (Exception var8) {
+				LOGGER.error("Failed to add resource pack {}", resourcePack.getName(), var8);
+				return new ReloadableResourceManagerImpl.FailedResourceReloadMonitor(new ReloadableResourceManagerImpl.PackAdditionFailedException(resourcePack, var8));
+			}
 		}
 
 		return this.beginReloadInner(executor, executor2, this.listeners, completableFuture);
+	}
+
+	static class FailedResourceReloadMonitor implements ResourceReloadMonitor {
+		private final ReloadableResourceManagerImpl.PackAdditionFailedException exception;
+		private final CompletableFuture<Unit> future;
+
+		public FailedResourceReloadMonitor(ReloadableResourceManagerImpl.PackAdditionFailedException packAdditionFailedException) {
+			this.exception = packAdditionFailedException;
+			this.future = new CompletableFuture();
+			this.future.completeExceptionally(packAdditionFailedException);
+		}
+
+		@Override
+		public CompletableFuture<Unit> whenComplete() {
+			return this.future;
+		}
+
+		@Override
+		public float getProgress() {
+			return 0.0F;
+		}
+
+		@Override
+		public boolean isPrepareStageComplete() {
+			return false;
+		}
+
+		@Override
+		public boolean isApplyStageComplete() {
+			return true;
+		}
+
+		@Override
+		public void throwExceptions() {
+			throw this.exception;
+		}
+	}
+
+	public static class PackAdditionFailedException extends RuntimeException {
+		private final ResourcePack pack;
+
+		public PackAdditionFailedException(ResourcePack resourcePack, Throwable throwable) {
+			super(resourcePack.getName(), throwable);
+			this.pack = resourcePack;
+		}
+
+		public ResourcePack getPack() {
+			return this.pack;
+		}
 	}
 }

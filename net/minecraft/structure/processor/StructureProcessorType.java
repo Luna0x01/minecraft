@@ -12,6 +12,6 @@ public interface StructureProcessorType extends DynamicDeserializer<StructurePro
 	StructureProcessorType field_16987 = register("nop", dynamic -> NopStructureProcessor.INSTANCE);
 
 	static StructureProcessorType register(String string, StructureProcessorType structureProcessorType) {
-		return Registry.register(Registry.STRUCTURE_PROCESSOR, string, structureProcessorType);
+		return Registry.register(Registry.field_16794, string, structureProcessorType);
 	}
 }

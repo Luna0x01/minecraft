@@ -4,11 +4,12 @@ import java.util.Random;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class FallingBlock extends Block {
 	public FallingBlock(Block.Settings settings) {
@@ -29,21 +30,13 @@ public class FallingBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!world.isClient) {
-			this.tryStartFalling(world, blockPos);
-		}
-	}
-
-	private void tryStartFalling(World world, BlockPos blockPos) {
-		if (canFallThrough(world.getBlockState(blockPos.down())) && blockPos.getY() >= 0) {
-			if (!world.isClient) {
-				FallingBlockEntity fallingBlockEntity = new FallingBlockEntity(
-					world, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, world.getBlockState(blockPos)
-				);
-				this.configureFallingBlockEntity(fallingBlockEntity);
-				world.spawnEntity(fallingBlockEntity);
-			}
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (canFallThrough(serverWorld.getBlockState(blockPos.down())) && blockPos.getY() >= 0) {
+			FallingBlockEntity fallingBlockEntity = new FallingBlockEntity(
+				serverWorld, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, serverWorld.getBlockState(blockPos)
+			);
+			this.configureFallingBlockEntity(fallingBlockEntity);
+			serverWorld.spawnEntity(fallingBlockEntity);
 		}
 	}
 
@@ -51,7 +44,7 @@ public class FallingBlock extends Block {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 2;
 	}
 
@@ -72,9 +65,9 @@ public class FallingBlock extends Block {
 		if (random.nextInt(16) == 0) {
 			BlockPos blockPos2 = blockPos.down();
 			if (canFallThrough(world.getBlockState(blockPos2))) {
-				double d = (double)((float)blockPos.getX() + random.nextFloat());
+				double d = (double)blockPos.getX() + (double)random.nextFloat();
 				double e = (double)blockPos.getY() - 0.05;
-				double f = (double)((float)blockPos.getZ() + random.nextFloat());
+				double f = (double)blockPos.getZ() + (double)random.nextFloat();
 				world.addParticle(new BlockStateParticleEffect(ParticleTypes.field_11206, blockState), d, e, f, 0.0, 0.0, 0.0);
 			}
 		}

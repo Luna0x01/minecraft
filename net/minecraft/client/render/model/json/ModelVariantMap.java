@@ -18,7 +18,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.MultipartUnbakedModel;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.util.JsonHelper;
 
 public class ModelVariantMap {
@@ -90,19 +90,19 @@ public class ModelVariantMap {
 			.registerTypeAdapter(MultipartUnbakedModel.class, new MultipartUnbakedModel.Deserializer(this))
 			.registerTypeAdapter(MultipartModelComponent.class, new MultipartModelComponent.Deserializer())
 			.create();
-		private StateFactory<Block, BlockState> stateFactory;
+		private StateManager<Block, BlockState> stateFactory;
 
-		public StateFactory<Block, BlockState> getStateFactory() {
+		public StateManager<Block, BlockState> getStateFactory() {
 			return this.stateFactory;
 		}
 
-		public void setStateFactory(StateFactory<Block, BlockState> stateFactory) {
-			this.stateFactory = stateFactory;
+		public void setStateFactory(StateManager<Block, BlockState> stateManager) {
+			this.stateFactory = stateManager;
 		}
 	}
 
 	public static class Deserializer implements JsonDeserializer<ModelVariantMap> {
-		public ModelVariantMap method_3428(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public ModelVariantMap deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Map<String, WeightedUnbakedModel> map = this.deserializeVariants(jsonDeserializationContext, jsonObject);
 			MultipartUnbakedModel multipartUnbakedModel = this.deserializeMultipart(jsonDeserializationContext, jsonObject);

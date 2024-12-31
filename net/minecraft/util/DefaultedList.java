@@ -1,7 +1,7 @@
 package net.minecraft.util;
 
+import com.google.common.collect.Lists;
 import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -29,7 +29,7 @@ public class DefaultedList<E> extends AbstractList<E> {
 	}
 
 	protected DefaultedList() {
-		this(new ArrayList(), null);
+		this(Lists.newArrayList(), null);
 	}
 
 	protected DefaultedList(List<E> list, @Nullable E object) {

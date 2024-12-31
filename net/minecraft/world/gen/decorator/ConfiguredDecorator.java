@@ -11,6 +11,7 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
+import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.FeatureConfig;
 
 public class ConfiguredDecorator<DC extends DecoratorConfig> {
@@ -26,8 +27,8 @@ public class ConfiguredDecorator<DC extends DecoratorConfig> {
 		this.config = decoratorConfig;
 	}
 
-	public <FC extends FeatureConfig> boolean generate(
-		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, ConfiguredFeature<FC> configuredFeature
+	public <FC extends FeatureConfig, F extends Feature<FC>> boolean generate(
+		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, ConfiguredFeature<FC, F> configuredFeature
 	) {
 		return this.decorator.generate(iWorld, chunkGenerator, random, blockPos, this.config, configuredFeature);
 	}
@@ -38,7 +39,7 @@ public class ConfiguredDecorator<DC extends DecoratorConfig> {
 			dynamicOps.createMap(
 				ImmutableMap.of(
 					dynamicOps.createString("name"),
-					dynamicOps.createString(Registry.DECORATOR.getId(this.decorator).toString()),
+					dynamicOps.createString(Registry.field_11148.getId(this.decorator).toString()),
 					dynamicOps.createString("config"),
 					this.config.serialize(dynamicOps).getValue()
 				)
@@ -47,7 +48,7 @@ public class ConfiguredDecorator<DC extends DecoratorConfig> {
 	}
 
 	public static <T> ConfiguredDecorator<?> deserialize(Dynamic<T> dynamic) {
-		Decorator<? extends DecoratorConfig> decorator = (Decorator<? extends DecoratorConfig>)Registry.DECORATOR
+		Decorator<? extends DecoratorConfig> decorator = (Decorator<? extends DecoratorConfig>)Registry.field_11148
 			.get(new Identifier(dynamic.get("name").asString("")));
 		return new ConfiguredDecorator<>(decorator, dynamic.get("config").orElseEmptyMap());
 	}

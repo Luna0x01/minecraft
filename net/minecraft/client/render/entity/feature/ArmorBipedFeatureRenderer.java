@@ -11,20 +11,20 @@ public class ArmorBipedFeatureRenderer<T extends LivingEntity, M extends BipedEn
 	}
 
 	@Override
-	protected void method_4170(A bipedEntityModel, EquipmentSlot equipmentSlot) {
-		this.method_4190(bipedEntityModel);
+	protected void setVisible(A bipedEntityModel, EquipmentSlot equipmentSlot) {
+		this.setInvisible(bipedEntityModel);
 		switch (equipmentSlot) {
 			case field_6169:
 				bipedEntityModel.head.visible = true;
-				bipedEntityModel.headwear.visible = true;
+				bipedEntityModel.helmet.visible = true;
 				break;
 			case field_6174:
-				bipedEntityModel.body.visible = true;
+				bipedEntityModel.torso.visible = true;
 				bipedEntityModel.rightArm.visible = true;
 				bipedEntityModel.leftArm.visible = true;
 				break;
 			case field_6172:
-				bipedEntityModel.body.visible = true;
+				bipedEntityModel.torso.visible = true;
 				bipedEntityModel.rightLeg.visible = true;
 				bipedEntityModel.leftLeg.visible = true;
 				break;
@@ -35,7 +35,7 @@ public class ArmorBipedFeatureRenderer<T extends LivingEntity, M extends BipedEn
 	}
 
 	@Override
-	protected void method_4190(A bipedEntityModel) {
+	protected void setInvisible(A bipedEntityModel) {
 		bipedEntityModel.setVisible(false);
 	}
 }

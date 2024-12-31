@@ -17,7 +17,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.world.GameMode;
 
 public class FindTreeTutorialStepHandler implements TutorialStepHandler {
-	private static final Set<Block> MATCHING_BLOCKS = Sets.newHashSet(
+	private static final Set<Block> TREE_BLOCKS = Sets.newHashSet(
 		new Block[]{
 			Blocks.field_10431,
 			Blocks.field_10037,
@@ -41,32 +41,32 @@ public class FindTreeTutorialStepHandler implements TutorialStepHandler {
 	);
 	private static final Text TITLE = new TranslatableText("tutorial.find_tree.title");
 	private static final Text DESCRIPTION = new TranslatableText("tutorial.find_tree.description");
-	private final TutorialManager manager;
+	private final TutorialManager tutorialManager;
 	private TutorialToast toast;
 	private int ticks;
 
 	public FindTreeTutorialStepHandler(TutorialManager tutorialManager) {
-		this.manager = tutorialManager;
+		this.tutorialManager = tutorialManager;
 	}
 
 	@Override
 	public void tick() {
 		this.ticks++;
-		if (this.manager.getGameMode() != GameMode.field_9215) {
-			this.manager.setStep(TutorialStep.field_5653);
+		if (this.tutorialManager.getGameMode() != GameMode.field_9215) {
+			this.tutorialManager.setStep(TutorialStep.field_5653);
 		} else {
 			if (this.ticks == 1) {
-				ClientPlayerEntity clientPlayerEntity = this.manager.getClient().player;
+				ClientPlayerEntity clientPlayerEntity = this.tutorialManager.getClient().player;
 				if (clientPlayerEntity != null) {
-					for (Block block : MATCHING_BLOCKS) {
+					for (Block block : TREE_BLOCKS) {
 						if (clientPlayerEntity.inventory.contains(new ItemStack(block))) {
-							this.manager.setStep(TutorialStep.field_5655);
+							this.tutorialManager.setStep(TutorialStep.field_5655);
 							return;
 						}
 					}
 
-					if (method_4896(clientPlayerEntity)) {
-						this.manager.setStep(TutorialStep.field_5655);
+					if (hasBrokenTreeBlocks(clientPlayerEntity)) {
+						this.tutorialManager.setStep(TutorialStep.field_5655);
 						return;
 					}
 				}
@@ -74,7 +74,7 @@ public class FindTreeTutorialStepHandler implements TutorialStepHandler {
 
 			if (this.ticks >= 6000 && this.toast == null) {
 				this.toast = new TutorialToast(TutorialToast.Type.field_2235, TITLE, DESCRIPTION, false);
-				this.manager.getClient().getToastManager().add(this.toast);
+				this.tutorialManager.getClient().getToastManager().add(this.toast);
 			}
 		}
 	}
@@ -91,25 +91,25 @@ public class FindTreeTutorialStepHandler implements TutorialStepHandler {
 	public void onTarget(ClientWorld clientWorld, HitResult hitResult) {
 		if (hitResult.getType() == HitResult.Type.field_1332) {
 			BlockState blockState = clientWorld.getBlockState(((BlockHitResult)hitResult).getBlockPos());
-			if (MATCHING_BLOCKS.contains(blockState.getBlock())) {
-				this.manager.setStep(TutorialStep.field_5649);
+			if (TREE_BLOCKS.contains(blockState.getBlock())) {
+				this.tutorialManager.setStep(TutorialStep.field_5649);
 			}
 		}
 	}
 
 	@Override
 	public void onSlotUpdate(ItemStack itemStack) {
-		for (Block block : MATCHING_BLOCKS) {
+		for (Block block : TREE_BLOCKS) {
 			if (itemStack.getItem() == block.asItem()) {
-				this.manager.setStep(TutorialStep.field_5655);
+				this.tutorialManager.setStep(TutorialStep.field_5655);
 				return;
 			}
 		}
 	}
 
-	public static boolean method_4896(ClientPlayerEntity clientPlayerEntity) {
-		for (Block block : MATCHING_BLOCKS) {
-			if (clientPlayerEntity.getStats().getStat(Stats.field_15427.getOrCreateStat(block)) > 0) {
+	public static boolean hasBrokenTreeBlocks(ClientPlayerEntity clientPlayerEntity) {
+		for (Block block : TREE_BLOCKS) {
+			if (clientPlayerEntity.getStatHandler().getStat(Stats.field_15427.getOrCreateStat(block)) > 0) {
 				return true;
 			}
 		}

@@ -7,7 +7,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class CarpetBlock extends Block {
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 1.0, 16.0);
@@ -37,7 +37,7 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return !viewableWorld.isAir(blockPos.down());
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return !worldView.isAir(blockPos.down());
 	}
 }

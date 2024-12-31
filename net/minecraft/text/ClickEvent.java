@@ -50,7 +50,8 @@ public class ClickEvent {
 		field_11746("open_file", false),
 		field_11750("run_command", true),
 		field_11745("suggest_command", true),
-		field_11748("change_page", true);
+		field_11748("change_page", true),
+		field_21462("copy_to_clipboard", true);
 
 		private static final Map<String, ClickEvent.Action> BY_NAME = (Map<String, ClickEvent.Action>)Arrays.stream(values())
 			.collect(Collectors.toMap(ClickEvent.Action::getName, action -> action));

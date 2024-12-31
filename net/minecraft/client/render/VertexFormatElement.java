@@ -1,5 +1,7 @@
 package net.minecraft.client.render;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.function.IntConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -9,6 +11,7 @@ public class VertexFormatElement {
 	private final VertexFormatElement.Type type;
 	private final int index;
 	private final int count;
+	private final int size;
 
 	public VertexFormatElement(int i, VertexFormatElement.Format format, VertexFormatElement.Type type, int j) {
 		if (this.isValidType(i, type)) {
@@ -21,9 +24,10 @@ public class VertexFormatElement {
 		this.format = format;
 		this.index = i;
 		this.count = j;
+		this.size = format.getSize() * this.count;
 	}
 
-	private final boolean isValidType(int i, VertexFormatElement.Type type) {
+	private boolean isValidType(int i, VertexFormatElement.Type type) {
 		return i == 0 || type == VertexFormatElement.Type.field_1636;
 	}
 
@@ -48,7 +52,7 @@ public class VertexFormatElement {
 	}
 
 	public final int getSize() {
-		return this.format.getSize() * this.count;
+		return this.size;
 	}
 
 	public final boolean isPosition() {
@@ -79,13 +83,21 @@ public class VertexFormatElement {
 		return 31 * i + this.count;
 	}
 
+	public void startDrawing(long l, int i) {
+		this.type.startDrawing(this.count, this.format.getGlId(), i, l, this.index);
+	}
+
+	public void endDrawing() {
+		this.type.endDrawing(this.index);
+	}
+
 	public static enum Format {
 		field_1623(4, "Float", 5126),
-		UBYTE(1, "Unsigned Byte", 5121),
+		field_1624(1, "Unsigned Byte", 5121),
 		field_1621(1, "Byte", 5120),
-		USHORT(2, "Unsigned Short", 5123),
+		field_1622(2, "Unsigned Short", 5123),
 		field_1625(2, "Short", 5122),
-		UINT(4, "Unsigned Int", 5125),
+		field_1619(4, "Unsigned Int", 5125),
 		field_1617(4, "Int", 5124);
 
 		private final int size;
@@ -112,22 +124,63 @@ public class VertexFormatElement {
 	}
 
 	public static enum Type {
-		field_1633("Position"),
-		field_1635("Normal"),
-		COLOR("Vertex Color"),
-		field_1636("UV"),
-		MATRIX("Bone Matrix"),
-		field_1628("Blend Weight"),
-		field_1629("Padding");
+		field_1633("Position", (i, j, k, l, m) -> {
+			GlStateManager.vertexPointer(i, j, k, l);
+			GlStateManager.enableClientState(32884);
+		}, i -> GlStateManager.disableClientState(32884)),
+		field_1635("Normal", (i, j, k, l, m) -> {
+			GlStateManager.normalPointer(j, k, l);
+			GlStateManager.enableClientState(32885);
+		}, i -> GlStateManager.disableClientState(32885)),
+		field_1632("Vertex Color", (i, j, k, l, m) -> {
+			GlStateManager.colorPointer(i, j, k, l);
+			GlStateManager.enableClientState(32886);
+		}, i -> {
+			GlStateManager.disableClientState(32886);
+			GlStateManager.clearCurrentColor();
+		}),
+		field_1636("UV", (i, j, k, l, m) -> {
+			GlStateManager.clientActiveTexture(33984 + m);
+			GlStateManager.texCoordPointer(i, j, k, l);
+			GlStateManager.enableClientState(32888);
+			GlStateManager.clientActiveTexture(33984);
+		}, i -> {
+			GlStateManager.clientActiveTexture(33984 + i);
+			GlStateManager.disableClientState(32888);
+			GlStateManager.clientActiveTexture(33984);
+		}),
+		field_1629("Padding", (i, j, k, l, m) -> {
+		}, i -> {
+		}),
+		field_20782("Generic", (i, j, k, l, m) -> {
+			GlStateManager.enableVertexAttribArray(m);
+			GlStateManager.vertexAttribPointer(m, i, j, false, k, l);
+		}, GlStateManager::method_22607);
 
 		private final String name;
+		private final VertexFormatElement.Type.Starter stater;
+		private final IntConsumer finisher;
 
-		private Type(String string2) {
+		private Type(String string2, VertexFormatElement.Type.Starter starter, IntConsumer intConsumer) {
 			this.name = string2;
+			this.stater = starter;
+			this.finisher = intConsumer;
+		}
+
+		private void startDrawing(int i, int j, int k, long l, int m) {
+			this.stater.setupBufferState(i, j, k, l, m);
+		}
+
+		public void endDrawing(int i) {
+			this.finisher.accept(i);
 		}
 
 		public String getName() {
 			return this.name;
+		}
+
+		interface Starter {
+			void setupBufferState(int i, int j, int k, long l, int m);
 		}
 	}
 }

@@ -23,13 +23,12 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class ZombiePigmanEntity extends ZombieEntity {
 	private static final UUID ATTACKING_SPEED_BOOST_UUID = UUID.fromString("49455A49-7EC5-45BA-B886-3B90B23A1718");
@@ -43,7 +42,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 
 	public ZombiePigmanEntity(EntityType<? extends ZombiePigmanEntity> entityType, World world) {
 		super(entityType, world);
-		this.setPathNodeTypeWeight(PathNodeType.field_14, 8.0F);
+		this.setPathfindingPenalty(PathNodeType.field_14, 8.0F);
 	}
 
 	@Override
@@ -112,13 +111,13 @@ public class ZombiePigmanEntity extends ZombieEntity {
 		super.mobTick();
 	}
 
-	public static boolean method_20682(EntityType<ZombiePigmanEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+	public static boolean canSpawn(EntityType<ZombiePigmanEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
 		return iWorld.getDifficulty() != Difficulty.field_5801;
 	}
 
 	@Override
-	public boolean canSpawn(ViewableWorld viewableWorld) {
-		return viewableWorld.intersectsEntities(this) && !viewableWorld.intersectsFluid(this.getBoundingBox());
+	public boolean canSpawn(WorldView worldView) {
+		return worldView.intersectsEntities(this) && !worldView.containsFluid(this.getBoundingBox());
 	}
 
 	@Override
@@ -155,20 +154,17 @@ public class ZombiePigmanEntity extends ZombieEntity {
 		} else {
 			Entity entity = damageSource.getAttacker();
 			if (entity instanceof PlayerEntity && !((PlayerEntity)entity).isCreative() && this.canSee(entity)) {
-				this.method_20804(entity);
+				this.method_20804((LivingEntity)entity);
 			}
 
 			return super.damage(damageSource, f);
 		}
 	}
 
-	private boolean method_20804(Entity entity) {
+	private boolean method_20804(LivingEntity livingEntity) {
 		this.anger = this.method_20806();
 		this.angrySoundDelay = this.random.nextInt(40);
-		if (entity instanceof LivingEntity) {
-			this.setAttacker((LivingEntity)entity);
-		}
-
+		this.setAttacker(livingEntity);
 		return true;
 	}
 
@@ -196,13 +192,8 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	@Override
-	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
-		return false;
-	}
-
-	@Override
 	protected void initEquipment(LocalDifficulty localDifficulty) {
-		this.setEquippedStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8845));
+		this.equipStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8845));
 	}
 
 	@Override

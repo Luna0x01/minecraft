@@ -13,11 +13,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkCache;
 
@@ -39,19 +38,29 @@ public abstract class EntityNavigation {
 	protected boolean shouldRecalculate;
 	protected long lastRecalculateTime;
 	protected PathNodeMaker nodeMaker;
-	private BlockPos field_20293;
-	private int field_20294;
-	private PathNodeNavigator pathNodeNavigator;
+	private BlockPos currentTarget;
+	private int currentDistance;
+	private float rangeMultiplier = 1.0F;
+	private final PathNodeNavigator pathNodeNavigator;
 
 	public EntityNavigation(MobEntity mobEntity, World world) {
 		this.entity = mobEntity;
 		this.world = world;
 		this.followRange = mobEntity.getAttributeInstance(EntityAttributes.FOLLOW_RANGE);
-		this.pathNodeNavigator = this.createPathNodeNavigator(MathHelper.floor(this.followRange.getValue() * 16.0));
+		int i = MathHelper.floor(this.followRange.getValue() * 16.0);
+		this.pathNodeNavigator = this.createPathNodeNavigator(i);
+	}
+
+	public void resetRangeMultiplier() {
+		this.rangeMultiplier = 1.0F;
+	}
+
+	public void setRangeMultiplier(float f) {
+		this.rangeMultiplier = f;
 	}
 
 	public BlockPos getTargetPos() {
-		return this.field_20293;
+		return this.currentTarget;
 	}
 
 	protected abstract PathNodeNavigator createPathNodeNavigator(int i);
@@ -60,19 +69,15 @@ public abstract class EntityNavigation {
 		this.speed = d;
 	}
 
-	public float getFollowRange() {
-		return (float)this.followRange.getValue();
-	}
-
 	public boolean shouldRecalculatePath() {
 		return this.shouldRecalculate;
 	}
 
 	public void recalculatePath() {
 		if (this.world.getTime() - this.lastRecalculateTime > 20L) {
-			if (this.field_20293 != null) {
+			if (this.currentTarget != null) {
 				this.currentPath = null;
-				this.currentPath = this.findPathTo(this.field_20293, this.field_20294);
+				this.currentPath = this.findPathTo(this.currentTarget, this.currentDistance);
 				this.lastRecalculateTime = this.world.getTime();
 				this.shouldRecalculate = false;
 			}
@@ -87,41 +92,41 @@ public abstract class EntityNavigation {
 	}
 
 	@Nullable
-	public Path method_21643(Stream<BlockPos> stream, int i) {
-		return this.findPathTo((Set<BlockPos>)stream.collect(Collectors.toSet()), 8, false, i);
+	public Path findPathToAny(Stream<BlockPos> stream, int i) {
+		return this.findPathToAny((Set<BlockPos>)stream.collect(Collectors.toSet()), 8, false, i);
 	}
 
 	@Nullable
 	public Path findPathTo(BlockPos blockPos, int i) {
-		return this.findPathTo(ImmutableSet.of(blockPos), 8, false, i);
+		return this.findPathToAny(ImmutableSet.of(blockPos), 8, false, i);
 	}
 
 	@Nullable
 	public Path findPathTo(Entity entity, int i) {
-		return this.findPathTo(ImmutableSet.of(new BlockPos(entity)), 16, true, i);
+		return this.findPathToAny(ImmutableSet.of(new BlockPos(entity)), 16, true, i);
 	}
 
 	@Nullable
-	protected Path findPathTo(Set<BlockPos> set, int i, boolean bl, int j) {
+	protected Path findPathToAny(Set<BlockPos> set, int i, boolean bl, int j) {
 		if (set.isEmpty()) {
 			return null;
-		} else if (this.entity.y < 0.0) {
+		} else if (this.entity.getY() < 0.0) {
 			return null;
 		} else if (!this.isAtValidPosition()) {
 			return null;
-		} else if (this.currentPath != null && !this.currentPath.isFinished() && set.contains(this.field_20293)) {
+		} else if (this.currentPath != null && !this.currentPath.isFinished() && set.contains(this.currentTarget)) {
 			return this.currentPath;
 		} else {
 			this.world.getProfiler().push("pathfind");
-			float f = this.getFollowRange();
+			float f = (float)this.followRange.getValue();
 			BlockPos blockPos = bl ? new BlockPos(this.entity).up() : new BlockPos(this.entity);
 			int k = (int)(f + (float)i);
-			ViewableWorld viewableWorld = new ChunkCache(this.world, blockPos.add(-k, -k, -k), blockPos.add(k, k, k));
-			Path path = this.pathNodeNavigator.pathfind(viewableWorld, this.entity, set, f, j);
+			ChunkCache chunkCache = new ChunkCache(this.world, blockPos.add(-k, -k, -k), blockPos.add(k, k, k));
+			Path path = this.pathNodeNavigator.findPathToAny(chunkCache, this.entity, set, f, j, this.rangeMultiplier);
 			this.world.getProfiler().pop();
-			if (path != null && path.method_48() != null) {
-				this.field_20293 = path.method_48();
-				this.field_20294 = j;
+			if (path != null && path.getTarget() != null) {
+				this.currentTarget = path.getTarget();
+				this.currentDistance = j;
 			}
 
 			return path;
@@ -146,15 +151,19 @@ public abstract class EntityNavigation {
 				this.currentPath = path;
 			}
 
-			this.method_6359();
-			if (this.currentPath.getLength() <= 0) {
+			if (this.isIdle()) {
 				return false;
 			} else {
-				this.speed = d;
-				Vec3d vec3d = this.getPos();
-				this.field_6674 = this.tickCount;
-				this.field_6672 = vec3d;
-				return true;
+				this.method_6359();
+				if (this.currentPath.getLength() <= 0) {
+					return false;
+				} else {
+					this.speed = d;
+					Vec3d vec3d = this.getPos();
+					this.field_6674 = this.tickCount;
+					this.field_6672 = vec3d;
+					return true;
+				}
 			}
 		}
 	}
@@ -190,7 +199,7 @@ public abstract class EntityNavigation {
 				BlockPos blockPos = new BlockPos(vec3d3);
 				this.entity
 					.getMoveControl()
-					.moveTo(vec3d3.x, this.world.getBlockState(blockPos.down()).isAir() ? vec3d3.y : LandPathNodeMaker.method_60(this.world, blockPos), vec3d3.z, this.speed);
+					.moveTo(vec3d3.x, this.world.getBlockState(blockPos.down()).isAir() ? vec3d3.y : LandPathNodeMaker.getHeight(this.world, blockPos), vec3d3.z, this.speed);
 			}
 		}
 	}
@@ -199,9 +208,9 @@ public abstract class EntityNavigation {
 		Vec3d vec3d = this.getPos();
 		this.field_6683 = this.entity.getWidth() > 0.75F ? this.entity.getWidth() / 2.0F : 0.75F - this.entity.getWidth() / 2.0F;
 		Vec3d vec3d2 = this.currentPath.getCurrentPosition();
-		if (Math.abs(this.entity.x - (vec3d2.x + 0.5)) < (double)this.field_6683
-			&& Math.abs(this.entity.z - (vec3d2.z + 0.5)) < (double)this.field_6683
-			&& Math.abs(this.entity.y - vec3d2.y) < 1.0) {
+		if (Math.abs(this.entity.getX() - (vec3d2.x + 0.5)) < (double)this.field_6683
+			&& Math.abs(this.entity.getZ() - (vec3d2.z + 0.5)) < (double)this.field_6683
+			&& Math.abs(this.entity.getY() - vec3d2.y) < 1.0) {
 			this.currentPath.setCurrentNodeIndex(this.currentPath.getCurrentNodeIndex() + 1);
 		}
 
@@ -221,7 +230,7 @@ public abstract class EntityNavigation {
 		if (this.currentPath != null && !this.currentPath.isFinished()) {
 			Vec3d vec3d2 = this.currentPath.getCurrentPosition();
 			if (vec3d2.equals(this.field_6680)) {
-				this.field_6670 = this.field_6670 + (SystemUtil.getMeasuringTimeMs() - this.field_6669);
+				this.field_6670 = this.field_6670 + (Util.getMeasuringTimeMs() - this.field_6669);
 			} else {
 				this.field_6680 = vec3d2;
 				double d = vec3d.distanceTo(this.field_6680);
@@ -235,12 +244,16 @@ public abstract class EntityNavigation {
 				this.stop();
 			}
 
-			this.field_6669 = SystemUtil.getMeasuringTimeMs();
+			this.field_6669 = Util.getMeasuringTimeMs();
 		}
 	}
 
 	public boolean isIdle() {
 		return this.currentPath == null || this.currentPath.isFinished();
+	}
+
+	public boolean method_23966() {
+		return !this.isIdle();
 	}
 
 	public void stop() {
@@ -294,7 +307,9 @@ public abstract class EntityNavigation {
 	public void method_18053(BlockPos blockPos) {
 		if (this.currentPath != null && !this.currentPath.isFinished() && this.currentPath.getLength() != 0) {
 			PathNode pathNode = this.currentPath.getEnd();
-			Vec3d vec3d = new Vec3d(((double)pathNode.x + this.entity.x) / 2.0, ((double)pathNode.y + this.entity.y) / 2.0, ((double)pathNode.z + this.entity.z) / 2.0);
+			Vec3d vec3d = new Vec3d(
+				((double)pathNode.x + this.entity.getX()) / 2.0, ((double)pathNode.y + this.entity.getY()) / 2.0, ((double)pathNode.z + this.entity.getZ()) / 2.0
+			);
 			if (blockPos.isWithinDistance(vec3d, (double)(this.currentPath.getLength() - this.currentPath.getCurrentNodeIndex()))) {
 				this.recalculatePath();
 			}

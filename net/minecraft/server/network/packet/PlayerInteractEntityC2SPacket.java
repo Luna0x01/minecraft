@@ -65,7 +65,7 @@ public class PlayerInteractEntityC2SPacket implements Packet<ServerPlayPacketLis
 		}
 	}
 
-	public void method_12251(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onPlayerInteractEntity(this);
 	}
 

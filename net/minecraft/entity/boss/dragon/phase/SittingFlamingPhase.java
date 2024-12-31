@@ -24,14 +24,14 @@ public class SittingFlamingPhase extends AbstractSittingPhase {
 		if (this.ticks % 2 == 0 && this.ticks < 10) {
 			Vec3d vec3d = this.dragon.method_6834(1.0F).normalize();
 			vec3d.rotateY((float) (-Math.PI / 4));
-			double d = this.dragon.partHead.x;
-			double e = this.dragon.partHead.y + (double)(this.dragon.partHead.getHeight() / 2.0F);
-			double f = this.dragon.partHead.z;
+			double d = this.dragon.partHead.getX();
+			double e = this.dragon.partHead.getBodyY(0.5);
+			double f = this.dragon.partHead.getZ();
 
 			for (int i = 0; i < 8; i++) {
-				double g = d + this.dragon.getRand().nextGaussian() / 2.0;
-				double h = e + this.dragon.getRand().nextGaussian() / 2.0;
-				double j = f + this.dragon.getRand().nextGaussian() / 2.0;
+				double g = d + this.dragon.getRandom().nextGaussian() / 2.0;
+				double h = e + this.dragon.getRandom().nextGaussian() / 2.0;
+				double j = f + this.dragon.getRandom().nextGaussian() / 2.0;
 
 				for (int k = 0; k < 6; k++) {
 					this.dragon.world.addParticle(ParticleTypes.field_11216, g, h, j, -vec3d.x * 0.08F * (double)k, -vec3d.y * 0.6F, -vec3d.z * 0.08F * (double)k);
@@ -52,19 +52,25 @@ public class SittingFlamingPhase extends AbstractSittingPhase {
 				this.dragon.getPhaseManager().setPhase(PhaseType.field_7081);
 			}
 		} else if (this.ticks == 10) {
-			Vec3d vec3d = new Vec3d(this.dragon.partHead.x - this.dragon.x, 0.0, this.dragon.partHead.z - this.dragon.z).normalize();
+			Vec3d vec3d = new Vec3d(this.dragon.partHead.getX() - this.dragon.getX(), 0.0, this.dragon.partHead.getZ() - this.dragon.getZ()).normalize();
 			float f = 5.0F;
-			double d = this.dragon.partHead.x + vec3d.x * 5.0 / 2.0;
-			double e = this.dragon.partHead.z + vec3d.z * 5.0 / 2.0;
-			double g = this.dragon.partHead.y + (double)(this.dragon.partHead.getHeight() / 2.0F);
+			double d = this.dragon.partHead.getX() + vec3d.x * 5.0 / 2.0;
+			double e = this.dragon.partHead.getZ() + vec3d.z * 5.0 / 2.0;
+			double g = this.dragon.partHead.getBodyY(0.5);
+			double h = g;
 			BlockPos.Mutable mutable = new BlockPos.Mutable(d, g, e);
 
 			while (this.dragon.world.isAir(mutable)) {
-				mutable.set(d, --g, e);
+				if (--h < 0.0) {
+					h = g;
+					break;
+				}
+
+				mutable.set(d, h, e);
 			}
 
-			g = (double)(MathHelper.floor(g) + 1);
-			this.field_7051 = new AreaEffectCloudEntity(this.dragon.world, d, g, e);
+			h = (double)(MathHelper.floor(h) + 1);
+			this.field_7051 = new AreaEffectCloudEntity(this.dragon.world, d, h, e);
 			this.field_7051.setOwner(this.dragon);
 			this.field_7051.setRadius(5.0F);
 			this.field_7051.setDuration(200);

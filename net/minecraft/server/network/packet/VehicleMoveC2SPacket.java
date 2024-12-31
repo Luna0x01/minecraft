@@ -17,9 +17,9 @@ public class VehicleMoveC2SPacket implements Packet<ServerPlayPacketListener> {
 	}
 
 	public VehicleMoveC2SPacket(Entity entity) {
-		this.x = entity.x;
-		this.y = entity.y;
-		this.z = entity.z;
+		this.x = entity.getX();
+		this.y = entity.getY();
+		this.z = entity.getZ();
 		this.yaw = entity.yaw;
 		this.pitch = entity.pitch;
 	}
@@ -42,7 +42,7 @@ public class VehicleMoveC2SPacket implements Packet<ServerPlayPacketListener> {
 		packetByteBuf.writeFloat(this.pitch);
 	}
 
-	public void method_12278(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onVehicleMove(this);
 	}
 

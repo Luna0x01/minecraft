@@ -1,80 +1,93 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.VisibleRegion;
-import net.minecraft.client.render.entity.model.EndCrystalEntityModel;
-import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.Frustum;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.decoration.EnderCrystalEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Quaternion;
 
 public class EnderCrystalEntityRenderer extends EntityRenderer<EnderCrystalEntity> {
 	private static final Identifier SKIN = new Identifier("textures/entity/end_crystal/end_crystal.png");
-	private final EntityModel<EnderCrystalEntity> field_4662 = new EndCrystalEntityModel<>(0.0F, true);
-	private final EntityModel<EnderCrystalEntity> field_4664 = new EndCrystalEntityModel<>(0.0F, false);
+	private static final RenderLayer field_21736 = RenderLayer.getEntityCutoutNoCull(SKIN);
+	private static final float field_21002 = (float)Math.sin(Math.PI / 4);
+	private final ModelPart field_21003;
+	private final ModelPart field_21004;
+	private final ModelPart bottom;
 
 	public EnderCrystalEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
-		this.field_4673 = 0.5F;
+		this.shadowSize = 0.5F;
+		this.field_21004 = new ModelPart(64, 32, 0, 0);
+		this.field_21004.addCuboid(-4.0F, -4.0F, -4.0F, 8.0F, 8.0F, 8.0F);
+		this.field_21003 = new ModelPart(64, 32, 32, 0);
+		this.field_21003.addCuboid(-4.0F, -4.0F, -4.0F, 8.0F, 8.0F, 8.0F);
+		this.bottom = new ModelPart(64, 32, 0, 16);
+		this.bottom.addCuboid(-6.0F, 0.0F, -6.0F, 12.0F, 4.0F, 12.0F);
 	}
 
-	public void method_3908(EnderCrystalEntity enderCrystalEntity, double d, double e, double f, float g, float h) {
-		float i = (float)enderCrystalEntity.field_7034 + h;
-		GlStateManager.pushMatrix();
-		GlStateManager.translatef((float)d, (float)e, (float)f);
-		this.bindTexture(SKIN);
-		float j = MathHelper.sin(i * 0.2F) / 2.0F + 0.5F;
-		j = j * j + j;
-		if (this.renderOutlines) {
-			GlStateManager.enableColorMaterial();
-			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(enderCrystalEntity));
-		}
-
+	public void render(EnderCrystalEntity enderCrystalEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		matrixStack.push();
+		float h = method_23155(enderCrystalEntity, g);
+		float j = ((float)enderCrystalEntity.field_7034 + g) * 3.0F;
+		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(field_21736);
+		matrixStack.push();
+		matrixStack.scale(2.0F, 2.0F, 2.0F);
+		matrixStack.translate(0.0, -0.5, 0.0);
+		int k = OverlayTexture.DEFAULT_UV;
 		if (enderCrystalEntity.getShowBottom()) {
-			this.field_4662.render(enderCrystalEntity, 0.0F, i * 3.0F, j * 0.2F, 0.0F, 0.0F, 0.0625F);
-		} else {
-			this.field_4664.render(enderCrystalEntity, 0.0F, i * 3.0F, j * 0.2F, 0.0F, 0.0F, 0.0625F);
+			this.bottom.render(matrixStack, vertexConsumer, i, k);
 		}
 
-		if (this.renderOutlines) {
-			GlStateManager.tearDownSolidRenderingTextureCombine();
-			GlStateManager.disableColorMaterial();
-		}
-
-		GlStateManager.popMatrix();
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(j));
+		matrixStack.translate(0.0, (double)(1.5F + h / 2.0F), 0.0);
+		matrixStack.multiply(new Quaternion(new Vector3f(field_21002, 0.0F, field_21002), 60.0F, true));
+		this.field_21004.render(matrixStack, vertexConsumer, i, k);
+		float l = 0.875F;
+		matrixStack.scale(0.875F, 0.875F, 0.875F);
+		matrixStack.multiply(new Quaternion(new Vector3f(field_21002, 0.0F, field_21002), 60.0F, true));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(j));
+		this.field_21004.render(matrixStack, vertexConsumer, i, k);
+		matrixStack.scale(0.875F, 0.875F, 0.875F);
+		matrixStack.multiply(new Quaternion(new Vector3f(field_21002, 0.0F, field_21002), 60.0F, true));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(j));
+		this.field_21003.render(matrixStack, vertexConsumer, i, k);
+		matrixStack.pop();
+		matrixStack.pop();
 		BlockPos blockPos = enderCrystalEntity.getBeamTarget();
 		if (blockPos != null) {
-			this.bindTexture(EnderDragonEntityRenderer.CRYSTAL_BEAM);
-			float k = (float)blockPos.getX() + 0.5F;
-			float l = (float)blockPos.getY() + 0.5F;
-			float m = (float)blockPos.getZ() + 0.5F;
-			double n = (double)k - enderCrystalEntity.x;
-			double o = (double)l - enderCrystalEntity.y;
-			double p = (double)m - enderCrystalEntity.z;
-			EnderDragonEntityRenderer.renderCrystalBeam(
-				d + n,
-				e - 0.3 + (double)(j * 0.4F) + o,
-				f + p,
-				h,
-				(double)k,
-				(double)l,
-				(double)m,
-				enderCrystalEntity.field_7034,
-				enderCrystalEntity.x,
-				enderCrystalEntity.y,
-				enderCrystalEntity.z
-			);
+			float m = (float)blockPos.getX() + 0.5F;
+			float n = (float)blockPos.getY() + 0.5F;
+			float o = (float)blockPos.getZ() + 0.5F;
+			float p = (float)((double)m - enderCrystalEntity.getX());
+			float q = (float)((double)n - enderCrystalEntity.getY());
+			float r = (float)((double)o - enderCrystalEntity.getZ());
+			matrixStack.translate((double)p, (double)q, (double)r);
+			EnderDragonEntityRenderer.renderCrystalBeam(-p, -q + h, -r, g, enderCrystalEntity.field_7034, matrixStack, vertexConsumerProvider, i);
 		}
 
-		super.render(enderCrystalEntity, d, e, f, g, h);
+		super.render(enderCrystalEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_3909(EnderCrystalEntity enderCrystalEntity) {
+	public static float method_23155(EnderCrystalEntity enderCrystalEntity, float f) {
+		float g = (float)enderCrystalEntity.field_7034 + f;
+		float h = MathHelper.sin(g * 0.2F) / 2.0F + 0.5F;
+		h = (h * h + h) * 0.4F;
+		return h - 1.4F;
+	}
+
+	public Identifier getTexture(EnderCrystalEntity enderCrystalEntity) {
 		return SKIN;
 	}
 
-	public boolean method_3907(EnderCrystalEntity enderCrystalEntity, VisibleRegion visibleRegion, double d, double e, double f) {
-		return super.isVisible(enderCrystalEntity, visibleRegion, d, e, f) || enderCrystalEntity.getBeamTarget() != null;
+	public boolean shouldRender(EnderCrystalEntity enderCrystalEntity, Frustum frustum, double d, double e, double f) {
+		return super.shouldRender(enderCrystalEntity, frustum, d, e, f) || enderCrystalEntity.getBeamTarget() != null;
 	}
 }

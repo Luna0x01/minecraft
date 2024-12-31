@@ -3,14 +3,14 @@ package net.minecraft.client.texture;
 import java.util.Collection;
 
 public class TextureStitcherCannotFitException extends RuntimeException {
-	private final Collection<Sprite> field_20311;
+	private final Collection<Sprite.Info> sprites;
 
-	public TextureStitcherCannotFitException(Sprite sprite, Collection<Sprite> collection) {
-		super(String.format("Unable to fit: %s - size: %dx%d - Maybe try a lower resolution resourcepack?", sprite.getId(), sprite.getWidth(), sprite.getHeight()));
-		this.field_20311 = collection;
+	public TextureStitcherCannotFitException(Sprite.Info info, Collection<Sprite.Info> collection) {
+		super(String.format("Unable to fit: %s - size: %dx%d - Maybe try a lower resolution resourcepack?", info.getId(), info.getWidth(), info.getHeight()));
+		this.sprites = collection;
 	}
 
-	public Collection<Sprite> method_21687() {
-		return this.field_20311;
+	public Collection<Sprite.Info> getSprites() {
+		return this.sprites;
 	}
 }

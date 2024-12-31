@@ -1,9 +1,9 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import javax.annotation.Nullable;
 import net.minecraft.client.render.entity.feature.DrownedOverlayFeatureRenderer;
 import net.minecraft.client.render.entity.model.DrownedEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.mob.DrownedEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.util.Identifier;
@@ -17,17 +17,16 @@ public class DrownedEntityRenderer extends ZombieBaseEntityRenderer<DrownedEntit
 		this.addFeature(new DrownedOverlayFeatureRenderer<>(this));
 	}
 
-	@Nullable
 	@Override
-	protected Identifier method_4163(ZombieEntity zombieEntity) {
+	public Identifier getTexture(ZombieEntity zombieEntity) {
 		return SKIN;
 	}
 
-	protected void method_4164(DrownedEntity drownedEntity, float f, float g, float h) {
-		float i = drownedEntity.method_6024(h);
-		super.method_17144(drownedEntity, f, g, h);
+	protected void setupTransforms(DrownedEntity drownedEntity, MatrixStack matrixStack, float f, float g, float h) {
+		super.setupTransforms(drownedEntity, matrixStack, f, g, h);
+		float i = drownedEntity.getLeaningPitch(h);
 		if (i > 0.0F) {
-			GlStateManager.rotatef(MathHelper.lerp(i, drownedEntity.pitch, -10.0F - drownedEntity.pitch), 1.0F, 0.0F, 0.0F);
+			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(MathHelper.lerp(i, drownedEntity.pitch, -10.0F - drownedEntity.pitch)));
 		}
 	}
 }

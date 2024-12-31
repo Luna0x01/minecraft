@@ -7,6 +7,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.OffsetDoubleList;
+import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.AxisCycleDirection;
 import net.minecraft.util.math.BlockPos;
@@ -36,7 +37,7 @@ public abstract class VoxelShape {
 
 	public Box getBoundingBox() {
 		if (this.isEmpty()) {
-			throw new UnsupportedOperationException("No bounds for empty shape.");
+			throw (UnsupportedOperationException)Util.throwOrPause(new UnsupportedOperationException("No bounds for empty shape."));
 		} else {
 			return new Box(
 				this.getMinimum(Direction.Axis.field_11048),
@@ -110,21 +111,21 @@ public abstract class VoxelShape {
 		return list;
 	}
 
-	public double method_1093(Direction.Axis axis, double d, double e) {
+	public double getBeginningCoord(Direction.Axis axis, double d, double e) {
 		Direction.Axis axis2 = AxisCycleDirection.field_10963.cycle(axis);
 		Direction.Axis axis3 = AxisCycleDirection.field_10965.cycle(axis);
 		int i = this.getCoordIndex(axis2, d);
 		int j = this.getCoordIndex(axis3, e);
-		int k = this.voxels.method_1043(axis, i, j);
+		int k = this.voxels.getBeginningAxisCoord(axis, i, j);
 		return k >= this.voxels.getSize(axis) ? Double.POSITIVE_INFINITY : this.getPointPosition(axis, k);
 	}
 
-	public double method_1102(Direction.Axis axis, double d, double e) {
+	public double getEndingCoord(Direction.Axis axis, double d, double e) {
 		Direction.Axis axis2 = AxisCycleDirection.field_10963.cycle(axis);
 		Direction.Axis axis3 = AxisCycleDirection.field_10965.cycle(axis);
 		int i = this.getCoordIndex(axis2, d);
 		int j = this.getCoordIndex(axis3, e);
-		int k = this.voxels.method_1058(axis, i, j);
+		int k = this.voxels.getEndingAxisCoord(axis, i, j);
 		return k <= 0 ? Double.NEGATIVE_INFINITY : this.getPointPosition(axis, k);
 	}
 
@@ -189,15 +190,15 @@ public abstract class VoxelShape {
 			return this;
 		} else {
 			int i = this.getCoordIndex(axis, axisDirection == Direction.AxisDirection.field_11056 ? 0.9999999 : 1.0E-7);
-			return new SliceVoxelShape(this, axis, i);
+			return new SlicedVoxelShape(this, axis, i);
 		}
 	}
 
-	public double method_1108(Direction.Axis axis, Box box, double d) {
-		return this.method_1103(AxisCycleDirection.between(axis, Direction.Axis.field_11048), box, d);
+	public double calculateMaxDistance(Direction.Axis axis, Box box, double d) {
+		return this.calculateMaxDistance(AxisCycleDirection.between(axis, Direction.Axis.field_11048), box, d);
 	}
 
-	protected double method_1103(AxisCycleDirection axisCycleDirection, Box box, double d) {
+	protected double calculateMaxDistance(AxisCycleDirection axisCycleDirection, Box box, double d) {
 		if (this.isEmpty()) {
 			return d;
 		} else if (Math.abs(d) < 1.0E-7) {

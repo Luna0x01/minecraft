@@ -31,7 +31,7 @@ public class EvokerFangsEntity extends Entity {
 		this.warmup = i;
 		this.setOwner(livingEntity);
 		this.yaw = g * (180.0F / (float)Math.PI);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 	}
 
 	@Override
@@ -58,7 +58,7 @@ public class EvokerFangsEntity extends Entity {
 	@Override
 	protected void readCustomDataFromTag(CompoundTag compoundTag) {
 		this.warmup = compoundTag.getInt("Warmup");
-		if (compoundTag.hasUuid("OwnerUUID")) {
+		if (compoundTag.containsUuid("OwnerUUID")) {
 			this.ownerUuid = compoundTag.getUuid("OwnerUUID");
 		}
 	}
@@ -79,9 +79,9 @@ public class EvokerFangsEntity extends Entity {
 				this.ticksLeft--;
 				if (this.ticksLeft == 14) {
 					for (int i = 0; i < 12; i++) {
-						double d = this.x + (this.random.nextDouble() * 2.0 - 1.0) * (double)this.getWidth() * 0.5;
-						double e = this.y + 0.05 + this.random.nextDouble();
-						double f = this.z + (this.random.nextDouble() * 2.0 - 1.0) * (double)this.getWidth() * 0.5;
+						double d = this.getX() + (this.random.nextDouble() * 2.0 - 1.0) * (double)this.getWidth() * 0.5;
+						double e = this.getY() + 0.05 + this.random.nextDouble();
+						double f = this.getZ() + (this.random.nextDouble() * 2.0 - 1.0) * (double)this.getWidth() * 0.5;
 						double g = (this.random.nextDouble() * 2.0 - 1.0) * 0.3;
 						double h = 0.3 + this.random.nextDouble() * 0.3;
 						double j = (this.random.nextDouble() * 2.0 - 1.0) * 0.3;
@@ -91,7 +91,7 @@ public class EvokerFangsEntity extends Entity {
 			}
 		} else if (--this.warmup < 0) {
 			if (this.warmup == -8) {
-				for (LivingEntity livingEntity : this.world.getEntities(LivingEntity.class, this.getBoundingBox().expand(0.2, 0.0, 0.2))) {
+				for (LivingEntity livingEntity : this.world.getNonSpectatingEntities(LivingEntity.class, this.getBoundingBox().expand(0.2, 0.0, 0.2))) {
 					this.damage(livingEntity);
 				}
 			}
@@ -128,7 +128,8 @@ public class EvokerFangsEntity extends Entity {
 		if (b == 4) {
 			this.hasAttacked = true;
 			if (!this.isSilent()) {
-				this.world.playSound(this.x, this.y, this.z, SoundEvents.field_14692, this.getSoundCategory(), 1.0F, this.random.nextFloat() * 0.2F + 0.85F, false);
+				this.world
+					.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.field_14692, this.getSoundCategory(), 1.0F, this.random.nextFloat() * 0.2F + 0.85F, false);
 			}
 		}
 	}

@@ -10,11 +10,11 @@ import net.minecraft.client.gui.screen.ingame.BlastFurnaceScreen;
 import net.minecraft.client.gui.screen.ingame.BrewingStandScreen;
 import net.minecraft.client.gui.screen.ingame.CartographyTableScreen;
 import net.minecraft.client.gui.screen.ingame.ContainerProvider;
-import net.minecraft.client.gui.screen.ingame.ContainerScreen54;
-import net.minecraft.client.gui.screen.ingame.ContainerScreen9;
 import net.minecraft.client.gui.screen.ingame.CraftingTableScreen;
 import net.minecraft.client.gui.screen.ingame.EnchantingScreen;
 import net.minecraft.client.gui.screen.ingame.FurnaceScreen;
+import net.minecraft.client.gui.screen.ingame.Generic3x3ContainerScreen;
+import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.GrindstoneScreen;
 import net.minecraft.client.gui.screen.ingame.HopperScreen;
 import net.minecraft.client.gui.screen.ingame.LecternScreen;
@@ -76,13 +76,13 @@ public class Screens {
 	}
 
 	static {
-		register(ContainerType.field_18664, ContainerScreen54::new);
-		register(ContainerType.field_18665, ContainerScreen54::new);
-		register(ContainerType.field_17326, ContainerScreen54::new);
-		register(ContainerType.field_18666, ContainerScreen54::new);
-		register(ContainerType.field_18667, ContainerScreen54::new);
-		register(ContainerType.field_17327, ContainerScreen54::new);
-		register(ContainerType.field_17328, ContainerScreen9::new);
+		register(ContainerType.field_18664, GenericContainerScreen::new);
+		register(ContainerType.field_18665, GenericContainerScreen::new);
+		register(ContainerType.field_17326, GenericContainerScreen::new);
+		register(ContainerType.field_18666, GenericContainerScreen::new);
+		register(ContainerType.field_18667, GenericContainerScreen::new);
+		register(ContainerType.field_17327, GenericContainerScreen::new);
+		register(ContainerType.field_17328, Generic3x3ContainerScreen::new);
 		register(ContainerType.field_17329, AnvilScreen::new);
 		register(ContainerType.field_17330, BeaconScreen::new);
 		register(ContainerType.field_17331, BlastFurnaceScreen::new);

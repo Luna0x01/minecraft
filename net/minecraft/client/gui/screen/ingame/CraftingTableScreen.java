@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.screen.ingame;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
@@ -11,7 +11,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class CraftingTableScreen extends AbstractContainerScreen<CraftingTableContainer> implements RecipeBookProvider {
+public class CraftingTableScreen extends ContainerScreen<CraftingTableContainer> implements RecipeBookProvider {
 	private static final Identifier BG_TEX = new Identifier("textures/gui/container/crafting_table.png");
 	private static final Identifier RECIPE_BUTTON_TEX = new Identifier("textures/gui/recipe_button.png");
 	private final RecipeBookWidget recipeBookGui = new RecipeBookWidget();
@@ -26,14 +26,14 @@ public class CraftingTableScreen extends AbstractContainerScreen<CraftingTableCo
 		super.init();
 		this.isNarrow = this.width < 379;
 		this.recipeBookGui.initialize(this.width, this.height, this.minecraft, this.isNarrow, this.container);
-		this.left = this.recipeBookGui.findLeftEdge(this.isNarrow, this.width, this.containerWidth);
+		this.x = this.recipeBookGui.findLeftEdge(this.isNarrow, this.width, this.containerWidth);
 		this.children.add(this.recipeBookGui);
 		this.setInitialFocus(this.recipeBookGui);
-		this.addButton(new TexturedButtonWidget(this.left + 5, this.height / 2 - 49, 20, 18, 0, 0, 19, RECIPE_BUTTON_TEX, buttonWidget -> {
+		this.addButton(new TexturedButtonWidget(this.x + 5, this.height / 2 - 49, 20, 18, 0, 0, 19, RECIPE_BUTTON_TEX, buttonWidget -> {
 			this.recipeBookGui.reset(this.isNarrow);
 			this.recipeBookGui.toggleOpen();
-			this.left = this.recipeBookGui.findLeftEdge(this.isNarrow, this.width, this.containerWidth);
-			((TexturedButtonWidget)buttonWidget).setPos(this.left + 5, this.height / 2 - 49);
+			this.x = this.recipeBookGui.findLeftEdge(this.isNarrow, this.width, this.containerWidth);
+			((TexturedButtonWidget)buttonWidget).setPos(this.x + 5, this.height / 2 - 49);
 		}));
 	}
 
@@ -52,11 +52,11 @@ public class CraftingTableScreen extends AbstractContainerScreen<CraftingTableCo
 		} else {
 			this.recipeBookGui.render(i, j, f);
 			super.render(i, j, f);
-			this.recipeBookGui.drawGhostSlots(this.left, this.top, true, f);
+			this.recipeBookGui.drawGhostSlots(this.x, this.y, true, f);
 		}
 
 		this.drawMouseoverTooltip(i, j);
-		this.recipeBookGui.drawTooltip(this.left, this.top, i, j);
+		this.recipeBookGui.drawTooltip(this.x, this.y, i, j);
 		this.focusOn(this.recipeBookGui);
 	}
 
@@ -68,9 +68,9 @@ public class CraftingTableScreen extends AbstractContainerScreen<CraftingTableCo
 
 	@Override
 	protected void drawBackground(float f, int i, int j) {
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.minecraft.getTextureManager().bindTexture(BG_TEX);
-		int k = this.left;
+		int k = this.x;
 		int l = (this.height - this.containerHeight) / 2;
 		this.blit(k, l, 0, 0, this.containerWidth, this.containerHeight);
 	}
@@ -92,7 +92,7 @@ public class CraftingTableScreen extends AbstractContainerScreen<CraftingTableCo
 	@Override
 	protected boolean isClickOutsideBounds(double d, double e, int i, int j, int k) {
 		boolean bl = d < (double)i || e < (double)j || d >= (double)(i + this.containerWidth) || e >= (double)(j + this.containerHeight);
-		return this.recipeBookGui.isClickOutsideBounds(d, e, this.left, this.top, this.containerWidth, this.containerHeight, k) && bl;
+		return this.recipeBookGui.isClickOutsideBounds(d, e, this.x, this.y, this.containerWidth, this.containerHeight, k) && bl;
 	}
 
 	@Override
@@ -113,7 +113,7 @@ public class CraftingTableScreen extends AbstractContainerScreen<CraftingTableCo
 	}
 
 	@Override
-	public RecipeBookWidget getRecipeBookGui() {
+	public RecipeBookWidget getRecipeBookWidget() {
 		return this.recipeBookGui;
 	}
 }

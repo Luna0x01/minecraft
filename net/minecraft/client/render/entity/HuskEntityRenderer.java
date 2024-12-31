@@ -1,6 +1,6 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.util.Identifier;
 
@@ -11,14 +11,14 @@ public class HuskEntityRenderer extends ZombieEntityRenderer {
 		super(entityRenderDispatcher);
 	}
 
-	protected void method_3985(ZombieEntity zombieEntity, float f) {
+	protected void scale(ZombieEntity zombieEntity, MatrixStack matrixStack, float f) {
 		float g = 1.0625F;
-		GlStateManager.scalef(1.0625F, 1.0625F, 1.0625F);
-		super.scale(zombieEntity, f);
+		matrixStack.scale(1.0625F, 1.0625F, 1.0625F);
+		super.scale(zombieEntity, matrixStack, f);
 	}
 
 	@Override
-	protected Identifier method_4163(ZombieEntity zombieEntity) {
+	public Identifier getTexture(ZombieEntity zombieEntity) {
 		return SKIN;
 	}
 }

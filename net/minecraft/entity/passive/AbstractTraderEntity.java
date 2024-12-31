@@ -9,6 +9,7 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.Npc;
+import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -26,6 +27,8 @@ import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOffers;
 import net.minecraft.village.Trader;
 import net.minecraft.village.TraderOfferList;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 
@@ -39,6 +42,18 @@ public abstract class AbstractTraderEntity extends PassiveEntity implements Npc,
 
 	public AbstractTraderEntity(EntityType<? extends AbstractTraderEntity> entityType, World world) {
 		super(entityType, world);
+	}
+
+	@Override
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
+	) {
+		if (entityData == null) {
+			entityData = new PassiveEntity.EntityData();
+			((PassiveEntity.EntityData)entityData).setBabyAllowed(false);
+		}
+
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
 	public int getHeadRollingTimeLeft() {
@@ -124,7 +139,7 @@ public abstract class AbstractTraderEntity extends PassiveEntity implements Npc,
 	}
 
 	@Override
-	public SoundEvent method_18010() {
+	public SoundEvent getYesSound() {
 		return SoundEvents.field_14815;
 	}
 
@@ -159,14 +174,14 @@ public abstract class AbstractTraderEntity extends PassiveEntity implements Npc,
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("Offers", 10)) {
+		if (compoundTag.contains("Offers", 10)) {
 			this.offers = new TraderOfferList(compoundTag.getCompound("Offers"));
 		}
 
 		ListTag listTag = compoundTag.getList("Inventory", 10);
 
 		for (int i = 0; i < listTag.size(); i++) {
-			ItemStack itemStack = ItemStack.fromTag(listTag.getCompoundTag(i));
+			ItemStack itemStack = ItemStack.fromTag(listTag.getCompound(i));
 			if (!itemStack.isEmpty()) {
 				this.inventory.add(itemStack);
 			}
@@ -195,16 +210,7 @@ public abstract class AbstractTraderEntity extends PassiveEntity implements Npc,
 			double d = this.random.nextGaussian() * 0.02;
 			double e = this.random.nextGaussian() * 0.02;
 			double f = this.random.nextGaussian() * 0.02;
-			this.world
-				.addParticle(
-					particleEffect,
-					this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					this.y + 1.0 + (double)(this.random.nextFloat() * this.getHeight()),
-					this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					d,
-					e,
-					f
-				);
+			this.world.addParticle(particleEffect, this.getParticleX(1.0), this.getRandomBodyY() + 1.0, this.getParticleZ(1.0), d, e, f);
 		}
 	}
 

@@ -55,6 +55,7 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 
 	@Override
 	protected void onCollision(HitResult hitResult) {
+		super.onCollision(hitResult);
 		if (!this.world.isClient) {
 			if (hitResult.getType() == HitResult.Type.field_1331) {
 				Entity entity = ((EntityHitResult)hitResult).getEntity();
@@ -79,7 +80,7 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 					}
 
 					if (i > 0) {
-						((LivingEntity)entity).addPotionEffect(new StatusEffectInstance(StatusEffects.field_5920, 20 * i, 1));
+						((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5920, 20 * i, 1));
 					}
 				}
 			}
@@ -87,7 +88,7 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 			Explosion.DestructionType destructionType = this.world.getGameRules().getBoolean(GameRules.field_19388)
 				? Explosion.DestructionType.field_18687
 				: Explosion.DestructionType.field_18685;
-			this.world.createExplosion(this, this.x, this.y, this.z, 1.0F, false, destructionType);
+			this.world.createExplosion(this, this.getX(), this.getY(), this.getZ(), 1.0F, false, destructionType);
 			this.remove();
 		}
 	}

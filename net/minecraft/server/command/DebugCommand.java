@@ -43,7 +43,7 @@ public class DebugCommand {
 							.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
 						.then(CommandManager.literal("start").executes(commandContext -> executeStart((ServerCommandSource)commandContext.getSource()))))
 					.then(CommandManager.literal("stop").executes(commandContext -> executeStop((ServerCommandSource)commandContext.getSource()))))
-				.then(CommandManager.literal("report").executes(commandContext -> method_21618((ServerCommandSource)commandContext.getSource())))
+				.then(CommandManager.literal("report").executes(commandContext -> createDebugReport((ServerCommandSource)commandContext.getSource())))
 		);
 	}
 
@@ -67,7 +67,7 @@ public class DebugCommand {
 		} else {
 			ProfileResult profileResult = disableableProfiler.getController().disable();
 			File file = new File(minecraftServer.getFile("debug"), "profile-results-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt");
-			profileResult.saveToFile(file);
+			profileResult.save(file);
 			float f = (float)profileResult.getTimeSpan() / 1.0E9F;
 			float g = (float)profileResult.getTickSpan() / f;
 			serverCommandSource.sendFeedback(
@@ -77,7 +77,7 @@ public class DebugCommand {
 		}
 	}
 
-	private static int method_21618(ServerCommandSource serverCommandSource) {
+	private static int createDebugReport(ServerCommandSource serverCommandSource) {
 		MinecraftServer minecraftServer = serverCommandSource.getMinecraftServer();
 		String string = "debug-report-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date());
 

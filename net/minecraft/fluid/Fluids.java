@@ -11,12 +11,12 @@ public class Fluids {
 	public static final BaseFluid LAVA = register("lava", new LavaFluid.Still());
 
 	private static <T extends Fluid> T register(String string, T fluid) {
-		return Registry.register(Registry.FLUID, string, fluid);
+		return Registry.register(Registry.field_11154, string, fluid);
 	}
 
 	static {
-		for (Fluid fluid : Registry.FLUID) {
-			UnmodifiableIterator var2 = fluid.getStateFactory().getStates().iterator();
+		for (Fluid fluid : Registry.field_11154) {
+			UnmodifiableIterator var2 = fluid.getStateManager().getStates().iterator();
 
 			while (var2.hasNext()) {
 				FluidState fluidState = (FluidState)var2.next();

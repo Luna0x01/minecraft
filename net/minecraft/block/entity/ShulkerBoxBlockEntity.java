@@ -37,6 +37,7 @@ public class ShulkerBoxBlockEntity extends LootableContainerBlockEntity implemen
 	private ShulkerBoxBlockEntity.AnimationStage animationStage = ShulkerBoxBlockEntity.AnimationStage.field_12065;
 	private float animationProgress;
 	private float prevAnimationProgress;
+	@Nullable
 	private DyeColor cachedColor;
 	private boolean cachedColorUpdateNeeded;
 
@@ -125,27 +126,27 @@ public class ShulkerBoxBlockEntity extends LootableContainerBlockEntity implemen
 						switch (direction.getAxis()) {
 							case field_11048:
 								if (direction.getDirection() == Direction.AxisDirection.field_11056) {
-									d = box.maxX - box2.minX;
+									d = box.x2 - box2.x1;
 								} else {
-									d = box2.maxX - box.minX;
+									d = box2.x2 - box.x1;
 								}
 
 								d += 0.01;
 								break;
 							case field_11052:
 								if (direction.getDirection() == Direction.AxisDirection.field_11056) {
-									e = box.maxY - box2.minY;
+									e = box.y2 - box2.y1;
 								} else {
-									e = box2.maxY - box.minY;
+									e = box2.y2 - box.y1;
 								}
 
 								e += 0.01;
 								break;
 							case field_11051:
 								if (direction.getDirection() == Direction.AxisDirection.field_11056) {
-									f = box.maxZ - box2.minZ;
+									f = box.z2 - box2.z1;
 								} else {
-									f = box2.maxZ - box.minZ;
+									f = box2.z2 - box.z1;
 								}
 
 								f += 0.01;
@@ -234,7 +235,7 @@ public class ShulkerBoxBlockEntity extends LootableContainerBlockEntity implemen
 
 	public void deserializeInventory(CompoundTag compoundTag) {
 		this.inventory = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
-		if (!this.deserializeLootTable(compoundTag) && compoundTag.containsKey("Items", 9)) {
+		if (!this.deserializeLootTable(compoundTag) && compoundTag.contains("Items", 9)) {
 			Inventories.fromTag(compoundTag, this.inventory);
 		}
 	}
@@ -258,17 +259,6 @@ public class ShulkerBoxBlockEntity extends LootableContainerBlockEntity implemen
 	}
 
 	@Override
-	public boolean isInvEmpty() {
-		for (ItemStack itemStack : this.inventory) {
-			if (!itemStack.isEmpty()) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	@Override
 	public int[] getInvAvailableSlots(Direction direction) {
 		return AVAILABLE_SLOTS;
 	}
@@ -287,6 +277,7 @@ public class ShulkerBoxBlockEntity extends LootableContainerBlockEntity implemen
 		return MathHelper.lerp(f, this.prevAnimationProgress, this.animationProgress);
 	}
 
+	@Nullable
 	public DyeColor getColor() {
 		if (this.cachedColorUpdateNeeded) {
 			this.cachedColor = ShulkerBoxBlock.getColor(this.getCachedState().getBlock());

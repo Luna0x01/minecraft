@@ -2,9 +2,11 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.EnderChestBlockEntity;
-import net.minecraft.client.network.ClientDummyContainerProvider;
 import net.minecraft.container.GenericContainer;
+import net.minecraft.container.SimpleNamedContainerFactory;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
@@ -13,11 +15,12 @@ import net.minecraft.inventory.EnderChestInventory;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -29,25 +32,25 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
-public class EnderChestBlock extends BlockWithEntity implements Waterloggable {
+public class EnderChestBlock extends AbstractChestBlock<EnderChestBlockEntity> implements Waterloggable {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 14.0, 15.0);
 	public static final TranslatableText CONTAINER_NAME = new TranslatableText("container.enderchest");
 
 	protected EnderChestBlock(Block.Settings settings) {
-		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(WATERLOGGED, Boolean.valueOf(false)));
+		super(settings, () -> BlockEntityType.field_11901);
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(WATERLOGGED, Boolean.valueOf(false)));
+	}
+
+	@Override
+	public DoubleBlockProperties.PropertySource<? extends ChestBlockEntity> getBlockEntitySource(BlockState blockState, World world, BlockPos blockPos, boolean bl) {
+		return DoubleBlockProperties.PropertyRetriever::getFallback;
 	}
 
 	@Override
 	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
 		return SHAPE;
-	}
-
-	@Override
-	public boolean hasBlockEntityBreakingRender(BlockState blockState) {
-		return true;
 	}
 
 	@Override
@@ -64,28 +67,28 @@ public class EnderChestBlock extends BlockWithEntity implements Waterloggable {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		EnderChestInventory enderChestInventory = playerEntity.getEnderChestInventory();
 		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (enderChestInventory != null && blockEntity instanceof EnderChestBlockEntity) {
 			BlockPos blockPos2 = blockPos.up();
 			if (world.getBlockState(blockPos2).isSimpleFullBlock(world, blockPos2)) {
-				return true;
+				return ActionResult.field_5812;
 			} else if (world.isClient) {
-				return true;
+				return ActionResult.field_5812;
 			} else {
 				EnderChestBlockEntity enderChestBlockEntity = (EnderChestBlockEntity)blockEntity;
 				enderChestInventory.setCurrentBlockEntity(enderChestBlockEntity);
 				playerEntity.openContainer(
-					new ClientDummyContainerProvider(
+					new SimpleNamedContainerFactory(
 						(i, playerInventory, playerEntityx) -> GenericContainer.createGeneric9x3(i, playerInventory, enderChestInventory), CONTAINER_NAME
 					)
 				);
 				playerEntity.incrementStat(Stats.field_15424);
-				return true;
+				return ActionResult.field_5812;
 			}
 		} else {
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -120,7 +123,7 @@ public class EnderChestBlock extends BlockWithEntity implements Waterloggable {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, WATERLOGGED);
 	}
 

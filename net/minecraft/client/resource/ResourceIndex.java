@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 public class ResourceIndex {
 	protected static final Logger LOGGER = LogManager.getLogger();
 	private final Map<String, File> index = Maps.newHashMap();
+	private final Map<Identifier, File> field_21556 = Maps.newHashMap();
 
 	protected ResourceIndex() {
 	}
@@ -42,15 +43,18 @@ public class ResourceIndex {
 					JsonObject jsonObject3 = (JsonObject)entry.getValue();
 					String string2 = (String)entry.getKey();
 					String[] strings = string2.split("/", 2);
-					String string3 = strings.length == 1 ? strings[0] : strings[0] + ":" + strings[1];
-					String string4 = JsonHelper.getString(jsonObject3, "hash");
-					File file4 = new File(file2, string4.substring(0, 2) + "/" + string4);
-					this.index.put(string3, file4);
+					String string3 = JsonHelper.getString(jsonObject3, "hash");
+					File file4 = new File(file2, string3.substring(0, 2) + "/" + string3);
+					if (strings.length == 1) {
+						this.index.put(strings[0], file4);
+					} else {
+						this.field_21556.put(new Identifier(strings[0], strings[1]), file4);
+					}
 				}
 			}
-		} catch (JsonParseException var20) {
+		} catch (JsonParseException var19) {
 			LOGGER.error("Unable to parse resource index file: {}", file3);
-		} catch (FileNotFoundException var21) {
+		} catch (FileNotFoundException var20) {
 			LOGGER.error("Can't find the resource index file: {}", file3);
 		} finally {
 			IOUtils.closeQuietly(bufferedReader);
@@ -59,7 +63,7 @@ public class ResourceIndex {
 
 	@Nullable
 	public File getResource(Identifier identifier) {
-		return this.findFile(identifier.toString());
+		return (File)this.field_21556.get(identifier);
 	}
 
 	@Nullable
@@ -67,15 +71,10 @@ public class ResourceIndex {
 		return (File)this.index.get(string);
 	}
 
-	public Collection<String> getFilesRecursively(String string, int i, Predicate<String> predicate) {
-		return (Collection<String>)this.index
-			.keySet()
-			.stream()
-			.filter(stringx -> !stringx.endsWith(".mcmeta"))
-			.map(Identifier::new)
-			.map(Identifier::getPath)
-			.filter(string2 -> string2.startsWith(string + "/"))
-			.filter(predicate)
-			.collect(Collectors.toList());
+	public Collection<Identifier> getFilesRecursively(String string, String string2, int i, Predicate<String> predicate) {
+		return (Collection<Identifier>)this.field_21556.keySet().stream().filter(identifier -> {
+			String string3 = identifier.getPath();
+			return identifier.getNamespace().equals(string2) && !string3.endsWith(".mcmeta") && string3.startsWith(string + "/") && predicate.test(string3);
+		}).collect(Collectors.toList());
 	}
 }

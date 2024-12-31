@@ -1,6 +1,6 @@
 package net.minecraft.entity;
 
-import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
@@ -13,13 +13,13 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.Packet;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -41,7 +41,7 @@ public class ItemEntity extends Entity {
 
 	public ItemEntity(World world, double d, double e, double f) {
 		this(EntityType.field_6052, world);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 		this.yaw = this.random.nextFloat() * 360.0F;
 		this.setVelocity(this.random.nextDouble() * 0.2 - 0.1, 0.2, this.random.nextDouble() * 0.2 - 0.1);
 	}
@@ -71,9 +71,9 @@ public class ItemEntity extends Entity {
 				this.pickupDelay--;
 			}
 
-			this.prevX = this.x;
-			this.prevY = this.y;
-			this.prevZ = this.z;
+			this.prevX = this.getX();
+			this.prevY = this.getY();
+			this.prevZ = this.getZ();
 			Vec3d vec3d = this.getVelocity();
 			if (this.isInFluid(FluidTags.field_15517)) {
 				this.applyBuoyancy();
@@ -86,7 +86,7 @@ public class ItemEntity extends Entity {
 			} else {
 				this.noClip = !this.world.doesNotCollide(this);
 				if (this.noClip) {
-					this.pushOutOfBlocks(this.x, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.z);
+					this.pushOutOfBlocks(this.getX(), (this.getBoundingBox().y1 + this.getBoundingBox().y2) / 2.0, this.getZ());
 				}
 			}
 
@@ -94,7 +94,7 @@ public class ItemEntity extends Entity {
 				this.move(MovementType.field_6308, this.getVelocity());
 				float f = 0.98F;
 				if (this.onGround) {
-					f = this.world.getBlockState(new BlockPos(this.x, this.getBoundingBox().minY - 1.0, this.z)).getBlock().getSlipperiness() * 0.98F;
+					f = this.world.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0, this.getZ())).getBlock().getSlipperiness() * 0.98F;
 				}
 
 				this.setVelocity(this.getVelocity().multiply((double)f, 0.98, (double)f));
@@ -103,9 +103,9 @@ public class ItemEntity extends Entity {
 				}
 			}
 
-			boolean bl = MathHelper.floor(this.prevX) != MathHelper.floor(this.x)
-				|| MathHelper.floor(this.prevY) != MathHelper.floor(this.y)
-				|| MathHelper.floor(this.prevZ) != MathHelper.floor(this.z);
+			boolean bl = MathHelper.floor(this.prevX) != MathHelper.floor(this.getX())
+				|| MathHelper.floor(this.prevY) != MathHelper.floor(this.getY())
+				|| MathHelper.floor(this.prevZ) != MathHelper.floor(this.getZ());
 			int i = bl ? 2 : 40;
 			if (this.age % i == 0) {
 				if (this.world.getFluidState(new BlockPos(this)).matches(FluidTags.field_15518)) {
@@ -144,15 +144,15 @@ public class ItemEntity extends Entity {
 	}
 
 	private void tryMerge() {
-		List<ItemEntity> list = this.world
-			.getEntities(ItemEntity.class, this.getBoundingBox().expand(0.5, 0.0, 0.5), itemEntityx -> itemEntityx != this && itemEntityx.canMerge());
-		if (!list.isEmpty()) {
-			for (ItemEntity itemEntity : list) {
-				if (!this.canMerge()) {
-					return;
+		if (this.canMerge()) {
+			for (ItemEntity itemEntity : this.world
+				.getEntities(ItemEntity.class, this.getBoundingBox().expand(0.5, 0.0, 0.5), itemEntityx -> itemEntityx != this && itemEntityx.canMerge())) {
+				if (itemEntity.canMerge()) {
+					this.tryMerge(itemEntity);
+					if (this.removed) {
+						break;
+					}
 				}
-
-				this.tryMerge(itemEntity);
 			}
 		}
 	}
@@ -165,37 +165,45 @@ public class ItemEntity extends Entity {
 	private void tryMerge(ItemEntity itemEntity) {
 		ItemStack itemStack = this.getStack();
 		ItemStack itemStack2 = itemEntity.getStack();
-		if (itemStack2.getItem() == itemStack.getItem()) {
-			if (itemStack2.getCount() + itemStack.getCount() <= itemStack2.getMaxCount()) {
-				if (!(itemStack2.hasTag() ^ itemStack.hasTag())) {
-					if (!itemStack2.hasTag() || itemStack2.getTag().equals(itemStack.getTag())) {
-						if (itemStack2.getCount() < itemStack.getCount()) {
-							merge(this, itemStack, itemEntity, itemStack2);
-						} else {
-							merge(itemEntity, itemStack2, this, itemStack);
-						}
-					}
-				}
+		if (Objects.equals(this.getOwner(), itemEntity.getOwner()) && method_24017(itemStack, itemStack2)) {
+			if (itemStack2.getCount() < itemStack.getCount()) {
+				merge(this, itemStack, itemEntity, itemStack2);
+			} else {
+				merge(itemEntity, itemStack2, this, itemStack);
 			}
 		}
 	}
 
-	private static void merge(ItemEntity itemEntity, ItemStack itemStack, ItemEntity itemEntity2, ItemStack itemStack2) {
-		int i = Math.min(itemStack.getMaxCount() - itemStack.getCount(), itemStack2.getCount());
+	public static boolean method_24017(ItemStack itemStack, ItemStack itemStack2) {
+		if (itemStack2.getItem() != itemStack.getItem()) {
+			return false;
+		} else if (itemStack2.getCount() + itemStack.getCount() > itemStack2.getMaxCount()) {
+			return false;
+		} else {
+			return itemStack2.hasTag() ^ itemStack.hasTag() ? false : !itemStack2.hasTag() || itemStack2.getTag().equals(itemStack.getTag());
+		}
+	}
+
+	public static ItemStack method_24018(ItemStack itemStack, ItemStack itemStack2, int i) {
+		int j = Math.min(Math.min(itemStack.getMaxCount(), i) - itemStack.getCount(), itemStack2.getCount());
 		ItemStack itemStack3 = itemStack.copy();
-		itemStack3.increment(i);
+		itemStack3.increment(j);
+		itemStack2.decrement(j);
+		return itemStack3;
+	}
+
+	private static void method_24016(ItemEntity itemEntity, ItemStack itemStack, ItemStack itemStack2) {
+		ItemStack itemStack3 = method_24018(itemStack, itemStack2, 64);
 		itemEntity.setStack(itemStack3);
-		itemStack2.decrement(i);
-		itemEntity2.setStack(itemStack2);
+	}
+
+	private static void merge(ItemEntity itemEntity, ItemStack itemStack, ItemEntity itemEntity2, ItemStack itemStack2) {
+		method_24016(itemEntity, itemStack, itemStack2);
 		itemEntity.pickupDelay = Math.max(itemEntity.pickupDelay, itemEntity2.pickupDelay);
 		itemEntity.age = Math.min(itemEntity.age, itemEntity2.age);
 		if (itemStack2.isEmpty()) {
 			itemEntity2.remove();
 		}
-	}
-
-	public void setCreativeDespawnTime() {
-		this.age = 4800;
 	}
 
 	@Override
@@ -226,11 +234,11 @@ public class ItemEntity extends Entity {
 		compoundTag.putShort("Age", (short)this.age);
 		compoundTag.putShort("PickupDelay", (short)this.pickupDelay);
 		if (this.getThrower() != null) {
-			compoundTag.put("Thrower", TagHelper.serializeUuid(this.getThrower()));
+			compoundTag.put("Thrower", NbtHelper.fromUuid(this.getThrower()));
 		}
 
 		if (this.getOwner() != null) {
-			compoundTag.put("Owner", TagHelper.serializeUuid(this.getOwner()));
+			compoundTag.put("Owner", NbtHelper.fromUuid(this.getOwner()));
 		}
 
 		if (!this.getStack().isEmpty()) {
@@ -242,16 +250,16 @@ public class ItemEntity extends Entity {
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		this.health = compoundTag.getShort("Health");
 		this.age = compoundTag.getShort("Age");
-		if (compoundTag.containsKey("PickupDelay")) {
+		if (compoundTag.contains("PickupDelay")) {
 			this.pickupDelay = compoundTag.getShort("PickupDelay");
 		}
 
-		if (compoundTag.containsKey("Owner", 10)) {
-			this.owner = TagHelper.deserializeUuid(compoundTag.getCompound("Owner"));
+		if (compoundTag.contains("Owner", 10)) {
+			this.owner = NbtHelper.toUuid(compoundTag.getCompound("Owner"));
 		}
 
-		if (compoundTag.containsKey("Thrower", 10)) {
-			this.thrower = TagHelper.deserializeUuid(compoundTag.getCompound("Thrower"));
+		if (compoundTag.contains("Thrower", 10)) {
+			this.thrower = NbtHelper.toUuid(compoundTag.getCompound("Thrower"));
 		}
 
 		CompoundTag compoundTag2 = compoundTag.getCompound("Item");
@@ -267,9 +275,7 @@ public class ItemEntity extends Entity {
 			ItemStack itemStack = this.getStack();
 			Item item = itemStack.getItem();
 			int i = itemStack.getCount();
-			if (this.pickupDelay == 0
-				&& (this.owner == null || 6000 - this.age <= 200 || this.owner.equals(playerEntity.getUuid()))
-				&& playerEntity.inventory.insertStack(itemStack)) {
+			if (this.pickupDelay == 0 && (this.owner == null || this.owner.equals(playerEntity.getUuid())) && playerEntity.inventory.insertStack(itemStack)) {
 				playerEntity.sendPickup(this, i);
 				if (itemStack.isEmpty()) {
 					this.remove();

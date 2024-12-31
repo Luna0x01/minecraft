@@ -1,12 +1,14 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Random;
-import net.minecraft.client.render.GuiLighting;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -20,30 +22,8 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 	public ItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ItemRenderer itemRenderer) {
 		super(entityRenderDispatcher);
 		this.itemRenderer = itemRenderer;
-		this.field_4673 = 0.15F;
-		this.field_4672 = 0.75F;
-	}
-
-	private int method_3997(ItemEntity itemEntity, double d, double e, double f, float g, BakedModel bakedModel) {
-		ItemStack itemStack = itemEntity.getStack();
-		Item item = itemStack.getItem();
-		if (item == null) {
-			return 0;
-		} else {
-			boolean bl = bakedModel.hasDepthInGui();
-			int i = this.getRenderedAmount(itemStack);
-			float h = 0.25F;
-			float j = MathHelper.sin(((float)itemEntity.getAge() + g) / 10.0F + itemEntity.hoverHeight) * 0.1F + 0.1F;
-			float k = bakedModel.getTransformation().getTransformation(ModelTransformation.Type.field_4318).scale.getY();
-			GlStateManager.translatef((float)d, (float)e + j + 0.25F * k, (float)f);
-			if (bl || this.renderManager.gameOptions != null) {
-				float l = (((float)itemEntity.getAge() + g) / 20.0F + itemEntity.hoverHeight) * (180.0F / (float)Math.PI);
-				GlStateManager.rotatef(l, 0.0F, 1.0F, 0.0F);
-			}
-
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			return i;
-		}
+		this.shadowSize = 0.15F;
+		this.shadowDarkness = 0.75F;
 	}
 
 	private int getRenderedAmount(ItemStack itemStack) {
@@ -61,87 +41,58 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 		return i;
 	}
 
-	public void method_3996(ItemEntity itemEntity, double d, double e, double f, float g, float h) {
+	public void render(ItemEntity itemEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		matrixStack.push();
 		ItemStack itemStack = itemEntity.getStack();
-		int i = itemStack.isEmpty() ? 187 : Item.getRawId(itemStack.getItem()) + itemStack.getDamage();
-		this.random.setSeed((long)i);
-		boolean bl = false;
-		if (this.bindEntityTexture(itemEntity)) {
-			this.renderManager.textureManager.getTexture(this.method_3999(itemEntity)).pushFilter(false, false);
-			bl = true;
+		int j = itemStack.isEmpty() ? 187 : Item.getRawId(itemStack.getItem()) + itemStack.getDamage();
+		this.random.setSeed((long)j);
+		BakedModel bakedModel = this.itemRenderer.getHeldItemModel(itemStack, itemEntity.world, null);
+		boolean bl = bakedModel.hasDepth();
+		int k = this.getRenderedAmount(itemStack);
+		float h = 0.25F;
+		float l = MathHelper.sin(((float)itemEntity.getAge() + g) / 10.0F + itemEntity.hoverHeight) * 0.1F + 0.1F;
+		float m = bakedModel.getTransformation().getTransformation(ModelTransformation.Mode.field_4318).scale.getY();
+		matrixStack.translate(0.0, (double)(l + 0.25F * m), 0.0);
+		float n = ((float)itemEntity.getAge() + g) / 20.0F + itemEntity.hoverHeight;
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getRadialQuaternion(n));
+		float o = bakedModel.getTransformation().ground.scale.getX();
+		float p = bakedModel.getTransformation().ground.scale.getY();
+		float q = bakedModel.getTransformation().ground.scale.getZ();
+		if (!bl) {
+			float r = -0.0F * (float)(k - 1) * 0.5F * o;
+			float s = -0.0F * (float)(k - 1) * 0.5F * p;
+			float t = -0.09375F * (float)(k - 1) * 0.5F * q;
+			matrixStack.translate((double)r, (double)s, (double)t);
 		}
 
-		GlStateManager.enableRescaleNormal();
-		GlStateManager.alphaFunc(516, 0.1F);
-		GlStateManager.enableBlend();
-		GuiLighting.enable();
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
-		GlStateManager.pushMatrix();
-		BakedModel bakedModel = this.itemRenderer.getModel(itemStack, itemEntity.world, null);
-		int j = this.method_3997(itemEntity, d, e, f, h, bakedModel);
-		float k = bakedModel.getTransformation().ground.scale.getX();
-		float l = bakedModel.getTransformation().ground.scale.getY();
-		float m = bakedModel.getTransformation().ground.scale.getZ();
-		boolean bl2 = bakedModel.hasDepthInGui();
-		if (!bl2) {
-			float n = -0.0F * (float)(j - 1) * 0.5F * k;
-			float o = -0.0F * (float)(j - 1) * 0.5F * l;
-			float p = -0.09375F * (float)(j - 1) * 0.5F * m;
-			GlStateManager.translatef(n, o, p);
-		}
-
-		if (this.renderOutlines) {
-			GlStateManager.enableColorMaterial();
-			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(itemEntity));
-		}
-
-		for (int q = 0; q < j; q++) {
-			if (bl2) {
-				GlStateManager.pushMatrix();
-				if (q > 0) {
-					float r = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					float s = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					float t = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					GlStateManager.translatef(r, s, t);
+		for (int u = 0; u < k; u++) {
+			matrixStack.push();
+			if (u > 0) {
+				if (bl) {
+					float v = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
+					float w = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
+					float x = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
+					matrixStack.translate((double)v, (double)w, (double)x);
+				} else {
+					float y = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
+					float z = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
+					matrixStack.translate((double)y, (double)z, 0.0);
 				}
+			}
 
-				bakedModel.getTransformation().applyGl(ModelTransformation.Type.field_4318);
-				this.itemRenderer.renderItemAndGlow(itemStack, bakedModel);
-				GlStateManager.popMatrix();
-			} else {
-				GlStateManager.pushMatrix();
-				if (q > 0) {
-					float u = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
-					float v = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
-					GlStateManager.translatef(u, v, 0.0F);
-				}
-
-				bakedModel.getTransformation().applyGl(ModelTransformation.Type.field_4318);
-				this.itemRenderer.renderItemAndGlow(itemStack, bakedModel);
-				GlStateManager.popMatrix();
-				GlStateManager.translatef(0.0F * k, 0.0F * l, 0.09375F * m);
+			this.itemRenderer
+				.renderItem(itemStack, ModelTransformation.Mode.field_4318, false, matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV, bakedModel);
+			matrixStack.pop();
+			if (!bl) {
+				matrixStack.translate((double)(0.0F * o), (double)(0.0F * p), (double)(0.09375F * q));
 			}
 		}
 
-		if (this.renderOutlines) {
-			GlStateManager.tearDownSolidRenderingTextureCombine();
-			GlStateManager.disableColorMaterial();
-		}
-
-		GlStateManager.popMatrix();
-		GlStateManager.disableRescaleNormal();
-		GlStateManager.disableBlend();
-		this.bindEntityTexture(itemEntity);
-		if (bl) {
-			this.renderManager.textureManager.getTexture(this.method_3999(itemEntity)).popFilter();
-		}
-
-		super.render(itemEntity, d, e, f, g, h);
+		matrixStack.pop();
+		super.render(itemEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_3999(ItemEntity itemEntity) {
+	public Identifier getTexture(ItemEntity itemEntity) {
 		return SpriteAtlasTexture.BLOCK_ATLAS_TEX;
 	}
 }

@@ -31,7 +31,7 @@ public class PlaySoundFromEntityS2CPacket implements Packet<ClientPlayPacketList
 
 	@Override
 	public void read(PacketByteBuf packetByteBuf) throws IOException {
-		this.sound = Registry.SOUND_EVENT.get(packetByteBuf.readVarInt());
+		this.sound = Registry.field_11156.get(packetByteBuf.readVarInt());
 		this.category = packetByteBuf.readEnumConstant(SoundCategory.class);
 		this.entityId = packetByteBuf.readVarInt();
 		this.volume = packetByteBuf.readFloat();
@@ -40,7 +40,7 @@ public class PlaySoundFromEntityS2CPacket implements Packet<ClientPlayPacketList
 
 	@Override
 	public void write(PacketByteBuf packetByteBuf) throws IOException {
-		packetByteBuf.writeVarInt(Registry.SOUND_EVENT.getRawId(this.sound));
+		packetByteBuf.writeVarInt(Registry.field_11156.getRawId(this.sound));
 		packetByteBuf.writeEnumConstant(this.category);
 		packetByteBuf.writeVarInt(this.entityId);
 		packetByteBuf.writeFloat(this.volume);
@@ -67,7 +67,7 @@ public class PlaySoundFromEntityS2CPacket implements Packet<ClientPlayPacketList
 		return this.pitch;
 	}
 
-	public void method_11884(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onPlaySoundFromEntity(this);
 	}
 }

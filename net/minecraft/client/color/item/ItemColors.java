@@ -36,7 +36,7 @@ public class ItemColors {
 				return -1;
 			} else {
 				CompoundTag compoundTag = itemStack.getSubTag("Explosion");
-				int[] is = compoundTag != null && compoundTag.containsKey("Colors", 11) ? compoundTag.getIntArray("Colors") : null;
+				int[] is = compoundTag != null && compoundTag.contains("Colors", 11) ? compoundTag.getIntArray("Colors") : null;
 				if (is == null) {
 					return 9079434;
 				} else if (is.length == 1) {
@@ -68,7 +68,7 @@ public class ItemColors {
 		itemColors.register(
 			(itemStack, i) -> {
 				BlockState blockState = ((BlockItem)itemStack.getItem()).getBlock().getDefaultState();
-				return blockColors.getColorMultiplier(blockState, null, null, i);
+				return blockColors.getColor(blockState, null, null, i);
 			},
 			Blocks.field_10219,
 			Blocks.field_10479,
@@ -88,7 +88,7 @@ public class ItemColors {
 	}
 
 	public int getColorMultiplier(ItemStack itemStack, int i) {
-		ItemColorProvider itemColorProvider = this.providers.get(Registry.ITEM.getRawId(itemStack.getItem()));
+		ItemColorProvider itemColorProvider = this.providers.get(Registry.field_11142.getRawId(itemStack.getItem()));
 		return itemColorProvider == null ? -1 : itemColorProvider.getColor(itemStack, i);
 	}
 

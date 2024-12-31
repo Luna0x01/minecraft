@@ -71,13 +71,13 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 	}
 
 	public static class Serializer<T extends CuttingRecipe> implements RecipeSerializer<T> {
-		final CuttingRecipe.Serializer.class_3974<T> field_17648;
+		final CuttingRecipe.Serializer.RecipeFactory<T> recipeFactory;
 
-		protected Serializer(CuttingRecipe.Serializer.class_3974<T> arg) {
-			this.field_17648 = arg;
+		protected Serializer(CuttingRecipe.Serializer.RecipeFactory<T> recipeFactory) {
+			this.recipeFactory = recipeFactory;
 		}
 
-		public T method_17881(Identifier identifier, JsonObject jsonObject) {
+		public T read(Identifier identifier, JsonObject jsonObject) {
 			String string = JsonHelper.getString(jsonObject, "group", "");
 			Ingredient ingredient;
 			if (JsonHelper.hasArray(jsonObject, "ingredient")) {
@@ -88,24 +88,24 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 
 			String string2 = JsonHelper.getString(jsonObject, "result");
 			int i = JsonHelper.getInt(jsonObject, "count");
-			ItemStack itemStack = new ItemStack(Registry.ITEM.get(new Identifier(string2)), i);
-			return this.field_17648.create(identifier, string, ingredient, itemStack);
+			ItemStack itemStack = new ItemStack(Registry.field_11142.get(new Identifier(string2)), i);
+			return this.recipeFactory.create(identifier, string, ingredient, itemStack);
 		}
 
-		public T method_17882(Identifier identifier, PacketByteBuf packetByteBuf) {
+		public T read(Identifier identifier, PacketByteBuf packetByteBuf) {
 			String string = packetByteBuf.readString(32767);
 			Ingredient ingredient = Ingredient.fromPacket(packetByteBuf);
 			ItemStack itemStack = packetByteBuf.readItemStack();
-			return this.field_17648.create(identifier, string, ingredient, itemStack);
+			return this.recipeFactory.create(identifier, string, ingredient, itemStack);
 		}
 
-		public void method_17880(PacketByteBuf packetByteBuf, T cuttingRecipe) {
+		public void write(PacketByteBuf packetByteBuf, T cuttingRecipe) {
 			packetByteBuf.writeString(cuttingRecipe.group);
 			cuttingRecipe.input.write(packetByteBuf);
 			packetByteBuf.writeItemStack(cuttingRecipe.output);
 		}
 
-		interface class_3974<T extends CuttingRecipe> {
+		interface RecipeFactory<T extends CuttingRecipe> {
 			T create(Identifier identifier, String string, Ingredient ingredient, ItemStack itemStack);
 		}
 	}

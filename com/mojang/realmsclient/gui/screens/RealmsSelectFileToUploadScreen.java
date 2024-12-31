@@ -1,14 +1,14 @@
 package com.mojang.realmsclient.gui.screens;
 
-import com.mojang.realmsclient.gui.ChatFormatting;
+import com.google.common.collect.Lists;
+import com.mojang.realmsclient.gui.RealmsConstants;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import net.minecraft.class_4359;
+import net.minecraft.client.util.TextFormat;
 import net.minecraft.realms.RealmListEntry;
 import net.minecraft.realms.Realms;
 import net.minecraft.realms.RealmsAnvilLevelStorageSource;
@@ -28,7 +28,7 @@ public class RealmsSelectFileToUploadScreen extends RealmsScreen {
 	private final int slotId;
 	private RealmsButton uploadButton;
 	private final DateFormat DATE_FORMAT = new SimpleDateFormat();
-	private List<RealmsLevelSummary> levelList = new ArrayList();
+	private List<RealmsLevelSummary> levelList = Lists.newArrayList();
 	private int selectedWorld = -1;
 	private RealmsSelectFileToUploadScreen.WorldSelectionList worldSelectionList;
 	private String worldLang;
@@ -89,7 +89,7 @@ public class RealmsSelectFileToUploadScreen extends RealmsScreen {
 		this.uploadButton.active(this.selectedWorld >= 0 && this.selectedWorld < this.levelList.size());
 		this.addWidget(this.titleLabel = new RealmsLabel(getLocalizedString("mco.upload.select.world.title"), this.width() / 2, 13, 16777215));
 		this.addWidget(
-			this.subtitleLabel = new RealmsLabel(getLocalizedString("mco.upload.select.world.subtitle"), this.width() / 2, class_4359.method_21072(-1), 10526880)
+			this.subtitleLabel = new RealmsLabel(getLocalizedString("mco.upload.select.world.subtitle"), this.width() / 2, RealmsConstants.row(-1), 10526880)
 		);
 		if (this.levelList.isEmpty()) {
 			this.addWidget(this.field_20063 = new RealmsLabel(getLocalizedString("mco.upload.select.world.none"), this.width() / 2, this.height() / 2 - 20, 16777215));
@@ -181,7 +181,7 @@ public class RealmsSelectFileToUploadScreen extends RealmsScreen {
 			} else {
 				string3 = RealmsSelectFileToUploadScreen.this.method_21400(realmsLevelSummary);
 				if (realmsLevelSummary.isHardcore()) {
-					string3 = ChatFormatting.DARK_RED + RealmsScreen.getLocalizedString("mco.upload.hardcore") + ChatFormatting.RESET;
+					string3 = TextFormat.DARK_RED + RealmsScreen.getLocalizedString("mco.upload.hardcore") + TextFormat.RESET;
 				}
 
 				if (realmsLevelSummary.hasCheats()) {
@@ -200,7 +200,7 @@ public class RealmsSelectFileToUploadScreen extends RealmsScreen {
 			super(
 				RealmsSelectFileToUploadScreen.this.width(),
 				RealmsSelectFileToUploadScreen.this.height(),
-				class_4359.method_21072(0),
+				RealmsConstants.row(0),
 				RealmsSelectFileToUploadScreen.this.height() - 40,
 				36
 			);

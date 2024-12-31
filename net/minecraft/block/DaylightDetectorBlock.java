@@ -4,10 +4,11 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.DaylightDetectorBlockEntity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -25,7 +26,7 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 
 	public DaylightDetectorBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(POWER, Integer.valueOf(0)).with(INVERTED, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(POWER, Integer.valueOf(0)).with(INVERTED, Boolean.valueOf(false)));
 	}
 
 	@Override
@@ -64,18 +65,18 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (playerEntity.canModifyWorld()) {
 			if (world.isClient) {
-				return true;
+				return ActionResult.field_5812;
 			} else {
 				BlockState blockState2 = blockState.cycle(INVERTED);
 				world.setBlockState(blockPos, blockState2, 4);
 				updateState(blockState2, world, blockPos);
-				return true;
+				return ActionResult.field_5812;
 			}
 		} else {
-			return super.activate(blockState, world, blockPos, playerEntity, hand, blockHitResult);
+			return super.onUse(blockState, world, blockPos, playerEntity, hand, blockHitResult);
 		}
 	}
 
@@ -95,7 +96,7 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(POWER, INVERTED);
 	}
 }

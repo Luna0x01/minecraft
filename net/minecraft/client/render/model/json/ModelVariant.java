@@ -6,19 +6,21 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import java.util.Objects;
 import net.minecraft.client.render.model.ModelBakeSettings;
+import net.minecraft.client.util.math.Rotation3;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class ModelVariant implements ModelBakeSettings {
 	private final Identifier location;
-	private final net.minecraft.client.render.model.ModelRotation rotation;
+	private final Rotation3 rotation;
 	private final boolean uvLock;
 	private final int weight;
 
-	public ModelVariant(Identifier identifier, net.minecraft.client.render.model.ModelRotation modelRotation, boolean bl, int i) {
+	public ModelVariant(Identifier identifier, Rotation3 rotation3, boolean bl, int i) {
 		this.location = identifier;
-		this.rotation = modelRotation;
+		this.rotation = rotation3;
 		this.uvLock = bl;
 		this.weight = i;
 	}
@@ -28,12 +30,12 @@ public class ModelVariant implements ModelBakeSettings {
 	}
 
 	@Override
-	public net.minecraft.client.render.model.ModelRotation getRotation() {
+	public Rotation3 getRotation() {
 		return this.rotation;
 	}
 
 	@Override
-	public boolean isUvLocked() {
+	public boolean isShaded() {
 		return this.uvLock;
 	}
 
@@ -53,7 +55,7 @@ public class ModelVariant implements ModelBakeSettings {
 		} else {
 			ModelVariant modelVariant = (ModelVariant)object;
 			return this.location.equals(modelVariant.location)
-				&& this.rotation == modelVariant.rotation
+				&& Objects.equals(this.rotation, modelVariant.rotation)
 				&& this.uvLock == modelVariant.uvLock
 				&& this.weight == modelVariant.weight;
 		}
@@ -67,13 +69,13 @@ public class ModelVariant implements ModelBakeSettings {
 	}
 
 	public static class Deserializer implements JsonDeserializer<ModelVariant> {
-		public ModelVariant method_3513(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public ModelVariant deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Identifier identifier = this.deserializeModel(jsonObject);
 			net.minecraft.client.render.model.ModelRotation modelRotation = this.deserializeRotation(jsonObject);
 			boolean bl = this.deserializeUvLock(jsonObject);
 			int i = this.deserializeWeight(jsonObject);
-			return new ModelVariant(identifier, modelRotation, bl, i);
+			return new ModelVariant(identifier, modelRotation.getRotation(), bl, i);
 		}
 
 		private boolean deserializeUvLock(JsonObject jsonObject) {

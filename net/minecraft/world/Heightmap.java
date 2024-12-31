@@ -11,7 +11,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.util.PackedIntegerArray;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.Chunk;
 
@@ -41,7 +41,7 @@ public class Heightmap {
 					}
 
 					for (int m = j - 1; m >= 0; m--) {
-						pooledMutable.method_10113(k, m, l);
+						pooledMutable.set(k, m, l);
 						BlockState blockState = chunk.getBlockState(pooledMutable);
 						if (blockState.getBlock() != Blocks.field_10124) {
 							while (objectListIterator.hasNext()) {
@@ -140,7 +140,7 @@ public class Heightmap {
 		private final String name;
 		private final Heightmap.Purpose purpose;
 		private final Predicate<BlockState> blockPredicate;
-		private static final Map<String, Heightmap.Type> BY_NAME = SystemUtil.consume(Maps.newHashMap(), hashMap -> {
+		private static final Map<String, Heightmap.Type> BY_NAME = Util.make(Maps.newHashMap(), hashMap -> {
 			for (Heightmap.Type type : values()) {
 				hashMap.put(type.name, type);
 			}

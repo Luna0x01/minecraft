@@ -1,130 +1,429 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.GuiLighting;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.render.entity.feature.EnderDragonDeathFeatureRenderer;
-import net.minecraft.client.render.entity.feature.EnderDragonEyesFeatureRenderer;
-import net.minecraft.client.render.entity.model.DragonEntityModel;
+import java.util.Random;
+import javax.annotation.Nullable;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.util.math.Matrix3f;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
-public class EnderDragonEntityRenderer extends MobEntityRenderer<EnderDragonEntity, DragonEntityModel> {
-	public static final Identifier CRYSTAL_BEAM = new Identifier("textures/entity/end_crystal/end_crystal_beam.png");
+public class EnderDragonEntityRenderer extends EntityRenderer<EnderDragonEntity> {
+	public static final Identifier CRYSTAL_BEAM_TEX = new Identifier("textures/entity/end_crystal/end_crystal_beam.png");
 	private static final Identifier EXPLOSION_TEX = new Identifier("textures/entity/enderdragon/dragon_exploding.png");
 	private static final Identifier SKIN = new Identifier("textures/entity/enderdragon/dragon.png");
+	private static final Identifier EYES_TEX = new Identifier("textures/entity/enderdragon/dragon_eyes.png");
+	private static final RenderLayer field_21737 = RenderLayer.getEntityCutoutNoCull(SKIN);
+	private static final RenderLayer field_21738 = RenderLayer.getEntityDecal(SKIN);
+	private static final RenderLayer field_21739 = RenderLayer.getEyes(EYES_TEX);
+	private static final RenderLayer field_21740 = RenderLayer.getEntitySmoothCutout(CRYSTAL_BEAM_TEX);
+	private static final float field_21007 = (float)(Math.sqrt(3.0) / 2.0);
+	private final EnderDragonEntityRenderer.DragonEntityModel field_21008 = new EnderDragonEntityRenderer.DragonEntityModel();
 
 	public EnderDragonEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
-		super(entityRenderDispatcher, new DragonEntityModel(0.0F), 0.5F);
-		this.addFeature(new EnderDragonEyesFeatureRenderer(this));
-		this.addFeature(new EnderDragonDeathFeatureRenderer(this));
+		super(entityRenderDispatcher);
+		this.shadowSize = 0.5F;
 	}
 
-	protected void method_3915(EnderDragonEntity enderDragonEntity, float f, float g, float h) {
-		float i = (float)enderDragonEntity.method_6817(7, h)[0];
-		float j = (float)(enderDragonEntity.method_6817(5, h)[1] - enderDragonEntity.method_6817(10, h)[1]);
-		GlStateManager.rotatef(-i, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotatef(j * 10.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.translatef(0.0F, 0.0F, 1.0F);
-		if (enderDragonEntity.deathTime > 0) {
-			float k = ((float)enderDragonEntity.deathTime + h - 1.0F) / 20.0F * 1.6F;
-			k = MathHelper.sqrt(k);
-			if (k > 1.0F) {
-				k = 1.0F;
+	public void render(EnderDragonEntity enderDragonEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		matrixStack.push();
+		float h = (float)enderDragonEntity.method_6817(7, g)[0];
+		float j = (float)(enderDragonEntity.method_6817(5, g)[1] - enderDragonEntity.method_6817(10, g)[1]);
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-h));
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(j * 10.0F));
+		matrixStack.translate(0.0, 0.0, 1.0);
+		matrixStack.scale(-1.0F, -1.0F, 1.0F);
+		matrixStack.translate(0.0, -1.501F, 0.0);
+		boolean bl = enderDragonEntity.hurtTime > 0;
+		this.field_21008.animateModel(enderDragonEntity, 0.0F, 0.0F, g);
+		if (enderDragonEntity.field_7031 > 0) {
+			float k = (float)enderDragonEntity.field_7031 / 200.0F;
+			VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getEntityAlpha(EXPLOSION_TEX, k));
+			this.field_21008.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
+			VertexConsumer vertexConsumer2 = vertexConsumerProvider.getBuffer(field_21738);
+			this.field_21008.render(matrixStack, vertexConsumer2, i, OverlayTexture.getUv(0.0F, bl), 1.0F, 1.0F, 1.0F, 1.0F);
+		} else {
+			VertexConsumer vertexConsumer3 = vertexConsumerProvider.getBuffer(field_21737);
+			this.field_21008.render(matrixStack, vertexConsumer3, i, OverlayTexture.getUv(0.0F, bl), 1.0F, 1.0F, 1.0F, 1.0F);
+		}
+
+		VertexConsumer vertexConsumer4 = vertexConsumerProvider.getBuffer(field_21739);
+		this.field_21008.render(matrixStack, vertexConsumer4, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
+		if (enderDragonEntity.field_7031 > 0) {
+			float l = ((float)enderDragonEntity.field_7031 + g) / 200.0F;
+			float m = 0.0F;
+			if (l > 0.8F) {
+				m = (l - 0.8F) / 0.2F;
 			}
 
-			GlStateManager.rotatef(k * this.getLyingAngle(enderDragonEntity), 0.0F, 0.0F, 1.0F);
-		}
-	}
+			Random random = new Random(432L);
+			VertexConsumer vertexConsumer5 = vertexConsumerProvider.getBuffer(RenderLayer.getLightning());
+			matrixStack.push();
+			matrixStack.translate(0.0, -1.0, -2.0);
 
-	protected void method_3916(EnderDragonEntity enderDragonEntity, float f, float g, float h, float i, float j, float k) {
-		if (enderDragonEntity.field_7031 > 0) {
-			float l = (float)enderDragonEntity.field_7031 / 200.0F;
-			GlStateManager.depthFunc(515);
-			GlStateManager.enableAlphaTest();
-			GlStateManager.alphaFunc(516, l);
-			this.bindTexture(EXPLOSION_TEX);
-			this.model.method_17137(enderDragonEntity, f, g, h, i, j, k);
-			GlStateManager.alphaFunc(516, 0.1F);
-			GlStateManager.depthFunc(514);
+			for (int n = 0; (float)n < (l + l * l) / 2.0F * 60.0F; n++) {
+				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(random.nextFloat() * 360.0F));
+				matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(random.nextFloat() * 360.0F));
+				matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(random.nextFloat() * 360.0F));
+				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(random.nextFloat() * 360.0F));
+				matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(random.nextFloat() * 360.0F));
+				matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(random.nextFloat() * 360.0F + l * 90.0F));
+				float o = random.nextFloat() * 20.0F + 5.0F + m * 10.0F;
+				float p = random.nextFloat() * 2.0F + 1.0F + m * 2.0F;
+				Matrix4f matrix4f = matrixStack.peek().getModel();
+				int q = (int)(255.0F * (1.0F - m));
+				method_23157(vertexConsumer5, matrix4f, q);
+				method_23156(vertexConsumer5, matrix4f, o, p);
+				method_23158(vertexConsumer5, matrix4f, o, p);
+				method_23157(vertexConsumer5, matrix4f, q);
+				method_23158(vertexConsumer5, matrix4f, o, p);
+				method_23159(vertexConsumer5, matrix4f, o, p);
+				method_23157(vertexConsumer5, matrix4f, q);
+				method_23159(vertexConsumer5, matrix4f, o, p);
+				method_23156(vertexConsumer5, matrix4f, o, p);
+			}
+
+			matrixStack.pop();
 		}
 
-		this.bindEntityTexture(enderDragonEntity);
-		this.model.method_17137(enderDragonEntity, f, g, h, i, j, k);
-		if (enderDragonEntity.hurtTime > 0) {
-			GlStateManager.depthFunc(514);
-			GlStateManager.disableTexture();
-			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-			GlStateManager.color4f(1.0F, 0.0F, 0.0F, 0.5F);
-			this.model.method_17137(enderDragonEntity, f, g, h, i, j, k);
-			GlStateManager.enableTexture();
-			GlStateManager.disableBlend();
-			GlStateManager.depthFunc(515);
-		}
-	}
-
-	public void method_3918(EnderDragonEntity enderDragonEntity, double d, double e, double f, float g, float h) {
-		super.method_4072(enderDragonEntity, d, e, f, g, h);
+		matrixStack.pop();
 		if (enderDragonEntity.connectedCrystal != null) {
-			this.bindTexture(CRYSTAL_BEAM);
-			float i = MathHelper.sin(((float)enderDragonEntity.connectedCrystal.age + h) * 0.2F) / 2.0F + 0.5F;
-			i = (i * i + i) * 0.2F;
+			matrixStack.push();
+			float r = (float)(enderDragonEntity.connectedCrystal.getX() - MathHelper.lerp((double)g, enderDragonEntity.prevX, enderDragonEntity.getX()));
+			float s = (float)(enderDragonEntity.connectedCrystal.getY() - MathHelper.lerp((double)g, enderDragonEntity.prevY, enderDragonEntity.getY()));
+			float t = (float)(enderDragonEntity.connectedCrystal.getZ() - MathHelper.lerp((double)g, enderDragonEntity.prevZ, enderDragonEntity.getZ()));
 			renderCrystalBeam(
-				d,
-				e,
-				f,
-				h,
-				MathHelper.lerp((double)(1.0F - h), enderDragonEntity.x, enderDragonEntity.prevX),
-				MathHelper.lerp((double)(1.0F - h), enderDragonEntity.y, enderDragonEntity.prevY),
-				MathHelper.lerp((double)(1.0F - h), enderDragonEntity.z, enderDragonEntity.prevZ),
-				enderDragonEntity.age,
-				enderDragonEntity.connectedCrystal.x,
-				(double)i + enderDragonEntity.connectedCrystal.y,
-				enderDragonEntity.connectedCrystal.z
+				r, s + EnderCrystalEntityRenderer.method_23155(enderDragonEntity.connectedCrystal, g), t, g, enderDragonEntity.age, matrixStack, vertexConsumerProvider, i
 			);
-		}
-	}
-
-	public static void renderCrystalBeam(double d, double e, double f, float g, double h, double i, double j, int k, double l, double m, double n) {
-		float o = (float)(l - h);
-		float p = (float)(m - 1.0 - i);
-		float q = (float)(n - j);
-		float r = MathHelper.sqrt(o * o + q * q);
-		float s = MathHelper.sqrt(o * o + p * p + q * q);
-		GlStateManager.pushMatrix();
-		GlStateManager.translatef((float)d, (float)e + 2.0F, (float)f);
-		GlStateManager.rotatef((float)(-Math.atan2((double)q, (double)o)) * (180.0F / (float)Math.PI) - 90.0F, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotatef((float)(-Math.atan2((double)r, (double)p)) * (180.0F / (float)Math.PI) - 90.0F, 1.0F, 0.0F, 0.0F);
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-		GuiLighting.disable();
-		GlStateManager.disableCull();
-		GlStateManager.shadeModel(7425);
-		float t = 0.0F - ((float)k + g) * 0.01F;
-		float u = MathHelper.sqrt(o * o + p * p + q * q) / 32.0F - ((float)k + g) * 0.01F;
-		bufferBuilder.begin(5, VertexFormats.POSITION_UV_COLOR);
-		int v = 8;
-
-		for (int w = 0; w <= 8; w++) {
-			float x = MathHelper.sin((float)(w % 8) * (float) (Math.PI * 2) / 8.0F) * 0.75F;
-			float y = MathHelper.cos((float)(w % 8) * (float) (Math.PI * 2) / 8.0F) * 0.75F;
-			float z = (float)(w % 8) / 8.0F;
-			bufferBuilder.vertex((double)(x * 0.2F), (double)(y * 0.2F), 0.0).texture((double)z, (double)t).color(0, 0, 0, 255).next();
-			bufferBuilder.vertex((double)x, (double)y, (double)s).texture((double)z, (double)u).color(255, 255, 255, 255).next();
+			matrixStack.pop();
 		}
 
-		tessellator.draw();
-		GlStateManager.enableCull();
-		GlStateManager.shadeModel(7424);
-		GuiLighting.enable();
-		GlStateManager.popMatrix();
+		super.render(enderDragonEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_3914(EnderDragonEntity enderDragonEntity) {
+	private static void method_23157(VertexConsumer vertexConsumer, Matrix4f matrix4f, int i) {
+		vertexConsumer.vertex(matrix4f, 0.0F, 0.0F, 0.0F).color(255, 255, 255, i).next();
+		vertexConsumer.vertex(matrix4f, 0.0F, 0.0F, 0.0F).color(255, 255, 255, i).next();
+	}
+
+	private static void method_23156(VertexConsumer vertexConsumer, Matrix4f matrix4f, float f, float g) {
+		vertexConsumer.vertex(matrix4f, -field_21007 * g, f, -0.5F * g).color(255, 0, 255, 0).next();
+	}
+
+	private static void method_23158(VertexConsumer vertexConsumer, Matrix4f matrix4f, float f, float g) {
+		vertexConsumer.vertex(matrix4f, field_21007 * g, f, -0.5F * g).color(255, 0, 255, 0).next();
+	}
+
+	private static void method_23159(VertexConsumer vertexConsumer, Matrix4f matrix4f, float f, float g) {
+		vertexConsumer.vertex(matrix4f, 0.0F, f, 1.0F * g).color(255, 0, 255, 0).next();
+	}
+
+	public static void renderCrystalBeam(float f, float g, float h, float i, int j, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int k) {
+		float l = MathHelper.sqrt(f * f + h * h);
+		float m = MathHelper.sqrt(f * f + g * g + h * h);
+		matrixStack.push();
+		matrixStack.translate(0.0, 2.0, 0.0);
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getRadialQuaternion((float)(-Math.atan2((double)h, (double)f)) - (float) (Math.PI / 2)));
+		matrixStack.multiply(Vector3f.POSITIVE_X.getRadialQuaternion((float)(-Math.atan2((double)l, (double)g)) - (float) (Math.PI / 2)));
+		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(field_21740);
+		float n = 0.0F - ((float)j + i) * 0.01F;
+		float o = MathHelper.sqrt(f * f + g * g + h * h) / 32.0F - ((float)j + i) * 0.01F;
+		int p = 8;
+		float q = 0.0F;
+		float r = 0.75F;
+		float s = 0.0F;
+		MatrixStack.Entry entry = matrixStack.peek();
+		Matrix4f matrix4f = entry.getModel();
+		Matrix3f matrix3f = entry.getNormal();
+
+		for (int t = 1; t <= 8; t++) {
+			float u = MathHelper.sin((float)t * (float) (Math.PI * 2) / 8.0F) * 0.75F;
+			float v = MathHelper.cos((float)t * (float) (Math.PI * 2) / 8.0F) * 0.75F;
+			float w = (float)t / 8.0F;
+			vertexConsumer.vertex(matrix4f, q * 0.2F, r * 0.2F, 0.0F)
+				.color(0, 0, 0, 255)
+				.texture(s, n)
+				.overlay(OverlayTexture.DEFAULT_UV)
+				.light(k)
+				.normal(matrix3f, 0.0F, -1.0F, 0.0F)
+				.next();
+			vertexConsumer.vertex(matrix4f, q, r, m)
+				.color(255, 255, 255, 255)
+				.texture(s, o)
+				.overlay(OverlayTexture.DEFAULT_UV)
+				.light(k)
+				.normal(matrix3f, 0.0F, -1.0F, 0.0F)
+				.next();
+			vertexConsumer.vertex(matrix4f, u, v, m)
+				.color(255, 255, 255, 255)
+				.texture(w, o)
+				.overlay(OverlayTexture.DEFAULT_UV)
+				.light(k)
+				.normal(matrix3f, 0.0F, -1.0F, 0.0F)
+				.next();
+			vertexConsumer.vertex(matrix4f, u * 0.2F, v * 0.2F, 0.0F)
+				.color(0, 0, 0, 255)
+				.texture(w, n)
+				.overlay(OverlayTexture.DEFAULT_UV)
+				.light(k)
+				.normal(matrix3f, 0.0F, -1.0F, 0.0F)
+				.next();
+			q = u;
+			r = v;
+			s = w;
+		}
+
+		matrixStack.pop();
+	}
+
+	public Identifier getTexture(EnderDragonEntity enderDragonEntity) {
 		return SKIN;
+	}
+
+	public static class DragonEntityModel extends EntityModel<EnderDragonEntity> {
+		private final ModelPart head;
+		private final ModelPart neck;
+		private final ModelPart jaw;
+		private final ModelPart body;
+		private ModelPart wing;
+		private ModelPart field_21548;
+		private ModelPart field_21549;
+		private ModelPart field_21550;
+		private ModelPart field_21551;
+		private ModelPart field_21552;
+		private ModelPart field_21553;
+		private ModelPart field_21554;
+		private ModelPart field_21555;
+		private ModelPart wingTip;
+		private ModelPart frontLeg;
+		private ModelPart frontLegTip;
+		private ModelPart frontFoot;
+		private ModelPart rearLeg;
+		private ModelPart rearLegTip;
+		private ModelPart rearFoot;
+		@Nullable
+		private EnderDragonEntity dragon;
+		private float field_21442;
+
+		public DragonEntityModel() {
+			this.textureWidth = 256;
+			this.textureHeight = 256;
+			float f = -16.0F;
+			this.head = new ModelPart(this);
+			this.head.addCuboid("upperlip", -6.0F, -1.0F, -24.0F, 12, 5, 16, 0.0F, 176, 44);
+			this.head.addCuboid("upperhead", -8.0F, -8.0F, -10.0F, 16, 16, 16, 0.0F, 112, 30);
+			this.head.mirror = true;
+			this.head.addCuboid("scale", -5.0F, -12.0F, -4.0F, 2, 4, 6, 0.0F, 0, 0);
+			this.head.addCuboid("nostril", -5.0F, -3.0F, -22.0F, 2, 2, 4, 0.0F, 112, 0);
+			this.head.mirror = false;
+			this.head.addCuboid("scale", 3.0F, -12.0F, -4.0F, 2, 4, 6, 0.0F, 0, 0);
+			this.head.addCuboid("nostril", 3.0F, -3.0F, -22.0F, 2, 2, 4, 0.0F, 112, 0);
+			this.jaw = new ModelPart(this);
+			this.jaw.setPivot(0.0F, 4.0F, -8.0F);
+			this.jaw.addCuboid("jaw", -6.0F, 0.0F, -16.0F, 12, 4, 16, 0.0F, 176, 65);
+			this.head.addChild(this.jaw);
+			this.neck = new ModelPart(this);
+			this.neck.addCuboid("box", -5.0F, -5.0F, -5.0F, 10, 10, 10, 0.0F, 192, 104);
+			this.neck.addCuboid("scale", -1.0F, -9.0F, -3.0F, 2, 4, 6, 0.0F, 48, 0);
+			this.body = new ModelPart(this);
+			this.body.setPivot(0.0F, 4.0F, 8.0F);
+			this.body.addCuboid("body", -12.0F, 0.0F, -16.0F, 24, 24, 64, 0.0F, 0, 0);
+			this.body.addCuboid("scale", -1.0F, -6.0F, -10.0F, 2, 6, 12, 0.0F, 220, 53);
+			this.body.addCuboid("scale", -1.0F, -6.0F, 10.0F, 2, 6, 12, 0.0F, 220, 53);
+			this.body.addCuboid("scale", -1.0F, -6.0F, 30.0F, 2, 6, 12, 0.0F, 220, 53);
+			this.wing = new ModelPart(this);
+			this.wing.mirror = true;
+			this.wing.setPivot(12.0F, 5.0F, 2.0F);
+			this.wing.addCuboid("bone", 0.0F, -4.0F, -4.0F, 56, 8, 8, 0.0F, 112, 88);
+			this.wing.addCuboid("skin", 0.0F, 0.0F, 2.0F, 56, 0, 56, 0.0F, -56, 88);
+			this.field_21548 = new ModelPart(this);
+			this.field_21548.mirror = true;
+			this.field_21548.setPivot(56.0F, 0.0F, 0.0F);
+			this.field_21548.addCuboid("bone", 0.0F, -2.0F, -2.0F, 56, 4, 4, 0.0F, 112, 136);
+			this.field_21548.addCuboid("skin", 0.0F, 0.0F, 2.0F, 56, 0, 56, 0.0F, -56, 144);
+			this.wing.addChild(this.field_21548);
+			this.field_21549 = new ModelPart(this);
+			this.field_21549.setPivot(12.0F, 20.0F, 2.0F);
+			this.field_21549.addCuboid("main", -4.0F, -4.0F, -4.0F, 8, 24, 8, 0.0F, 112, 104);
+			this.field_21550 = new ModelPart(this);
+			this.field_21550.setPivot(0.0F, 20.0F, -1.0F);
+			this.field_21550.addCuboid("main", -3.0F, -1.0F, -3.0F, 6, 24, 6, 0.0F, 226, 138);
+			this.field_21549.addChild(this.field_21550);
+			this.field_21551 = new ModelPart(this);
+			this.field_21551.setPivot(0.0F, 23.0F, 0.0F);
+			this.field_21551.addCuboid("main", -4.0F, 0.0F, -12.0F, 8, 4, 16, 0.0F, 144, 104);
+			this.field_21550.addChild(this.field_21551);
+			this.field_21552 = new ModelPart(this);
+			this.field_21552.setPivot(16.0F, 16.0F, 42.0F);
+			this.field_21552.addCuboid("main", -8.0F, -4.0F, -8.0F, 16, 32, 16, 0.0F, 0, 0);
+			this.field_21553 = new ModelPart(this);
+			this.field_21553.setPivot(0.0F, 32.0F, -4.0F);
+			this.field_21553.addCuboid("main", -6.0F, -2.0F, 0.0F, 12, 32, 12, 0.0F, 196, 0);
+			this.field_21552.addChild(this.field_21553);
+			this.field_21554 = new ModelPart(this);
+			this.field_21554.setPivot(0.0F, 31.0F, 4.0F);
+			this.field_21554.addCuboid("main", -9.0F, 0.0F, -20.0F, 18, 6, 24, 0.0F, 112, 0);
+			this.field_21553.addChild(this.field_21554);
+			this.field_21555 = new ModelPart(this);
+			this.field_21555.setPivot(-12.0F, 5.0F, 2.0F);
+			this.field_21555.addCuboid("bone", -56.0F, -4.0F, -4.0F, 56, 8, 8, 0.0F, 112, 88);
+			this.field_21555.addCuboid("skin", -56.0F, 0.0F, 2.0F, 56, 0, 56, 0.0F, -56, 88);
+			this.wingTip = new ModelPart(this);
+			this.wingTip.setPivot(-56.0F, 0.0F, 0.0F);
+			this.wingTip.addCuboid("bone", -56.0F, -2.0F, -2.0F, 56, 4, 4, 0.0F, 112, 136);
+			this.wingTip.addCuboid("skin", -56.0F, 0.0F, 2.0F, 56, 0, 56, 0.0F, -56, 144);
+			this.field_21555.addChild(this.wingTip);
+			this.frontLeg = new ModelPart(this);
+			this.frontLeg.setPivot(-12.0F, 20.0F, 2.0F);
+			this.frontLeg.addCuboid("main", -4.0F, -4.0F, -4.0F, 8, 24, 8, 0.0F, 112, 104);
+			this.frontLegTip = new ModelPart(this);
+			this.frontLegTip.setPivot(0.0F, 20.0F, -1.0F);
+			this.frontLegTip.addCuboid("main", -3.0F, -1.0F, -3.0F, 6, 24, 6, 0.0F, 226, 138);
+			this.frontLeg.addChild(this.frontLegTip);
+			this.frontFoot = new ModelPart(this);
+			this.frontFoot.setPivot(0.0F, 23.0F, 0.0F);
+			this.frontFoot.addCuboid("main", -4.0F, 0.0F, -12.0F, 8, 4, 16, 0.0F, 144, 104);
+			this.frontLegTip.addChild(this.frontFoot);
+			this.rearLeg = new ModelPart(this);
+			this.rearLeg.setPivot(-16.0F, 16.0F, 42.0F);
+			this.rearLeg.addCuboid("main", -8.0F, -4.0F, -8.0F, 16, 32, 16, 0.0F, 0, 0);
+			this.rearLegTip = new ModelPart(this);
+			this.rearLegTip.setPivot(0.0F, 32.0F, -4.0F);
+			this.rearLegTip.addCuboid("main", -6.0F, -2.0F, 0.0F, 12, 32, 12, 0.0F, 196, 0);
+			this.rearLeg.addChild(this.rearLegTip);
+			this.rearFoot = new ModelPart(this);
+			this.rearFoot.setPivot(0.0F, 31.0F, 4.0F);
+			this.rearFoot.addCuboid("main", -9.0F, 0.0F, -20.0F, 18, 6, 24, 0.0F, 112, 0);
+			this.rearLegTip.addChild(this.rearFoot);
+		}
+
+		public void animateModel(EnderDragonEntity enderDragonEntity, float f, float g, float h) {
+			this.dragon = enderDragonEntity;
+			this.field_21442 = h;
+		}
+
+		public void setAngles(EnderDragonEntity enderDragonEntity, float f, float g, float h, float i, float j) {
+		}
+
+		@Override
+		public void render(MatrixStack matrixStack, VertexConsumer vertexConsumer, int i, int j, float f, float g, float h, float k) {
+			matrixStack.push();
+			float l = MathHelper.lerp(this.field_21442, this.dragon.field_7019, this.dragon.field_7030);
+			this.jaw.pitch = (float)(Math.sin((double)(l * (float) (Math.PI * 2))) + 1.0) * 0.2F;
+			float m = (float)(Math.sin((double)(l * (float) (Math.PI * 2) - 1.0F)) + 1.0);
+			m = (m * m + m * 2.0F) * 0.05F;
+			matrixStack.translate(0.0, (double)(m - 2.0F), -3.0);
+			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(m * 2.0F));
+			float n = 0.0F;
+			float o = 20.0F;
+			float p = -12.0F;
+			float q = 1.5F;
+			double[] ds = this.dragon.method_6817(6, this.field_21442);
+			float r = MathHelper.method_22860(this.dragon.method_6817(5, this.field_21442)[0] - this.dragon.method_6817(10, this.field_21442)[0]);
+			float s = MathHelper.method_22860(this.dragon.method_6817(5, this.field_21442)[0] + (double)(r / 2.0F));
+			float t = l * (float) (Math.PI * 2);
+
+			for (int u = 0; u < 5; u++) {
+				double[] es = this.dragon.method_6817(5 - u, this.field_21442);
+				float v = (float)Math.cos((double)((float)u * 0.45F + t)) * 0.15F;
+				this.neck.yaw = MathHelper.method_22860(es[0] - ds[0]) * (float) (Math.PI / 180.0) * 1.5F;
+				this.neck.pitch = v + this.dragon.method_6823(u, ds, es) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
+				this.neck.roll = -MathHelper.method_22860(es[0] - (double)s) * (float) (Math.PI / 180.0) * 1.5F;
+				this.neck.pivotY = o;
+				this.neck.pivotZ = p;
+				this.neck.pivotX = n;
+				o = (float)((double)o + Math.sin((double)this.neck.pitch) * 10.0);
+				p = (float)((double)p - Math.cos((double)this.neck.yaw) * Math.cos((double)this.neck.pitch) * 10.0);
+				n = (float)((double)n - Math.sin((double)this.neck.yaw) * Math.cos((double)this.neck.pitch) * 10.0);
+				this.neck.render(matrixStack, vertexConsumer, i, j);
+			}
+
+			this.head.pivotY = o;
+			this.head.pivotZ = p;
+			this.head.pivotX = n;
+			double[] fs = this.dragon.method_6817(0, this.field_21442);
+			this.head.yaw = MathHelper.method_22860(fs[0] - ds[0]) * (float) (Math.PI / 180.0);
+			this.head.pitch = MathHelper.method_22860((double)this.dragon.method_6823(6, ds, fs)) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
+			this.head.roll = -MathHelper.method_22860(fs[0] - (double)s) * (float) (Math.PI / 180.0);
+			this.head.render(matrixStack, vertexConsumer, i, j);
+			matrixStack.push();
+			matrixStack.translate(0.0, 1.0, 0.0);
+			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(-r * 1.5F));
+			matrixStack.translate(0.0, -1.0, 0.0);
+			this.body.roll = 0.0F;
+			this.body.render(matrixStack, vertexConsumer, i, j);
+			float w = l * (float) (Math.PI * 2);
+			this.wing.pitch = 0.125F - (float)Math.cos((double)w) * 0.2F;
+			this.wing.yaw = -0.25F;
+			this.wing.roll = -((float)(Math.sin((double)w) + 0.125)) * 0.8F;
+			this.field_21548.roll = (float)(Math.sin((double)(w + 2.0F)) + 0.5) * 0.75F;
+			this.field_21555.pitch = this.wing.pitch;
+			this.field_21555.yaw = -this.wing.yaw;
+			this.field_21555.roll = -this.wing.roll;
+			this.wingTip.roll = -this.field_21548.roll;
+			this.method_23838(
+				matrixStack, vertexConsumer, i, j, m, this.wing, this.field_21549, this.field_21550, this.field_21551, this.field_21552, this.field_21553, this.field_21554
+			);
+			this.method_23838(
+				matrixStack, vertexConsumer, i, j, m, this.field_21555, this.frontLeg, this.frontLegTip, this.frontFoot, this.rearLeg, this.rearLegTip, this.rearFoot
+			);
+			matrixStack.pop();
+			float x = -((float)Math.sin((double)(l * (float) (Math.PI * 2)))) * 0.0F;
+			t = l * (float) (Math.PI * 2);
+			o = 10.0F;
+			p = 60.0F;
+			n = 0.0F;
+			ds = this.dragon.method_6817(11, this.field_21442);
+
+			for (int y = 0; y < 12; y++) {
+				fs = this.dragon.method_6817(12 + y, this.field_21442);
+				x = (float)((double)x + Math.sin((double)((float)y * 0.45F + t)) * 0.05F);
+				this.neck.yaw = (MathHelper.method_22860(fs[0] - ds[0]) * 1.5F + 180.0F) * (float) (Math.PI / 180.0);
+				this.neck.pitch = x + (float)(fs[1] - ds[1]) * (float) (Math.PI / 180.0) * 1.5F * 5.0F;
+				this.neck.roll = MathHelper.method_22860(fs[0] - (double)s) * (float) (Math.PI / 180.0) * 1.5F;
+				this.neck.pivotY = o;
+				this.neck.pivotZ = p;
+				this.neck.pivotX = n;
+				o = (float)((double)o + Math.sin((double)this.neck.pitch) * 10.0);
+				p = (float)((double)p - Math.cos((double)this.neck.yaw) * Math.cos((double)this.neck.pitch) * 10.0);
+				n = (float)((double)n - Math.sin((double)this.neck.yaw) * Math.cos((double)this.neck.pitch) * 10.0);
+				this.neck.render(matrixStack, vertexConsumer, i, j);
+			}
+
+			matrixStack.pop();
+		}
+
+		private void method_23838(
+			MatrixStack matrixStack,
+			VertexConsumer vertexConsumer,
+			int i,
+			int j,
+			float f,
+			ModelPart modelPart,
+			ModelPart modelPart2,
+			ModelPart modelPart3,
+			ModelPart modelPart4,
+			ModelPart modelPart5,
+			ModelPart modelPart6,
+			ModelPart modelPart7
+		) {
+			modelPart5.pitch = 1.0F + f * 0.1F;
+			modelPart6.pitch = 0.5F + f * 0.1F;
+			modelPart7.pitch = 0.75F + f * 0.1F;
+			modelPart2.pitch = 1.3F + f * 0.1F;
+			modelPart3.pitch = -0.5F - f * 0.1F;
+			modelPart4.pitch = 0.75F + f * 0.1F;
+			modelPart.render(matrixStack, vertexConsumer, i, j);
+			modelPart2.render(matrixStack, vertexConsumer, i, j);
+			modelPart5.render(matrixStack, vertexConsumer, i, j);
+		}
 	}
 }

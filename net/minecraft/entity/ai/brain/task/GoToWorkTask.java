@@ -15,18 +15,18 @@ public class GoToWorkTask extends Task<VillagerEntity> {
 		super(ImmutableMap.of(MemoryModuleType.field_18439, MemoryModuleState.field_18456));
 	}
 
-	protected boolean method_18987(ServerWorld serverWorld, VillagerEntity villagerEntity) {
+	protected boolean shouldRun(ServerWorld serverWorld, VillagerEntity villagerEntity) {
 		return villagerEntity.getVillagerData().getProfession() == VillagerProfession.field_17051;
 	}
 
-	protected void method_18988(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void run(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		GlobalPos globalPos = (GlobalPos)villagerEntity.getBrain().getOptionalMemory(MemoryModuleType.field_18439).get();
 		MinecraftServer minecraftServer = serverWorld.getServer();
 		minecraftServer.getWorld(globalPos.getDimension())
 			.getPointOfInterestStorage()
 			.getType(globalPos.getPos())
 			.ifPresent(
-				pointOfInterestType -> Registry.VILLAGER_PROFESSION
+				pointOfInterestType -> Registry.field_17167
 						.stream()
 						.filter(villagerProfession -> villagerProfession.getWorkStation() == pointOfInterestType)
 						.findFirst()

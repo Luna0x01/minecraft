@@ -2,19 +2,17 @@ package net.minecraft.client.font;
 
 import it.unimi.dsi.fastutil.chars.CharArraySet;
 import it.unimi.dsi.fastutil.chars.CharSet;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import javax.annotation.Nullable;
 import net.minecraft.client.texture.NativeImage;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.stb.STBTTFontinfo;
 import org.lwjgl.stb.STBTruetype;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 public class TrueTypeFont implements Font {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private final ByteBuffer field_21839;
 	private final STBTTFontinfo info;
 	private final float oversample;
 	private final CharSet excludedCharacters = new CharArraySet();
@@ -23,7 +21,8 @@ public class TrueTypeFont implements Font {
 	private final float scaleFactor;
 	private final float ascent;
 
-	public TrueTypeFont(STBTTFontinfo sTBTTFontinfo, float f, float g, float h, float i, String string) {
+	public TrueTypeFont(ByteBuffer byteBuffer, STBTTFontinfo sTBTTFontinfo, float f, float g, float h, float i, String string) {
+		this.field_21839 = byteBuffer;
 		this.info = sTBTTFontinfo;
 		this.oversample = g;
 		string.chars().forEach(ix -> this.excludedCharacters.add((char)(ix & 65535)));
@@ -31,7 +30,7 @@ public class TrueTypeFont implements Font {
 		this.shiftY = i * g;
 		this.scaleFactor = STBTruetype.stbtt_ScaleForPixelHeight(sTBTTFontinfo, f * g);
 		MemoryStack memoryStack = MemoryStack.stackPush();
-		Throwable var8 = null;
+		Throwable var9 = null;
 
 		try {
 			IntBuffer intBuffer = memoryStack.mallocInt(1);
@@ -39,16 +38,16 @@ public class TrueTypeFont implements Font {
 			IntBuffer intBuffer3 = memoryStack.mallocInt(1);
 			STBTruetype.stbtt_GetFontVMetrics(sTBTTFontinfo, intBuffer, intBuffer2, intBuffer3);
 			this.ascent = (float)intBuffer.get(0) * this.scaleFactor;
-		} catch (Throwable var19) {
-			var8 = var19;
-			throw var19;
+		} catch (Throwable var20) {
+			var9 = var20;
+			throw var20;
 		} finally {
 			if (memoryStack != null) {
-				if (var8 != null) {
+				if (var9 != null) {
 					try {
 						memoryStack.close();
-					} catch (Throwable var18) {
-						var8.addSuppressed(var18);
+					} catch (Throwable var19) {
+						var9.addSuppressed(var19);
 					}
 				} else {
 					memoryStack.close();
@@ -58,7 +57,7 @@ public class TrueTypeFont implements Font {
 	}
 
 	@Nullable
-	public TrueTypeFont.TtfGlyph method_2051(char c) {
+	public TrueTypeFont.TtfGlyph getGlyph(char c) {
 		if (this.excludedCharacters.contains(c)) {
 			return null;
 		} else {
@@ -118,13 +117,10 @@ public class TrueTypeFont implements Font {
 		}
 	}
 
-	public static STBTTFontinfo getSTBTTFontInfo(ByteBuffer byteBuffer) throws IOException {
-		STBTTFontinfo sTBTTFontinfo = STBTTFontinfo.create();
-		if (!STBTruetype.stbtt_InitFont(sTBTTFontinfo, byteBuffer)) {
-			throw new IOException("Invalid ttf");
-		} else {
-			return sTBTTFontinfo;
-		}
+	@Override
+	public void close() {
+		this.info.free();
+		MemoryUtil.memFree(this.field_21839);
 	}
 
 	class TtfGlyph implements RenderableGlyph {
@@ -176,21 +172,20 @@ public class TrueTypeFont implements Font {
 
 		@Override
 		public void upload(int i, int j) {
-			try (NativeImage nativeImage = new NativeImage(NativeImage.Format.field_4998, this.width, this.height, false)) {
-				nativeImage.makeGlyphBitmapSubpixel(
-					TrueTypeFont.this.info,
-					this.glyphIndex,
-					this.width,
-					this.height,
-					TrueTypeFont.this.scaleFactor,
-					TrueTypeFont.this.scaleFactor,
-					TrueTypeFont.this.shiftX,
-					TrueTypeFont.this.shiftY,
-					0,
-					0
-				);
-				nativeImage.upload(0, i, j, 0, 0, this.width, this.height, false);
-			}
+			NativeImage nativeImage = new NativeImage(NativeImage.Format.field_4998, this.width, this.height, false);
+			nativeImage.makeGlyphBitmapSubpixel(
+				TrueTypeFont.this.info,
+				this.glyphIndex,
+				this.width,
+				this.height,
+				TrueTypeFont.this.scaleFactor,
+				TrueTypeFont.this.scaleFactor,
+				TrueTypeFont.this.shiftX,
+				TrueTypeFont.this.shiftY,
+				0,
+				0
+			);
+			nativeImage.upload(0, i, j, 0, 0, this.width, this.height, false, true);
 		}
 
 		@Override

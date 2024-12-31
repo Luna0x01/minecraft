@@ -5,6 +5,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndPortalBlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.BooleanBiFunction;
@@ -49,9 +50,9 @@ public class EndPortalBlock extends BlockWithEntity {
 
 	@Override
 	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		double d = (double)((float)blockPos.getX() + random.nextFloat());
-		double e = (double)((float)blockPos.getY() + 0.8F);
-		double f = (double)((float)blockPos.getZ() + random.nextFloat());
+		double d = (double)blockPos.getX() + (double)random.nextFloat();
+		double e = (double)blockPos.getY() + 0.8;
+		double f = (double)blockPos.getZ() + (double)random.nextFloat();
 		double g = 0.0;
 		double h = 0.0;
 		double i = 0.0;
@@ -61,5 +62,10 @@ public class EndPortalBlock extends BlockWithEntity {
 	@Override
 	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
 		return ItemStack.EMPTY;
+	}
+
+	@Override
+	public boolean canBucketPlace(BlockState blockState, Fluid fluid) {
+		return false;
 	}
 }

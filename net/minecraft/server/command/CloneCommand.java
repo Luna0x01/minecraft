@@ -21,8 +21,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Clearable;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 
 public class CloneCommand {
 	private static final SimpleCommandExceptionType OVERLAP_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.clone.overlap"));
@@ -226,31 +226,27 @@ public class CloneCommand {
 		Predicate<CachedBlockPosition> predicate,
 		CloneCommand.Mode mode
 	) throws CommandSyntaxException {
-		MutableIntBoundingBox mutableIntBoundingBox = new MutableIntBoundingBox(blockPos, blockPos2);
-		BlockPos blockPos4 = blockPos3.add(mutableIntBoundingBox.getSize());
-		MutableIntBoundingBox mutableIntBoundingBox2 = new MutableIntBoundingBox(blockPos3, blockPos4);
-		if (!mode.allowsOverlap() && mutableIntBoundingBox2.intersects(mutableIntBoundingBox)) {
+		BlockBox blockBox = new BlockBox(blockPos, blockPos2);
+		BlockPos blockPos4 = blockPos3.add(blockBox.getDimensions());
+		BlockBox blockBox2 = new BlockBox(blockPos3, blockPos4);
+		if (!mode.allowsOverlap() && blockBox2.intersects(blockBox)) {
 			throw OVERLAP_EXCEPTION.create();
 		} else {
-			int i = mutableIntBoundingBox.getBlockCountX() * mutableIntBoundingBox.getBlockCountY() * mutableIntBoundingBox.getBlockCountZ();
+			int i = blockBox.getBlockCountX() * blockBox.getBlockCountY() * blockBox.getBlockCountZ();
 			if (i > 32768) {
 				throw TOOBIG_EXCEPTION.create(32768, i);
 			} else {
 				ServerWorld serverWorld = serverCommandSource.getWorld();
-				if (serverWorld.isAreaLoaded(blockPos, blockPos2) && serverWorld.isAreaLoaded(blockPos3, blockPos4)) {
+				if (serverWorld.isRegionLoaded(blockPos, blockPos2) && serverWorld.isRegionLoaded(blockPos3, blockPos4)) {
 					List<CloneCommand.BlockInfo> list = Lists.newArrayList();
 					List<CloneCommand.BlockInfo> list2 = Lists.newArrayList();
 					List<CloneCommand.BlockInfo> list3 = Lists.newArrayList();
 					Deque<BlockPos> deque = Lists.newLinkedList();
-					BlockPos blockPos5 = new BlockPos(
-						mutableIntBoundingBox2.minX - mutableIntBoundingBox.minX,
-						mutableIntBoundingBox2.minY - mutableIntBoundingBox.minY,
-						mutableIntBoundingBox2.minZ - mutableIntBoundingBox.minZ
-					);
+					BlockPos blockPos5 = new BlockPos(blockBox2.minX - blockBox.minX, blockBox2.minY - blockBox.minY, blockBox2.minZ - blockBox.minZ);
 
-					for (int j = mutableIntBoundingBox.minZ; j <= mutableIntBoundingBox.maxZ; j++) {
-						for (int k = mutableIntBoundingBox.minY; k <= mutableIntBoundingBox.maxY; k++) {
-							for (int l = mutableIntBoundingBox.minX; l <= mutableIntBoundingBox.maxX; l++) {
+					for (int j = blockBox.minZ; j <= blockBox.maxZ; j++) {
+						for (int k = blockBox.minY; k <= blockBox.maxY; k++) {
+							for (int l = blockBox.minX; l <= blockBox.maxX; l++) {
 								BlockPos blockPos6 = new BlockPos(l, k, j);
 								BlockPos blockPos7 = blockPos6.add(blockPos5);
 								CachedBlockPosition cachedBlockPosition = new CachedBlockPosition(serverWorld, blockPos6, false);
@@ -261,7 +257,7 @@ public class CloneCommand {
 										CompoundTag compoundTag = blockEntity.toTag(new CompoundTag());
 										list2.add(new CloneCommand.BlockInfo(blockPos7, blockState, compoundTag));
 										deque.addLast(blockPos6);
-									} else if (!blockState.isFullOpaque(serverWorld, blockPos6) && !blockState.method_21743(serverWorld, blockPos6)) {
+									} else if (!blockState.isFullOpaque(serverWorld, blockPos6) && !blockState.isFullCube(serverWorld, blockPos6)) {
 										list3.add(new CloneCommand.BlockInfo(blockPos7, blockState, null));
 										deque.addFirst(blockPos6);
 									} else {
@@ -322,7 +318,7 @@ public class CloneCommand {
 						serverWorld.updateNeighbors(blockInfo4.pos, blockInfo4.state.getBlock());
 					}
 
-					serverWorld.method_14196().copyScheduledTicks(mutableIntBoundingBox, blockPos5);
+					serverWorld.getBlockTickScheduler().copyScheduledTicks(blockBox, blockPos5);
 					if (m == 0) {
 						throw FAILED_EXCEPTION.create();
 					} else {

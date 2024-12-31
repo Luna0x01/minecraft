@@ -132,7 +132,7 @@ public abstract class AbstractFurnaceBlockEntity extends LockableContainerBlockE
 		addFuel(map, Items.field_8406, 200);
 		addFuel(map, Items.field_8647, 200);
 		addFuel(map, ItemTags.field_15552, 200);
-		addFuel(map, ItemTags.field_15536, 200);
+		addFuel(map, ItemTags.field_15536, 1200);
 		addFuel(map, ItemTags.field_15544, 100);
 		addFuel(map, ItemTags.field_15555, 100);
 		addFuel(map, Items.field_8600, 100);
@@ -143,7 +143,7 @@ public abstract class AbstractFurnaceBlockEntity extends LockableContainerBlockE
 		addFuel(map, Items.field_8399, 300);
 		addFuel(map, Blocks.field_10211, 50);
 		addFuel(map, Blocks.field_10428, 100);
-		addFuel(map, Blocks.field_16492, 50);
+		addFuel(map, Blocks.field_16492, 400);
 		addFuel(map, Blocks.field_10083, 300);
 		addFuel(map, Blocks.field_16328, 300);
 		addFuel(map, Blocks.field_16336, 300);
@@ -463,7 +463,7 @@ public abstract class AbstractFurnaceBlockEntity extends LockableContainerBlockE
 		while (i > 0) {
 			int k = ExperienceOrbEntity.roundToOrbSize(i);
 			i -= k;
-			playerEntity.world.spawnEntity(new ExperienceOrbEntity(playerEntity.world, playerEntity.x, playerEntity.y + 0.5, playerEntity.z + 0.5, k));
+			playerEntity.world.spawnEntity(new ExperienceOrbEntity(playerEntity.world, playerEntity.getX(), playerEntity.getY() + 0.5, playerEntity.getZ() + 0.5, k));
 		}
 	}
 

@@ -93,32 +93,30 @@ public class SpawnEggItem extends Item {
 	@Override
 	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (world.isClient) {
-			return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1345);
+		if (hitResult.getType() != HitResult.Type.field_1332) {
+			return TypedActionResult.pass(itemStack);
+		} else if (world.isClient) {
+			return TypedActionResult.success(itemStack);
 		} else {
-			HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1345);
-			if (hitResult.getType() != HitResult.Type.field_1332) {
-				return new TypedActionResult<>(ActionResult.field_5811, itemStack);
-			} else {
-				BlockHitResult blockHitResult = (BlockHitResult)hitResult;
-				BlockPos blockPos = blockHitResult.getBlockPos();
-				if (!(world.getBlockState(blockPos).getBlock() instanceof FluidBlock)) {
-					return new TypedActionResult<>(ActionResult.field_5811, itemStack);
-				} else if (world.canPlayerModifyAt(playerEntity, blockPos) && playerEntity.canPlaceOn(blockPos, blockHitResult.getSide(), itemStack)) {
-					EntityType<?> entityType = this.getEntityType(itemStack.getTag());
-					if (entityType.spawnFromItemStack(world, itemStack, playerEntity, blockPos, SpawnType.field_16465, false, false) == null) {
-						return new TypedActionResult<>(ActionResult.field_5811, itemStack);
-					} else {
-						if (!playerEntity.abilities.creativeMode) {
-							itemStack.decrement(1);
-						}
-
-						playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-						return new TypedActionResult<>(ActionResult.field_5812, itemStack);
-					}
+			BlockHitResult blockHitResult = (BlockHitResult)hitResult;
+			BlockPos blockPos = blockHitResult.getBlockPos();
+			if (!(world.getBlockState(blockPos).getBlock() instanceof FluidBlock)) {
+				return TypedActionResult.pass(itemStack);
+			} else if (world.canPlayerModifyAt(playerEntity, blockPos) && playerEntity.canPlaceOn(blockPos, blockHitResult.getSide(), itemStack)) {
+				EntityType<?> entityType = this.getEntityType(itemStack.getTag());
+				if (entityType.spawnFromItemStack(world, itemStack, playerEntity, blockPos, SpawnType.field_16465, false, false) == null) {
+					return TypedActionResult.pass(itemStack);
 				} else {
-					return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+					if (!playerEntity.abilities.creativeMode) {
+						itemStack.decrement(1);
+					}
+
+					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+					return TypedActionResult.success(itemStack);
 				}
+			} else {
+				return TypedActionResult.fail(itemStack);
 			}
 		}
 	}
@@ -131,6 +129,7 @@ public class SpawnEggItem extends Item {
 		return i == 0 ? this.primaryColor : this.secondaryColor;
 	}
 
+	@Nullable
 	public static SpawnEggItem forEntity(@Nullable EntityType<?> entityType) {
 		return (SpawnEggItem)SPAWN_EGGS.get(entityType);
 	}
@@ -140,9 +139,9 @@ public class SpawnEggItem extends Item {
 	}
 
 	public EntityType<?> getEntityType(@Nullable CompoundTag compoundTag) {
-		if (compoundTag != null && compoundTag.containsKey("EntityTag", 10)) {
+		if (compoundTag != null && compoundTag.contains("EntityTag", 10)) {
 			CompoundTag compoundTag2 = compoundTag.getCompound("EntityTag");
-			if (compoundTag2.containsKey("id", 8)) {
+			if (compoundTag2.contains("id", 8)) {
 				return (EntityType<?>)EntityType.get(compoundTag2.getString("id")).orElse(this.type);
 			}
 		}

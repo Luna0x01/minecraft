@@ -22,8 +22,8 @@ public class ServerHandshakeNetworkHandler implements ServerHandshakePacketListe
 	@Override
 	public void onHandshake(HandshakeC2SPacket handshakeC2SPacket) {
 		switch (handshakeC2SPacket.getIntendedState()) {
-			case field_11688:
-				this.client.setState(NetworkState.field_11688);
+			case field_20593:
+				this.client.setState(NetworkState.field_20593);
 				if (handshakeC2SPacket.getProtocolVersion() > SharedConstants.getGameVersion().getProtocolVersion()) {
 					Text text = new TranslatableText("multiplayer.disconnect.outdated_server", SharedConstants.getGameVersion().getName());
 					this.client.send(new LoginDisconnectS2CPacket(text));
@@ -36,8 +36,8 @@ public class ServerHandshakeNetworkHandler implements ServerHandshakePacketListe
 					this.client.setPacketListener(new ServerLoginNetworkHandler(this.server, this.client));
 				}
 				break;
-			case field_11691:
-				this.client.setState(NetworkState.field_11691);
+			case field_20592:
+				this.client.setState(NetworkState.field_20592);
 				this.client.setPacketListener(new ServerQueryNetworkHandler(this.server, this.client));
 				break;
 			default:

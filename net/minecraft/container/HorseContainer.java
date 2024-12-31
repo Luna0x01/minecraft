@@ -73,12 +73,13 @@ public class HorseContainer extends Container {
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
-			if (i < this.playerInv.getInvSize()) {
-				if (!this.insertItem(itemStack2, this.playerInv.getInvSize(), this.slotList.size(), true)) {
+			int j = this.playerInv.getInvSize();
+			if (i < j) {
+				if (!this.insertItem(itemStack2, j, this.slots.size(), true)) {
 					return ItemStack.EMPTY;
 				}
 			} else if (this.getSlot(1).canInsert(itemStack2) && !this.getSlot(1).hasStack()) {
@@ -89,7 +90,21 @@ public class HorseContainer extends Container {
 				if (!this.insertItem(itemStack2, 0, 1, false)) {
 					return ItemStack.EMPTY;
 				}
-			} else if (this.playerInv.getInvSize() <= 2 || !this.insertItem(itemStack2, 2, this.playerInv.getInvSize(), false)) {
+			} else if (j <= 2 || !this.insertItem(itemStack2, 2, j, false)) {
+				int l = j + 27;
+				int n = l + 9;
+				if (i >= l && i < n) {
+					if (!this.insertItem(itemStack2, j, l, false)) {
+						return ItemStack.EMPTY;
+					}
+				} else if (i >= j && i < l) {
+					if (!this.insertItem(itemStack2, l, n, false)) {
+						return ItemStack.EMPTY;
+					}
+				} else if (!this.insertItem(itemStack2, l, l, false)) {
+					return ItemStack.EMPTY;
+				}
+
 				return ItemStack.EMPTY;
 			}
 

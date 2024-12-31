@@ -1,7 +1,7 @@
 package net.minecraft.client.sound;
 
 import java.util.concurrent.locks.LockSupport;
-import net.minecraft.util.ThreadExecutor;
+import net.minecraft.util.thread.ThreadExecutor;
 
 public class SoundExecutor extends ThreadExecutor<Runnable> {
 	private Thread thread = this.createThread();
@@ -20,12 +20,12 @@ public class SoundExecutor extends ThreadExecutor<Runnable> {
 	}
 
 	@Override
-	protected Runnable prepareRunnable(Runnable runnable) {
+	protected Runnable createTask(Runnable runnable) {
 		return runnable;
 	}
 
 	@Override
-	protected boolean canRun(Runnable runnable) {
+	protected boolean canExecute(Runnable runnable) {
 		return !this.stopped;
 	}
 
@@ -36,12 +36,12 @@ public class SoundExecutor extends ThreadExecutor<Runnable> {
 
 	private void waitForStop() {
 		while (!this.stopped) {
-			this.waitFor(() -> this.stopped);
+			this.runTasks(() -> this.stopped);
 		}
 	}
 
 	@Override
-	protected void method_20813() {
+	protected void waitForTasks() {
 		LockSupport.park("waiting for tasks");
 	}
 
@@ -55,7 +55,7 @@ public class SoundExecutor extends ThreadExecutor<Runnable> {
 			Thread.currentThread().interrupt();
 		}
 
-		this.clear();
+		this.cancelTasks();
 		this.stopped = false;
 		this.thread = this.createThread();
 	}

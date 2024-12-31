@@ -3,6 +3,10 @@ package net.minecraft.world.explosion;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.mojang.datafixers.util.Pair;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -14,12 +18,16 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.enchantment.ProtectionEnchantment;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.TntEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -31,8 +39,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RayTraceContext;
 import net.minecraft.world.World;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
 
 public class Explosion {
 	private final boolean createFire;
@@ -42,6 +48,7 @@ public class Explosion {
 	private final double x;
 	private final double y;
 	private final double z;
+	@Nullable
 	private final Entity entity;
 	private final float power;
 	private DamageSource damageSource;
@@ -73,9 +80,9 @@ public class Explosion {
 
 	public static float getExposure(Vec3d vec3d, Entity entity) {
 		Box box = entity.getBoundingBox();
-		double d = 1.0 / ((box.maxX - box.minX) * 2.0 + 1.0);
-		double e = 1.0 / ((box.maxY - box.minY) * 2.0 + 1.0);
-		double f = 1.0 / ((box.maxZ - box.minZ) * 2.0 + 1.0);
+		double d = 1.0 / ((box.x2 - box.x1) * 2.0 + 1.0);
+		double e = 1.0 / ((box.y2 - box.y1) * 2.0 + 1.0);
+		double f = 1.0 / ((box.z2 - box.z1) * 2.0 + 1.0);
 		double g = (1.0 - Math.floor(1.0 / d) * d) / 2.0;
 		double h = (1.0 - Math.floor(1.0 / f) * f) / 2.0;
 		if (!(d < 0.0) && !(e < 0.0) && !(f < 0.0)) {
@@ -85,9 +92,9 @@ public class Explosion {
 			for (float k = 0.0F; k <= 1.0F; k = (float)((double)k + d)) {
 				for (float l = 0.0F; l <= 1.0F; l = (float)((double)l + e)) {
 					for (float m = 0.0F; m <= 1.0F; m = (float)((double)m + f)) {
-						double n = MathHelper.lerp((double)k, box.minX, box.maxX);
-						double o = MathHelper.lerp((double)l, box.minY, box.maxY);
-						double p = MathHelper.lerp((double)m, box.minZ, box.maxZ);
+						double n = MathHelper.lerp((double)k, box.x1, box.x2);
+						double o = MathHelper.lerp((double)l, box.y1, box.y2);
+						double p = MathHelper.lerp((double)m, box.z1, box.z2);
 						Vec3d vec3d2 = new Vec3d(n + g, o, p + h);
 						if (entity.world
 								.rayTrace(new RayTraceContext(vec3d2, vec3d, RayTraceContext.ShapeType.field_17559, RayTraceContext.FluidHandling.field_1348, entity))
@@ -167,11 +174,11 @@ public class Explosion {
 		for (int y = 0; y < list.size(); y++) {
 			Entity entity = (Entity)list.get(y);
 			if (!entity.isImmuneToExplosion()) {
-				double z = (double)(MathHelper.sqrt(entity.squaredDistanceTo(new Vec3d(this.x, this.y, this.z))) / r);
+				double z = (double)(MathHelper.sqrt(entity.squaredDistanceTo(vec3d)) / r);
 				if (z <= 1.0) {
-					double aa = entity.x - this.x;
-					double ab = entity.y + (double)entity.getStandingEyeHeight() - this.y;
-					double ac = entity.z - this.z;
+					double aa = entity.getX() - this.x;
+					double ab = entity.getEyeY() - this.y;
+					double ac = entity.getZ() - this.z;
 					double ad = (double)MathHelper.sqrt(aa * aa + ab * ab + ac * ac);
 					if (ad != 0.0) {
 						aa /= ad;
@@ -199,78 +206,95 @@ public class Explosion {
 	}
 
 	public void affectWorld(boolean bl) {
-		this.world
-			.playSound(
-				null,
-				this.x,
-				this.y,
-				this.z,
-				SoundEvents.field_15152,
-				SoundCategory.field_15245,
-				4.0F,
-				(1.0F + (this.world.random.nextFloat() - this.world.random.nextFloat()) * 0.2F) * 0.7F
-			);
+		if (this.world.isClient) {
+			this.world
+				.playSound(
+					this.x,
+					this.y,
+					this.z,
+					SoundEvents.field_15152,
+					SoundCategory.field_15245,
+					4.0F,
+					(1.0F + (this.world.random.nextFloat() - this.world.random.nextFloat()) * 0.2F) * 0.7F,
+					false
+				);
+		}
+
 		boolean bl2 = this.blockDestructionType != Explosion.DestructionType.field_18685;
-		if (!(this.power < 2.0F) && bl2) {
-			this.world.addParticle(ParticleTypes.field_11221, this.x, this.y, this.z, 1.0, 0.0, 0.0);
-		} else {
-			this.world.addParticle(ParticleTypes.field_11236, this.x, this.y, this.z, 1.0, 0.0, 0.0);
+		if (bl) {
+			if (!(this.power < 2.0F) && bl2) {
+				this.world.addParticle(ParticleTypes.field_11221, this.x, this.y, this.z, 1.0, 0.0, 0.0);
+			} else {
+				this.world.addParticle(ParticleTypes.field_11236, this.x, this.y, this.z, 1.0, 0.0, 0.0);
+			}
 		}
 
 		if (bl2) {
+			ObjectArrayList<Pair<ItemStack, BlockPos>> objectArrayList = new ObjectArrayList();
+			Collections.shuffle(this.affectedBlocks, this.world.random);
+
 			for (BlockPos blockPos : this.affectedBlocks) {
 				BlockState blockState = this.world.getBlockState(blockPos);
 				Block block = blockState.getBlock();
-				if (bl) {
-					double d = (double)((float)blockPos.getX() + this.world.random.nextFloat());
-					double e = (double)((float)blockPos.getY() + this.world.random.nextFloat());
-					double f = (double)((float)blockPos.getZ() + this.world.random.nextFloat());
-					double g = d - this.x;
-					double h = e - this.y;
-					double i = f - this.z;
-					double j = (double)MathHelper.sqrt(g * g + h * h + i * i);
-					g /= j;
-					h /= j;
-					i /= j;
-					double k = 0.5 / (j / (double)this.power + 0.1);
-					k *= (double)(this.world.random.nextFloat() * this.world.random.nextFloat() + 0.3F);
-					g *= k;
-					h *= k;
-					i *= k;
-					this.world.addParticle(ParticleTypes.field_11203, (d + this.x) / 2.0, (e + this.y) / 2.0, (f + this.z) / 2.0, g, h, i);
-					this.world.addParticle(ParticleTypes.field_11251, d, e, f, g, h, i);
-				}
-
 				if (!blockState.isAir()) {
+					BlockPos blockPos2 = blockPos.toImmutable();
+					this.world.getProfiler().push("explosion_blocks");
 					if (block.shouldDropItemsOnExplosion(this) && this.world instanceof ServerWorld) {
 						BlockEntity blockEntity = block.hasBlockEntity() ? this.world.getBlockEntity(blockPos) : null;
 						LootContext.Builder builder = new LootContext.Builder((ServerWorld)this.world)
 							.setRandom(this.world.random)
 							.put(LootContextParameters.field_1232, blockPos)
 							.put(LootContextParameters.field_1229, ItemStack.EMPTY)
-							.putNullable(LootContextParameters.field_1228, blockEntity);
+							.putNullable(LootContextParameters.field_1228, blockEntity)
+							.putNullable(LootContextParameters.field_1226, this.entity);
 						if (this.blockDestructionType == Explosion.DestructionType.field_18687) {
 							builder.put(LootContextParameters.field_1225, this.power);
 						}
 
-						Block.dropStacks(blockState, builder);
+						blockState.getDroppedStacks(builder).forEach(itemStack -> method_24023(objectArrayList, itemStack, blockPos2));
 					}
 
 					this.world.setBlockState(blockPos, Blocks.field_10124.getDefaultState(), 3);
 					block.onDestroyedByExplosion(this.world, blockPos, this);
+					this.world.getProfiler().pop();
 				}
+			}
+
+			ObjectListIterator var12 = objectArrayList.iterator();
+
+			while (var12.hasNext()) {
+				Pair<ItemStack, BlockPos> pair = (Pair<ItemStack, BlockPos>)var12.next();
+				Block.dropStack(this.world, (BlockPos)pair.getSecond(), (ItemStack)pair.getFirst());
 			}
 		}
 
 		if (this.createFire) {
-			for (BlockPos blockPos2 : this.affectedBlocks) {
-				if (this.world.getBlockState(blockPos2).isAir()
-					&& this.world.getBlockState(blockPos2.down()).isFullOpaque(this.world, blockPos2.down())
-					&& this.random.nextInt(3) == 0) {
-					this.world.setBlockState(blockPos2, Blocks.field_10036.getDefaultState());
+			for (BlockPos blockPos3 : this.affectedBlocks) {
+				if (this.random.nextInt(3) == 0
+					&& this.world.getBlockState(blockPos3).isAir()
+					&& this.world.getBlockState(blockPos3.down()).isFullOpaque(this.world, blockPos3.down())) {
+					this.world.setBlockState(blockPos3, Blocks.field_10036.getDefaultState());
 				}
 			}
 		}
+	}
+
+	private static void method_24023(ObjectArrayList<Pair<ItemStack, BlockPos>> objectArrayList, ItemStack itemStack, BlockPos blockPos) {
+		int i = objectArrayList.size();
+
+		for (int j = 0; j < i; j++) {
+			Pair<ItemStack, BlockPos> pair = (Pair<ItemStack, BlockPos>)objectArrayList.get(j);
+			ItemStack itemStack2 = (ItemStack)pair.getFirst();
+			if (ItemEntity.method_24017(itemStack2, itemStack)) {
+				ItemStack itemStack3 = ItemEntity.method_24018(itemStack2, itemStack, 16);
+				objectArrayList.set(j, Pair.of(itemStack3, pair.getSecond()));
+				if (itemStack.isEmpty()) {
+					return;
+				}
+			}
+		}
+
+		objectArrayList.add(Pair.of(itemStack, blockPos));
 	}
 
 	public DamageSource getDamageSource() {
@@ -291,8 +315,10 @@ public class Explosion {
 			return null;
 		} else if (this.entity instanceof TntEntity) {
 			return ((TntEntity)this.entity).getCausingEntity();
+		} else if (this.entity instanceof LivingEntity) {
+			return (LivingEntity)this.entity;
 		} else {
-			return this.entity instanceof LivingEntity ? (LivingEntity)this.entity : null;
+			return this.entity instanceof ExplosiveProjectileEntity ? ((ExplosiveProjectileEntity)this.entity).owner : null;
 		}
 	}
 

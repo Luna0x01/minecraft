@@ -11,12 +11,12 @@ import net.minecraft.util.registry.Registry;
 
 public class BlockTagsProvider extends AbstractTagProvider<Block> {
 	public BlockTagsProvider(DataGenerator dataGenerator) {
-		super(dataGenerator, Registry.BLOCK);
+		super(dataGenerator, Registry.field_11146);
 	}
 
 	@Override
 	protected void configure() {
-		this.method_10512(BlockTags.field_15481)
+		this.getOrCreateTagBuilder(BlockTags.field_15481)
 			.add(
 				Blocks.field_10446,
 				Blocks.field_10095,
@@ -35,13 +35,13 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10314,
 				Blocks.field_10146
 			);
-		this.method_10512(BlockTags.field_15471)
+		this.getOrCreateTagBuilder(BlockTags.field_15471)
 			.add(Blocks.field_10161, Blocks.field_9975, Blocks.field_10148, Blocks.field_10334, Blocks.field_10218, Blocks.field_10075);
-		this.method_10512(BlockTags.field_15465).add(Blocks.field_10056, Blocks.field_10065, Blocks.field_10416, Blocks.field_10552);
-		this.method_10512(BlockTags.field_15499)
+		this.getOrCreateTagBuilder(BlockTags.field_15465).add(Blocks.field_10056, Blocks.field_10065, Blocks.field_10416, Blocks.field_10552);
+		this.getOrCreateTagBuilder(BlockTags.field_15499)
 			.add(Blocks.field_10057, Blocks.field_10066, Blocks.field_10417, Blocks.field_10553, Blocks.field_10278, Blocks.field_10493);
-		this.method_10512(BlockTags.field_15493).add(BlockTags.field_15499).add(Blocks.field_10494);
-		this.method_10512(BlockTags.field_15479)
+		this.getOrCreateTagBuilder(BlockTags.field_15493).add(BlockTags.field_15499).add(Blocks.field_10494);
+		this.getOrCreateTagBuilder(BlockTags.field_15479)
 			.add(
 				Blocks.field_10466,
 				Blocks.field_9977,
@@ -60,32 +60,32 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10536,
 				Blocks.field_10106
 			);
-		this.method_10512(BlockTags.field_15494)
+		this.getOrCreateTagBuilder(BlockTags.field_15494)
 			.add(Blocks.field_10149, Blocks.field_10521, Blocks.field_10352, Blocks.field_10627, Blocks.field_10232, Blocks.field_10403);
-		this.method_10512(BlockTags.field_15502)
+		this.getOrCreateTagBuilder(BlockTags.field_15502)
 			.add(Blocks.field_10563, Blocks.field_10569, Blocks.field_10408, Blocks.field_10122, Blocks.field_10256, Blocks.field_10616);
-		this.method_10512(BlockTags.field_15468)
+		this.getOrCreateTagBuilder(BlockTags.field_15468)
 			.add(Blocks.field_10119, Blocks.field_10071, Blocks.field_10257, Blocks.field_10617, Blocks.field_10031, Blocks.field_10500);
-		this.method_10512(BlockTags.field_17619)
+		this.getOrCreateTagBuilder(BlockTags.field_17619)
 			.add(Blocks.field_10620, Blocks.field_10144, Blocks.field_10132, Blocks.field_10020, Blocks.field_10299, Blocks.field_10319);
-		this.method_10512(BlockTags.field_15495).add(BlockTags.field_15494).add(Blocks.field_9973);
-		this.method_10512(BlockTags.field_15462)
+		this.getOrCreateTagBuilder(BlockTags.field_15495).add(BlockTags.field_15494).add(Blocks.field_9973);
+		this.getOrCreateTagBuilder(BlockTags.field_15462)
 			.add(Blocks.field_10394, Blocks.field_10217, Blocks.field_10575, Blocks.field_10276, Blocks.field_10385, Blocks.field_10160);
-		this.method_10512(BlockTags.field_15485).add(Blocks.field_10010, Blocks.field_10178, Blocks.field_10244, Blocks.field_10374);
-		this.method_10512(BlockTags.field_15482).add(Blocks.field_10431, Blocks.field_10126, Blocks.field_10519, Blocks.field_10250);
-		this.method_10512(BlockTags.field_15458).add(Blocks.field_10533, Blocks.field_9999, Blocks.field_10622, Blocks.field_10103);
-		this.method_10512(BlockTags.field_15498).add(Blocks.field_10511, Blocks.field_10307, Blocks.field_10366, Blocks.field_10204);
-		this.method_10512(BlockTags.field_15474).add(Blocks.field_10306, Blocks.field_10303, Blocks.field_10254, Blocks.field_10084);
-		this.method_10512(BlockTags.field_15489).add(Blocks.field_10037, Blocks.field_10155, Blocks.field_10436, Blocks.field_10558);
-		this.method_10512(BlockTags.field_15475)
+		this.getOrCreateTagBuilder(BlockTags.field_15485).add(Blocks.field_10010, Blocks.field_10178, Blocks.field_10244, Blocks.field_10374);
+		this.getOrCreateTagBuilder(BlockTags.field_15482).add(Blocks.field_10431, Blocks.field_10126, Blocks.field_10519, Blocks.field_10250);
+		this.getOrCreateTagBuilder(BlockTags.field_15458).add(Blocks.field_10533, Blocks.field_9999, Blocks.field_10622, Blocks.field_10103);
+		this.getOrCreateTagBuilder(BlockTags.field_15498).add(Blocks.field_10511, Blocks.field_10307, Blocks.field_10366, Blocks.field_10204);
+		this.getOrCreateTagBuilder(BlockTags.field_15474).add(Blocks.field_10306, Blocks.field_10303, Blocks.field_10254, Blocks.field_10084);
+		this.getOrCreateTagBuilder(BlockTags.field_15489).add(Blocks.field_10037, Blocks.field_10155, Blocks.field_10436, Blocks.field_10558);
+		this.getOrCreateTagBuilder(BlockTags.field_15475)
 			.add(BlockTags.field_15485)
 			.add(BlockTags.field_15482)
 			.add(BlockTags.field_15458)
 			.add(BlockTags.field_15498)
 			.add(BlockTags.field_15474)
 			.add(BlockTags.field_15489);
-		this.method_10512(BlockTags.field_15486).add(Blocks.field_10535, Blocks.field_10105, Blocks.field_10414);
-		this.method_10512(BlockTags.field_15480)
+		this.getOrCreateTagBuilder(BlockTags.field_15486).add(Blocks.field_10535, Blocks.field_10105, Blocks.field_10414);
+		this.getOrCreateTagBuilder(BlockTags.field_15480)
 			.add(
 				Blocks.field_10182,
 				Blocks.field_10449,
@@ -101,7 +101,7 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10548,
 				Blocks.field_10606
 			);
-		this.method_10512(BlockTags.field_15460)
+		this.getOrCreateTagBuilder(BlockTags.field_15460)
 			.add(BlockTags.field_15480)
 			.add(
 				Blocks.field_10219,
@@ -122,7 +122,7 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10402,
 				Blocks.field_10515
 			);
-		this.method_10512(BlockTags.field_15470)
+		this.getOrCreateTagBuilder(BlockTags.field_15470)
 			.add(
 				Blocks.field_10495,
 				Blocks.field_10151,
@@ -151,7 +151,7 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_9998,
 				Blocks.field_10586
 			);
-		this.method_10512(BlockTags.field_15501)
+		this.getOrCreateTagBuilder(BlockTags.field_15501)
 			.add(
 				Blocks.field_10154,
 				Blocks.field_10045,
@@ -186,9 +186,9 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10279,
 				Blocks.field_10537
 			);
-		this.method_10512(BlockTags.field_15477)
+		this.getOrCreateTagBuilder(BlockTags.field_15477)
 			.add(Blocks.field_10484, Blocks.field_10332, Blocks.field_10592, Blocks.field_10026, Blocks.field_10397, Blocks.field_10470);
-		this.method_10512(BlockTags.field_15459)
+		this.getOrCreateTagBuilder(BlockTags.field_15459)
 			.add(
 				Blocks.field_10563,
 				Blocks.field_10596,
@@ -222,7 +222,7 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_9994,
 				Blocks.field_10216
 			);
-		this.method_10512(BlockTags.field_15469)
+		this.getOrCreateTagBuilder(BlockTags.field_15469)
 			.add(
 				Blocks.field_10454,
 				Blocks.field_10136,
@@ -260,7 +260,7 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_18890,
 				Blocks.field_18891
 			);
-		this.method_10512(BlockTags.field_15504)
+		this.getOrCreateTagBuilder(BlockTags.field_15504)
 			.add(
 				Blocks.field_10625,
 				Blocks.field_9990,
@@ -277,19 +277,19 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10001,
 				Blocks.field_10517
 			);
-		this.method_10512(BlockTags.field_15483).add(Blocks.field_10125, Blocks.field_10339, Blocks.field_10134, Blocks.field_10618, Blocks.field_10169);
-		this.method_10512(BlockTags.field_15488)
+		this.getOrCreateTagBuilder(BlockTags.field_15483).add(Blocks.field_10125, Blocks.field_10339, Blocks.field_10134, Blocks.field_10618, Blocks.field_10169);
+		this.getOrCreateTagBuilder(BlockTags.field_15488)
 			.add(BlockTags.field_15483)
 			.add(Blocks.field_10053, Blocks.field_10079, Blocks.field_10427, Blocks.field_10551, Blocks.field_10005);
-		this.method_10512(BlockTags.field_15476).add(Blocks.field_10584, Blocks.field_10186, Blocks.field_10447, Blocks.field_10498, Blocks.field_9976);
-		this.method_10512(BlockTags.field_15466).add(Blocks.field_10102, Blocks.field_10534);
-		this.method_10512(BlockTags.field_15463).add(Blocks.field_10167, Blocks.field_10425, Blocks.field_10025, Blocks.field_10546);
-		this.method_10512(BlockTags.field_15461).add(Blocks.field_10309, Blocks.field_10629, Blocks.field_10000, Blocks.field_10516, Blocks.field_10464);
-		this.method_10512(BlockTags.field_15467).add(Blocks.field_10295, Blocks.field_10225, Blocks.field_10384, Blocks.field_10110);
-		this.method_10512(BlockTags.field_15478).add(Blocks.field_10219, Blocks.field_10520);
-		this.method_10512(BlockTags.field_15503)
+		this.getOrCreateTagBuilder(BlockTags.field_15476).add(Blocks.field_10584, Blocks.field_10186, Blocks.field_10447, Blocks.field_10498, Blocks.field_9976);
+		this.getOrCreateTagBuilder(BlockTags.field_15466).add(Blocks.field_10102, Blocks.field_10534);
+		this.getOrCreateTagBuilder(BlockTags.field_15463).add(Blocks.field_10167, Blocks.field_10425, Blocks.field_10025, Blocks.field_10546);
+		this.getOrCreateTagBuilder(BlockTags.field_15461).add(Blocks.field_10309, Blocks.field_10629, Blocks.field_10000, Blocks.field_10516, Blocks.field_10464);
+		this.getOrCreateTagBuilder(BlockTags.field_15467).add(Blocks.field_10295, Blocks.field_10225, Blocks.field_10384, Blocks.field_10110);
+		this.getOrCreateTagBuilder(BlockTags.field_15478).add(Blocks.field_10219, Blocks.field_10520);
+		this.getOrCreateTagBuilder(BlockTags.field_15503)
 			.add(Blocks.field_10335, Blocks.field_10503, Blocks.field_9988, Blocks.field_10035, Blocks.field_10098, Blocks.field_10539);
-		this.method_10512(BlockTags.field_15490)
+		this.getOrCreateTagBuilder(BlockTags.field_15490)
 			.add(
 				Blocks.field_10033,
 				Blocks.field_10087,
@@ -309,28 +309,26 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10272,
 				Blocks.field_9997
 			);
-		this.method_10512(BlockTags.field_15491)
+		this.getOrCreateTagBuilder(BlockTags.field_15491)
 			.add(Blocks.field_10608, Blocks.field_10486, Blocks.field_10246, Blocks.field_10017, Blocks.field_10137, Blocks.field_10323);
-		this.method_10512(BlockTags.field_15487).add(BlockTags.field_15491).add(Blocks.field_10453);
-		this.method_10512(BlockTags.field_15496).add(Blocks.field_10376).add(BlockTags.field_15488).add(BlockTags.field_15476);
-		this.method_10512(BlockTags.field_15464)
+		this.getOrCreateTagBuilder(BlockTags.field_15487).add(BlockTags.field_15491).add(Blocks.field_10453);
+		this.getOrCreateTagBuilder(BlockTags.field_15496).add(Blocks.field_10376).add(BlockTags.field_15488).add(BlockTags.field_15476);
+		this.getOrCreateTagBuilder(BlockTags.field_15497)
+			.add(Blocks.field_10211)
+			.add(Blocks.field_10108)
+			.add(Blocks.field_10255)
+			.add(BlockTags.field_15466)
 			.add(Blocks.field_10566)
 			.add(Blocks.field_10219)
 			.add(Blocks.field_10520)
 			.add(Blocks.field_10253)
 			.add(Blocks.field_10402);
-		this.method_10512(BlockTags.field_15497)
-			.add(Blocks.field_10211)
-			.add(Blocks.field_10108)
-			.add(Blocks.field_10255)
-			.add(BlockTags.field_15466)
-			.add(BlockTags.field_15464);
-		this.method_10512(BlockTags.field_15472)
+		this.getOrCreateTagBuilder(BlockTags.field_15472)
 			.add(Blocks.field_10121, Blocks.field_10411, Blocks.field_10231, Blocks.field_10284, Blocks.field_10544, Blocks.field_10330);
-		this.method_10512(BlockTags.field_15492)
+		this.getOrCreateTagBuilder(BlockTags.field_15492)
 			.add(Blocks.field_10187, Blocks.field_10088, Blocks.field_10391, Blocks.field_10401, Blocks.field_10587, Blocks.field_10265);
-		this.method_10512(BlockTags.field_15500).add(BlockTags.field_15472).add(BlockTags.field_15492);
-		this.method_10512(BlockTags.field_16443)
+		this.getOrCreateTagBuilder(BlockTags.field_15500).add(BlockTags.field_15472).add(BlockTags.field_15492);
+		this.getOrCreateTagBuilder(BlockTags.field_16443)
 			.add(
 				Blocks.field_10069,
 				Blocks.field_10461,
@@ -349,8 +347,8 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10120,
 				Blocks.field_10356
 			);
-		this.method_10512(BlockTags.field_16584).add(BlockTags.field_17619).add(Blocks.field_10364);
-		this.method_10512(BlockTags.field_17753)
+		this.getOrCreateTagBuilder(BlockTags.field_16584).add(BlockTags.field_17619).add(Blocks.field_10364);
+		this.getOrCreateTagBuilder(BlockTags.field_17753)
 			.add(
 				Blocks.field_10499,
 				Blocks.field_9987,
@@ -367,7 +365,7 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_10471,
 				Blocks.field_10576
 			);
-		this.method_10512(BlockTags.field_17754)
+		this.getOrCreateTagBuilder(BlockTags.field_17754)
 			.add(
 				Blocks.field_10499,
 				Blocks.field_9987,
@@ -381,6 +379,33 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 				Blocks.field_16540,
 				Blocks.field_10008
 			);
+		this.getOrCreateTagBuilder(BlockTags.field_20338).add(Blocks.field_10583, Blocks.field_10378, Blocks.field_10003, Blocks.field_10430);
+		this.getOrCreateTagBuilder(BlockTags.field_20339).add(BlockTags.field_15480).add(BlockTags.field_20338);
+		this.getOrCreateTagBuilder(BlockTags.field_20340).add(Blocks.field_20421, Blocks.field_20422);
+		this.getOrCreateTagBuilder(BlockTags.field_20341)
+			.add(Blocks.field_10341, Blocks.field_10609, Blocks.field_10247, Blocks.field_10293, Blocks.field_10168, Blocks.field_9984);
+		this.getOrCreateTagBuilder(BlockTags.field_20342).add(BlockTags.field_20341).add(Blocks.field_16999);
+		this.getOrCreateTagBuilder(BlockTags.field_21490)
+			.add(
+				Blocks.field_10603,
+				Blocks.field_10371,
+				Blocks.field_10605,
+				Blocks.field_10373,
+				Blocks.field_10532,
+				Blocks.field_10140,
+				Blocks.field_10055,
+				Blocks.field_10203,
+				Blocks.field_10320,
+				Blocks.field_10275,
+				Blocks.field_10063,
+				Blocks.field_10407,
+				Blocks.field_10051,
+				Blocks.field_10268,
+				Blocks.field_10068,
+				Blocks.field_10199,
+				Blocks.field_10600
+			);
+		this.getOrCreateTagBuilder(BlockTags.field_21780).add(Blocks.field_10316, Blocks.field_10027, Blocks.field_10613);
 	}
 
 	@Override
@@ -394,7 +419,7 @@ public class BlockTagsProvider extends AbstractTagProvider<Block> {
 	}
 
 	@Override
-	protected void method_10511(TagContainer<Block> tagContainer) {
+	protected void setContainer(TagContainer<Block> tagContainer) {
 		BlockTags.setContainer(tagContainer);
 	}
 }

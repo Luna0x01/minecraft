@@ -4,8 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.Criterions;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -20,12 +18,15 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.LootTables;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Packet;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
@@ -36,42 +37,37 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RayTraceContext;
 import net.minecraft.world.World;
-import net.minecraft.world.loot.LootSupplier;
-import net.minecraft.world.loot.LootTables;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
-import net.minecraft.world.loot.context.LootContextTypes;
 
 public class FishingBobberEntity extends Entity {
 	private static final TrackedData<Integer> HOOK_ENTITY_ID = DataTracker.registerData(FishingBobberEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private boolean field_7176;
-	private int field_7167;
+	private boolean stuckOnBlock;
+	private int removalTimer;
 	private final PlayerEntity owner;
-	private int field_7166;
-	private int field_7173;
-	private int field_7174;
-	private int field_7172;
-	private float field_7169;
+	private int selfHitTimer;
+	private int hookCountdown;
+	private int waitCountdown;
+	private int fishTravelCountdown;
+	private float fishAngle;
 	public Entity hookedEntity;
 	private FishingBobberEntity.State state = FishingBobberEntity.State.field_7180;
-	private final int lureLevel;
 	private final int luckOfTheSeaLevel;
+	private final int lureLevel;
 
 	private FishingBobberEntity(World world, PlayerEntity playerEntity, int i, int j) {
 		super(EntityType.field_6103, world);
 		this.ignoreCameraFrustum = true;
 		this.owner = playerEntity;
 		this.owner.fishHook = this;
-		this.lureLevel = Math.max(0, i);
-		this.luckOfTheSeaLevel = Math.max(0, j);
+		this.luckOfTheSeaLevel = Math.max(0, i);
+		this.lureLevel = Math.max(0, j);
 	}
 
 	public FishingBobberEntity(World world, PlayerEntity playerEntity, double d, double e, double f) {
 		this(world, playerEntity, 0, 0);
-		this.setPosition(d, e, f);
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+		this.updatePosition(d, e, f);
+		this.prevX = this.getX();
+		this.prevY = this.getY();
+		this.prevZ = this.getZ();
 	}
 
 	public FishingBobberEntity(PlayerEntity playerEntity, World world, int i, int j) {
@@ -82,10 +78,10 @@ public class FishingBobberEntity extends Entity {
 		float k = MathHelper.sin(-g * (float) (Math.PI / 180.0) - (float) Math.PI);
 		float l = -MathHelper.cos(-f * (float) (Math.PI / 180.0));
 		float m = MathHelper.sin(-f * (float) (Math.PI / 180.0));
-		double d = this.owner.x - (double)k * 0.3;
-		double e = this.owner.y + (double)this.owner.getStandingEyeHeight();
-		double n = this.owner.z - (double)h * 0.3;
-		this.setPositionAndAngles(d, e, n, g, f);
+		double d = this.owner.getX() - (double)k * 0.3;
+		double e = this.owner.getEyeY();
+		double n = this.owner.getZ() - (double)h * 0.3;
+		this.refreshPositionAndAngles(d, e, n, g, f);
 		Vec3d vec3d = new Vec3d((double)(-k), (double)MathHelper.clamp(-(m / l), -5.0F, 5.0F), (double)(-h));
 		double o = vec3d.length();
 		vec3d = vec3d.multiply(
@@ -116,7 +112,7 @@ public class FishingBobberEntity extends Entity {
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
+	public boolean shouldRender(double d) {
 		double e = 64.0;
 		return d < 4096.0;
 	}
@@ -130,10 +126,10 @@ public class FishingBobberEntity extends Entity {
 		super.tick();
 		if (this.owner == null) {
 			this.remove();
-		} else if (this.world.isClient || !this.method_6959()) {
-			if (this.field_7176) {
-				this.field_7167++;
-				if (this.field_7167 >= 1200) {
+		} else if (this.world.isClient || !this.removeIfInvalid()) {
+			if (this.stuckOnBlock) {
+				this.removalTimer++;
+				if (this.removalTimer >= 1200) {
 					this.remove();
 					return;
 				}
@@ -160,13 +156,13 @@ public class FishingBobberEntity extends Entity {
 				}
 
 				if (!this.world.isClient) {
-					this.method_6958();
+					this.checkForCollision();
 				}
 
-				if (!this.field_7176 && !this.onGround && !this.horizontalCollision) {
-					this.field_7166++;
+				if (!this.stuckOnBlock && !this.onGround && !this.horizontalCollision) {
+					this.selfHitTimer++;
 				} else {
-					this.field_7166 = 0;
+					this.selfHitTimer = 0;
 					this.setVelocity(Vec3d.ZERO);
 				}
 			} else {
@@ -176,10 +172,7 @@ public class FishingBobberEntity extends Entity {
 							this.hookedEntity = null;
 							this.state = FishingBobberEntity.State.field_7180;
 						} else {
-							this.x = this.hookedEntity.x;
-							this.y = this.hookedEntity.getBoundingBox().minY + (double)this.hookedEntity.getHeight() * 0.8;
-							this.z = this.hookedEntity.z;
-							this.setPosition(this.x, this.y, this.z);
+							this.updatePosition(this.hookedEntity.getX(), this.hookedEntity.getBodyY(0.8), this.hookedEntity.getZ());
 						}
 					}
 
@@ -188,14 +181,14 @@ public class FishingBobberEntity extends Entity {
 
 				if (this.state == FishingBobberEntity.State.field_7179) {
 					Vec3d vec3d = this.getVelocity();
-					double d = this.y + vec3d.y - (double)blockPos.getY() - (double)f;
+					double d = this.getY() + vec3d.y - (double)blockPos.getY() - (double)f;
 					if (Math.abs(d) < 0.01) {
 						d += Math.signum(d) * 0.1;
 					}
 
 					this.setVelocity(vec3d.x * 0.9, vec3d.y - d * (double)this.random.nextFloat() * 0.2, vec3d.z * 0.9);
 					if (!this.world.isClient && f > 0.0F) {
-						this.method_6949(blockPos);
+						this.tickFishingLogic(blockPos);
 					}
 				}
 			}
@@ -205,14 +198,14 @@ public class FishingBobberEntity extends Entity {
 			}
 
 			this.move(MovementType.field_6308, this.getVelocity());
-			this.method_6952();
+			this.smoothenMovement();
 			double e = 0.92;
 			this.setVelocity(this.getVelocity().multiply(0.92));
-			this.setPosition(this.x, this.y, this.z);
+			this.refreshPosition();
 		}
 	}
 
-	private boolean method_6959() {
+	private boolean removeIfInvalid() {
 		ItemStack itemStack = this.owner.getMainHandStack();
 		ItemStack itemStack2 = this.owner.getOffHandStack();
 		boolean bl = itemStack.getItem() == Items.field_8378;
@@ -225,7 +218,7 @@ public class FishingBobberEntity extends Entity {
 		}
 	}
 
-	private void method_6952() {
+	private void smoothenMovement() {
 		Vec3d vec3d = this.getVelocity();
 		float f = MathHelper.sqrt(squaredHorizontalLength(vec3d));
 		this.yaw = (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI);
@@ -251,11 +244,11 @@ public class FishingBobberEntity extends Entity {
 		this.yaw = MathHelper.lerp(0.2F, this.prevYaw, this.yaw);
 	}
 
-	private void method_6958() {
+	private void checkForCollision() {
 		HitResult hitResult = ProjectileUtil.getCollision(
 			this,
 			this.getBoundingBox().stretch(this.getVelocity()).expand(1.0),
-			entity -> !entity.isSpectator() && (entity.collides() || entity instanceof ItemEntity) && (entity != this.owner || this.field_7166 >= 5),
+			entity -> !entity.isSpectator() && (entity.collides() || entity instanceof ItemEntity) && (entity != this.owner || this.selfHitTimer >= 5),
 			RayTraceContext.ShapeType.field_17558,
 			true
 		);
@@ -264,7 +257,7 @@ public class FishingBobberEntity extends Entity {
 				this.hookedEntity = ((EntityHitResult)hitResult).getEntity();
 				this.updateHookedEntityId();
 			} else {
-				this.field_7176 = true;
+				this.stuckOnBlock = true;
 			}
 		}
 	}
@@ -273,91 +266,498 @@ public class FishingBobberEntity extends Entity {
 		this.getDataTracker().set(HOOK_ENTITY_ID, this.hookedEntity.getEntityId() + 1);
 	}
 
-	private void method_6949(BlockPos blockPos) {
-		ServerWorld serverWorld = (ServerWorld)this.world;
-		int i = 1;
-		BlockPos blockPos2 = blockPos.up();
-		if (this.random.nextFloat() < 0.25F && this.world.hasRain(blockPos2)) {
-			i++;
-		}
-
-		if (this.random.nextFloat() < 0.5F && !this.world.isSkyVisible(blockPos2)) {
-			i--;
-		}
-
-		if (this.field_7173 > 0) {
-			this.field_7173--;
-			if (this.field_7173 <= 0) {
-				this.field_7174 = 0;
-				this.field_7172 = 0;
-			} else {
-				this.setVelocity(this.getVelocity().add(0.0, -0.2 * (double)this.random.nextFloat() * (double)this.random.nextFloat(), 0.0));
-			}
-		} else if (this.field_7172 > 0) {
-			this.field_7172 -= i;
-			if (this.field_7172 > 0) {
-				this.field_7169 = (float)((double)this.field_7169 + this.random.nextGaussian() * 4.0);
-				float f = this.field_7169 * (float) (Math.PI / 180.0);
-				float g = MathHelper.sin(f);
-				float h = MathHelper.cos(f);
-				double d = this.x + (double)(g * (float)this.field_7172 * 0.1F);
-				double e = (double)((float)MathHelper.floor(this.getBoundingBox().minY) + 1.0F);
-				double j = this.z + (double)(h * (float)this.field_7172 * 0.1F);
-				Block block = serverWorld.getBlockState(new BlockPos(d, e - 1.0, j)).getBlock();
-				if (block == Blocks.field_10382) {
-					if (this.random.nextFloat() < 0.15F) {
-						serverWorld.spawnParticles(ParticleTypes.field_11247, d, e - 0.1F, j, 1, (double)g, 0.1, (double)h, 0.0);
-					}
-
-					float k = g * 0.04F;
-					float l = h * 0.04F;
-					serverWorld.spawnParticles(ParticleTypes.field_11244, d, e, j, 0, (double)l, 0.01, (double)(-k), 1.0);
-					serverWorld.spawnParticles(ParticleTypes.field_11244, d, e, j, 0, (double)(-l), 0.01, (double)k, 1.0);
-				}
-			} else {
-				Vec3d vec3d = this.getVelocity();
-				this.setVelocity(vec3d.x, (double)(-0.4F * MathHelper.nextFloat(this.random, 0.6F, 1.0F)), vec3d.z);
-				this.playSound(SoundEvents.field_14660, 0.25F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
-				double m = this.getBoundingBox().minY + 0.5;
-				serverWorld.spawnParticles(
-					ParticleTypes.field_11247, this.x, m, this.z, (int)(1.0F + this.getWidth() * 20.0F), (double)this.getWidth(), 0.0, (double)this.getWidth(), 0.2F
-				);
-				serverWorld.spawnParticles(
-					ParticleTypes.field_11244, this.x, m, this.z, (int)(1.0F + this.getWidth() * 20.0F), (double)this.getWidth(), 0.0, (double)this.getWidth(), 0.2F
-				);
-				this.field_7173 = MathHelper.nextInt(this.random, 20, 40);
-			}
-		} else if (this.field_7174 > 0) {
-			this.field_7174 -= i;
-			float n = 0.15F;
-			if (this.field_7174 < 20) {
-				n = (float)((double)n + (double)(20 - this.field_7174) * 0.05);
-			} else if (this.field_7174 < 40) {
-				n = (float)((double)n + (double)(40 - this.field_7174) * 0.02);
-			} else if (this.field_7174 < 60) {
-				n = (float)((double)n + (double)(60 - this.field_7174) * 0.01);
-			}
-
-			if (this.random.nextFloat() < n) {
-				float o = MathHelper.nextFloat(this.random, 0.0F, 360.0F) * (float) (Math.PI / 180.0);
-				float p = MathHelper.nextFloat(this.random, 25.0F, 60.0F);
-				double q = this.x + (double)(MathHelper.sin(o) * p * 0.1F);
-				double r = (double)((float)MathHelper.floor(this.getBoundingBox().minY) + 1.0F);
-				double s = this.z + (double)(MathHelper.cos(o) * p * 0.1F);
-				Block block2 = serverWorld.getBlockState(new BlockPos(q, r - 1.0, s)).getBlock();
-				if (block2 == Blocks.field_10382) {
-					serverWorld.spawnParticles(ParticleTypes.field_11202, q, r, s, 2 + this.random.nextInt(2), 0.1F, 0.0, 0.1F, 0.0);
-				}
-			}
-
-			if (this.field_7174 <= 0) {
-				this.field_7169 = MathHelper.nextFloat(this.random, 0.0F, 360.0F);
-				this.field_7172 = MathHelper.nextInt(this.random, 20, 80);
-			}
-		} else {
-			this.field_7174 = MathHelper.nextInt(this.random, 100, 600);
-			this.field_7174 = this.field_7174 - this.luckOfTheSeaLevel * 20 * 5;
-		}
+	private void tickFishingLogic(BlockPos blockPos) {
+		// $VF: Couldn't be decompiled
+		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
+		//
+		// Bytecode:
+		// 000: aload 0
+		// 001: getfield net/minecraft/entity/projectile/FishingBobberEntity.world Lnet/minecraft/world/World;
+		// 004: checkcast net/minecraft/server/world/ServerWorld
+		// 007: astore 2
+		// 008: bipush 1
+		// 009: istore 3
+		// 00a: aload 1
+		// 00b: invokevirtual net/minecraft/util/math/BlockPos.up ()Lnet/minecraft/util/math/BlockPos;
+		// 00e: astore 4
+		// 010: aload 0
+		// 011: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 014: invokevirtual java/util/Random.nextFloat ()F
+		// 017: ldc_w 0.25
+		// 01a: fcmpg
+		// 01b: ifge 02d
+		// 01e: aload 0
+		// 01f: getfield net/minecraft/entity/projectile/FishingBobberEntity.world Lnet/minecraft/world/World;
+		// 022: aload 4
+		// 024: invokevirtual net/minecraft/world/World.hasRain (Lnet/minecraft/util/math/BlockPos;)Z
+		// 027: ifeq 02d
+		// 02a: iinc 3 1
+		// 02d: aload 0
+		// 02e: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 031: invokevirtual java/util/Random.nextFloat ()F
+		// 034: ldc_w 0.5
+		// 037: fcmpg
+		// 038: ifge 04a
+		// 03b: aload 0
+		// 03c: getfield net/minecraft/entity/projectile/FishingBobberEntity.world Lnet/minecraft/world/World;
+		// 03f: aload 4
+		// 041: invokevirtual net/minecraft/world/World.isSkyVisible (Lnet/minecraft/util/math/BlockPos;)Z
+		// 044: ifne 04a
+		// 047: iinc 3 -1
+		// 04a: aload 0
+		// 04b: getfield net/minecraft/entity/projectile/FishingBobberEntity.hookCountdown I
+		// 04e: ifle 094
+		// 051: aload 0
+		// 052: dup
+		// 053: getfield net/minecraft/entity/projectile/FishingBobberEntity.hookCountdown I
+		// 056: bipush 1
+		// 057: isub
+		// 058: putfield net/minecraft/entity/projectile/FishingBobberEntity.hookCountdown I
+		// 05b: aload 0
+		// 05c: getfield net/minecraft/entity/projectile/FishingBobberEntity.hookCountdown I
+		// 05f: ifgt 06f
+		// 062: aload 0
+		// 063: bipush 0
+		// 064: putfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 067: aload 0
+		// 068: bipush 0
+		// 069: putfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 06c: goto 3b0
+		// 06f: aload 0
+		// 070: aload 0
+		// 071: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getVelocity ()Lnet/minecraft/util/math/Vec3d;
+		// 074: dconst_0
+		// 075: ldc2_w -0.2
+		// 078: aload 0
+		// 079: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 07c: invokevirtual java/util/Random.nextFloat ()F
+		// 07f: f2d
+		// 080: dmul
+		// 081: aload 0
+		// 082: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 085: invokevirtual java/util/Random.nextFloat ()F
+		// 088: f2d
+		// 089: dmul
+		// 08a: dconst_0
+		// 08b: invokevirtual net/minecraft/util/math/Vec3d.add (DDD)Lnet/minecraft/util/math/Vec3d;
+		// 08e: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.setVelocity (Lnet/minecraft/util/math/Vec3d;)V
+		// 091: goto 3b0
+		// 094: aload 0
+		// 095: getfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 098: ifle 255
+		// 09b: aload 0
+		// 09c: dup
+		// 09d: getfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 0a0: iload 3
+		// 0a1: isub
+		// 0a2: putfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 0a5: aload 0
+		// 0a6: getfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 0a9: ifle 1a0
+		// 0ac: aload 0
+		// 0ad: dup
+		// 0ae: getfield net/minecraft/entity/projectile/FishingBobberEntity.fishAngle F
+		// 0b1: f2d
+		// 0b2: aload 0
+		// 0b3: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 0b6: invokevirtual java/util/Random.nextGaussian ()D
+		// 0b9: ldc2_w 4.0
+		// 0bc: dmul
+		// 0bd: dadd
+		// 0be: d2f
+		// 0bf: putfield net/minecraft/entity/projectile/FishingBobberEntity.fishAngle F
+		// 0c2: aload 0
+		// 0c3: getfield net/minecraft/entity/projectile/FishingBobberEntity.fishAngle F
+		// 0c6: ldc 0.017453292
+		// 0c8: fmul
+		// 0c9: fstore 5
+		// 0cb: fload 5
+		// 0cd: invokestatic net/minecraft/util/math/MathHelper.sin (F)F
+		// 0d0: fstore 6
+		// 0d2: fload 5
+		// 0d4: invokestatic net/minecraft/util/math/MathHelper.cos (F)F
+		// 0d7: fstore 7
+		// 0d9: aload 0
+		// 0da: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getX ()D
+		// 0dd: fload 6
+		// 0df: aload 0
+		// 0e0: getfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 0e3: i2f
+		// 0e4: fmul
+		// 0e5: ldc_w 0.1
+		// 0e8: fmul
+		// 0e9: f2d
+		// 0ea: dadd
+		// 0eb: dstore 8
+		// 0ed: aload 0
+		// 0ee: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getY ()D
+		// 0f1: invokestatic net/minecraft/util/math/MathHelper.floor (D)I
+		// 0f4: i2f
+		// 0f5: fconst_1
+		// 0f6: fadd
+		// 0f7: f2d
+		// 0f8: dstore 10
+		// 0fa: aload 0
+		// 0fb: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getZ ()D
+		// 0fe: fload 7
+		// 100: aload 0
+		// 101: getfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 104: i2f
+		// 105: fmul
+		// 106: ldc_w 0.1
+		// 109: fmul
+		// 10a: f2d
+		// 10b: dadd
+		// 10c: dstore 12
+		// 10e: aload 2
+		// 10f: new net/minecraft/util/math/BlockPos
+		// 112: dup
+		// 113: dload 8
+		// 115: dload 10
+		// 117: dconst_1
+		// 118: dsub
+		// 119: dload 12
+		// 11b: invokespecial net/minecraft/util/math/BlockPos.<init> (DDD)V
+		// 11e: invokevirtual net/minecraft/server/world/ServerWorld.getBlockState (Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;
+		// 121: invokevirtual net/minecraft/block/BlockState.getBlock ()Lnet/minecraft/block/Block;
+		// 124: astore 14
+		// 126: aload 14
+		// 128: getstatic net/minecraft/block/Blocks.field_10382 Lnet/minecraft/block/Block;
+		// 12b: if_acmpne 19d
+		// 12e: aload 0
+		// 12f: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 132: invokevirtual java/util/Random.nextFloat ()F
+		// 135: ldc_w 0.15
+		// 138: fcmpg
+		// 139: ifge 159
+		// 13c: aload 2
+		// 13d: getstatic net/minecraft/particle/ParticleTypes.field_11247 Lnet/minecraft/particle/DefaultParticleType;
+		// 140: dload 8
+		// 142: dload 10
+		// 144: ldc2_w 0.10000000149011612
+		// 147: dsub
+		// 148: dload 12
+		// 14a: bipush 1
+		// 14b: fload 6
+		// 14d: f2d
+		// 14e: ldc2_w 0.1
+		// 151: fload 7
+		// 153: f2d
+		// 154: dconst_0
+		// 155: invokevirtual net/minecraft/server/world/ServerWorld.spawnParticles (Lnet/minecraft/particle/ParticleEffect;DDDIDDDD)I
+		// 158: pop
+		// 159: fload 6
+		// 15b: ldc_w 0.04
+		// 15e: fmul
+		// 15f: fstore 15
+		// 161: fload 7
+		// 163: ldc_w 0.04
+		// 166: fmul
+		// 167: fstore 16
+		// 169: aload 2
+		// 16a: getstatic net/minecraft/particle/ParticleTypes.field_11244 Lnet/minecraft/particle/DefaultParticleType;
+		// 16d: dload 8
+		// 16f: dload 10
+		// 171: dload 12
+		// 173: bipush 0
+		// 174: fload 16
+		// 176: f2d
+		// 177: ldc2_w 0.01
+		// 17a: fload 15
+		// 17c: fneg
+		// 17d: f2d
+		// 17e: dconst_1
+		// 17f: invokevirtual net/minecraft/server/world/ServerWorld.spawnParticles (Lnet/minecraft/particle/ParticleEffect;DDDIDDDD)I
+		// 182: pop
+		// 183: aload 2
+		// 184: getstatic net/minecraft/particle/ParticleTypes.field_11244 Lnet/minecraft/particle/DefaultParticleType;
+		// 187: dload 8
+		// 189: dload 10
+		// 18b: dload 12
+		// 18d: bipush 0
+		// 18e: fload 16
+		// 190: fneg
+		// 191: f2d
+		// 192: ldc2_w 0.01
+		// 195: fload 15
+		// 197: f2d
+		// 198: dconst_1
+		// 199: invokevirtual net/minecraft/server/world/ServerWorld.spawnParticles (Lnet/minecraft/particle/ParticleEffect;DDDIDDDD)I
+		// 19c: pop
+		// 19d: goto 3b0
+		// 1a0: aload 0
+		// 1a1: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getVelocity ()Lnet/minecraft/util/math/Vec3d;
+		// 1a4: astore 5
+		// 1a6: aload 0
+		// 1a7: aload 5
+		// 1a9: getfield net/minecraft/util/math/Vec3d.x D
+		// 1ac: ldc_w -0.4
+		// 1af: aload 0
+		// 1b0: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 1b3: ldc_w 0.6
+		// 1b6: fconst_1
+		// 1b7: invokestatic net/minecraft/util/math/MathHelper.nextFloat (Ljava/util/Random;FF)F
+		// 1ba: fmul
+		// 1bb: f2d
+		// 1bc: aload 5
+		// 1be: getfield net/minecraft/util/math/Vec3d.z D
+		// 1c1: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.setVelocity (DDD)V
+		// 1c4: aload 0
+		// 1c5: getstatic net/minecraft/sound/SoundEvents.field_14660 Lnet/minecraft/sound/SoundEvent;
+		// 1c8: ldc_w 0.25
+		// 1cb: fconst_1
+		// 1cc: aload 0
+		// 1cd: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 1d0: invokevirtual java/util/Random.nextFloat ()F
+		// 1d3: aload 0
+		// 1d4: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 1d7: invokevirtual java/util/Random.nextFloat ()F
+		// 1da: fsub
+		// 1db: ldc_w 0.4
+		// 1de: fmul
+		// 1df: fadd
+		// 1e0: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.playSound (Lnet/minecraft/sound/SoundEvent;FF)V
+		// 1e3: aload 0
+		// 1e4: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getY ()D
+		// 1e7: ldc2_w 0.5
+		// 1ea: dadd
+		// 1eb: dstore 6
+		// 1ed: aload 2
+		// 1ee: getstatic net/minecraft/particle/ParticleTypes.field_11247 Lnet/minecraft/particle/DefaultParticleType;
+		// 1f1: aload 0
+		// 1f2: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getX ()D
+		// 1f5: dload 6
+		// 1f7: aload 0
+		// 1f8: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getZ ()D
+		// 1fb: fconst_1
+		// 1fc: aload 0
+		// 1fd: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getWidth ()F
+		// 200: ldc_w 20.0
+		// 203: fmul
+		// 204: fadd
+		// 205: f2i
+		// 206: aload 0
+		// 207: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getWidth ()F
+		// 20a: f2d
+		// 20b: dconst_0
+		// 20c: aload 0
+		// 20d: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getWidth ()F
+		// 210: f2d
+		// 211: ldc2_w 0.20000000298023224
+		// 214: invokevirtual net/minecraft/server/world/ServerWorld.spawnParticles (Lnet/minecraft/particle/ParticleEffect;DDDIDDDD)I
+		// 217: pop
+		// 218: aload 2
+		// 219: getstatic net/minecraft/particle/ParticleTypes.field_11244 Lnet/minecraft/particle/DefaultParticleType;
+		// 21c: aload 0
+		// 21d: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getX ()D
+		// 220: dload 6
+		// 222: aload 0
+		// 223: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getZ ()D
+		// 226: fconst_1
+		// 227: aload 0
+		// 228: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getWidth ()F
+		// 22b: ldc_w 20.0
+		// 22e: fmul
+		// 22f: fadd
+		// 230: f2i
+		// 231: aload 0
+		// 232: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getWidth ()F
+		// 235: f2d
+		// 236: dconst_0
+		// 237: aload 0
+		// 238: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getWidth ()F
+		// 23b: f2d
+		// 23c: ldc2_w 0.20000000298023224
+		// 23f: invokevirtual net/minecraft/server/world/ServerWorld.spawnParticles (Lnet/minecraft/particle/ParticleEffect;DDDIDDDD)I
+		// 242: pop
+		// 243: aload 0
+		// 244: aload 0
+		// 245: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 248: bipush 20
+		// 24a: bipush 40
+		// 24c: invokestatic net/minecraft/util/math/MathHelper.nextInt (Ljava/util/Random;II)I
+		// 24f: putfield net/minecraft/entity/projectile/FishingBobberEntity.hookCountdown I
+		// 252: goto 3b0
+		// 255: aload 0
+		// 256: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 259: ifle 38e
+		// 25c: aload 0
+		// 25d: dup
+		// 25e: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 261: iload 3
+		// 262: isub
+		// 263: putfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 266: ldc_w 0.15
+		// 269: fstore 5
+		// 26b: aload 0
+		// 26c: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 26f: bipush 20
+		// 271: if_icmpge 28a
+		// 274: fload 5
+		// 276: f2d
+		// 277: bipush 20
+		// 279: aload 0
+		// 27a: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 27d: isub
+		// 27e: i2d
+		// 27f: ldc2_w 0.05
+		// 282: dmul
+		// 283: dadd
+		// 284: d2f
+		// 285: fstore 5
+		// 287: goto 2c5
+		// 28a: aload 0
+		// 28b: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 28e: bipush 40
+		// 290: if_icmpge 2a9
+		// 293: fload 5
+		// 295: f2d
+		// 296: bipush 40
+		// 298: aload 0
+		// 299: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 29c: isub
+		// 29d: i2d
+		// 29e: ldc2_w 0.02
+		// 2a1: dmul
+		// 2a2: dadd
+		// 2a3: d2f
+		// 2a4: fstore 5
+		// 2a6: goto 2c5
+		// 2a9: aload 0
+		// 2aa: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 2ad: bipush 60
+		// 2af: if_icmpge 2c5
+		// 2b2: fload 5
+		// 2b4: f2d
+		// 2b5: bipush 60
+		// 2b7: aload 0
+		// 2b8: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 2bb: isub
+		// 2bc: i2d
+		// 2bd: ldc2_w 0.01
+		// 2c0: dmul
+		// 2c1: dadd
+		// 2c2: d2f
+		// 2c3: fstore 5
+		// 2c5: aload 0
+		// 2c6: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 2c9: invokevirtual java/util/Random.nextFloat ()F
+		// 2cc: fload 5
+		// 2ce: fcmpg
+		// 2cf: ifge 366
+		// 2d2: aload 0
+		// 2d3: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 2d6: fconst_0
+		// 2d7: ldc_w 360.0
+		// 2da: invokestatic net/minecraft/util/math/MathHelper.nextFloat (Ljava/util/Random;FF)F
+		// 2dd: ldc 0.017453292
+		// 2df: fmul
+		// 2e0: fstore 6
+		// 2e2: aload 0
+		// 2e3: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 2e6: ldc_w 25.0
+		// 2e9: ldc_w 60.0
+		// 2ec: invokestatic net/minecraft/util/math/MathHelper.nextFloat (Ljava/util/Random;FF)F
+		// 2ef: fstore 7
+		// 2f1: aload 0
+		// 2f2: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getX ()D
+		// 2f5: fload 6
+		// 2f7: invokestatic net/minecraft/util/math/MathHelper.sin (F)F
+		// 2fa: fload 7
+		// 2fc: fmul
+		// 2fd: ldc_w 0.1
+		// 300: fmul
+		// 301: f2d
+		// 302: dadd
+		// 303: dstore 8
+		// 305: aload 0
+		// 306: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getY ()D
+		// 309: invokestatic net/minecraft/util/math/MathHelper.floor (D)I
+		// 30c: i2f
+		// 30d: fconst_1
+		// 30e: fadd
+		// 30f: f2d
+		// 310: dstore 10
+		// 312: aload 0
+		// 313: invokevirtual net/minecraft/entity/projectile/FishingBobberEntity.getZ ()D
+		// 316: fload 6
+		// 318: invokestatic net/minecraft/util/math/MathHelper.cos (F)F
+		// 31b: fload 7
+		// 31d: fmul
+		// 31e: ldc_w 0.1
+		// 321: fmul
+		// 322: f2d
+		// 323: dadd
+		// 324: dstore 12
+		// 326: aload 2
+		// 327: new net/minecraft/util/math/BlockPos
+		// 32a: dup
+		// 32b: dload 8
+		// 32d: dload 10
+		// 32f: dconst_1
+		// 330: dsub
+		// 331: dload 12
+		// 333: invokespecial net/minecraft/util/math/BlockPos.<init> (DDD)V
+		// 336: invokevirtual net/minecraft/server/world/ServerWorld.getBlockState (Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;
+		// 339: invokevirtual net/minecraft/block/BlockState.getBlock ()Lnet/minecraft/block/Block;
+		// 33c: astore 14
+		// 33e: aload 14
+		// 340: getstatic net/minecraft/block/Blocks.field_10382 Lnet/minecraft/block/Block;
+		// 343: if_acmpne 366
+		// 346: aload 2
+		// 347: getstatic net/minecraft/particle/ParticleTypes.field_11202 Lnet/minecraft/particle/DefaultParticleType;
+		// 34a: dload 8
+		// 34c: dload 10
+		// 34e: dload 12
+		// 350: bipush 2
+		// 351: aload 0
+		// 352: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 355: bipush 2
+		// 356: invokevirtual java/util/Random.nextInt (I)I
+		// 359: iadd
+		// 35a: ldc2_w 0.10000000149011612
+		// 35d: dconst_0
+		// 35e: ldc2_w 0.10000000149011612
+		// 361: dconst_0
+		// 362: invokevirtual net/minecraft/server/world/ServerWorld.spawnParticles (Lnet/minecraft/particle/ParticleEffect;DDDIDDDD)I
+		// 365: pop
+		// 366: aload 0
+		// 367: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 36a: ifgt 38b
+		// 36d: aload 0
+		// 36e: aload 0
+		// 36f: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 372: fconst_0
+		// 373: ldc_w 360.0
+		// 376: invokestatic net/minecraft/util/math/MathHelper.nextFloat (Ljava/util/Random;FF)F
+		// 379: putfield net/minecraft/entity/projectile/FishingBobberEntity.fishAngle F
+		// 37c: aload 0
+		// 37d: aload 0
+		// 37e: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 381: bipush 20
+		// 383: bipush 80
+		// 385: invokestatic net/minecraft/util/math/MathHelper.nextInt (Ljava/util/Random;II)I
+		// 388: putfield net/minecraft/entity/projectile/FishingBobberEntity.fishTravelCountdown I
+		// 38b: goto 3b0
+		// 38e: aload 0
+		// 38f: aload 0
+		// 390: getfield net/minecraft/entity/projectile/FishingBobberEntity.random Ljava/util/Random;
+		// 393: bipush 100
+		// 395: sipush 600
+		// 398: invokestatic net/minecraft/util/math/MathHelper.nextInt (Ljava/util/Random;II)I
+		// 39b: putfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 39e: aload 0
+		// 39f: dup
+		// 3a0: getfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 3a3: aload 0
+		// 3a4: getfield net/minecraft/entity/projectile/FishingBobberEntity.lureLevel I
+		// 3a7: bipush 20
+		// 3a9: imul
+		// 3aa: bipush 5
+		// 3ab: imul
+		// 3ac: isub
+		// 3ad: putfield net/minecraft/entity/projectile/FishingBobberEntity.waitCountdown I
+		// 3b0: return
 	}
 
 	@Override
@@ -368,33 +768,35 @@ public class FishingBobberEntity extends Entity {
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 	}
 
-	public int method_6957(ItemStack itemStack) {
+	public int use(ItemStack itemStack) {
 		if (!this.world.isClient && this.owner != null) {
 			int i = 0;
 			if (this.hookedEntity != null) {
-				this.method_6954();
-				Criterions.FISHING_ROD_HOOKED.handle((ServerPlayerEntity)this.owner, itemStack, this, Collections.emptyList());
+				this.pullHookedEntity();
+				Criterions.FISHING_ROD_HOOKED.trigger((ServerPlayerEntity)this.owner, itemStack, this, Collections.emptyList());
 				this.world.sendEntityStatus(this, (byte)31);
 				i = this.hookedEntity instanceof ItemEntity ? 3 : 5;
-			} else if (this.field_7173 > 0) {
+			} else if (this.hookCountdown > 0) {
 				LootContext.Builder builder = new LootContext.Builder((ServerWorld)this.world)
 					.put(LootContextParameters.field_1232, new BlockPos(this))
 					.put(LootContextParameters.field_1229, itemStack)
 					.setRandom(this.random)
-					.setLuck((float)this.lureLevel + this.owner.getLuck());
-				LootSupplier lootSupplier = this.world.getServer().getLootManager().getSupplier(LootTables.field_353);
-				List<ItemStack> list = lootSupplier.getDrops(builder.build(LootContextTypes.field_1176));
-				Criterions.FISHING_ROD_HOOKED.handle((ServerPlayerEntity)this.owner, itemStack, this, list);
+					.setLuck((float)this.luckOfTheSeaLevel + this.owner.getLuck());
+				LootTable lootTable = this.world.getServer().getLootManager().getSupplier(LootTables.field_353);
+				List<ItemStack> list = lootTable.getDrops(builder.build(LootContextTypes.field_1176));
+				Criterions.FISHING_ROD_HOOKED.trigger((ServerPlayerEntity)this.owner, itemStack, this, list);
 
 				for (ItemStack itemStack2 : list) {
-					ItemEntity itemEntity = new ItemEntity(this.world, this.x, this.y, this.z, itemStack2);
-					double d = this.owner.x - this.x;
-					double e = this.owner.y - this.y;
-					double f = this.owner.z - this.z;
+					ItemEntity itemEntity = new ItemEntity(this.world, this.getX(), this.getY(), this.getZ(), itemStack2);
+					double d = this.owner.getX() - this.getX();
+					double e = this.owner.getY() - this.getY();
+					double f = this.owner.getZ() - this.getZ();
 					double g = 0.1;
 					itemEntity.setVelocity(d * 0.1, e * 0.1 + Math.sqrt(Math.sqrt(d * d + e * e + f * f)) * 0.08, f * 0.1);
 					this.world.spawnEntity(itemEntity);
-					this.owner.world.spawnEntity(new ExperienceOrbEntity(this.owner.world, this.owner.x, this.owner.y + 0.5, this.owner.z + 0.5, this.random.nextInt(6) + 1));
+					this.owner
+						.world
+						.spawnEntity(new ExperienceOrbEntity(this.owner.world, this.owner.getX(), this.owner.getY() + 0.5, this.owner.getZ() + 0.5, this.random.nextInt(6) + 1));
 					if (itemStack2.getItem().isIn(ItemTags.field_15527)) {
 						this.owner.increaseStat(Stats.field_15391, 1);
 					}
@@ -403,7 +805,7 @@ public class FishingBobberEntity extends Entity {
 				i = 1;
 			}
 
-			if (this.field_7176) {
+			if (this.stuckOnBlock) {
 				i = 2;
 			}
 
@@ -417,15 +819,15 @@ public class FishingBobberEntity extends Entity {
 	@Override
 	public void handleStatus(byte b) {
 		if (b == 31 && this.world.isClient && this.hookedEntity instanceof PlayerEntity && ((PlayerEntity)this.hookedEntity).isMainPlayer()) {
-			this.method_6954();
+			this.pullHookedEntity();
 		}
 
 		super.handleStatus(b);
 	}
 
-	protected void method_6954() {
+	protected void pullHookedEntity() {
 		if (this.owner != null) {
-			Vec3d vec3d = new Vec3d(this.owner.x - this.x, this.owner.y - this.y, this.owner.z - this.z).multiply(0.1);
+			Vec3d vec3d = new Vec3d(this.owner.getX() - this.getX(), this.owner.getY() - this.getY(), this.owner.getZ() - this.getZ()).multiply(0.1);
 			this.hookedEntity.setVelocity(this.hookedEntity.getVelocity().add(vec3d));
 		}
 	}

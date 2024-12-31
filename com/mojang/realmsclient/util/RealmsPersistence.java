@@ -31,7 +31,7 @@ public class RealmsPersistence {
 
 	public static class RealmsPersistenceData {
 		public String newsLink;
-		public boolean hasUnreadNews = false;
+		public boolean hasUnreadNews;
 
 		private RealmsPersistenceData() {
 		}

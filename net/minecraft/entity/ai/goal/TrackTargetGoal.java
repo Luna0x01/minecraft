@@ -118,7 +118,7 @@ public abstract class TrackTargetGoal extends Goal {
 	}
 
 	private boolean canNavigateToEntity(LivingEntity livingEntity) {
-		this.checkCanNavigateCooldown = 10 + this.mob.getRand().nextInt(5);
+		this.checkCanNavigateCooldown = 10 + this.mob.getRandom().nextInt(5);
 		Path path = this.mob.getNavigation().findPathTo(livingEntity, 0);
 		if (path == null) {
 			return false;
@@ -127,8 +127,8 @@ public abstract class TrackTargetGoal extends Goal {
 			if (pathNode == null) {
 				return false;
 			} else {
-				int i = pathNode.x - MathHelper.floor(livingEntity.x);
-				int j = pathNode.z - MathHelper.floor(livingEntity.z);
+				int i = pathNode.x - MathHelper.floor(livingEntity.getX());
+				int j = pathNode.z - MathHelper.floor(livingEntity.getZ());
 				return (double)(i * i + j * j) <= 2.25;
 			}
 		}

@@ -7,12 +7,12 @@ import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public abstract class StructureProcessor {
 	@Nullable
 	public abstract Structure.StructureBlockInfo process(
-		ViewableWorld viewableWorld,
+		WorldView worldView,
 		BlockPos blockPos,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,
@@ -29,7 +29,7 @@ public abstract class StructureProcessor {
 			dynamicOps.mergeInto(
 				this.method_16666(dynamicOps).getValue(),
 				dynamicOps.createString("processor_type"),
-				dynamicOps.createString(Registry.STRUCTURE_PROCESSOR.getId(this.getType()).toString())
+				dynamicOps.createString(Registry.field_16794.getId(this.getType()).toString())
 			)
 		);
 	}

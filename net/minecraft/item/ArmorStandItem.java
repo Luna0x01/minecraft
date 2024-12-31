@@ -40,15 +40,17 @@ public class ArmorStandItem extends Item {
 				} else {
 					ItemStack itemStack = itemUsageContext.getStack();
 					if (!world.isClient) {
-						world.clearBlockState(blockPos, false);
-						world.clearBlockState(blockPos2, false);
+						world.removeBlock(blockPos, false);
+						world.removeBlock(blockPos2, false);
 						ArmorStandEntity armorStandEntity = new ArmorStandEntity(world, d + 0.5, e, f + 0.5);
 						float g = (float)MathHelper.floor((MathHelper.wrapDegrees(itemUsageContext.getPlayerYaw() - 180.0F) + 22.5F) / 45.0F) * 45.0F;
-						armorStandEntity.setPositionAndAngles(d + 0.5, e, f + 0.5, g, 0.0F);
+						armorStandEntity.refreshPositionAndAngles(d + 0.5, e, f + 0.5, g, 0.0F);
 						this.setRotations(armorStandEntity, world.random);
 						EntityType.loadFromEntityTag(world, itemUsageContext.getPlayer(), armorStandEntity, itemStack.getTag());
 						world.spawnEntity(armorStandEntity);
-						world.playSound(null, armorStandEntity.x, armorStandEntity.y, armorStandEntity.z, SoundEvents.field_14969, SoundCategory.field_15245, 0.75F, 0.8F);
+						world.playSound(
+							null, armorStandEntity.getX(), armorStandEntity.getY(), armorStandEntity.getZ(), SoundEvents.field_14969, SoundCategory.field_15245, 0.75F, 0.8F
+						);
 					}
 
 					itemStack.decrement(1);

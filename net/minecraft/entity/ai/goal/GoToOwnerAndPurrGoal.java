@@ -5,7 +5,7 @@ import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class GoToOwnerAndPurrGoal extends MoveToTargetPosGoal {
 	private final CatEntity cat;
@@ -51,7 +51,7 @@ public class GoToOwnerAndPurrGoal extends MoveToTargetPosGoal {
 	}
 
 	@Override
-	protected boolean isTargetPos(ViewableWorld viewableWorld, BlockPos blockPos) {
-		return viewableWorld.isAir(blockPos.up()) && viewableWorld.getBlockState(blockPos).getBlock().matches(BlockTags.field_16443);
+	protected boolean isTargetPos(WorldView worldView, BlockPos blockPos) {
+		return worldView.isAir(blockPos.up()) && worldView.getBlockState(blockPos).getBlock().matches(BlockTags.field_16443);
 	}
 }

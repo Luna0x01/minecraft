@@ -1,92 +1,70 @@
 package net.minecraft.client.render.entity.model;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class ChickenEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid head;
-	private final Cuboid field_3346;
-	private final Cuboid field_3345;
-	private final Cuboid field_3343;
-	private final Cuboid field_3341;
-	private final Cuboid field_3347;
-	private final Cuboid field_3340;
-	private final Cuboid field_3342;
+public class ChickenEntityModel<T extends Entity> extends AnimalModel<T> {
+	private final ModelPart head;
+	private final ModelPart torso;
+	private final ModelPart rightLeg;
+	private final ModelPart leftLeg;
+	private final ModelPart rightWing;
+	private final ModelPart leftWing;
+	private final ModelPart beak;
+	private final ModelPart wattle;
 
 	public ChickenEntityModel() {
 		int i = 16;
-		this.head = new Cuboid(this, 0, 0);
-		this.head.addBox(-2.0F, -6.0F, -2.0F, 4, 6, 3, 0.0F);
-		this.head.setRotationPoint(0.0F, 15.0F, -4.0F);
-		this.field_3340 = new Cuboid(this, 14, 0);
-		this.field_3340.addBox(-2.0F, -4.0F, -4.0F, 4, 2, 2, 0.0F);
-		this.field_3340.setRotationPoint(0.0F, 15.0F, -4.0F);
-		this.field_3342 = new Cuboid(this, 14, 4);
-		this.field_3342.addBox(-1.0F, -2.0F, -3.0F, 2, 2, 2, 0.0F);
-		this.field_3342.setRotationPoint(0.0F, 15.0F, -4.0F);
-		this.field_3346 = new Cuboid(this, 0, 9);
-		this.field_3346.addBox(-3.0F, -4.0F, -3.0F, 6, 8, 6, 0.0F);
-		this.field_3346.setRotationPoint(0.0F, 16.0F, 0.0F);
-		this.field_3345 = new Cuboid(this, 26, 0);
-		this.field_3345.addBox(-1.0F, 0.0F, -3.0F, 3, 5, 3);
-		this.field_3345.setRotationPoint(-2.0F, 19.0F, 1.0F);
-		this.field_3343 = new Cuboid(this, 26, 0);
-		this.field_3343.addBox(-1.0F, 0.0F, -3.0F, 3, 5, 3);
-		this.field_3343.setRotationPoint(1.0F, 19.0F, 1.0F);
-		this.field_3341 = new Cuboid(this, 24, 13);
-		this.field_3341.addBox(0.0F, 0.0F, -3.0F, 1, 4, 6);
-		this.field_3341.setRotationPoint(-4.0F, 13.0F, 0.0F);
-		this.field_3347 = new Cuboid(this, 24, 13);
-		this.field_3347.addBox(-1.0F, 0.0F, -3.0F, 1, 4, 6);
-		this.field_3347.setRotationPoint(4.0F, 13.0F, 0.0F);
+		this.head = new ModelPart(this, 0, 0);
+		this.head.addCuboid(-2.0F, -6.0F, -2.0F, 4.0F, 6.0F, 3.0F, 0.0F);
+		this.head.setPivot(0.0F, 15.0F, -4.0F);
+		this.beak = new ModelPart(this, 14, 0);
+		this.beak.addCuboid(-2.0F, -4.0F, -4.0F, 4.0F, 2.0F, 2.0F, 0.0F);
+		this.beak.setPivot(0.0F, 15.0F, -4.0F);
+		this.wattle = new ModelPart(this, 14, 4);
+		this.wattle.addCuboid(-1.0F, -2.0F, -3.0F, 2.0F, 2.0F, 2.0F, 0.0F);
+		this.wattle.setPivot(0.0F, 15.0F, -4.0F);
+		this.torso = new ModelPart(this, 0, 9);
+		this.torso.addCuboid(-3.0F, -4.0F, -3.0F, 6.0F, 8.0F, 6.0F, 0.0F);
+		this.torso.setPivot(0.0F, 16.0F, 0.0F);
+		this.rightLeg = new ModelPart(this, 26, 0);
+		this.rightLeg.addCuboid(-1.0F, 0.0F, -3.0F, 3.0F, 5.0F, 3.0F);
+		this.rightLeg.setPivot(-2.0F, 19.0F, 1.0F);
+		this.leftLeg = new ModelPart(this, 26, 0);
+		this.leftLeg.addCuboid(-1.0F, 0.0F, -3.0F, 3.0F, 5.0F, 3.0F);
+		this.leftLeg.setPivot(1.0F, 19.0F, 1.0F);
+		this.rightWing = new ModelPart(this, 24, 13);
+		this.rightWing.addCuboid(0.0F, 0.0F, -3.0F, 1.0F, 4.0F, 6.0F);
+		this.rightWing.setPivot(-4.0F, 13.0F, 0.0F);
+		this.leftWing = new ModelPart(this, 24, 13);
+		this.leftWing.addCuboid(-1.0F, 0.0F, -3.0F, 1.0F, 4.0F, 6.0F);
+		this.leftWing.setPivot(4.0F, 13.0F, 0.0F);
 	}
 
 	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.setAngles(entity, f, g, h, i, j, k);
-		if (this.isChild) {
-			float l = 2.0F;
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef(0.0F, 5.0F * k, 2.0F * k);
-			this.head.render(k);
-			this.field_3340.render(k);
-			this.field_3342.render(k);
-			GlStateManager.popMatrix();
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
-			GlStateManager.translatef(0.0F, 24.0F * k, 0.0F);
-			this.field_3346.render(k);
-			this.field_3345.render(k);
-			this.field_3343.render(k);
-			this.field_3341.render(k);
-			this.field_3347.render(k);
-			GlStateManager.popMatrix();
-		} else {
-			this.head.render(k);
-			this.field_3340.render(k);
-			this.field_3342.render(k);
-			this.field_3346.render(k);
-			this.field_3345.render(k);
-			this.field_3343.render(k);
-			this.field_3341.render(k);
-			this.field_3347.render(k);
-		}
+	protected Iterable<ModelPart> getHeadParts() {
+		return ImmutableList.of(this.head, this.beak, this.wattle);
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
+	protected Iterable<ModelPart> getBodyParts() {
+		return ImmutableList.of(this.torso, this.rightLeg, this.leftLeg, this.rightWing, this.leftWing);
+	}
+
+	@Override
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
 		this.head.pitch = j * (float) (Math.PI / 180.0);
 		this.head.yaw = i * (float) (Math.PI / 180.0);
-		this.field_3340.pitch = this.head.pitch;
-		this.field_3340.yaw = this.head.yaw;
-		this.field_3342.pitch = this.head.pitch;
-		this.field_3342.yaw = this.head.yaw;
-		this.field_3346.pitch = (float) (Math.PI / 2);
-		this.field_3345.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
-		this.field_3343.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.field_3341.roll = h;
-		this.field_3347.roll = -h;
+		this.beak.pitch = this.head.pitch;
+		this.beak.yaw = this.head.yaw;
+		this.wattle.pitch = this.head.pitch;
+		this.wattle.yaw = this.head.yaw;
+		this.torso.pitch = (float) (Math.PI / 2);
+		this.rightLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
+		this.leftLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
+		this.rightWing.roll = h;
+		this.leftWing.roll = -h;
 	}
 }

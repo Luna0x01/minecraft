@@ -4,7 +4,8 @@ import java.util.Random;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.FluidTags;
@@ -13,8 +14,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class CactusBlock extends Block {
 	public static final IntProperty AGE = Properties.AGE_15;
@@ -23,31 +24,31 @@ public class CactusBlock extends Block {
 
 	protected CactusBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(AGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(world, blockPos)) {
-			world.breakBlock(blockPos, true);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
+			serverWorld.breakBlock(blockPos, true);
 		} else {
 			BlockPos blockPos2 = blockPos.up();
-			if (world.isAir(blockPos2)) {
+			if (serverWorld.isAir(blockPos2)) {
 				int i = 1;
 
-				while (world.getBlockState(blockPos.down(i)).getBlock() == this) {
+				while (serverWorld.getBlockState(blockPos.down(i)).getBlock() == this) {
 					i++;
 				}
 
 				if (i < 3) {
 					int j = (Integer)blockState.get(AGE);
 					if (j == 15) {
-						world.setBlockState(blockPos2, this.getDefaultState());
+						serverWorld.setBlockState(blockPos2, this.getDefaultState());
 						BlockState blockState2 = blockState.with(AGE, Integer.valueOf(0));
-						world.setBlockState(blockPos, blockState2, 4);
-						blockState2.neighborUpdate(world, blockPos2, this, blockPos, false);
+						serverWorld.setBlockState(blockPos, blockState2, 4);
+						blockState2.neighborUpdate(serverWorld, blockPos2, this, blockPos, false);
 					} else {
-						world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(j + 1)), 4);
+						serverWorld.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(j + 1)), 4);
 					}
 				}
 			}
@@ -65,11 +66,6 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public boolean isOpaque(BlockState blockState) {
-		return true;
-	}
-
-	@Override
 	public BlockState getStateForNeighborUpdate(
 		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
 	) {
@@ -81,18 +77,18 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		for (Direction direction : Direction.Type.field_11062) {
-			BlockState blockState2 = viewableWorld.getBlockState(blockPos.offset(direction));
+			BlockState blockState2 = worldView.getBlockState(blockPos.offset(direction));
 			Material material = blockState2.getMaterial();
-			if (material.isSolid() || viewableWorld.getFluidState(blockPos.offset(direction)).matches(FluidTags.field_15518)) {
+			if (material.isSolid() || worldView.getFluidState(blockPos.offset(direction)).matches(FluidTags.field_15518)) {
 				return false;
 			}
 		}
 
-		Block block = viewableWorld.getBlockState(blockPos.down()).getBlock();
+		Block block = worldView.getBlockState(blockPos.down()).getBlock();
 		return (block == Blocks.field_10029 || block == Blocks.field_10102 || block == Blocks.field_10534)
-			&& !viewableWorld.getBlockState(blockPos.up()).getMaterial().isLiquid();
+			&& !worldView.getBlockState(blockPos.up()).getMaterial().isLiquid();
 	}
 
 	@Override
@@ -101,12 +97,7 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(AGE);
 	}
 

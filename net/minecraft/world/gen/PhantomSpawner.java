@@ -14,6 +14,7 @@ import net.minecraft.stat.ServerStatHandler;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.SpawnHelper;
 
@@ -22,6 +23,8 @@ public class PhantomSpawner {
 
 	public int spawn(ServerWorld serverWorld, boolean bl, boolean bl2) {
 		if (!bl) {
+			return 0;
+		} else if (!serverWorld.getGameRules().getBoolean(GameRules.field_20637)) {
 			return 0;
 		} else {
 			Random random = serverWorld.random;
@@ -54,7 +57,7 @@ public class PhantomSpawner {
 
 											for (int m = 0; m < l; m++) {
 												PhantomEntity phantomEntity = EntityType.field_6078.create(serverWorld);
-												phantomEntity.setPositionAndAngles(blockPos2, 0.0F, 0.0F);
+												phantomEntity.refreshPositionAndAngles(blockPos2, 0.0F, 0.0F);
 												entityData = phantomEntity.initialize(serverWorld, localDifficulty, SpawnType.field_16459, entityData, null);
 												serverWorld.spawnEntity(phantomEntity);
 											}

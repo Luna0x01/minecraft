@@ -11,7 +11,7 @@ import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.util.JsonHelper;
 
 public class LanguageResourceMetadataReader implements ResourceMetadataReader<LanguageResourceMetadata> {
-	public LanguageResourceMetadata method_4695(JsonObject jsonObject) {
+	public LanguageResourceMetadata fromJson(JsonObject jsonObject) {
 		Set<LanguageDefinition> set = Sets.newHashSet();
 
 		for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {

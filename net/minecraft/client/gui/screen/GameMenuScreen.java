@@ -7,19 +7,19 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.realms.RealmsBridge;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 public class GameMenuScreen extends Screen {
-	private final boolean field_19319;
+	private final boolean showMenu;
 
 	public GameMenuScreen(boolean bl) {
 		super(bl ? new TranslatableText("menu.game") : new TranslatableText("menu.paused"));
-		this.field_19319 = bl;
+		this.showMenu = bl;
 	}
 
 	@Override
 	protected void init() {
-		if (this.field_19319) {
+		if (this.showMenu) {
 			this.initWidgets();
 		}
 	}
@@ -48,7 +48,7 @@ public class GameMenuScreen extends Screen {
 				98,
 				20,
 				I18n.translate("gui.stats"),
-				buttonWidgetx -> this.minecraft.openScreen(new StatsScreen(this, this.minecraft.player.getStats()))
+				buttonWidgetx -> this.minecraft.openScreen(new StatsScreen(this, this.minecraft.player.getStatHandler()))
 			)
 		);
 		String string = SharedConstants.getGameVersion().isStable() ? "https://aka.ms/javafeedback?ref=game" : "https://aka.ms/snapshotfeedback?ref=game";
@@ -61,7 +61,7 @@ public class GameMenuScreen extends Screen {
 				I18n.translate("menu.sendFeedback"),
 				buttonWidgetx -> this.minecraft.openScreen(new ConfirmChatLinkScreen(bl -> {
 						if (bl) {
-							SystemUtil.getOperatingSystem().open(string);
+							Util.getOperatingSystem().open(string);
 						}
 
 						this.minecraft.openScreen(this);
@@ -77,7 +77,7 @@ public class GameMenuScreen extends Screen {
 				I18n.translate("menu.reportBugs"),
 				buttonWidgetx -> this.minecraft.openScreen(new ConfirmChatLinkScreen(bl -> {
 						if (bl) {
-							SystemUtil.getOperatingSystem().open("https://aka.ms/snapshotbugs?ref=game");
+							Util.getOperatingSystem().open("https://aka.ms/snapshotbugs?ref=game");
 						}
 
 						this.minecraft.openScreen(this);
@@ -139,7 +139,7 @@ public class GameMenuScreen extends Screen {
 
 	@Override
 	public void render(int i, int j, float f) {
-		if (this.field_19319) {
+		if (this.showMenu) {
 			this.renderBackground();
 			this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 40, 16777215);
 		} else {

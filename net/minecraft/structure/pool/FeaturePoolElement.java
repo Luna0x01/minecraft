@@ -12,9 +12,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
@@ -22,15 +22,15 @@ import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
 
 public class FeaturePoolElement extends StructurePoolElement {
-	private final ConfiguredFeature<?> feature;
+	private final ConfiguredFeature<?, ?> feature;
 	private final CompoundTag tag;
 
 	@Deprecated
-	public FeaturePoolElement(ConfiguredFeature<?> configuredFeature) {
+	public FeaturePoolElement(ConfiguredFeature<?, ?> configuredFeature) {
 		this(configuredFeature, StructurePool.Projection.field_16687);
 	}
 
-	public FeaturePoolElement(ConfiguredFeature<?> configuredFeature, StructurePool.Projection projection) {
+	public FeaturePoolElement(ConfiguredFeature<?, ?> configuredFeature, StructurePool.Projection projection) {
 		super(projection);
 		this.feature = configuredFeature;
 		this.tag = this.method_19299();
@@ -64,9 +64,9 @@ public class FeaturePoolElement extends StructurePoolElement {
 	}
 
 	@Override
-	public MutableIntBoundingBox getBoundingBox(StructureManager structureManager, BlockPos blockPos, BlockRotation blockRotation) {
+	public BlockBox getBoundingBox(StructureManager structureManager, BlockPos blockPos, BlockRotation blockRotation) {
 		BlockPos blockPos2 = this.method_16601(structureManager, blockRotation);
-		return new MutableIntBoundingBox(
+		return new BlockBox(
 			blockPos.getX(),
 			blockPos.getY(),
 			blockPos.getZ(),
@@ -78,9 +78,14 @@ public class FeaturePoolElement extends StructurePoolElement {
 
 	@Override
 	public boolean generate(
-		StructureManager structureManager, IWorld iWorld, BlockPos blockPos, BlockRotation blockRotation, MutableIntBoundingBox mutableIntBoundingBox, Random random
+		StructureManager structureManager,
+		IWorld iWorld,
+		ChunkGenerator<?> chunkGenerator,
+		BlockPos blockPos,
+		BlockRotation blockRotation,
+		BlockBox blockBox,
+		Random random
 	) {
-		ChunkGenerator<?> chunkGenerator = iWorld.getChunkManager().getChunkGenerator();
 		return this.feature.generate(iWorld, (ChunkGenerator<? extends ChunkGeneratorConfig>)chunkGenerator, random, blockPos);
 	}
 
@@ -95,6 +100,6 @@ public class FeaturePoolElement extends StructurePoolElement {
 	}
 
 	public String toString() {
-		return "Feature[" + Registry.FEATURE.getId(this.feature.feature) + "]";
+		return "Feature[" + Registry.field_11138.getId(this.feature.feature) + "]";
 	}
 }

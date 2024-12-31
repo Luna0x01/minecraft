@@ -10,7 +10,7 @@ public class SpectralArrowEntityRenderer extends ProjectileEntityRenderer<Spectr
 		super(entityRenderDispatcher);
 	}
 
-	protected Identifier method_4120(SpectralArrowEntity spectralArrowEntity) {
+	public Identifier getTexture(SpectralArrowEntity spectralArrowEntity) {
 		return SKIN;
 	}
 }

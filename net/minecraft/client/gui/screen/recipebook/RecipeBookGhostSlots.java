@@ -1,13 +1,12 @@
 package net.minecraft.client.gui.screen.recipebook;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
@@ -51,9 +50,6 @@ public class RecipeBookGhostSlots {
 			this.time += f;
 		}
 
-		GuiLighting.enableForItems();
-		GlStateManager.disableLighting();
-
 		for (int k = 0; k < this.slots.size(); k++) {
 			RecipeBookGhostSlots.GhostInputSlot ghostInputSlot = (RecipeBookGhostSlots.GhostInputSlot)this.slots.get(k);
 			int l = ghostInputSlot.getX() + i;
@@ -67,17 +63,13 @@ public class RecipeBookGhostSlots {
 			ItemStack itemStack = ghostInputSlot.getCurrentItemStack();
 			ItemRenderer itemRenderer = minecraftClient.getItemRenderer();
 			itemRenderer.renderGuiItem(minecraftClient.player, itemStack, l, m);
-			GlStateManager.depthFunc(516);
+			RenderSystem.depthFunc(516);
 			DrawableHelper.fill(l, m, l + 16, m + 16, 822083583);
-			GlStateManager.depthFunc(515);
+			RenderSystem.depthFunc(515);
 			if (k == 0) {
 				itemRenderer.renderGuiItemOverlay(minecraftClient.textRenderer, itemStack, l, m);
 			}
-
-			GlStateManager.enableLighting();
 		}
-
-		GuiLighting.disable();
 	}
 
 	public class GhostInputSlot {
@@ -100,7 +92,7 @@ public class RecipeBookGhostSlots {
 		}
 
 		public ItemStack getCurrentItemStack() {
-			ItemStack[] itemStacks = this.ingredient.getStackArray();
+			ItemStack[] itemStacks = this.ingredient.getMatchingStacksClient();
 			return itemStacks[MathHelper.floor(RecipeBookGhostSlots.this.time / 30.0F) % itemStacks.length];
 		}
 	}

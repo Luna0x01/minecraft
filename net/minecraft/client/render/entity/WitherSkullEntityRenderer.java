@@ -1,7 +1,10 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.SkullEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -15,47 +18,23 @@ public class WitherSkullEntityRenderer extends EntityRenderer<WitherSkullEntity>
 		super(entityRenderDispatcher);
 	}
 
-	private float method_4158(float f, float g, float h) {
-		float i = g - f;
-
-		while (i < -180.0F) {
-			i += 360.0F;
-		}
-
-		while (i >= 180.0F) {
-			i -= 360.0F;
-		}
-
-		return f + h * i;
+	protected int getBlockLight(WitherSkullEntity witherSkullEntity, float f) {
+		return 15;
 	}
 
-	public void method_4159(WitherSkullEntity witherSkullEntity, double d, double e, double f, float g, float h) {
-		GlStateManager.pushMatrix();
-		GlStateManager.disableCull();
-		float i = this.method_4158(witherSkullEntity.prevYaw, witherSkullEntity.yaw, h);
-		float j = MathHelper.lerp(h, witherSkullEntity.prevPitch, witherSkullEntity.pitch);
-		GlStateManager.translatef((float)d, (float)e, (float)f);
-		float k = 0.0625F;
-		GlStateManager.enableRescaleNormal();
-		GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
-		GlStateManager.enableAlphaTest();
-		this.bindEntityTexture(witherSkullEntity);
-		if (this.renderOutlines) {
-			GlStateManager.enableColorMaterial();
-			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(witherSkullEntity));
-		}
-
-		this.model.render(0.0F, 0.0F, 0.0F, i, j, 0.0625F);
-		if (this.renderOutlines) {
-			GlStateManager.tearDownSolidRenderingTextureCombine();
-			GlStateManager.disableColorMaterial();
-		}
-
-		GlStateManager.popMatrix();
-		super.render(witherSkullEntity, d, e, f, g, h);
+	public void render(WitherSkullEntity witherSkullEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		matrixStack.push();
+		matrixStack.scale(-1.0F, -1.0F, 1.0F);
+		float h = MathHelper.lerpAngle(witherSkullEntity.prevYaw, witherSkullEntity.yaw, g);
+		float j = MathHelper.lerp(g, witherSkullEntity.prevPitch, witherSkullEntity.pitch);
+		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(this.model.getLayer(this.getTexture(witherSkullEntity)));
+		this.model.render(0.0F, h, j);
+		this.model.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
+		matrixStack.pop();
+		super.render(witherSkullEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_4160(WitherSkullEntity witherSkullEntity) {
+	public Identifier getTexture(WitherSkullEntity witherSkullEntity) {
 		return witherSkullEntity.isCharged() ? INVINCIBLE_SKIN : SKIN;
 	}
 }

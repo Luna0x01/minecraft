@@ -93,7 +93,7 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 	public void onLoginSuccess(LoginSuccessS2CPacket loginSuccessS2CPacket) {
 		this.statusConsumer.accept(new TranslatableText("connect.joining"));
 		this.profile = loginSuccessS2CPacket.getProfile();
-		this.connection.setState(NetworkState.field_11690);
+		this.connection.setState(NetworkState.field_20591);
 		this.connection.setPacketListener(new ClientPlayNetworkHandler(this.client, this.parentGui, this.connection, this.profile));
 	}
 

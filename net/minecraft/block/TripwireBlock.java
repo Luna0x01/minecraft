@@ -8,7 +8,8 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.Items;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.state.property.Property;
@@ -37,7 +38,7 @@ public class TripwireBlock extends Block {
 	public TripwireBlock(TripwireHookBlock tripwireHookBlock, Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(POWERED, Boolean.valueOf(false))
 				.with(ATTACHED, Boolean.valueOf(false))
@@ -73,11 +74,6 @@ public class TripwireBlock extends Block {
 		return direction.getAxis().isHorizontal()
 			? blockState.with((Property)FACING_PROPERTIES.get(direction), Boolean.valueOf(this.shouldConnectTo(blockState2, direction)))
 			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9179;
 	}
 
 	@Override
@@ -132,11 +128,9 @@ public class TripwireBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!world.isClient) {
-			if ((Boolean)world.getBlockState(blockPos).get(POWERED)) {
-				this.updatePowered(world, blockPos);
-			}
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if ((Boolean)serverWorld.getBlockState(blockPos).get(POWERED)) {
+			this.updatePowered(serverWorld, blockPos);
 		}
 	}
 
@@ -197,7 +191,7 @@ public class TripwireBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(POWERED, ATTACHED, DISARMED, NORTH, EAST, WEST, SOUTH);
 	}
 }

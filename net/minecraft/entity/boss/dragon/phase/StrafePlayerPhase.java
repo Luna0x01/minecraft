@@ -31,16 +31,16 @@ public class StrafePlayerPhase extends AbstractPhase {
 			this.dragon.getPhaseManager().setPhase(PhaseType.field_7069);
 		} else {
 			if (this.field_7059 != null && this.field_7059.isFinished()) {
-				double d = this.field_7062.x;
-				double e = this.field_7062.z;
-				double f = d - this.dragon.x;
-				double g = e - this.dragon.z;
+				double d = this.field_7062.getX();
+				double e = this.field_7062.getZ();
+				double f = d - this.dragon.getX();
+				double g = e - this.dragon.getZ();
 				double h = (double)MathHelper.sqrt(f * f + g * g);
 				double i = Math.min(0.4F + h / 80.0 - 1.0, 10.0);
-				this.field_7057 = new Vec3d(d, this.field_7062.y + i, e);
+				this.field_7057 = new Vec3d(d, this.field_7062.getY() + i, e);
 			}
 
-			double j = this.field_7057 == null ? 0.0 : this.field_7057.squaredDistanceTo(this.dragon.x, this.dragon.y, this.dragon.z);
+			double j = this.field_7057 == null ? 0.0 : this.field_7057.squaredDistanceTo(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ());
 			if (j < 100.0 || j > 22500.0) {
 				this.method_6860();
 			}
@@ -49,7 +49,7 @@ public class StrafePlayerPhase extends AbstractPhase {
 			if (this.field_7062.squaredDistanceTo(this.dragon) < 4096.0) {
 				if (this.dragon.canSee(this.field_7062)) {
 					this.field_7060++;
-					Vec3d vec3d = new Vec3d(this.field_7062.x - this.dragon.x, 0.0, this.field_7062.z - this.dragon.z).normalize();
+					Vec3d vec3d = new Vec3d(this.field_7062.getX() - this.dragon.getX(), 0.0, this.field_7062.getZ() - this.dragon.getZ()).normalize();
 					Vec3d vec3d2 = new Vec3d(
 							(double)MathHelper.sin(this.dragon.yaw * (float) (Math.PI / 180.0)), 0.0, (double)(-MathHelper.cos(this.dragon.yaw * (float) (Math.PI / 180.0)))
 						)
@@ -60,15 +60,15 @@ public class StrafePlayerPhase extends AbstractPhase {
 					if (this.field_7060 >= 5 && m >= 0.0F && m < 10.0F) {
 						double n = 1.0;
 						Vec3d vec3d3 = this.dragon.getRotationVec(1.0F);
-						double o = this.dragon.partHead.x - vec3d3.x * 1.0;
-						double p = this.dragon.partHead.y + (double)(this.dragon.partHead.getHeight() / 2.0F) + 0.5;
-						double q = this.dragon.partHead.z - vec3d3.z * 1.0;
-						double r = this.field_7062.x - o;
-						double s = this.field_7062.y + (double)(this.field_7062.getHeight() / 2.0F) - (p + (double)(this.dragon.partHead.getHeight() / 2.0F));
-						double t = this.field_7062.z - q;
+						double o = this.dragon.partHead.getX() - vec3d3.x * 1.0;
+						double p = this.dragon.partHead.getBodyY(0.5) + 0.5;
+						double q = this.dragon.partHead.getZ() - vec3d3.z * 1.0;
+						double r = this.field_7062.getX() - o;
+						double s = this.field_7062.getBodyY(0.5) - p;
+						double t = this.field_7062.getZ() - q;
 						this.dragon.world.playLevelEvent(null, 1017, new BlockPos(this.dragon), 0);
 						DragonFireballEntity dragonFireballEntity = new DragonFireballEntity(this.dragon.world, this.dragon, r, s, t);
-						dragonFireballEntity.setPositionAndAngles(o, p, q, 0.0F, 0.0F);
+						dragonFireballEntity.refreshPositionAndAngles(o, p, q, 0.0F, 0.0F);
 						this.dragon.world.spawnEntity(dragonFireballEntity);
 						this.field_7060 = 0;
 						if (this.field_7059 != null) {
@@ -92,7 +92,7 @@ public class StrafePlayerPhase extends AbstractPhase {
 		if (this.field_7059 == null || this.field_7059.isFinished()) {
 			int i = this.dragon.method_6818();
 			int j = i;
-			if (this.dragon.getRand().nextInt(8) == 0) {
+			if (this.dragon.getRandom().nextInt(8) == 0) {
 				this.field_7058 = !this.field_7058;
 				j = i + 6;
 			}
@@ -132,7 +132,7 @@ public class StrafePlayerPhase extends AbstractPhase {
 
 			double f;
 			do {
-				f = vec3d.y + (double)(this.dragon.getRand().nextFloat() * 20.0F);
+				f = vec3d.y + (double)(this.dragon.getRandom().nextFloat() * 20.0F);
 			} while (f < vec3d.y);
 
 			this.field_7057 = new Vec3d(d, f, e);
@@ -150,14 +150,14 @@ public class StrafePlayerPhase extends AbstractPhase {
 	public void method_6862(LivingEntity livingEntity) {
 		this.field_7062 = livingEntity;
 		int i = this.dragon.method_6818();
-		int j = this.dragon.method_6822(this.field_7062.x, this.field_7062.y, this.field_7062.z);
-		int k = MathHelper.floor(this.field_7062.x);
-		int l = MathHelper.floor(this.field_7062.z);
-		double d = (double)k - this.dragon.x;
-		double e = (double)l - this.dragon.z;
+		int j = this.dragon.method_6822(this.field_7062.getX(), this.field_7062.getY(), this.field_7062.getZ());
+		int k = MathHelper.floor(this.field_7062.getX());
+		int l = MathHelper.floor(this.field_7062.getZ());
+		double d = (double)k - this.dragon.getX();
+		double e = (double)l - this.dragon.getZ();
 		double f = (double)MathHelper.sqrt(d * d + e * e);
 		double g = Math.min(0.4F + f / 80.0 - 1.0, 10.0);
-		int m = MathHelper.floor(this.field_7062.y + g);
+		int m = MathHelper.floor(this.field_7062.getY() + g);
 		PathNode pathNode = new PathNode(k, m, l);
 		this.field_7059 = this.dragon.method_6833(i, j, pathNode);
 		if (this.field_7059 != null) {

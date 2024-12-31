@@ -3,8 +3,8 @@ package net.minecraft.client.gui.hud;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.UnmodifiableIterator;
-import com.mojang.blaze3d.platform.GLX;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.GlDebugInfo;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.DataFixUtils;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -22,7 +22,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.ShaderEffect;
 import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.Rotation3;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.network.ClientConnection;
@@ -32,7 +39,7 @@ import net.minecraft.state.property.Property;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.MetricsData;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -50,7 +57,7 @@ import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.dimension.DimensionType;
 
 public class DebugHud extends DrawableHelper {
-	private static final Map<Heightmap.Type, String> HEIGHT_MAP_TYPES = SystemUtil.consume(new EnumMap(Heightmap.Type.class), enumMap -> {
+	private static final Map<Heightmap.Type, String> HEIGHT_MAP_TYPES = Util.make(new EnumMap(Heightmap.Type.class), enumMap -> {
 		enumMap.put(Heightmap.Type.field_13194, "SW");
 		enumMap.put(Heightmap.Type.field_13202, "S");
 		enumMap.put(Heightmap.Type.field_13195, "OW");
@@ -81,15 +88,15 @@ public class DebugHud extends DrawableHelper {
 
 	public void render() {
 		this.client.getProfiler().push("debug");
-		GlStateManager.pushMatrix();
+		RenderSystem.pushMatrix();
 		Entity entity = this.client.getCameraEntity();
 		this.blockHit = entity.rayTrace(20.0, 0.0F, false);
 		this.fluidHit = entity.rayTrace(20.0, 0.0F, true);
 		this.renderLeftText();
 		this.renderRightText();
-		GlStateManager.popMatrix();
+		RenderSystem.popMatrix();
 		if (this.client.options.debugTpsEnabled) {
-			int i = this.client.window.getScaledWidth();
+			int i = this.client.getWindow().getScaledWidth();
 			this.drawMetricsData(this.client.getMetricsData(), 0, i / 2, true);
 			IntegratedServer integratedServer = this.client.getServer();
 			if (integratedServer != null) {
@@ -134,7 +141,7 @@ public class DebugHud extends DrawableHelper {
 			if (!Strings.isNullOrEmpty(string)) {
 				int j = 9;
 				int k = this.fontRenderer.getStringWidth(string);
-				int l = this.client.window.getScaledWidth() - 2 - k;
+				int l = this.client.getWindow().getScaledWidth() - 2 - k;
 				int m = 2 + j * i;
 				fill(l - 1, m - 1, l + k + 1, m + j - 1, -1873784752);
 				this.fontRenderer.draw(string, (float)l, (float)m, 14737632);
@@ -154,7 +161,7 @@ public class DebugHud extends DrawableHelper {
 			string = String.format("\"%s\" server, %.0f tx, %.0f rx", this.client.player.getServerBrand(), f, g);
 		}
 
-		BlockPos blockPos = new BlockPos(this.client.getCameraEntity().x, this.client.getCameraEntity().getBoundingBox().minY, this.client.getCameraEntity().z);
+		BlockPos blockPos = new BlockPos(this.client.getCameraEntity());
 		if (this.client.hasReducedDebugInfo()) {
 			return Lists.newArrayList(
 				new String[]{
@@ -164,7 +171,7 @@ public class DebugHud extends DrawableHelper {
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
 					"P: " + this.client.particleManager.getDebugString() + ". T: " + this.client.world.getRegularEntityCount(),
-					this.client.world.getChunkProviderStatus(),
+					this.client.world.getDebugString(),
 					"",
 					String.format("Chunk-relative: %d %d %d", blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15)
 				}
@@ -213,10 +220,10 @@ public class DebugHud extends DrawableHelper {
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
 					"P: " + this.client.particleManager.getDebugString() + ". T: " + this.client.world.getRegularEntityCount(),
-					this.client.world.getChunkProviderStatus()
+					this.client.world.getDebugString()
 				}
 			);
-			String string8 = this.method_20603();
+			String string8 = this.getServerWorldDebugString();
 			if (string8 != null) {
 				list.add(string8);
 			}
@@ -225,11 +232,7 @@ public class DebugHud extends DrawableHelper {
 			list.add("");
 			list.add(
 				String.format(
-					Locale.ROOT,
-					"XYZ: %.3f / %.5f / %.3f",
-					this.client.getCameraEntity().x,
-					this.client.getCameraEntity().getBoundingBox().minY,
-					this.client.getCameraEntity().z
+					Locale.ROOT, "XYZ: %.3f / %.5f / %.3f", this.client.getCameraEntity().getX(), this.client.getCameraEntity().getY(), this.client.getCameraEntity().getZ()
 				)
 			);
 			list.add(String.format("Block: %d %d %d", blockPos.getX(), blockPos.getY(), blockPos.getZ()));
@@ -248,20 +251,15 @@ public class DebugHud extends DrawableHelper {
 				String.format(Locale.ROOT, "Facing: %s (%s) (%.1f / %.1f)", direction, string3, MathHelper.wrapDegrees(entity.yaw), MathHelper.wrapDegrees(entity.pitch))
 			);
 			if (this.client.world != null) {
-				if (this.client.world.isBlockLoaded(blockPos)) {
+				if (this.client.world.isChunkLoaded(blockPos)) {
 					WorldChunk worldChunk = this.getClientChunk();
 					if (worldChunk.isEmpty()) {
 						list.add("Waiting for chunk...");
 					} else {
-						list.add(
-							"Client Light: "
-								+ worldChunk.getLightLevel(blockPos, 0)
-								+ " ("
-								+ this.client.world.getLightLevel(LightType.field_9284, blockPos)
-								+ " sky, "
-								+ this.client.world.getLightLevel(LightType.field_9282, blockPos)
-								+ " block)"
-						);
+						int i = this.client.world.getChunkManager().getLightingProvider().getLight(blockPos, 0);
+						int j = this.client.world.getLightLevel(LightType.field_9284, blockPos);
+						int k = this.client.world.getLightLevel(LightType.field_9282, blockPos);
+						list.add("Client Light: " + i + " (" + j + " sky, " + k + " block)");
 						WorldChunk worldChunk2 = this.getChunk();
 						if (worldChunk2 != null) {
 							LightingProvider lightingProvider = world.getChunkManager().getLightingProvider();
@@ -272,6 +270,8 @@ public class DebugHud extends DrawableHelper {
 									+ lightingProvider.get(LightType.field_9282).getLightLevel(blockPos)
 									+ " block)"
 							);
+						} else {
+							list.add("Server Light: (?? sky, ?? block)");
 						}
 
 						StringBuilder stringBuilder = new StringBuilder("CH");
@@ -286,24 +286,23 @@ public class DebugHud extends DrawableHelper {
 						}
 
 						list.add(stringBuilder.toString());
-						if (worldChunk2 != null) {
-							stringBuilder.setLength(0);
-							stringBuilder.append("SH");
+						stringBuilder.setLength(0);
+						stringBuilder.append("SH");
 
-							for (Heightmap.Type type2 : Heightmap.Type.values()) {
-								if (type2.isStoredServerSide()) {
-									stringBuilder.append(" ")
-										.append((String)HEIGHT_MAP_TYPES.get(type2))
-										.append(": ")
-										.append(worldChunk2.sampleHeightmap(type2, blockPos.getX(), blockPos.getZ()));
+						for (Heightmap.Type type2 : Heightmap.Type.values()) {
+							if (type2.isStoredServerSide()) {
+								stringBuilder.append(" ").append((String)HEIGHT_MAP_TYPES.get(type2)).append(": ");
+								if (worldChunk2 != null) {
+									stringBuilder.append(worldChunk2.sampleHeightmap(type2, blockPos.getX(), blockPos.getZ()));
+								} else {
+									stringBuilder.append("??");
 								}
 							}
-
-							list.add(stringBuilder.toString());
 						}
 
+						list.add(stringBuilder.toString());
 						if (blockPos.getY() >= 0 && blockPos.getY() < 256) {
-							list.add("Biome: " + Registry.BIOME.getId(worldChunk.getBiome(blockPos)));
+							list.add("Biome: " + Registry.field_11153.getId(this.client.world.getBiome(blockPos)));
 							long l = 0L;
 							float h = 0.0F;
 							if (worldChunk2 != null) {
@@ -330,8 +329,9 @@ public class DebugHud extends DrawableHelper {
 				list.add("Outside of world...");
 			}
 
-			if (this.client.gameRenderer != null && this.client.gameRenderer.isShaderEnabled()) {
-				list.add("Shader: " + this.client.gameRenderer.getShader().getName());
+			ShaderEffect shaderEffect = this.client.gameRenderer.getShader();
+			if (shaderEffect != null) {
+				list.add("Shader: " + shaderEffect.getName());
 			}
 
 			if (this.blockHit.getType() == HitResult.Type.field_1332) {
@@ -350,12 +350,12 @@ public class DebugHud extends DrawableHelper {
 	}
 
 	@Nullable
-	private String method_20603() {
+	private String getServerWorldDebugString() {
 		IntegratedServer integratedServer = this.client.getServer();
 		if (integratedServer != null) {
 			ServerWorld serverWorld = integratedServer.getWorld(this.client.world.getDimension().getType());
 			if (serverWorld != null) {
-				return serverWorld.getChunkProviderStatus();
+				return serverWorld.getDebugString();
 			}
 		}
 
@@ -375,7 +375,7 @@ public class DebugHud extends DrawableHelper {
 			if (integratedServer != null) {
 				ServerWorld serverWorld = integratedServer.getWorld(this.client.world.dimension.getType());
 				if (serverWorld != null) {
-					this.chunkFuture = serverWorld.method_14178()
+					this.chunkFuture = serverWorld.getChunkManager()
 						.getChunkFutureSyncOnMainThread(this.pos.x, this.pos.z, ChunkStatus.field_12803, false)
 						.thenApply(either -> (WorldChunk)either.map(chunk -> (WorldChunk)chunk, unloaded -> null));
 				}
@@ -391,7 +391,7 @@ public class DebugHud extends DrawableHelper {
 
 	private WorldChunk getClientChunk() {
 		if (this.chunk == null) {
-			this.chunk = this.client.world.method_8497(this.pos.x, this.pos.z);
+			this.chunk = this.client.world.getChunk(this.pos.x, this.pos.z);
 		}
 
 		return this.chunk;
@@ -405,19 +405,19 @@ public class DebugHud extends DrawableHelper {
 		List<String> list = Lists.newArrayList(
 			new String[]{
 				String.format("Java: %s %dbit", System.getProperty("java.version"), this.client.is64Bit() ? 64 : 32),
-				String.format("Mem: % 2d%% %03d/%03dMB", o * 100L / l, method_1838(o), method_1838(l)),
-				String.format("Allocated: % 2d%% %03dMB", m * 100L / l, method_1838(m)),
+				String.format("Mem: % 2d%% %03d/%03dMB", o * 100L / l, toMiB(o), toMiB(l)),
+				String.format("Allocated: % 2d%% %03dMB", m * 100L / l, toMiB(m)),
 				"",
-				String.format("CPU: %s", GLX.getCpuInfo()),
+				String.format("CPU: %s", GlDebugInfo.getCpuInfo()),
 				"",
 				String.format(
 					"Display: %dx%d (%s)",
-					MinecraftClient.getInstance().window.getFramebufferWidth(),
-					MinecraftClient.getInstance().window.getFramebufferHeight(),
-					GLX.getVendor()
+					MinecraftClient.getInstance().getWindow().getFramebufferWidth(),
+					MinecraftClient.getInstance().getWindow().getFramebufferHeight(),
+					GlDebugInfo.getVendor()
 				),
-				GLX.getRenderer(),
-				GLX.getOpenGLVersion()
+				GlDebugInfo.getRenderer(),
+				GlDebugInfo.getVersion()
 			}
 		);
 		if (this.client.hasReducedDebugInfo()) {
@@ -428,7 +428,7 @@ public class DebugHud extends DrawableHelper {
 				BlockState blockState = this.client.world.getBlockState(blockPos);
 				list.add("");
 				list.add(Formatting.field_1073 + "Targeted Block");
-				list.add(String.valueOf(Registry.BLOCK.getId(blockState.getBlock())));
+				list.add(String.valueOf(Registry.field_11146.getId(blockState.getBlock())));
 				UnmodifiableIterator var12 = blockState.getEntries().entrySet().iterator();
 
 				while (var12.hasNext()) {
@@ -446,7 +446,7 @@ public class DebugHud extends DrawableHelper {
 				FluidState fluidState = this.client.world.getFluidState(blockPos2);
 				list.add("");
 				list.add(Formatting.field_1073 + "Targeted Fluid");
-				list.add(String.valueOf(Registry.FLUID.getId(fluidState.getFluid())));
+				list.add(String.valueOf(Registry.field_11154.getId(fluidState.getFluid())));
 				UnmodifiableIterator var18 = fluidState.getEntries().entrySet().iterator();
 
 				while (var18.hasNext()) {
@@ -463,7 +463,7 @@ public class DebugHud extends DrawableHelper {
 			if (entity != null) {
 				list.add("");
 				list.add(Formatting.field_1073 + "Targeted Entity");
-				list.add(String.valueOf(Registry.ENTITY_TYPE.getId(entity.getType())));
+				list.add(String.valueOf(Registry.field_11145.getId(entity.getType())));
 			}
 
 			return list;
@@ -473,7 +473,7 @@ public class DebugHud extends DrawableHelper {
 	private String propertyToString(Entry<Property<?>, Comparable<?>> entry) {
 		Property<?> property = (Property<?>)entry.getKey();
 		Comparable<?> comparable = (Comparable<?>)entry.getValue();
-		String string = SystemUtil.getValueAsString(property, comparable);
+		String string = Util.getValueAsString(property, comparable);
 		if (Boolean.TRUE.equals(comparable)) {
 			string = Formatting.field_1060 + string;
 		} else if (Boolean.FALSE.equals(comparable)) {
@@ -484,7 +484,7 @@ public class DebugHud extends DrawableHelper {
 	}
 
 	private void drawMetricsData(MetricsData metricsData, int i, int j, boolean bl) {
-		GlStateManager.disableDepthTest();
+		RenderSystem.disableDepthTest();
 		int k = metricsData.getStartIndex();
 		int l = metricsData.getCurrentIndex();
 		long[] ls = metricsData.getSamples();
@@ -503,18 +503,33 @@ public class DebugHud extends DrawableHelper {
 			q += (long)u;
 		}
 
-		int v = this.client.window.getScaledHeight();
+		int v = this.client.getWindow().getScaledHeight();
 		fill(i, v - 60, i + p, v, -1873784752);
+		BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
+		RenderSystem.enableBlend();
+		RenderSystem.disableTexture();
+		RenderSystem.defaultBlendFunc();
+		bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
 
-		while (m != l) {
+		for (Matrix4f matrix4f = Rotation3.identity().getMatrix(); m != l; m = metricsData.wrapIndex(m + 1)) {
 			int w = metricsData.method_15248(ls[m], bl ? 30 : 60, bl ? 60 : 20);
 			int x = bl ? 100 : 60;
-			int y = this.method_1833(MathHelper.clamp(w, 0, x), 0, x / 2, x);
-			this.vLine(n, v, v - w, y);
+			int y = this.getMetricsLineColor(MathHelper.clamp(w, 0, x), 0, x / 2, x);
+			int z = y >> 24 & 0xFF;
+			int aa = y >> 16 & 0xFF;
+			int ab = y >> 8 & 0xFF;
+			int ac = y & 0xFF;
+			bufferBuilder.vertex(matrix4f, (float)(n + 1), (float)v, 0.0F).color(aa, ab, ac, z).next();
+			bufferBuilder.vertex(matrix4f, (float)n, (float)v, 0.0F).color(aa, ab, ac, z).next();
+			bufferBuilder.vertex(matrix4f, (float)n, (float)(v - w + 1), 0.0F).color(aa, ab, ac, z).next();
+			bufferBuilder.vertex(matrix4f, (float)(n + 1), (float)(v - w + 1), 0.0F).color(aa, ab, ac, z).next();
 			n++;
-			m = metricsData.wrapIndex(m + 1);
 		}
 
+		bufferBuilder.end();
+		BufferRenderer.draw(bufferBuilder);
+		RenderSystem.enableTexture();
+		RenderSystem.disableBlend();
 		if (bl) {
 			fill(i + 1, v - 30 + 1, i + 14, v - 30 + 10, -1873784752);
 			this.fontRenderer.draw("60 FPS", (float)(i + 2), (float)(v - 30 + 2), 14737632);
@@ -541,10 +556,10 @@ public class DebugHud extends DrawableHelper {
 		this.fontRenderer.drawWithShadow(string, (float)(i + 2), (float)(v - 60 - 9), 14737632);
 		this.fontRenderer.drawWithShadow(string2, (float)(i + p / 2 - this.fontRenderer.getStringWidth(string2) / 2), (float)(v - 60 - 9), 14737632);
 		this.fontRenderer.drawWithShadow(string3, (float)(i + p - this.fontRenderer.getStringWidth(string3)), (float)(v - 60 - 9), 14737632);
-		GlStateManager.enableDepthTest();
+		RenderSystem.enableDepthTest();
 	}
 
-	private int method_1833(int i, int j, int k, int l) {
+	private int getMetricsLineColor(int i, int j, int k, int l) {
 		return i < k ? this.interpolateColor(-16711936, -256, (float)i / (float)k) : this.interpolateColor(-256, -65536, (float)(i - k) / (float)(l - k));
 	}
 
@@ -564,7 +579,7 @@ public class DebugHud extends DrawableHelper {
 		return s << 24 | t << 16 | u << 8 | v;
 	}
 
-	private static long method_1838(long l) {
+	private static long toMiB(long l) {
 		return l / 1024L / 1024L;
 	}
 }

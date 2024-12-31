@@ -1,6 +1,6 @@
 package net.minecraft.client.gui;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import net.minecraft.client.MinecraftClient;
@@ -22,98 +22,97 @@ public class CubeMapRenderer {
 
 	public void draw(MinecraftClient minecraftClient, float f, float g, float h) {
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-		GlStateManager.matrixMode(5889);
-		GlStateManager.pushMatrix();
-		GlStateManager.loadIdentity();
-		GlStateManager.multMatrix(
-			Matrix4f.method_4929(85.0, (float)minecraftClient.window.getFramebufferWidth() / (float)minecraftClient.window.getFramebufferHeight(), 0.05F, 10.0F)
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		RenderSystem.matrixMode(5889);
+		RenderSystem.pushMatrix();
+		RenderSystem.loadIdentity();
+		RenderSystem.multMatrix(
+			Matrix4f.viewboxMatrix(
+				85.0, (float)minecraftClient.getWindow().getFramebufferWidth() / (float)minecraftClient.getWindow().getFramebufferHeight(), 0.05F, 10.0F
+			)
 		);
-		GlStateManager.matrixMode(5888);
-		GlStateManager.pushMatrix();
-		GlStateManager.loadIdentity();
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.rotatef(180.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.enableBlend();
-		GlStateManager.disableAlphaTest();
-		GlStateManager.disableCull();
-		GlStateManager.depthMask(false);
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
+		RenderSystem.matrixMode(5888);
+		RenderSystem.pushMatrix();
+		RenderSystem.loadIdentity();
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.rotatef(180.0F, 1.0F, 0.0F, 0.0F);
+		RenderSystem.enableBlend();
+		RenderSystem.disableAlphaTest();
+		RenderSystem.disableCull();
+		RenderSystem.depthMask(false);
+		RenderSystem.defaultBlendFunc();
 		int i = 2;
 
 		for (int j = 0; j < 4; j++) {
-			GlStateManager.pushMatrix();
+			RenderSystem.pushMatrix();
 			float k = ((float)(j % 2) / 2.0F - 0.5F) / 256.0F;
 			float l = ((float)(j / 2) / 2.0F - 0.5F) / 256.0F;
 			float m = 0.0F;
-			GlStateManager.translatef(k, l, 0.0F);
-			GlStateManager.rotatef(f, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotatef(g, 0.0F, 1.0F, 0.0F);
+			RenderSystem.translatef(k, l, 0.0F);
+			RenderSystem.rotatef(f, 1.0F, 0.0F, 0.0F);
+			RenderSystem.rotatef(g, 0.0F, 1.0F, 0.0F);
 
 			for (int n = 0; n < 6; n++) {
 				minecraftClient.getTextureManager().bindTexture(this.faces[n]);
-				bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
+				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 				int o = Math.round(255.0F * h) / (j + 1);
 				if (n == 0) {
-					bufferBuilder.vertex(-1.0, -1.0, 1.0).texture(0.0, 0.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, 1.0, 1.0).texture(0.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, 1.0, 1.0).texture(1.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, -1.0, 1.0).texture(1.0, 0.0).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, -1.0, 1.0).texture(0.0F, 0.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, 1.0, 1.0).texture(0.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, 1.0, 1.0).texture(1.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, -1.0, 1.0).texture(1.0F, 0.0F).color(255, 255, 255, o).next();
 				}
 
 				if (n == 1) {
-					bufferBuilder.vertex(1.0, -1.0, 1.0).texture(0.0, 0.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, 1.0, 1.0).texture(0.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, 1.0, -1.0).texture(1.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, -1.0, -1.0).texture(1.0, 0.0).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, -1.0, 1.0).texture(0.0F, 0.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, 1.0, 1.0).texture(0.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, 1.0, -1.0).texture(1.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, -1.0, -1.0).texture(1.0F, 0.0F).color(255, 255, 255, o).next();
 				}
 
 				if (n == 2) {
-					bufferBuilder.vertex(1.0, -1.0, -1.0).texture(0.0, 0.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, 1.0, -1.0).texture(0.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, 1.0, -1.0).texture(1.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, -1.0, -1.0).texture(1.0, 0.0).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, -1.0, -1.0).texture(0.0F, 0.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, 1.0, -1.0).texture(0.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, 1.0, -1.0).texture(1.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, -1.0, -1.0).texture(1.0F, 0.0F).color(255, 255, 255, o).next();
 				}
 
 				if (n == 3) {
-					bufferBuilder.vertex(-1.0, -1.0, -1.0).texture(0.0, 0.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, 1.0, -1.0).texture(0.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, 1.0, 1.0).texture(1.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, -1.0, 1.0).texture(1.0, 0.0).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, -1.0, -1.0).texture(0.0F, 0.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, 1.0, -1.0).texture(0.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, 1.0, 1.0).texture(1.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, -1.0, 1.0).texture(1.0F, 0.0F).color(255, 255, 255, o).next();
 				}
 
 				if (n == 4) {
-					bufferBuilder.vertex(-1.0, -1.0, -1.0).texture(0.0, 0.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, -1.0, 1.0).texture(0.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, -1.0, 1.0).texture(1.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, -1.0, -1.0).texture(1.0, 0.0).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, -1.0, -1.0).texture(0.0F, 0.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, -1.0, 1.0).texture(0.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, -1.0, 1.0).texture(1.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, -1.0, -1.0).texture(1.0F, 0.0F).color(255, 255, 255, o).next();
 				}
 
 				if (n == 5) {
-					bufferBuilder.vertex(-1.0, 1.0, 1.0).texture(0.0, 0.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(-1.0, 1.0, -1.0).texture(0.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, 1.0, -1.0).texture(1.0, 1.0).color(255, 255, 255, o).next();
-					bufferBuilder.vertex(1.0, 1.0, 1.0).texture(1.0, 0.0).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, 1.0, 1.0).texture(0.0F, 0.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(-1.0, 1.0, -1.0).texture(0.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, 1.0, -1.0).texture(1.0F, 1.0F).color(255, 255, 255, o).next();
+					bufferBuilder.vertex(1.0, 1.0, 1.0).texture(1.0F, 0.0F).color(255, 255, 255, o).next();
 				}
 
 				tessellator.draw();
 			}
 
-			GlStateManager.popMatrix();
-			GlStateManager.colorMask(true, true, true, false);
+			RenderSystem.popMatrix();
+			RenderSystem.colorMask(true, true, true, false);
 		}
 
-		bufferBuilder.setOffset(0.0, 0.0, 0.0);
-		GlStateManager.colorMask(true, true, true, true);
-		GlStateManager.matrixMode(5889);
-		GlStateManager.popMatrix();
-		GlStateManager.matrixMode(5888);
-		GlStateManager.popMatrix();
-		GlStateManager.depthMask(true);
-		GlStateManager.enableCull();
-		GlStateManager.enableDepthTest();
+		RenderSystem.colorMask(true, true, true, true);
+		RenderSystem.matrixMode(5889);
+		RenderSystem.popMatrix();
+		RenderSystem.matrixMode(5888);
+		RenderSystem.popMatrix();
+		RenderSystem.depthMask(true);
+		RenderSystem.enableCull();
+		RenderSystem.enableDepthTest();
 	}
 
 	public CompletableFuture<Void> loadTexturesAsync(TextureManager textureManager, Executor executor) {

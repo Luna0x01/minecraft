@@ -14,6 +14,7 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.CatSpawner;
@@ -56,17 +57,18 @@ public class FlatChunkGenerator extends ChunkGenerator<FlatChunkGeneratorConfig>
 		Map<String, Map<String, String>> map = this.config.getStructures();
 
 		for (String string : map.keySet()) {
-			ConfiguredFeature<?>[] configuredFeatures = (ConfiguredFeature<?>[])FlatChunkGeneratorConfig.STRUCTURE_TO_FEATURES.get(string);
+			ConfiguredFeature<?, ?>[] configuredFeatures = (ConfiguredFeature<?, ?>[])FlatChunkGeneratorConfig.STRUCTURE_TO_FEATURES.get(string);
 			if (configuredFeatures != null) {
-				for (ConfiguredFeature<?> configuredFeature : configuredFeatures) {
+				for (ConfiguredFeature<?, ?> configuredFeature : configuredFeatures) {
 					flatChunkGeneratorBiome.addFeature((GenerationStep.Feature)FlatChunkGeneratorConfig.FEATURE_TO_GENERATION_STEP.get(configuredFeature), configuredFeature);
-					ConfiguredFeature<?> configuredFeature2 = ((DecoratedFeatureConfig)configuredFeature.config).feature;
+					ConfiguredFeature<?, ?> configuredFeature2 = ((DecoratedFeatureConfig)configuredFeature.config).feature;
 					if (configuredFeature2.feature instanceof StructureFeature) {
 						StructureFeature<FeatureConfig> structureFeature = (StructureFeature<FeatureConfig>)configuredFeature2.feature;
 						FeatureConfig featureConfig = biome.getStructureFeatureConfig(structureFeature);
-						flatChunkGeneratorBiome.addStructureFeature(
-							structureFeature, featureConfig != null ? featureConfig : (FeatureConfig)FlatChunkGeneratorConfig.FEATURE_TO_FEATURE_CONFIG.get(configuredFeature)
-						);
+						FeatureConfig featureConfig2 = featureConfig != null
+							? featureConfig
+							: (FeatureConfig)FlatChunkGeneratorConfig.FEATURE_TO_FEATURE_CONFIG.get(configuredFeature);
+						flatChunkGeneratorBiome.addStructureFeature(structureFeature.configure(featureConfig2));
 					}
 				}
 			}
@@ -80,7 +82,7 @@ public class FlatChunkGenerator extends ChunkGenerator<FlatChunkGeneratorConfig>
 
 			for (GenerationStep.Feature feature : GenerationStep.Feature.values()) {
 				if (!list.contains(feature)) {
-					for (ConfiguredFeature<?> configuredFeature3 : biome.getFeaturesForStep(feature)) {
+					for (ConfiguredFeature<?, ?> configuredFeature3 : biome.getFeaturesForStep(feature)) {
 						flatChunkGeneratorBiome.addFeature(feature, configuredFeature3);
 					}
 				}
@@ -92,10 +94,10 @@ public class FlatChunkGenerator extends ChunkGenerator<FlatChunkGeneratorConfig>
 		for (int i = 0; i < blockStates.length; i++) {
 			BlockState blockState = blockStates[i];
 			if (blockState != null && !Heightmap.Type.field_13197.getBlockPredicate().test(blockState)) {
-				this.config.method_20314(i);
+				this.config.removeLayerBlock(i);
 				flatChunkGeneratorBiome.addFeature(
 					GenerationStep.Feature.field_13179,
-					Biome.configureFeature(Feature.field_19201, new FillLayerFeatureConfig(i, blockState), Decorator.field_14250, DecoratorConfig.DEFAULT)
+					Feature.field_19201.configure(new FillLayerFeatureConfig(i, blockState)).createDecoratedFeature(Decorator.field_14250.configure(DecoratorConfig.DEFAULT))
 				);
 			}
 		}
@@ -104,7 +106,7 @@ public class FlatChunkGenerator extends ChunkGenerator<FlatChunkGeneratorConfig>
 	}
 
 	@Override
-	public void buildSurface(Chunk chunk) {
+	public void buildSurface(ChunkRegion chunkRegion, Chunk chunk) {
 	}
 
 	@Override
@@ -114,12 +116,7 @@ public class FlatChunkGenerator extends ChunkGenerator<FlatChunkGeneratorConfig>
 	}
 
 	@Override
-	protected Biome getDecorationBiome(Chunk chunk) {
-		return this.biome;
-	}
-
-	@Override
-	protected Biome getDecorationBiome(ChunkRegion chunkRegion, BlockPos blockPos) {
+	protected Biome getDecorationBiome(BiomeAccess biomeAccess, BlockPos blockPos) {
 		return this.biome;
 	}
 

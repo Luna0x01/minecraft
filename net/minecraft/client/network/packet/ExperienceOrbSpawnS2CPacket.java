@@ -18,9 +18,9 @@ public class ExperienceOrbSpawnS2CPacket implements Packet<ClientPlayPacketListe
 
 	public ExperienceOrbSpawnS2CPacket(ExperienceOrbEntity experienceOrbEntity) {
 		this.id = experienceOrbEntity.getEntityId();
-		this.x = experienceOrbEntity.x;
-		this.y = experienceOrbEntity.y;
-		this.z = experienceOrbEntity.z;
+		this.x = experienceOrbEntity.getX();
+		this.y = experienceOrbEntity.getY();
+		this.z = experienceOrbEntity.getZ();
 		this.experience = experienceOrbEntity.getExperienceAmount();
 	}
 
@@ -42,7 +42,7 @@ public class ExperienceOrbSpawnS2CPacket implements Packet<ClientPlayPacketListe
 		packetByteBuf.writeShort(this.experience);
 	}
 
-	public void method_11182(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onExperienceOrbSpawn(this);
 	}
 

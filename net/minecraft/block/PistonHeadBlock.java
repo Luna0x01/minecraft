@@ -4,7 +4,7 @@ import net.minecraft.block.enums.PistonType;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
@@ -16,8 +16,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class PistonHeadBlock extends FacingBlock {
 	public static final EnumProperty<PistonType> TYPE = Properties.PISTON_TYPE;
@@ -44,7 +44,7 @@ public class PistonHeadBlock extends FacingBlock {
 	public PistonHeadBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(TYPE, PistonType.field_12637).with(SHORT, Boolean.valueOf(false))
+			this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(TYPE, PistonType.field_12637).with(SHORT, Boolean.valueOf(false))
 		);
 	}
 
@@ -101,7 +101,7 @@ public class PistonHeadBlock extends FacingBlock {
 			BlockPos blockPos2 = blockPos.offset(((Direction)blockState.get(FACING)).getOpposite());
 			Block block = world.getBlockState(blockPos2).getBlock();
 			if (block == Blocks.field_10560 || block == Blocks.field_10615) {
-				world.clearBlockState(blockPos2, false);
+				world.removeBlock(blockPos2, false);
 			}
 		}
 
@@ -117,7 +117,7 @@ public class PistonHeadBlock extends FacingBlock {
 			BlockState blockState3 = world.getBlockState(blockPos);
 			if ((blockState3.getBlock() == Blocks.field_10560 || blockState3.getBlock() == Blocks.field_10615) && (Boolean)blockState3.get(PistonBlock.EXTENDED)) {
 				dropStacks(blockState3, world, blockPos);
-				world.clearBlockState(blockPos, false);
+				world.removeBlock(blockPos, false);
 			}
 		}
 	}
@@ -132,8 +132,8 @@ public class PistonHeadBlock extends FacingBlock {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		Block block = viewableWorld.getBlockState(blockPos.offset(((Direction)blockState.get(FACING)).getOpposite())).getBlock();
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		Block block = worldView.getBlockState(blockPos.offset(((Direction)blockState.get(FACING)).getOpposite())).getBlock();
 		return block == Blocks.field_10560 || block == Blocks.field_10615 || block == Blocks.field_10008;
 	}
 
@@ -161,7 +161,7 @@ public class PistonHeadBlock extends FacingBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, TYPE, SHORT);
 	}
 

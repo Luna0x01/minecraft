@@ -36,11 +36,11 @@ public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends Abstra
 	}
 
 	@Override
-	public Optional<T> getValue(String string) {
+	public Optional<T> parse(String string) {
 		return Optional.ofNullable(this.byName.get(string));
 	}
 
-	public String method_11846(T enum_) {
+	public String name(T enum_) {
 		return enum_.asString();
 	}
 

@@ -28,13 +28,13 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOffer;
@@ -62,14 +62,14 @@ public class WanderingTraderEntity extends AbstractTraderEntity {
 					this,
 					PotionUtil.setPotion(new ItemStack(Items.field_8574), Potions.field_8997),
 					SoundEvents.field_18315,
-					wanderingTraderEntity -> !this.world.isDaylight() && !wanderingTraderEntity.isInvisible()
+					wanderingTraderEntity -> !this.world.isDay() && !wanderingTraderEntity.isInvisible()
 				)
 			);
 		this.goalSelector
 			.add(
 				0,
 				new HoldInHandsGoal<>(
-					this, new ItemStack(Items.field_8103), SoundEvents.field_18314, wanderingTraderEntity -> this.world.isDaylight() && wanderingTraderEntity.isInvisible()
+					this, new ItemStack(Items.field_8103), SoundEvents.field_18314, wanderingTraderEntity -> this.world.isDay() && wanderingTraderEntity.isInvisible()
 				)
 			);
 		this.goalSelector.add(1, new StopFollowingCustomerGoal(this));
@@ -82,7 +82,7 @@ public class WanderingTraderEntity extends AbstractTraderEntity {
 		this.goalSelector.add(1, new EscapeDangerGoal(this, 0.5));
 		this.goalSelector.add(1, new LookAtCustomerGoal(this));
 		this.goalSelector.add(2, new WanderingTraderEntity.WanderToTargetGoal(this, 2.0, 0.35));
-		this.goalSelector.add(4, new GoToWalkTargetGoal(this, 1.0));
+		this.goalSelector.add(4, new GoToWalkTargetGoal(this, 0.35));
 		this.goalSelector.add(8, new WanderAroundFarGoal(this, 0.35));
 		this.goalSelector.add(9, new GoToEntityGoal(this, PlayerEntity.class, 3.0F, 1.0F));
 		this.goalSelector.add(10, new LookAtEntityGoal(this, MobEntity.class, 8.0F));
@@ -147,19 +147,19 @@ public class WanderingTraderEntity extends AbstractTraderEntity {
 		super.writeCustomDataToTag(compoundTag);
 		compoundTag.putInt("DespawnDelay", this.despawnDelay);
 		if (this.wanderTarget != null) {
-			compoundTag.put("WanderTarget", TagHelper.serializeBlockPos(this.wanderTarget));
+			compoundTag.put("WanderTarget", NbtHelper.fromBlockPos(this.wanderTarget));
 		}
 	}
 
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("DespawnDelay", 99)) {
+		if (compoundTag.contains("DespawnDelay", 99)) {
 			this.despawnDelay = compoundTag.getInt("DespawnDelay");
 		}
 
-		if (compoundTag.containsKey("WanderTarget")) {
-			this.wanderTarget = TagHelper.deserializeBlockPos(compoundTag.getCompound("WanderTarget"));
+		if (compoundTag.contains("WanderTarget")) {
+			this.wanderTarget = NbtHelper.toBlockPos(compoundTag.getCompound("WanderTarget"));
 		}
 
 		this.setBreedingAge(Math.max(0, this.getBreedingAge()));
@@ -174,7 +174,7 @@ public class WanderingTraderEntity extends AbstractTraderEntity {
 	protected void afterUsing(TradeOffer tradeOffer) {
 		if (tradeOffer.shouldRewardPlayerExperience()) {
 			int i = 3 + this.random.nextInt(4);
-			this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.x, this.y + 0.5, this.z, i));
+			this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.getX(), this.getY() + 0.5, this.getZ(), i));
 		}
 	}
 
@@ -205,7 +205,7 @@ public class WanderingTraderEntity extends AbstractTraderEntity {
 	}
 
 	@Override
-	public SoundEvent method_18010() {
+	public SoundEvent getYesSound() {
 		return SoundEvents.field_17752;
 	}
 
@@ -269,9 +269,11 @@ public class WanderingTraderEntity extends AbstractTraderEntity {
 			BlockPos blockPos = this.trader.getWanderTarget();
 			if (blockPos != null && WanderingTraderEntity.this.navigation.isIdle()) {
 				if (this.isTooFarFrom(blockPos, 10.0)) {
-					Vec3d vec3d = new Vec3d((double)blockPos.getX() - this.trader.x, (double)blockPos.getY() - this.trader.y, (double)blockPos.getZ() - this.trader.z)
+					Vec3d vec3d = new Vec3d(
+							(double)blockPos.getX() - this.trader.getX(), (double)blockPos.getY() - this.trader.getY(), (double)blockPos.getZ() - this.trader.getZ()
+						)
 						.normalize();
-					Vec3d vec3d2 = vec3d.multiply(10.0).add(this.trader.x, this.trader.y, this.trader.z);
+					Vec3d vec3d2 = vec3d.multiply(10.0).add(this.trader.getX(), this.trader.getY(), this.trader.getZ());
 					WanderingTraderEntity.this.navigation.startMovingTo(vec3d2.x, vec3d2.y, vec3d2.z, this.speed);
 				} else {
 					WanderingTraderEntity.this.navigation.startMovingTo((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), this.speed);

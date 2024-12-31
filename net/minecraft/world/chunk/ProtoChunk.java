@@ -31,7 +31,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.ChunkTickScheduler;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.gen.GenerationStep;
 import org.apache.logging.log4j.LogManager;
@@ -41,7 +41,8 @@ public class ProtoChunk implements Chunk {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final ChunkPos pos;
 	private volatile boolean shouldSave;
-	private Biome[] biomeArray;
+	@Nullable
+	private BiomeArray field_20656;
 	@Nullable
 	private volatile LightingProvider lightingProvider;
 	private final Map<Heightmap.Type, Heightmap> heightmaps = Maps.newEnumMap(Heightmap.Type.class);
@@ -159,16 +160,16 @@ public class ProtoChunk implements Chunk {
 				if (this.status.isAtLeast(ChunkStatus.field_12795)
 					&& blockState != blockState2
 					&& (
-						blockState.getLightSubtracted(this, blockPos) != blockState2.getLightSubtracted(this, blockPos)
+						blockState.getOpacity(this, blockPos) != blockState2.getOpacity(this, blockPos)
 							|| blockState.getLuminance() != blockState2.getLuminance()
 							|| blockState.hasSidedTransparency()
 							|| blockState2.hasSidedTransparency()
 					)) {
 					LightingProvider lightingProvider = this.getLightingProvider();
-					lightingProvider.enqueueLightUpdate(blockPos);
+					lightingProvider.checkBlock(blockPos);
 				}
 
-				EnumSet<Heightmap.Type> enumSet = this.getStatus().isSurfaceGenerated();
+				EnumSet<Heightmap.Type> enumSet = this.getStatus().getHeightmapTypes();
 				EnumSet<Heightmap.Type> enumSet2 = null;
 
 				for (Heightmap.Type type : enumSet) {
@@ -243,14 +244,14 @@ public class ProtoChunk implements Chunk {
 		return this.entities;
 	}
 
-	@Override
-	public void setBiomeArray(Biome[] biomes) {
-		this.biomeArray = biomes;
+	public void method_22405(BiomeArray biomeArray) {
+		this.field_20656 = biomeArray;
 	}
 
+	@Nullable
 	@Override
-	public Biome[] getBiomeArray() {
-		return this.biomeArray;
+	public BiomeArray getBiomeArray() {
+		return this.field_20656;
 	}
 
 	@Override
@@ -279,7 +280,6 @@ public class ProtoChunk implements Chunk {
 	}
 
 	@Nullable
-	@Override
 	public LightingProvider getLightingProvider() {
 		return this.lightingProvider;
 	}
@@ -400,11 +400,11 @@ public class ProtoChunk implements Chunk {
 		Chunk.getList(this.postProcessingLists, i).add(s);
 	}
 
-	public ChunkTickScheduler<Block> method_12303() {
+	public ChunkTickScheduler<Block> getBlockTickScheduler() {
 		return this.blockTickScheduler;
 	}
 
-	public ChunkTickScheduler<Fluid> method_12313() {
+	public ChunkTickScheduler<Fluid> getFluidTickScheduler() {
 		return this.fluidTickScheduler;
 	}
 
@@ -459,7 +459,6 @@ public class ProtoChunk implements Chunk {
 		this.carvingMasks.put(carver, bitSet);
 	}
 
-	@Override
 	public void setLightingProvider(LightingProvider lightingProvider) {
 		this.lightingProvider = lightingProvider;
 	}

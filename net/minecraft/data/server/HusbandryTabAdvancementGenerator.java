@@ -5,6 +5,8 @@ import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.AdvancementFrame;
 import net.minecraft.advancement.AdvancementRewards;
 import net.minecraft.advancement.CriteriaMerger;
+import net.minecraft.advancement.criterion.BeeNestDestroyedCriterion;
+import net.minecraft.advancement.criterion.BlockUsedCriterion;
 import net.minecraft.advancement.criterion.BredAnimalsCriterion;
 import net.minecraft.advancement.criterion.ConsumeItemCriterion;
 import net.minecraft.advancement.criterion.FilledBucketCriterion;
@@ -13,19 +15,23 @@ import net.minecraft.advancement.criterion.ItemDurabilityChangedCriterion;
 import net.minecraft.advancement.criterion.PlacedBlockCriterion;
 import net.minecraft.advancement.criterion.TameAnimalCriterion;
 import net.minecraft.block.Blocks;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.predicate.BlockPredicate;
+import net.minecraft.predicate.NumberRange;
 import net.minecraft.predicate.entity.EntityPredicate;
+import net.minecraft.predicate.item.EnchantmentPredicate;
 import net.minecraft.predicate.item.ItemPredicate;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.NumberRange;
 import net.minecraft.util.registry.Registry;
 
 public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advancement>> {
-	private static final EntityType<?>[] field_11296 = new EntityType[]{
+	private static final EntityType<?>[] BREEDABLE_ANIMALS = new EntityType[]{
 		EntityType.field_6139,
 		EntityType.field_6115,
 		EntityType.field_6085,
@@ -39,11 +45,12 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 		EntityType.field_6113,
 		EntityType.field_16281,
 		EntityType.field_6146,
-		EntityType.field_17943
+		EntityType.field_17943,
+		EntityType.field_20346
 	};
-	private static final Item[] field_11295 = new Item[]{Items.field_8429, Items.field_8846, Items.field_8323, Items.field_8209};
-	private static final Item[] field_11297 = new Item[]{Items.field_8666, Items.field_8478, Items.field_8108, Items.field_8714};
-	private static final Item[] field_11298 = new Item[]{
+	private static final Item[] FISH_ITEMS = new Item[]{Items.field_8429, Items.field_8846, Items.field_8323, Items.field_8209};
+	private static final Item[] FISH_BUCKET_ITEMS = new Item[]{Items.field_8666, Items.field_8478, Items.field_8108, Items.field_8714};
+	private static final Item[] FOOD_ITEMS = new Item[]{
 		Items.field_8279,
 		Items.field_8208,
 		Items.field_8229,
@@ -81,10 +88,11 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 		Items.field_8515,
 		Items.field_8551,
 		Items.field_8766,
-		Items.field_16998
+		Items.field_16998,
+		Items.field_20417
 	};
 
-	public void method_10338(Consumer<Advancement> consumer) {
+	public void accept(Consumer<Advancement> consumer) {
 		Advancement advancement = Advancement.Task.create()
 			.display(
 				Blocks.field_10359,
@@ -132,7 +140,7 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 			.criteriaMerger(CriteriaMerger.OR)
 			.criterion("bred", BredAnimalsCriterion.Conditions.any())
 			.build(consumer, "husbandry/breed_an_animal");
-		Advancement advancement4 = this.method_10341(Advancement.Task.create())
+		Advancement advancement4 = this.requireFoodItemsEaten(Advancement.Task.create())
 			.parent(advancement2)
 			.display(
 				Items.field_8279,
@@ -178,7 +186,7 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 			)
 			.criterion("tamed_animal", TameAnimalCriterion.Conditions.any())
 			.build(consumer, "husbandry/tame_an_animal");
-		Advancement advancement7 = this.method_10342(Advancement.Task.create())
+		Advancement advancement7 = this.requireListedAnimalsBred(Advancement.Task.create())
 			.parent(advancement3)
 			.display(
 				Items.field_8071,
@@ -192,7 +200,7 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 			)
 			.rewards(AdvancementRewards.Builder.experience(100))
 			.build(consumer, "husbandry/bred_all_animals");
-		Advancement advancement8 = this.method_10339(Advancement.Task.create())
+		Advancement advancement8 = this.requireListedFishCaught(Advancement.Task.create())
 			.parent(advancement)
 			.criteriaMerger(CriteriaMerger.OR)
 			.display(
@@ -206,7 +214,7 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 				false
 			)
 			.build(consumer, "husbandry/fishy_business");
-		Advancement advancement9 = this.method_10340(Advancement.Task.create())
+		Advancement advancement9 = this.requireListedFishBucketsFilled(Advancement.Task.create())
 			.parent(advancement8)
 			.criteriaMerger(CriteriaMerger.OR)
 			.display(
@@ -220,7 +228,7 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 				false
 			)
 			.build(consumer, "husbandry/tactical_fishing");
-		Advancement advancement10 = this.method_16118(Advancement.Task.create())
+		Advancement advancement10 = this.requireAllCatsTamed(Advancement.Task.create())
 			.parent(advancement6)
 			.display(
 				Items.field_8429,
@@ -234,36 +242,74 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 			)
 			.rewards(AdvancementRewards.Builder.experience(50))
 			.build(consumer, "husbandry/complete_catalogue");
+		Advancement advancement11 = Advancement.Task.create()
+			.parent(advancement)
+			.criterion(
+				"safely_harvest_honey",
+				BlockUsedCriterion.Conditions.create(BlockPredicate.Builder.create().tag(BlockTags.field_20340), ItemPredicate.Builder.create().item(Items.field_8469))
+			)
+			.display(
+				Items.field_20417,
+				new TranslatableText("advancements.husbandry.safely_harvest_honey.title"),
+				new TranslatableText("advancements.husbandry.safely_harvest_honey.description"),
+				null,
+				AdvancementFrame.field_1254,
+				true,
+				true,
+				false
+			)
+			.build(consumer, "husbandry/safely_harvest_honey");
+		Advancement advancement12 = Advancement.Task.create()
+			.parent(advancement)
+			.criterion(
+				"silk_touch_nest",
+				BeeNestDestroyedCriterion.Conditions.create(
+					Blocks.field_20421,
+					ItemPredicate.Builder.create().enchantment(new EnchantmentPredicate(Enchantments.field_9099, NumberRange.IntRange.atLeast(1))),
+					NumberRange.IntRange.exactly(3)
+				)
+			)
+			.display(
+				Blocks.field_20421,
+				new TranslatableText("advancements.husbandry.silk_touch_nest.title"),
+				new TranslatableText("advancements.husbandry.silk_touch_nest.description"),
+				null,
+				AdvancementFrame.field_1254,
+				true,
+				true,
+				false
+			)
+			.build(consumer, "husbandry/silk_touch_nest");
 	}
 
-	private Advancement.Task method_10341(Advancement.Task task) {
-		for (Item item : field_11298) {
-			task.criterion(Registry.ITEM.getId(item).getPath(), ConsumeItemCriterion.Conditions.item(item));
+	private Advancement.Task requireFoodItemsEaten(Advancement.Task task) {
+		for (Item item : FOOD_ITEMS) {
+			task.criterion(Registry.field_11142.getId(item).getPath(), ConsumeItemCriterion.Conditions.item(item));
 		}
 
 		return task;
 	}
 
-	private Advancement.Task method_10342(Advancement.Task task) {
-		for (EntityType<?> entityType : field_11296) {
+	private Advancement.Task requireListedAnimalsBred(Advancement.Task task) {
+		for (EntityType<?> entityType : BREEDABLE_ANIMALS) {
 			task.criterion(EntityType.getId(entityType).toString(), BredAnimalsCriterion.Conditions.create(EntityPredicate.Builder.create().type(entityType)));
 		}
 
 		return task;
 	}
 
-	private Advancement.Task method_10340(Advancement.Task task) {
-		for (Item item : field_11297) {
-			task.criterion(Registry.ITEM.getId(item).getPath(), FilledBucketCriterion.Conditions.create(ItemPredicate.Builder.create().item(item).build()));
+	private Advancement.Task requireListedFishBucketsFilled(Advancement.Task task) {
+		for (Item item : FISH_BUCKET_ITEMS) {
+			task.criterion(Registry.field_11142.getId(item).getPath(), FilledBucketCriterion.Conditions.create(ItemPredicate.Builder.create().item(item).build()));
 		}
 
 		return task;
 	}
 
-	private Advancement.Task method_10339(Advancement.Task task) {
-		for (Item item : field_11295) {
+	private Advancement.Task requireListedFishCaught(Advancement.Task task) {
+		for (Item item : FISH_ITEMS) {
 			task.criterion(
-				Registry.ITEM.getId(item).getPath(),
+				Registry.field_11142.getId(item).getPath(),
 				FishingRodHookedCriterion.Conditions.create(ItemPredicate.ANY, EntityPredicate.ANY, ItemPredicate.Builder.create().item(item).build())
 			);
 		}
@@ -271,7 +317,7 @@ public class HusbandryTabAdvancementGenerator implements Consumer<Consumer<Advan
 		return task;
 	}
 
-	private Advancement.Task method_16118(Advancement.Task task) {
+	private Advancement.Task requireAllCatsTamed(Advancement.Task task) {
 		CatEntity.TEXTURES
 			.forEach(
 				(integer, identifier) -> task.criterion(

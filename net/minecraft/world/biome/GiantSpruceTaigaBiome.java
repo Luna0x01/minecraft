@@ -23,8 +23,8 @@ public final class GiantSpruceTaigaBiome extends Biome {
 				.waterFogColor(329011)
 				.parent("giant_tree_taiga")
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.STRONGHOLD, FeatureConfig.DEFAULT);
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.STRONGHOLD.configure(FeatureConfig.DEFAULT));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);
@@ -40,6 +40,7 @@ public final class GiantSpruceTaigaBiome extends Biome {
 		DefaultBiomeFeatures.addDefaultMushrooms(this);
 		DefaultBiomeFeatures.addDefaultVegetation(this);
 		DefaultBiomeFeatures.addSprings(this);
+		DefaultBiomeFeatures.addSweetBerryBushes(this);
 		DefaultBiomeFeatures.addFrozenTopLayer(this);
 		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_6115, 12, 4, 4));
 		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_6093, 10, 4, 4));

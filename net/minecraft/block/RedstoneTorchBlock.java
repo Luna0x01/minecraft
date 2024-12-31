@@ -6,14 +6,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.WeakHashMap;
 import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class RedstoneTorchBlock extends TorchBlock {
 	public static final BooleanProperty LIT = Properties.LIT;
@@ -21,11 +22,11 @@ public class RedstoneTorchBlock extends TorchBlock {
 
 	protected RedstoneTorchBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(LIT, Boolean.valueOf(true)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(LIT, Boolean.valueOf(true)));
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 2;
 	}
 
@@ -55,8 +56,8 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		update(blockState, world, blockPos, random, this.shouldUnpower(world, blockPos, blockState));
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		update(blockState, serverWorld, blockPos, random, this.shouldUnpower(serverWorld, blockPos, blockState));
 	}
 
 	public static void update(BlockState blockState, World world, BlockPos blockPos, Random random, boolean bl) {
@@ -112,7 +113,7 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(LIT);
 	}
 

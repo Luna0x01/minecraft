@@ -15,7 +15,7 @@ public class ShulkerBoxColoringRecipe extends SpecialCraftingRecipe {
 		super(identifier);
 	}
 
-	public boolean method_17734(CraftingInventory craftingInventory, World world) {
+	public boolean matches(CraftingInventory craftingInventory, World world) {
 		int i = 0;
 		int j = 0;
 
@@ -41,7 +41,7 @@ public class ShulkerBoxColoringRecipe extends SpecialCraftingRecipe {
 		return i == 1 && j == 1;
 	}
 
-	public ItemStack method_17733(CraftingInventory craftingInventory) {
+	public ItemStack craft(CraftingInventory craftingInventory) {
 		ItemStack itemStack = ItemStack.EMPTY;
 		DyeItem dyeItem = (DyeItem)Items.field_8446;
 
@@ -59,7 +59,7 @@ public class ShulkerBoxColoringRecipe extends SpecialCraftingRecipe {
 
 		ItemStack itemStack3 = ShulkerBoxBlock.getItemStack(dyeItem.getColor());
 		if (itemStack.hasTag()) {
-			itemStack3.setTag(itemStack.getTag().method_10553());
+			itemStack3.setTag(itemStack.getTag().copy());
 		}
 
 		return itemStack3;

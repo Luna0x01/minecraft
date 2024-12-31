@@ -15,7 +15,7 @@ public class DiskFeature extends Feature<DiskFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_13005(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DiskFeatureConfig diskFeatureConfig
 	) {
 		if (!iWorld.getFluidState(blockPos).matches(FluidTags.field_15517)) {

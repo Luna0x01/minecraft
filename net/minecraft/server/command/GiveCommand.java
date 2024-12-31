@@ -67,13 +67,13 @@ public class GiveCommand {
 					serverPlayerEntity.world
 						.playSound(
 							null,
-							serverPlayerEntity.x,
-							serverPlayerEntity.y,
-							serverPlayerEntity.z,
+							serverPlayerEntity.getX(),
+							serverPlayerEntity.getY(),
+							serverPlayerEntity.getZ(),
 							SoundEvents.field_15197,
 							SoundCategory.PLAYERS,
 							0.2F,
-							((serverPlayerEntity.getRand().nextFloat() - serverPlayerEntity.getRand().nextFloat()) * 0.7F + 1.0F) * 2.0F
+							((serverPlayerEntity.getRandom().nextFloat() - serverPlayerEntity.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F
 						);
 					serverPlayerEntity.playerContainer.sendContentUpdates();
 				} else {

@@ -14,9 +14,8 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.client.network.DebugRendererInfoManager;
-import net.minecraft.datafixers.NbtOps;
+import net.minecraft.datafixer.NbtOps;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityInteraction;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ExperienceOrbEntity;
@@ -52,8 +51,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.scoreboard.AbstractTeam;
-import net.minecraft.scoreboard.Team;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
@@ -68,8 +65,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.village.PointOfInterestStorage;
-import net.minecraft.village.PointOfInterestType;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOffers;
 import net.minecraft.village.TraderOfferList;
@@ -82,6 +77,8 @@ import net.minecraft.village.VillagerType;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.poi.PointOfInterestStorage;
+import net.minecraft.world.poi.PointOfInterestType;
 
 public class VillagerEntity extends AbstractTraderEntity implements InteractionObserver, VillagerDataContainer {
 	private static final TrackedData<VillagerData> VILLAGER_DATA = DataTracker.registerData(VillagerEntity.class, TrackedDataHandlerRegistry.VILLAGER_DATA);
@@ -127,6 +124,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 			MemoryModuleType.field_19009,
 			MemoryModuleType.field_19293,
 			MemoryModuleType.field_19385,
+			MemoryModuleType.field_20616,
 			MemoryModuleType.field_19386,
 			MemoryModuleType.field_19355
 		}
@@ -244,7 +242,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 					this.levellingUp = false;
 				}
 
-				this.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5924, 200, 0));
+				this.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5924, 200, 0));
 			}
 		}
 
@@ -368,7 +366,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 
 	private boolean needRestock() {
 		for (TradeOffer tradeOffer : this.getOffers()) {
-			if (tradeOffer.isDisabled()) {
+			if (tradeOffer.method_21834()) {
 				return true;
 			}
 		}
@@ -377,21 +375,23 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 	}
 
 	private boolean canRestock() {
-		return this.restocksToday < 2 && this.world.getTime() > this.lastRestockTime + 2400L;
+		return this.restocksToday == 0 || this.restocksToday < 2 && this.world.getTime() > this.lastRestockTime + 2400L;
 	}
 
 	public boolean shouldRestock() {
 		long l = this.lastRestockTime + 12000L;
-		boolean bl = this.world.getTime() > l;
-		long m = this.world.getTimeOfDay();
+		long m = this.world.getTime();
+		boolean bl = m > l;
+		long n = this.world.getTimeOfDay();
 		if (this.field_20332 > 0L) {
-			long n = this.field_20332 / 24000L;
-			long o = m / 24000L;
-			bl |= o > n;
+			long o = this.field_20332 / 24000L;
+			long p = n / 24000L;
+			bl |= p > o;
 		}
 
-		this.field_20332 = m;
+		this.field_20332 = n;
 		if (bl) {
+			this.lastRestockTime = m;
 			this.clearDailyRestockCount();
 		}
 
@@ -458,28 +458,31 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("VillagerData", 10)) {
-			this.setVillagerData(new VillagerData(new Dynamic(NbtOps.INSTANCE, compoundTag.getTag("VillagerData"))));
+		if (compoundTag.contains("VillagerData", 10)) {
+			this.setVillagerData(new VillagerData(new Dynamic(NbtOps.INSTANCE, compoundTag.get("VillagerData"))));
 		}
 
-		if (compoundTag.containsKey("Offers", 10)) {
+		if (compoundTag.contains("Offers", 10)) {
 			this.offers = new TraderOfferList(compoundTag.getCompound("Offers"));
 		}
 
-		if (compoundTag.containsKey("FoodLevel", 1)) {
+		if (compoundTag.contains("FoodLevel", 1)) {
 			this.foodLevel = compoundTag.getByte("FoodLevel");
 		}
 
 		ListTag listTag = compoundTag.getList("Gossips", 10);
 		this.gossip.deserialize(new Dynamic(NbtOps.INSTANCE, listTag));
-		if (compoundTag.containsKey("Xp", 3)) {
+		if (compoundTag.contains("Xp", 3)) {
 			this.experience = compoundTag.getInt("Xp");
 		}
 
 		this.lastRestockTime = compoundTag.getLong("LastRestock");
 		this.lastGossipDecayTime = compoundTag.getLong("LastGossipDecay");
 		this.setCanPickUpLoot(true);
-		this.reinitializeBrain((ServerWorld)this.world);
+		if (this.world instanceof ServerWorld) {
+			this.reinitializeBrain((ServerWorld)this.world);
+		}
+
 		this.restocksToday = compoundTag.getInt("RestocksToday");
 	}
 
@@ -509,7 +512,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 	}
 
 	public void playWorkSound() {
-		SoundEvent soundEvent = this.getVillagerData().getProfession().getWorkStation().getSound();
+		SoundEvent soundEvent = this.getVillagerData().getProfession().getWorkSound();
 		if (soundEvent != null) {
 			this.playSound(soundEvent, this.getSoundVolume(), this.getSoundPitch());
 		}
@@ -541,7 +544,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 		}
 
 		if (tradeOffer.shouldRewardPlayerExperience()) {
-			this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.x, this.y + 0.5, this.z, i));
+			this.world.spawnEntity(new ExperienceOrbEntity(this.world, this.getX(), this.getY() + 0.5, this.getZ(), i));
 		}
 	}
 
@@ -559,6 +562,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 
 	@Override
 	public void onDeath(DamageSource damageSource) {
+		LOGGER.info("Villager {} died, message: '{}'", this, damageSource.getDeathMessage(this).getString());
 		Entity entity = damageSource.getAttacker();
 		if (entity != null) {
 			this.notifyDeath(entity);
@@ -657,21 +661,8 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 	}
 
 	@Override
-	public Text getDisplayName() {
-		AbstractTeam abstractTeam = this.getScoreboardTeam();
-		Text text = this.getCustomName();
-		if (text != null) {
-			return Team.modifyText(abstractTeam, text).styled(style -> style.setHoverEvent(this.getHoverEvent()).setInsertion(this.getUuidAsString()));
-		} else {
-			VillagerProfession villagerProfession = this.getVillagerData().getProfession();
-			Text text2 = new TranslatableText(this.getType().getTranslationKey() + '.' + Registry.VILLAGER_PROFESSION.getId(villagerProfession).getPath())
-				.styled(style -> style.setHoverEvent(this.getHoverEvent()).setInsertion(this.getUuidAsString()));
-			if (abstractTeam != null) {
-				text2.formatted(abstractTeam.getColor());
-			}
-
-			return text2;
-		}
+	protected Text getDefaultName() {
+		return new TranslatableText(this.getType().getTranslationKey() + '.' + Registry.field_17167.getId(this.getVillagerData().getProfession()).getPath());
 	}
 
 	@Override
@@ -691,21 +682,21 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
 		if (spawnType == SpawnType.field_16466) {
 			this.setVillagerData(this.getVillagerData().withProfession(VillagerProfession.field_17051));
 		}
 
-		if (spawnType == SpawnType.field_16462 || spawnType == SpawnType.field_16465 || spawnType == SpawnType.field_16469) {
+		if (spawnType == SpawnType.field_16462 || spawnType == SpawnType.field_16465 || spawnType == SpawnType.field_16469 || spawnType == SpawnType.field_16470) {
 			this.setVillagerData(this.getVillagerData().withType(VillagerType.forBiome(iWorld.getBiome(new BlockPos(this)))));
 		}
 
 		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
-	public VillagerEntity method_7225(PassiveEntity passiveEntity) {
+	public VillagerEntity createChild(PassiveEntity passiveEntity) {
 		double d = this.random.nextDouble();
 		VillagerType villagerType;
 		if (d < 0.5) {
@@ -724,7 +715,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 	@Override
 	public void onStruckByLightning(LightningEntity lightningEntity) {
 		WitchEntity witchEntity = EntityType.field_6145.create(this.world);
-		witchEntity.setPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
+		witchEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
 		witchEntity.initialize(this.world, this.world.getLocalDifficulty(new BlockPos(witchEntity)), SpawnType.field_16468, null, null);
 		witchEntity.setAiDisabled(this.isAiDisabled());
 		if (this.hasCustomName()) {
@@ -848,7 +839,7 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 	public void summonGolem(long l, int i) {
 		if (this.canSummonGolem(l)) {
 			Box box = this.getBoundingBox().expand(10.0, 10.0, 10.0);
-			List<VillagerEntity> list = this.world.getEntities(VillagerEntity.class, box);
+			List<VillagerEntity> list = this.world.getNonSpectatingEntities(VillagerEntity.class, box);
 			List<VillagerEntity> list2 = (List<VillagerEntity>)list.stream()
 				.filter(villagerEntity -> villagerEntity.canSummonGolem(l))
 				.limit(5L)
@@ -964,6 +955,12 @@ public class VillagerEntity extends AbstractTraderEntity implements InteractionO
 	public void sleep(BlockPos blockPos) {
 		super.sleep(blockPos);
 		this.brain.putMemory(MemoryModuleType.field_19385, Timestamp.of(this.world.getTime()));
+	}
+
+	@Override
+	public void wakeUp() {
+		super.wakeUp();
+		this.brain.putMemory(MemoryModuleType.field_20616, Timestamp.of(this.world.getTime()));
 	}
 
 	private boolean hasRecentlyWorkedAndSlept(long l) {

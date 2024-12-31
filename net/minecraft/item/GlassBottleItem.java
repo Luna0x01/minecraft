@@ -10,7 +10,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.tag.FluidTags;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
@@ -35,28 +34,28 @@ public class GlassBottleItem extends Item {
 		if (!list.isEmpty()) {
 			AreaEffectCloudEntity areaEffectCloudEntity = (AreaEffectCloudEntity)list.get(0);
 			areaEffectCloudEntity.setRadius(areaEffectCloudEntity.getRadius() - 0.5F);
-			world.playSound(null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_15029, SoundCategory.field_15254, 1.0F, 1.0F);
-			return new TypedActionResult<>(ActionResult.field_5812, this.fill(itemStack, playerEntity, new ItemStack(Items.field_8613)));
+			world.playSound(null, playerEntity.getX(), playerEntity.getY(), playerEntity.getZ(), SoundEvents.field_15029, SoundCategory.field_15254, 1.0F, 1.0F);
+			return TypedActionResult.success(this.fill(itemStack, playerEntity, new ItemStack(Items.field_8613)));
 		} else {
 			HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1345);
 			if (hitResult.getType() == HitResult.Type.field_1333) {
-				return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+				return TypedActionResult.pass(itemStack);
 			} else {
 				if (hitResult.getType() == HitResult.Type.field_1332) {
 					BlockPos blockPos = ((BlockHitResult)hitResult).getBlockPos();
 					if (!world.canPlayerModifyAt(playerEntity, blockPos)) {
-						return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+						return TypedActionResult.pass(itemStack);
 					}
 
 					if (world.getFluidState(blockPos).matches(FluidTags.field_15517)) {
-						world.playSound(playerEntity, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_14779, SoundCategory.field_15254, 1.0F, 1.0F);
-						return new TypedActionResult<>(
-							ActionResult.field_5812, this.fill(itemStack, playerEntity, PotionUtil.setPotion(new ItemStack(Items.field_8574), Potions.field_8991))
+						world.playSound(
+							playerEntity, playerEntity.getX(), playerEntity.getY(), playerEntity.getZ(), SoundEvents.field_14779, SoundCategory.field_15254, 1.0F, 1.0F
 						);
+						return TypedActionResult.success(this.fill(itemStack, playerEntity, PotionUtil.setPotion(new ItemStack(Items.field_8574), Potions.field_8991)));
 					}
 				}
 
-				return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+				return TypedActionResult.pass(itemStack);
 			}
 		}
 	}

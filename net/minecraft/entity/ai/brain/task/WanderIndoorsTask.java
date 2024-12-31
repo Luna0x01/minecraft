@@ -20,11 +20,11 @@ public class WanderIndoorsTask extends Task<MobEntityWithAi> {
 		this.speed = f;
 	}
 
-	protected boolean method_20421(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi) {
+	protected boolean shouldRun(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi) {
 		return !serverWorld.isSkyVisible(new BlockPos(mobEntityWithAi));
 	}
 
-	protected void method_20422(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, long l) {
+	protected void run(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, long l) {
 		BlockPos blockPos = new BlockPos(mobEntityWithAi);
 		List<BlockPos> list = (List<BlockPos>)BlockPos.stream(blockPos.add(-1, -1, -1), blockPos.add(1, 1, 1))
 			.map(BlockPos::toImmutable)
@@ -32,7 +32,7 @@ public class WanderIndoorsTask extends Task<MobEntityWithAi> {
 		Collections.shuffle(list);
 		Optional<BlockPos> optional = list.stream()
 			.filter(blockPosx -> !serverWorld.isSkyVisible(blockPosx))
-			.filter(blockPosx -> serverWorld.doesBlockHaveSolidTopSurface(blockPosx, mobEntityWithAi))
+			.filter(blockPosx -> serverWorld.isTopSolid(blockPosx, mobEntityWithAi))
 			.filter(blockPosx -> serverWorld.doesNotCollide(mobEntityWithAi))
 			.findFirst();
 		optional.ifPresent(blockPosx -> mobEntityWithAi.getBrain().putMemory(MemoryModuleType.field_18445, new WalkTarget(blockPosx, this.speed, 0)));

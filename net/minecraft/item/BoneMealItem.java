@@ -6,6 +6,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.DeadCoralWallFanBlock;
 import net.minecraft.block.Fertilizable;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
@@ -51,9 +52,9 @@ public class BoneMealItem extends Item {
 		if (blockState.getBlock() instanceof Fertilizable) {
 			Fertilizable fertilizable = (Fertilizable)blockState.getBlock();
 			if (fertilizable.isFertilizable(world, blockPos, blockState, world.isClient)) {
-				if (!world.isClient) {
+				if (world instanceof ServerWorld) {
 					if (fertilizable.canGrow(world, world.random, blockPos, blockState)) {
-						fertilizable.grow(world, world.random, blockPos, blockState);
+						fertilizable.grow((ServerWorld)world, world.random, blockPos, blockState);
 					}
 
 					itemStack.decrement(1);
@@ -68,8 +69,10 @@ public class BoneMealItem extends Item {
 
 	public static boolean useOnGround(ItemStack itemStack, World world, BlockPos blockPos, @Nullable Direction direction) {
 		if (world.getBlockState(blockPos).getBlock() == Blocks.field_10382 && world.getFluidState(blockPos).getLevel() == 8) {
-			if (!world.isClient) {
-				label79:
+			if (!(world instanceof ServerWorld)) {
+				return true;
+			} else {
+				label80:
 				for (int i = 0; i < 128; i++) {
 					BlockPos blockPos2 = blockPos;
 					Biome biome = world.getBiome(blockPos);
@@ -78,8 +81,8 @@ public class BoneMealItem extends Item {
 					for (int j = 0; j < i / 16; j++) {
 						blockPos2 = blockPos2.add(RANDOM.nextInt(3) - 1, (RANDOM.nextInt(3) - 1) * RANDOM.nextInt(3) / 2, RANDOM.nextInt(3) - 1);
 						biome = world.getBiome(blockPos2);
-						if (world.getBlockState(blockPos2).method_21743(world, blockPos2)) {
-							continue label79;
+						if (world.getBlockState(blockPos2).isFullCube(world, blockPos2)) {
+							continue label80;
 						}
 					}
 
@@ -102,15 +105,14 @@ public class BoneMealItem extends Item {
 						if (blockState2.getBlock() == Blocks.field_10382 && world.getFluidState(blockPos2).getLevel() == 8) {
 							world.setBlockState(blockPos2, blockState, 3);
 						} else if (blockState2.getBlock() == Blocks.field_10376 && RANDOM.nextInt(10) == 0) {
-							((Fertilizable)Blocks.field_10376).grow(world, RANDOM, blockPos2, blockState2);
+							((Fertilizable)Blocks.field_10376).grow((ServerWorld)world, RANDOM, blockPos2, blockState2);
 						}
 					}
 				}
 
 				itemStack.decrement(1);
+				return true;
 			}
-
-			return true;
 		} else {
 			return false;
 		}

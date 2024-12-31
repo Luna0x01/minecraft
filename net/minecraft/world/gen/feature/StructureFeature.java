@@ -9,13 +9,14 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 import net.minecraft.structure.StructurePiece;
 import net.minecraft.structure.StructureStart;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
-import net.minecraft.world.BlockViewWithStructures;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.StructureHolder;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.gen.ChunkRandom;
@@ -28,7 +29,12 @@ public abstract class StructureFeature<C extends FeatureConfig> extends Feature<
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	public StructureFeature(Function<Dynamic<?>, ? extends C> function) {
-		super(function, false);
+		super(function);
+	}
+
+	@Override
+	public ConfiguredFeature<C, ? extends StructureFeature<C>> configure(C featureConfig) {
+		return new ConfiguredFeature<>(this, featureConfig);
 	}
 
 	@Override
@@ -48,7 +54,7 @@ public abstract class StructureFeature<C extends FeatureConfig> extends Feature<
 				ChunkPos chunkPos = new ChunkPos(long_);
 				StructureStart structureStart = iWorld.getChunk(chunkPos.x, chunkPos.z).getStructureStart(this.getName());
 				if (structureStart != null && structureStart != StructureStart.DEFAULT) {
-					structureStart.generateStructure(iWorld, random, new MutableIntBoundingBox(k, l, k + 15, l + 15), new ChunkPos(i, j));
+					structureStart.generateStructure(iWorld, chunkGenerator, random, new BlockBox(k, l, k + 15, l + 15), new ChunkPos(i, j));
 					bl = true;
 				}
 			}
@@ -135,8 +141,8 @@ public abstract class StructureFeature<C extends FeatureConfig> extends Feature<
 
 		while (longIterator.hasNext()) {
 			long l = longIterator.nextLong();
-			BlockViewWithStructures blockViewWithStructures = iWorld.getChunk(ChunkPos.getPackedX(l), ChunkPos.getPackedZ(l), ChunkStatus.field_16423);
-			StructureStart structureStart = blockViewWithStructures.getStructureStart(this.getName());
+			StructureHolder structureHolder = iWorld.getChunk(ChunkPos.getPackedX(l), ChunkPos.getPackedZ(l), ChunkStatus.field_16423);
+			StructureStart structureStart = structureHolder.getStructureStart(this.getName());
 			if (structureStart != null) {
 				list.add(structureStart);
 			}
@@ -149,7 +155,7 @@ public abstract class StructureFeature<C extends FeatureConfig> extends Feature<
 		return new ChunkPos(i + k, j + l);
 	}
 
-	public abstract boolean shouldStartAt(ChunkGenerator<?> chunkGenerator, Random random, int i, int j);
+	public abstract boolean shouldStartAt(BiomeAccess biomeAccess, ChunkGenerator<?> chunkGenerator, Random random, int i, int j, Biome biome);
 
 	public abstract StructureFeature.StructureStartFactory getStructureStartFactory();
 
@@ -158,6 +164,6 @@ public abstract class StructureFeature<C extends FeatureConfig> extends Feature<
 	public abstract int getRadius();
 
 	public interface StructureStartFactory {
-		StructureStart create(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l);
+		StructureStart create(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l);
 	}
 }

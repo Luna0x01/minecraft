@@ -5,10 +5,10 @@ import java.util.Comparator;
 import net.minecraft.util.math.MathHelper;
 
 public enum NarratorOption {
-	OFF(0, "options.narrator.off"),
-	ALL(1, "options.narrator.all"),
-	CHAT(2, "options.narrator.chat"),
-	SYSTEM(3, "options.narrator.system");
+	field_18176(0, "options.narrator.off"),
+	field_18177(1, "options.narrator.all"),
+	field_18178(2, "options.narrator.chat"),
+	field_18179(3, "options.narrator.system");
 
 	private static final NarratorOption[] VALUES = (NarratorOption[])Arrays.stream(values())
 		.sorted(Comparator.comparingInt(NarratorOption::getId))

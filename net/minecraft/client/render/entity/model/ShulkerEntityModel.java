@@ -1,62 +1,60 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class ShulkerEntityModel<T extends ShulkerEntity> extends EntityModel<T> {
-	private final Cuboid field_3553;
-	private final Cuboid field_3555;
-	private final Cuboid field_3554;
+public class ShulkerEntityModel<T extends ShulkerEntity> extends CompositeEntityModel<T> {
+	private final ModelPart bottomShell;
+	private final ModelPart topShell = new ModelPart(64, 64, 0, 0);
+	private final ModelPart head;
 
 	public ShulkerEntityModel() {
-		this.textureHeight = 64;
-		this.textureWidth = 64;
-		this.field_3555 = new Cuboid(this);
-		this.field_3553 = new Cuboid(this);
-		this.field_3554 = new Cuboid(this);
-		this.field_3555.setTextureOffset(0, 0).addBox(-8.0F, -16.0F, -8.0F, 16, 12, 16);
-		this.field_3555.setRotationPoint(0.0F, 24.0F, 0.0F);
-		this.field_3553.setTextureOffset(0, 28).addBox(-8.0F, -8.0F, -8.0F, 16, 8, 16);
-		this.field_3553.setRotationPoint(0.0F, 24.0F, 0.0F);
-		this.field_3554.setTextureOffset(0, 52).addBox(-3.0F, 0.0F, -3.0F, 6, 6, 6);
-		this.field_3554.setRotationPoint(0.0F, 12.0F, 0.0F);
+		this.bottomShell = new ModelPart(64, 64, 0, 28);
+		this.head = new ModelPart(64, 64, 0, 52);
+		this.topShell.addCuboid(-8.0F, -16.0F, -8.0F, 16.0F, 12.0F, 16.0F);
+		this.topShell.setPivot(0.0F, 24.0F, 0.0F);
+		this.bottomShell.addCuboid(-8.0F, -8.0F, -8.0F, 16.0F, 8.0F, 16.0F);
+		this.bottomShell.setPivot(0.0F, 24.0F, 0.0F);
+		this.head.addCuboid(-3.0F, 0.0F, -3.0F, 6.0F, 6.0F, 6.0F);
+		this.head.setPivot(0.0F, 12.0F, 0.0F);
 	}
 
-	public void method_17122(T shulkerEntity, float f, float g, float h, float i, float j, float k) {
-		float l = h - (float)shulkerEntity.age;
-		float m = (0.5F + shulkerEntity.method_7116(l)) * (float) Math.PI;
-		float n = -1.0F + MathHelper.sin(m);
-		float o = 0.0F;
-		if (m > (float) Math.PI) {
-			o = MathHelper.sin(h * 0.1F) * 0.7F;
+	public void setAngles(T shulkerEntity, float f, float g, float h, float i, float j) {
+		float k = h - (float)shulkerEntity.age;
+		float l = (0.5F + shulkerEntity.method_7116(k)) * (float) Math.PI;
+		float m = -1.0F + MathHelper.sin(l);
+		float n = 0.0F;
+		if (l > (float) Math.PI) {
+			n = MathHelper.sin(h * 0.1F) * 0.7F;
 		}
 
-		this.field_3555.setRotationPoint(0.0F, 16.0F + MathHelper.sin(m) * 8.0F + o, 0.0F);
-		if (shulkerEntity.method_7116(l) > 0.3F) {
-			this.field_3555.yaw = n * n * n * n * (float) Math.PI * 0.125F;
+		this.topShell.setPivot(0.0F, 16.0F + MathHelper.sin(l) * 8.0F + n, 0.0F);
+		if (shulkerEntity.method_7116(k) > 0.3F) {
+			this.topShell.yaw = m * m * m * m * (float) Math.PI * 0.125F;
 		} else {
-			this.field_3555.yaw = 0.0F;
+			this.topShell.yaw = 0.0F;
 		}
 
-		this.field_3554.pitch = j * (float) (Math.PI / 180.0);
-		this.field_3554.yaw = i * (float) (Math.PI / 180.0);
+		this.head.pitch = j * (float) (Math.PI / 180.0);
+		this.head.yaw = i * (float) (Math.PI / 180.0);
 	}
 
-	public void method_17123(T shulkerEntity, float f, float g, float h, float i, float j, float k) {
-		this.field_3553.render(k);
-		this.field_3555.render(k);
+	@Override
+	public Iterable<ModelPart> getParts() {
+		return ImmutableList.of(this.bottomShell, this.topShell);
 	}
 
-	public Cuboid method_2831() {
-		return this.field_3553;
+	public ModelPart getBottomShell() {
+		return this.bottomShell;
 	}
 
-	public Cuboid method_2829() {
-		return this.field_3555;
+	public ModelPart getTopShell() {
+		return this.topShell;
 	}
 
-	public Cuboid method_2830() {
-		return this.field_3554;
+	public ModelPart getHead() {
+		return this.head;
 	}
 }

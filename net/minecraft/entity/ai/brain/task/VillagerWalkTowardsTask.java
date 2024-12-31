@@ -2,7 +2,7 @@ package net.minecraft.entity.ai.brain.task;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
-import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.ai.brain.Brain;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
@@ -17,7 +17,7 @@ public class VillagerWalkTowardsTask extends Task<VillagerEntity> {
 	private final MemoryModuleType<GlobalPos> destination;
 	private final float speed;
 	private final int completionRange;
-	private final int field_18385;
+	private final int maxRange;
 	private final int maxRunTime;
 
 	public VillagerWalkTowardsTask(MemoryModuleType<GlobalPos> memoryModuleType, float f, int i, int j, int k) {
@@ -34,37 +34,37 @@ public class VillagerWalkTowardsTask extends Task<VillagerEntity> {
 		this.destination = memoryModuleType;
 		this.speed = f;
 		this.completionRange = i;
-		this.field_18385 = j;
+		this.maxRange = j;
 		this.maxRunTime = k;
 	}
 
-	private void method_21722(VillagerEntity villagerEntity, long l) {
+	private void giveUp(VillagerEntity villagerEntity, long l) {
 		Brain<?> brain = villagerEntity.getBrain();
 		villagerEntity.releaseTicketFor(this.destination);
 		brain.forget(this.destination);
 		brain.putMemory(MemoryModuleType.field_19293, l);
 	}
 
-	protected void method_19509(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void run(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		Brain<?> brain = villagerEntity.getBrain();
 		brain.getOptionalMemory(this.destination)
 			.ifPresent(
 				globalPos -> {
 					if (this.shouldGiveUp(serverWorld, villagerEntity)) {
-						this.method_21722(villagerEntity, l);
-					} else if (this.method_19597(serverWorld, villagerEntity, globalPos)) {
+						this.giveUp(villagerEntity, l);
+					} else if (this.exceedsMaxRange(serverWorld, villagerEntity, globalPos)) {
 						Vec3d vec3d = null;
 						int i = 0;
 
 						for (int j = 1000;
-							i < 1000 && (vec3d == null || this.method_19597(serverWorld, villagerEntity, GlobalPos.create(villagerEntity.dimension, new BlockPos(vec3d))));
+							i < 1000 && (vec3d == null || this.exceedsMaxRange(serverWorld, villagerEntity, GlobalPos.create(villagerEntity.dimension, new BlockPos(vec3d))));
 							i++
 						) {
-							vec3d = PathfindingUtil.method_6373(villagerEntity, 15, 7, new Vec3d(globalPos.getPos()));
+							vec3d = TargetFinder.findTargetTowards(villagerEntity, 15, 7, new Vec3d(globalPos.getPos()));
 						}
 
 						if (i == 1000) {
-							this.method_21722(villagerEntity, l);
+							this.giveUp(villagerEntity, l);
 							return;
 						}
 
@@ -81,9 +81,9 @@ public class VillagerWalkTowardsTask extends Task<VillagerEntity> {
 		return optional.isPresent() ? serverWorld.getTime() - (Long)optional.get() > (long)this.maxRunTime : false;
 	}
 
-	private boolean method_19597(ServerWorld serverWorld, VillagerEntity villagerEntity, GlobalPos globalPos) {
+	private boolean exceedsMaxRange(ServerWorld serverWorld, VillagerEntity villagerEntity, GlobalPos globalPos) {
 		return globalPos.getDimension() != serverWorld.getDimension().getType()
-			|| globalPos.getPos().getManhattanDistance(new BlockPos(villagerEntity)) > this.field_18385;
+			|| globalPos.getPos().getManhattanDistance(new BlockPos(villagerEntity)) > this.maxRange;
 	}
 
 	private boolean reachedDestination(ServerWorld serverWorld, VillagerEntity villagerEntity, GlobalPos globalPos) {

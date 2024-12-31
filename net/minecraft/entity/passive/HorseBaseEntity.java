@@ -7,8 +7,8 @@ import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityPose;
@@ -219,19 +219,28 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 		if (!this.isSilent()) {
 			this.world
 				.playSound(
-					null, this.x, this.y, this.z, SoundEvents.field_15099, this.getSoundCategory(), 1.0F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
+					null,
+					this.getX(),
+					this.getY(),
+					this.getZ(),
+					SoundEvents.field_15099,
+					this.getSoundCategory(),
+					1.0F,
+					1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
 				);
 		}
 	}
 
 	@Override
-	public void handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float f, float g) {
 		if (f > 1.0F) {
 			this.playSound(SoundEvents.field_14783, 0.4F, 1.0F);
 		}
 
-		int i = MathHelper.ceil((f * 0.5F - 3.0F) * g);
-		if (i > 0) {
+		int i = this.computeFallDamage(f, g);
+		if (i <= 0) {
+			return false;
+		} else {
 			this.damage(DamageSource.FALL, (float)i);
 			if (this.hasPassengers()) {
 				for (Entity entity : this.getPassengersDeep()) {
@@ -239,22 +248,14 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 				}
 			}
 
-			BlockState blockState = this.world.getBlockState(new BlockPos(this.x, this.y - 0.2 - (double)this.prevYaw, this.z));
-			if (!blockState.isAir() && !this.isSilent()) {
-				BlockSoundGroup blockSoundGroup = blockState.getSoundGroup();
-				this.world
-					.playSound(
-						null,
-						this.x,
-						this.y,
-						this.z,
-						blockSoundGroup.getStepSound(),
-						this.getSoundCategory(),
-						blockSoundGroup.getVolume() * 0.5F,
-						blockSoundGroup.getPitch() * 0.75F
-					);
-			}
+			this.playBlockFallSound();
+			return true;
 		}
+	}
+
+	@Override
+	protected int computeFallDamage(float f, float g) {
+		return MathHelper.ceil((f * 0.5F - 3.0F) * g);
 	}
 
 	protected int getInventorySize() {
@@ -318,7 +319,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 	@Nullable
 	@Override
 	protected SoundEvent getAmbientSound() {
-		if (this.random.nextInt(10) == 0 && !this.cannotMove()) {
+		if (this.random.nextInt(10) == 0 && !this.isImmobile()) {
 			this.updateAnger();
 		}
 
@@ -370,7 +371,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 	@Override
 	protected void initAttributes() {
 		super.initAttributes();
-		this.getAttributeContainer().register(JUMP_STRENGTH);
+		this.getAttributes().register(JUMP_STRENGTH);
 		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(53.0);
 		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.225F);
 	}
@@ -439,22 +440,13 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 			}
 		}
 
-		if (this.getHealth() < this.getHealthMaximum() && f > 0.0F) {
+		if (this.getHealth() < this.getMaximumHealth() && f > 0.0F) {
 			this.heal(f);
 			bl = true;
 		}
 
 		if (this.isBaby() && i > 0) {
-			this.world
-				.addParticle(
-					ParticleTypes.field_11211,
-					this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
-					this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					0.0,
-					0.0,
-					0.0
-				);
+			this.world.addParticle(ParticleTypes.field_11211, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), 0.0, 0.0, 0.0);
 			if (!this.world.isClient) {
 				this.growUp(i);
 			}
@@ -487,8 +479,8 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 	}
 
 	@Override
-	protected boolean cannotMove() {
-		return super.cannotMove() && this.hasPassengers() && this.isSaddled() || this.isEatingGrass() || this.isAngry();
+	protected boolean isImmobile() {
+		return super.isImmobile() && this.hasPassengers() && this.isSaddled() || this.isEatingGrass() || this.isAngry();
 	}
 
 	@Override
@@ -506,7 +498,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 		if (this.items != null) {
 			for (int i = 0; i < this.items.getInvSize(); i++) {
 				ItemStack itemStack = this.items.getInvStack(i);
-				if (!itemStack.isEmpty()) {
+				if (!itemStack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(itemStack)) {
 					this.dropStack(itemStack);
 				}
 			}
@@ -546,7 +538,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 	protected void walkToParent() {
 		if (this.isBred() && this.isBaby() && !this.isEatingGrass()) {
 			LivingEntity livingEntity = this.world
-				.method_21726(HorseBaseEntity.class, PARENT_HORSE_PREDICATE, this, this.x, this.y, this.z, this.getBoundingBox().expand(16.0));
+				.getClosestEntity(HorseBaseEntity.class, PARENT_HORSE_PREDICATE, this, this.getX(), this.getY(), this.getZ(), this.getBoundingBox().expand(16.0));
 			if (livingEntity != null && this.squaredDistanceTo(livingEntity) > 4.0) {
 				this.navigation.findPathTo(livingEntity, 0);
 			}
@@ -663,7 +655,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 		this.setOwnerUuid(playerEntity.getUuid());
 		this.setTame(true);
 		if (playerEntity instanceof ServerPlayerEntity) {
-			Criterions.TAME_ANIMAL.handle((ServerPlayerEntity)playerEntity, this);
+			Criterions.TAME_ANIMAL.trigger((ServerPlayerEntity)playerEntity, this);
 		}
 
 		this.world.sendEntityStatus(this, (byte)7);
@@ -679,8 +671,8 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 				this.prevYaw = this.yaw;
 				this.pitch = livingEntity.pitch * 0.5F;
 				this.setRotation(this.yaw, this.pitch);
-				this.field_6283 = this.yaw;
-				this.headYaw = this.field_6283;
+				this.bodyYaw = this.yaw;
+				this.headYaw = this.bodyYaw;
 				float f = livingEntity.sidewaysSpeed * 0.5F;
 				float g = livingEntity.forwardSpeed;
 				if (g <= 0.0F) {
@@ -694,7 +686,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 				}
 
 				if (this.jumpStrength > 0.0F && !this.isInAir() && this.onGround) {
-					double d = this.getJumpStrength() * (double)this.jumpStrength;
+					double d = this.getJumpStrength() * (double)this.jumpStrength * (double)this.getJumpVelocityMultiplier();
 					double e;
 					if (this.hasStatusEffect(StatusEffects.field_5913)) {
 						e = d + (double)((float)(this.getStatusEffect(StatusEffects.field_5913).getAmplifier() + 1) * 0.1F);
@@ -716,7 +708,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 					this.jumpStrength = 0.0F;
 				}
 
-				this.field_6281 = this.getMovementSpeed() * 0.1F;
+				this.flyingSpeed = this.getMovementSpeed() * 0.1F;
 				if (this.isLogicalSideForUpdatingMovement()) {
 					this.setMovementSpeed((float)this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue());
 					super.travel(new Vec3d((double)f, vec3d.y, (double)g));
@@ -730,8 +722,8 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 				}
 
 				this.lastLimbDistance = this.limbDistance;
-				double k = this.x - this.prevX;
-				double l = this.z - this.prevZ;
+				double k = this.getX() - this.prevX;
+				double l = this.getZ() - this.prevZ;
 				float m = MathHelper.sqrt(k * k + l * l) * 4.0F;
 				if (m > 1.0F) {
 					m = 1.0F;
@@ -740,7 +732,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 				this.limbDistance = this.limbDistance + (m - this.limbDistance) * 0.4F;
 				this.limbAngle = this.limbAngle + this.limbDistance;
 			} else {
-				this.field_6281 = 0.02F;
+				this.flyingSpeed = 0.02F;
 				super.travel(vec3d);
 			}
 		}
@@ -774,7 +766,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 		this.setTemper(compoundTag.getInt("Temper"));
 		this.setTame(compoundTag.getBoolean("Tame"));
 		String string;
-		if (compoundTag.containsKey("OwnerUUID", 8)) {
+		if (compoundTag.contains("OwnerUUID", 8)) {
 			string = compoundTag.getString("OwnerUUID");
 		} else {
 			String string2 = compoundTag.getString("Owner");
@@ -785,12 +777,12 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 			this.setOwnerUuid(UUID.fromString(string));
 		}
 
-		EntityAttributeInstance entityAttributeInstance = this.getAttributeContainer().get("Speed");
+		EntityAttributeInstance entityAttributeInstance = this.getAttributes().get("Speed");
 		if (entityAttributeInstance != null) {
 			this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(entityAttributeInstance.getBaseValue() * 0.25);
 		}
 
-		if (compoundTag.containsKey("SaddleItem", 10)) {
+		if (compoundTag.contains("SaddleItem", 10)) {
 			ItemStack itemStack = ItemStack.fromTag(compoundTag.getCompound("SaddleItem"));
 			if (itemStack.getItem() == Items.field_8175) {
 				this.items.setInvStack(0, itemStack);
@@ -806,7 +798,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 	}
 
 	protected boolean canBreed() {
-		return !this.hasPassengers() && !this.hasVehicle() && this.isTame() && !this.isBaby() && this.getHealth() >= this.getHealthMaximum() && this.isInLove();
+		return !this.hasPassengers() && !this.hasVehicle() && this.isTame() && !this.isBaby() && this.getHealth() >= this.getMaximumHealth() && this.isInLove();
 	}
 
 	@Nullable
@@ -887,16 +879,7 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 			double d = this.random.nextGaussian() * 0.02;
 			double e = this.random.nextGaussian() * 0.02;
 			double f = this.random.nextGaussian() * 0.02;
-			this.world
-				.addParticle(
-					particleEffect,
-					this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
-					this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					d,
-					e,
-					f
-				);
+			this.world.addParticle(particleEffect, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), d, e, f);
 		}
 	}
 
@@ -916,17 +899,19 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 		super.updatePassengerPosition(entity);
 		if (entity instanceof MobEntity) {
 			MobEntity mobEntity = (MobEntity)entity;
-			this.field_6283 = mobEntity.field_6283;
+			this.bodyYaw = mobEntity.bodyYaw;
 		}
 
 		if (this.lastAngryAnimationProgress > 0.0F) {
-			float f = MathHelper.sin(this.field_6283 * (float) (Math.PI / 180.0));
-			float g = MathHelper.cos(this.field_6283 * (float) (Math.PI / 180.0));
+			float f = MathHelper.sin(this.bodyYaw * (float) (Math.PI / 180.0));
+			float g = MathHelper.cos(this.bodyYaw * (float) (Math.PI / 180.0));
 			float h = 0.7F * this.lastAngryAnimationProgress;
 			float i = 0.15F * this.lastAngryAnimationProgress;
-			entity.setPosition(this.x + (double)(h * f), this.y + this.getMountedHeightOffset() + entity.getHeightOffset() + (double)i, this.z - (double)(h * g));
+			entity.updatePosition(
+				this.getX() + (double)(h * f), this.getY() + this.getMountedHeightOffset() + entity.getHeightOffset() + (double)i, this.getZ() - (double)(h * g)
+			);
 			if (entity instanceof LivingEntity) {
-				((LivingEntity)entity).field_6283 = this.field_6283;
+				((LivingEntity)entity).bodyYaw = this.bodyYaw;
 			}
 		}
 	}
@@ -993,14 +978,14 @@ public abstract class HorseBaseEntity extends AnimalEntity implements InventoryL
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
-		entityData = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
-		if (this.random.nextInt(5) == 0) {
-			this.setBreedingAge(-24000);
+		if (entityData == null) {
+			entityData = new PassiveEntity.EntityData();
+			((PassiveEntity.EntityData)entityData).setBabyChance(0.2F);
 		}
 
-		return entityData;
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 }

@@ -13,24 +13,24 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LogBlock;
-import net.minecraft.entity.Bird;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.Flutterer;
 import net.minecraft.entity.SpawnType;
-import net.minecraft.entity.ai.control.ParrotMoveControl;
+import net.minecraft.entity.ai.control.FlightMoveControl;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
-import net.minecraft.entity.ai.goal.FlyAroundGoal;
+import net.minecraft.entity.ai.goal.FlyOntoTreeGoal;
 import net.minecraft.entity.ai.goal.FollowMobGoal;
-import net.minecraft.entity.ai.goal.FollowOwnerFlyingGoal;
+import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SitGoal;
-import net.minecraft.entity.ai.goal.SitOnOwnerShoulder;
+import net.minecraft.entity.ai.goal.SitOnOwnerShoulderGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.pathing.BirdNavigation;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
+import net.minecraft.entity.ai.pathing.PathNodeType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -43,13 +43,14 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.Hand;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -57,23 +58,22 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
 
-public class ParrotEntity extends TameableShoulderEntity implements Bird {
+public class ParrotEntity extends TameableShoulderEntity implements Flutterer {
 	private static final TrackedData<Integer> ATTR_VARIANT = DataTracker.registerData(ParrotEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final Predicate<MobEntity> CAN_IMITATE = new Predicate<MobEntity>() {
-		public boolean method_6590(@Nullable MobEntity mobEntity) {
+		public boolean test(@Nullable MobEntity mobEntity) {
 			return mobEntity != null && ParrotEntity.MOB_SOUNDS.containsKey(mobEntity.getType());
 		}
 	};
 	private static final Item COOKIE = Items.field_8423;
 	private static final Set<Item> TAMING_INGREDIENTS = Sets.newHashSet(new Item[]{Items.field_8317, Items.field_8188, Items.field_8706, Items.field_8309});
-	private static final Map<EntityType<?>, SoundEvent> MOB_SOUNDS = SystemUtil.consume(Maps.newHashMap(), hashMap -> {
+	private static final Map<EntityType<?>, SoundEvent> MOB_SOUNDS = Util.make(Maps.newHashMap(), hashMap -> {
 		hashMap.put(EntityType.field_6099, SoundEvents.field_15199);
 		hashMap.put(EntityType.field_6084, SoundEvents.field_15190);
 		hashMap.put(EntityType.field_6046, SoundEvents.field_14547);
 		hashMap.put(EntityType.field_6123, SoundEvents.field_14647);
 		hashMap.put(EntityType.field_6086, SoundEvents.field_14777);
 		hashMap.put(EntityType.field_6116, SoundEvents.field_14854);
-		hashMap.put(EntityType.field_6091, SoundEvents.field_14950);
 		hashMap.put(EntityType.field_6128, SoundEvents.field_15022);
 		hashMap.put(EntityType.field_6090, SoundEvents.field_15113);
 		hashMap.put(EntityType.field_6107, SoundEvents.field_14577);
@@ -81,11 +81,8 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 		hashMap.put(EntityType.field_6071, SoundEvents.field_15185);
 		hashMap.put(EntityType.field_6065, SoundEvents.field_15064);
 		hashMap.put(EntityType.field_6102, SoundEvents.field_14963);
-		hashMap.put(EntityType.field_6050, SoundEvents.field_15143);
-		hashMap.put(EntityType.field_6146, SoundEvents.field_18814);
 		hashMap.put(EntityType.field_6078, SoundEvents.field_14957);
 		hashMap.put(EntityType.field_6105, SoundEvents.field_18815);
-		hashMap.put(EntityType.field_6042, SoundEvents.field_14866);
 		hashMap.put(EntityType.field_6134, SoundEvents.field_18816);
 		hashMap.put(EntityType.field_6109, SoundEvents.field_14768);
 		hashMap.put(EntityType.field_6125, SoundEvents.field_14683);
@@ -98,7 +95,6 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 		hashMap.put(EntityType.field_6145, SoundEvents.field_14796);
 		hashMap.put(EntityType.field_6119, SoundEvents.field_14555);
 		hashMap.put(EntityType.field_6076, SoundEvents.field_15073);
-		hashMap.put(EntityType.field_6055, SoundEvents.field_14942);
 		hashMap.put(EntityType.field_6051, SoundEvents.field_15220);
 		hashMap.put(EntityType.field_6054, SoundEvents.field_14676);
 	});
@@ -106,21 +102,29 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 	public float field_6819;
 	public float field_6827;
 	public float field_6829;
-	public float field_6824 = 1.0F;
+	private float field_6824 = 1.0F;
 	private boolean songPlaying;
 	private BlockPos songSource;
 
 	public ParrotEntity(EntityType<? extends ParrotEntity> entityType, World world) {
 		super(entityType, world);
-		this.moveControl = new ParrotMoveControl(this);
+		this.moveControl = new FlightMoveControl(this, 10, false);
+		this.setPathfindingPenalty(PathNodeType.field_9, -1.0F);
+		this.setPathfindingPenalty(PathNodeType.field_3, -1.0F);
+		this.setPathfindingPenalty(PathNodeType.field_21516, -1.0F);
 	}
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
 		this.setVariant(this.random.nextInt(5));
+		if (entityData == null) {
+			entityData = new PassiveEntity.EntityData();
+			((PassiveEntity.EntityData)entityData).setBabyAllowed(false);
+		}
+
 		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
@@ -131,16 +135,16 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 		this.goalSelector.add(0, new SwimGoal(this));
 		this.goalSelector.add(1, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.add(2, this.sitGoal);
-		this.goalSelector.add(2, new FollowOwnerFlyingGoal(this, 1.0, 5.0F, 1.0F));
-		this.goalSelector.add(2, new FlyAroundGoal(this, 1.0));
-		this.goalSelector.add(3, new SitOnOwnerShoulder(this));
+		this.goalSelector.add(2, new FollowOwnerGoal(this, 1.0, 5.0F, 1.0F, true));
+		this.goalSelector.add(2, new FlyOntoTreeGoal(this, 1.0));
+		this.goalSelector.add(3, new SitOnOwnerShoulderGoal(this));
 		this.goalSelector.add(3, new FollowMobGoal(this, 1.0, 3.0F, 7.0F));
 	}
 
 	@Override
 	protected void initAttributes() {
 		super.initAttributes();
-		this.getAttributeContainer().register(EntityAttributes.FLYING_SPEED);
+		this.getAttributes().register(EntityAttributes.FLYING_SPEED);
 		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(6.0);
 		this.getAttributeInstance(EntityAttributes.FLYING_SPEED).setBaseValue(0.4F);
 		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.2F);
@@ -209,7 +213,7 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 				MobEntity mobEntity = (MobEntity)list.get(world.random.nextInt(list.size()));
 				if (!mobEntity.isSilent()) {
 					SoundEvent soundEvent = getSound(mobEntity.getType());
-					world.playSound(null, entity.x, entity.y, entity.z, soundEvent, entity.getSoundCategory(), 0.7F, getSoundPitch(world.random));
+					world.playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, entity.getSoundCategory(), 0.7F, getSoundPitch(world.random));
 					return true;
 				}
 			}
@@ -223,7 +227,9 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (!this.isTamed() && TAMING_INGREDIENTS.contains(itemStack.getItem())) {
+		if (itemStack.getItem() instanceof SpawnEggItem) {
+			return super.interactMob(playerEntity, hand);
+		} else if (!this.isTamed() && TAMING_INGREDIENTS.contains(itemStack.getItem())) {
 			if (!playerEntity.abilities.creativeMode) {
 				itemStack.decrement(1);
 			}
@@ -231,17 +237,22 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 			if (!this.isSilent()) {
 				this.world
 					.playSound(
-						null, this.x, this.y, this.z, SoundEvents.field_14960, this.getSoundCategory(), 1.0F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
+						null,
+						this.getX(),
+						this.getY(),
+						this.getZ(),
+						SoundEvents.field_14960,
+						this.getSoundCategory(),
+						1.0F,
+						1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
 					);
 			}
 
 			if (!this.world.isClient) {
 				if (this.random.nextInt(10) == 0) {
 					this.setOwner(playerEntity);
-					this.showEmoteParticle(true);
 					this.world.sendEntityStatus(this, (byte)7);
 				} else {
-					this.showEmoteParticle(false);
 					this.world.sendEntityStatus(this, (byte)6);
 				}
 			}
@@ -252,17 +263,19 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 				itemStack.decrement(1);
 			}
 
-			this.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5899, 900));
+			this.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5899, 900));
 			if (playerEntity.isCreative() || !this.isInvulnerable()) {
 				this.damage(DamageSource.player(playerEntity), Float.MAX_VALUE);
 			}
 
 			return true;
-		} else {
-			if (!this.world.isClient && !this.isInAir() && this.isTamed() && this.isOwner(playerEntity)) {
+		} else if (!this.isInAir() && this.isTamed() && this.isOwner(playerEntity)) {
+			if (!this.world.isClient) {
 				this.sitGoal.setEnabledWithOwner(!this.isSitting());
 			}
 
+			return true;
+		} else {
 			return super.interactMob(playerEntity, hand);
 		}
 	}
@@ -272,14 +285,15 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 		return false;
 	}
 
-	public static boolean method_20667(EntityType<ParrotEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+	public static boolean canSpawn(EntityType<ParrotEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
 		Block block = iWorld.getBlockState(blockPos.down()).getBlock();
 		return (block.matches(BlockTags.field_15503) || block == Blocks.field_10219 || block instanceof LogBlock || block == Blocks.field_10124)
-			&& iWorld.getLightLevel(blockPos, 0) > 8;
+			&& iWorld.getBaseLightLevel(blockPos, 0) > 8;
 	}
 
 	@Override
-	public void handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float f, float g) {
+		return false;
 	}
 
 	@Override
@@ -299,7 +313,9 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 
 	public static void playMobSound(World world, Entity entity) {
 		if (!entity.isSilent() && !imitateNearbyMob(world, entity) && world.random.nextInt(200) == 0) {
-			world.playSound(null, entity.x, entity.y, entity.z, getRandomSound(world.random), entity.getSoundCategory(), 1.0F, getSoundPitch(world.random));
+			world.playSound(
+				null, entity.getX(), entity.getY(), entity.getZ(), getRandomSound(world.random), entity.getSoundCategory(), 1.0F, getSoundPitch(world.random)
+			);
 		}
 	}
 
@@ -323,7 +339,7 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 		}
 	}
 
-	public static SoundEvent getSound(EntityType<?> entityType) {
+	private static SoundEvent getSound(EntityType<?> entityType) {
 		return (SoundEvent)MOB_SOUNDS.getOrDefault(entityType, SoundEvents.field_15132);
 	}
 
@@ -343,13 +359,13 @@ public class ParrotEntity extends TameableShoulderEntity implements Bird {
 	}
 
 	@Override
-	protected float calculateAerialStepDelta(float f) {
+	protected float playFlySound(float f) {
 		this.playSound(SoundEvents.field_14925, 0.15F, 1.0F);
 		return f + this.field_6819 / 2.0F;
 	}
 
 	@Override
-	protected boolean method_5776() {
+	protected boolean hasWings() {
 		return true;
 	}
 

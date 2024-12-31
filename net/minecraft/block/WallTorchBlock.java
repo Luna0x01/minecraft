@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -17,8 +17,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class WallTorchBlock extends TorchBlock {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -37,7 +37,7 @@ public class WallTorchBlock extends TorchBlock {
 
 	protected WallTorchBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043));
 	}
 
 	@Override
@@ -55,18 +55,18 @@ public class WallTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		Direction direction = blockState.get(FACING);
 		BlockPos blockPos2 = blockPos.offset(direction.getOpposite());
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos2);
-		return blockState2.isSideSolidFullSquare(viewableWorld, blockPos2, direction);
+		BlockState blockState2 = worldView.getBlockState(blockPos2);
+		return blockState2.isSideSolidFullSquare(worldView, blockPos2, direction);
 	}
 
 	@Nullable
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
 		BlockState blockState = this.getDefaultState();
-		ViewableWorld viewableWorld = itemPlacementContext.getWorld();
+		WorldView worldView = itemPlacementContext.getWorld();
 		BlockPos blockPos = itemPlacementContext.getBlockPos();
 		Direction[] directions = itemPlacementContext.getPlacementDirections();
 
@@ -74,7 +74,7 @@ public class WallTorchBlock extends TorchBlock {
 			if (direction.getAxis().isHorizontal()) {
 				Direction direction2 = direction.getOpposite();
 				blockState = blockState.with(FACING, direction2);
-				if (blockState.canPlaceAt(viewableWorld, blockPos)) {
+				if (blockState.canPlaceAt(worldView, blockPos)) {
 					return blockState;
 				}
 			}
@@ -114,7 +114,7 @@ public class WallTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING);
 	}
 }

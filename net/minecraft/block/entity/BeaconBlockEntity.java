@@ -16,14 +16,14 @@ import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
 import net.minecraft.container.BeaconContainer;
 import net.minecraft.container.BlockContext;
 import net.minecraft.container.Container;
-import net.minecraft.container.ContainerLock;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.container.PropertyDelegate;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.ContainerLock;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -36,7 +36,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.Heightmap;
 
-public class BeaconBlockEntity extends BlockEntity implements NameableContainerProvider, Tickable {
+public class BeaconBlockEntity extends BlockEntity implements NameableContainerFactory, Tickable {
 	public static final StatusEffect[][] EFFECTS_BY_LEVEL = new StatusEffect[][]{
 		{StatusEffects.field_5904, StatusEffects.field_5917},
 		{StatusEffects.field_5907, StatusEffects.field_5913},
@@ -46,7 +46,7 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 	private static final Set<StatusEffect> EFFECTS = (Set<StatusEffect>)Arrays.stream(EFFECTS_BY_LEVEL).flatMap(Arrays::stream).collect(Collectors.toSet());
 	private List<BeaconBlockEntity.BeamSegment> beamSegments = Lists.newArrayList();
 	private List<BeaconBlockEntity.BeamSegment> field_19178 = Lists.newArrayList();
-	private int level = 0;
+	private int level;
 	private int field_19179 = -1;
 	@Nullable
 	private StatusEffect primary;
@@ -54,7 +54,7 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 	private StatusEffect secondary;
 	@Nullable
 	private Text customName;
-	private ContainerLock lock = ContainerLock.NONE;
+	private ContainerLock lock = ContainerLock.EMPTY;
 	private final PropertyDelegate propertyDelegate = new PropertyDelegate() {
 		@Override
 		public int get(int i) {
@@ -115,7 +115,7 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 		BeaconBlockEntity.BeamSegment beamSegment = this.field_19178.isEmpty()
 			? null
 			: (BeaconBlockEntity.BeamSegment)this.field_19178.get(this.field_19178.size() - 1);
-		int l = this.world.getTop(Heightmap.Type.field_13202, i, k);
+		int l = this.world.getTopY(Heightmap.Type.field_13202, i, k);
 
 		for (int m = 0; m < 10 && blockPos.getY() <= l; m++) {
 			BlockState blockState = this.world.getBlockState(blockPos);
@@ -136,7 +136,7 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 					}
 				}
 			} else {
-				if (beamSegment == null || blockState.getLightSubtracted(this.world, blockPos) >= 15 && block != Blocks.field_9987) {
+				if (beamSegment == null || blockState.getOpacity(this.world, blockPos) >= 15 && block != Blocks.field_9987) {
 					this.field_19178.clear();
 					this.field_19179 = l;
 					break;
@@ -171,8 +171,10 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 					this.playSound(SoundEvents.field_14703);
 
 					for (ServerPlayerEntity serverPlayerEntity : this.world
-						.getEntities(ServerPlayerEntity.class, new Box((double)i, (double)j, (double)k, (double)i, (double)(j - 4), (double)k).expand(10.0, 5.0, 10.0))) {
-						Criterions.CONSTRUCT_BEACON.handle(serverPlayerEntity, this);
+						.getNonSpectatingEntities(
+							ServerPlayerEntity.class, new Box((double)i, (double)j, (double)k, (double)i, (double)(j - 4), (double)k).expand(10.0, 5.0, 10.0)
+						)) {
+						Criterions.CONSTRUCT_BEACON.trigger(serverPlayerEntity, this);
 					}
 				} else if (bl && !bl2) {
 					this.playSound(SoundEvents.field_19344);
@@ -209,9 +211,9 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 	}
 
 	@Override
-	public void invalidate() {
+	public void markRemoved() {
 		this.playSound(SoundEvents.field_19344);
-		super.invalidate();
+		super.markRemoved();
 	}
 
 	private void applyPlayerEffects() {
@@ -224,15 +226,15 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 
 			int j = (9 + this.level * 2) * 20;
 			Box box = new Box(this.pos).expand(d).stretch(0.0, (double)this.world.getHeight(), 0.0);
-			List<PlayerEntity> list = this.world.getEntities(PlayerEntity.class, box);
+			List<PlayerEntity> list = this.world.getNonSpectatingEntities(PlayerEntity.class, box);
 
 			for (PlayerEntity playerEntity : list) {
-				playerEntity.addPotionEffect(new StatusEffectInstance(this.primary, j, i, true, true));
+				playerEntity.addStatusEffect(new StatusEffectInstance(this.primary, j, i, true, true));
 			}
 
 			if (this.level >= 4 && this.primary != this.secondary && this.secondary != null) {
 				for (PlayerEntity playerEntity2 : list) {
-					playerEntity2.addPotionEffect(new StatusEffectInstance(this.secondary, j, 0, true, true));
+					playerEntity2.addStatusEffect(new StatusEffectInstance(this.secondary, j, 0, true, true));
 				}
 			}
 		}
@@ -277,11 +279,11 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 		super.fromTag(compoundTag);
 		this.primary = getPotionEffectById(compoundTag.getInt("Primary"));
 		this.secondary = getPotionEffectById(compoundTag.getInt("Secondary"));
-		if (compoundTag.containsKey("CustomName", 8)) {
+		if (compoundTag.contains("CustomName", 8)) {
 			this.customName = Text.Serializer.fromJson(compoundTag.getString("CustomName"));
 		}
 
-		this.lock = ContainerLock.deserialize(compoundTag);
+		this.lock = ContainerLock.fromTag(compoundTag);
 	}
 
 	@Override
@@ -294,7 +296,7 @@ public class BeaconBlockEntity extends BlockEntity implements NameableContainerP
 			compoundTag.putString("CustomName", Text.Serializer.toJson(this.customName));
 		}
 
-		this.lock.serialize(compoundTag);
+		this.lock.toTag(compoundTag);
 		return compoundTag;
 	}
 

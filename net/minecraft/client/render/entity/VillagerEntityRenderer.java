@@ -1,10 +1,10 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.client.render.entity.feature.VillagerClothingFeatureRenderer;
 import net.minecraft.client.render.entity.feature.VillagerHeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.model.VillagerResemblingModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.resource.ReloadableResourceManager;
 import net.minecraft.util.Identifier;
@@ -19,19 +19,19 @@ public class VillagerEntityRenderer extends MobEntityRenderer<VillagerEntity, Vi
 		this.addFeature(new VillagerHeldItemFeatureRenderer<>(this));
 	}
 
-	protected Identifier method_4151(VillagerEntity villagerEntity) {
+	public Identifier getTexture(VillagerEntity villagerEntity) {
 		return VILLAGER_SKIN;
 	}
 
-	protected void method_4149(VillagerEntity villagerEntity, float f) {
+	protected void scale(VillagerEntity villagerEntity, MatrixStack matrixStack, float f) {
 		float g = 0.9375F;
 		if (villagerEntity.isBaby()) {
 			g = (float)((double)g * 0.5);
-			this.field_4673 = 0.25F;
+			this.shadowSize = 0.25F;
 		} else {
-			this.field_4673 = 0.5F;
+			this.shadowSize = 0.5F;
 		}
 
-		GlStateManager.scalef(g, g, g);
+		matrixStack.scale(g, g, g);
 	}
 }

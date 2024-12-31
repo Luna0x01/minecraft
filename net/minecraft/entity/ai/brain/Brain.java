@@ -17,7 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import net.minecraft.datafixers.NbtOps;
+import net.minecraft.datafixer.NbtOps;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.sensor.Sensor;
 import net.minecraft.entity.ai.brain.sensor.SensorType;
@@ -53,7 +53,7 @@ public class Brain<E extends LivingEntity> implements DynamicSerializable {
 		});
 
 		for (Entry<Dynamic<T>, Dynamic<T>> entry : dynamic.get("memories").asMap(Function.identity(), Function.identity()).entrySet()) {
-			this.readMemory(Registry.MEMORY_MODULE_TYPE.get(new Identifier(((Dynamic)entry.getKey()).asString(""))), (Dynamic<T>)entry.getValue());
+			this.readMemory(Registry.field_18793.get(new Identifier(((Dynamic)entry.getKey()).asString(""))), (Dynamic<T>)entry.getValue());
 		}
 	}
 
@@ -186,7 +186,7 @@ public class Brain<E extends LivingEntity> implements DynamicSerializable {
 				.filter(entry -> ((MemoryModuleType)entry.getKey()).getFactory().isPresent() && ((Optional)entry.getValue()).isPresent())
 				.map(
 					entry -> Pair.of(
-							dynamicOps.createString(Registry.MEMORY_MODULE_TYPE.getId((MemoryModuleType<?>)entry.getKey()).toString()),
+							dynamicOps.createString(Registry.field_18793.getId((MemoryModuleType<?>)entry.getKey()).toString()),
 							((DynamicSerializable)((Optional)entry.getValue()).get()).serialize(dynamicOps)
 						)
 				)

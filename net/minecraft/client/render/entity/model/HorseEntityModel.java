@@ -1,145 +1,154 @@
 package net.minecraft.client.render.entity.model;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.util.math.MathHelper;
 
-public class HorseEntityModel<T extends HorseBaseEntity> extends EntityModel<T> {
-	protected final Cuboid field_3305;
-	protected final Cuboid field_3307;
-	private final Cuboid field_3306;
-	private final Cuboid field_3303;
-	private final Cuboid field_3302;
-	private final Cuboid field_3308;
-	private final Cuboid field_3300;
-	private final Cuboid[] field_3304;
-	private final Cuboid[] field_3301;
+public class HorseEntityModel<T extends HorseBaseEntity> extends AnimalModel<T> {
+	protected final ModelPart torso;
+	protected final ModelPart head;
+	private final ModelPart leftBackLeg;
+	private final ModelPart rightBackLeg;
+	private final ModelPart leftFrontLeg;
+	private final ModelPart rightFrontLeg;
+	private final ModelPart field_20930;
+	private final ModelPart field_20931;
+	private final ModelPart field_20932;
+	private final ModelPart field_20933;
+	private final ModelPart tail;
+	private final ModelPart[] field_3304;
+	private final ModelPart[] field_3301;
 
 	public HorseEntityModel(float f) {
+		super(true, 16.2F, 1.36F, 2.7272F, 2.0F, 20.0F);
 		this.textureWidth = 64;
 		this.textureHeight = 64;
-		this.field_3305 = new Cuboid(this, 0, 32);
-		this.field_3305.addBox(-5.0F, -8.0F, -17.0F, 10, 10, 22, 0.05F);
-		this.field_3305.setRotationPoint(0.0F, 11.0F, 5.0F);
-		this.field_3307 = new Cuboid(this, 0, 35);
-		this.field_3307.addBox(-2.05F, -6.0F, -2.0F, 4, 12, 7);
-		this.field_3307.pitch = (float) (Math.PI / 6);
-		Cuboid cuboid = new Cuboid(this, 0, 13);
-		cuboid.addBox(-3.0F, -11.0F, -2.0F, 6, 5, 7, f);
-		Cuboid cuboid2 = new Cuboid(this, 56, 36);
-		cuboid2.addBox(-1.0F, -11.0F, 5.01F, 2, 16, 2, f);
-		Cuboid cuboid3 = new Cuboid(this, 0, 25);
-		cuboid3.addBox(-2.0F, -11.0F, -7.0F, 4, 5, 5, f);
-		this.field_3307.addChild(cuboid);
-		this.field_3307.addChild(cuboid2);
-		this.field_3307.addChild(cuboid3);
-		this.method_2789(this.field_3307);
-		this.field_3306 = new Cuboid(this, 48, 21);
-		this.field_3306.mirror = true;
-		this.field_3306.addBox(-3.0F, -1.01F, -1.0F, 4, 11, 4, f);
-		this.field_3306.setRotationPoint(4.0F, 14.0F, 7.0F);
-		this.field_3303 = new Cuboid(this, 48, 21);
-		this.field_3303.addBox(-1.0F, -1.01F, -1.0F, 4, 11, 4, f);
-		this.field_3303.setRotationPoint(-4.0F, 14.0F, 7.0F);
-		this.field_3302 = new Cuboid(this, 48, 21);
-		this.field_3302.mirror = true;
-		this.field_3302.addBox(-3.0F, -1.01F, -1.9F, 4, 11, 4, f);
-		this.field_3302.setRotationPoint(4.0F, 6.0F, -12.0F);
-		this.field_3308 = new Cuboid(this, 48, 21);
-		this.field_3308.addBox(-1.0F, -1.01F, -1.9F, 4, 11, 4, f);
-		this.field_3308.setRotationPoint(-4.0F, 6.0F, -12.0F);
-		this.field_3300 = new Cuboid(this, 42, 36);
-		this.field_3300.addBox(-1.5F, 0.0F, 0.0F, 3, 14, 4, f);
-		this.field_3300.setRotationPoint(0.0F, -5.0F, 2.0F);
-		this.field_3300.pitch = (float) (Math.PI / 6);
-		this.field_3305.addChild(this.field_3300);
-		Cuboid cuboid4 = new Cuboid(this, 26, 0);
-		cuboid4.addBox(-5.0F, -8.0F, -9.0F, 10, 9, 9, 0.5F);
-		this.field_3305.addChild(cuboid4);
-		Cuboid cuboid5 = new Cuboid(this, 29, 5);
-		cuboid5.addBox(2.0F, -9.0F, -6.0F, 1, 2, 2, f);
-		this.field_3307.addChild(cuboid5);
-		Cuboid cuboid6 = new Cuboid(this, 29, 5);
-		cuboid6.addBox(-3.0F, -9.0F, -6.0F, 1, 2, 2, f);
-		this.field_3307.addChild(cuboid6);
-		Cuboid cuboid7 = new Cuboid(this, 32, 2);
-		cuboid7.addBox(3.1F, -6.0F, -8.0F, 0, 3, 16, f);
-		cuboid7.pitch = (float) (-Math.PI / 6);
-		this.field_3307.addChild(cuboid7);
-		Cuboid cuboid8 = new Cuboid(this, 32, 2);
-		cuboid8.addBox(-3.1F, -6.0F, -8.0F, 0, 3, 16, f);
-		cuboid8.pitch = (float) (-Math.PI / 6);
-		this.field_3307.addChild(cuboid8);
-		Cuboid cuboid9 = new Cuboid(this, 1, 1);
-		cuboid9.addBox(-3.0F, -11.0F, -1.9F, 6, 5, 6, 0.2F);
-		this.field_3307.addChild(cuboid9);
-		Cuboid cuboid10 = new Cuboid(this, 19, 0);
-		cuboid10.addBox(-2.0F, -11.0F, -4.0F, 4, 5, 2, 0.2F);
-		this.field_3307.addChild(cuboid10);
-		this.field_3304 = new Cuboid[]{cuboid4, cuboid5, cuboid6, cuboid9, cuboid10};
-		this.field_3301 = new Cuboid[]{cuboid7, cuboid8};
+		this.torso = new ModelPart(this, 0, 32);
+		this.torso.addCuboid(-5.0F, -8.0F, -17.0F, 10.0F, 10.0F, 22.0F, 0.05F);
+		this.torso.setPivot(0.0F, 11.0F, 5.0F);
+		this.head = new ModelPart(this, 0, 35);
+		this.head.addCuboid(-2.05F, -6.0F, -2.0F, 4.0F, 12.0F, 7.0F);
+		this.head.pitch = (float) (Math.PI / 6);
+		ModelPart modelPart = new ModelPart(this, 0, 13);
+		modelPart.addCuboid(-3.0F, -11.0F, -2.0F, 6.0F, 5.0F, 7.0F, f);
+		ModelPart modelPart2 = new ModelPart(this, 56, 36);
+		modelPart2.addCuboid(-1.0F, -11.0F, 5.01F, 2.0F, 16.0F, 2.0F, f);
+		ModelPart modelPart3 = new ModelPart(this, 0, 25);
+		modelPart3.addCuboid(-2.0F, -11.0F, -7.0F, 4.0F, 5.0F, 5.0F, f);
+		this.head.addChild(modelPart);
+		this.head.addChild(modelPart2);
+		this.head.addChild(modelPart3);
+		this.method_2789(this.head);
+		this.leftBackLeg = new ModelPart(this, 48, 21);
+		this.leftBackLeg.mirror = true;
+		this.leftBackLeg.addCuboid(-3.0F, -1.01F, -1.0F, 4.0F, 11.0F, 4.0F, f);
+		this.leftBackLeg.setPivot(4.0F, 14.0F, 7.0F);
+		this.rightBackLeg = new ModelPart(this, 48, 21);
+		this.rightBackLeg.addCuboid(-1.0F, -1.01F, -1.0F, 4.0F, 11.0F, 4.0F, f);
+		this.rightBackLeg.setPivot(-4.0F, 14.0F, 7.0F);
+		this.leftFrontLeg = new ModelPart(this, 48, 21);
+		this.leftFrontLeg.mirror = true;
+		this.leftFrontLeg.addCuboid(-3.0F, -1.01F, -1.9F, 4.0F, 11.0F, 4.0F, f);
+		this.leftFrontLeg.setPivot(4.0F, 6.0F, -12.0F);
+		this.rightFrontLeg = new ModelPart(this, 48, 21);
+		this.rightFrontLeg.addCuboid(-1.0F, -1.01F, -1.9F, 4.0F, 11.0F, 4.0F, f);
+		this.rightFrontLeg.setPivot(-4.0F, 6.0F, -12.0F);
+		float g = 5.5F;
+		this.field_20930 = new ModelPart(this, 48, 21);
+		this.field_20930.mirror = true;
+		this.field_20930.addCuboid(-3.0F, -1.01F, -1.0F, 4.0F, 11.0F, 4.0F, f, f + 5.5F, f);
+		this.field_20930.setPivot(4.0F, 14.0F, 7.0F);
+		this.field_20931 = new ModelPart(this, 48, 21);
+		this.field_20931.addCuboid(-1.0F, -1.01F, -1.0F, 4.0F, 11.0F, 4.0F, f, f + 5.5F, f);
+		this.field_20931.setPivot(-4.0F, 14.0F, 7.0F);
+		this.field_20932 = new ModelPart(this, 48, 21);
+		this.field_20932.mirror = true;
+		this.field_20932.addCuboid(-3.0F, -1.01F, -1.9F, 4.0F, 11.0F, 4.0F, f, f + 5.5F, f);
+		this.field_20932.setPivot(4.0F, 6.0F, -12.0F);
+		this.field_20933 = new ModelPart(this, 48, 21);
+		this.field_20933.addCuboid(-1.0F, -1.01F, -1.9F, 4.0F, 11.0F, 4.0F, f, f + 5.5F, f);
+		this.field_20933.setPivot(-4.0F, 6.0F, -12.0F);
+		this.tail = new ModelPart(this, 42, 36);
+		this.tail.addCuboid(-1.5F, 0.0F, 0.0F, 3.0F, 14.0F, 4.0F, f);
+		this.tail.setPivot(0.0F, -5.0F, 2.0F);
+		this.tail.pitch = (float) (Math.PI / 6);
+		this.torso.addChild(this.tail);
+		ModelPart modelPart4 = new ModelPart(this, 26, 0);
+		modelPart4.addCuboid(-5.0F, -8.0F, -9.0F, 10.0F, 9.0F, 9.0F, 0.5F);
+		this.torso.addChild(modelPart4);
+		ModelPart modelPart5 = new ModelPart(this, 29, 5);
+		modelPart5.addCuboid(2.0F, -9.0F, -6.0F, 1.0F, 2.0F, 2.0F, f);
+		this.head.addChild(modelPart5);
+		ModelPart modelPart6 = new ModelPart(this, 29, 5);
+		modelPart6.addCuboid(-3.0F, -9.0F, -6.0F, 1.0F, 2.0F, 2.0F, f);
+		this.head.addChild(modelPart6);
+		ModelPart modelPart7 = new ModelPart(this, 32, 2);
+		modelPart7.addCuboid(3.1F, -6.0F, -8.0F, 0.0F, 3.0F, 16.0F, f);
+		modelPart7.pitch = (float) (-Math.PI / 6);
+		this.head.addChild(modelPart7);
+		ModelPart modelPart8 = new ModelPart(this, 32, 2);
+		modelPart8.addCuboid(-3.1F, -6.0F, -8.0F, 0.0F, 3.0F, 16.0F, f);
+		modelPart8.pitch = (float) (-Math.PI / 6);
+		this.head.addChild(modelPart8);
+		ModelPart modelPart9 = new ModelPart(this, 1, 1);
+		modelPart9.addCuboid(-3.0F, -11.0F, -1.9F, 6.0F, 5.0F, 6.0F, 0.2F);
+		this.head.addChild(modelPart9);
+		ModelPart modelPart10 = new ModelPart(this, 19, 0);
+		modelPart10.addCuboid(-2.0F, -11.0F, -4.0F, 4.0F, 5.0F, 2.0F, 0.2F);
+		this.head.addChild(modelPart10);
+		this.field_3304 = new ModelPart[]{modelPart4, modelPart5, modelPart6, modelPart9, modelPart10};
+		this.field_3301 = new ModelPart[]{modelPart7, modelPart8};
 	}
 
-	protected void method_2789(Cuboid cuboid) {
-		Cuboid cuboid2 = new Cuboid(this, 19, 16);
-		cuboid2.addBox(0.55F, -13.0F, 4.0F, 2, 3, 1, -0.001F);
-		Cuboid cuboid3 = new Cuboid(this, 19, 16);
-		cuboid3.addBox(-2.55F, -13.0F, 4.0F, 2, 3, 1, -0.001F);
-		cuboid.addChild(cuboid2);
-		cuboid.addChild(cuboid3);
+	protected void method_2789(ModelPart modelPart) {
+		ModelPart modelPart2 = new ModelPart(this, 19, 16);
+		modelPart2.addCuboid(0.55F, -13.0F, 4.0F, 2.0F, 3.0F, 1.0F, -0.001F);
+		ModelPart modelPart3 = new ModelPart(this, 19, 16);
+		modelPart3.addCuboid(-2.55F, -13.0F, 4.0F, 2.0F, 3.0F, 1.0F, -0.001F);
+		modelPart.addChild(modelPart2);
+		modelPart.addChild(modelPart3);
 	}
 
-	public void method_17085(T horseBaseEntity, float f, float g, float h, float i, float j, float k) {
-		boolean bl = horseBaseEntity.isBaby();
-		float l = horseBaseEntity.getScaleFactor();
-		boolean bl2 = horseBaseEntity.isSaddled();
-		boolean bl3 = horseBaseEntity.hasPassengers();
+	public void setAngles(T horseBaseEntity, float f, float g, float h, float i, float j) {
+		boolean bl = horseBaseEntity.isSaddled();
+		boolean bl2 = horseBaseEntity.hasPassengers();
 
-		for (Cuboid cuboid : this.field_3304) {
-			cuboid.visible = bl2;
+		for (ModelPart modelPart : this.field_3304) {
+			modelPart.visible = bl;
 		}
 
-		for (Cuboid cuboid2 : this.field_3301) {
-			cuboid2.visible = bl3 && bl2;
+		for (ModelPart modelPart2 : this.field_3301) {
+			modelPart2.visible = bl2 && bl;
 		}
 
-		if (bl) {
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(l, 0.5F + l * 0.5F, l);
-			GlStateManager.translatef(0.0F, 0.95F * (1.0F - l), 0.0F);
-		}
-
-		this.field_3306.render(k);
-		this.field_3303.render(k);
-		this.field_3302.render(k);
-		this.field_3308.render(k);
-		if (bl) {
-			GlStateManager.popMatrix();
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(l, l, l);
-			GlStateManager.translatef(0.0F, 2.3F * (1.0F - l), 0.0F);
-		}
-
-		this.field_3305.render(k);
-		if (bl) {
-			GlStateManager.popMatrix();
-			GlStateManager.pushMatrix();
-			float m = l + 0.1F * l;
-			GlStateManager.scalef(m, m, m);
-			GlStateManager.translatef(0.0F, 2.25F * (1.0F - m), 0.1F * (1.4F - m));
-		}
-
-		this.field_3307.render(k);
-		if (bl) {
-			GlStateManager.popMatrix();
-		}
+		this.torso.pivotY = 11.0F;
 	}
 
-	public void method_17084(T horseBaseEntity, float f, float g, float h) {
+	@Override
+	public Iterable<ModelPart> getHeadParts() {
+		return ImmutableList.of(this.head);
+	}
+
+	@Override
+	protected Iterable<ModelPart> getBodyParts() {
+		return ImmutableList.of(
+			this.torso,
+			this.leftBackLeg,
+			this.rightBackLeg,
+			this.leftFrontLeg,
+			this.rightFrontLeg,
+			this.field_20930,
+			this.field_20931,
+			this.field_20932,
+			this.field_20933
+		);
+	}
+
+	public void animateModel(T horseBaseEntity, float f, float g, float h) {
 		super.animateModel(horseBaseEntity, f, g, h);
-		float i = this.method_2790(horseBaseEntity.field_6220, horseBaseEntity.field_6283, h);
-		float j = this.method_2790(horseBaseEntity.prevHeadYaw, horseBaseEntity.headYaw, h);
+		float i = MathHelper.lerpAngle(horseBaseEntity.prevBodyYaw, horseBaseEntity.bodyYaw, h);
+		float j = MathHelper.lerpAngle(horseBaseEntity.prevHeadYaw, horseBaseEntity.headYaw, h);
 		float k = MathHelper.lerp(h, horseBaseEntity.prevPitch, horseBaseEntity.pitch);
 		float l = j - i;
 		float m = k * (float) (Math.PI / 180.0);
@@ -161,53 +170,62 @@ public class HorseEntityModel<T extends HorseBaseEntity> extends EntityModel<T> 
 		float q = horseBaseEntity.getEatingAnimationProgress(h);
 		boolean bl = horseBaseEntity.field_6957 != 0;
 		float r = (float)horseBaseEntity.age + h;
-		this.field_3307.rotationPointY = 4.0F;
-		this.field_3307.rotationPointZ = -12.0F;
-		this.field_3305.pitch = 0.0F;
-		this.field_3307.pitch = (float) (Math.PI / 6) + m;
-		this.field_3307.yaw = l * (float) (Math.PI / 180.0);
-		float s = horseBaseEntity.isInsideWater() ? 0.2F : 1.0F;
+		this.head.pivotY = 4.0F;
+		this.head.pivotZ = -12.0F;
+		this.torso.pitch = 0.0F;
+		this.head.pitch = (float) (Math.PI / 6) + m;
+		this.head.yaw = l * (float) (Math.PI / 180.0);
+		float s = horseBaseEntity.isTouchingWater() ? 0.2F : 1.0F;
 		float t = MathHelper.cos(s * f * 0.6662F + (float) Math.PI);
 		float u = t * 0.8F * g;
 		float v = (1.0F - Math.max(o, n)) * ((float) (Math.PI / 6) + m + q * MathHelper.sin(r) * 0.05F);
-		this.field_3307.pitch = o * ((float) (Math.PI / 12) + m) + n * (2.1816616F + MathHelper.sin(r) * 0.05F) + v;
-		this.field_3307.yaw = o * l * (float) (Math.PI / 180.0) + (1.0F - Math.max(o, n)) * this.field_3307.yaw;
-		this.field_3307.rotationPointY = o * -4.0F + n * 11.0F + (1.0F - Math.max(o, n)) * this.field_3307.rotationPointY;
-		this.field_3307.rotationPointZ = o * -4.0F + n * -12.0F + (1.0F - Math.max(o, n)) * this.field_3307.rotationPointZ;
-		this.field_3305.pitch = o * (float) (-Math.PI / 4) + p * this.field_3305.pitch;
+		this.head.pitch = o * ((float) (Math.PI / 12) + m) + n * (2.1816616F + MathHelper.sin(r) * 0.05F) + v;
+		this.head.yaw = o * l * (float) (Math.PI / 180.0) + (1.0F - Math.max(o, n)) * this.head.yaw;
+		this.head.pivotY = o * -4.0F + n * 11.0F + (1.0F - Math.max(o, n)) * this.head.pivotY;
+		this.head.pivotZ = o * -4.0F + n * -12.0F + (1.0F - Math.max(o, n)) * this.head.pivotZ;
+		this.torso.pitch = o * (float) (-Math.PI / 4) + p * this.torso.pitch;
 		float w = (float) (Math.PI / 12) * o;
 		float x = MathHelper.cos(r * 0.6F + (float) Math.PI);
-		this.field_3302.rotationPointY = 2.0F * o + 14.0F * p;
-		this.field_3302.rotationPointZ = -6.0F * o - 10.0F * p;
-		this.field_3308.rotationPointY = this.field_3302.rotationPointY;
-		this.field_3308.rotationPointZ = this.field_3302.rotationPointZ;
+		this.leftFrontLeg.pivotY = 2.0F * o + 14.0F * p;
+		this.leftFrontLeg.pivotZ = -6.0F * o - 10.0F * p;
+		this.rightFrontLeg.pivotY = this.leftFrontLeg.pivotY;
+		this.rightFrontLeg.pivotZ = this.leftFrontLeg.pivotZ;
 		float y = ((float) (-Math.PI / 3) + x) * o + u * p;
 		float z = ((float) (-Math.PI / 3) - x) * o - u * p;
-		this.field_3306.pitch = w - t * 0.5F * g * p;
-		this.field_3303.pitch = w + t * 0.5F * g * p;
-		this.field_3302.pitch = y;
-		this.field_3308.pitch = z;
-		this.field_3300.pitch = (float) (Math.PI / 6) + g * 0.75F;
-		this.field_3300.rotationPointY = -5.0F + g;
-		this.field_3300.rotationPointZ = 2.0F + g * 2.0F;
+		this.leftBackLeg.pitch = w - t * 0.5F * g * p;
+		this.rightBackLeg.pitch = w + t * 0.5F * g * p;
+		this.leftFrontLeg.pitch = y;
+		this.rightFrontLeg.pitch = z;
+		this.tail.pitch = (float) (Math.PI / 6) + g * 0.75F;
+		this.tail.pivotY = -5.0F + g;
+		this.tail.pivotZ = 2.0F + g * 2.0F;
 		if (bl) {
-			this.field_3300.yaw = MathHelper.cos(r * 0.7F);
+			this.tail.yaw = MathHelper.cos(r * 0.7F);
 		} else {
-			this.field_3300.yaw = 0.0F;
-		}
-	}
-
-	private float method_2790(float f, float g, float h) {
-		float i = g - f;
-
-		while (i < -180.0F) {
-			i += 360.0F;
+			this.tail.yaw = 0.0F;
 		}
 
-		while (i >= 180.0F) {
-			i -= 360.0F;
-		}
-
-		return f + h * i;
+		this.field_20930.pivotY = this.leftBackLeg.pivotY;
+		this.field_20930.pivotZ = this.leftBackLeg.pivotZ;
+		this.field_20930.pitch = this.leftBackLeg.pitch;
+		this.field_20931.pivotY = this.rightBackLeg.pivotY;
+		this.field_20931.pivotZ = this.rightBackLeg.pivotZ;
+		this.field_20931.pitch = this.rightBackLeg.pitch;
+		this.field_20932.pivotY = this.leftFrontLeg.pivotY;
+		this.field_20932.pivotZ = this.leftFrontLeg.pivotZ;
+		this.field_20932.pitch = this.leftFrontLeg.pitch;
+		this.field_20933.pivotY = this.rightFrontLeg.pivotY;
+		this.field_20933.pivotZ = this.rightFrontLeg.pivotZ;
+		this.field_20933.pitch = this.rightFrontLeg.pitch;
+		boolean bl2 = horseBaseEntity.isBaby();
+		this.leftBackLeg.visible = !bl2;
+		this.rightBackLeg.visible = !bl2;
+		this.leftFrontLeg.visible = !bl2;
+		this.rightFrontLeg.visible = !bl2;
+		this.field_20930.visible = bl2;
+		this.field_20931.visible = bl2;
+		this.field_20932.visible = bl2;
+		this.field_20933.visible = bl2;
+		this.torso.pivotY = bl2 ? 10.8F : 0.0F;
 	}
 }

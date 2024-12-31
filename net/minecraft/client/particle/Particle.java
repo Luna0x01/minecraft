@@ -2,8 +2,9 @@ package net.minecraft.client.particle;
 
 import java.util.Random;
 import java.util.stream.Stream;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.util.ReusableStream;
@@ -28,6 +29,7 @@ public abstract class Particle {
 	private Box boundingBox = EMPTY_BOUNDING_BOX;
 	protected boolean onGround;
 	protected boolean collidesWithWorld = true;
+	private boolean field_21507;
 	protected boolean dead;
 	protected float spacingXZ = 0.6F;
 	protected float spacingY = 1.8F;
@@ -41,9 +43,6 @@ public abstract class Particle {
 	protected float colorAlpha = 1.0F;
 	protected float angle;
 	protected float prevAngle;
-	public static double cameraX;
-	public static double cameraY;
-	public static double cameraZ;
 
 	protected Particle(World world, double d, double e, double f) {
 		this.world = world;
@@ -74,7 +73,7 @@ public abstract class Particle {
 		return this;
 	}
 
-	public Particle method_3087(float f) {
+	public Particle scale(float f) {
 		this.setBoundingBoxSpacing(0.2F * f, 0.2F * f);
 		return this;
 	}
@@ -116,7 +115,7 @@ public abstract class Particle {
 		}
 	}
 
-	public abstract void buildGeometry(BufferBuilder bufferBuilder, Camera camera, float f, float g, float h, float i, float j, float k);
+	public abstract void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float f);
 
 	public abstract ParticleTextureSheet getType();
 
@@ -149,9 +148,9 @@ public abstract class Particle {
 			this.spacingXZ = f;
 			this.spacingY = g;
 			Box box = this.getBoundingBox();
-			double d = (box.minX + box.maxX - (double)f) / 2.0;
-			double e = (box.minZ + box.maxZ - (double)f) / 2.0;
-			this.setBoundingBox(new Box(d, box.minY, e, d + (double)this.spacingXZ, box.minY + (double)this.spacingY, e + (double)this.spacingXZ));
+			double d = (box.x1 + box.x2 - (double)f) / 2.0;
+			double e = (box.z1 + box.z2 - (double)f) / 2.0;
+			this.setBoundingBox(new Box(d, box.y1, e, d + (double)this.spacingXZ, box.y1 + (double)this.spacingY, e + (double)this.spacingXZ));
 		}
 	}
 
@@ -165,43 +164,49 @@ public abstract class Particle {
 	}
 
 	public void move(double d, double e, double f) {
-		double g = d;
-		double h = e;
-		double i = f;
-		if (this.collidesWithWorld && (d != 0.0 || e != 0.0 || f != 0.0)) {
-			Vec3d vec3d = Entity.calculateMotionVector(
-				null, new Vec3d(d, e, f), this.getBoundingBox(), this.world, EntityContext.absent(), new ReusableStream<>(Stream.empty())
-			);
-			d = vec3d.x;
-			e = vec3d.y;
-			f = vec3d.z;
-		}
+		if (!this.field_21507) {
+			double g = d;
+			double h = e;
+			double i = f;
+			if (this.collidesWithWorld && (d != 0.0 || e != 0.0 || f != 0.0)) {
+				Vec3d vec3d = Entity.adjustMovementForCollisions(
+					null, new Vec3d(d, e, f), this.getBoundingBox(), this.world, EntityContext.absent(), new ReusableStream<>(Stream.empty())
+				);
+				d = vec3d.x;
+				e = vec3d.y;
+				f = vec3d.z;
+			}
 
-		if (d != 0.0 || e != 0.0 || f != 0.0) {
-			this.setBoundingBox(this.getBoundingBox().offset(d, e, f));
-			this.repositionFromBoundingBox();
-		}
+			if (d != 0.0 || e != 0.0 || f != 0.0) {
+				this.setBoundingBox(this.getBoundingBox().offset(d, e, f));
+				this.repositionFromBoundingBox();
+			}
 
-		this.onGround = h != e && h < 0.0;
-		if (g != d) {
-			this.velocityX = 0.0;
-		}
+			if (Math.abs(h) >= 1.0E-5F && Math.abs(e) < 1.0E-5F) {
+				this.field_21507 = true;
+			}
 
-		if (i != f) {
-			this.velocityZ = 0.0;
+			this.onGround = h != e && h < 0.0;
+			if (g != d) {
+				this.velocityX = 0.0;
+			}
+
+			if (i != f) {
+				this.velocityZ = 0.0;
+			}
 		}
 	}
 
 	protected void repositionFromBoundingBox() {
 		Box box = this.getBoundingBox();
-		this.x = (box.minX + box.maxX) / 2.0;
-		this.y = box.minY;
-		this.z = (box.minZ + box.maxZ) / 2.0;
+		this.x = (box.x1 + box.x2) / 2.0;
+		this.y = box.y1;
+		this.z = (box.z1 + box.z2) / 2.0;
 	}
 
 	protected int getColorMultiplier(float f) {
 		BlockPos blockPos = new BlockPos(this.x, this.y, this.z);
-		return this.world.isBlockLoaded(blockPos) ? this.world.getLightmapIndex(blockPos, 0) : 0;
+		return this.world.isChunkLoaded(blockPos) ? WorldRenderer.getLightmapCoordinates(this.world, blockPos) : 0;
 	}
 
 	public boolean isAlive() {

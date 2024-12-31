@@ -1,18 +1,66 @@
 package net.minecraft.nbt;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.bytes.ByteOpenHashSet;
+import it.unimi.dsi.fastutil.bytes.ByteSet;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 
 public class ListTag extends AbstractListTag<Tag> {
-	private List<Tag> value = Lists.newArrayList();
-	private byte type = 0;
+	public static final TagReader<ListTag> READER = new TagReader<ListTag>() {
+		public ListTag read(DataInput dataInput, int i, PositionTracker positionTracker) throws IOException {
+			positionTracker.add(296L);
+			if (i > 512) {
+				throw new RuntimeException("Tried to read NBT tag with too high complexity, depth > 512");
+			} else {
+				byte b = dataInput.readByte();
+				int j = dataInput.readInt();
+				if (b == 0 && j > 0) {
+					throw new RuntimeException("Missing type on ListTag");
+				} else {
+					positionTracker.add(32L * (long)j);
+					TagReader<?> tagReader = TagReaders.of(b);
+					List<Tag> list = Lists.newArrayListWithCapacity(j);
+
+					for (int k = 0; k < j; k++) {
+						list.add(tagReader.read(dataInput, i + 1, positionTracker));
+					}
+
+					return new ListTag(list, b);
+				}
+			}
+		}
+
+		@Override
+		public String getCrashReportName() {
+			return "LIST";
+		}
+
+		@Override
+		public String getCommandFeedbackName() {
+			return "TAG_List";
+		}
+	};
+	private static final ByteSet NBT_NUMBER_TYPES = new ByteOpenHashSet(Arrays.asList((byte)1, (byte)2, (byte)3, (byte)4, (byte)5, (byte)6));
+	private final List<Tag> value;
+	private byte type;
+
+	private ListTag(List<Tag> list, byte b) {
+		this.value = list;
+		this.type = b;
+	}
+
+	public ListTag() {
+		this(Lists.newArrayList(), (byte)0);
+	}
 
 	@Override
 	public void write(DataOutput dataOutput) throws IOException {
@@ -31,31 +79,13 @@ public class ListTag extends AbstractListTag<Tag> {
 	}
 
 	@Override
-	public void read(DataInput dataInput, int i, PositionTracker positionTracker) throws IOException {
-		positionTracker.add(296L);
-		if (i > 512) {
-			throw new RuntimeException("Tried to read NBT tag with too high complexity, depth > 512");
-		} else {
-			this.type = dataInput.readByte();
-			int j = dataInput.readInt();
-			if (this.type == 0 && j > 0) {
-				throw new RuntimeException("Missing type on ListTag");
-			} else {
-				positionTracker.add(32L * (long)j);
-				this.value = Lists.newArrayListWithCapacity(j);
-
-				for (int k = 0; k < j; k++) {
-					Tag tag = Tag.createTag(this.type);
-					tag.read(dataInput, i + 1, positionTracker);
-					this.value.add(tag);
-				}
-			}
-		}
+	public byte getType() {
+		return 9;
 	}
 
 	@Override
-	public byte getType() {
-		return 9;
+	public TagReader<ListTag> getReader() {
+		return READER;
 	}
 
 	@Override
@@ -80,7 +110,7 @@ public class ListTag extends AbstractListTag<Tag> {
 	}
 
 	@Override
-	public Tag method_10536(int i) {
+	public Tag remove(int i) {
 		Tag tag = (Tag)this.value.remove(i);
 		this.forgetTypeIfEmpty();
 		return tag;
@@ -90,7 +120,7 @@ public class ListTag extends AbstractListTag<Tag> {
 		return this.value.isEmpty();
 	}
 
-	public CompoundTag getCompoundTag(int i) {
+	public CompoundTag getCompound(int i) {
 		if (i >= 0 && i < this.value.size()) {
 			Tag tag = (Tag)this.value.get(i);
 			if (tag.getType() == 10) {
@@ -101,7 +131,7 @@ public class ListTag extends AbstractListTag<Tag> {
 		return new CompoundTag();
 	}
 
-	public ListTag getListTag(int i) {
+	public ListTag getList(int i) {
 		if (i >= 0 && i < this.value.size()) {
 			Tag tag = (Tag)this.value.get(i);
 			if (tag.getType() == 9) {
@@ -180,13 +210,13 @@ public class ListTag extends AbstractListTag<Tag> {
 		return this.value.size();
 	}
 
-	public Tag method_10534(int i) {
+	public Tag get(int i) {
 		return (Tag)this.value.get(i);
 	}
 
 	@Override
-	public Tag method_10606(int i, Tag tag) {
-		Tag tag2 = this.method_10534(i);
+	public Tag set(int i, Tag tag) {
+		Tag tag2 = this.get(i);
 		if (!this.setTag(i, tag)) {
 			throw new UnsupportedOperationException(String.format("Trying to add tag of type %d to list of %d", tag.getType(), this.type));
 		} else {
@@ -195,7 +225,7 @@ public class ListTag extends AbstractListTag<Tag> {
 	}
 
 	@Override
-	public void method_10531(int i, Tag tag) {
+	public void add(int i, Tag tag) {
 		if (!this.addTag(i, tag)) {
 			throw new UnsupportedOperationException(String.format("Trying to add tag of type %d to list of %d", tag.getType(), this.type));
 		}
@@ -232,16 +262,10 @@ public class ListTag extends AbstractListTag<Tag> {
 		}
 	}
 
-	public ListTag method_10612() {
-		ListTag listTag = new ListTag();
-		listTag.type = this.type;
-
-		for (Tag tag : this.value) {
-			Tag tag2 = tag.copy();
-			listTag.value.add(tag2);
-		}
-
-		return listTag;
+	public ListTag copy() {
+		Iterable<Tag> iterable = (Iterable<Tag>)(TagReaders.of(this.type).isImmutable() ? this.value : Iterables.transform(this.value, Tag::copy));
+		List<Tag> list = Lists.newArrayList(iterable);
+		return new ListTag(list, this.type);
 	}
 
 	public boolean equals(Object object) {
@@ -256,32 +280,48 @@ public class ListTag extends AbstractListTag<Tag> {
 	public Text toText(String string, int i) {
 		if (this.isEmpty()) {
 			return new LiteralText("[]");
-		} else {
+		} else if (NBT_NUMBER_TYPES.contains(this.type) && this.size() <= 8) {
+			String string2 = ", ";
 			Text text = new LiteralText("[");
-			if (!string.isEmpty()) {
-				text.append("\n");
-			}
 
 			for (int j = 0; j < this.value.size(); j++) {
-				Text text2 = new LiteralText(Strings.repeat(string, i + 1));
-				text2.append(((Tag)this.value.get(j)).toText(string, i + 1));
-				if (j != this.value.size() - 1) {
-					text2.append(String.valueOf(',')).append(string.isEmpty() ? " " : "\n");
+				if (j != 0) {
+					text.append(", ");
 				}
 
-				text.append(text2);
-			}
-
-			if (!string.isEmpty()) {
-				text.append("\n").append(Strings.repeat(string, i));
+				text.append(((Tag)this.value.get(j)).toText());
 			}
 
 			text.append("]");
 			return text;
+		} else {
+			Text text2 = new LiteralText("[");
+			if (!string.isEmpty()) {
+				text2.append("\n");
+			}
+
+			String string3 = String.valueOf(',');
+
+			for (int k = 0; k < this.value.size(); k++) {
+				Text text3 = new LiteralText(Strings.repeat(string, i + 1));
+				text3.append(((Tag)this.value.get(k)).toText(string, i + 1));
+				if (k != this.value.size() - 1) {
+					text3.append(string3).append(string.isEmpty() ? " " : "\n");
+				}
+
+				text2.append(text3);
+			}
+
+			if (!string.isEmpty()) {
+				text2.append("\n").append(Strings.repeat(string, i));
+			}
+
+			text2.append("]");
+			return text2;
 		}
 	}
 
-	public int getListType() {
+	public int getElementType() {
 		return this.type;
 	}
 

@@ -17,17 +17,17 @@ public class ChorusPlantDecorator extends Decorator<NopeDecoratorConfig> {
 		super(function);
 	}
 
-	public Stream<BlockPos> method_14373(
+	public Stream<BlockPos> getPositions(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, NopeDecoratorConfig nopeDecoratorConfig, BlockPos blockPos
 	) {
 		int i = random.nextInt(5);
 		return IntStream.range(0, i).mapToObj(ix -> {
-			int j = random.nextInt(16);
-			int k = random.nextInt(16);
-			int l = iWorld.getTopPosition(Heightmap.Type.field_13197, blockPos.add(j, 0, k)).getY();
+			int j = random.nextInt(16) + blockPos.getX();
+			int k = random.nextInt(16) + blockPos.getZ();
+			int l = iWorld.getTopY(Heightmap.Type.field_13197, j, k);
 			if (l > 0) {
 				int m = l - 1;
-				return new BlockPos(blockPos.getX() + j, m, blockPos.getZ() + k);
+				return new BlockPos(j, m, k);
 			} else {
 				return null;
 			}

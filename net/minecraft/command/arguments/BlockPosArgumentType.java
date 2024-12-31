@@ -29,7 +29,7 @@ public class BlockPosArgumentType implements ArgumentType<PosArgument> {
 
 	public static BlockPos getLoadedBlockPos(CommandContext<ServerCommandSource> commandContext, String string) throws CommandSyntaxException {
 		BlockPos blockPos = ((PosArgument)commandContext.getArgument(string, PosArgument.class)).toAbsoluteBlockPos((ServerCommandSource)commandContext.getSource());
-		if (!((ServerCommandSource)commandContext.getSource()).getWorld().isBlockLoaded(blockPos)) {
+		if (!((ServerCommandSource)commandContext.getSource()).getWorld().isChunkLoaded(blockPos)) {
 			throw UNLOADED_EXCEPTION.create();
 		} else {
 			((ServerCommandSource)commandContext.getSource()).getWorld();
@@ -45,7 +45,7 @@ public class BlockPosArgumentType implements ArgumentType<PosArgument> {
 		return ((PosArgument)commandContext.getArgument(string, PosArgument.class)).toAbsoluteBlockPos((ServerCommandSource)commandContext.getSource());
 	}
 
-	public PosArgument method_9699(StringReader stringReader) throws CommandSyntaxException {
+	public PosArgument parse(StringReader stringReader) throws CommandSyntaxException {
 		return (PosArgument)(stringReader.canRead() && stringReader.peek() == '^' ? LookingPosArgument.parse(stringReader) : DefaultPosArgument.parse(stringReader));
 	}
 
@@ -61,7 +61,7 @@ public class BlockPosArgumentType implements ArgumentType<PosArgument> {
 				collection = ((CommandSource)commandContext.getSource()).getBlockPositionSuggestions();
 			}
 
-			return CommandSource.suggestPositions(string, collection, suggestionsBuilder, CommandManager.getCommandValidator(this::method_9699));
+			return CommandSource.suggestPositions(string, collection, suggestionsBuilder, CommandManager.getCommandValidator(this::parse));
 		}
 	}
 

@@ -1,143 +1,141 @@
 package net.minecraft.client.render.entity.model;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.util.List;
+import java.util.Random;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Arm;
 
 public class PlayerEntityModel<T extends LivingEntity> extends BipedEntityModel<T> {
-	public final Cuboid leftArmOverlay;
-	public final Cuboid rightArmOverlay;
-	public final Cuboid leftLegOverlay;
-	public final Cuboid rightLegOverlay;
-	public final Cuboid bodyOverlay;
-	private final Cuboid cape;
-	private final Cuboid ears;
+	private List<ModelPart> parts = Lists.newArrayList();
+	public final ModelPart leftSleeve;
+	public final ModelPart rightSleeve;
+	public final ModelPart leftPantLeg;
+	public final ModelPart rightPantLeg;
+	public final ModelPart jacket;
+	private final ModelPart cape;
+	private final ModelPart ears;
 	private final boolean thinArms;
 
 	public PlayerEntityModel(float f, boolean bl) {
-		super(f, 0.0F, 64, 64);
+		super(RenderLayer::getEntityTranslucent, f, 0.0F, 64, 64);
 		this.thinArms = bl;
-		this.ears = new Cuboid(this, 24, 0);
-		this.ears.addBox(-3.0F, -6.0F, -1.0F, 6, 6, 1, f);
-		this.cape = new Cuboid(this, 0, 0);
+		this.ears = new ModelPart(this, 24, 0);
+		this.ears.addCuboid(-3.0F, -6.0F, -1.0F, 6.0F, 6.0F, 1.0F, f);
+		this.cape = new ModelPart(this, 0, 0);
 		this.cape.setTextureSize(64, 32);
-		this.cape.addBox(-5.0F, 0.0F, -1.0F, 10, 16, 1, f);
+		this.cape.addCuboid(-5.0F, 0.0F, -1.0F, 10.0F, 16.0F, 1.0F, f);
 		if (bl) {
-			this.leftArm = new Cuboid(this, 32, 48);
-			this.leftArm.addBox(-1.0F, -2.0F, -2.0F, 3, 12, 4, f);
-			this.leftArm.setRotationPoint(5.0F, 2.5F, 0.0F);
-			this.rightArm = new Cuboid(this, 40, 16);
-			this.rightArm.addBox(-2.0F, -2.0F, -2.0F, 3, 12, 4, f);
-			this.rightArm.setRotationPoint(-5.0F, 2.5F, 0.0F);
-			this.leftArmOverlay = new Cuboid(this, 48, 48);
-			this.leftArmOverlay.addBox(-1.0F, -2.0F, -2.0F, 3, 12, 4, f + 0.25F);
-			this.leftArmOverlay.setRotationPoint(5.0F, 2.5F, 0.0F);
-			this.rightArmOverlay = new Cuboid(this, 40, 32);
-			this.rightArmOverlay.addBox(-2.0F, -2.0F, -2.0F, 3, 12, 4, f + 0.25F);
-			this.rightArmOverlay.setRotationPoint(-5.0F, 2.5F, 10.0F);
+			this.leftArm = new ModelPart(this, 32, 48);
+			this.leftArm.addCuboid(-1.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, f);
+			this.leftArm.setPivot(5.0F, 2.5F, 0.0F);
+			this.rightArm = new ModelPart(this, 40, 16);
+			this.rightArm.addCuboid(-2.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, f);
+			this.rightArm.setPivot(-5.0F, 2.5F, 0.0F);
+			this.leftSleeve = new ModelPart(this, 48, 48);
+			this.leftSleeve.addCuboid(-1.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, f + 0.25F);
+			this.leftSleeve.setPivot(5.0F, 2.5F, 0.0F);
+			this.rightSleeve = new ModelPart(this, 40, 32);
+			this.rightSleeve.addCuboid(-2.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, f + 0.25F);
+			this.rightSleeve.setPivot(-5.0F, 2.5F, 10.0F);
 		} else {
-			this.leftArm = new Cuboid(this, 32, 48);
-			this.leftArm.addBox(-1.0F, -2.0F, -2.0F, 4, 12, 4, f);
-			this.leftArm.setRotationPoint(5.0F, 2.0F, 0.0F);
-			this.leftArmOverlay = new Cuboid(this, 48, 48);
-			this.leftArmOverlay.addBox(-1.0F, -2.0F, -2.0F, 4, 12, 4, f + 0.25F);
-			this.leftArmOverlay.setRotationPoint(5.0F, 2.0F, 0.0F);
-			this.rightArmOverlay = new Cuboid(this, 40, 32);
-			this.rightArmOverlay.addBox(-3.0F, -2.0F, -2.0F, 4, 12, 4, f + 0.25F);
-			this.rightArmOverlay.setRotationPoint(-5.0F, 2.0F, 10.0F);
+			this.leftArm = new ModelPart(this, 32, 48);
+			this.leftArm.addCuboid(-1.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, f);
+			this.leftArm.setPivot(5.0F, 2.0F, 0.0F);
+			this.leftSleeve = new ModelPart(this, 48, 48);
+			this.leftSleeve.addCuboid(-1.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, f + 0.25F);
+			this.leftSleeve.setPivot(5.0F, 2.0F, 0.0F);
+			this.rightSleeve = new ModelPart(this, 40, 32);
+			this.rightSleeve.addCuboid(-3.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, f + 0.25F);
+			this.rightSleeve.setPivot(-5.0F, 2.0F, 10.0F);
 		}
 
-		this.leftLeg = new Cuboid(this, 16, 48);
-		this.leftLeg.addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4, f);
-		this.leftLeg.setRotationPoint(1.9F, 12.0F, 0.0F);
-		this.leftLegOverlay = new Cuboid(this, 0, 48);
-		this.leftLegOverlay.addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4, f + 0.25F);
-		this.leftLegOverlay.setRotationPoint(1.9F, 12.0F, 0.0F);
-		this.rightLegOverlay = new Cuboid(this, 0, 32);
-		this.rightLegOverlay.addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4, f + 0.25F);
-		this.rightLegOverlay.setRotationPoint(-1.9F, 12.0F, 0.0F);
-		this.bodyOverlay = new Cuboid(this, 16, 32);
-		this.bodyOverlay.addBox(-4.0F, 0.0F, -2.0F, 8, 12, 4, f + 0.25F);
-		this.bodyOverlay.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.leftLeg = new ModelPart(this, 16, 48);
+		this.leftLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, f);
+		this.leftLeg.setPivot(1.9F, 12.0F, 0.0F);
+		this.leftPantLeg = new ModelPart(this, 0, 48);
+		this.leftPantLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, f + 0.25F);
+		this.leftPantLeg.setPivot(1.9F, 12.0F, 0.0F);
+		this.rightPantLeg = new ModelPart(this, 0, 32);
+		this.rightPantLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 12.0F, 4.0F, f + 0.25F);
+		this.rightPantLeg.setPivot(-1.9F, 12.0F, 0.0F);
+		this.jacket = new ModelPart(this, 16, 32);
+		this.jacket.addCuboid(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, f + 0.25F);
+		this.jacket.setPivot(0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
-	public void method_17088(T livingEntity, float f, float g, float h, float i, float j, float k) {
-		super.method_17088(livingEntity, f, g, h, i, j, k);
-		GlStateManager.pushMatrix();
-		if (this.isChild) {
-			float l = 2.0F;
-			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
-			GlStateManager.translatef(0.0F, 24.0F * k, 0.0F);
-			this.leftLegOverlay.render(k);
-			this.rightLegOverlay.render(k);
-			this.leftArmOverlay.render(k);
-			this.rightArmOverlay.render(k);
-			this.bodyOverlay.render(k);
-		} else {
-			if (livingEntity.isInSneakingPose()) {
-				GlStateManager.translatef(0.0F, 0.2F, 0.0F);
-			}
-
-			this.leftLegOverlay.render(k);
-			this.rightLegOverlay.render(k);
-			this.leftArmOverlay.render(k);
-			this.rightArmOverlay.render(k);
-			this.bodyOverlay.render(k);
-		}
-
-		GlStateManager.popMatrix();
+	protected Iterable<ModelPart> getBodyParts() {
+		return Iterables.concat(super.getBodyParts(), ImmutableList.of(this.leftPantLeg, this.rightPantLeg, this.leftSleeve, this.rightSleeve, this.jacket));
 	}
 
-	public void renderEars(float f) {
-		this.ears.copyRotation(this.head);
-		this.ears.rotationPointX = 0.0F;
-		this.ears.rotationPointY = 0.0F;
-		this.ears.render(f);
+	public void renderEars(MatrixStack matrixStack, VertexConsumer vertexConsumer, int i, int j) {
+		this.ears.copyPositionAndRotation(this.head);
+		this.ears.pivotX = 0.0F;
+		this.ears.pivotY = 0.0F;
+		this.ears.render(matrixStack, vertexConsumer, i, j);
 	}
 
-	public void renderCape(float f) {
-		this.cape.render(f);
+	public void renderCape(MatrixStack matrixStack, VertexConsumer vertexConsumer, int i, int j) {
+		this.cape.render(matrixStack, vertexConsumer, i, j);
 	}
 
 	@Override
-	public void method_17087(T livingEntity, float f, float g, float h, float i, float j, float k) {
-		super.method_17087(livingEntity, f, g, h, i, j, k);
-		this.leftLegOverlay.copyRotation(this.leftLeg);
-		this.rightLegOverlay.copyRotation(this.rightLeg);
-		this.leftArmOverlay.copyRotation(this.leftArm);
-		this.rightArmOverlay.copyRotation(this.rightArm);
-		this.bodyOverlay.copyRotation(this.body);
+	public void setAngles(T livingEntity, float f, float g, float h, float i, float j) {
+		super.setAngles(livingEntity, f, g, h, i, j);
+		this.leftPantLeg.copyPositionAndRotation(this.leftLeg);
+		this.rightPantLeg.copyPositionAndRotation(this.rightLeg);
+		this.leftSleeve.copyPositionAndRotation(this.leftArm);
+		this.rightSleeve.copyPositionAndRotation(this.rightArm);
+		this.jacket.copyPositionAndRotation(this.torso);
 		if (livingEntity.isInSneakingPose()) {
-			this.cape.rotationPointY = 2.0F;
+			this.cape.pivotY = 2.0F;
 		} else {
-			this.cape.rotationPointY = 0.0F;
+			this.cape.pivotY = 0.0F;
 		}
 	}
 
 	@Override
 	public void setVisible(boolean bl) {
 		super.setVisible(bl);
-		this.leftArmOverlay.visible = bl;
-		this.rightArmOverlay.visible = bl;
-		this.leftLegOverlay.visible = bl;
-		this.rightLegOverlay.visible = bl;
-		this.bodyOverlay.visible = bl;
+		this.leftSleeve.visible = bl;
+		this.rightSleeve.visible = bl;
+		this.leftPantLeg.visible = bl;
+		this.rightPantLeg.visible = bl;
+		this.jacket.visible = bl;
 		this.cape.visible = bl;
 		this.ears.visible = bl;
 	}
 
 	@Override
-	public void setArmAngle(float f, Arm arm) {
-		Cuboid cuboid = this.getArm(arm);
+	public void setArmAngle(Arm arm, MatrixStack matrixStack) {
+		ModelPart modelPart = this.getArm(arm);
 		if (this.thinArms) {
-			float g = 0.5F * (float)(arm == Arm.field_6183 ? 1 : -1);
-			cuboid.rotationPointX += g;
-			cuboid.applyTransform(f);
-			cuboid.rotationPointX -= g;
+			float f = 0.5F * (float)(arm == Arm.field_6183 ? 1 : -1);
+			modelPart.pivotX += f;
+			modelPart.rotate(matrixStack);
+			modelPart.pivotX -= f;
 		} else {
-			cuboid.applyTransform(f);
+			modelPart.rotate(matrixStack);
 		}
+	}
+
+	public ModelPart getRandomPart(Random random) {
+		return (ModelPart)this.parts.get(random.nextInt(this.parts.size()));
+	}
+
+	@Override
+	public void accept(ModelPart modelPart) {
+		if (this.parts == null) {
+			this.parts = Lists.newArrayList();
+		}
+
+		this.parts.add(modelPart);
 	}
 }

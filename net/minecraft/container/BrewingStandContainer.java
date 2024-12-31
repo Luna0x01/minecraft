@@ -54,21 +54,21 @@ public class BrewingStandContainer extends Container {
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if ((i < 0 || i > 2) && i != 3 && i != 4) {
-				if (this.ingredientSlot.canInsert(itemStack2)) {
+				if (BrewingStandContainer.SlotFuel.matches(itemStack)) {
+					if (this.insertItem(itemStack2, 4, 5, false) || this.ingredientSlot.canInsert(itemStack2) && !this.insertItem(itemStack2, 3, 4, false)) {
+						return ItemStack.EMPTY;
+					}
+				} else if (this.ingredientSlot.canInsert(itemStack2)) {
 					if (!this.insertItem(itemStack2, 3, 4, false)) {
 						return ItemStack.EMPTY;
 					}
 				} else if (BrewingStandContainer.SlotPotion.matches(itemStack) && itemStack.getCount() == 1) {
 					if (!this.insertItem(itemStack2, 0, 3, false)) {
-						return ItemStack.EMPTY;
-					}
-				} else if (BrewingStandContainer.SlotFuel.matches(itemStack)) {
-					if (!this.insertItem(itemStack2, 4, 5, false)) {
 						return ItemStack.EMPTY;
 					}
 				} else if (i >= 5 && i < 32) {
@@ -169,7 +169,7 @@ public class BrewingStandContainer extends Container {
 		public ItemStack onTakeItem(PlayerEntity playerEntity, ItemStack itemStack) {
 			Potion potion = PotionUtil.getPotion(itemStack);
 			if (playerEntity instanceof ServerPlayerEntity) {
-				Criterions.BREWED_POTION.handle((ServerPlayerEntity)playerEntity, potion);
+				Criterions.BREWED_POTION.trigger((ServerPlayerEntity)playerEntity, potion);
 			}
 
 			super.onTakeItem(playerEntity, itemStack);

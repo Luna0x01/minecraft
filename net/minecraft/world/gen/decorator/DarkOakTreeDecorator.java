@@ -16,15 +16,16 @@ public class DarkOakTreeDecorator extends Decorator<NopeDecoratorConfig> {
 		super(function);
 	}
 
-	public Stream<BlockPos> method_14524(
+	public Stream<BlockPos> getPositions(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, NopeDecoratorConfig nopeDecoratorConfig, BlockPos blockPos
 	) {
 		return IntStream.range(0, 16).mapToObj(i -> {
 			int j = i / 4;
 			int k = i % 4;
-			int l = j * 4 + 1 + random.nextInt(3);
-			int m = k * 4 + 1 + random.nextInt(3);
-			return iWorld.getTopPosition(Heightmap.Type.field_13197, blockPos.add(l, 0, m));
+			int l = j * 4 + 1 + random.nextInt(3) + blockPos.getX();
+			int m = k * 4 + 1 + random.nextInt(3) + blockPos.getZ();
+			int n = iWorld.getTopY(Heightmap.Type.field_13197, l, m);
+			return new BlockPos(l, n, m);
 		});
 	}
 }

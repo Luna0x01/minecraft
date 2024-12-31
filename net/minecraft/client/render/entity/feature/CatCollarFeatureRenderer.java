@@ -1,7 +1,8 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.CatEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.util.Identifier;
 
@@ -13,19 +14,12 @@ public class CatCollarFeatureRenderer extends FeatureRenderer<CatEntity, CatEnti
 		super(featureRendererContext);
 	}
 
-	public void method_16047(CatEntity catEntity, float f, float g, float h, float i, float j, float k, float l) {
-		if (catEntity.isTamed() && !catEntity.isInvisible()) {
-			this.bindTexture(SKIN);
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CatEntity catEntity, float f, float g, float h, float j, float k, float l
+	) {
+		if (catEntity.isTamed()) {
 			float[] fs = catEntity.getCollarColor().getColorComponents();
-			GlStateManager.color3f(fs[0], fs[1], fs[2]);
-			this.getModel().copyStateTo(this.model);
-			this.model.method_17074(catEntity, f, g, h);
-			this.model.render(catEntity, f, g, i, j, k, l);
+			render(this.getContextModel(), this.model, SKIN, matrixStack, vertexConsumerProvider, i, catEntity, f, g, j, k, l, h, fs[0], fs[1], fs[2]);
 		}
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return true;
 	}
 }

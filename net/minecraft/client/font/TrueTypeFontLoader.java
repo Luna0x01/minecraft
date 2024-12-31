@@ -4,16 +4,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import javax.annotation.Nullable;
+import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.stb.STBTTFontinfo;
+import org.lwjgl.stb.STBTruetype;
+import org.lwjgl.system.MemoryUtil;
 
 public class TrueTypeFontLoader implements FontLoader {
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -73,27 +76,35 @@ public class TrueTypeFontLoader implements FontLoader {
 	@Nullable
 	@Override
 	public Font load(ResourceManager resourceManager) {
+		STBTTFontinfo sTBTTFontinfo = null;
+		ByteBuffer byteBuffer = null;
+
 		try {
 			Resource resource = resourceManager.getResource(new Identifier(this.filename.getNamespace(), "font/" + this.filename.getPath()));
-			Throwable var3 = null;
+			Throwable var5 = null;
 
-			TrueTypeFont var5;
+			TrueTypeFont var6;
 			try {
-				LOGGER.info("Loading font");
-				ByteBuffer byteBuffer = TextureUtil.readResource(resource.getInputStream());
+				LOGGER.debug("Loading font {}", this.filename);
+				sTBTTFontinfo = STBTTFontinfo.malloc();
+				byteBuffer = TextureUtil.readResource(resource.getInputStream());
 				byteBuffer.flip();
-				LOGGER.info("Reading font");
-				var5 = new TrueTypeFont(TrueTypeFont.getSTBTTFontInfo(byteBuffer), this.size, this.oversample, this.shiftX, this.shiftY, this.excludedCharacters);
-			} catch (Throwable var15) {
-				var3 = var15;
-				throw var15;
+				LOGGER.debug("Reading font {}", this.filename);
+				if (!STBTruetype.stbtt_InitFont(sTBTTFontinfo, byteBuffer)) {
+					throw new IOException("Invalid ttf");
+				}
+
+				var6 = new TrueTypeFont(byteBuffer, sTBTTFontinfo, this.size, this.oversample, this.shiftX, this.shiftY, this.excludedCharacters);
+			} catch (Throwable var16) {
+				var5 = var16;
+				throw var16;
 			} finally {
 				if (resource != null) {
-					if (var3 != null) {
+					if (var5 != null) {
 						try {
 							resource.close();
-						} catch (Throwable var14) {
-							var3.addSuppressed(var14);
+						} catch (Throwable var15) {
+							var5.addSuppressed(var15);
 						}
 					} else {
 						resource.close();
@@ -101,9 +112,14 @@ public class TrueTypeFontLoader implements FontLoader {
 				}
 			}
 
-			return var5;
-		} catch (IOException var17) {
-			LOGGER.error("Couldn't load truetype font {}", this.filename, var17);
+			return var6;
+		} catch (Exception var18) {
+			LOGGER.error("Couldn't load truetype font {}", this.filename, var18);
+			if (sTBTTFontinfo != null) {
+				sTBTTFontinfo.free();
+			}
+
+			MemoryUtil.memFree(byteBuffer);
 			return null;
 		}
 	}

@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.util.BlockMirror;
@@ -15,8 +15,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class WallRedstoneTorchBlock extends RedstoneTorchBlock {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -24,7 +24,7 @@ public class WallRedstoneTorchBlock extends RedstoneTorchBlock {
 
 	protected WallRedstoneTorchBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(LIT_2, Boolean.valueOf(true)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(LIT_2, Boolean.valueOf(true)));
 	}
 
 	@Override
@@ -38,8 +38,8 @@ public class WallRedstoneTorchBlock extends RedstoneTorchBlock {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return Blocks.field_10099.canPlaceAt(blockState, viewableWorld, blockPos);
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return Blocks.field_10099.canPlaceAt(blockState, worldView, blockPos);
 	}
 
 	@Override
@@ -90,7 +90,7 @@ public class WallRedstoneTorchBlock extends RedstoneTorchBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, LIT_2);
 	}
 }

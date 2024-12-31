@@ -1,7 +1,7 @@
 package net.minecraft.block;
 
 import net.minecraft.block.enums.RailShape;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
@@ -17,7 +17,7 @@ public class PoweredRailBlock extends AbstractRailBlock {
 
 	protected PoweredRailBlock(Block.Settings settings) {
 		super(true, settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(SHAPE, RailShape.field_12665).with(POWERED, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(SHAPE, RailShape.field_12665).with(POWERED, Boolean.valueOf(false)));
 	}
 
 	protected boolean isPoweredByOtherRails(World world, BlockPos blockPos, BlockState blockState, boolean bl, int i) {
@@ -258,7 +258,7 @@ public class PoweredRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(SHAPE, POWERED);
 	}
 }

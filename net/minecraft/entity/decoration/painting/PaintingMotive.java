@@ -33,7 +33,7 @@ public class PaintingMotive {
 	private final int height;
 
 	private static PaintingMotive register(String string, int i, int j) {
-		return Registry.register(Registry.MOTIVE, string, new PaintingMotive(i, j));
+		return Registry.register(Registry.field_11150, string, new PaintingMotive(i, j));
 	}
 
 	public PaintingMotive(int i, int j) {

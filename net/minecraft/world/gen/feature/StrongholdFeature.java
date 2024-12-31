@@ -10,12 +10,13 @@ import net.minecraft.structure.StrongholdGenerator;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructurePiece;
 import net.minecraft.structure.StructureStart;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
@@ -30,7 +31,7 @@ public class StrongholdFeature extends StructureFeature<DefaultFeatureConfig> {
 	}
 
 	@Override
-	public boolean shouldStartAt(ChunkGenerator<?> chunkGenerator, Random random, int i, int j) {
+	public boolean shouldStartAt(BiomeAccess biomeAccess, ChunkGenerator<?> chunkGenerator, Random random, int i, int j, Biome biome) {
 		if (this.lastSeed != chunkGenerator.getSeed()) {
 			this.invalidateState();
 		}
@@ -109,8 +110,8 @@ public class StrongholdFeature extends StructureFeature<DefaultFeatureConfig> {
 		this.lastSeed = chunkGenerator.getSeed();
 		List<Biome> list = Lists.newArrayList();
 
-		for (Biome biome : Registry.BIOME) {
-			if (biome != null && chunkGenerator.hasStructure(biome, Feature.STRONGHOLD)) {
+		for (Biome biome : Registry.field_11153) {
+			if (biome != null && chunkGenerator.hasStructure(biome, this)) {
 				list.add(biome);
 			}
 		}
@@ -139,7 +140,7 @@ public class StrongholdFeature extends StructureFeature<DefaultFeatureConfig> {
 				double e = (double)(4 * i + i * o * 6) + (random.nextDouble() - 0.5) * (double)i * 2.5;
 				int q = (int)Math.round(Math.cos(d) * e);
 				int r = (int)Math.round(Math.sin(d) * e);
-				BlockPos blockPos = chunkGenerator.getBiomeSource().locateBiome((q << 4) + 8, (r << 4) + 8, 112, list, random);
+				BlockPos blockPos = chunkGenerator.getBiomeSource().locateBiome((q << 4) + 8, chunkGenerator.getSeaLevel(), (r << 4) + 8, 112, list, random);
 				if (blockPos != null) {
 					q = blockPos.getX() >> 4;
 					r = blockPos.getZ() >> 4;
@@ -162,8 +163,8 @@ public class StrongholdFeature extends StructureFeature<DefaultFeatureConfig> {
 	}
 
 	public static class Start extends StructureStart {
-		public Start(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l) {
-			super(structureFeature, i, j, biome, mutableIntBoundingBox, k, l);
+		public Start(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
+			super(structureFeature, i, j, blockBox, k, l);
 		}
 
 		@Override
@@ -174,7 +175,7 @@ public class StrongholdFeature extends StructureFeature<DefaultFeatureConfig> {
 			StrongholdGenerator.Start start;
 			do {
 				this.children.clear();
-				this.boundingBox = MutableIntBoundingBox.empty();
+				this.boundingBox = BlockBox.empty();
 				this.random.setStructureSeed(l + (long)(k++), i, j);
 				StrongholdGenerator.method_14855();
 				start = new StrongholdGenerator.Start(this.random, (i << 4) + 2, (j << 4) + 2);

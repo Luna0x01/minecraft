@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.widget;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Identifier;
 
@@ -42,7 +42,7 @@ public class ToggleButtonWidget extends AbstractButtonWidget {
 	public void renderButton(int i, int j, float f) {
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
 		minecraftClient.getTextureManager().bindTexture(this.texture);
-		GlStateManager.disableDepthTest();
+		RenderSystem.disableDepthTest();
 		int k = this.u;
 		int l = this.v;
 		if (this.toggled) {
@@ -54,6 +54,6 @@ public class ToggleButtonWidget extends AbstractButtonWidget {
 		}
 
 		this.blit(this.x, this.y, k, l, this.width, this.height);
-		GlStateManager.enableDepthTest();
+		RenderSystem.enableDepthTest();
 	}
 }

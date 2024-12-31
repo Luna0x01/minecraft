@@ -11,7 +11,7 @@ public class RavagerEntityRenderer extends MobEntityRenderer<RavagerEntity, Rava
 		super(entityRenderDispatcher, new RavagerEntityModel(), 1.1F);
 	}
 
-	protected Identifier method_3984(RavagerEntity ravagerEntity) {
+	public Identifier getTexture(RavagerEntity ravagerEntity) {
 		return SKIN;
 	}
 }

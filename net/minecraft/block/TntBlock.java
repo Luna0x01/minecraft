@@ -11,9 +11,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -33,7 +34,7 @@ public class TntBlock extends Block {
 		if (blockState2.getBlock() != blockState.getBlock()) {
 			if (world.isReceivingRedstonePower(blockPos)) {
 				primeTnt(world, blockPos);
-				world.clearBlockState(blockPos, false);
+				world.removeBlock(blockPos, false);
 			}
 		}
 	}
@@ -42,7 +43,7 @@ public class TntBlock extends Block {
 	public void neighborUpdate(BlockState blockState, World world, BlockPos blockPos, Block block, BlockPos blockPos2, boolean bl) {
 		if (world.isReceivingRedstonePower(blockPos)) {
 			primeTnt(world, blockPos);
-			world.clearBlockState(blockPos, false);
+			world.removeBlock(blockPos, false);
 		}
 	}
 
@@ -72,30 +73,30 @@ public class TntBlock extends Block {
 
 	private static void primeTnt(World world, BlockPos blockPos, @Nullable LivingEntity livingEntity) {
 		if (!world.isClient) {
-			TntEntity tntEntity = new TntEntity(
-				world, (double)((float)blockPos.getX() + 0.5F), (double)blockPos.getY(), (double)((float)blockPos.getZ() + 0.5F), livingEntity
-			);
+			TntEntity tntEntity = new TntEntity(world, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, livingEntity);
 			world.spawnEntity(tntEntity);
-			world.playSound(null, tntEntity.x, tntEntity.y, tntEntity.z, SoundEvents.field_15079, SoundCategory.field_15245, 1.0F, 1.0F);
+			world.playSound(null, tntEntity.getX(), tntEntity.getY(), tntEntity.getZ(), SoundEvents.field_15079, SoundCategory.field_15245, 1.0F, 1.0F);
 		}
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		Item item = itemStack.getItem();
 		if (item != Items.field_8884 && item != Items.field_8814) {
-			return super.activate(blockState, world, blockPos, playerEntity, hand, blockHitResult);
+			return super.onUse(blockState, world, blockPos, playerEntity, hand, blockHitResult);
 		} else {
 			primeTnt(world, blockPos, playerEntity);
 			world.setBlockState(blockPos, Blocks.field_10124.getDefaultState(), 11);
-			if (item == Items.field_8884) {
-				itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
-			} else {
-				itemStack.decrement(1);
+			if (!playerEntity.isCreative()) {
+				if (item == Items.field_8884) {
+					itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
+				} else {
+					itemStack.decrement(1);
+				}
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -107,7 +108,7 @@ public class TntBlock extends Block {
 			if (projectileEntity.isOnFire()) {
 				BlockPos blockPos = blockHitResult.getBlockPos();
 				primeTnt(world, blockPos, entity2 instanceof LivingEntity ? (LivingEntity)entity2 : null);
-				world.clearBlockState(blockPos, false);
+				world.removeBlock(blockPos, false);
 			}
 		}
 	}
@@ -118,7 +119,7 @@ public class TntBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(UNSTABLE);
 	}
 }

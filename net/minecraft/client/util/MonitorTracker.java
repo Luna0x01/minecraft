@@ -1,5 +1,6 @@
 package net.minecraft.client.util;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -13,6 +14,7 @@ public class MonitorTracker {
 	private final MonitorFactory monitorFactory;
 
 	public MonitorTracker(MonitorFactory monitorFactory) {
+		RenderSystem.assertThread(RenderSystem::isInInitPhase);
 		this.monitorFactory = monitorFactory;
 		GLFW.glfwSetMonitorCallback(this::handleMonitorEvent);
 		PointerBuffer pointerBuffer = GLFW.glfwGetMonitors();
@@ -25,6 +27,7 @@ public class MonitorTracker {
 	}
 
 	private void handleMonitorEvent(long l, int i) {
+		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
 		if (i == 262145) {
 			this.pointerToMonitorMap.put(l, this.monitorFactory.createMonitor(l));
 		} else if (i == 262146) {
@@ -34,6 +37,7 @@ public class MonitorTracker {
 
 	@Nullable
 	public Monitor getMonitor(long l) {
+		RenderSystem.assertThread(RenderSystem::isInInitPhase);
 		return (Monitor)this.pointerToMonitorMap.get(l);
 	}
 
@@ -43,9 +47,9 @@ public class MonitorTracker {
 		if (l != 0L) {
 			return this.getMonitor(l);
 		} else {
-			int i = window.getPositionY();
+			int i = window.getX();
 			int j = i + window.getWidth();
-			int k = window.getPositionX();
+			int k = window.getY();
 			int m = k + window.getHeight();
 			int n = -1;
 			Monitor monitor = null;
@@ -83,6 +87,7 @@ public class MonitorTracker {
 	}
 
 	public void stop() {
+		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
 		GLFWMonitorCallback gLFWMonitorCallback = GLFW.glfwSetMonitorCallback(null);
 		if (gLFWMonitorCallback != null) {
 			gLFWMonitorCallback.free();

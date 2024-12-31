@@ -17,7 +17,7 @@ public class ItemStackArgumentType implements ArgumentType<ItemStackArgument> {
 		return new ItemStackArgumentType();
 	}
 
-	public ItemStackArgument method_9778(StringReader stringReader) throws CommandSyntaxException {
+	public ItemStackArgument parse(StringReader stringReader) throws CommandSyntaxException {
 		ItemStringReader itemStringReader = new ItemStringReader(stringReader, false).consume();
 		return new ItemStackArgument(itemStringReader.getItem(), itemStringReader.getTag());
 	}
@@ -36,7 +36,7 @@ public class ItemStackArgumentType implements ArgumentType<ItemStackArgument> {
 		} catch (CommandSyntaxException var6) {
 		}
 
-		return itemStringReader.method_9793(suggestionsBuilder);
+		return itemStringReader.getSuggestions(suggestionsBuilder);
 	}
 
 	public Collection<String> getExamples() {

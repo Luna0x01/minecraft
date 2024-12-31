@@ -1,5 +1,9 @@
 package net.minecraft.world.biome.layer;
 
+import net.minecraft.world.biome.layer.type.CrossSamplingLayer;
+import net.minecraft.world.biome.layer.type.IdentitySamplingLayer;
+import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
+
 public class AddClimateLayers {
 	public static enum AddCoolBiomesLayer implements CrossSamplingLayer {
 		field_17401;

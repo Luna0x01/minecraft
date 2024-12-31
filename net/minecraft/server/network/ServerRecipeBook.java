@@ -37,7 +37,7 @@ public class ServerRecipeBook extends RecipeBook {
 				this.add(identifier);
 				this.display(identifier);
 				list.add(identifier);
-				Criterions.RECIPE_UNLOCKED.handle(serverPlayerEntity, recipe);
+				Criterions.RECIPE_UNLOCKED.trigger(serverPlayerEntity, recipe);
 				i++;
 			}
 		}
@@ -81,14 +81,14 @@ public class ServerRecipeBook extends RecipeBook {
 		ListTag listTag = new ListTag();
 
 		for (Identifier identifier : this.recipes) {
-			listTag.add(new StringTag(identifier.toString()));
+			listTag.add(StringTag.of(identifier.toString()));
 		}
 
 		compoundTag.put("recipes", listTag);
 		ListTag listTag2 = new ListTag();
 
 		for (Identifier identifier2 : this.toBeDisplayed) {
-			listTag2.add(new StringTag(identifier2.toString()));
+			listTag2.add(StringTag.of(identifier2.toString()));
 		}
 
 		compoundTag.put("toBeDisplayed", listTag2);

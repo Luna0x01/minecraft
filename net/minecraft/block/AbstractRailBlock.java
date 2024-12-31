@@ -3,13 +3,15 @@ package net.minecraft.block;
 import net.minecraft.block.enums.RailShape;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.EntityContext;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.property.Property;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class AbstractRailBlock extends Block {
 	protected static final VoxelShape STRAIGHT_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0);
@@ -40,18 +42,16 @@ public abstract class AbstractRailBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return isSolidMediumSquare(viewableWorld, blockPos.down());
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return topCoversMediumSquare(worldView, blockPos.down());
 	}
 
 	@Override
 	public void onBlockAdded(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
 		if (blockState2.getBlock() != blockState.getBlock()) {
-			if (!world.isClient) {
-				blockState = this.updateBlockState(world, blockPos, blockState, true);
-				if (this.allowCurves) {
-					blockState.neighborUpdate(world, blockPos, this, blockPos, bl);
-				}
+			blockState = this.updateBlockState(world, blockPos, blockState, true);
+			if (this.allowCurves) {
+				blockState.neighborUpdate(world, blockPos, this, blockPos, bl);
 			}
 		}
 	}
@@ -62,24 +62,24 @@ public abstract class AbstractRailBlock extends Block {
 			RailShape railShape = blockState.get(this.getShapeProperty());
 			boolean bl2 = false;
 			BlockPos blockPos3 = blockPos.down();
-			if (!isSolidMediumSquare(world, blockPos3)) {
+			if (!topCoversMediumSquare(world, blockPos3)) {
 				bl2 = true;
 			}
 
 			BlockPos blockPos4 = blockPos.east();
-			if (railShape == RailShape.field_12667 && !isSolidMediumSquare(world, blockPos4)) {
+			if (railShape == RailShape.field_12667 && !topCoversMediumSquare(world, blockPos4)) {
 				bl2 = true;
 			} else {
 				BlockPos blockPos5 = blockPos.west();
-				if (railShape == RailShape.field_12666 && !isSolidMediumSquare(world, blockPos5)) {
+				if (railShape == RailShape.field_12666 && !topCoversMediumSquare(world, blockPos5)) {
 					bl2 = true;
 				} else {
 					BlockPos blockPos6 = blockPos.north();
-					if (railShape == RailShape.field_12670 && !isSolidMediumSquare(world, blockPos6)) {
+					if (railShape == RailShape.field_12670 && !topCoversMediumSquare(world, blockPos6)) {
 						bl2 = true;
 					} else {
 						BlockPos blockPos7 = blockPos.south();
-						if (railShape == RailShape.field_12668 && !isSolidMediumSquare(world, blockPos7)) {
+						if (railShape == RailShape.field_12668 && !topCoversMediumSquare(world, blockPos7)) {
 							bl2 = true;
 						}
 					}
@@ -91,7 +91,7 @@ public abstract class AbstractRailBlock extends Block {
 					dropStacks(blockState, world, blockPos);
 				}
 
-				world.clearBlockState(blockPos, bl);
+				world.removeBlock(blockPos, bl);
 			} else {
 				this.updateBlockState(blockState, world, blockPos, block);
 			}
@@ -102,19 +102,17 @@ public abstract class AbstractRailBlock extends Block {
 	}
 
 	protected BlockState updateBlockState(World world, BlockPos blockPos, BlockState blockState, boolean bl) {
-		return world.isClient
-			? blockState
-			: new RailPlacementHelper(world, blockPos, blockState).updateBlockState(world.isReceivingRedstonePower(blockPos), bl).getBlockState();
+		if (world.isClient) {
+			return blockState;
+		} else {
+			RailShape railShape = blockState.get(this.getShapeProperty());
+			return new RailPlacementHelper(world, blockPos, blockState).updateBlockState(world.isReceivingRedstonePower(blockPos), bl, railShape).getBlockState();
+		}
 	}
 
 	@Override
 	public PistonBehavior getPistonBehavior(BlockState blockState) {
 		return PistonBehavior.field_15974;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
 	}
 
 	@Override
@@ -130,6 +128,14 @@ public abstract class AbstractRailBlock extends Block {
 				world.updateNeighborsAlways(blockPos.down(), this);
 			}
 		}
+	}
+
+	@Override
+	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
+		BlockState blockState = super.getDefaultState();
+		Direction direction = itemPlacementContext.getPlayerFacing();
+		boolean bl = direction == Direction.field_11034 || direction == Direction.field_11039;
+		return blockState.with(this.getShapeProperty(), bl ? RailShape.field_12674 : RailShape.field_12665);
 	}
 
 	public abstract Property<RailShape> getShapeProperty();

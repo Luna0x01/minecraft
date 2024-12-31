@@ -1,12 +1,12 @@
 package net.minecraft.client.gui.screen.ingame;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.container.HopperContainer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class HopperScreen extends AbstractContainerScreen<HopperContainer> {
+public class HopperScreen extends ContainerScreen<HopperContainer> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/hopper.png");
 
 	public HopperScreen(HopperContainer hopperContainer, PlayerInventory playerInventory, Text text) {
@@ -30,7 +30,7 @@ public class HopperScreen extends AbstractContainerScreen<HopperContainer> {
 
 	@Override
 	protected void drawBackground(float f, int i, int j) {
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.minecraft.getTextureManager().bindTexture(TEXTURE);
 		int k = (this.width - this.containerWidth) / 2;
 		int l = (this.height - this.containerHeight) / 2;

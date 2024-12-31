@@ -19,7 +19,7 @@ public abstract class CoralFeature extends Feature<DefaultFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_12865(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DefaultFeatureConfig defaultFeatureConfig
 	) {
 		BlockState blockState = BlockTags.field_15461.getRandom(random).getDefaultState();

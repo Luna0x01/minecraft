@@ -2,17 +2,17 @@ package net.minecraft.block.sapling;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.world.gen.feature.AbstractTreeFeature;
-import net.minecraft.world.gen.feature.DefaultFeatureConfig;
-import net.minecraft.world.gen.feature.LargeOakTreeFeature;
-import net.minecraft.world.gen.feature.OakTreeFeature;
+import net.minecraft.world.biome.DefaultBiomeFeatures;
+import net.minecraft.world.gen.feature.BranchedTreeFeatureConfig;
+import net.minecraft.world.gen.feature.ConfiguredFeature;
+import net.minecraft.world.gen.feature.Feature;
 
 public class OakSaplingGenerator extends SaplingGenerator {
 	@Nullable
 	@Override
-	protected AbstractTreeFeature<DefaultFeatureConfig> createTreeFeature(Random random) {
-		return (AbstractTreeFeature<DefaultFeatureConfig>)(random.nextInt(10) == 0
-			? new LargeOakTreeFeature(DefaultFeatureConfig::deserialize, true)
-			: new OakTreeFeature(DefaultFeatureConfig::deserialize, true));
+	protected ConfiguredFeature<BranchedTreeFeatureConfig, ?> createTreeFeature(Random random, boolean bl) {
+		return random.nextInt(10) == 0
+			? Feature.field_13529.configure(bl ? DefaultBiomeFeatures.FANCY_TREE_WITH_MORE_BEEHIVES_CONFIG : DefaultBiomeFeatures.FANCY_TREE_CONFIG)
+			: Feature.field_13510.configure(bl ? DefaultBiomeFeatures.OAK_TREE_WITH_MORE_BEEHIVES_CONFIG : DefaultBiomeFeatures.OAK_TREE_CONFIG);
 	}
 }

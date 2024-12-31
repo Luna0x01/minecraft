@@ -7,10 +7,12 @@ import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.datafixers.NbtOps;
+import net.minecraft.datafixer.NbtOps;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityInteraction;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -51,7 +53,7 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 
 	public ZombieVillagerEntity(EntityType<? extends ZombieVillagerEntity> entityType, World world) {
 		super(entityType, world);
-		this.setVillagerData(this.getVillagerData().withProfession(Registry.VILLAGER_PROFESSION.getRandom(this.random)));
+		this.setVillagerData(this.getVillagerData().withProfession(Registry.field_17167.getRandom(this.random)));
 	}
 
 	@Override
@@ -84,23 +86,23 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("VillagerData", 10)) {
-			this.setVillagerData(new VillagerData(new Dynamic(NbtOps.INSTANCE, compoundTag.getTag("VillagerData"))));
+		if (compoundTag.contains("VillagerData", 10)) {
+			this.setVillagerData(new VillagerData(new Dynamic(NbtOps.INSTANCE, compoundTag.get("VillagerData"))));
 		}
 
-		if (compoundTag.containsKey("Offers", 10)) {
+		if (compoundTag.contains("Offers", 10)) {
 			this.offerData = compoundTag.getCompound("Offers");
 		}
 
-		if (compoundTag.containsKey("Gossips", 10)) {
+		if (compoundTag.contains("Gossips", 10)) {
 			this.field_20299 = compoundTag.getList("Gossips", 10);
 		}
 
-		if (compoundTag.containsKey("ConversionTime", 99) && compoundTag.getInt("ConversionTime") > -1) {
-			this.setConverting(compoundTag.hasUuid("ConversionPlayer") ? compoundTag.getUuid("ConversionPlayer") : null, compoundTag.getInt("ConversionTime"));
+		if (compoundTag.contains("ConversionTime", 99) && compoundTag.getInt("ConversionTime") > -1) {
+			this.setConverting(compoundTag.containsUuid("ConversionPlayer") ? compoundTag.getUuid("ConversionPlayer") : null, compoundTag.getInt("ConversionTime"));
 		}
 
-		if (compoundTag.containsKey("Xp", 3)) {
+		if (compoundTag.contains("Xp", 3)) {
 			this.xp = compoundTag.getInt("Xp");
 		}
 	}
@@ -128,11 +130,12 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 
 			if (!this.world.isClient) {
 				this.setConverting(playerEntity.getUuid(), this.random.nextInt(2401) + 3600);
+				playerEntity.swingHand(hand, true);
 			}
 
 			return true;
 		} else {
-			return false;
+			return super.interactMob(playerEntity, hand);
 		}
 	}
 
@@ -155,7 +158,7 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 		this.conversionTimer = i;
 		this.getDataTracker().set(CONVERTING, true);
 		this.removeStatusEffect(StatusEffects.field_5911);
-		this.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5910, i, Math.min(this.world.getDifficulty().getId() - 1, 0)));
+		this.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5910, i, Math.min(this.world.getDifficulty().getId() - 1, 0)));
 		this.world.sendEntityStatus(this, (byte)16);
 	}
 
@@ -165,9 +168,9 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 			if (!this.isSilent()) {
 				this.world
 					.playSound(
-						this.x + 0.5,
-						this.y + 0.5,
-						this.z + 0.5,
+						this.getX(),
+						this.getEyeY(),
+						this.getZ(),
 						SoundEvents.field_14905,
 						this.getSoundCategory(),
 						1.0F + this.random.nextFloat(),
@@ -182,6 +185,21 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 
 	private void finishConversion(ServerWorld serverWorld) {
 		VillagerEntity villagerEntity = EntityType.field_6077.create(serverWorld);
+
+		for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
+			ItemStack itemStack = this.getEquippedStack(equipmentSlot);
+			if (!itemStack.isEmpty()) {
+				if (EnchantmentHelper.hasBindingCurse(itemStack)) {
+					villagerEntity.equip(equipmentSlot.getEntitySlotId() + 300, itemStack);
+				} else {
+					double d = (double)this.getDropChance(equipmentSlot);
+					if (d > 1.0) {
+						this.dropStack(itemStack);
+					}
+				}
+			}
+		}
+
 		villagerEntity.copyPositionAndRotation(this);
 		villagerEntity.setVillagerData(this.getVillagerData());
 		if (this.field_20299 != null) {
@@ -205,16 +223,21 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 			villagerEntity.setCustomNameVisible(this.isCustomNameVisible());
 		}
 
+		if (this.isPersistent()) {
+			villagerEntity.setPersistent();
+		}
+
+		villagerEntity.setInvulnerable(this.isInvulnerable());
 		serverWorld.spawnEntity(villagerEntity);
 		if (this.converter != null) {
 			PlayerEntity playerEntity = serverWorld.getPlayerByUuid(this.converter);
 			if (playerEntity instanceof ServerPlayerEntity) {
-				Criterions.CURED_ZOMBIE_VILLAGER.handle((ServerPlayerEntity)playerEntity, this, villagerEntity);
+				Criterions.CURED_ZOMBIE_VILLAGER.trigger((ServerPlayerEntity)playerEntity, this, villagerEntity);
 				serverWorld.handleInteraction(EntityInteraction.field_18474, playerEntity, villagerEntity);
 			}
 		}
 
-		villagerEntity.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5916, 200, 0));
+		villagerEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5916, 200, 0));
 		serverWorld.playLevelEvent(null, 1027, new BlockPos(this), 0);
 	}
 
@@ -224,9 +247,9 @@ public class ZombieVillagerEntity extends ZombieEntity implements VillagerDataCo
 			int j = 0;
 			BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-			for (int k = (int)this.x - 4; k < (int)this.x + 4 && j < 14; k++) {
-				for (int l = (int)this.y - 4; l < (int)this.y + 4 && j < 14; l++) {
-					for (int m = (int)this.z - 4; m < (int)this.z + 4 && j < 14; m++) {
+			for (int k = (int)this.getX() - 4; k < (int)this.getX() + 4 && j < 14; k++) {
+				for (int l = (int)this.getY() - 4; l < (int)this.getY() + 4 && j < 14; l++) {
+					for (int m = (int)this.getZ() - 4; m < (int)this.getZ() + 4 && j < 14; m++) {
 						Block block = this.world.getBlockState(mutable.set(k, l, m)).getBlock();
 						if (block == Blocks.field_10576 || block instanceof BedBlock) {
 							if (this.random.nextFloat() < 0.3F) {

@@ -34,7 +34,7 @@ public class AnvilContainer extends Container {
 	};
 	private final Property levelCost = Property.create();
 	private final BlockContext context;
-	private int field_7776;
+	private int repairItemUsage;
 	private String newItemName;
 	private final PlayerEntity player;
 
@@ -70,10 +70,10 @@ public class AnvilContainer extends Container {
 					}
 
 					AnvilContainer.this.inventory.setInvStack(0, ItemStack.EMPTY);
-					if (AnvilContainer.this.field_7776 > 0) {
+					if (AnvilContainer.this.repairItemUsage > 0) {
 						ItemStack itemStack2 = AnvilContainer.this.inventory.getInvStack(1);
-						if (!itemStack2.isEmpty() && itemStack2.getCount() > AnvilContainer.this.field_7776) {
-							itemStack2.decrement(AnvilContainer.this.field_7776);
+						if (!itemStack2.isEmpty() && itemStack2.getCount() > AnvilContainer.this.repairItemUsage) {
+							itemStack2.decrement(AnvilContainer.this.repairItemUsage);
 							AnvilContainer.this.inventory.setInvStack(1, itemStack2);
 						} else {
 							AnvilContainer.this.inventory.setInvStack(1, ItemStack.EMPTY);
@@ -85,10 +85,10 @@ public class AnvilContainer extends Container {
 					AnvilContainer.this.levelCost.set(0);
 					blockContext.run((BiConsumer<World, BlockPos>)((world, blockPos) -> {
 						BlockState blockState = world.getBlockState(blockPos);
-						if (!playerEntity.abilities.creativeMode && blockState.matches(BlockTags.field_15486) && playerEntity.getRand().nextFloat() < 0.12F) {
+						if (!playerEntity.abilities.creativeMode && blockState.matches(BlockTags.field_15486) && playerEntity.getRandom().nextFloat() < 0.12F) {
 							BlockState blockState2 = AnvilBlock.getLandingState(blockState);
 							if (blockState2 == null) {
-								world.clearBlockState(blockPos, false);
+								world.removeBlock(blockPos, false);
 								world.playLevelEvent(1029, blockPos, 0);
 							} else {
 								world.setBlockState(blockPos, blockState2, 2);
@@ -136,7 +136,7 @@ public class AnvilContainer extends Container {
 			ItemStack itemStack3 = this.inventory.getInvStack(1);
 			Map<Enchantment, Integer> map = EnchantmentHelper.getEnchantments(itemStack2);
 			j += itemStack.getRepairCost() + (itemStack3.isEmpty() ? 0 : itemStack3.getRepairCost());
-			this.field_7776 = 0;
+			this.repairItemUsage = 0;
 			if (!itemStack3.isEmpty()) {
 				boolean bl = itemStack3.getItem() == Items.field_8598 && !EnchantedBookItem.getEnchantmentTag(itemStack3).isEmpty();
 				if (itemStack2.isDamageable() && itemStack2.getItem().canRepair(itemStack, itemStack3)) {
@@ -155,7 +155,7 @@ public class AnvilContainer extends Container {
 						l = Math.min(itemStack2.getDamage(), itemStack2.getMaxDamage() / 4);
 					}
 
-					this.field_7776 = m;
+					this.repairItemUsage = m;
 				} else {
 					if (!bl && (itemStack2.getItem() != itemStack3.getItem() || !itemStack2.isDamageable())) {
 						this.result.setInvStack(0, ItemStack.EMPTY);
@@ -312,7 +312,7 @@ public class AnvilContainer extends Container {
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();

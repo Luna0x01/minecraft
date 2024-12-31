@@ -5,12 +5,12 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class KelpPlantBlock extends Block implements FluidFillable {
 	private final KelpBlock kelpBlock;
@@ -21,22 +21,17 @@ public class KelpPlantBlock extends Block implements FluidFillable {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
 	public FluidState getFluidState(BlockState blockState) {
 		return Fluids.WATER.getStill(false);
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(world, blockPos)) {
-			world.breakBlock(blockPos, true);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
+			serverWorld.breakBlock(blockPos, true);
 		}
 
-		super.onScheduledTick(blockState, world, blockPos, random);
+		super.scheduledTick(blockState, serverWorld, blockPos, random);
 	}
 
 	@Override
@@ -59,11 +54,11 @@ public class KelpPlantBlock extends Block implements FluidFillable {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		BlockPos blockPos2 = blockPos.down();
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos2);
+		BlockState blockState2 = worldView.getBlockState(blockPos2);
 		Block block = blockState2.getBlock();
-		return block != Blocks.field_10092 && (block == this || blockState2.isSideSolidFullSquare(viewableWorld, blockPos2, Direction.field_11036));
+		return block != Blocks.field_10092 && (block == this || blockState2.isSideSolidFullSquare(worldView, blockPos2, Direction.field_11036));
 	}
 
 	@Override

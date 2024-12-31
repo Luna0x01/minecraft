@@ -58,7 +58,7 @@ public class ItemStringReader {
 	public void readItem() throws CommandSyntaxException {
 		int i = this.reader.getCursor();
 		Identifier identifier = Identifier.fromCommandInput(this.reader);
-		this.item = (Item)Registry.ITEM.getOrEmpty(identifier).orElseThrow(() -> {
+		this.item = (Item)Registry.field_11142.getOrEmpty(identifier).orElseThrow(() -> {
 			this.reader.setCursor(i);
 			return ID_INVALID_EXCEPTION.createWithContext(this.reader, identifier.toString());
 		});
@@ -113,10 +113,10 @@ public class ItemStringReader {
 			CommandSource.suggestIdentifiers(ItemTags.getContainer().getKeys(), suggestionsBuilder, String.valueOf('#'));
 		}
 
-		return CommandSource.suggestIdentifiers(Registry.ITEM.getIds(), suggestionsBuilder);
+		return CommandSource.suggestIdentifiers(Registry.field_11142.getIds(), suggestionsBuilder);
 	}
 
-	public CompletableFuture<Suggestions> method_9793(SuggestionsBuilder suggestionsBuilder) {
+	public CompletableFuture<Suggestions> getSuggestions(SuggestionsBuilder suggestionsBuilder) {
 		return (CompletableFuture<Suggestions>)this.suggestions.apply(suggestionsBuilder.createOffset(this.reader.getCursor()));
 	}
 }

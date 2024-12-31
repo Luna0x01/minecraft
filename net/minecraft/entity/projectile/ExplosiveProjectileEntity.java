@@ -1,5 +1,6 @@
 package net.minecraft.entity.projectile;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -11,6 +12,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.network.Packet;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -34,8 +36,8 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		EntityType<? extends ExplosiveProjectileEntity> entityType, double d, double e, double f, double g, double h, double i, World world
 	) {
 		this(entityType, world);
-		this.setPositionAndAngles(d, e, f, this.yaw, this.pitch);
-		this.setPosition(d, e, f);
+		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
+		this.updatePosition(d, e, f);
 		double j = (double)MathHelper.sqrt(g * g + h * h + i * i);
 		this.posX = g / j * 0.1;
 		this.posY = h / j * 0.1;
@@ -47,8 +49,8 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	) {
 		this(entityType, world);
 		this.owner = livingEntity;
-		this.setPositionAndAngles(livingEntity.x, livingEntity.y, livingEntity.z, livingEntity.yaw, livingEntity.pitch);
-		this.setPosition(this.x, this.y, this.z);
+		this.refreshPositionAndAngles(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), livingEntity.yaw, livingEntity.pitch);
+		this.refreshPosition();
 		this.setVelocity(Vec3d.ZERO);
 		d += this.random.nextGaussian() * 0.4;
 		e += this.random.nextGaussian() * 0.4;
@@ -64,8 +66,8 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
-		double e = this.getBoundingBox().averageDimension() * 4.0;
+	public boolean shouldRender(double d) {
+		double e = this.getBoundingBox().getAverageSideLength() * 4.0;
 		if (Double.isNaN(e)) {
 			e = 4.0;
 		}
@@ -76,7 +78,7 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 
 	@Override
 	public void tick() {
-		if (this.world.isClient || (this.owner == null || !this.owner.removed) && this.world.isBlockLoaded(new BlockPos(this))) {
+		if (this.world.isClient || (this.owner == null || !this.owner.removed) && this.world.isChunkLoaded(new BlockPos(this))) {
 			super.tick();
 			if (this.isBurning()) {
 				this.setOnFireFor(1);
@@ -89,23 +91,23 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 			}
 
 			Vec3d vec3d = this.getVelocity();
-			this.x = this.x + vec3d.x;
-			this.y = this.y + vec3d.y;
-			this.z = this.z + vec3d.z;
+			double d = this.getX() + vec3d.x;
+			double e = this.getY() + vec3d.y;
+			double f = this.getZ() + vec3d.z;
 			ProjectileUtil.method_7484(this, 0.2F);
-			float f = this.getDrag();
-			if (this.isInsideWater()) {
+			float g = this.getDrag();
+			if (this.isTouchingWater()) {
 				for (int i = 0; i < 4; i++) {
-					float g = 0.25F;
-					this.world.addParticle(ParticleTypes.field_11247, this.x - vec3d.x * 0.25, this.y - vec3d.y * 0.25, this.z - vec3d.z * 0.25, vec3d.x, vec3d.y, vec3d.z);
+					float h = 0.25F;
+					this.world.addParticle(ParticleTypes.field_11247, d - vec3d.x * 0.25, e - vec3d.y * 0.25, f - vec3d.z * 0.25, vec3d.x, vec3d.y, vec3d.z);
 				}
 
-				f = 0.8F;
+				g = 0.8F;
 			}
 
-			this.setVelocity(vec3d.add(this.posX, this.posY, this.posZ).multiply((double)f));
-			this.world.addParticle(this.getParticleType(), this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
-			this.setPosition(this.x, this.y, this.z);
+			this.setVelocity(vec3d.add(this.posX, this.posY, this.posZ).multiply((double)g));
+			this.world.addParticle(this.getParticleType(), d, e + 0.5, f, 0.0, 0.0, 0.0);
+			this.updatePosition(d, e, f);
 		} else {
 			this.remove();
 		}
@@ -123,7 +125,14 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		return 0.95F;
 	}
 
-	protected abstract void onCollision(HitResult hitResult);
+	protected void onCollision(HitResult hitResult) {
+		HitResult.Type type = hitResult.getType();
+		if (type == HitResult.Type.field_1332) {
+			BlockHitResult blockHitResult = (BlockHitResult)hitResult;
+			BlockState blockState = this.world.getBlockState(blockHitResult.getBlockPos());
+			blockState.onProjectileHit(this.world, blockState, blockHitResult, this);
+		}
+	}
 
 	@Override
 	public void writeCustomDataToTag(CompoundTag compoundTag) {
@@ -135,7 +144,7 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		if (compoundTag.containsKey("power", 9)) {
+		if (compoundTag.contains("power", 9)) {
 			ListTag listTag = compoundTag.getList("power", 6);
 			if (listTag.size() == 3) {
 				this.posX = listTag.getDouble(0);
@@ -145,7 +154,7 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		}
 
 		this.life = compoundTag.getInt("life");
-		if (compoundTag.containsKey("direction", 9) && compoundTag.getList("direction", 6).size() == 3) {
+		if (compoundTag.contains("direction", 9) && compoundTag.getList("direction", 6).size() == 3) {
 			ListTag listTag2 = compoundTag.getList("direction", 6);
 			this.setVelocity(listTag2.getDouble(0), listTag2.getDouble(1), listTag2.getDouble(2));
 		} else {
@@ -192,15 +201,19 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	@Override
-	public int getLightmapCoordinates() {
-		return 15728880;
-	}
-
-	@Override
 	public Packet<?> createSpawnPacket() {
 		int i = this.owner == null ? 0 : this.owner.getEntityId();
 		return new EntitySpawnS2CPacket(
-			this.getEntityId(), this.getUuid(), this.x, this.y, this.z, this.pitch, this.yaw, this.getType(), i, new Vec3d(this.posX, this.posY, this.posZ)
+			this.getEntityId(),
+			this.getUuid(),
+			this.getX(),
+			this.getY(),
+			this.getZ(),
+			this.pitch,
+			this.yaw,
+			this.getType(),
+			i,
+			new Vec3d(this.posX, this.posY, this.posZ)
 		);
 	}
 }

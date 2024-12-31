@@ -15,13 +15,13 @@ public class SittingAttackingPhase extends AbstractSittingPhase {
 		this.dragon
 			.world
 			.playSound(
-				this.dragon.x,
-				this.dragon.y,
-				this.dragon.z,
+				this.dragon.getX(),
+				this.dragon.getY(),
+				this.dragon.getZ(),
 				SoundEvents.field_14671,
 				this.dragon.getSoundCategory(),
 				2.5F,
-				0.8F + this.dragon.getRand().nextFloat() * 0.3F,
+				0.8F + this.dragon.getRandom().nextFloat() * 0.3F,
 				false
 			);
 	}

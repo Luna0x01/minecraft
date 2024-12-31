@@ -12,13 +12,14 @@ import net.minecraft.entity.passive.SnowGolemEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.util.MaterialPredicate;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class CarvedPumpkinBlock extends HorizontalFacingBlock {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -35,7 +36,7 @@ public class CarvedPumpkinBlock extends HorizontalFacingBlock {
 
 	protected CarvedPumpkinBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043));
 	}
 
 	@Override
@@ -45,9 +46,9 @@ public class CarvedPumpkinBlock extends HorizontalFacingBlock {
 		}
 	}
 
-	public boolean canDispense(ViewableWorld viewableWorld, BlockPos blockPos) {
-		return this.getSnowGolemDispenserPattern().searchAround(viewableWorld, blockPos) != null
-			|| this.getIronGolemDispenserPattern().searchAround(viewableWorld, blockPos) != null;
+	public boolean canDispense(WorldView worldView, BlockPos blockPos) {
+		return this.getSnowGolemDispenserPattern().searchAround(worldView, blockPos) != null
+			|| this.getIronGolemDispenserPattern().searchAround(worldView, blockPos) != null;
 	}
 
 	private void trySpawnEntity(World world, BlockPos blockPos) {
@@ -61,11 +62,11 @@ public class CarvedPumpkinBlock extends HorizontalFacingBlock {
 
 			SnowGolemEntity snowGolemEntity = EntityType.field_6047.create(world);
 			BlockPos blockPos2 = result.translate(0, 2, 0).getBlockPos();
-			snowGolemEntity.setPositionAndAngles((double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.05, (double)blockPos2.getZ() + 0.5, 0.0F, 0.0F);
+			snowGolemEntity.refreshPositionAndAngles((double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.05, (double)blockPos2.getZ() + 0.5, 0.0F, 0.0F);
 			world.spawnEntity(snowGolemEntity);
 
-			for (ServerPlayerEntity serverPlayerEntity : world.getEntities(ServerPlayerEntity.class, snowGolemEntity.getBoundingBox().expand(5.0))) {
-				Criterions.SUMMONED_ENTITY.handle(serverPlayerEntity, snowGolemEntity);
+			for (ServerPlayerEntity serverPlayerEntity : world.getNonSpectatingEntities(ServerPlayerEntity.class, snowGolemEntity.getBoundingBox().expand(5.0))) {
+				Criterions.SUMMONED_ENTITY.trigger(serverPlayerEntity, snowGolemEntity);
 			}
 
 			for (int j = 0; j < this.getSnowGolemPattern().getHeight(); j++) {
@@ -86,11 +87,11 @@ public class CarvedPumpkinBlock extends HorizontalFacingBlock {
 				BlockPos blockPos3 = result.translate(1, 2, 0).getBlockPos();
 				IronGolemEntity ironGolemEntity = EntityType.field_6147.create(world);
 				ironGolemEntity.setPlayerCreated(true);
-				ironGolemEntity.setPositionAndAngles((double)blockPos3.getX() + 0.5, (double)blockPos3.getY() + 0.05, (double)blockPos3.getZ() + 0.5, 0.0F, 0.0F);
+				ironGolemEntity.refreshPositionAndAngles((double)blockPos3.getX() + 0.5, (double)blockPos3.getY() + 0.05, (double)blockPos3.getZ() + 0.5, 0.0F, 0.0F);
 				world.spawnEntity(ironGolemEntity);
 
-				for (ServerPlayerEntity serverPlayerEntity2 : world.getEntities(ServerPlayerEntity.class, ironGolemEntity.getBoundingBox().expand(5.0))) {
-					Criterions.SUMMONED_ENTITY.handle(serverPlayerEntity2, ironGolemEntity);
+				for (ServerPlayerEntity serverPlayerEntity2 : world.getNonSpectatingEntities(ServerPlayerEntity.class, ironGolemEntity.getBoundingBox().expand(5.0))) {
+					Criterions.SUMMONED_ENTITY.trigger(serverPlayerEntity2, ironGolemEntity);
 				}
 
 				for (int m = 0; m < this.getIronGolemPattern().getWidth(); m++) {
@@ -109,7 +110,7 @@ public class CarvedPumpkinBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING);
 	}
 
@@ -159,5 +160,10 @@ public class CarvedPumpkinBlock extends HorizontalFacingBlock {
 		}
 
 		return this.ironGolemPattern;
+	}
+
+	@Override
+	public boolean allowsSpawning(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityType<?> entityType) {
+		return true;
 	}
 }

@@ -41,7 +41,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos(Entity entity) {
-		this(entity.x, entity.y, entity.z);
+		this(entity.getX(), entity.getY(), entity.getZ());
 	}
 
 	public BlockPos(Vec3d vec3d) {
@@ -127,7 +127,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos up() {
-		return this.up(1);
+		return this.offset(Direction.field_11036);
 	}
 
 	public BlockPos up(int i) {
@@ -135,7 +135,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos down() {
-		return this.down(1);
+		return this.offset(Direction.field_11033);
 	}
 
 	public BlockPos down(int i) {
@@ -143,7 +143,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos north() {
-		return this.north(1);
+		return this.offset(Direction.field_11043);
 	}
 
 	public BlockPos north(int i) {
@@ -151,7 +151,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos south() {
-		return this.south(1);
+		return this.offset(Direction.field_11035);
 	}
 
 	public BlockPos south(int i) {
@@ -159,7 +159,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos west() {
-		return this.west(1);
+		return this.offset(Direction.field_11039);
 	}
 
 	public BlockPos west(int i) {
@@ -167,7 +167,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos east() {
-		return this.east(1);
+		return this.offset(Direction.field_11034);
 	}
 
 	public BlockPos east(int i) {
@@ -175,7 +175,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 	}
 
 	public BlockPos offset(Direction direction) {
-		return this.offset(direction, 1);
+		return new BlockPos(this.getX() + direction.getOffsetX(), this.getY() + direction.getOffsetY(), this.getZ() + direction.getOffsetZ());
 	}
 
 	public BlockPos offset(Direction direction, int i) {
@@ -232,6 +232,17 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 		);
 	}
 
+	public static Stream<BlockPos> method_23627(BlockBox blockBox) {
+		return stream(
+			Math.min(blockBox.minX, blockBox.maxX),
+			Math.min(blockBox.minY, blockBox.maxY),
+			Math.min(blockBox.minZ, blockBox.maxZ),
+			Math.max(blockBox.minX, blockBox.maxX),
+			Math.max(blockBox.minY, blockBox.maxY),
+			Math.max(blockBox.minZ, blockBox.maxZ)
+		);
+	}
+
 	public static Stream<BlockPos> stream(int i, int j, int k, int l, int m, int n) {
 		return StreamSupport.stream(new AbstractSpliterator<BlockPos>((long)((l - i + 1) * (m - j + 1) * (n - k + 1)), 64) {
 			final CuboidBlockIterator connector = new CuboidBlockIterator(i, j, k, l, m, n);
@@ -253,7 +264,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 				final CuboidBlockIterator iterator = new CuboidBlockIterator(i, j, k, l, m, n);
 				final BlockPos.Mutable pos = new BlockPos.Mutable();
 
-				protected BlockPos method_10106() {
+				protected BlockPos computeNext() {
 					return (BlockPos)(this.iterator.step() ? this.pos.set(this.iterator.getX(), this.iterator.getY(), this.iterator.getZ()) : (BlockPos)this.endOfData());
 				}
 			};
@@ -281,6 +292,10 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 
 		public Mutable(double d, double e, double f) {
 			this(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
+		}
+
+		public Mutable(Entity entity) {
+			this(entity.getX(), entity.getY(), entity.getZ());
 		}
 
 		@Override
@@ -326,7 +341,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 		}
 
 		public BlockPos.Mutable set(Entity entity) {
-			return this.set(entity.x, entity.y, entity.z);
+			return this.set(entity.getX(), entity.getY(), entity.getZ());
 		}
 
 		public BlockPos.Mutable set(double d, double e, double f) {
@@ -392,7 +407,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 		}
 
 		public static BlockPos.PooledMutable getEntityPos(Entity entity) {
-			return get(entity.x, entity.y, entity.z);
+			return get(entity.getX(), entity.getY(), entity.getZ());
 		}
 
 		public static BlockPos.PooledMutable get(double d, double e, double f) {
@@ -405,7 +420,7 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 					BlockPos.PooledMutable pooledMutable = (BlockPos.PooledMutable)POOL.remove(POOL.size() - 1);
 					if (pooledMutable != null && pooledMutable.free) {
 						pooledMutable.free = false;
-						pooledMutable.method_10113(i, j, k);
+						pooledMutable.set(i, j, k);
 						return pooledMutable;
 					}
 				}
@@ -414,31 +429,31 @@ public class BlockPos extends Vec3i implements DynamicSerializable {
 			return new BlockPos.PooledMutable(i, j, k);
 		}
 
-		public BlockPos.PooledMutable method_10113(int i, int j, int k) {
+		public BlockPos.PooledMutable set(int i, int j, int k) {
 			return (BlockPos.PooledMutable)super.set(i, j, k);
 		}
 
-		public BlockPos.PooledMutable method_10110(Entity entity) {
+		public BlockPos.PooledMutable set(Entity entity) {
 			return (BlockPos.PooledMutable)super.set(entity);
 		}
 
-		public BlockPos.PooledMutable method_10112(double d, double e, double f) {
+		public BlockPos.PooledMutable set(double d, double e, double f) {
 			return (BlockPos.PooledMutable)super.set(d, e, f);
 		}
 
-		public BlockPos.PooledMutable method_10114(Vec3i vec3i) {
+		public BlockPos.PooledMutable set(Vec3i vec3i) {
 			return (BlockPos.PooledMutable)super.set(vec3i);
 		}
 
-		public BlockPos.PooledMutable method_10118(Direction direction) {
+		public BlockPos.PooledMutable setOffset(Direction direction) {
 			return (BlockPos.PooledMutable)super.setOffset(direction);
 		}
 
-		public BlockPos.PooledMutable method_10116(Direction direction, int i) {
+		public BlockPos.PooledMutable setOffset(Direction direction, int i) {
 			return (BlockPos.PooledMutable)super.setOffset(direction, i);
 		}
 
-		public BlockPos.PooledMutable method_10108(int i, int j, int k) {
+		public BlockPos.PooledMutable setOffset(int i, int j, int k) {
 			return (BlockPos.PooledMutable)super.setOffset(i, j, k);
 		}
 

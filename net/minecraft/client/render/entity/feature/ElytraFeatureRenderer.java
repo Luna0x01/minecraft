@@ -1,10 +1,14 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.PlayerModelPart;
 import net.minecraft.client.render.entity.model.ElytraEntityModel;
 import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
@@ -19,42 +23,36 @@ public class ElytraFeatureRenderer<T extends LivingEntity, M extends EntityModel
 		super(featureRendererContext);
 	}
 
-	public void method_17161(T livingEntity, float f, float g, float h, float i, float j, float k, float l) {
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T livingEntity, float f, float g, float h, float j, float k, float l
+	) {
 		ItemStack itemStack = livingEntity.getEquippedStack(EquipmentSlot.field_6174);
 		if (itemStack.getItem() == Items.field_8833) {
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+			Identifier identifier;
 			if (livingEntity instanceof AbstractClientPlayerEntity) {
 				AbstractClientPlayerEntity abstractClientPlayerEntity = (AbstractClientPlayerEntity)livingEntity;
 				if (abstractClientPlayerEntity.canRenderElytraTexture() && abstractClientPlayerEntity.getElytraTexture() != null) {
-					this.bindTexture(abstractClientPlayerEntity.getElytraTexture());
+					identifier = abstractClientPlayerEntity.getElytraTexture();
 				} else if (abstractClientPlayerEntity.canRenderCapeTexture()
 					&& abstractClientPlayerEntity.getCapeTexture() != null
-					&& abstractClientPlayerEntity.isSkinOverlayVisible(PlayerModelPart.field_7559)) {
-					this.bindTexture(abstractClientPlayerEntity.getCapeTexture());
+					&& abstractClientPlayerEntity.isPartVisible(PlayerModelPart.field_7559)) {
+					identifier = abstractClientPlayerEntity.getCapeTexture();
 				} else {
-					this.bindTexture(SKIN);
+					identifier = SKIN;
 				}
 			} else {
-				this.bindTexture(SKIN);
+				identifier = SKIN;
 			}
 
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef(0.0F, 0.0F, 0.125F);
-			this.elytra.method_17079(livingEntity, f, g, i, j, k, l);
-			this.elytra.method_17078(livingEntity, f, g, i, j, k, l);
-			if (itemStack.hasEnchantments()) {
-				ArmorFeatureRenderer.renderEnchantedGlint(this::bindTexture, livingEntity, this.elytra, f, g, h, i, j, k, l);
-			}
-
-			GlStateManager.disableBlend();
-			GlStateManager.popMatrix();
+			matrixStack.push();
+			matrixStack.translate(0.0, 0.0, 0.125);
+			this.getContextModel().copyStateTo(this.elytra);
+			this.elytra.setAngles(livingEntity, f, g, j, k, l);
+			VertexConsumer vertexConsumer = ItemRenderer.getArmorVertexConsumer(
+				vertexConsumerProvider, this.elytra.getLayer(identifier), false, itemStack.hasEnchantmentGlint()
+			);
+			this.elytra.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
+			matrixStack.pop();
 		}
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return false;
 	}
 }

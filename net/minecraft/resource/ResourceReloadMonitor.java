@@ -8,7 +8,7 @@ public interface ResourceReloadMonitor {
 
 	float getProgress();
 
-	boolean isLoadStageComplete();
+	boolean isPrepareStageComplete();
 
 	boolean isApplyStageComplete();
 

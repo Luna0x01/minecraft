@@ -48,7 +48,7 @@ public class SelectWorldScreen extends Screen {
 				150,
 				20,
 				I18n.translate("selectWorld.select"),
-				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.LevelItem::play)
+				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.Entry::play)
 			)
 		);
 		this.addButton(
@@ -63,7 +63,7 @@ public class SelectWorldScreen extends Screen {
 				72,
 				20,
 				I18n.translate("selectWorld.edit"),
-				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.LevelItem::edit)
+				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.Entry::edit)
 			)
 		);
 		this.deleteButton = this.addButton(
@@ -73,7 +73,7 @@ public class SelectWorldScreen extends Screen {
 				72,
 				20,
 				I18n.translate("selectWorld.delete"),
-				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.LevelItem::delete)
+				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.Entry::delete)
 			)
 		);
 		this.recreateButton = this.addButton(
@@ -83,7 +83,7 @@ public class SelectWorldScreen extends Screen {
 				72,
 				20,
 				I18n.translate("selectWorld.recreate"),
-				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.LevelItem::recreate)
+				buttonWidget -> this.levelList.method_20159().ifPresent(WorldListWidget.Entry::recreate)
 			)
 		);
 		this.addButton(
@@ -96,6 +96,11 @@ public class SelectWorldScreen extends Screen {
 	@Override
 	public boolean keyPressed(int i, int j, int k) {
 		return super.keyPressed(i, j, k) ? true : this.searchBox.keyPressed(i, j, k);
+	}
+
+	@Override
+	public void onClose() {
+		this.minecraft.openScreen(this.parent);
 	}
 
 	@Override
@@ -129,7 +134,7 @@ public class SelectWorldScreen extends Screen {
 	@Override
 	public void removed() {
 		if (this.levelList != null) {
-			this.levelList.children().forEach(WorldListWidget.LevelItem::close);
+			this.levelList.children().forEach(WorldListWidget.Entry::close);
 		}
 	}
 }

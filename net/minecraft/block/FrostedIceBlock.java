@@ -2,7 +2,8 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -16,25 +17,25 @@ public class FrostedIceBlock extends IceBlock {
 
 	public FrostedIceBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(AGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if ((random.nextInt(3) == 0 || this.canMelt(world, blockPos, 4))
-			&& world.getLightLevel(blockPos) > 11 - (Integer)blockState.get(AGE) - blockState.getLightSubtracted(world, blockPos)
-			&& this.increaseAge(blockState, world, blockPos)) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if ((random.nextInt(3) == 0 || this.canMelt(serverWorld, blockPos, 4))
+			&& serverWorld.getLightLevel(blockPos) > 11 - (Integer)blockState.get(AGE) - blockState.getOpacity(serverWorld, blockPos)
+			&& this.increaseAge(blockState, serverWorld, blockPos)) {
 			try (BlockPos.PooledMutable pooledMutable = BlockPos.PooledMutable.get()) {
 				for (Direction direction : Direction.values()) {
-					pooledMutable.method_10114(blockPos).method_10118(direction);
-					BlockState blockState2 = world.getBlockState(pooledMutable);
-					if (blockState2.getBlock() == this && !this.increaseAge(blockState2, world, pooledMutable)) {
-						world.getBlockTickScheduler().schedule(pooledMutable, this, MathHelper.nextInt(random, 20, 40));
+					pooledMutable.set(blockPos).setOffset(direction);
+					BlockState blockState2 = serverWorld.getBlockState(pooledMutable);
+					if (blockState2.getBlock() == this && !this.increaseAge(blockState2, serverWorld, pooledMutable)) {
+						serverWorld.getBlockTickScheduler().schedule(pooledMutable, this, MathHelper.nextInt(random, 20, 40));
 					}
 				}
 			}
 		} else {
-			world.getBlockTickScheduler().schedule(blockPos, this, MathHelper.nextInt(random, 20, 40));
+			serverWorld.getBlockTickScheduler().schedule(blockPos, this, MathHelper.nextInt(random, 20, 40));
 		}
 	}
 
@@ -63,7 +64,7 @@ public class FrostedIceBlock extends IceBlock {
 
 		try (BlockPos.PooledMutable pooledMutable = BlockPos.PooledMutable.get()) {
 			for (Direction direction : Direction.values()) {
-				pooledMutable.method_10114(blockPos).method_10118(direction);
+				pooledMutable.set(blockPos).setOffset(direction);
 				if (blockView.getBlockState(pooledMutable).getBlock() == this) {
 					if (++j >= i) {
 						return false;
@@ -76,7 +77,7 @@ public class FrostedIceBlock extends IceBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(AGE);
 	}
 

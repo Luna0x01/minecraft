@@ -1,7 +1,13 @@
 package net.minecraft.client.render.entity.feature;
 
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Identifier;
 
 public abstract class FeatureRenderer<T extends Entity, M extends EntityModel<T>> {
@@ -11,19 +17,56 @@ public abstract class FeatureRenderer<T extends Entity, M extends EntityModel<T>
 		this.context = featureRendererContext;
 	}
 
-	public M getModel() {
+	protected static <T extends LivingEntity> void render(
+		EntityModel<T> entityModel,
+		EntityModel<T> entityModel2,
+		Identifier identifier,
+		MatrixStack matrixStack,
+		VertexConsumerProvider vertexConsumerProvider,
+		int i,
+		T livingEntity,
+		float f,
+		float g,
+		float h,
+		float j,
+		float k,
+		float l,
+		float m,
+		float n,
+		float o
+	) {
+		if (!livingEntity.isInvisible()) {
+			entityModel.copyStateTo(entityModel2);
+			entityModel2.animateModel(livingEntity, f, g, l);
+			entityModel2.setAngles(livingEntity, f, g, h, j, k);
+			renderModel(entityModel2, identifier, matrixStack, vertexConsumerProvider, i, livingEntity, m, n, o);
+		}
+	}
+
+	protected static <T extends LivingEntity> void renderModel(
+		EntityModel<T> entityModel,
+		Identifier identifier,
+		MatrixStack matrixStack,
+		VertexConsumerProvider vertexConsumerProvider,
+		int i,
+		T livingEntity,
+		float f,
+		float g,
+		float h
+	) {
+		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getEntityCutoutNoCull(identifier));
+		entityModel.render(matrixStack, vertexConsumer, i, LivingEntityRenderer.getOverlay(livingEntity, 0.0F), f, g, h, 1.0F);
+	}
+
+	public M getContextModel() {
 		return this.context.getModel();
 	}
 
-	public void bindTexture(Identifier identifier) {
-		this.context.bindTexture(identifier);
+	protected Identifier getTexture(T entity) {
+		return this.context.getTexture(entity);
 	}
 
-	public void applyLightmapCoordinates(T entity) {
-		this.context.applyLightmapCoordinates(entity);
-	}
-
-	public abstract void render(T entity, float f, float g, float h, float i, float j, float k, float l);
-
-	public abstract boolean hasHurtOverlay();
+	public abstract void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T entity, float f, float g, float h, float j, float k, float l
+	);
 }

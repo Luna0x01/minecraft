@@ -10,11 +10,12 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -26,8 +27,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class DoorBlock extends Block {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -43,7 +44,7 @@ public class DoorBlock extends Block {
 	protected DoorBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(FACING, Direction.field_11043)
 				.with(OPEN, Boolean.valueOf(false))
@@ -106,7 +107,7 @@ public class DoorBlock extends Block {
 			world.setBlockState(blockPos2, Blocks.field_10124.getDefaultState(), 35);
 			world.playLevelEvent(playerEntity, 2001, blockPos2, Block.getRawIdFromState(blockState2));
 			ItemStack itemStack = playerEntity.getMainHandStack();
-			if (!world.isClient && !playerEntity.isCreative()) {
+			if (!world.isClient && !playerEntity.isCreative() && playerEntity.isUsingEffectiveTool(blockState2)) {
 				Block.dropStacks(blockState, world, blockPos, null, playerEntity, itemStack);
 				Block.dropStacks(blockState2, world, blockPos2, null, playerEntity, itemStack);
 			}
@@ -175,10 +176,10 @@ public class DoorBlock extends Block {
 		BlockState blockState3 = blockView.getBlockState(blockPos5);
 		BlockPos blockPos6 = blockPos2.offset(direction3);
 		BlockState blockState4 = blockView.getBlockState(blockPos6);
-		int i = (blockState.method_21743(blockView, blockPos3) ? -1 : 0)
-			+ (blockState2.method_21743(blockView, blockPos4) ? -1 : 0)
-			+ (blockState3.method_21743(blockView, blockPos5) ? 1 : 0)
-			+ (blockState4.method_21743(blockView, blockPos6) ? 1 : 0);
+		int i = (blockState.isFullCube(blockView, blockPos3) ? -1 : 0)
+			+ (blockState2.isFullCube(blockView, blockPos4) ? -1 : 0)
+			+ (blockState3.isFullCube(blockView, blockPos5) ? 1 : 0)
+			+ (blockState4.isFullCube(blockView, blockPos6) ? 1 : 0);
 		boolean bl = blockState.getBlock() == this && blockState.get(HALF) == DoubleBlockHalf.field_12607;
 		boolean bl2 = blockState3.getBlock() == this && blockState3.get(HALF) == DoubleBlockHalf.field_12607;
 		if ((!bl || bl2) && i <= 0) {
@@ -198,14 +199,14 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (this.material == Material.METAL) {
-			return false;
+			return ActionResult.field_5811;
 		} else {
 			blockState = blockState.cycle(OPEN);
 			world.setBlockState(blockPos, blockState, 10);
 			world.playLevelEvent(playerEntity, blockState.get(OPEN) ? this.getCloseSoundEventId() : this.getOpenSoundEventId(), blockPos, 0);
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -231,11 +232,11 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		BlockPos blockPos2 = blockPos.down();
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos2);
+		BlockState blockState2 = worldView.getBlockState(blockPos2);
 		return blockState.get(HALF) == DoubleBlockHalf.field_12607
-			? blockState2.isSideSolidFullSquare(viewableWorld, blockPos2, Direction.field_11036)
+			? blockState2.isSideSolidFullSquare(worldView, blockPos2, Direction.field_11036)
 			: blockState2.getBlock() == this;
 	}
 
@@ -246,11 +247,6 @@ public class DoorBlock extends Block {
 	@Override
 	public PistonBehavior getPistonBehavior(BlockState blockState) {
 		return PistonBehavior.field_15971;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
 	}
 
 	@Override
@@ -269,7 +265,7 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(HALF, FACING, OPEN, HINGE, POWERED);
 	}
 }

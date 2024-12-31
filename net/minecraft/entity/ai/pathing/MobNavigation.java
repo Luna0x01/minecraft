@@ -31,7 +31,7 @@ public class MobNavigation extends EntityNavigation {
 
 	@Override
 	protected Vec3d getPos() {
-		return new Vec3d(this.entity.x, (double)this.method_6362(), this.entity.z);
+		return new Vec3d(this.entity.getX(), (double)this.method_6362(), this.entity.getZ());
 	}
 
 	@Override
@@ -73,21 +73,21 @@ public class MobNavigation extends EntityNavigation {
 	}
 
 	private int method_6362() {
-		if (this.entity.isInsideWater() && this.canSwim()) {
-			int i = MathHelper.floor(this.entity.getBoundingBox().minY);
-			Block block = this.world.getBlockState(new BlockPos(this.entity.x, (double)i, this.entity.z)).getBlock();
+		if (this.entity.isTouchingWater() && this.canSwim()) {
+			int i = MathHelper.floor(this.entity.getY());
+			Block block = this.world.getBlockState(new BlockPos(this.entity.getX(), (double)i, this.entity.getZ())).getBlock();
 			int j = 0;
 
 			while (block == Blocks.field_10382) {
-				block = this.world.getBlockState(new BlockPos(this.entity.x, (double)(++i), this.entity.z)).getBlock();
+				block = this.world.getBlockState(new BlockPos(this.entity.getX(), (double)(++i), this.entity.getZ())).getBlock();
 				if (++j > 16) {
-					return MathHelper.floor(this.entity.getBoundingBox().minY);
+					return MathHelper.floor(this.entity.getY());
 				}
 			}
 
 			return i;
 		} else {
-			return MathHelper.floor(this.entity.getBoundingBox().minY + 0.5);
+			return MathHelper.floor(this.entity.getY() + 0.5);
 		}
 	}
 
@@ -95,7 +95,7 @@ public class MobNavigation extends EntityNavigation {
 	protected void method_6359() {
 		super.method_6359();
 		if (this.avoidSunlight) {
-			if (this.world.isSkyVisible(new BlockPos(this.entity.x, this.entity.getBoundingBox().minY + 0.5, this.entity.z))) {
+			if (this.world.isSkyVisible(new BlockPos(this.entity.getX(), this.entity.getY() + 0.5, this.entity.getZ()))) {
 				return;
 			}
 
@@ -182,7 +182,7 @@ public class MobNavigation extends EntityNavigation {
 					double f = (double)q + 0.5 - vec3d.x;
 					double g = (double)r + 0.5 - vec3d.z;
 					if (!(f * d + g * e < 0.0)) {
-						PathNodeType pathNodeType = this.nodeMaker.getPathNodeType(this.world, q, j - 1, r, this.entity, l, m, n, true, true);
+						PathNodeType pathNodeType = this.nodeMaker.getNodeType(this.world, q, j - 1, r, this.entity, l, m, n, true, true);
 						if (pathNodeType == PathNodeType.field_18) {
 							return false;
 						}
@@ -195,8 +195,8 @@ public class MobNavigation extends EntityNavigation {
 							return false;
 						}
 
-						pathNodeType = this.nodeMaker.getPathNodeType(this.world, q, j, r, this.entity, l, m, n, true, true);
-						float h = this.entity.getPathNodeTypeWeight(pathNodeType);
+						pathNodeType = this.nodeMaker.getNodeType(this.world, q, j, r, this.entity, l, m, n, true, true);
+						float h = this.entity.getPathfindingPenalty(pathNodeType);
 						if (h < 0.0F || h >= 8.0F) {
 							return false;
 						}
@@ -225,7 +225,7 @@ public class MobNavigation extends EntityNavigation {
 	}
 
 	public void setCanPathThroughDoors(boolean bl) {
-		this.nodeMaker.setCanPathThroughDoors(bl);
+		this.nodeMaker.setCanOpenDoors(bl);
 	}
 
 	public boolean canEnterOpenDoors() {

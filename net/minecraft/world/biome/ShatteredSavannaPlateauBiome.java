@@ -23,8 +23,8 @@ public final class ShatteredSavannaPlateauBiome extends Biome {
 				.waterFogColor(329011)
 				.parent("savanna_plateau")
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.STRONGHOLD, FeatureConfig.DEFAULT);
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.STRONGHOLD.configure(FeatureConfig.DEFAULT));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);

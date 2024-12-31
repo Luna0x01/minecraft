@@ -2,27 +2,22 @@ package net.minecraft.client.render.debug;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 
 public class CaveDebugRenderer implements DebugRenderer.Renderer {
-	private final MinecraftClient field_4505;
 	private final Map<BlockPos, BlockPos> field_4507 = Maps.newHashMap();
 	private final Map<BlockPos, Float> field_4508 = Maps.newHashMap();
 	private final List<BlockPos> field_4506 = Lists.newArrayList();
-
-	public CaveDebugRenderer(MinecraftClient minecraftClient) {
-		this.field_4505 = minecraftClient;
-	}
 
 	public void method_3704(BlockPos blockPos, List<BlockPos> list, List<Float> list2) {
 		for (int i = 0; i < list.size(); i++) {
@@ -34,20 +29,14 @@ public class CaveDebugRenderer implements DebugRenderer.Renderer {
 	}
 
 	@Override
-	public void render(long l) {
-		Camera camera = this.field_4505.gameRenderer.getCamera();
-		double d = camera.getPos().x;
-		double e = camera.getPos().y;
-		double f = camera.getPos().z;
-		GlStateManager.pushMatrix();
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
-		GlStateManager.disableTexture();
-		BlockPos blockPos = new BlockPos(camera.getPos().x, 0.0, camera.getPos().z);
+	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
+		RenderSystem.pushMatrix();
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.disableTexture();
+		BlockPos blockPos = new BlockPos(d, 0.0, f);
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(5, VertexFormats.POSITION_COLOR);
 
 		for (Entry<BlockPos, BlockPos> entry : this.field_4507.entrySet()) {
@@ -58,7 +47,7 @@ public class CaveDebugRenderer implements DebugRenderer.Renderer {
 			float i = (float)(blockPos3.getZ() * 128 % 256) / 256.0F;
 			float j = (Float)this.field_4508.get(blockPos2);
 			if (blockPos.isWithinDistance(blockPos2, 160.0)) {
-				WorldRenderer.buildBox(
+				WorldRenderer.drawBox(
 					bufferBuilder,
 					(double)((float)blockPos2.getX() + 0.5F) - d - (double)j,
 					(double)((float)blockPos2.getY() + 0.5F) - e - (double)j,
@@ -76,7 +65,7 @@ public class CaveDebugRenderer implements DebugRenderer.Renderer {
 
 		for (BlockPos blockPos4 : this.field_4506) {
 			if (blockPos.isWithinDistance(blockPos4, 160.0)) {
-				WorldRenderer.buildBox(
+				WorldRenderer.drawBox(
 					bufferBuilder,
 					(double)blockPos4.getX() - d,
 					(double)blockPos4.getY() - e,
@@ -93,8 +82,8 @@ public class CaveDebugRenderer implements DebugRenderer.Renderer {
 		}
 
 		tessellator.draw();
-		GlStateManager.enableDepthTest();
-		GlStateManager.enableTexture();
-		GlStateManager.popMatrix();
+		RenderSystem.enableDepthTest();
+		RenderSystem.enableTexture();
+		RenderSystem.popMatrix();
 	}
 }

@@ -7,9 +7,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.MusicDiscItem;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -22,18 +23,18 @@ public class JukeboxBlock extends BlockWithEntity {
 
 	protected JukeboxBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(HAS_RECORD, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(HAS_RECORD, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if ((Boolean)blockState.get(HAS_RECORD)) {
 			this.removeRecord(world, blockPos);
 			blockState = blockState.with(HAS_RECORD, Boolean.valueOf(false));
 			world.setBlockState(blockPos, blockState, 2);
-			return true;
+			return ActionResult.field_5812;
 		} else {
-			return false;
+			return ActionResult.field_5811;
 		}
 	}
 
@@ -104,7 +105,7 @@ public class JukeboxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(HAS_RECORD);
 	}
 }

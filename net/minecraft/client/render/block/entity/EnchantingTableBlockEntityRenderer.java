@@ -1,57 +1,52 @@
 package net.minecraft.client.render.block.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.BookModel;
+import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class EnchantingTableBlockEntityRenderer extends BlockEntityRenderer<EnchantingTableBlockEntity> {
-	private static final Identifier BOOK_TEX = new Identifier("textures/entity/enchanting_table_book.png");
+	public static final SpriteIdentifier BOOK_TEX = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/enchanting_table_book"));
 	private final BookModel book = new BookModel();
 
-	public void method_3571(EnchantingTableBlockEntity enchantingTableBlockEntity, double d, double e, double f, float g, int i) {
-		GlStateManager.pushMatrix();
-		GlStateManager.translatef((float)d + 0.5F, (float)e + 0.75F, (float)f + 0.5F);
-		float h = (float)enchantingTableBlockEntity.ticks + g;
-		GlStateManager.translatef(0.0F, 0.1F + MathHelper.sin(h * 0.1F) * 0.01F, 0.0F);
-		float j = enchantingTableBlockEntity.field_11964 - enchantingTableBlockEntity.field_11963;
+	public EnchantingTableBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
+		super(blockEntityRenderDispatcher);
+	}
 
-		while (j >= (float) Math.PI) {
-			j -= (float) (Math.PI * 2);
+	public void render(
+		EnchantingTableBlockEntity enchantingTableBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j
+	) {
+		matrixStack.push();
+		matrixStack.translate(0.5, 0.75, 0.5);
+		float g = (float)enchantingTableBlockEntity.ticks + f;
+		matrixStack.translate(0.0, (double)(0.1F + MathHelper.sin(g * 0.1F) * 0.01F), 0.0);
+		float h = enchantingTableBlockEntity.field_11964 - enchantingTableBlockEntity.field_11963;
+
+		while (h >= (float) Math.PI) {
+			h -= (float) (Math.PI * 2);
 		}
 
-		while (j < (float) -Math.PI) {
-			j += (float) (Math.PI * 2);
+		while (h < (float) -Math.PI) {
+			h += (float) (Math.PI * 2);
 		}
 
-		float k = enchantingTableBlockEntity.field_11963 + j * g;
-		GlStateManager.rotatef(-k * (180.0F / (float)Math.PI), 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotatef(80.0F, 0.0F, 0.0F, 1.0F);
-		this.bindTexture(BOOK_TEX);
-		float l = MathHelper.lerp(g, enchantingTableBlockEntity.pageAngle, enchantingTableBlockEntity.nextPageAngle) + 0.25F;
-		float m = MathHelper.lerp(g, enchantingTableBlockEntity.pageAngle, enchantingTableBlockEntity.nextPageAngle) + 0.75F;
-		l = (l - (float)MathHelper.fastFloor((double)l)) * 1.6F - 0.3F;
-		m = (m - (float)MathHelper.fastFloor((double)m)) * 1.6F - 0.3F;
-		if (l < 0.0F) {
-			l = 0.0F;
-		}
-
-		if (m < 0.0F) {
-			m = 0.0F;
-		}
-
-		if (l > 1.0F) {
-			l = 1.0F;
-		}
-
-		if (m > 1.0F) {
-			m = 1.0F;
-		}
-
-		float n = MathHelper.lerp(g, enchantingTableBlockEntity.pageTurningSpeed, enchantingTableBlockEntity.nextPageTurningSpeed);
-		GlStateManager.enableCull();
-		this.book.render(h, l, m, n, 0.0F, 0.0625F);
-		GlStateManager.popMatrix();
+		float k = enchantingTableBlockEntity.field_11963 + h * f;
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getRadialQuaternion(-k));
+		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(80.0F));
+		float l = MathHelper.lerp(f, enchantingTableBlockEntity.pageAngle, enchantingTableBlockEntity.nextPageAngle);
+		float m = MathHelper.fractionalPart(l + 0.25F) * 1.6F - 0.3F;
+		float n = MathHelper.fractionalPart(l + 0.75F) * 1.6F - 0.3F;
+		float o = MathHelper.lerp(f, enchantingTableBlockEntity.pageTurningSpeed, enchantingTableBlockEntity.nextPageTurningSpeed);
+		this.book.setPageAngles(g, MathHelper.clamp(m, 0.0F, 1.0F), MathHelper.clamp(n, 0.0F, 1.0F), o);
+		VertexConsumer vertexConsumer = BOOK_TEX.getVertexConsumer(vertexConsumerProvider, RenderLayer::getEntitySolid);
+		this.book.method_24184(matrixStack, vertexConsumer, i, j, 1.0F, 1.0F, 1.0F, 1.0F);
+		matrixStack.pop();
 	}
 }

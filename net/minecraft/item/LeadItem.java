@@ -32,7 +32,7 @@ public class LeadItem extends Item {
 		}
 	}
 
-	public static boolean attachHeldMobsToBlock(PlayerEntity playerEntity, World world, BlockPos blockPos) {
+	public static ActionResult attachHeldMobsToBlock(PlayerEntity playerEntity, World world, BlockPos blockPos) {
 		LeadKnotEntity leadKnotEntity = null;
 		boolean bl = false;
 		double d = 7.0;
@@ -40,7 +40,7 @@ public class LeadItem extends Item {
 		int j = blockPos.getY();
 		int k = blockPos.getZ();
 
-		for (MobEntity mobEntity : world.getEntities(
+		for (MobEntity mobEntity : world.getNonSpectatingEntities(
 			MobEntity.class, new Box((double)i - 7.0, (double)j - 7.0, (double)k - 7.0, (double)i + 7.0, (double)j + 7.0, (double)k + 7.0)
 		)) {
 			if (mobEntity.getHoldingEntity() == playerEntity) {
@@ -53,6 +53,6 @@ public class LeadItem extends Item {
 			}
 		}
 
-		return bl;
+		return bl ? ActionResult.field_5812 : ActionResult.field_5811;
 	}
 }

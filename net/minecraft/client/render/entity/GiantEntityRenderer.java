@@ -1,10 +1,10 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.ArmorBipedFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.client.render.entity.model.GiantEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.GiantEntity;
 import net.minecraft.util.Identifier;
 
@@ -19,11 +19,11 @@ public class GiantEntityRenderer extends MobEntityRenderer<GiantEntity, BipedEnt
 		this.addFeature(new ArmorBipedFeatureRenderer<>(this, new GiantEntityModel(0.5F, true), new GiantEntityModel(1.0F, true)));
 	}
 
-	protected void method_3980(GiantEntity giantEntity, float f) {
-		GlStateManager.scalef(this.scale, this.scale, this.scale);
+	protected void scale(GiantEntity giantEntity, MatrixStack matrixStack, float f) {
+		matrixStack.scale(this.scale, this.scale, this.scale);
 	}
 
-	protected Identifier method_3981(GiantEntity giantEntity) {
+	public Identifier getTexture(GiantEntity giantEntity) {
 		return SKIN;
 	}
 }

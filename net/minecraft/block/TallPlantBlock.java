@@ -7,22 +7,22 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class TallPlantBlock extends PlantBlock {
 	public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
 
 	public TallPlantBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(HALF, DoubleBlockHalf.field_12607));
+		this.setDefaultState(this.stateManager.getDefaultState().with(HALF, DoubleBlockHalf.field_12607));
 	}
 
 	@Override
@@ -56,11 +56,11 @@ public class TallPlantBlock extends PlantBlock {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		if (blockState.get(HALF) != DoubleBlockHalf.field_12609) {
-			return super.canPlaceAt(blockState, viewableWorld, blockPos);
+			return super.canPlaceAt(blockState, worldView, blockPos);
 		} else {
-			BlockState blockState2 = viewableWorld.getBlockState(blockPos.down());
+			BlockState blockState2 = worldView.getBlockState(blockPos.down());
 			return blockState2.getBlock() == this && blockState2.get(HALF) == DoubleBlockHalf.field_12607;
 		}
 	}
@@ -95,7 +95,7 @@ public class TallPlantBlock extends PlantBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(HALF);
 	}
 

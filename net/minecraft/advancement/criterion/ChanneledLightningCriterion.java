@@ -1,71 +1,29 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.entity.Entity;
 import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-public class ChanneledLightningCriterion implements Criterion<ChanneledLightningCriterion.Conditions> {
+public class ChanneledLightningCriterion extends AbstractCriterion<ChanneledLightningCriterion.Conditions> {
 	private static final Identifier ID = new Identifier("channeled_lightning");
-	private final Map<PlayerAdvancementTracker, ChanneledLightningCriterion.Handler> handlers = Maps.newHashMap();
 
 	@Override
 	public Identifier getId() {
 		return ID;
 	}
 
-	@Override
-	public void beginTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions> conditionsContainer
-	) {
-		ChanneledLightningCriterion.Handler handler = (ChanneledLightningCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler == null) {
-			handler = new ChanneledLightningCriterion.Handler(playerAdvancementTracker);
-			this.handlers.put(playerAdvancementTracker, handler);
-		}
-
-		handler.addCondition(conditionsContainer);
-	}
-
-	@Override
-	public void endTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions> conditionsContainer
-	) {
-		ChanneledLightningCriterion.Handler handler = (ChanneledLightningCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler != null) {
-			handler.removeCondition(conditionsContainer);
-			if (handler.isEmpty()) {
-				this.handlers.remove(playerAdvancementTracker);
-			}
-		}
-	}
-
-	@Override
-	public void endTracking(PlayerAdvancementTracker playerAdvancementTracker) {
-		this.handlers.remove(playerAdvancementTracker);
-	}
-
-	public ChanneledLightningCriterion.Conditions method_8801(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		EntityPredicate[] entityPredicates = EntityPredicate.deserializeAll(jsonObject.get("victims"));
+	public ChanneledLightningCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+		EntityPredicate[] entityPredicates = EntityPredicate.fromJsonArray(jsonObject.get("victims"));
 		return new ChanneledLightningCriterion.Conditions(entityPredicates);
 	}
 
-	public void handle(ServerPlayerEntity serverPlayerEntity, Collection<? extends Entity> collection) {
-		ChanneledLightningCriterion.Handler handler = (ChanneledLightningCriterion.Handler)this.handlers.get(serverPlayerEntity.getAdvancementManager());
-		if (handler != null) {
-			handler.handle(serverPlayerEntity, collection);
-		}
+	public void trigger(ServerPlayerEntity serverPlayerEntity, Collection<? extends Entity> collection) {
+		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(serverPlayerEntity, collection));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
@@ -104,47 +62,6 @@ public class ChanneledLightningCriterion implements Criterion<ChanneledLightning
 			JsonObject jsonObject = new JsonObject();
 			jsonObject.add("victims", EntityPredicate.serializeAll(this.victims));
 			return jsonObject;
-		}
-	}
-
-	static class Handler {
-		private final PlayerAdvancementTracker manager;
-		private final Set<Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions>> conditions = Sets.newHashSet();
-
-		public Handler(PlayerAdvancementTracker playerAdvancementTracker) {
-			this.manager = playerAdvancementTracker;
-		}
-
-		public boolean isEmpty() {
-			return this.conditions.isEmpty();
-		}
-
-		public void addCondition(Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions> conditionsContainer) {
-			this.conditions.add(conditionsContainer);
-		}
-
-		public void removeCondition(Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions> conditionsContainer) {
-			this.conditions.remove(conditionsContainer);
-		}
-
-		public void handle(ServerPlayerEntity serverPlayerEntity, Collection<? extends Entity> collection) {
-			List<Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions>> list = null;
-
-			for (Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions> conditionsContainer : this.conditions) {
-				if (conditionsContainer.getConditions().matches(serverPlayerEntity, collection)) {
-					if (list == null) {
-						list = Lists.newArrayList();
-					}
-
-					list.add(conditionsContainer);
-				}
-			}
-
-			if (list != null) {
-				for (Criterion.ConditionsContainer<ChanneledLightningCriterion.Conditions> conditionsContainer2 : list) {
-					conditionsContainer2.apply(this.manager);
-				}
-			}
 		}
 	}
 }

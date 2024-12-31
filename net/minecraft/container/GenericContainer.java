@@ -79,12 +79,12 @@ public class GenericContainer extends Container {
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (i < this.rows * 9) {
-				if (!this.insertItem(itemStack2, this.rows * 9, this.slotList.size(), true)) {
+				if (!this.insertItem(itemStack2, this.rows * 9, this.slots.size(), true)) {
 					return ItemStack.EMPTY;
 				}
 			} else if (!this.insertItem(itemStack2, 0, this.rows * 9, false)) {

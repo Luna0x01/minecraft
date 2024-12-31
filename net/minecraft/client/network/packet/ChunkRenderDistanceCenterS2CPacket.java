@@ -29,8 +29,8 @@ public class ChunkRenderDistanceCenterS2CPacket implements Packet<ClientPlayPack
 		packetByteBuf.writeVarInt(this.chunkZ);
 	}
 
-	public void method_20321(ClientPlayPacketListener clientPlayPacketListener) {
-		clientPlayPacketListener.handleChunkRenderDistanceCenter(this);
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
+		clientPlayPacketListener.onChunkRenderDistanceCenter(this);
 	}
 
 	public int getChunkX() {

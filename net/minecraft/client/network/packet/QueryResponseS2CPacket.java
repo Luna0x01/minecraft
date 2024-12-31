@@ -40,7 +40,7 @@ public class QueryResponseS2CPacket implements Packet<ClientQueryPacketListener>
 		packetByteBuf.writeString(GSON.toJson(this.metadata));
 	}
 
-	public void method_12671(ClientQueryPacketListener clientQueryPacketListener) {
+	public void apply(ClientQueryPacketListener clientQueryPacketListener) {
 		clientQueryPacketListener.onResponse(this);
 	}
 

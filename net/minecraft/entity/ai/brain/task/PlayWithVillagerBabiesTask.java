@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.ai.brain.Brain;
 import net.minecraft.entity.ai.brain.EntityPosWrapper;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
@@ -36,27 +36,27 @@ public class PlayWithVillagerBabiesTask extends Task<MobEntityWithAi> {
 		);
 	}
 
-	protected boolean method_19583(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi) {
+	protected boolean shouldRun(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi) {
 		return serverWorld.getRandom().nextInt(10) == 0 && this.hasVisibleVillagerBabies(mobEntityWithAi);
 	}
 
-	protected void method_19584(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, long l) {
+	protected void run(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, long l) {
 		LivingEntity livingEntity = this.findVisibleVillagerBaby(mobEntityWithAi);
 		if (livingEntity != null) {
-			this.method_19585(serverWorld, mobEntityWithAi, livingEntity);
+			this.setGroundTarget(serverWorld, mobEntityWithAi, livingEntity);
 		} else {
-			Optional<LivingEntity> optional = this.method_19588(mobEntityWithAi);
+			Optional<LivingEntity> optional = this.getLeastPopularBabyInteractionTarget(mobEntityWithAi);
 			if (optional.isPresent()) {
-				method_19580(mobEntityWithAi, (LivingEntity)optional.get());
+				setPlayTarget(mobEntityWithAi, (LivingEntity)optional.get());
 			} else {
-				this.getVisibleMob(mobEntityWithAi).ifPresent(livingEntityx -> method_19580(mobEntityWithAi, livingEntityx));
+				this.getVisibleMob(mobEntityWithAi).ifPresent(livingEntityx -> setPlayTarget(mobEntityWithAi, livingEntityx));
 			}
 		}
 	}
 
-	private void method_19585(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, LivingEntity livingEntity) {
+	private void setGroundTarget(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, LivingEntity livingEntity) {
 		for (int i = 0; i < 10; i++) {
-			Vec3d vec3d = PathfindingUtil.findTargetStraight(mobEntityWithAi, 20, 8);
+			Vec3d vec3d = TargetFinder.findGroundTarget(mobEntityWithAi, 20, 8);
 			if (vec3d != null && serverWorld.isNearOccupiedPointOfInterest(new BlockPos(vec3d))) {
 				mobEntityWithAi.getBrain().putMemory(MemoryModuleType.field_18445, new WalkTarget(vec3d, 0.6F, 0));
 				return;
@@ -64,7 +64,7 @@ public class PlayWithVillagerBabiesTask extends Task<MobEntityWithAi> {
 		}
 	}
 
-	private static void method_19580(MobEntityWithAi mobEntityWithAi, LivingEntity livingEntity) {
+	private static void setPlayTarget(MobEntityWithAi mobEntityWithAi, LivingEntity livingEntity) {
 		Brain<?> brain = mobEntityWithAi.getBrain();
 		brain.putMemory(MemoryModuleType.field_18447, livingEntity);
 		brain.putMemory(MemoryModuleType.field_18446, new EntityPosWrapper(livingEntity));
@@ -75,8 +75,8 @@ public class PlayWithVillagerBabiesTask extends Task<MobEntityWithAi> {
 		return this.getVisibleVillagerBabies(mobEntityWithAi).stream().findAny();
 	}
 
-	private Optional<LivingEntity> method_19588(MobEntityWithAi mobEntityWithAi) {
-		Map<LivingEntity, Integer> map = this.method_19592(mobEntityWithAi);
+	private Optional<LivingEntity> getLeastPopularBabyInteractionTarget(MobEntityWithAi mobEntityWithAi) {
+		Map<LivingEntity, Integer> map = this.getBabyInteractionTargetCounts(mobEntityWithAi);
 		return map.entrySet()
 			.stream()
 			.sorted(Comparator.comparingInt(Entry::getValue))
@@ -85,7 +85,7 @@ public class PlayWithVillagerBabiesTask extends Task<MobEntityWithAi> {
 			.findFirst();
 	}
 
-	private Map<LivingEntity, Integer> method_19592(MobEntityWithAi mobEntityWithAi) {
+	private Map<LivingEntity, Integer> getBabyInteractionTargetCounts(MobEntityWithAi mobEntityWithAi) {
 		Map<LivingEntity, Integer> map = Maps.newHashMap();
 		this.getVisibleVillagerBabies(mobEntityWithAi).stream().filter(this::hasInteractionTarget).forEach(livingEntity -> {
 			Integer var10000 = (Integer)map.compute(this.getInteractionTarget(livingEntity), (livingEntityx, integer) -> integer == null ? 1 : integer + 1);

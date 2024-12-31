@@ -13,15 +13,13 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.LightType;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,7 +34,7 @@ public class ClientChunkManager extends ChunkManager {
 		this.world = clientWorld;
 		this.emptyChunk = new EmptyChunk(clientWorld, new ChunkPos(0, 0));
 		this.lightingProvider = new LightingProvider(this, true, clientWorld.getDimension().hasSkyLight());
-		this.chunks = new ClientChunkManager.ClientChunkMap(method_20230(i));
+		this.chunks = new ClientChunkManager.ClientChunkMap(getChunkMapRadius(i));
 	}
 
 	@Override
@@ -44,7 +42,7 @@ public class ClientChunkManager extends ChunkManager {
 		return this.lightingProvider;
 	}
 
-	private static boolean method_20181(@Nullable WorldChunk worldChunk, int i, int j) {
+	private static boolean positionEquals(@Nullable WorldChunk worldChunk, int i, int j) {
 		if (worldChunk == null) {
 			return false;
 		} else {
@@ -54,20 +52,20 @@ public class ClientChunkManager extends ChunkManager {
 	}
 
 	public void unload(int i, int j) {
-		if (this.chunks.hasChunk(i, j)) {
-			int k = this.chunks.index(i, j);
+		if (this.chunks.isInRadius(i, j)) {
+			int k = this.chunks.getIndex(i, j);
 			WorldChunk worldChunk = this.chunks.getChunk(k);
-			if (method_20181(worldChunk, i, j)) {
-				this.chunks.method_20183(k, worldChunk, null);
+			if (positionEquals(worldChunk, i, j)) {
+				this.chunks.compareAndSet(k, worldChunk, null);
 			}
 		}
 	}
 
 	@Nullable
-	public WorldChunk method_2857(int i, int j, ChunkStatus chunkStatus, boolean bl) {
-		if (this.chunks.hasChunk(i, j)) {
-			WorldChunk worldChunk = this.chunks.getChunk(this.chunks.index(i, j));
-			if (method_20181(worldChunk, i, j)) {
+	public WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl) {
+		if (this.chunks.isInRadius(i, j)) {
+			WorldChunk worldChunk = this.chunks.getChunk(this.chunks.getIndex(i, j));
+			if (positionEquals(worldChunk, i, j)) {
 				return worldChunk;
 			}
 		}
@@ -81,35 +79,36 @@ public class ClientChunkManager extends ChunkManager {
 	}
 
 	@Nullable
-	public WorldChunk loadChunkFromPacket(World world, int i, int j, PacketByteBuf packetByteBuf, CompoundTag compoundTag, int k, boolean bl) {
-		if (!this.chunks.hasChunk(i, j)) {
+	public WorldChunk loadChunkFromPacket(int i, int j, @Nullable BiomeArray biomeArray, PacketByteBuf packetByteBuf, CompoundTag compoundTag, int k) {
+		if (!this.chunks.isInRadius(i, j)) {
 			LOGGER.warn("Ignoring chunk since it's not in the view range: {}, {}", i, j);
 			return null;
 		} else {
-			int l = this.chunks.index(i, j);
+			int l = this.chunks.getIndex(i, j);
 			WorldChunk worldChunk = (WorldChunk)this.chunks.chunks.get(l);
-			if (!method_20181(worldChunk, i, j)) {
-				if (!bl) {
+			if (!positionEquals(worldChunk, i, j)) {
+				if (biomeArray == null) {
 					LOGGER.warn("Ignoring chunk since we don't have complete data: {}, {}", i, j);
 					return null;
 				}
 
-				worldChunk = new WorldChunk(world, new ChunkPos(i, j), new Biome[256]);
-				worldChunk.loadFromPacket(packetByteBuf, compoundTag, k, bl);
-				this.chunks.unload(l, worldChunk);
+				worldChunk = new WorldChunk(this.world, new ChunkPos(i, j), biomeArray);
+				worldChunk.loadFromPacket(biomeArray, packetByteBuf, compoundTag, k);
+				this.chunks.set(l, worldChunk);
 			} else {
-				worldChunk.loadFromPacket(packetByteBuf, compoundTag, k, bl);
+				worldChunk.loadFromPacket(biomeArray, packetByteBuf, compoundTag, k);
 			}
 
 			ChunkSection[] chunkSections = worldChunk.getSectionArray();
 			LightingProvider lightingProvider = this.getLightingProvider();
-			lightingProvider.suppressLight(new ChunkPos(i, j), true);
+			lightingProvider.setLightEnabled(new ChunkPos(i, j), true);
 
 			for (int m = 0; m < chunkSections.length; m++) {
 				ChunkSection chunkSection = chunkSections[m];
 				lightingProvider.updateSectionStatus(ChunkSectionPos.from(i, m, j), ChunkSection.isEmpty(chunkSection));
 			}
 
+			this.world.resetChunkColor(i, j);
 			return worldChunk;
 		}
 	}
@@ -124,8 +123,8 @@ public class ClientChunkManager extends ChunkManager {
 	}
 
 	public void updateLoadDistance(int i) {
-		int j = this.chunks.loadDistance;
-		int k = method_20230(i);
+		int j = this.chunks.radius;
+		int k = getChunkMapRadius(i);
 		if (j != k) {
 			ClientChunkManager.ClientChunkMap clientChunkMap = new ClientChunkManager.ClientChunkMap(k);
 			clientChunkMap.centerChunkX = this.chunks.centerChunkX;
@@ -135,8 +134,8 @@ public class ClientChunkManager extends ChunkManager {
 				WorldChunk worldChunk = (WorldChunk)this.chunks.chunks.get(l);
 				if (worldChunk != null) {
 					ChunkPos chunkPos = worldChunk.getPos();
-					if (clientChunkMap.hasChunk(chunkPos.x, chunkPos.z)) {
-						clientChunkMap.unload(clientChunkMap.index(chunkPos.x, chunkPos.z), worldChunk);
+					if (clientChunkMap.isInRadius(chunkPos.x, chunkPos.z)) {
+						clientChunkMap.set(clientChunkMap.getIndex(chunkPos.x, chunkPos.z), worldChunk);
 					}
 				}
 			}
@@ -145,27 +144,22 @@ public class ClientChunkManager extends ChunkManager {
 		}
 	}
 
-	private static int method_20230(int i) {
+	private static int getChunkMapRadius(int i) {
 		return Math.max(2, i) + 3;
 	}
 
 	@Override
-	public String getStatus() {
-		return "Client Chunk Cache: " + this.chunks.chunks.length() + ", " + this.method_20182();
+	public String getDebugString() {
+		return "Client Chunk Cache: " + this.chunks.chunks.length() + ", " + this.getLoadedChunkCount();
 	}
 
-	@Override
-	public ChunkGenerator<?> getChunkGenerator() {
-		return null;
-	}
-
-	public int method_20182() {
-		return this.chunks.field_19143;
+	public int getLoadedChunkCount() {
+		return this.chunks.loadedChunkCount;
 	}
 
 	@Override
 	public void onLightUpdate(LightType lightType, ChunkSectionPos chunkSectionPos) {
-		MinecraftClient.getInstance().worldRenderer.scheduleBlockRender(chunkSectionPos.getChunkX(), chunkSectionPos.getChunkY(), chunkSectionPos.getChunkZ());
+		MinecraftClient.getInstance().worldRenderer.scheduleBlockRender(chunkSectionPos.getSectionX(), chunkSectionPos.getSectionY(), chunkSectionPos.getSectionZ());
 	}
 
 	@Override
@@ -180,50 +174,50 @@ public class ClientChunkManager extends ChunkManager {
 
 	@Override
 	public boolean shouldTickEntity(Entity entity) {
-		return this.isChunkLoaded(MathHelper.floor(entity.x) >> 4, MathHelper.floor(entity.z) >> 4);
+		return this.isChunkLoaded(MathHelper.floor(entity.getX()) >> 4, MathHelper.floor(entity.getZ()) >> 4);
 	}
 
 	final class ClientChunkMap {
 		private final AtomicReferenceArray<WorldChunk> chunks;
-		private final int loadDistance;
-		private final int loadDiameter;
+		private final int radius;
+		private final int diameter;
 		private volatile int centerChunkX;
 		private volatile int centerChunkZ;
-		private int field_19143;
+		private int loadedChunkCount;
 
 		private ClientChunkMap(int i) {
-			this.loadDistance = i;
-			this.loadDiameter = i * 2 + 1;
-			this.chunks = new AtomicReferenceArray(this.loadDiameter * this.loadDiameter);
+			this.radius = i;
+			this.diameter = i * 2 + 1;
+			this.chunks = new AtomicReferenceArray(this.diameter * this.diameter);
 		}
 
-		private int index(int i, int j) {
-			return Math.floorMod(j, this.loadDiameter) * this.loadDiameter + Math.floorMod(i, this.loadDiameter);
+		private int getIndex(int i, int j) {
+			return Math.floorMod(j, this.diameter) * this.diameter + Math.floorMod(i, this.diameter);
 		}
 
-		protected void unload(int i, @Nullable WorldChunk worldChunk) {
+		protected void set(int i, @Nullable WorldChunk worldChunk) {
 			WorldChunk worldChunk2 = (WorldChunk)this.chunks.getAndSet(i, worldChunk);
 			if (worldChunk2 != null) {
-				this.field_19143--;
+				this.loadedChunkCount--;
 				ClientChunkManager.this.world.unloadBlockEntities(worldChunk2);
 			}
 
 			if (worldChunk != null) {
-				this.field_19143++;
+				this.loadedChunkCount++;
 			}
 		}
 
-		protected WorldChunk method_20183(int i, WorldChunk worldChunk, @Nullable WorldChunk worldChunk2) {
+		protected WorldChunk compareAndSet(int i, WorldChunk worldChunk, @Nullable WorldChunk worldChunk2) {
 			if (this.chunks.compareAndSet(i, worldChunk, worldChunk2) && worldChunk2 == null) {
-				this.field_19143--;
+				this.loadedChunkCount--;
 			}
 
 			ClientChunkManager.this.world.unloadBlockEntities(worldChunk);
 			return worldChunk;
 		}
 
-		private boolean hasChunk(int i, int j) {
-			return Math.abs(i - this.centerChunkX) <= this.loadDistance && Math.abs(j - this.centerChunkZ) <= this.loadDistance;
+		private boolean isInRadius(int i, int j) {
+			return Math.abs(i - this.centerChunkX) <= this.radius && Math.abs(j - this.centerChunkZ) <= this.radius;
 		}
 
 		@Nullable

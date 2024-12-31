@@ -7,10 +7,10 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.client.gui.screen.AccessibilityScreen;
-import net.minecraft.client.gui.screen.ChatOptionsScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.controls.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.options.AccessibilityScreen;
+import net.minecraft.client.gui.screen.options.ChatOptionsScreen;
+import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.options.Option;
@@ -25,7 +25,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.hit.BlockHitResult;
@@ -75,7 +75,7 @@ public class Keyboard {
 	}
 
 	private boolean processF3(int i) {
-		if (this.debugCrashStartTime > 0L && this.debugCrashStartTime < SystemUtil.getMeasuringTimeMs() - 100L) {
+		if (this.debugCrashStartTime > 0L && this.debugCrashStartTime < Util.getMeasuringTimeMs() - 100L) {
 			return true;
 		} else {
 			switch (i) {
@@ -99,9 +99,9 @@ public class Keyboard {
 							Locale.ROOT,
 							"/execute in %s run tp @s %.2f %.2f %.2f %.2f %.2f",
 							DimensionType.getId(this.client.player.world.dimension.getType()),
-							this.client.player.x,
-							this.client.player.y,
-							this.client.player.z,
+							this.client.player.getX(),
+							this.client.player.getY(),
+							this.client.player.getZ(),
 							this.client.player.yaw,
 							this.client.player.pitch
 						)
@@ -189,7 +189,7 @@ public class Keyboard {
 	}
 
 	private void copyLookAt(boolean bl, boolean bl2) {
-		HitResult hitResult = this.client.hitResult;
+		HitResult hitResult = this.client.crosshairTarget;
 		if (hitResult != null) {
 			switch (hitResult.getType()) {
 				case field_1332:
@@ -197,8 +197,8 @@ public class Keyboard {
 					BlockState blockState = this.client.player.world.getBlockState(blockPos);
 					if (bl) {
 						if (bl2) {
-							this.client.player.networkHandler.getDataQueryHandler().queryBlockNbt(blockPos, compoundTag -> {
-								this.copyBlock(blockState, blockPos, compoundTag);
+							this.client.player.networkHandler.getDataQueryHandler().queryBlockNbt(blockPos, compoundTagx -> {
+								this.copyBlock(blockState, blockPos, compoundTagx);
 								this.debugWarn("debug.inspect.server.block");
 							});
 						} else {
@@ -214,21 +214,20 @@ public class Keyboard {
 					break;
 				case field_1331:
 					Entity entity = ((EntityHitResult)hitResult).getEntity();
-					Identifier identifier = Registry.ENTITY_TYPE.getId(entity.getType());
-					Vec3d vec3d = new Vec3d(entity.x, entity.y, entity.z);
+					Identifier identifier = Registry.field_11145.getId(entity.getType());
 					if (bl) {
 						if (bl2) {
-							this.client.player.networkHandler.getDataQueryHandler().queryEntityNbt(entity.getEntityId(), compoundTag -> {
-								this.copyEntity(identifier, vec3d, compoundTag);
+							this.client.player.networkHandler.getDataQueryHandler().queryEntityNbt(entity.getEntityId(), compoundTagx -> {
+								this.copyEntity(identifier, entity.getPos(), compoundTagx);
 								this.debugWarn("debug.inspect.server.entity");
 							});
 						} else {
 							CompoundTag compoundTag2 = entity.toTag(new CompoundTag());
-							this.copyEntity(identifier, vec3d, compoundTag2);
+							this.copyEntity(identifier, entity.getPos(), compoundTag2);
 							this.debugWarn("debug.inspect.client.entity");
 						}
 					} else {
-						this.copyEntity(identifier, vec3d, null);
+						this.copyEntity(identifier, entity.getPos(), null);
 						this.debugWarn("debug.inspect.client.entity");
 					}
 			}
@@ -269,26 +268,26 @@ public class Keyboard {
 	}
 
 	public void onKey(long l, int i, int j, int k, int m) {
-		if (l == this.client.window.getHandle()) {
+		if (l == this.client.getWindow().getHandle()) {
 			if (this.debugCrashStartTime > 0L) {
-				if (!InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 67)
-					|| !InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 292)) {
+				if (!InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 67)
+					|| !InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292)) {
 					this.debugCrashStartTime = -1L;
 				}
-			} else if (InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 67)
-				&& InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 292)) {
+			} else if (InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 67)
+				&& InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292)) {
 				this.switchF3State = true;
-				this.debugCrashStartTime = SystemUtil.getMeasuringTimeMs();
-				this.debugCrashLastLogTime = SystemUtil.getMeasuringTimeMs();
+				this.debugCrashStartTime = Util.getMeasuringTimeMs();
+				this.debugCrashLastLogTime = Util.getMeasuringTimeMs();
 				this.debugCrashElapsedTime = 0L;
 			}
 
 			ParentElement parentElement = this.client.currentScreen;
 			if (k == 1
-				&& (!(this.client.currentScreen instanceof ControlsOptionsScreen) || ((ControlsOptionsScreen)parentElement).time <= SystemUtil.getMeasuringTimeMs() - 20L)) {
+				&& (!(this.client.currentScreen instanceof ControlsOptionsScreen) || ((ControlsOptionsScreen)parentElement).time <= Util.getMeasuringTimeMs() - 20L)) {
 				if (this.client.options.keyFullscreen.matchesKey(i, j)) {
-					this.client.window.toggleFullscreen();
-					this.client.options.fullscreen = this.client.window.isFullscreen();
+					this.client.getWindow().toggleFullscreen();
+					this.client.options.fullscreen = this.client.getWindow().isFullscreen();
 					return;
 				}
 
@@ -296,10 +295,10 @@ public class Keyboard {
 					if (Screen.hasControlDown()) {
 					}
 
-					ScreenshotUtils.method_1659(
+					ScreenshotUtils.saveScreenshot(
 						this.client.runDirectory,
-						this.client.window.getFramebufferWidth(),
-						this.client.window.getFramebufferHeight(),
+						this.client.getWindow().getFramebufferWidth(),
+						this.client.getWindow().getFramebufferHeight(),
 						this.client.getFramebuffer(),
 						text -> this.client.execute(() -> this.client.inGameHud.getChatHud().addMessage(text))
 					);
@@ -307,17 +306,15 @@ public class Keyboard {
 				}
 			}
 
-			boolean bl = parentElement == null
-				|| !(parentElement.getFocused() instanceof TextFieldWidget)
-				|| !((TextFieldWidget)parentElement.getFocused()).method_20315();
+			boolean bl = parentElement == null || !(parentElement.getFocused() instanceof TextFieldWidget) || !((TextFieldWidget)parentElement.getFocused()).isActive();
 			if (k != 0 && i == 66 && Screen.hasControlDown() && bl) {
 				Option.NARRATOR.cycle(this.client.options, 1);
 				if (parentElement instanceof ChatOptionsScreen) {
-					((ChatOptionsScreen)parentElement).method_2096();
+					((ChatOptionsScreen)parentElement).setNarratorMessage();
 				}
 
 				if (parentElement instanceof AccessibilityScreen) {
-					((AccessibilityScreen)parentElement).method_19366();
+					((AccessibilityScreen)parentElement).setNarratorMessage();
 				}
 			}
 
@@ -358,11 +355,11 @@ public class Keyboard {
 					boolean bl2 = false;
 					if (this.client.currentScreen == null) {
 						if (i == 256) {
-							boolean bl3 = InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 292);
+							boolean bl3 = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292);
 							this.client.openPauseMenu(bl3);
 						}
 
-						bl2 = InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 292) && this.processF3(i);
+						bl2 = InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 292) && this.processF3(i);
 						this.switchF3State |= bl2;
 						if (i == 290) {
 							this.client.options.hudHidden = !this.client.options.hudHidden;
@@ -393,7 +390,7 @@ public class Keyboard {
 	}
 
 	private void onChar(long l, int i, int j) {
-		if (l == this.client.window.getHandle()) {
+		if (l == this.client.getWindow().getHandle()) {
 			Element element = this.client.currentScreen;
 			if (element != null && this.client.getOverlay() == null) {
 				if (Character.charCount(i) == 1) {
@@ -412,29 +409,31 @@ public class Keyboard {
 	}
 
 	public void setup(long l) {
-		InputUtil.setKeyboardCallbacks(l, this::onKey, this::onChar);
+		InputUtil.setKeyboardCallbacks(
+			l, (lx, i, j, k, m) -> this.client.execute(() -> this.onKey(lx, i, j, k, m)), (lx, i, j) -> this.client.execute(() -> this.onChar(lx, i, j))
+		);
 	}
 
 	public String getClipboard() {
-		return this.clipboard.getClipboard(this.client.window.getHandle(), (i, l) -> {
+		return this.clipboard.getClipboard(this.client.getWindow().getHandle(), (i, l) -> {
 			if (i != 65545) {
-				this.client.window.logGlError(i, l);
+				this.client.getWindow().logGlError(i, l);
 			}
 		});
 	}
 
 	public void setClipboard(String string) {
-		this.clipboard.setClipboard(this.client.window.getHandle(), string);
+		this.clipboard.setClipboard(this.client.getWindow().getHandle(), string);
 	}
 
 	public void pollDebugCrash() {
 		if (this.debugCrashStartTime > 0L) {
-			long l = SystemUtil.getMeasuringTimeMs();
+			long l = Util.getMeasuringTimeMs();
 			long m = 10000L - (l - this.debugCrashStartTime);
 			long n = l - this.debugCrashLastLogTime;
 			if (m < 0L) {
 				if (Screen.hasControlDown()) {
-					GlfwUtil.method_15973();
+					GlfwUtil.makeJvmCrash();
 				}
 
 				throw new CrashException(new CrashReport("Manually triggered debug crash", new Throwable()));

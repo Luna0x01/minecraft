@@ -1,7 +1,7 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.model.HorseEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.HorseBaseEntity;
 
 public abstract class HorseBaseEntityRenderer<T extends HorseBaseEntity, M extends HorseEntityModel<T>> extends MobEntityRenderer<T, M> {
@@ -12,8 +12,8 @@ public abstract class HorseBaseEntityRenderer<T extends HorseBaseEntity, M exten
 		this.scale = f;
 	}
 
-	protected void method_3874(T horseBaseEntity, float f) {
-		GlStateManager.scalef(this.scale, this.scale, this.scale);
-		super.scale(horseBaseEntity, f);
+	protected void scale(T horseBaseEntity, MatrixStack matrixStack, float f) {
+		matrixStack.scale(this.scale, this.scale, this.scale);
+		super.scale(horseBaseEntity, matrixStack, f);
 	}
 }

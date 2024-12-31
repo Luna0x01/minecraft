@@ -12,14 +12,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.data.DataCache;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 
 public class BlockListProvider implements DataProvider {
-	private static final Gson field_17168 = new GsonBuilder().setPrettyPrinting().create();
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private final DataGenerator root;
 
 	public BlockListProvider(DataGenerator dataGenerator) {
@@ -30,18 +30,18 @@ public class BlockListProvider implements DataProvider {
 	public void run(DataCache dataCache) throws IOException {
 		JsonObject jsonObject = new JsonObject();
 
-		for (Block block : Registry.BLOCK) {
-			Identifier identifier = Registry.BLOCK.getId(block);
+		for (Block block : Registry.field_11146) {
+			Identifier identifier = Registry.field_11146.getId(block);
 			JsonObject jsonObject2 = new JsonObject();
-			StateFactory<Block, BlockState> stateFactory = block.getStateFactory();
-			if (!stateFactory.getProperties().isEmpty()) {
+			StateManager<Block, BlockState> stateManager = block.getStateManager();
+			if (!stateManager.getProperties().isEmpty()) {
 				JsonObject jsonObject3 = new JsonObject();
 
-				for (Property<?> property : stateFactory.getProperties()) {
+				for (Property<?> property : stateManager.getProperties()) {
 					JsonArray jsonArray = new JsonArray();
 
 					for (Comparable<?> comparable : property.getValues()) {
-						jsonArray.add(SystemUtil.getValueAsString(property, comparable));
+						jsonArray.add(Util.getValueAsString(property, comparable));
 					}
 
 					jsonObject3.add(property.getName(), jsonArray);
@@ -51,15 +51,15 @@ public class BlockListProvider implements DataProvider {
 			}
 
 			JsonArray jsonArray2 = new JsonArray();
-			UnmodifiableIterator var17 = stateFactory.getStates().iterator();
+			UnmodifiableIterator var17 = stateManager.getStates().iterator();
 
 			while (var17.hasNext()) {
 				BlockState blockState = (BlockState)var17.next();
 				JsonObject jsonObject4 = new JsonObject();
 				JsonObject jsonObject5 = new JsonObject();
 
-				for (Property<?> property2 : stateFactory.getProperties()) {
-					jsonObject5.addProperty(property2.getName(), SystemUtil.getValueAsString(property2, blockState.get(property2)));
+				for (Property<?> property2 : stateManager.getProperties()) {
+					jsonObject5.addProperty(property2.getName(), Util.getValueAsString(property2, blockState.get(property2)));
 				}
 
 				if (jsonObject5.size() > 0) {
@@ -79,7 +79,7 @@ public class BlockListProvider implements DataProvider {
 		}
 
 		Path path = this.root.getOutput().resolve("reports/blocks.json");
-		DataProvider.writeToPath(field_17168, dataCache, jsonObject, path);
+		DataProvider.writeToPath(GSON, dataCache, jsonObject, path);
 	}
 
 	@Override

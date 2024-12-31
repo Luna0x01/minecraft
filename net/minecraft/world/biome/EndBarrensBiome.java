@@ -19,12 +19,12 @@ public class EndBarrensBiome extends Biome {
 				.waterFogColor(329011)
 				.parent(null)
 		);
-		DefaultBiomeFeatures.method_20826(this);
+		DefaultBiomeFeatures.addEndCities(this);
 		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6091, 10, 4, 4));
 	}
 
 	@Override
-	public int getSkyColor(float f) {
+	public int getSkyColor() {
 		return 0;
 	}
 }

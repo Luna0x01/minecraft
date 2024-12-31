@@ -61,21 +61,23 @@ public class Bootstrap {
 
 	public static Set<String> getMissingTranslations() {
 		Set<String> set = new TreeSet();
-		collectMissingTranslations(Registry.ENTITY_TYPE, EntityType::getTranslationKey, set);
+		collectMissingTranslations(Registry.field_11145, EntityType::getTranslationKey, set);
 		collectMissingTranslations(Registry.STATUS_EFFECT, StatusEffect::getTranslationKey, set);
-		collectMissingTranslations(Registry.ITEM, Item::getTranslationKey, set);
-		collectMissingTranslations(Registry.ENCHANTMENT, Enchantment::getTranslationKey, set);
-		collectMissingTranslations(Registry.BIOME, Biome::getTranslationKey, set);
-		collectMissingTranslations(Registry.BLOCK, Block::getTranslationKey, set);
-		collectMissingTranslations(Registry.CUSTOM_STAT, identifier -> "stat." + identifier.toString().replace(':', '.'), set);
+		collectMissingTranslations(Registry.field_11142, Item::getTranslationKey, set);
+		collectMissingTranslations(Registry.field_11160, Enchantment::getTranslationKey, set);
+		collectMissingTranslations(Registry.field_11153, Biome::getTranslationKey, set);
+		collectMissingTranslations(Registry.field_11146, Block::getTranslationKey, set);
+		collectMissingTranslations(Registry.field_11158, identifier -> "stat." + identifier.toString().replace(':', '.'), set);
 		return set;
 	}
 
 	public static void logMissingTranslations() {
 		if (!initialized) {
 			throw new IllegalArgumentException("Not bootstrapped");
-		} else if (!SharedConstants.isDevelopment) {
-			getMissingTranslations().forEach(string -> LOGGER.error("Missing translations: " + string));
+		} else {
+			if (SharedConstants.isDevelopment) {
+				getMissingTranslations().forEach(string -> LOGGER.error("Missing translations: " + string));
+			}
 		}
 	}
 

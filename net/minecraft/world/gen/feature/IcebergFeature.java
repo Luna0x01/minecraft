@@ -14,17 +14,21 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
-public class IcebergFeature extends Feature<IcebergFeatureConfig> {
-	public IcebergFeature(Function<Dynamic<?>, ? extends IcebergFeatureConfig> function) {
+public class IcebergFeature extends Feature<SingleStateFeatureConfig> {
+	public IcebergFeature(Function<Dynamic<?>, ? extends SingleStateFeatureConfig> function) {
 		super(function);
 	}
 
-	public boolean method_13423(
-		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, IcebergFeatureConfig icebergFeatureConfig
+	public boolean generate(
+		IWorld iWorld,
+		ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator,
+		Random random,
+		BlockPos blockPos,
+		SingleStateFeatureConfig singleStateFeatureConfig
 	) {
 		blockPos = new BlockPos(blockPos.getX(), iWorld.getSeaLevel(), blockPos.getZ());
 		boolean bl = random.nextDouble() > 0.7;
-		BlockState blockState = icebergFeatureConfig.state;
+		BlockState blockState = singleStateFeatureConfig.state;
 		double d = random.nextDouble() * 2.0 * Math.PI;
 		int i = 11 - random.nextInt(5);
 		int j = 3 + random.nextInt(3);
@@ -113,12 +117,12 @@ public class IcebergFeature extends Feature<IcebergFeatureConfig> {
 				if (e < 0.0) {
 					BlockPos blockPos3 = blockPos.add(o, j, p);
 					Block block = iWorld.getBlockState(blockPos3).getBlock();
-					if (this.method_13420(block) || block == Blocks.field_10491) {
+					if (this.isSnowyOrIcy(block) || block == Blocks.field_10491) {
 						if (bl) {
 							this.setBlockState(iWorld, blockPos3, Blocks.field_10382.getDefaultState());
 						} else {
 							this.setBlockState(iWorld, blockPos3, Blocks.field_10124.getDefaultState());
-							this.method_13422(iWorld, blockPos3);
+							this.clearSnowAbove(iWorld, blockPos3);
 						}
 					}
 				}
@@ -126,7 +130,7 @@ public class IcebergFeature extends Feature<IcebergFeatureConfig> {
 		}
 	}
 
-	private void method_13422(IWorld iWorld, BlockPos blockPos) {
+	private void clearSnowAbove(IWorld iWorld, BlockPos blockPos) {
 		if (iWorld.getBlockState(blockPos.up()).getBlock() == Blocks.field_10477) {
 			this.setBlockState(iWorld, blockPos.up(), Blocks.field_10124.getDefaultState());
 		}
@@ -204,11 +208,11 @@ public class IcebergFeature extends Feature<IcebergFeatureConfig> {
 		return MathHelper.ceil(g / 2.0F);
 	}
 
-	private boolean method_13420(Block block) {
+	private boolean isSnowyOrIcy(Block block) {
 		return block == Blocks.field_10225 || block == Blocks.field_10491 || block == Blocks.field_10384;
 	}
 
-	private boolean method_13414(BlockView blockView, BlockPos blockPos) {
+	private boolean isAirBelow(BlockView blockView, BlockPos blockPos) {
 		return blockView.getBlockState(blockPos.down()).getMaterial() == Material.AIR;
 	}
 
@@ -220,11 +224,11 @@ public class IcebergFeature extends Feature<IcebergFeatureConfig> {
 				for (int o = 0; o <= j; o++) {
 					BlockPos blockPos2 = blockPos.add(m, o, n);
 					Block block = iWorld.getBlockState(blockPos2).getBlock();
-					if (this.method_13420(block) || block == Blocks.field_10477) {
-						if (this.method_13414(iWorld, blockPos2)) {
+					if (this.isSnowyOrIcy(block) || block == Blocks.field_10477) {
+						if (this.isAirBelow(iWorld, blockPos2)) {
 							this.setBlockState(iWorld, blockPos2, Blocks.field_10124.getDefaultState());
 							this.setBlockState(iWorld, blockPos2.up(), Blocks.field_10124.getDefaultState());
-						} else if (this.method_13420(block)) {
+						} else if (this.isSnowyOrIcy(block)) {
 							Block[] blocks = new Block[]{
 								iWorld.getBlockState(blockPos2.west()).getBlock(),
 								iWorld.getBlockState(blockPos2.east()).getBlock(),
@@ -234,7 +238,7 @@ public class IcebergFeature extends Feature<IcebergFeatureConfig> {
 							int p = 0;
 
 							for (Block block2 : blocks) {
-								if (!this.method_13420(block2)) {
+								if (!this.isSnowyOrIcy(block2)) {
 									p++;
 								}
 							}

@@ -2,12 +2,14 @@ package net.minecraft.client.gui.screen.ingame;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import java.util.ListIterator;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.PageTurnWidget;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
@@ -21,7 +23,7 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.server.network.packet.BookUpdateC2SPacket;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public class BookEditScreen extends Screen {
@@ -37,12 +39,12 @@ public class BookEditScreen extends Screen {
 	private int highlightTo;
 	private long lastClickTime;
 	private int lastClickIndex = -1;
-	private PageTurnWidget buttonPreviousPage;
-	private PageTurnWidget buttonNextPage;
-	private ButtonWidget buttonDone;
-	private ButtonWidget buttonSign;
-	private ButtonWidget buttonFinalize;
-	private ButtonWidget buttonCancel;
+	private PageTurnWidget nextPageButton;
+	private PageTurnWidget previousPageButton;
+	private ButtonWidget doneButton;
+	private ButtonWidget signButton;
+	private ButtonWidget finalizeButton;
+	private ButtonWidget cancelButton;
 	private final Hand hand;
 
 	public BookEditScreen(PlayerEntity playerEntity, ItemStack itemStack, Hand hand) {
@@ -52,7 +54,7 @@ public class BookEditScreen extends Screen {
 		this.hand = hand;
 		CompoundTag compoundTag = itemStack.getTag();
 		if (compoundTag != null) {
-			ListTag listTag = compoundTag.getList("pages", 8).method_10612();
+			ListTag listTag = compoundTag.getList("pages", 8).copy();
 
 			for (int i = 0; i < listTag.size(); i++) {
 				this.pages.add(listTag.getString(i));
@@ -77,21 +79,21 @@ public class BookEditScreen extends Screen {
 	@Override
 	protected void init() {
 		this.minecraft.keyboard.enableRepeatEvents(true);
-		this.buttonSign = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, I18n.translate("book.signButton"), buttonWidget -> {
+		this.signButton = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, I18n.translate("book.signButton"), buttonWidget -> {
 			this.signing = true;
 			this.updateButtons();
 		}));
-		this.buttonDone = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.done"), buttonWidget -> {
+		this.doneButton = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.done"), buttonWidget -> {
 			this.minecraft.openScreen(null);
 			this.finalizeBook(false);
 		}));
-		this.buttonFinalize = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, I18n.translate("book.finalizeButton"), buttonWidget -> {
+		this.finalizeButton = this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, I18n.translate("book.finalizeButton"), buttonWidget -> {
 			if (this.signing) {
 				this.finalizeBook(true);
 				this.minecraft.openScreen(null);
 			}
 		}));
-		this.buttonCancel = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.cancel"), buttonWidget -> {
+		this.cancelButton = this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, I18n.translate("gui.cancel"), buttonWidget -> {
 			if (this.signing) {
 				this.signing = false;
 			}
@@ -100,8 +102,8 @@ public class BookEditScreen extends Screen {
 		}));
 		int i = (this.width - 192) / 2;
 		int j = 2;
-		this.buttonPreviousPage = this.addButton(new PageTurnWidget(i + 116, 159, true, buttonWidget -> this.openNextPage(), true));
-		this.buttonNextPage = this.addButton(new PageTurnWidget(i + 43, 159, false, buttonWidget -> this.openPreviousPage(), true));
+		this.nextPageButton = this.addButton(new PageTurnWidget(i + 116, 159, true, buttonWidget -> this.openNextPage(), true));
+		this.previousPageButton = this.addButton(new PageTurnWidget(i + 43, 159, false, buttonWidget -> this.openPreviousPage(), true));
 		this.updateButtons();
 	}
 
@@ -151,13 +153,13 @@ public class BookEditScreen extends Screen {
 	}
 
 	private void updateButtons() {
-		this.buttonNextPage.visible = !this.signing && this.currentPage > 0;
-		this.buttonPreviousPage.visible = !this.signing;
-		this.buttonDone.visible = !this.signing;
-		this.buttonSign.visible = !this.signing;
-		this.buttonCancel.visible = this.signing;
-		this.buttonFinalize.visible = this.signing;
-		this.buttonFinalize.active = !this.title.trim().isEmpty();
+		this.previousPageButton.visible = !this.signing && this.currentPage > 0;
+		this.nextPageButton.visible = !this.signing;
+		this.doneButton.visible = !this.signing;
+		this.signButton.visible = !this.signing;
+		this.cancelButton.visible = this.signing;
+		this.finalizeButton.visible = this.signing;
+		this.finalizeButton.active = !this.title.trim().isEmpty();
 	}
 
 	private void removeEmptyPages() {
@@ -172,14 +174,14 @@ public class BookEditScreen extends Screen {
 		if (this.dirty) {
 			this.removeEmptyPages();
 			ListTag listTag = new ListTag();
-			this.pages.stream().map(StringTag::new).forEach(listTag::add);
+			this.pages.stream().map(StringTag::of).forEach(listTag::add);
 			if (!this.pages.isEmpty()) {
 				this.itemStack.putSubTag("pages", listTag);
 			}
 
 			if (bl) {
-				this.itemStack.putSubTag("author", new StringTag(this.player.getGameProfile().getName()));
-				this.itemStack.putSubTag("title", new StringTag(this.title.trim()));
+				this.itemStack.putSubTag("author", StringTag.of(this.player.getGameProfile().getName()));
+				this.itemStack.putSubTag("title", StringTag.of(this.title.trim()));
 			}
 
 			this.minecraft.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(this.itemStack, bl, this.hand));
@@ -265,10 +267,10 @@ public class BookEditScreen extends Screen {
 					this.applyUpArrowKey(string);
 					return true;
 				case 266:
-					this.buttonNextPage.onPress();
+					this.previousPageButton.onPress();
 					return true;
 				case 267:
-					this.buttonPreviousPage.onPress();
+					this.nextPageButton.onPress();
 					return true;
 				case 268:
 					this.moveCursorToTop(string);
@@ -459,7 +461,7 @@ public class BookEditScreen extends Screen {
 	public void render(int i, int j, float f) {
 		this.renderBackground();
 		this.setFocused(null);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.minecraft.getTextureManager().bindTexture(BookScreen.BOOK_TEXTURE);
 		int k = (this.width - 192) / 2;
 		int l = 2;
@@ -481,13 +483,13 @@ public class BookEditScreen extends Screen {
 			int o = this.getStringWidth(string3);
 			this.font.draw(Formatting.field_1063 + string3, (float)(k + 36 + (114 - o) / 2), 60.0F, 0);
 			String string4 = I18n.translate("book.finalizeWarning");
-			this.font.drawStringBounded(string4, k + 36, 82, 114, 0);
+			this.font.drawTrimmed(string4, k + 36, 82, 114, 0);
 		} else {
 			String string5 = I18n.translate("book.pageIndicator", this.currentPage + 1, this.countPages());
 			String string6 = this.getCurrentPageContent();
 			int p = this.getStringWidth(string5);
 			this.font.draw(string5, (float)(k - p + 192 - 44), 18.0F, 0);
-			this.font.drawStringBounded(string6, k + 36, 32, 114, 0);
+			this.font.drawTrimmed(string6, k + 36, 32, 114, 0);
 			this.drawHighlight(string6);
 			if (this.tickCounter / 6 % 2 == 0) {
 				BookEditScreen.Position position = this.getCursorPositionForIndex(string6, this.cursorIndex);
@@ -570,19 +572,19 @@ public class BookEditScreen extends Screen {
 		this.translateRelativePositionToGlPosition(position3);
 		this.translateRelativePositionToGlPosition(position4);
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-		GlStateManager.color4f(0.0F, 0.0F, 255.0F, 255.0F);
-		GlStateManager.disableTexture();
-		GlStateManager.enableColorLogicOp();
-		GlStateManager.logicOp(GlStateManager.LogicOp.field_5110);
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		RenderSystem.color4f(0.0F, 0.0F, 255.0F, 255.0F);
+		RenderSystem.disableTexture();
+		RenderSystem.enableColorLogicOp();
+		RenderSystem.logicOp(GlStateManager.LogicOp.field_5110);
 		bufferBuilder.begin(7, VertexFormats.POSITION);
 		bufferBuilder.vertex((double)position3.x, (double)position4.y, 0.0).next();
 		bufferBuilder.vertex((double)position4.x, (double)position4.y, 0.0).next();
 		bufferBuilder.vertex((double)position4.x, (double)position3.y, 0.0).next();
 		bufferBuilder.vertex((double)position3.x, (double)position3.y, 0.0).next();
 		tessellator.draw();
-		GlStateManager.disableColorLogicOp();
-		GlStateManager.enableTexture();
+		RenderSystem.disableColorLogicOp();
+		RenderSystem.enableTexture();
 	}
 
 	private BookEditScreen.Position getCursorPositionForIndex(String string, int i) {
@@ -705,7 +707,7 @@ public class BookEditScreen extends Screen {
 	@Override
 	public boolean mouseClicked(double d, double e, int i) {
 		if (i == 0) {
-			long l = SystemUtil.getMeasuringTimeMs();
+			long l = Util.getMeasuringTimeMs();
 			String string = this.getCurrentPageContent();
 			if (!string.isEmpty()) {
 				BookEditScreen.Position position = new BookEditScreen.Position((int)d, (int)e);

@@ -3,14 +3,14 @@ package net.minecraft.block;
 import net.minecraft.entity.Entity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class WeightedPressurePlateBlock extends AbstractPressurePlateBlock {
 	public static final IntProperty POWER = Properties.POWER;
@@ -18,13 +18,13 @@ public class WeightedPressurePlateBlock extends AbstractPressurePlateBlock {
 
 	protected WeightedPressurePlateBlock(int i, Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(POWER, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(POWER, Integer.valueOf(0)));
 		this.weight = i;
 	}
 
 	@Override
 	protected int getRedstoneOutput(World world, BlockPos blockPos) {
-		int i = Math.min(world.getEntities(Entity.class, BOX.offset(blockPos)).size(), this.weight);
+		int i = Math.min(world.getNonSpectatingEntities(Entity.class, BOX.offset(blockPos)).size(), this.weight);
 		if (i > 0) {
 			float f = (float)Math.min(this.weight, i) / (float)this.weight;
 			return MathHelper.ceil(f * 15.0F);
@@ -54,12 +54,12 @@ public class WeightedPressurePlateBlock extends AbstractPressurePlateBlock {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 10;
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(POWER);
 	}
 }

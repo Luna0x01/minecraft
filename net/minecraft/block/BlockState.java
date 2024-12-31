@@ -12,20 +12,24 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.state.AbstractPropertyContainer;
-import net.minecraft.state.PropertyContainer;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.AbstractState;
+import net.minecraft.state.State;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.tag.Tag;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -39,13 +43,11 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.EmptyBlockView;
-import net.minecraft.world.ExtendedBlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.loot.context.LootContext;
+import net.minecraft.world.WorldView;
 
-public class BlockState extends AbstractPropertyContainer<Block, BlockState> implements PropertyContainer<BlockState> {
+public class BlockState extends AbstractState<Block, BlockState> implements State<BlockState> {
 	@Nullable
 	private BlockState.ShapeCache shapeCache;
 	private final int luminance;
@@ -79,18 +81,18 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		return this.shapeCache != null ? this.shapeCache.translucent : this.getBlock().isTranslucent(this, blockView, blockPos);
 	}
 
-	public int getLightSubtracted(BlockView blockView, BlockPos blockPos) {
-		return this.shapeCache != null ? this.shapeCache.lightSubtracted : this.getBlock().getLightSubtracted(this, blockView, blockPos);
+	public int getOpacity(BlockView blockView, BlockPos blockPos) {
+		return this.shapeCache != null ? this.shapeCache.lightSubtracted : this.getBlock().getOpacity(this, blockView, blockPos);
 	}
 
-	public VoxelShape getCullShape(BlockView blockView, BlockPos blockPos, Direction direction) {
-		return this.shapeCache != null && this.shapeCache.shapes != null
-			? this.shapeCache.shapes[direction.ordinal()]
-			: VoxelShapes.method_16344(this.method_11615(blockView, blockPos), direction);
+	public VoxelShape getCullingFace(BlockView blockView, BlockPos blockPos, Direction direction) {
+		return this.shapeCache != null && this.shapeCache.extrudedFaces != null
+			? this.shapeCache.extrudedFaces[direction.ordinal()]
+			: VoxelShapes.extrudeFace(this.getCullingShape(blockView, blockPos), direction);
 	}
 
-	public boolean method_17900() {
-		return this.shapeCache == null || this.shapeCache.field_17651;
+	public boolean exceedsCube() {
+		return this.shapeCache == null || this.shapeCache.exceedsCube;
 	}
 
 	public boolean hasSidedTransparency() {
@@ -117,16 +119,12 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		return this.getBlock().mirror(this, blockMirror);
 	}
 
-	public boolean hasBlockEntityBreakingRender() {
-		return this.getBlock().hasBlockEntityBreakingRender(this);
-	}
-
 	public BlockRenderType getRenderType() {
 		return this.getBlock().getRenderType(this);
 	}
 
-	public int getBlockBrightness(ExtendedBlockView extendedBlockView, BlockPos blockPos) {
-		return this.getBlock().getBlockBrightness(this, extendedBlockView, blockPos);
+	public boolean hasEmissiveLighting() {
+		return this.getBlock().hasEmissiveLighting(this);
 	}
 
 	public float getAmbientOcclusionLightLevel(BlockView blockView, BlockPos blockPos) {
@@ -197,8 +195,8 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		return this.getBlock().getCollisionShape(this, blockView, blockPos, entityContext);
 	}
 
-	public VoxelShape method_11615(BlockView blockView, BlockPos blockPos) {
-		return this.getBlock().method_9571(this, blockView, blockPos);
+	public VoxelShape getCullingShape(BlockView blockView, BlockPos blockPos) {
+		return this.getBlock().getCullingShape(this, blockView, blockPos);
 	}
 
 	public VoxelShape getRayTraceShape(BlockView blockView, BlockPos blockPos) {
@@ -237,12 +235,12 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		this.getBlock().onBlockRemoved(this, world, blockPos, blockState, bl);
 	}
 
-	public void scheduledTick(World world, BlockPos blockPos, Random random) {
-		this.getBlock().onScheduledTick(this, world, blockPos, random);
+	public void scheduledTick(ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		this.getBlock().scheduledTick(this, serverWorld, blockPos, random);
 	}
 
-	public void onRandomTick(World world, BlockPos blockPos, Random random) {
-		this.getBlock().onRandomTick(this, world, blockPos, random);
+	public void randomTick(ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		this.getBlock().randomTick(this, serverWorld, blockPos, random);
 	}
 
 	public void onEntityCollision(World world, BlockPos blockPos, Entity entity) {
@@ -257,8 +255,8 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		return this.getBlock().getDroppedStacks(this, builder);
 	}
 
-	public boolean activate(World world, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		return this.getBlock().activate(this, world, blockHitResult.getBlockPos(), playerEntity, hand, blockHitResult);
+	public ActionResult onUse(World world, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		return this.getBlock().onUse(this, world, blockHitResult.getBlockPos(), playerEntity, hand, blockHitResult);
 	}
 
 	public void onBlockBreakStart(World world, BlockPos blockPos, PlayerEntity playerEntity) {
@@ -267,6 +265,10 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 
 	public boolean canSuffocate(BlockView blockView, BlockPos blockPos) {
 		return this.getBlock().canSuffocate(this, blockView, blockPos);
+	}
+
+	public boolean hasInWallOverlay(BlockView blockView, BlockPos blockPos) {
+		return this.getBlock().hasInWallOverlay(this, blockView, blockPos);
 	}
 
 	public BlockState getStateForNeighborUpdate(Direction direction, BlockState blockState, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2) {
@@ -281,8 +283,12 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		return this.getBlock().canReplace(this, itemPlacementContext);
 	}
 
-	public boolean canPlaceAt(ViewableWorld viewableWorld, BlockPos blockPos) {
-		return this.getBlock().canPlaceAt(this, viewableWorld, blockPos);
+	public boolean canBucketPlace(Fluid fluid) {
+		return this.getBlock().canBucketPlace(this, fluid);
+	}
+
+	public boolean canPlaceAt(WorldView worldView, BlockPos blockPos) {
+		return this.getBlock().canPlaceAt(this, worldView, blockPos);
 	}
 
 	public boolean shouldPostProcess(BlockView blockView, BlockPos blockPos) {
@@ -290,8 +296,8 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 	}
 
 	@Nullable
-	public NameableContainerProvider createContainerProvider(World world, BlockPos blockPos) {
-		return this.getBlock().createContainerProvider(this, world, blockPos);
+	public NameableContainerFactory createContainerFactory(World world, BlockPos blockPos) {
+		return this.getBlock().createContainerFactory(this, world, blockPos);
 	}
 
 	public boolean matches(Tag<Block> tag) {
@@ -322,8 +328,8 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		return this.shapeCache != null ? this.shapeCache.solidFullSquare[direction.ordinal()] : Block.isSideSolidFullSquare(this, blockView, blockPos, direction);
 	}
 
-	public boolean method_21743(BlockView blockView, BlockPos blockPos) {
-		return this.shapeCache != null ? this.shapeCache.field_20337 : Block.isShapeFullCube(this.getCollisionShape(blockView, blockPos));
+	public boolean isFullCube(BlockView blockView, BlockPos blockPos) {
+		return this.shapeCache != null ? this.shapeCache.isFullCube : Block.isShapeFullCube(this.getCollisionShape(blockView, blockPos));
 	}
 
 	public static <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps, BlockState blockState) {
@@ -331,13 +337,13 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		T object;
 		if (immutableMap.isEmpty()) {
 			object = (T)dynamicOps.createMap(
-				ImmutableMap.of(dynamicOps.createString("Name"), dynamicOps.createString(Registry.BLOCK.getId(blockState.getBlock()).toString()))
+				ImmutableMap.of(dynamicOps.createString("Name"), dynamicOps.createString(Registry.field_11146.getId(blockState.getBlock()).toString()))
 			);
 		} else {
 			object = (T)dynamicOps.createMap(
 				ImmutableMap.of(
 					dynamicOps.createString("Name"),
-					dynamicOps.createString(Registry.BLOCK.getId(blockState.getBlock()).toString()),
+					dynamicOps.createString(Registry.field_11146.getId(blockState.getBlock()).toString()),
 					dynamicOps.createString("Properties"),
 					dynamicOps.createMap(
 						(Map)immutableMap.entrySet()
@@ -345,7 +351,7 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 							.map(
 								entry -> Pair.of(
 										dynamicOps.createString(((Property)entry.getKey()).getName()),
-										dynamicOps.createString(PropertyContainer.getValueAsString((Property<T>)entry.getKey(), (Comparable<?>)entry.getValue()))
+										dynamicOps.createString(State.nameValue((Property<T>)entry.getKey(), (Comparable<?>)entry.getValue()))
 									)
 							)
 							.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond))
@@ -358,16 +364,16 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 	}
 
 	public static <T> BlockState deserialize(Dynamic<T> dynamic) {
-		Block block = Registry.BLOCK.get(new Identifier((String)dynamic.getElement("Name").flatMap(dynamic.getOps()::getStringValue).orElse("minecraft:air")));
+		Block block = Registry.field_11146.get(new Identifier((String)dynamic.getElement("Name").flatMap(dynamic.getOps()::getStringValue).orElse("minecraft:air")));
 		Map<String, String> map = dynamic.get("Properties").asMap(dynamicx -> dynamicx.asString(""), dynamicx -> dynamicx.asString(""));
 		BlockState blockState = block.getDefaultState();
-		StateFactory<Block, BlockState> stateFactory = block.getStateFactory();
+		StateManager<Block, BlockState> stateManager = block.getStateManager();
 
 		for (Entry<String, String> entry : map.entrySet()) {
 			String string = (String)entry.getKey();
-			Property<?> property = stateFactory.getProperty(string);
+			Property<?> property = stateManager.getProperty(string);
 			if (property != null) {
-				blockState = PropertyContainer.deserialize(blockState, property, string, dynamic.toString(), (String)entry.getValue());
+				blockState = State.tryRead(blockState, property, string, dynamic.toString(), (String)entry.getValue());
 			}
 		}
 
@@ -380,31 +386,31 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 		private final boolean fullOpaque;
 		private final boolean translucent;
 		private final int lightSubtracted;
-		private final VoxelShape[] shapes;
+		private final VoxelShape[] extrudedFaces;
 		private final VoxelShape collisionShape;
-		private final boolean field_17651;
+		private final boolean exceedsCube;
 		private final boolean[] solidFullSquare;
-		private final boolean field_20337;
+		private final boolean isFullCube;
 
 		private ShapeCache(BlockState blockState) {
 			Block block = blockState.getBlock();
 			this.opaque = block.isOpaque(blockState);
 			this.fullOpaque = block.isFullOpaque(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN);
 			this.translucent = block.isTranslucent(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN);
-			this.lightSubtracted = block.getLightSubtracted(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN);
+			this.lightSubtracted = block.getOpacity(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN);
 			if (!blockState.isOpaque()) {
-				this.shapes = null;
+				this.extrudedFaces = null;
 			} else {
-				this.shapes = new VoxelShape[DIRECTIONS.length];
-				VoxelShape voxelShape = block.method_9571(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN);
+				this.extrudedFaces = new VoxelShape[DIRECTIONS.length];
+				VoxelShape voxelShape = block.getCullingShape(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN);
 
 				for (Direction direction : DIRECTIONS) {
-					this.shapes[direction.ordinal()] = VoxelShapes.method_16344(voxelShape, direction);
+					this.extrudedFaces[direction.ordinal()] = VoxelShapes.extrudeFace(voxelShape, direction);
 				}
 			}
 
 			this.collisionShape = block.getCollisionShape(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN, EntityContext.absent());
-			this.field_17651 = Arrays.stream(Direction.Axis.values())
+			this.exceedsCube = Arrays.stream(Direction.Axis.values())
 				.anyMatch(axis -> this.collisionShape.getMinimum(axis) < 0.0 || this.collisionShape.getMaximum(axis) > 1.0);
 			this.solidFullSquare = new boolean[6];
 
@@ -412,7 +418,7 @@ public class BlockState extends AbstractPropertyContainer<Block, BlockState> imp
 				this.solidFullSquare[direction2.ordinal()] = Block.isSideSolidFullSquare(blockState, EmptyBlockView.field_12294, BlockPos.ORIGIN, direction2);
 			}
 
-			this.field_20337 = Block.isShapeFullCube(blockState.getCollisionShape(EmptyBlockView.field_12294, BlockPos.ORIGIN));
+			this.isFullCube = Block.isShapeFullCube(blockState.getCollisionShape(EmptyBlockView.field_12294, BlockPos.ORIGIN));
 		}
 	}
 }

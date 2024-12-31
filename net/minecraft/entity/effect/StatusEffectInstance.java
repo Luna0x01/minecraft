@@ -1,6 +1,7 @@
 package net.minecraft.entity.effect;
 
 import com.google.common.collect.ComparisonChain;
+import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.CompoundTag;
 import org.apache.logging.log4j.LogManager;
@@ -16,6 +17,8 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 	private boolean permanent;
 	private boolean showParticles;
 	private boolean showIcon;
+	@Nullable
+	private StatusEffectInstance hiddenEffect;
 
 	public StatusEffectInstance(StatusEffect statusEffect) {
 		this(statusEffect, 0, 0);
@@ -34,16 +37,25 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 	}
 
 	public StatusEffectInstance(StatusEffect statusEffect, int i, int j, boolean bl, boolean bl2, boolean bl3) {
+		this(statusEffect, i, j, bl, bl2, bl3, null);
+	}
+
+	public StatusEffectInstance(StatusEffect statusEffect, int i, int j, boolean bl, boolean bl2, boolean bl3, @Nullable StatusEffectInstance statusEffectInstance) {
 		this.type = statusEffect;
 		this.duration = i;
 		this.amplifier = j;
 		this.ambient = bl;
 		this.showParticles = bl2;
 		this.showIcon = bl3;
+		this.hiddenEffect = statusEffectInstance;
 	}
 
 	public StatusEffectInstance(StatusEffectInstance statusEffectInstance) {
 		this.type = statusEffectInstance.type;
+		this.copyFrom(statusEffectInstance);
+	}
+
+	void copyFrom(StatusEffectInstance statusEffectInstance) {
 		this.duration = statusEffectInstance.duration;
 		this.amplifier = statusEffectInstance.amplifier;
 		this.ambient = statusEffectInstance.ambient;
@@ -58,12 +70,24 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 
 		boolean bl = false;
 		if (statusEffectInstance.amplifier > this.amplifier) {
+			if (statusEffectInstance.duration < this.duration) {
+				StatusEffectInstance statusEffectInstance2 = this.hiddenEffect;
+				this.hiddenEffect = new StatusEffectInstance(this);
+				this.hiddenEffect.hiddenEffect = statusEffectInstance2;
+			}
+
 			this.amplifier = statusEffectInstance.amplifier;
 			this.duration = statusEffectInstance.duration;
 			bl = true;
-		} else if (statusEffectInstance.amplifier == this.amplifier && this.duration < statusEffectInstance.duration) {
-			this.duration = statusEffectInstance.duration;
-			bl = true;
+		} else if (statusEffectInstance.duration > this.duration) {
+			if (statusEffectInstance.amplifier == this.amplifier) {
+				this.duration = statusEffectInstance.duration;
+				bl = true;
+			} else if (this.hiddenEffect == null) {
+				this.hiddenEffect = new StatusEffectInstance(statusEffectInstance);
+			} else {
+				this.hiddenEffect.upgrade(statusEffectInstance);
+			}
 		}
 
 		if (!statusEffectInstance.ambient && this.ambient || bl) {
@@ -108,19 +132,28 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 		return this.showIcon;
 	}
 
-	public boolean update(LivingEntity livingEntity) {
+	public boolean update(LivingEntity livingEntity, Runnable runnable) {
 		if (this.duration > 0) {
 			if (this.type.canApplyUpdateEffect(this.duration, this.amplifier)) {
 				this.applyUpdateEffect(livingEntity);
 			}
 
 			this.updateDuration();
+			if (this.duration == 0 && this.hiddenEffect != null) {
+				this.copyFrom(this.hiddenEffect);
+				this.hiddenEffect = this.hiddenEffect.hiddenEffect;
+				runnable.run();
+			}
 		}
 
 		return this.duration > 0;
 	}
 
 	private int updateDuration() {
+		if (this.hiddenEffect != null) {
+			this.hiddenEffect.updateDuration();
+		}
+
 		return --this.duration;
 	}
 
@@ -180,37 +213,51 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 		return 31 * i + (this.ambient ? 1 : 0);
 	}
 
-	public CompoundTag serialize(CompoundTag compoundTag) {
+	public CompoundTag toTag(CompoundTag compoundTag) {
 		compoundTag.putByte("Id", (byte)StatusEffect.getRawId(this.getEffectType()));
+		this.typelessToTag(compoundTag);
+		return compoundTag;
+	}
+
+	private void typelessToTag(CompoundTag compoundTag) {
 		compoundTag.putByte("Amplifier", (byte)this.getAmplifier());
 		compoundTag.putInt("Duration", this.getDuration());
 		compoundTag.putBoolean("Ambient", this.isAmbient());
 		compoundTag.putBoolean("ShowParticles", this.shouldShowParticles());
 		compoundTag.putBoolean("ShowIcon", this.shouldShowIcon());
-		return compoundTag;
+		if (this.hiddenEffect != null) {
+			CompoundTag compoundTag2 = new CompoundTag();
+			this.hiddenEffect.toTag(compoundTag2);
+			compoundTag.put("HiddenEffect", compoundTag2);
+		}
 	}
 
-	public static StatusEffectInstance deserialize(CompoundTag compoundTag) {
+	public static StatusEffectInstance fromTag(CompoundTag compoundTag) {
 		int i = compoundTag.getByte("Id");
 		StatusEffect statusEffect = StatusEffect.byRawId(i);
-		if (statusEffect == null) {
-			return null;
-		} else {
-			int j = compoundTag.getByte("Amplifier");
-			int k = compoundTag.getInt("Duration");
-			boolean bl = compoundTag.getBoolean("Ambient");
-			boolean bl2 = true;
-			if (compoundTag.containsKey("ShowParticles", 1)) {
-				bl2 = compoundTag.getBoolean("ShowParticles");
-			}
+		return statusEffect == null ? null : fromTag(statusEffect, compoundTag);
+	}
 
-			boolean bl3 = bl2;
-			if (compoundTag.containsKey("ShowIcon", 1)) {
-				bl3 = compoundTag.getBoolean("ShowIcon");
-			}
-
-			return new StatusEffectInstance(statusEffect, k, j < 0 ? 0 : j, bl, bl2, bl3);
+	private static StatusEffectInstance fromTag(StatusEffect statusEffect, CompoundTag compoundTag) {
+		int i = compoundTag.getByte("Amplifier");
+		int j = compoundTag.getInt("Duration");
+		boolean bl = compoundTag.getBoolean("Ambient");
+		boolean bl2 = true;
+		if (compoundTag.contains("ShowParticles", 1)) {
+			bl2 = compoundTag.getBoolean("ShowParticles");
 		}
+
+		boolean bl3 = bl2;
+		if (compoundTag.contains("ShowIcon", 1)) {
+			bl3 = compoundTag.getBoolean("ShowIcon");
+		}
+
+		StatusEffectInstance statusEffectInstance = null;
+		if (compoundTag.contains("HiddenEffect", 10)) {
+			statusEffectInstance = fromTag(statusEffect, compoundTag.getCompound("HiddenEffect"));
+		}
+
+		return new StatusEffectInstance(statusEffect, j, i < 0 ? 0 : i, bl, bl2, bl3, statusEffectInstance);
 	}
 
 	public void setPermanent(boolean bl) {
@@ -221,7 +268,7 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 		return this.permanent;
 	}
 
-	public int method_5587(StatusEffectInstance statusEffectInstance) {
+	public int compareTo(StatusEffectInstance statusEffectInstance) {
 		int i = 32147;
 		return (this.getDuration() <= 32147 || statusEffectInstance.getDuration() <= 32147) && (!this.isAmbient() || !statusEffectInstance.isAmbient())
 			? ComparisonChain.start()

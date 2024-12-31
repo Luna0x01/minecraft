@@ -57,18 +57,18 @@ public class WitherSkullBlock extends SkullBlock {
 
 					WitherEntity witherEntity = EntityType.field_6119.create(world);
 					BlockPos blockPos2 = result.translate(1, 2, 0).getBlockPos();
-					witherEntity.setPositionAndAngles(
+					witherEntity.refreshPositionAndAngles(
 						(double)blockPos2.getX() + 0.5,
 						(double)blockPos2.getY() + 0.55,
 						(double)blockPos2.getZ() + 0.5,
 						result.getForwards().getAxis() == Direction.Axis.field_11048 ? 0.0F : 90.0F,
 						0.0F
 					);
-					witherEntity.field_6283 = result.getForwards().getAxis() == Direction.Axis.field_11048 ? 0.0F : 90.0F;
+					witherEntity.bodyYaw = result.getForwards().getAxis() == Direction.Axis.field_11048 ? 0.0F : 90.0F;
 					witherEntity.method_6885();
 
-					for (ServerPlayerEntity serverPlayerEntity : world.getEntities(ServerPlayerEntity.class, witherEntity.getBoundingBox().expand(50.0))) {
-						Criterions.SUMMONED_ENTITY.handle(serverPlayerEntity, witherEntity);
+					for (ServerPlayerEntity serverPlayerEntity : world.getNonSpectatingEntities(ServerPlayerEntity.class, witherEntity.getBoundingBox().expand(50.0))) {
+						Criterions.SUMMONED_ENTITY.trigger(serverPlayerEntity, witherEntity);
 					}
 
 					world.spawnEntity(witherEntity);

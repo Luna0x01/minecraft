@@ -22,11 +22,11 @@ public class NarratorManager implements ClientChatListener {
 
 	@Override
 	public void onChatMessage(MessageType messageType, Text text) {
-		NarratorOption narratorOption = method_20602();
-		if (narratorOption != NarratorOption.OFF && this.narrator.active()) {
-			if (narratorOption == NarratorOption.ALL
-				|| narratorOption == NarratorOption.CHAT && messageType == MessageType.field_11737
-				|| narratorOption == NarratorOption.SYSTEM && messageType == MessageType.field_11735) {
+		NarratorOption narratorOption = getNarratorOption();
+		if (narratorOption != NarratorOption.field_18176 && this.narrator.active()) {
+			if (narratorOption == NarratorOption.field_18177
+				|| narratorOption == NarratorOption.field_18178 && messageType == MessageType.field_11737
+				|| narratorOption == NarratorOption.field_18179 && messageType == MessageType.field_11735) {
 				Text text2;
 				if (text instanceof TranslatableText && "chat.type.text".equals(((TranslatableText)text).getKey())) {
 					text2 = new TranslatableText("chat.type.text.narrate", ((TranslatableText)text).getArgs());
@@ -40,14 +40,14 @@ public class NarratorManager implements ClientChatListener {
 	}
 
 	public void narrate(String string) {
-		NarratorOption narratorOption = method_20602();
-		if (this.narrator.active() && narratorOption != NarratorOption.OFF && narratorOption != NarratorOption.CHAT && !string.isEmpty()) {
+		NarratorOption narratorOption = getNarratorOption();
+		if (this.narrator.active() && narratorOption != NarratorOption.field_18176 && narratorOption != NarratorOption.field_18178 && !string.isEmpty()) {
 			this.narrator.clear();
 			this.narrate(true, string);
 		}
 	}
 
-	private static NarratorOption method_20602() {
+	private static NarratorOption getNarratorOption() {
 		return MinecraftClient.getInstance().options.narrator;
 	}
 
@@ -64,7 +64,7 @@ public class NarratorManager implements ClientChatListener {
 		this.narrator.say(new TranslatableText("options.narrator").getString() + " : " + new TranslatableText(narratorOption.getTranslationKey()).getString(), true);
 		ToastManager toastManager = MinecraftClient.getInstance().getToastManager();
 		if (this.narrator.active()) {
-			if (narratorOption == NarratorOption.OFF) {
+			if (narratorOption == NarratorOption.field_18176) {
 				SystemToast.show(toastManager, SystemToast.Type.field_2219, new TranslatableText("narrator.toast.disabled"), null);
 			} else {
 				SystemToast.show(
@@ -83,7 +83,7 @@ public class NarratorManager implements ClientChatListener {
 	}
 
 	public void clear() {
-		if (method_20602() != NarratorOption.OFF && this.narrator.active()) {
+		if (getNarratorOption() != NarratorOption.field_18176 && this.narrator.active()) {
 			this.narrator.clear();
 		}
 	}

@@ -96,11 +96,11 @@ public class VexEntity extends HostileEntity {
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("BoundX")) {
+		if (compoundTag.contains("BoundX")) {
 			this.bounds = new BlockPos(compoundTag.getInt("BoundX"), compoundTag.getInt("BoundY"), compoundTag.getInt("BoundZ"));
 		}
 
-		if (compoundTag.containsKey("LifeTicks")) {
+		if (compoundTag.contains("LifeTicks")) {
 			this.setLifeTicks(compoundTag.getInt("LifeTicks"));
 		}
 	}
@@ -181,11 +181,6 @@ public class VexEntity extends HostileEntity {
 	}
 
 	@Override
-	public int getLightmapCoordinates() {
-		return 15728880;
-	}
-
-	@Override
 	public float getBrightnessAtEyes() {
 		return 1.0F;
 	}
@@ -202,7 +197,7 @@ public class VexEntity extends HostileEntity {
 
 	@Override
 	protected void initEquipment(LocalDifficulty localDifficulty) {
-		this.setEquippedStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8371));
+		this.equipStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8371));
 		this.setEquipmentDropChance(EquipmentSlot.field_6173, 0.0F);
 	}
 
@@ -300,14 +295,14 @@ public class VexEntity extends HostileEntity {
 
 		@Override
 		public boolean canStart() {
-			return VexEntity.method_7185(VexEntity.this) != null
-				&& VexEntity.method_7185(VexEntity.this).getTarget() != null
-				&& this.canTrack(VexEntity.method_7185(VexEntity.this).getTarget(), this.TRACK_OWNER_PREDICATE);
+			return VexEntity.this.owner != null
+				&& VexEntity.this.owner.getTarget() != null
+				&& this.canTrack(VexEntity.this.owner.getTarget(), this.TRACK_OWNER_PREDICATE);
 		}
 
 		@Override
 		public void start() {
-			VexEntity.this.setTarget(VexEntity.method_7185(VexEntity.this).getTarget());
+			VexEntity.this.setTarget(VexEntity.this.owner.getTarget());
 			super.start();
 		}
 	}
@@ -320,9 +315,9 @@ public class VexEntity extends HostileEntity {
 		@Override
 		public void tick() {
 			if (this.state == MoveControl.State.field_6378) {
-				Vec3d vec3d = new Vec3d(this.targetX - VexEntity.this.x, this.targetY - VexEntity.this.y, this.targetZ - VexEntity.this.z);
+				Vec3d vec3d = new Vec3d(this.targetX - VexEntity.this.getX(), this.targetY - VexEntity.this.getY(), this.targetZ - VexEntity.this.getZ());
 				double d = vec3d.length();
-				if (d < VexEntity.this.getBoundingBox().averageDimension()) {
+				if (d < VexEntity.this.getBoundingBox().getAverageSideLength()) {
 					this.state = MoveControl.State.field_6377;
 					VexEntity.this.setVelocity(VexEntity.this.getVelocity().multiply(0.5));
 				} else {
@@ -330,12 +325,12 @@ public class VexEntity extends HostileEntity {
 					if (VexEntity.this.getTarget() == null) {
 						Vec3d vec3d2 = VexEntity.this.getVelocity();
 						VexEntity.this.yaw = -((float)MathHelper.atan2(vec3d2.x, vec3d2.z)) * (180.0F / (float)Math.PI);
-						VexEntity.this.field_6283 = VexEntity.this.yaw;
+						VexEntity.this.bodyYaw = VexEntity.this.yaw;
 					} else {
-						double e = VexEntity.this.getTarget().x - VexEntity.this.x;
-						double f = VexEntity.this.getTarget().z - VexEntity.this.z;
+						double e = VexEntity.this.getTarget().getX() - VexEntity.this.getX();
+						double f = VexEntity.this.getTarget().getZ() - VexEntity.this.getZ();
 						VexEntity.this.yaw = -((float)MathHelper.atan2(e, f)) * (180.0F / (float)Math.PI);
-						VexEntity.this.field_6283 = VexEntity.this.yaw;
+						VexEntity.this.bodyYaw = VexEntity.this.yaw;
 					}
 				}
 			}

@@ -16,10 +16,10 @@ import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
 
 public class RegistryTagManager implements ResourceReloadListener {
-	private final RegistryTagContainer<Block> blocks = new RegistryTagContainer<>(Registry.BLOCK, "tags/blocks", "block");
-	private final RegistryTagContainer<Item> items = new RegistryTagContainer<>(Registry.ITEM, "tags/items", "item");
-	private final RegistryTagContainer<Fluid> fluids = new RegistryTagContainer<>(Registry.FLUID, "tags/fluids", "fluid");
-	private final RegistryTagContainer<EntityType<?>> entityTypes = new RegistryTagContainer<>(Registry.ENTITY_TYPE, "tags/entity_types", "entity_type");
+	private final RegistryTagContainer<Block> blocks = new RegistryTagContainer<>(Registry.field_11146, "tags/blocks", "block");
+	private final RegistryTagContainer<Item> items = new RegistryTagContainer<>(Registry.field_11142, "tags/items", "item");
+	private final RegistryTagContainer<Fluid> fluids = new RegistryTagContainer<>(Registry.field_11154, "tags/fluids", "fluid");
+	private final RegistryTagContainer<EntityType<?>> entityTypes = new RegistryTagContainer<>(Registry.field_11145, "tags/entity_types", "entity_type");
 
 	public RegistryTagContainer<Block> blocks() {
 		return this.blocks;

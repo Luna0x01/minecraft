@@ -2,7 +2,7 @@ package net.minecraft.entity.ai.goal;
 
 import java.util.EnumSet;
 import javax.annotation.Nullable;
-import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.util.math.Vec3d;
 
@@ -36,7 +36,7 @@ public class WanderAroundGoal extends Goal {
 					return false;
 				}
 
-				if (this.mob.getRand().nextInt(this.chance) != 0) {
+				if (this.mob.getRandom().nextInt(this.chance) != 0) {
 					return false;
 				}
 			}
@@ -56,17 +56,23 @@ public class WanderAroundGoal extends Goal {
 
 	@Nullable
 	protected Vec3d getWanderTarget() {
-		return PathfindingUtil.findTarget(this.mob, 10, 7);
+		return TargetFinder.findTarget(this.mob, 10, 7);
 	}
 
 	@Override
 	public boolean shouldContinue() {
-		return !this.mob.getNavigation().isIdle();
+		return !this.mob.getNavigation().isIdle() && !this.mob.hasPassengers();
 	}
 
 	@Override
 	public void start() {
 		this.mob.getNavigation().startMovingTo(this.targetX, this.targetY, this.targetZ, this.speed);
+	}
+
+	@Override
+	public void stop() {
+		this.mob.getNavigation().stop();
+		super.stop();
 	}
 
 	public void ignoreChanceOnce() {

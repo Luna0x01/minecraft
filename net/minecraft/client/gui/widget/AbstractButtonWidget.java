@@ -1,6 +1,7 @@
 package net.minecraft.client.gui.widget;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Objects;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -13,7 +14,7 @@ import net.minecraft.client.sound.SoundManager;
 import net.minecraft.client.util.NarratorManager;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public abstract class AbstractButtonWidget extends DrawableHelper implements Drawable, Element {
@@ -63,9 +64,9 @@ public abstract class AbstractButtonWidget extends DrawableHelper implements Dra
 			if (this.wasHovered != this.isHovered()) {
 				if (this.isHovered()) {
 					if (this.focused) {
-						this.nextNarration = SystemUtil.getMeasuringTimeMs() + 200L;
+						this.queueNarration(200);
 					} else {
-						this.nextNarration = SystemUtil.getMeasuringTimeMs() + 750L;
+						this.queueNarration(750);
 					}
 				} else {
 					this.nextNarration = Long.MAX_VALUE;
@@ -82,7 +83,7 @@ public abstract class AbstractButtonWidget extends DrawableHelper implements Dra
 	}
 
 	protected void narrate() {
-		if (this.active && this.isHovered() && SystemUtil.getMeasuringTimeMs() > this.nextNarration) {
+		if (this.active && this.isHovered() && Util.getMeasuringTimeMs() > this.nextNarration) {
 			String string = this.getNarrationMessage();
 			if (!string.isEmpty()) {
 				NarratorManager.INSTANCE.narrate(string);
@@ -92,31 +93,25 @@ public abstract class AbstractButtonWidget extends DrawableHelper implements Dra
 	}
 
 	protected String getNarrationMessage() {
-		return this.message.isEmpty() ? "" : I18n.translate("gui.narrate.button", this.getMessage());
+		return this.getMessage().isEmpty() ? "" : I18n.translate("gui.narrate.button", this.getMessage());
 	}
 
 	public void renderButton(int i, int j, float f) {
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
 		TextRenderer textRenderer = minecraftClient.textRenderer;
 		minecraftClient.getTextureManager().bindTexture(WIDGETS_LOCATION);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, this.alpha);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, this.alpha);
 		int k = this.getYImage(this.isHovered());
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
-		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
 		this.blit(this.x, this.y, 0, 46 + k * 20, this.width / 2, this.height);
 		this.blit(this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + k * 20, this.width / 2, this.height);
 		this.renderBg(minecraftClient, i, j);
-		int l = 14737632;
-		if (!this.active) {
-			l = 10526880;
-		} else if (this.isHovered()) {
-			l = 16777120;
-		}
-
-		this.drawCenteredString(textRenderer, this.message, this.x + this.width / 2, this.y + (this.height - 8) / 2, l | MathHelper.ceil(this.alpha * 255.0F) << 24);
+		int l = this.active ? 16777215 : 10526880;
+		this.drawCenteredString(
+			textRenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, l | MathHelper.ceil(this.alpha * 255.0F) << 24
+		);
 	}
 
 	protected void renderBg(MinecraftClient minecraftClient, int i, int j) {
@@ -221,10 +216,14 @@ public abstract class AbstractButtonWidget extends DrawableHelper implements Dra
 
 	public void setMessage(String string) {
 		if (!Objects.equals(string, this.message)) {
-			this.nextNarration = SystemUtil.getMeasuringTimeMs() + 250L;
+			this.queueNarration(250);
 		}
 
 		this.message = string;
+	}
+
+	public void queueNarration(int i) {
+		this.nextNarration = Util.getMeasuringTimeMs() + (long)i;
 	}
 
 	public String getMessage() {

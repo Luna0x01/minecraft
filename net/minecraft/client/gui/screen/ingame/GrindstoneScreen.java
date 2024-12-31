@@ -1,12 +1,12 @@
 package net.minecraft.client.gui.screen.ingame;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.container.GrindstoneContainer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class GrindstoneScreen extends AbstractContainerScreen<GrindstoneContainer> {
+public class GrindstoneScreen extends ContainerScreen<GrindstoneContainer> {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/container/grindstone.png");
 
 	public GrindstoneScreen(GrindstoneContainer grindstoneContainer, PlayerInventory playerInventory, Text text) {
@@ -29,7 +29,7 @@ public class GrindstoneScreen extends AbstractContainerScreen<GrindstoneContaine
 
 	@Override
 	protected void drawBackground(float f, int i, int j) {
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.minecraft.getTextureManager().bindTexture(TEXTURE);
 		int k = (this.width - this.containerWidth) / 2;
 		int l = (this.height - this.containerHeight) / 2;

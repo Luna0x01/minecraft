@@ -4,7 +4,6 @@ import net.minecraft.client.network.packet.AdvancementUpdateS2CPacket;
 import net.minecraft.client.network.packet.BlockActionS2CPacket;
 import net.minecraft.client.network.packet.BlockBreakingProgressS2CPacket;
 import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
-import net.minecraft.client.network.packet.BlockPlayerActionS2CPacket;
 import net.minecraft.client.network.packet.BlockUpdateS2CPacket;
 import net.minecraft.client.network.packet.BossBarS2CPacket;
 import net.minecraft.client.network.packet.ChatMessageS2CPacket;
@@ -12,12 +11,15 @@ import net.minecraft.client.network.packet.ChunkDataS2CPacket;
 import net.minecraft.client.network.packet.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.client.network.packet.ChunkLoadDistanceS2CPacket;
 import net.minecraft.client.network.packet.ChunkRenderDistanceCenterS2CPacket;
+import net.minecraft.client.network.packet.CloseContainerS2CPacket;
 import net.minecraft.client.network.packet.CombatEventS2CPacket;
 import net.minecraft.client.network.packet.CommandSuggestionsS2CPacket;
 import net.minecraft.client.network.packet.CommandTreeS2CPacket;
 import net.minecraft.client.network.packet.ConfirmGuiActionS2CPacket;
+import net.minecraft.client.network.packet.ContainerPropertyUpdateS2CPacket;
+import net.minecraft.client.network.packet.ContainerSlotUpdateS2CPacket;
 import net.minecraft.client.network.packet.CooldownUpdateS2CPacket;
-import net.minecraft.client.network.packet.CraftResponseS2CPacket;
+import net.minecraft.client.network.packet.CraftFailedResponseS2CPacket;
 import net.minecraft.client.network.packet.CustomPayloadS2CPacket;
 import net.minecraft.client.network.packet.DifficultyS2CPacket;
 import net.minecraft.client.network.packet.DisconnectS2CPacket;
@@ -41,10 +43,6 @@ import net.minecraft.client.network.packet.ExperienceOrbSpawnS2CPacket;
 import net.minecraft.client.network.packet.ExplosionS2CPacket;
 import net.minecraft.client.network.packet.GameJoinS2CPacket;
 import net.minecraft.client.network.packet.GameStateChangeS2CPacket;
-import net.minecraft.client.network.packet.GuiCloseS2CPacket;
-import net.minecraft.client.network.packet.GuiOpenS2CPacket;
-import net.minecraft.client.network.packet.GuiSlotUpdateS2CPacket;
-import net.minecraft.client.network.packet.GuiUpdateS2CPacket;
 import net.minecraft.client.network.packet.HealthUpdateS2CPacket;
 import net.minecraft.client.network.packet.HeldItemChangeS2CPacket;
 import net.minecraft.client.network.packet.InventoryS2CPacket;
@@ -54,7 +52,8 @@ import net.minecraft.client.network.packet.LightUpdateS2CPacket;
 import net.minecraft.client.network.packet.LookAtS2CPacket;
 import net.minecraft.client.network.packet.MapUpdateS2CPacket;
 import net.minecraft.client.network.packet.MobSpawnS2CPacket;
-import net.minecraft.client.network.packet.OpenContainerPacket;
+import net.minecraft.client.network.packet.OpenContainerS2CPacket;
+import net.minecraft.client.network.packet.OpenHorseContainerS2CPacket;
 import net.minecraft.client.network.packet.OpenWrittenBookS2CPacket;
 import net.minecraft.client.network.packet.PaintingSpawnS2CPacket;
 import net.minecraft.client.network.packet.ParticleS2CPacket;
@@ -62,6 +61,7 @@ import net.minecraft.client.network.packet.PlaySoundFromEntityS2CPacket;
 import net.minecraft.client.network.packet.PlaySoundIdS2CPacket;
 import net.minecraft.client.network.packet.PlaySoundS2CPacket;
 import net.minecraft.client.network.packet.PlayerAbilitiesS2CPacket;
+import net.minecraft.client.network.packet.PlayerActionResponseS2CPacket;
 import net.minecraft.client.network.packet.PlayerListHeaderS2CPacket;
 import net.minecraft.client.network.packet.PlayerListS2CPacket;
 import net.minecraft.client.network.packet.PlayerPositionLookS2CPacket;
@@ -75,7 +75,7 @@ import net.minecraft.client.network.packet.ScoreboardObjectiveUpdateS2CPacket;
 import net.minecraft.client.network.packet.ScoreboardPlayerUpdateS2CPacket;
 import net.minecraft.client.network.packet.SelectAdvancementTabS2CPacket;
 import net.minecraft.client.network.packet.SetCameraEntityS2CPacket;
-import net.minecraft.client.network.packet.SetTradeOffersPacket;
+import net.minecraft.client.network.packet.SetTradeOffersS2CPacket;
 import net.minecraft.client.network.packet.SignEditorOpenS2CPacket;
 import net.minecraft.client.network.packet.StatisticsS2CPacket;
 import net.minecraft.client.network.packet.StopSoundS2CPacket;
@@ -130,15 +130,15 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onGuiActionConfirm(ConfirmGuiActionS2CPacket confirmGuiActionS2CPacket);
 
-	void onGuiClose(GuiCloseS2CPacket guiCloseS2CPacket);
+	void onCloseContainer(CloseContainerS2CPacket closeContainerS2CPacket);
 
 	void onInventory(InventoryS2CPacket inventoryS2CPacket);
 
-	void onGuiOpen(GuiOpenS2CPacket guiOpenS2CPacket);
+	void onOpenHorseContainer(OpenHorseContainerS2CPacket openHorseContainerS2CPacket);
 
-	void onGuiUpdate(GuiUpdateS2CPacket guiUpdateS2CPacket);
+	void onContainerPropertyUpdate(ContainerPropertyUpdateS2CPacket containerPropertyUpdateS2CPacket);
 
-	void onGuiSlotUpdate(GuiSlotUpdateS2CPacket guiSlotUpdateS2CPacket);
+	void onContainerSlotUpdate(ContainerSlotUpdateS2CPacket containerSlotUpdateS2CPacket);
 
 	void onCustomPayload(CustomPayloadS2CPacket customPayloadS2CPacket);
 
@@ -244,7 +244,7 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onSelectAdvancementTab(SelectAdvancementTabS2CPacket selectAdvancementTabS2CPacket);
 
-	void onCraftResponse(CraftResponseS2CPacket craftResponseS2CPacket);
+	void onCraftFailedResponse(CraftFailedResponseS2CPacket craftFailedResponseS2CPacket);
 
 	void onCommandTree(CommandTreeS2CPacket commandTreeS2CPacket);
 
@@ -262,13 +262,13 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onOpenWrittenBook(OpenWrittenBookS2CPacket openWrittenBookS2CPacket);
 
-	void onOpenContainer(OpenContainerPacket openContainerPacket);
+	void onOpenContainer(OpenContainerS2CPacket openContainerS2CPacket);
 
-	void onSetTradeOffers(SetTradeOffersPacket setTradeOffersPacket);
+	void onSetTradeOffers(SetTradeOffersS2CPacket setTradeOffersS2CPacket);
 
-	void handleChunkLoadDistance(ChunkLoadDistanceS2CPacket chunkLoadDistanceS2CPacket);
+	void onChunkLoadDistance(ChunkLoadDistanceS2CPacket chunkLoadDistanceS2CPacket);
 
-	void handleChunkRenderDistanceCenter(ChunkRenderDistanceCenterS2CPacket chunkRenderDistanceCenterS2CPacket);
+	void onChunkRenderDistanceCenter(ChunkRenderDistanceCenterS2CPacket chunkRenderDistanceCenterS2CPacket);
 
-	void method_21707(BlockPlayerActionS2CPacket blockPlayerActionS2CPacket);
+	void onPlayerActionResponse(PlayerActionResponseS2CPacket playerActionResponseS2CPacket);
 }

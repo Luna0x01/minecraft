@@ -5,13 +5,13 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ExtendedBlockView;
-import net.minecraft.world.LightType;
+import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.chunk.light.LightingProvider;
+import net.minecraft.world.level.ColorResolver;
 
-public class ChunkRendererRegion implements ExtendedBlockView {
+public class ChunkRendererRegion implements BlockRenderView {
 	protected final int chunkXOffset;
 	protected final int chunkZOffset;
 	protected final BlockPos offset;
@@ -33,7 +33,7 @@ public class ChunkRendererRegion implements ExtendedBlockView {
 
 		for (int n = j; n <= l; n++) {
 			for (int o = k; o <= m; o++) {
-				worldChunks[n - j][o - k] = world.method_8497(n, o);
+				worldChunks[n - j][o - k] = world.getChunk(n, o);
 			}
 		}
 
@@ -102,15 +102,8 @@ public class ChunkRendererRegion implements ExtendedBlockView {
 	}
 
 	@Override
-	public int getLightLevel(LightType lightType, BlockPos blockPos) {
-		return this.world.getLightLevel(lightType, blockPos);
-	}
-
-	@Override
-	public Biome getBiome(BlockPos blockPos) {
-		int i = (blockPos.getX() >> 4) - this.chunkXOffset;
-		int j = (blockPos.getZ() >> 4) - this.chunkZOffset;
-		return this.chunks[i][j].getBiome(blockPos);
+	public LightingProvider getLightingProvider() {
+		return this.world.getLightingProvider();
 	}
 
 	@Nullable
@@ -124,5 +117,10 @@ public class ChunkRendererRegion implements ExtendedBlockView {
 		int i = (blockPos.getX() >> 4) - this.chunkXOffset;
 		int j = (blockPos.getZ() >> 4) - this.chunkZOffset;
 		return this.chunks[i][j].getBlockEntity(blockPos, creationType);
+	}
+
+	@Override
+	public int getColor(BlockPos blockPos, ColorResolver colorResolver) {
+		return this.world.getColor(blockPos, colorResolver);
 	}
 }

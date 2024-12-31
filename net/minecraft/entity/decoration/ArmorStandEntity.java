@@ -74,16 +74,16 @@ public class ArmorStandEntity extends LivingEntity {
 
 	public ArmorStandEntity(World world, double d, double e, double f) {
 		this(EntityType.field_6131, world);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 	}
 
 	@Override
 	public void calculateDimensions() {
-		double d = this.x;
-		double e = this.y;
-		double f = this.z;
+		double d = this.getX();
+		double e = this.getY();
+		double f = this.getZ();
 		super.calculateDimensions();
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 	}
 
 	private boolean canClip() {
@@ -130,7 +130,7 @@ public class ArmorStandEntity extends LivingEntity {
 	}
 
 	@Override
-	public void setEquippedStack(EquipmentSlot equipmentSlot, ItemStack itemStack) {
+	public void equipStack(EquipmentSlot equipmentSlot, ItemStack itemStack) {
 		switch (equipmentSlot.getType()) {
 			case field_6177:
 				this.onEquipStack(itemStack);
@@ -166,7 +166,7 @@ public class ArmorStandEntity extends LivingEntity {
 		if (!itemStack.isEmpty() && !MobEntity.canEquipmentSlotContain(equipmentSlot, itemStack) && equipmentSlot != EquipmentSlot.field_6169) {
 			return false;
 		} else {
-			this.setEquippedStack(equipmentSlot, itemStack);
+			this.equipStack(equipmentSlot, itemStack);
 			return true;
 		}
 	}
@@ -219,19 +219,19 @@ public class ArmorStandEntity extends LivingEntity {
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("ArmorItems", 9)) {
+		if (compoundTag.contains("ArmorItems", 9)) {
 			ListTag listTag = compoundTag.getList("ArmorItems", 10);
 
 			for (int i = 0; i < this.armorItems.size(); i++) {
-				this.armorItems.set(i, ItemStack.fromTag(listTag.getCompoundTag(i)));
+				this.armorItems.set(i, ItemStack.fromTag(listTag.getCompound(i)));
 			}
 		}
 
-		if (compoundTag.containsKey("HandItems", 9)) {
+		if (compoundTag.contains("HandItems", 9)) {
 			ListTag listTag2 = compoundTag.getList("HandItems", 10);
 
 			for (int j = 0; j < this.heldItems.size(); j++) {
-				this.heldItems.set(j, ItemStack.fromTag(listTag2.getCompoundTag(j)));
+				this.heldItems.set(j, ItemStack.fromTag(listTag2.getCompound(j)));
 			}
 		}
 
@@ -300,7 +300,7 @@ public class ArmorStandEntity extends LivingEntity {
 	}
 
 	@Override
-	protected void tickPushing() {
+	protected void tickCramming() {
 		List<Entity> list = this.world.getEntities(this, this.getBoundingBox(), RIDEABLE_MINECART_PREDICATE);
 
 		for (int i = 0; i < list.size(); i++) {
@@ -316,13 +316,17 @@ public class ArmorStandEntity extends LivingEntity {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (this.isMarker() || itemStack.getItem() == Items.field_8448) {
 			return ActionResult.field_5811;
-		} else if (!this.world.isClient && !playerEntity.isSpectator()) {
+		} else if (playerEntity.isSpectator()) {
+			return ActionResult.field_5812;
+		} else if (playerEntity.world.isClient) {
+			return ActionResult.field_21466;
+		} else {
 			EquipmentSlot equipmentSlot = MobEntity.getPreferredEquipmentSlot(itemStack);
 			if (itemStack.isEmpty()) {
 				EquipmentSlot equipmentSlot2 = this.method_6916(vec3d);
 				EquipmentSlot equipmentSlot3 = this.method_6915(equipmentSlot2) ? equipmentSlot : equipmentSlot2;
-				if (this.isEquippedStackValid(equipmentSlot3)) {
-					this.method_6904(playerEntity, equipmentSlot3, itemStack, hand);
+				if (this.hasStackEquipped(equipmentSlot3) && this.method_6904(playerEntity, equipmentSlot3, itemStack, hand)) {
+					return ActionResult.field_5812;
 				}
 			} else {
 				if (this.method_6915(equipmentSlot)) {
@@ -333,58 +337,63 @@ public class ArmorStandEntity extends LivingEntity {
 					return ActionResult.field_5814;
 				}
 
-				this.method_6904(playerEntity, equipmentSlot, itemStack, hand);
+				if (this.method_6904(playerEntity, equipmentSlot, itemStack, hand)) {
+					return ActionResult.field_5812;
+				}
 			}
 
-			return ActionResult.field_5812;
-		} else {
-			return ActionResult.field_5812;
+			return ActionResult.field_5811;
 		}
 	}
 
-	protected EquipmentSlot method_6916(Vec3d vec3d) {
+	private EquipmentSlot method_6916(Vec3d vec3d) {
 		EquipmentSlot equipmentSlot = EquipmentSlot.field_6173;
 		boolean bl = this.isSmall();
 		double d = bl ? vec3d.y * 2.0 : vec3d.y;
 		EquipmentSlot equipmentSlot2 = EquipmentSlot.field_6166;
-		if (d >= 0.1 && d < 0.1 + (bl ? 0.8 : 0.45) && this.isEquippedStackValid(equipmentSlot2)) {
+		if (d >= 0.1 && d < 0.1 + (bl ? 0.8 : 0.45) && this.hasStackEquipped(equipmentSlot2)) {
 			equipmentSlot = EquipmentSlot.field_6166;
-		} else if (d >= 0.9 + (bl ? 0.3 : 0.0) && d < 0.9 + (bl ? 1.0 : 0.7) && this.isEquippedStackValid(EquipmentSlot.field_6174)) {
+		} else if (d >= 0.9 + (bl ? 0.3 : 0.0) && d < 0.9 + (bl ? 1.0 : 0.7) && this.hasStackEquipped(EquipmentSlot.field_6174)) {
 			equipmentSlot = EquipmentSlot.field_6174;
-		} else if (d >= 0.4 && d < 0.4 + (bl ? 1.0 : 0.8) && this.isEquippedStackValid(EquipmentSlot.field_6172)) {
+		} else if (d >= 0.4 && d < 0.4 + (bl ? 1.0 : 0.8) && this.hasStackEquipped(EquipmentSlot.field_6172)) {
 			equipmentSlot = EquipmentSlot.field_6172;
-		} else if (d >= 1.6 && this.isEquippedStackValid(EquipmentSlot.field_6169)) {
+		} else if (d >= 1.6 && this.hasStackEquipped(EquipmentSlot.field_6169)) {
 			equipmentSlot = EquipmentSlot.field_6169;
-		} else if (!this.isEquippedStackValid(EquipmentSlot.field_6173) && this.isEquippedStackValid(EquipmentSlot.field_6171)) {
+		} else if (!this.hasStackEquipped(EquipmentSlot.field_6173) && this.hasStackEquipped(EquipmentSlot.field_6171)) {
 			equipmentSlot = EquipmentSlot.field_6171;
 		}
 
 		return equipmentSlot;
 	}
 
-	public boolean method_6915(EquipmentSlot equipmentSlot) {
+	private boolean method_6915(EquipmentSlot equipmentSlot) {
 		return (this.disabledSlots & 1 << equipmentSlot.getArmorStandSlotId()) != 0
 			|| equipmentSlot.getType() == EquipmentSlot.Type.field_6177 && !this.shouldShowArms();
 	}
 
-	private void method_6904(PlayerEntity playerEntity, EquipmentSlot equipmentSlot, ItemStack itemStack, Hand hand) {
+	private boolean method_6904(PlayerEntity playerEntity, EquipmentSlot equipmentSlot, ItemStack itemStack, Hand hand) {
 		ItemStack itemStack2 = this.getEquippedStack(equipmentSlot);
-		if (itemStack2.isEmpty() || (this.disabledSlots & 1 << equipmentSlot.getArmorStandSlotId() + 8) == 0) {
-			if (!itemStack2.isEmpty() || (this.disabledSlots & 1 << equipmentSlot.getArmorStandSlotId() + 16) == 0) {
-				if (playerEntity.abilities.creativeMode && itemStack2.isEmpty() && !itemStack.isEmpty()) {
-					ItemStack itemStack3 = itemStack.copy();
-					itemStack3.setCount(1);
-					this.setEquippedStack(equipmentSlot, itemStack3);
-				} else if (itemStack.isEmpty() || itemStack.getCount() <= 1) {
-					this.setEquippedStack(equipmentSlot, itemStack);
-					playerEntity.setStackInHand(hand, itemStack2);
-				} else if (itemStack2.isEmpty()) {
-					ItemStack itemStack4 = itemStack.copy();
-					itemStack4.setCount(1);
-					this.setEquippedStack(equipmentSlot, itemStack4);
-					itemStack.decrement(1);
-				}
-			}
+		if (!itemStack2.isEmpty() && (this.disabledSlots & 1 << equipmentSlot.getArmorStandSlotId() + 8) != 0) {
+			return false;
+		} else if (itemStack2.isEmpty() && (this.disabledSlots & 1 << equipmentSlot.getArmorStandSlotId() + 16) != 0) {
+			return false;
+		} else if (playerEntity.abilities.creativeMode && itemStack2.isEmpty() && !itemStack.isEmpty()) {
+			ItemStack itemStack3 = itemStack.copy();
+			itemStack3.setCount(1);
+			this.equipStack(equipmentSlot, itemStack3);
+			return true;
+		} else if (itemStack.isEmpty() || itemStack.getCount() <= 1) {
+			this.equipStack(equipmentSlot, itemStack);
+			playerEntity.setStackInHand(hand, itemStack2);
+			return true;
+		} else if (!itemStack2.isEmpty()) {
+			return false;
+		} else {
+			ItemStack itemStack4 = itemStack.copy();
+			itemStack4.setCount(1);
+			this.equipStack(equipmentSlot, itemStack4);
+			itemStack.decrement(1);
+			return true;
 		}
 	}
 
@@ -445,7 +454,7 @@ public class ArmorStandEntity extends LivingEntity {
 	public void handleStatus(byte b) {
 		if (b == 32) {
 			if (this.world.isClient) {
-				this.world.playSound(this.x, this.y, this.z, SoundEvents.field_14897, this.getSoundCategory(), 0.3F, 1.0F, false);
+				this.world.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.field_14897, this.getSoundCategory(), 0.3F, 1.0F, false);
 				this.field_7112 = this.world.getTime();
 			}
 		} else {
@@ -454,8 +463,8 @@ public class ArmorStandEntity extends LivingEntity {
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
-		double e = this.getBoundingBox().averageDimension() * 4.0;
+	public boolean shouldRender(double d) {
+		double e = this.getBoundingBox().getAverageSideLength() * 4.0;
 		if (Double.isNaN(e) || e == 0.0) {
 			e = 4.0;
 		}
@@ -469,9 +478,9 @@ public class ArmorStandEntity extends LivingEntity {
 			((ServerWorld)this.world)
 				.spawnParticles(
 					new BlockStateParticleEffect(ParticleTypes.field_11217, Blocks.field_10161.getDefaultState()),
-					this.x,
-					this.y + (double)this.getHeight() / 1.5,
-					this.z,
+					this.getX(),
+					this.getBodyY(0.6666666666666666),
+					this.getZ(),
 					10,
 					(double)(this.getWidth() / 4.0F),
 					(double)(this.getHeight() / 4.0F),
@@ -519,13 +528,13 @@ public class ArmorStandEntity extends LivingEntity {
 	}
 
 	private void method_6920() {
-		this.world.playSound(null, this.x, this.y, this.z, SoundEvents.field_15118, this.getSoundCategory(), 1.0F, 1.0F);
+		this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.field_15118, this.getSoundCategory(), 1.0F, 1.0F);
 	}
 
 	@Override
-	protected float method_6031(float f, float g) {
-		this.field_6220 = this.prevYaw;
-		this.field_6283 = this.yaw;
+	protected float turnHead(float f, float g) {
+		this.prevBodyYaw = this.prevYaw;
+		this.bodyYaw = this.yaw;
 		return 0.0F;
 	}
 
@@ -548,13 +557,13 @@ public class ArmorStandEntity extends LivingEntity {
 
 	@Override
 	public void setYaw(float f) {
-		this.field_6220 = this.prevYaw = f;
+		this.prevBodyYaw = this.prevYaw = f;
 		this.prevHeadYaw = this.headYaw = f;
 	}
 
 	@Override
 	public void setHeadYaw(float f) {
-		this.field_6220 = this.prevYaw = f;
+		this.prevBodyYaw = this.prevYaw = f;
 		this.prevHeadYaw = this.headYaw = f;
 	}
 
@@ -722,6 +731,11 @@ public class ArmorStandEntity extends LivingEntity {
 	@Override
 	public boolean collides() {
 		return super.collides() && !this.isMarker();
+	}
+
+	@Override
+	public boolean handleAttack(Entity entity) {
+		return entity instanceof PlayerEntity && !this.world.canPlayerModifyAt((PlayerEntity)entity, new BlockPos(this));
 	}
 
 	@Override

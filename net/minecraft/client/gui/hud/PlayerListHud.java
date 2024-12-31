@@ -3,7 +3,7 @@ package net.minecraft.client.gui.hud;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.mojang.authlib.GameProfile;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Comparator;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -20,7 +20,7 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameMode;
 
@@ -46,7 +46,7 @@ public class PlayerListHud extends DrawableHelper {
 
 	public void tick(boolean bl) {
 		if (bl && !this.visible) {
-			this.showTime = SystemUtil.getMeasuringTimeMs();
+			this.showTime = Util.getMeasuringTimeMs();
 		}
 
 		this.visible = bl;
@@ -131,25 +131,23 @@ public class PlayerListHud extends DrawableHelper {
 			int ab = t + z * s + z * 5;
 			int ac = u + aa * 9;
 			fill(ab, ac, ab + s, ac + 8, x);
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			GlStateManager.enableAlphaTest();
-			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(
-				GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-			);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.enableAlphaTest();
+			RenderSystem.enableBlend();
+			RenderSystem.defaultBlendFunc();
 			if (y < list.size()) {
 				PlayerListEntry playerListEntry2 = (PlayerListEntry)list.get(y);
 				GameProfile gameProfile = playerListEntry2.getProfile();
 				if (bl) {
 					PlayerEntity playerEntity = this.client.world.getPlayerByUuid(gameProfile.getId());
 					boolean bl2 = playerEntity != null
-						&& playerEntity.isSkinOverlayVisible(PlayerModelPart.field_7559)
+						&& playerEntity.isPartVisible(PlayerModelPart.field_7559)
 						&& ("Dinnerbone".equals(gameProfile.getName()) || "Grumm".equals(gameProfile.getName()));
 					this.client.getTextureManager().bindTexture(playerListEntry2.getSkinTexture());
 					int ad = 8 + (bl2 ? 8 : 0);
 					int ae = 8 * (bl2 ? -1 : 1);
 					DrawableHelper.blit(ab, ac, 8, 8, 8.0F, (float)ad, 8, ae, 64, 64);
-					if (playerEntity != null && playerEntity.isSkinOverlayVisible(PlayerModelPart.field_7563)) {
+					if (playerEntity != null && playerEntity.isPartVisible(PlayerModelPart.field_7563)) {
 						int af = 8 + (bl2 ? 8 : 0);
 						int ag = 8 * (bl2 ? -1 : 1);
 						DrawableHelper.blit(ab, ac, 8, 8, 40.0F, (float)af, 8, ag, 64, 64);
@@ -190,7 +188,7 @@ public class PlayerListHud extends DrawableHelper {
 	}
 
 	protected void renderLatencyIcon(int i, int j, int k, PlayerListEntry playerListEntry) {
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.client.getTextureManager().bindTexture(GUI_ICONS_LOCATION);
 		int l = 0;
 		int m;
@@ -208,16 +206,16 @@ public class PlayerListHud extends DrawableHelper {
 			m = 4;
 		}
 
-		this.blitOffset += 100;
+		this.setBlitOffset(this.getBlitOffset() + 100);
 		this.blit(j + i - 11, k, 0, 176 + m * 8, 10, 8);
-		this.blitOffset -= 100;
+		this.setBlitOffset(this.getBlitOffset() - 100);
 	}
 
 	private void renderScoreboardObjective(ScoreboardObjective scoreboardObjective, int i, String string, int j, int k, PlayerListEntry playerListEntry) {
 		int l = scoreboardObjective.getScoreboard().getPlayerScore(string, scoreboardObjective).getScore();
 		if (scoreboardObjective.getRenderType() == ScoreboardCriterion.RenderType.field_1471) {
 			this.client.getTextureManager().bindTexture(GUI_ICONS_LOCATION);
-			long m = SystemUtil.getMeasuringTimeMs();
+			long m = Util.getMeasuringTimeMs();
 			if (this.showTime == playerListEntry.method_2976()) {
 				if (l < playerListEntry.method_2973()) {
 					playerListEntry.method_2978(m);
@@ -301,7 +299,7 @@ public class PlayerListHud extends DrawableHelper {
 		private EntryOrderComparator() {
 		}
 
-		public int method_1926(PlayerListEntry playerListEntry, PlayerListEntry playerListEntry2) {
+		public int compare(PlayerListEntry playerListEntry, PlayerListEntry playerListEntry2) {
 			Team team = playerListEntry.getScoreboardTeam();
 			Team team2 = playerListEntry2.getScoreboardTeam();
 			return ComparisonChain.start()

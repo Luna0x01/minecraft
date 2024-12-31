@@ -6,8 +6,11 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class Vec3i implements Comparable<Vec3i> {
 	public static final Vec3i ZERO = new Vec3i(0, 0, 0);
+	@Deprecated
 	private final int x;
+	@Deprecated
 	private final int y;
+	@Deprecated
 	private final int z;
 
 	public Vec3i(int i, int j, int k) {
@@ -39,7 +42,7 @@ public class Vec3i implements Comparable<Vec3i> {
 		return (this.getY() + this.getZ() * 31) * 31 + this.getX();
 	}
 
-	public int method_10265(Vec3i vec3i) {
+	public int compareTo(Vec3i vec3i) {
 		if (this.getY() == vec3i.getY()) {
 			return this.getZ() == vec3i.getZ() ? this.getX() - vec3i.getX() : this.getZ() - vec3i.getZ();
 		} else {
@@ -59,6 +62,20 @@ public class Vec3i implements Comparable<Vec3i> {
 		return this.z;
 	}
 
+	public Vec3i down() {
+		return this.down(1);
+	}
+
+	public Vec3i down(int i) {
+		return this.offset(Direction.field_11033, i);
+	}
+
+	public Vec3i offset(Direction direction, int i) {
+		return i == 0
+			? this
+			: new Vec3i(this.getX() + direction.getOffsetX() * i, this.getY() + direction.getOffsetY() * i, this.getZ() + direction.getOffsetZ() * i);
+	}
+
 	public Vec3i crossProduct(Vec3i vec3i) {
 		return new Vec3i(
 			this.getY() * vec3i.getZ() - this.getZ() * vec3i.getY(),
@@ -68,7 +85,7 @@ public class Vec3i implements Comparable<Vec3i> {
 	}
 
 	public boolean isWithinDistance(Vec3i vec3i, double d) {
-		return this.getSquaredDistance((double)vec3i.x, (double)vec3i.y, (double)vec3i.z, false) < d * d;
+		return this.getSquaredDistance((double)vec3i.getX(), (double)vec3i.getY(), (double)vec3i.getZ(), false) < d * d;
 	}
 
 	public boolean isWithinDistance(Position position, double d) {
@@ -92,13 +109,17 @@ public class Vec3i implements Comparable<Vec3i> {
 	}
 
 	public int getManhattanDistance(Vec3i vec3i) {
-		float f = (float)Math.abs(vec3i.getX() - this.x);
-		float g = (float)Math.abs(vec3i.getY() - this.y);
-		float h = (float)Math.abs(vec3i.getZ() - this.z);
+		float f = (float)Math.abs(vec3i.getX() - this.getX());
+		float g = (float)Math.abs(vec3i.getY() - this.getY());
+		float h = (float)Math.abs(vec3i.getZ() - this.getZ());
 		return (int)(f + g + h);
 	}
 
 	public String toString() {
 		return MoreObjects.toStringHelper(this).add("x", this.getX()).add("y", this.getY()).add("z", this.getZ()).toString();
+	}
+
+	public String toShortString() {
+		return "" + this.getX() + ", " + this.getY() + ", " + this.getZ();
 	}
 }

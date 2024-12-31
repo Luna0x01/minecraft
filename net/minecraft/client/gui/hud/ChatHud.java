@@ -1,7 +1,7 @@
 package net.minecraft.client.gui.hud;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -9,7 +9,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.options.ChatVisibility;
-import net.minecraft.client.util.TextComponentUtil;
+import net.minecraft.client.util.Texts;
+import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
@@ -23,14 +24,14 @@ public class ChatHud extends DrawableHelper {
 	private final List<ChatHudLine> messages = Lists.newArrayList();
 	private final List<ChatHudLine> visibleMessages = Lists.newArrayList();
 	private int scrolledLines;
-	private boolean field_2067;
+	private boolean hasUnreadNewMessages;
 
 	public ChatHud(MinecraftClient minecraftClient) {
 		this.client = minecraftClient;
 	}
 
 	public void render(int i) {
-		if (this.client.options.chatVisibility != ChatVisibility.HIDDEN) {
+		if (this.method_23677()) {
 			int j = this.getVisibleLineCount();
 			int k = this.visibleMessages.size();
 			if (k > 0) {
@@ -41,31 +42,32 @@ public class ChatHud extends DrawableHelper {
 
 				double d = this.getChatScale();
 				int l = MathHelper.ceil((double)this.getWidth() / d);
-				GlStateManager.pushMatrix();
-				GlStateManager.translatef(2.0F, 8.0F, 0.0F);
-				GlStateManager.scaled(d, d, 1.0);
+				RenderSystem.pushMatrix();
+				RenderSystem.translatef(2.0F, 8.0F, 0.0F);
+				RenderSystem.scaled(d, d, 1.0);
 				double e = this.client.options.chatOpacity * 0.9F + 0.1F;
 				double f = this.client.options.textBackgroundOpacity;
 				int m = 0;
+				Matrix4f matrix4f = Matrix4f.translate(0.0F, 0.0F, -100.0F);
 
 				for (int n = 0; n + this.scrolledLines < this.visibleMessages.size() && n < j; n++) {
 					ChatHudLine chatHudLine = (ChatHudLine)this.visibleMessages.get(n + this.scrolledLines);
 					if (chatHudLine != null) {
-						int o = i - chatHudLine.getTimestamp();
+						int o = i - chatHudLine.getCreationTick();
 						if (o < 200 || bl) {
-							double g = bl ? 1.0 : method_19348(o);
+							double g = bl ? 1.0 : getMessageOpacityMultiplier(o);
 							int p = (int)(255.0 * g * e);
 							int q = (int)(255.0 * g * f);
 							m++;
 							if (p > 3) {
 								int r = 0;
 								int s = -n * 9;
-								fill(-2, s - 9, 0 + l + 4, s, q << 24);
+								fill(matrix4f, -2, s - 9, 0 + l + 4, s, q << 24);
 								String string = chatHudLine.getText().asFormattedString();
-								GlStateManager.enableBlend();
+								RenderSystem.enableBlend();
 								this.client.textRenderer.drawWithShadow(string, 0.0F, (float)(s - 8), 16777215 + (p << 24));
-								GlStateManager.disableAlphaTest();
-								GlStateManager.disableBlend();
+								RenderSystem.disableAlphaTest();
+								RenderSystem.disableBlend();
 							}
 						}
 					}
@@ -73,25 +75,29 @@ public class ChatHud extends DrawableHelper {
 
 				if (bl) {
 					int t = 9;
-					GlStateManager.translatef(-3.0F, 0.0F, 0.0F);
+					RenderSystem.translatef(-3.0F, 0.0F, 0.0F);
 					int u = k * t + k;
 					int v = m * t + m;
 					int w = this.scrolledLines * v / k;
 					int x = v * v / u;
 					if (u != v) {
 						int y = w > 0 ? 170 : 96;
-						int z = this.field_2067 ? 13382451 : 3355562;
+						int z = this.hasUnreadNewMessages ? 13382451 : 3355562;
 						fill(0, -w, 2, -w - x, z + (y << 24));
 						fill(2, -w, 1, -w - x, 13421772 + (y << 24));
 					}
 				}
 
-				GlStateManager.popMatrix();
+				RenderSystem.popMatrix();
 			}
 		}
 	}
 
-	private static double method_19348(int i) {
+	private boolean method_23677() {
+		return this.client.options.chatVisibility != ChatVisibility.field_7536;
+	}
+
+	private static double getMessageOpacityMultiplier(int i) {
 		double d = (double)i / 200.0;
 		d = 1.0 - d;
 		d *= 10.0;
@@ -122,12 +128,12 @@ public class ChatHud extends DrawableHelper {
 		}
 
 		int k = MathHelper.floor((double)this.getWidth() / this.getChatScale());
-		List<Text> list = TextComponentUtil.wrapLines(text, k, this.client.textRenderer, false, false);
+		List<Text> list = Texts.wrapLines(text, k, this.client.textRenderer, false, false);
 		boolean bl2 = this.isChatFocused();
 
 		for (Text text2 : list) {
 			if (bl2 && this.scrolledLines > 0) {
-				this.field_2067 = true;
+				this.hasUnreadNewMessages = true;
 				this.scroll(1.0);
 			}
 
@@ -149,11 +155,11 @@ public class ChatHud extends DrawableHelper {
 
 	public void reset() {
 		this.visibleMessages.clear();
-		this.method_1820();
+		this.resetScroll();
 
 		for (int i = this.messages.size() - 1; i >= 0; i--) {
 			ChatHudLine chatHudLine = (ChatHudLine)this.messages.get(i);
-			this.addMessage(chatHudLine.getText(), chatHudLine.getId(), chatHudLine.getTimestamp(), true);
+			this.addMessage(chatHudLine.getText(), chatHudLine.getId(), chatHudLine.getCreationTick(), true);
 		}
 	}
 
@@ -167,9 +173,9 @@ public class ChatHud extends DrawableHelper {
 		}
 	}
 
-	public void method_1820() {
+	public void resetScroll() {
 		this.scrolledLines = 0;
-		this.field_2067 = false;
+		this.hasUnreadNewMessages = false;
 	}
 
 	public void scroll(double d) {
@@ -181,18 +187,16 @@ public class ChatHud extends DrawableHelper {
 
 		if (this.scrolledLines <= 0) {
 			this.scrolledLines = 0;
-			this.field_2067 = false;
+			this.hasUnreadNewMessages = false;
 		}
 	}
 
 	@Nullable
 	public Text getText(double d, double e) {
-		if (!this.isChatFocused()) {
-			return null;
-		} else {
+		if (this.isChatFocused() && !this.client.options.hudHidden && this.method_23677()) {
 			double f = this.getChatScale();
 			double g = d - 2.0;
-			double h = (double)this.client.window.getScaledHeight() - e - 40.0;
+			double h = (double)this.client.getWindow().getScaledHeight() - e - 40.0;
 			g = (double)MathHelper.floor(g / f);
 			h = (double)MathHelper.floor(h / f);
 			if (!(g < 0.0) && !(h < 0.0)) {
@@ -205,7 +209,7 @@ public class ChatHud extends DrawableHelper {
 
 						for (Text text : chatHudLine.getText()) {
 							if (text instanceof LiteralText) {
-								k += this.client.textRenderer.getStringWidth(TextComponentUtil.getRenderChatMessage(((LiteralText)text).getRawString(), false));
+								k += this.client.textRenderer.getStringWidth(Texts.getRenderChatMessage(((LiteralText)text).getRawString(), false));
 								if ((double)k > g) {
 									return text;
 								}
@@ -220,6 +224,8 @@ public class ChatHud extends DrawableHelper {
 			} else {
 				return null;
 			}
+		} else {
+			return null;
 		}
 	}
 

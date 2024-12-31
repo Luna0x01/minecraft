@@ -1,7 +1,10 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.LeashEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.decoration.LeadKnotEntity;
 import net.minecraft.util.Identifier;
 
@@ -13,31 +16,17 @@ public class LeashKnotEntityRenderer extends EntityRenderer<LeadKnotEntity> {
 		super(entityRenderDispatcher);
 	}
 
-	public void method_4035(LeadKnotEntity leadKnotEntity, double d, double e, double f, float g, float h) {
-		GlStateManager.pushMatrix();
-		GlStateManager.disableCull();
-		GlStateManager.translatef((float)d, (float)e, (float)f);
-		float i = 0.0625F;
-		GlStateManager.enableRescaleNormal();
-		GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
-		GlStateManager.enableAlphaTest();
-		this.bindEntityTexture(leadKnotEntity);
-		if (this.renderOutlines) {
-			GlStateManager.enableColorMaterial();
-			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(leadKnotEntity));
-		}
-
-		this.model.render(leadKnotEntity, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-		if (this.renderOutlines) {
-			GlStateManager.tearDownSolidRenderingTextureCombine();
-			GlStateManager.disableColorMaterial();
-		}
-
-		GlStateManager.popMatrix();
-		super.render(leadKnotEntity, d, e, f, g, h);
+	public void render(LeadKnotEntity leadKnotEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		matrixStack.push();
+		matrixStack.scale(-1.0F, -1.0F, 1.0F);
+		this.model.setAngles(leadKnotEntity, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
+		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(this.model.getLayer(SKIN));
+		this.model.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
+		matrixStack.pop();
+		super.render(leadKnotEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_4036(LeadKnotEntity leadKnotEntity) {
+	public Identifier getTexture(LeadKnotEntity leadKnotEntity) {
 		return SKIN;
 	}
 }

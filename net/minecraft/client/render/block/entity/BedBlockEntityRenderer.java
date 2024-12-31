@@ -1,65 +1,106 @@
 package net.minecraft.client.render.block.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import java.util.Arrays;
-import java.util.Comparator;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.block.DoubleBlockProperties;
 import net.minecraft.block.entity.BedBlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.BedPart;
-import net.minecraft.client.render.entity.model.BedEntityModel;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.TexturedRenderLayers;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
 
 public class BedBlockEntityRenderer extends BlockEntityRenderer<BedBlockEntity> {
-	private static final Identifier[] TEXTURES = (Identifier[])Arrays.stream(DyeColor.values())
-		.sorted(Comparator.comparingInt(DyeColor::getId))
-		.map(dyeColor -> new Identifier("textures/entity/bed/" + dyeColor.getName() + ".png"))
-		.toArray(Identifier[]::new);
-	private final BedEntityModel model = new BedEntityModel();
+	private final ModelPart field_20813;
+	private final ModelPart field_20814;
+	private final ModelPart[] field_20815 = new ModelPart[4];
 
-	public void method_3557(BedBlockEntity bedBlockEntity, double d, double e, double f, float g, int i) {
-		if (i >= 0) {
-			this.bindTexture(DESTROY_STAGE_TEXTURES[i]);
-			GlStateManager.matrixMode(5890);
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(4.0F, 4.0F, 1.0F);
-			GlStateManager.translatef(0.0625F, 0.0625F, 0.0625F);
-			GlStateManager.matrixMode(5888);
-		} else {
-			Identifier identifier = TEXTURES[bedBlockEntity.getColor().getId()];
-			if (identifier != null) {
-				this.bindTexture(identifier);
-			}
-		}
+	public BedBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
+		super(blockEntityRenderDispatcher);
+		this.field_20813 = new ModelPart(64, 64, 0, 0);
+		this.field_20813.addCuboid(0.0F, 0.0F, 0.0F, 16.0F, 16.0F, 6.0F, 0.0F);
+		this.field_20814 = new ModelPart(64, 64, 0, 22);
+		this.field_20814.addCuboid(0.0F, 0.0F, 0.0F, 16.0F, 16.0F, 6.0F, 0.0F);
+		this.field_20815[0] = new ModelPart(64, 64, 50, 0);
+		this.field_20815[1] = new ModelPart(64, 64, 50, 6);
+		this.field_20815[2] = new ModelPart(64, 64, 50, 12);
+		this.field_20815[3] = new ModelPart(64, 64, 50, 18);
+		this.field_20815[0].addCuboid(0.0F, 6.0F, -16.0F, 3.0F, 3.0F, 3.0F);
+		this.field_20815[1].addCuboid(0.0F, 6.0F, 0.0F, 3.0F, 3.0F, 3.0F);
+		this.field_20815[2].addCuboid(-16.0F, 6.0F, -16.0F, 3.0F, 3.0F, 3.0F);
+		this.field_20815[3].addCuboid(-16.0F, 6.0F, 0.0F, 3.0F, 3.0F, 3.0F);
+		this.field_20815[0].pitch = (float) (Math.PI / 2);
+		this.field_20815[1].pitch = (float) (Math.PI / 2);
+		this.field_20815[2].pitch = (float) (Math.PI / 2);
+		this.field_20815[3].pitch = (float) (Math.PI / 2);
+		this.field_20815[0].roll = 0.0F;
+		this.field_20815[1].roll = (float) (Math.PI / 2);
+		this.field_20815[2].roll = (float) (Math.PI * 3.0 / 2.0);
+		this.field_20815[3].roll = (float) Math.PI;
+	}
 
-		if (bedBlockEntity.hasWorld()) {
+	public void render(BedBlockEntity bedBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
+		SpriteIdentifier spriteIdentifier = TexturedRenderLayers.BED_TEXTURES[bedBlockEntity.getColor().getId()];
+		World world = bedBlockEntity.getWorld();
+		if (world != null) {
 			BlockState blockState = bedBlockEntity.getCachedState();
-			this.method_3558(blockState.get(BedBlock.PART) == BedPart.field_12560, d, e, f, blockState.get(BedBlock.FACING));
+			DoubleBlockProperties.PropertySource<? extends BedBlockEntity> propertySource = DoubleBlockProperties.toPropertySource(
+				BlockEntityType.field_11910,
+				BedBlock::method_24164,
+				BedBlock::method_24163,
+				ChestBlock.FACING,
+				blockState,
+				world,
+				bedBlockEntity.getPos(),
+				(iWorld, blockPos) -> false
+			);
+			int k = propertySource.apply(new LightmapCoordinatesRetriever<>()).get(i);
+			this.method_3558(
+				matrixStack, vertexConsumerProvider, blockState.get(BedBlock.PART) == BedPart.field_12560, blockState.get(BedBlock.FACING), spriteIdentifier, k, j, false
+			);
 		} else {
-			this.method_3558(true, d, e, f, Direction.field_11035);
-			this.method_3558(false, d, e, f - 1.0, Direction.field_11035);
-		}
-
-		if (i >= 0) {
-			GlStateManager.matrixMode(5890);
-			GlStateManager.popMatrix();
-			GlStateManager.matrixMode(5888);
+			this.method_3558(matrixStack, vertexConsumerProvider, true, Direction.field_11035, spriteIdentifier, i, j, false);
+			this.method_3558(matrixStack, vertexConsumerProvider, false, Direction.field_11035, spriteIdentifier, i, j, true);
 		}
 	}
 
-	private void method_3558(boolean bl, double d, double e, double f, Direction direction) {
-		this.model.setVisible(bl);
-		GlStateManager.pushMatrix();
-		GlStateManager.translatef((float)d, (float)e + 0.5625F, (float)f);
-		GlStateManager.rotatef(90.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.translatef(0.5F, 0.5F, 0.5F);
-		GlStateManager.rotatef(180.0F + direction.asRotation(), 0.0F, 0.0F, 1.0F);
-		GlStateManager.translatef(-0.5F, -0.5F, -0.5F);
-		GlStateManager.enableRescaleNormal();
-		this.model.render();
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.popMatrix();
+	private void method_3558(
+		MatrixStack matrixStack,
+		VertexConsumerProvider vertexConsumerProvider,
+		boolean bl,
+		Direction direction,
+		SpriteIdentifier spriteIdentifier,
+		int i,
+		int j,
+		boolean bl2
+	) {
+		this.field_20813.visible = bl;
+		this.field_20814.visible = !bl;
+		this.field_20815[0].visible = !bl;
+		this.field_20815[1].visible = bl;
+		this.field_20815[2].visible = !bl;
+		this.field_20815[3].visible = bl;
+		matrixStack.push();
+		matrixStack.translate(0.0, 0.5625, bl2 ? -1.0 : 0.0);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(90.0F));
+		matrixStack.translate(0.5, 0.5, 0.5);
+		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F + direction.asRotation()));
+		matrixStack.translate(-0.5, -0.5, -0.5);
+		VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumerProvider, RenderLayer::getEntitySolid);
+		this.field_20813.render(matrixStack, vertexConsumer, i, j);
+		this.field_20814.render(matrixStack, vertexConsumer, i, j);
+		this.field_20815[0].render(matrixStack, vertexConsumer, i, j);
+		this.field_20815[1].render(matrixStack, vertexConsumer, i, j);
+		this.field_20815[2].render(matrixStack, vertexConsumer, i, j);
+		this.field_20815[3].render(matrixStack, vertexConsumer, i, j);
+		matrixStack.pop();
 	}
 }

@@ -9,11 +9,10 @@ import java.util.Random;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.state.PropertyContainer;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.State;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
@@ -25,7 +24,7 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public interface FluidState extends PropertyContainer<FluidState> {
+public interface FluidState extends State<FluidState> {
 	Fluid getFluid();
 
 	default boolean isStill() {
@@ -40,8 +39,8 @@ public interface FluidState extends PropertyContainer<FluidState> {
 		return this.getFluid().getHeight(this, blockView, blockPos);
 	}
 
-	default float method_20785() {
-		return this.getFluid().method_20784(this);
+	default float getHeight() {
+		return this.getFluid().getHeight(this);
 	}
 
 	default int getLevel() {
@@ -91,10 +90,6 @@ public interface FluidState extends PropertyContainer<FluidState> {
 		return this.getFluid().getParticle();
 	}
 
-	default BlockRenderLayer getRenderLayer() {
-		return this.getFluid().getRenderLayer();
-	}
-
 	default boolean matches(Tag<Fluid> tag) {
 		return this.getFluid().matches(tag);
 	}
@@ -112,13 +107,13 @@ public interface FluidState extends PropertyContainer<FluidState> {
 		T object;
 		if (immutableMap.isEmpty()) {
 			object = (T)dynamicOps.createMap(
-				ImmutableMap.of(dynamicOps.createString("Name"), dynamicOps.createString(Registry.FLUID.getId(fluidState.getFluid()).toString()))
+				ImmutableMap.of(dynamicOps.createString("Name"), dynamicOps.createString(Registry.field_11154.getId(fluidState.getFluid()).toString()))
 			);
 		} else {
 			object = (T)dynamicOps.createMap(
 				ImmutableMap.of(
 					dynamicOps.createString("Name"),
-					dynamicOps.createString(Registry.FLUID.getId(fluidState.getFluid()).toString()),
+					dynamicOps.createString(Registry.field_11154.getId(fluidState.getFluid()).toString()),
 					dynamicOps.createString("Properties"),
 					dynamicOps.createMap(
 						(Map)immutableMap.entrySet()
@@ -126,7 +121,7 @@ public interface FluidState extends PropertyContainer<FluidState> {
 							.map(
 								entry -> Pair.of(
 										dynamicOps.createString(((Property)entry.getKey()).getName()),
-										dynamicOps.createString(PropertyContainer.getValueAsString((Property<T>)entry.getKey(), (Comparable<?>)entry.getValue()))
+										dynamicOps.createString(State.nameValue((Property<T>)entry.getKey(), (Comparable<?>)entry.getValue()))
 									)
 							)
 							.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond))
@@ -139,16 +134,17 @@ public interface FluidState extends PropertyContainer<FluidState> {
 	}
 
 	static <T> FluidState deserialize(Dynamic<T> dynamic) {
-		Fluid fluid = Registry.FLUID.get(new Identifier((String)dynamic.getElement("Name").flatMap(dynamic.getOps()::getStringValue).orElse("minecraft:empty")));
+		Fluid fluid = Registry.field_11154
+			.get(new Identifier((String)dynamic.getElement("Name").flatMap(dynamic.getOps()::getStringValue).orElse("minecraft:empty")));
 		Map<String, String> map = dynamic.get("Properties").asMap(dynamicx -> dynamicx.asString(""), dynamicx -> dynamicx.asString(""));
 		FluidState fluidState = fluid.getDefaultState();
-		StateFactory<Fluid, FluidState> stateFactory = fluid.getStateFactory();
+		StateManager<Fluid, FluidState> stateManager = fluid.getStateManager();
 
 		for (Entry<String, String> entry : map.entrySet()) {
 			String string = (String)entry.getKey();
-			Property<?> property = stateFactory.getProperty(string);
+			Property<?> property = stateManager.getProperty(string);
 			if (property != null) {
-				fluidState = PropertyContainer.deserialize(fluidState, property, string, dynamic.toString(), (String)entry.getValue());
+				fluidState = State.tryRead(fluidState, property, string, dynamic.toString(), (String)entry.getValue());
 			}
 		}
 

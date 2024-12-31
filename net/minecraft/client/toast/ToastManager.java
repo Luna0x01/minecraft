@@ -1,14 +1,13 @@
 package net.minecraft.client.toast;
 
 import com.google.common.collect.Queues;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Arrays;
 import java.util.Deque;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.render.GuiLighting;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public class ToastManager extends DrawableHelper {
@@ -22,11 +21,9 @@ public class ToastManager extends DrawableHelper {
 
 	public void draw() {
 		if (!this.client.options.hudHidden) {
-			GuiLighting.disable();
-
 			for (int i = 0; i < this.visibleEntries.length; i++) {
 				ToastManager.Entry<?> entry = this.visibleEntries[i];
-				if (entry != null && entry.draw(this.client.window.getScaledWidth(), i)) {
+				if (entry != null && entry.draw(this.client.getWindow().getScaledWidth(), i)) {
 					this.visibleEntries[i] = null;
 				}
 
@@ -88,7 +85,7 @@ public class ToastManager extends DrawableHelper {
 		}
 
 		public boolean draw(int i, int j) {
-			long l = SystemUtil.getMeasuringTimeMs();
+			long l = Util.getMeasuringTimeMs();
 			if (this.field_2243 == -1L) {
 				this.field_2243 = l;
 				this.visibility.playSound(ToastManager.this.client.getSoundManager());
@@ -98,10 +95,10 @@ public class ToastManager extends DrawableHelper {
 				this.field_2242 = l;
 			}
 
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)i - 160.0F * this.getDissapearProgress(l), (float)(j * 32), (float)(500 + j));
+			RenderSystem.pushMatrix();
+			RenderSystem.translatef((float)i - 160.0F * this.getDissapearProgress(l), (float)(j * 32), (float)(800 + j));
 			Toast.Visibility visibility = this.instance.draw(ToastManager.this, l - this.field_2242);
-			GlStateManager.popMatrix();
+			RenderSystem.popMatrix();
 			if (visibility != this.visibility) {
 				this.field_2243 = l - (long)((int)((1.0F - this.getDissapearProgress(l)) * 600.0F));
 				this.visibility = visibility;

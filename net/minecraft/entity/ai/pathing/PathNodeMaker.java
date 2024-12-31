@@ -2,25 +2,24 @@ package net.minecraft.entity.ai.pathing;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.class_4459;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.chunk.ChunkCache;
 
 public abstract class PathNodeMaker {
-	protected ViewableWorld blockView;
+	protected ChunkCache field_20622;
 	protected MobEntity entity;
 	protected final Int2ObjectMap<PathNode> pathNodeCache = new Int2ObjectOpenHashMap();
 	protected int field_31;
 	protected int field_30;
 	protected int field_28;
-	protected boolean entersOpenDoors;
-	protected boolean pathsThroughDoors;
-	protected boolean swims;
+	protected boolean canEnterOpenDoors;
+	protected boolean canOpenDoors;
+	protected boolean canSwim;
 
-	public void init(ViewableWorld viewableWorld, MobEntity mobEntity) {
-		this.blockView = viewableWorld;
+	public void init(ChunkCache chunkCache, MobEntity mobEntity) {
+		this.field_20622 = chunkCache;
 		this.entity = mobEntity;
 		this.pathNodeCache.clear();
 		this.field_31 = MathHelper.floor(mobEntity.getWidth() + 1.0F);
@@ -29,45 +28,45 @@ public abstract class PathNodeMaker {
 	}
 
 	public void clear() {
-		this.blockView = null;
+		this.field_20622 = null;
 		this.entity = null;
 	}
 
-	protected PathNode getPathNode(int i, int j, int k) {
-		return (PathNode)this.pathNodeCache.computeIfAbsent(PathNode.calculateHashCode(i, j, k), l -> new PathNode(i, j, k));
+	protected PathNode getNode(int i, int j, int k) {
+		return (PathNode)this.pathNodeCache.computeIfAbsent(PathNode.hash(i, j, k), l -> new PathNode(i, j, k));
 	}
 
 	public abstract PathNode getStart();
 
-	public abstract class_4459 getPathNode(double d, double e, double f);
+	public abstract TargetPathNode getNode(double d, double e, double f);
 
-	public abstract int getPathNodes(PathNode[] pathNodes, PathNode pathNode);
+	public abstract int getSuccessors(PathNode[] pathNodes, PathNode pathNode);
 
-	public abstract PathNodeType getPathNodeType(BlockView blockView, int i, int j, int k, MobEntity mobEntity, int l, int m, int n, boolean bl, boolean bl2);
+	public abstract PathNodeType getNodeType(BlockView blockView, int i, int j, int k, MobEntity mobEntity, int l, int m, int n, boolean bl, boolean bl2);
 
-	public abstract PathNodeType getPathNodeType(BlockView blockView, int i, int j, int k);
+	public abstract PathNodeType getNodeType(BlockView blockView, int i, int j, int k);
 
 	public void setCanEnterOpenDoors(boolean bl) {
-		this.entersOpenDoors = bl;
+		this.canEnterOpenDoors = bl;
 	}
 
-	public void setCanPathThroughDoors(boolean bl) {
-		this.pathsThroughDoors = bl;
+	public void setCanOpenDoors(boolean bl) {
+		this.canOpenDoors = bl;
 	}
 
 	public void setCanSwim(boolean bl) {
-		this.swims = bl;
+		this.canSwim = bl;
 	}
 
 	public boolean canEnterOpenDoors() {
-		return this.entersOpenDoors;
+		return this.canEnterOpenDoors;
 	}
 
-	public boolean canPathThroughDoors() {
-		return this.pathsThroughDoors;
+	public boolean canOpenDoors() {
+		return this.canOpenDoors;
 	}
 
 	public boolean canSwim() {
-		return this.swims;
+		return this.canSwim;
 	}
 }

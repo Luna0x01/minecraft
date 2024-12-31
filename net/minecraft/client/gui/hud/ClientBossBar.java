@@ -2,7 +2,7 @@ package net.minecraft.client.gui.hud;
 
 import net.minecraft.client.network.packet.BossBarS2CPacket;
 import net.minecraft.entity.boss.BossBar;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public class ClientBossBar extends BossBar {
@@ -13,7 +13,7 @@ public class ClientBossBar extends BossBar {
 		super(bossBarS2CPacket.getUuid(), bossBarS2CPacket.getName(), bossBarS2CPacket.getColor(), bossBarS2CPacket.getOverlay());
 		this.healthLatest = bossBarS2CPacket.getPercent();
 		this.percent = bossBarS2CPacket.getPercent();
-		this.timeHealthSet = SystemUtil.getMeasuringTimeMs();
+		this.timeHealthSet = Util.getMeasuringTimeMs();
 		this.setDarkenSky(bossBarS2CPacket.shouldDarkenSky());
 		this.setDragonMusic(bossBarS2CPacket.hasDragonMusic());
 		this.setThickenFog(bossBarS2CPacket.shouldThickenFog());
@@ -23,12 +23,12 @@ public class ClientBossBar extends BossBar {
 	public void setPercent(float f) {
 		this.percent = this.getPercent();
 		this.healthLatest = f;
-		this.timeHealthSet = SystemUtil.getMeasuringTimeMs();
+		this.timeHealthSet = Util.getMeasuringTimeMs();
 	}
 
 	@Override
 	public float getPercent() {
-		long l = SystemUtil.getMeasuringTimeMs() - this.timeHealthSet;
+		long l = Util.getMeasuringTimeMs() - this.timeHealthSet;
 		float f = MathHelper.clamp((float)l / 100.0F, 0.0F, 1.0F);
 		return MathHelper.lerp(f, this.percent, this.healthLatest);
 	}

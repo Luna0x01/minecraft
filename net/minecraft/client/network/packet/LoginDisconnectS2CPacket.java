@@ -26,7 +26,7 @@ public class LoginDisconnectS2CPacket implements Packet<ClientLoginPacketListene
 		packetByteBuf.writeText(this.reason);
 	}
 
-	public void method_12637(ClientLoginPacketListener clientLoginPacketListener) {
+	public void apply(ClientLoginPacketListener clientLoginPacketListener) {
 		clientLoginPacketListener.onDisconnect(this);
 	}
 

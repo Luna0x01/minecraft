@@ -15,8 +15,8 @@ import net.minecraft.command.arguments.BlockStateArgumentType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Clearable;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 
 public class SetBlockCommand {
 	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.setblock.failed"));
@@ -112,7 +112,7 @@ public class SetBlockCommand {
 
 	public interface Filter {
 		@Nullable
-		BlockStateArgument filter(MutableIntBoundingBox mutableIntBoundingBox, BlockPos blockPos, BlockStateArgument blockStateArgument, ServerWorld serverWorld);
+		BlockStateArgument filter(BlockBox blockBox, BlockPos blockPos, BlockStateArgument blockStateArgument, ServerWorld serverWorld);
 	}
 
 	public static enum Mode {

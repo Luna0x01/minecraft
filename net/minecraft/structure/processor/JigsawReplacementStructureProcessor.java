@@ -11,7 +11,7 @@ import net.minecraft.command.arguments.BlockArgumentParser;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class JigsawReplacementStructureProcessor extends StructureProcessor {
 	public static final JigsawReplacementStructureProcessor INSTANCE = new JigsawReplacementStructureProcessor();
@@ -22,7 +22,7 @@ public class JigsawReplacementStructureProcessor extends StructureProcessor {
 	@Nullable
 	@Override
 	public Structure.StructureBlockInfo process(
-		ViewableWorld viewableWorld,
+		WorldView worldView,
 		BlockPos blockPos,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,

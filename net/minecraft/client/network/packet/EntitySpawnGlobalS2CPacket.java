@@ -19,9 +19,9 @@ public class EntitySpawnGlobalS2CPacket implements Packet<ClientPlayPacketListen
 
 	public EntitySpawnGlobalS2CPacket(Entity entity) {
 		this.id = entity.getEntityId();
-		this.x = entity.x;
-		this.y = entity.y;
-		this.z = entity.z;
+		this.x = entity.getX();
+		this.y = entity.getY();
+		this.z = entity.getZ();
 		if (entity instanceof LightningEntity) {
 			this.entityTypeId = 1;
 		}
@@ -45,7 +45,7 @@ public class EntitySpawnGlobalS2CPacket implements Packet<ClientPlayPacketListen
 		packetByteBuf.writeDouble(this.z);
 	}
 
-	public void method_11188(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onEntitySpawnGlobal(this);
 	}
 

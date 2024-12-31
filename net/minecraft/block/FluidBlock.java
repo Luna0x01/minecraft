@@ -11,7 +11,9 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.FluidTags;
@@ -21,9 +23,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.loot.context.LootContext;
+import net.minecraft.world.WorldView;
 
 public class FluidBlock extends Block implements FluidDrainable {
 	public static final IntProperty LEVEL = Properties.LEVEL_15;
@@ -41,12 +42,12 @@ public class FluidBlock extends Block implements FluidDrainable {
 		}
 
 		this.statesByLevel.add(baseFluid.getFlowing(8, true));
-		this.setDefaultState(this.stateFactory.getDefaultState().with(LEVEL, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void onRandomTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		world.getFluidState(blockPos).onRandomTick(world, blockPos, random);
+	public void randomTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		serverWorld.getFluidState(blockPos).onRandomTick(serverWorld, blockPos, random);
 	}
 
 	@Override
@@ -67,7 +68,7 @@ public class FluidBlock extends Block implements FluidDrainable {
 
 	@Override
 	public boolean isSideInvisible(BlockState blockState, BlockState blockState2, Direction direction) {
-		return blockState2.getFluidState().getFluid().matchesType(this.fluid) ? true : super.isOpaque(blockState);
+		return blockState2.getFluidState().getFluid().matchesType(this.fluid);
 	}
 
 	@Override
@@ -86,8 +87,8 @@ public class FluidBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
-		return this.fluid.getTickRate(viewableWorld);
+	public int getTickRate(WorldView worldView) {
+		return this.fluid.getTickRate(worldView);
 	}
 
 	@Override
@@ -150,7 +151,7 @@ public class FluidBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(LEVEL);
 	}
 

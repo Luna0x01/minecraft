@@ -41,7 +41,7 @@ public class ModelElementTexture {
 		return (i + this.rotation / 90) % 4;
 	}
 
-	public int method_3414(int i) {
+	public int getDirectionIndex(int i) {
 		return (i + 4 - this.rotation / 90) % 4;
 	}
 
@@ -55,7 +55,7 @@ public class ModelElementTexture {
 		protected Deserializer() {
 		}
 
-		public ModelElementTexture method_3418(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public ModelElementTexture deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			float[] fs = this.deserializeUVs(jsonObject);
 			int i = this.deserializeRotation(jsonObject);

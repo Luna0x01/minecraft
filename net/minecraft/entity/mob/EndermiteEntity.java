@@ -99,7 +99,7 @@ public class EndermiteEntity extends HostileEntity {
 
 	@Override
 	public void tick() {
-		this.field_6283 = this.yaw;
+		this.bodyYaw = this.yaw;
 		super.tick();
 	}
 
@@ -130,9 +130,9 @@ public class EndermiteEntity extends HostileEntity {
 				this.world
 					.addParticle(
 						ParticleTypes.field_11214,
-						this.x + (this.random.nextDouble() - 0.5) * (double)this.getWidth(),
-						this.y + this.random.nextDouble() * (double)this.getHeight(),
-						this.z + (this.random.nextDouble() - 0.5) * (double)this.getWidth(),
+						this.getParticleX(0.5),
+						this.getRandomBodyY(),
+						this.getParticleZ(0.5),
 						(this.random.nextDouble() - 0.5) * 2.0,
 						-this.random.nextDouble(),
 						(this.random.nextDouble() - 0.5) * 2.0
@@ -149,8 +149,8 @@ public class EndermiteEntity extends HostileEntity {
 		}
 	}
 
-	public static boolean method_20674(EntityType<EndermiteEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		if (method_20681(entityType, iWorld, spawnType, blockPos, random)) {
+	public static boolean canSpawn(EntityType<EndermiteEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		if (canSpawnIgnoreLightLevel(entityType, iWorld, spawnType, blockPos, random)) {
 			PlayerEntity playerEntity = iWorld.getClosestPlayer((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, 5.0, true);
 			return playerEntity == null;
 		} else {

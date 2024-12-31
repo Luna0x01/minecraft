@@ -1,12 +1,15 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import javax.annotation.Nullable;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.feature.ArmorBipedFeatureRenderer;
 import net.minecraft.client.render.entity.feature.ElytraFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.model.ArmorStandArmorEntityModel;
 import net.minecraft.client.render.entity.model.ArmorStandEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -22,30 +25,35 @@ public class ArmorStandEntityRenderer extends LivingEntityRenderer<ArmorStandEnt
 		this.addFeature(new HeadFeatureRenderer<>(this));
 	}
 
-	protected Identifier method_3880(ArmorStandEntity armorStandEntity) {
+	public Identifier getTexture(ArmorStandEntity armorStandEntity) {
 		return SKIN;
 	}
 
-	protected void method_3877(ArmorStandEntity armorStandEntity, float f, float g, float h) {
-		GlStateManager.rotatef(180.0F - g, 0.0F, 1.0F, 0.0F);
+	protected void setupTransforms(ArmorStandEntity armorStandEntity, MatrixStack matrixStack, float f, float g, float h) {
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F - g));
 		float i = (float)(armorStandEntity.world.getTime() - armorStandEntity.field_7112) + h;
 		if (i < 5.0F) {
-			GlStateManager.rotatef(MathHelper.sin(i / 1.5F * (float) Math.PI) * 3.0F, 0.0F, 1.0F, 0.0F);
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(MathHelper.sin(i / 1.5F * (float) Math.PI) * 3.0F));
 		}
 	}
 
-	protected boolean method_3878(ArmorStandEntity armorStandEntity) {
-		return armorStandEntity.isCustomNameVisible();
+	protected boolean hasLabel(ArmorStandEntity armorStandEntity) {
+		double d = this.renderManager.getSquaredDistanceToCamera(armorStandEntity);
+		float f = armorStandEntity.isInSneakingPose() ? 32.0F : 64.0F;
+		return d >= (double)(f * f) ? false : armorStandEntity.isCustomNameVisible();
 	}
 
-	public void method_3876(ArmorStandEntity armorStandEntity, double d, double e, double f, float g, float h) {
-		if (armorStandEntity.isMarker()) {
-			this.disableOutlineRender = true;
-		}
-
-		super.method_4054(armorStandEntity, d, e, f, g, h);
-		if (armorStandEntity.isMarker()) {
-			this.disableOutlineRender = false;
+	@Nullable
+	protected RenderLayer method_24302(ArmorStandEntity armorStandEntity, boolean bl, boolean bl2) {
+		if (!armorStandEntity.isMarker()) {
+			return super.method_24302(armorStandEntity, bl, bl2);
+		} else {
+			Identifier identifier = this.getTexture(armorStandEntity);
+			if (bl2) {
+				return RenderLayer.getEntityTranslucent(identifier, false);
+			} else {
+				return bl ? RenderLayer.getCutoutNoCull(identifier, false) : null;
+			}
 		}
 	}
 }

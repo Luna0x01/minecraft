@@ -1,13 +1,11 @@
 package net.minecraft.world.biome;
 
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.EntityType;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.decorator.ChanceDecoratorConfig;
 import net.minecraft.world.gen.decorator.CountDecoratorConfig;
 import net.minecraft.world.gen.decorator.Decorator;
-import net.minecraft.world.gen.feature.DoublePlantFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.FeatureConfig;
 import net.minecraft.world.gen.feature.MineshaftFeature;
@@ -29,8 +27,8 @@ public final class SunflowerPlainsBiome extends Biome {
 				.waterFogColor(329011)
 				.parent("plains")
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.STRONGHOLD, FeatureConfig.DEFAULT);
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.STRONGHOLD.configure(FeatureConfig.DEFAULT));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);
@@ -38,20 +36,22 @@ public final class SunflowerPlainsBiome extends Biome {
 		DefaultBiomeFeatures.addPlainsTallGrass(this);
 		this.addFeature(
 			GenerationStep.Feature.field_13178,
-			configureFeature(
-				Feature.field_13576, new DoublePlantFeatureConfig(Blocks.field_10583.getDefaultState()), Decorator.field_14253, new CountDecoratorConfig(10)
-			)
+			Feature.field_21220.configure(DefaultBiomeFeatures.SUNFLOWER_CONFIG).createDecoratedFeature(Decorator.field_14253.configure(new CountDecoratorConfig(10)))
 		);
 		DefaultBiomeFeatures.addMineables(this);
 		DefaultBiomeFeatures.addDefaultOres(this);
 		DefaultBiomeFeatures.addDefaultDisks(this);
 		DefaultBiomeFeatures.addPlainsFeatures(this);
 		this.addFeature(
-			GenerationStep.Feature.field_13178, configureFeature(Feature.field_13583, FeatureConfig.DEFAULT, Decorator.field_14240, new CountDecoratorConfig(10))
+			GenerationStep.Feature.field_13178,
+			Feature.field_21220.configure(DefaultBiomeFeatures.SUGAR_CANE_CONFIG).createDecoratedFeature(Decorator.field_14240.configure(new CountDecoratorConfig(10)))
 		);
 		DefaultBiomeFeatures.addDefaultMushrooms(this);
 		this.addFeature(
-			GenerationStep.Feature.field_13178, configureFeature(Feature.field_13524, FeatureConfig.DEFAULT, Decorator.field_14263, new ChanceDecoratorConfig(32))
+			GenerationStep.Feature.field_13178,
+			Feature.field_21220
+				.configure(DefaultBiomeFeatures.PUMPKIN_PATCH_CONFIG)
+				.createDecoratedFeature(Decorator.field_14263.configure(new ChanceDecoratorConfig(32)))
 		);
 		DefaultBiomeFeatures.addSprings(this);
 		DefaultBiomeFeatures.addFrozenTopLayer(this);

@@ -62,7 +62,7 @@ public class ThrownEnderpearlEntity extends ThrownItemEntity {
 				EndGatewayBlockEntity endGatewayBlockEntity = (EndGatewayBlockEntity)blockEntity;
 				if (livingEntity != null) {
 					if (livingEntity instanceof ServerPlayerEntity) {
-						Criterions.ENTER_BLOCK.handle((ServerPlayerEntity)livingEntity, this.world.getBlockState(blockPos));
+						Criterions.ENTER_BLOCK.trigger((ServerPlayerEntity)livingEntity, this.world.getBlockState(blockPos));
 					}
 
 					endGatewayBlockEntity.tryTeleportingEntity(livingEntity);
@@ -78,7 +78,13 @@ public class ThrownEnderpearlEntity extends ThrownItemEntity {
 		for (int i = 0; i < 32; i++) {
 			this.world
 				.addParticle(
-					ParticleTypes.field_11214, this.x, this.y + this.random.nextDouble() * 2.0, this.z, this.random.nextGaussian(), 0.0, this.random.nextGaussian()
+					ParticleTypes.field_11214,
+					this.getX(),
+					this.getY() + this.random.nextDouble() * 2.0,
+					this.getZ(),
+					this.random.nextGaussian(),
+					0.0,
+					this.random.nextGaussian()
 				);
 		}
 
@@ -89,7 +95,7 @@ public class ThrownEnderpearlEntity extends ThrownItemEntity {
 					if (this.random.nextFloat() < 0.05F && this.world.getGameRules().getBoolean(GameRules.field_19390)) {
 						EndermiteEntity endermiteEntity = EntityType.field_6128.create(this.world);
 						endermiteEntity.setPlayerSpawned(true);
-						endermiteEntity.setPositionAndAngles(livingEntity.x, livingEntity.y, livingEntity.z, livingEntity.yaw, livingEntity.pitch);
+						endermiteEntity.refreshPositionAndAngles(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), livingEntity.yaw, livingEntity.pitch);
 						this.world.spawnEntity(endermiteEntity);
 					}
 
@@ -97,12 +103,12 @@ public class ThrownEnderpearlEntity extends ThrownItemEntity {
 						livingEntity.stopRiding();
 					}
 
-					livingEntity.requestTeleport(this.x, this.y, this.z);
+					livingEntity.requestTeleport(this.getX(), this.getY(), this.getZ());
 					livingEntity.fallDistance = 0.0F;
 					livingEntity.damage(DamageSource.FALL, 5.0F);
 				}
 			} else if (livingEntity != null) {
-				livingEntity.requestTeleport(this.x, this.y, this.z);
+				livingEntity.requestTeleport(this.getX(), this.getY(), this.getZ());
 				livingEntity.fallDistance = 0.0F;
 			}
 

@@ -17,6 +17,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.Tag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -26,9 +28,9 @@ import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
-import net.minecraft.util.SystemUtil;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
+import net.minecraft.util.Util;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -68,11 +70,11 @@ public class Item implements ItemConvertible {
 	private final FoodComponent foodComponent;
 
 	public static int getRawId(Item item) {
-		return item == null ? 0 : Registry.ITEM.getRawId(item);
+		return item == null ? 0 : Registry.field_11142.getRawId(item);
 	}
 
 	public static Item byRawId(int i) {
-		return Registry.ITEM.get(i);
+		return Registry.field_11142.get(i);
 	}
 
 	@Deprecated
@@ -138,12 +140,12 @@ public class Item implements ItemConvertible {
 			ItemStack itemStack = playerEntity.getStackInHand(hand);
 			if (playerEntity.canConsume(this.getFoodComponent().isAlwaysEdible())) {
 				playerEntity.setCurrentHand(hand);
-				return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+				return TypedActionResult.consume(itemStack);
 			} else {
-				return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+				return TypedActionResult.fail(itemStack);
 			}
 		} else {
-			return new TypedActionResult<>(ActionResult.field_5811, playerEntity.getStackInHand(hand));
+			return TypedActionResult.pass(playerEntity.getStackInHand(hand));
 		}
 	}
 
@@ -184,12 +186,12 @@ public class Item implements ItemConvertible {
 	}
 
 	public String toString() {
-		return Registry.ITEM.getId(this).getPath();
+		return Registry.field_11142.getId(this).getPath();
 	}
 
 	protected String getOrCreateTranslationKey() {
 		if (this.translationKey == null) {
-			this.translationKey = SystemUtil.createTranslationKey("item", Registry.ITEM.getId(this));
+			this.translationKey = Util.createTranslationKey("item", Registry.field_11142.getId(this));
 		}
 
 		return this.translationKey;
@@ -335,6 +337,14 @@ public class Item implements ItemConvertible {
 	@Nullable
 	public FoodComponent getFoodComponent() {
 		return this.foodComponent;
+	}
+
+	public SoundEvent getDrinkSound() {
+		return SoundEvents.field_20613;
+	}
+
+	public SoundEvent getEatSound() {
+		return SoundEvents.field_20614;
 	}
 
 	public static class Settings {

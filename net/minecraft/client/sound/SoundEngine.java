@@ -60,7 +60,7 @@ public class SoundEngine {
 		} else {
 			this.contextPointer = ALC10.alcCreateContext(this.devicePointer, (IntBuffer)null);
 			ALC10.alcMakeContextCurrent(this.contextPointer);
-			int i = this.method_20297();
+			int i = this.getMonoSourceCount();
 			int j = MathHelper.clamp((int)MathHelper.sqrt((float)i), 2, 8);
 			int k = MathHelper.clamp(i - j, 8, 255);
 			this.streamingSources = new SoundEngine.SourceSetImpl(k);
@@ -81,7 +81,7 @@ public class SoundEngine {
 		}
 	}
 
-	private int method_20297() {
+	private int getMonoSourceCount() {
 		MemoryStack memoryStack = MemoryStack.stackPush();
 		Throwable var2 = null;
 

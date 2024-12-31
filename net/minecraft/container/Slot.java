@@ -1,16 +1,18 @@
 package net.minecraft.container;
 
+import com.mojang.datafixers.util.Pair;
 import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
 
 public class Slot {
 	private final int invSlot;
 	public final Inventory inventory;
 	public int id;
-	public int xPosition;
-	public int yPosition;
+	public final int xPosition;
+	public final int yPosition;
 
 	public Slot(Inventory inventory, int i, int j, int k) {
 		this.inventory = inventory;
@@ -70,7 +72,7 @@ public class Slot {
 	}
 
 	@Nullable
-	public String getBackgroundSprite() {
+	public Pair<Identifier, Identifier> getBackgroundSprite() {
 		return null;
 	}
 

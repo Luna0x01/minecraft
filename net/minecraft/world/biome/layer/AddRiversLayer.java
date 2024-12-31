@@ -2,15 +2,19 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.layer.type.MergingLayer;
+import net.minecraft.world.biome.layer.util.IdentityCoordinateTransformer;
+import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
+import net.minecraft.world.biome.layer.util.LayerSampler;
 
 public enum AddRiversLayer implements MergingLayer, IdentityCoordinateTransformer {
 	field_16161;
 
-	private static final int FROZEN_RIVER_ID = Registry.BIOME.getRawId(Biomes.field_9463);
-	private static final int SNOWY_TUNDRA_ID = Registry.BIOME.getRawId(Biomes.field_9452);
-	private static final int MUSHROOM_FIELDS_ID = Registry.BIOME.getRawId(Biomes.field_9462);
-	private static final int MUSHROOM_FIELD_SHORE_ID = Registry.BIOME.getRawId(Biomes.field_9407);
-	private static final int RIVER_ID = Registry.BIOME.getRawId(Biomes.field_9438);
+	private static final int FROZEN_RIVER_ID = Registry.field_11153.getRawId(Biomes.field_9463);
+	private static final int SNOWY_TUNDRA_ID = Registry.field_11153.getRawId(Biomes.field_9452);
+	private static final int MUSHROOM_FIELDS_ID = Registry.field_11153.getRawId(Biomes.field_9462);
+	private static final int MUSHROOM_FIELD_SHORE_ID = Registry.field_11153.getRawId(Biomes.field_9407);
+	private static final int RIVER_ID = Registry.field_11153.getRawId(Biomes.field_9438);
 
 	@Override
 	public int sample(LayerRandomnessSource layerRandomnessSource, LayerSampler layerSampler, LayerSampler layerSampler2, int i, int j) {

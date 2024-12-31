@@ -9,7 +9,7 @@ import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class BreatheAirGoal extends Goal {
 	private final MobEntityWithAi mob;
@@ -21,7 +21,7 @@ public class BreatheAirGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		return this.mob.getBreath() < 140;
+		return this.mob.getAir() < 140;
 	}
 
 	@Override
@@ -41,12 +41,12 @@ public class BreatheAirGoal extends Goal {
 
 	private void moveToAir() {
 		Iterable<BlockPos> iterable = BlockPos.iterate(
-			MathHelper.floor(this.mob.x - 1.0),
-			MathHelper.floor(this.mob.y),
-			MathHelper.floor(this.mob.z - 1.0),
-			MathHelper.floor(this.mob.x + 1.0),
-			MathHelper.floor(this.mob.y + 8.0),
-			MathHelper.floor(this.mob.z + 1.0)
+			MathHelper.floor(this.mob.getX() - 1.0),
+			MathHelper.floor(this.mob.getY()),
+			MathHelper.floor(this.mob.getZ() - 1.0),
+			MathHelper.floor(this.mob.getX() + 1.0),
+			MathHelper.floor(this.mob.getY() + 8.0),
+			MathHelper.floor(this.mob.getZ() + 1.0)
 		);
 		BlockPos blockPos = null;
 
@@ -58,7 +58,7 @@ public class BreatheAirGoal extends Goal {
 		}
 
 		if (blockPos == null) {
-			blockPos = new BlockPos(this.mob.x, this.mob.y + 8.0, this.mob.z);
+			blockPos = new BlockPos(this.mob.getX(), this.mob.getY() + 8.0, this.mob.getZ());
 		}
 
 		this.mob.getNavigation().startMovingTo((double)blockPos.getX(), (double)(blockPos.getY() + 1), (double)blockPos.getZ(), 1.0);
@@ -71,9 +71,9 @@ public class BreatheAirGoal extends Goal {
 		this.mob.move(MovementType.field_6308, this.mob.getVelocity());
 	}
 
-	private boolean isAirPos(ViewableWorld viewableWorld, BlockPos blockPos) {
-		BlockState blockState = viewableWorld.getBlockState(blockPos);
-		return (viewableWorld.getFluidState(blockPos).isEmpty() || blockState.getBlock() == Blocks.field_10422)
-			&& blockState.canPlaceAtSide(viewableWorld, blockPos, BlockPlacementEnvironment.field_50);
+	private boolean isAirPos(WorldView worldView, BlockPos blockPos) {
+		BlockState blockState = worldView.getBlockState(blockPos);
+		return (worldView.getFluidState(blockPos).isEmpty() || blockState.getBlock() == Blocks.field_10422)
+			&& blockState.canPlaceAtSide(worldView, blockPos, BlockPlacementEnvironment.field_50);
 	}
 }

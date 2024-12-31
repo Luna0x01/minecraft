@@ -20,8 +20,8 @@ public class HuskEntity extends ZombieEntity {
 		super(entityType, world);
 	}
 
-	public static boolean method_20677(EntityType<HuskEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		return method_20680(entityType, iWorld, spawnType, blockPos, random) && (spawnType == SpawnType.field_16469 || iWorld.isSkyVisible(blockPos));
+	public static boolean canSpawn(EntityType<HuskEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		return canSpawnInDark(entityType, iWorld, spawnType, blockPos, random) && (spawnType == SpawnType.field_16469 || iWorld.isSkyVisible(blockPos));
 	}
 
 	@Override
@@ -54,7 +54,7 @@ public class HuskEntity extends ZombieEntity {
 		boolean bl = super.tryAttack(entity);
 		if (bl && this.getMainHandStack().isEmpty() && entity instanceof LivingEntity) {
 			float f = this.world.getLocalDifficulty(new BlockPos(this)).getLocalDifficulty();
-			((LivingEntity)entity).addPotionEffect(new StatusEffectInstance(StatusEffects.field_5903, 140 * (int)f));
+			((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5903, 140 * (int)f));
 		}
 
 		return bl;

@@ -103,7 +103,7 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 	}
 
-	public void method_11860(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onTeam(this);
 	}
 

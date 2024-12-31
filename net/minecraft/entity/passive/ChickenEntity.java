@@ -41,7 +41,7 @@ public class ChickenEntity extends AnimalEntity {
 
 	public ChickenEntity(EntityType<? extends ChickenEntity> entityType, World world) {
 		super(entityType, world);
-		this.setPathNodeTypeWeight(PathNodeType.field_18, 0.0F);
+		this.setPathfindingPenalty(PathNodeType.field_18, 0.0F);
 	}
 
 	@Override
@@ -94,7 +94,8 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	public void handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float f, float g) {
+		return false;
 	}
 
 	@Override
@@ -117,13 +118,13 @@ public class ChickenEntity extends AnimalEntity {
 		this.playSound(SoundEvents.field_14685, 0.15F, 1.0F);
 	}
 
-	public ChickenEntity method_6471(PassiveEntity passiveEntity) {
+	public ChickenEntity createChild(PassiveEntity passiveEntity) {
 		return EntityType.field_6132.create(this.world);
 	}
 
 	@Override
 	public boolean isBreedingItem(ItemStack itemStack) {
-		return BREEDING_INGREDIENT.method_8093(itemStack);
+		return BREEDING_INGREDIENT.test(itemStack);
 	}
 
 	@Override
@@ -135,7 +136,7 @@ public class ChickenEntity extends AnimalEntity {
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
 		this.jockey = compoundTag.getBoolean("IsChickenJockey");
-		if (compoundTag.containsKey("EggLayTime")) {
+		if (compoundTag.contains("EggLayTime")) {
 			this.eggLayTime = compoundTag.getInt("EggLayTime");
 		}
 	}
@@ -155,13 +156,13 @@ public class ChickenEntity extends AnimalEntity {
 	@Override
 	public void updatePassengerPosition(Entity entity) {
 		super.updatePassengerPosition(entity);
-		float f = MathHelper.sin(this.field_6283 * (float) (Math.PI / 180.0));
-		float g = MathHelper.cos(this.field_6283 * (float) (Math.PI / 180.0));
+		float f = MathHelper.sin(this.bodyYaw * (float) (Math.PI / 180.0));
+		float g = MathHelper.cos(this.bodyYaw * (float) (Math.PI / 180.0));
 		float h = 0.1F;
 		float i = 0.0F;
-		entity.setPosition(this.x + (double)(0.1F * f), this.y + (double)(this.getHeight() * 0.5F) + entity.getHeightOffset() + 0.0, this.z - (double)(0.1F * g));
+		entity.updatePosition(this.getX() + (double)(0.1F * f), this.getBodyY(0.5) + entity.getHeightOffset() + 0.0, this.getZ() - (double)(0.1F * g));
 		if (entity instanceof LivingEntity) {
-			((LivingEntity)entity).field_6283 = this.field_6283;
+			((LivingEntity)entity).bodyYaw = this.bodyYaw;
 		}
 	}
 

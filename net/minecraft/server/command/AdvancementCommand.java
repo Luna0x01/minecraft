@@ -18,7 +18,7 @@ import net.minecraft.text.TranslatableText;
 
 public class AdvancementCommand {
 	private static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> {
-		Collection<Advancement> collection = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementManager().getAdvancements();
+		Collection<Advancement> collection = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementLoader().getAdvancements();
 		return CommandSource.suggestIdentifiers(collection.stream().map(Advancement::getId), suggestionsBuilder);
 	};
 
@@ -116,7 +116,7 @@ public class AdvancementCommand {
 														(ServerCommandSource)commandContext.getSource(),
 														EntityArgumentType.getPlayers(commandContext, "targets"),
 														AdvancementCommand.Operation.field_13457,
-														((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementManager().getAdvancements()
+														((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementLoader().getAdvancements()
 													)
 											)
 									)
@@ -212,7 +212,7 @@ public class AdvancementCommand {
 													(ServerCommandSource)commandContext.getSource(),
 													EntityArgumentType.getPlayers(commandContext, "targets"),
 													AdvancementCommand.Operation.field_13456,
-													((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementManager().getAdvancements()
+													((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getAdvancementLoader().getAdvancements()
 												)
 										)
 								)
@@ -374,12 +374,12 @@ public class AdvancementCommand {
 		field_13457("grant") {
 			@Override
 			protected boolean processEach(ServerPlayerEntity serverPlayerEntity, Advancement advancement) {
-				AdvancementProgress advancementProgress = serverPlayerEntity.getAdvancementManager().getProgress(advancement);
+				AdvancementProgress advancementProgress = serverPlayerEntity.getAdvancementTracker().getProgress(advancement);
 				if (advancementProgress.isDone()) {
 					return false;
 				} else {
 					for (String string : advancementProgress.getUnobtainedCriteria()) {
-						serverPlayerEntity.getAdvancementManager().grantCriterion(advancement, string);
+						serverPlayerEntity.getAdvancementTracker().grantCriterion(advancement, string);
 					}
 
 					return true;
@@ -388,18 +388,18 @@ public class AdvancementCommand {
 
 			@Override
 			protected boolean processEachCriterion(ServerPlayerEntity serverPlayerEntity, Advancement advancement, String string) {
-				return serverPlayerEntity.getAdvancementManager().grantCriterion(advancement, string);
+				return serverPlayerEntity.getAdvancementTracker().grantCriterion(advancement, string);
 			}
 		},
 		field_13456("revoke") {
 			@Override
 			protected boolean processEach(ServerPlayerEntity serverPlayerEntity, Advancement advancement) {
-				AdvancementProgress advancementProgress = serverPlayerEntity.getAdvancementManager().getProgress(advancement);
+				AdvancementProgress advancementProgress = serverPlayerEntity.getAdvancementTracker().getProgress(advancement);
 				if (!advancementProgress.isAnyObtained()) {
 					return false;
 				} else {
 					for (String string : advancementProgress.getObtainedCriteria()) {
-						serverPlayerEntity.getAdvancementManager().revokeCriterion(advancement, string);
+						serverPlayerEntity.getAdvancementTracker().revokeCriterion(advancement, string);
 					}
 
 					return true;
@@ -408,7 +408,7 @@ public class AdvancementCommand {
 
 			@Override
 			protected boolean processEachCriterion(ServerPlayerEntity serverPlayerEntity, Advancement advancement, String string) {
-				return serverPlayerEntity.getAdvancementManager().revokeCriterion(advancement, string);
+				return serverPlayerEntity.getAdvancementTracker().revokeCriterion(advancement, string);
 			}
 		};
 

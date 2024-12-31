@@ -11,7 +11,8 @@ import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.CommandBlockMinecartEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.predicate.entity.EntityPredicates;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
@@ -22,8 +23,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class DetectorRailBlock extends AbstractRailBlock {
 	public static final EnumProperty<RailShape> SHAPE = Properties.STRAIGHT_RAIL_SHAPE;
@@ -31,11 +32,11 @@ public class DetectorRailBlock extends AbstractRailBlock {
 
 	public DetectorRailBlock(Block.Settings settings) {
 		super(true, settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(POWERED, Boolean.valueOf(false)).with(SHAPE, RailShape.field_12665));
+		this.setDefaultState(this.stateManager.getDefaultState().with(POWERED, Boolean.valueOf(false)).with(SHAPE, RailShape.field_12665));
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 20;
 	}
 
@@ -54,9 +55,9 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!world.isClient && (Boolean)blockState.get(POWERED)) {
-			this.updatePoweredStatus(world, blockPos, blockState);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if ((Boolean)blockState.get(POWERED)) {
+			this.updatePoweredStatus(serverWorld, blockPos, blockState);
 		}
 	}
 
@@ -88,7 +89,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 			this.updateNearbyRails(world, blockPos, blockState2, true);
 			world.updateNeighborsAlways(blockPos, this);
 			world.updateNeighborsAlways(blockPos.down(), this);
-			world.scheduleBlockRender(blockPos, blockState, blockState2);
+			world.checkBlockRerender(blockPos, blockState, blockState2);
 		}
 
 		if (!bl2 && bl) {
@@ -97,7 +98,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 			this.updateNearbyRails(world, blockPos, blockState3, false);
 			world.updateNeighborsAlways(blockPos, this);
 			world.updateNeighborsAlways(blockPos.down(), this);
-			world.scheduleBlockRender(blockPos, blockState, blockState3);
+			world.checkBlockRerender(blockPos, blockState, blockState3);
 		}
 
 		if (bl2) {
@@ -286,7 +287,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(SHAPE, POWERED);
 	}
 }

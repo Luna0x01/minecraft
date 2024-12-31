@@ -1,22 +1,19 @@
 package net.minecraft.util.math;
 
-import java.util.Arrays;
 import net.minecraft.client.util.math.Vector3f;
 
 public final class Quaternion {
-	private final float[] components;
-
-	public Quaternion() {
-		this.components = new float[4];
-		this.components[4] = 1.0F;
-	}
+	public static final Quaternion IDENTITY = new Quaternion(0.0F, 0.0F, 0.0F, 1.0F);
+	private float b;
+	private float c;
+	private float d;
+	private float a;
 
 	public Quaternion(float f, float g, float h, float i) {
-		this.components = new float[4];
-		this.components[0] = f;
-		this.components[1] = g;
-		this.components[2] = h;
-		this.components[3] = i;
+		this.b = f;
+		this.c = g;
+		this.d = h;
+		this.a = i;
 	}
 
 	public Quaternion(Vector3f vector3f, float f, boolean bl) {
@@ -25,11 +22,10 @@ public final class Quaternion {
 		}
 
 		float g = sin(f / 2.0F);
-		this.components = new float[4];
-		this.components[0] = vector3f.getX() * g;
-		this.components[1] = vector3f.getY() * g;
-		this.components[2] = vector3f.getZ() * g;
-		this.components[3] = cos(f / 2.0F);
+		this.b = vector3f.getX() * g;
+		this.c = vector3f.getY() * g;
+		this.d = vector3f.getZ() * g;
+		this.a = cos(f / 2.0F);
 	}
 
 	public Quaternion(float f, float g, float h, boolean bl) {
@@ -45,15 +41,17 @@ public final class Quaternion {
 		float l = cos(0.5F * g);
 		float m = sin(0.5F * h);
 		float n = cos(0.5F * h);
-		this.components = new float[4];
-		this.components[0] = i * l * n + j * k * m;
-		this.components[1] = j * k * n - i * l * m;
-		this.components[2] = i * k * n + j * l * m;
-		this.components[3] = j * l * n - i * k * m;
+		this.b = i * l * n + j * k * m;
+		this.c = j * k * n - i * l * m;
+		this.d = i * k * n + j * l * m;
+		this.a = j * l * n - i * k * m;
 	}
 
 	public Quaternion(Quaternion quaternion) {
-		this.components = Arrays.copyOf(quaternion.components, 4);
+		this.b = quaternion.b;
+		this.c = quaternion.c;
+		this.d = quaternion.d;
+		this.a = quaternion.a;
 	}
 
 	public boolean equals(Object object) {
@@ -61,60 +59,83 @@ public final class Quaternion {
 			return true;
 		} else if (object != null && this.getClass() == object.getClass()) {
 			Quaternion quaternion = (Quaternion)object;
-			return Arrays.equals(this.components, quaternion.components);
+			if (Float.compare(quaternion.b, this.b) != 0) {
+				return false;
+			} else if (Float.compare(quaternion.c, this.c) != 0) {
+				return false;
+			} else {
+				return Float.compare(quaternion.d, this.d) != 0 ? false : Float.compare(quaternion.a, this.a) == 0;
+			}
 		} else {
 			return false;
 		}
 	}
 
 	public int hashCode() {
-		return Arrays.hashCode(this.components);
+		int i = Float.floatToIntBits(this.b);
+		i = 31 * i + Float.floatToIntBits(this.c);
+		i = 31 * i + Float.floatToIntBits(this.d);
+		return 31 * i + Float.floatToIntBits(this.a);
 	}
 
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("Quaternion[").append(this.getW()).append(" + ");
-		stringBuilder.append(this.getX()).append("i + ");
-		stringBuilder.append(this.getY()).append("j + ");
-		stringBuilder.append(this.getZ()).append("k]");
+		stringBuilder.append("Quaternion[").append(this.getA()).append(" + ");
+		stringBuilder.append(this.getB()).append("i + ");
+		stringBuilder.append(this.getC()).append("j + ");
+		stringBuilder.append(this.getD()).append("k]");
 		return stringBuilder.toString();
 	}
 
-	public float getX() {
-		return this.components[0];
+	public float getB() {
+		return this.b;
 	}
 
-	public float getY() {
-		return this.components[1];
+	public float getC() {
+		return this.c;
 	}
 
-	public float getZ() {
-		return this.components[2];
+	public float getD() {
+		return this.d;
 	}
 
-	public float getW() {
-		return this.components[3];
+	public float getA() {
+		return this.a;
 	}
 
-	public void copyFrom(Quaternion quaternion) {
-		float f = this.getX();
-		float g = this.getY();
-		float h = this.getZ();
-		float i = this.getW();
-		float j = quaternion.getX();
-		float k = quaternion.getY();
-		float l = quaternion.getZ();
-		float m = quaternion.getW();
-		this.components[0] = i * j + f * m + g * l - h * k;
-		this.components[1] = i * k - f * l + g * m + h * j;
-		this.components[2] = i * l + f * k - g * j + h * m;
-		this.components[3] = i * m - f * j - g * k - h * l;
+	public void hamiltonProduct(Quaternion quaternion) {
+		float f = this.getB();
+		float g = this.getC();
+		float h = this.getD();
+		float i = this.getA();
+		float j = quaternion.getB();
+		float k = quaternion.getC();
+		float l = quaternion.getD();
+		float m = quaternion.getA();
+		this.b = i * j + f * m + g * l - h * k;
+		this.c = i * k - f * l + g * m + h * j;
+		this.d = i * l + f * k - g * j + h * m;
+		this.a = i * m - f * j - g * k - h * l;
 	}
 
-	public void reverse() {
-		this.components[0] = -this.components[0];
-		this.components[1] = -this.components[1];
-		this.components[2] = -this.components[2];
+	public void scale(float f) {
+		this.b *= f;
+		this.c *= f;
+		this.d *= f;
+		this.a *= f;
+	}
+
+	public void conjugate() {
+		this.b = -this.b;
+		this.c = -this.c;
+		this.d = -this.d;
+	}
+
+	public void set(float f, float g, float h, float i) {
+		this.b = f;
+		this.c = g;
+		this.d = h;
+		this.a = i;
 	}
 
 	private static float cos(float f) {
@@ -123,5 +144,25 @@ public final class Quaternion {
 
 	private static float sin(float f) {
 		return (float)Math.sin((double)f);
+	}
+
+	public void normalize() {
+		float f = this.getB() * this.getB() + this.getC() * this.getC() + this.getD() * this.getD() + this.getA() * this.getA();
+		if (f > 1.0E-6F) {
+			float g = MathHelper.fastInverseSqrt(f);
+			this.b *= g;
+			this.c *= g;
+			this.d *= g;
+			this.a *= g;
+		} else {
+			this.b = 0.0F;
+			this.c = 0.0F;
+			this.d = 0.0F;
+			this.a = 0.0F;
+		}
+	}
+
+	public Quaternion copy() {
+		return new Quaternion(this);
 	}
 }

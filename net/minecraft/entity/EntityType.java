@@ -8,8 +8,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
-import net.minecraft.datafixers.Schemas;
-import net.minecraft.datafixers.TypeReferences;
+import net.minecraft.datafixer.Schemas;
+import net.minecraft.datafixer.TypeReferences;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -52,6 +52,7 @@ import net.minecraft.entity.mob.ZombieHorseEntity;
 import net.minecraft.entity.mob.ZombiePigmanEntity;
 import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.passive.BatEntity;
+import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.CodEntity;
@@ -113,7 +114,7 @@ import net.minecraft.tag.Tag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -121,8 +122,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -140,6 +141,9 @@ public class EntityType<T extends Entity> {
 	);
 	public static final EntityType<BatEntity> field_6108 = register(
 		"bat", EntityType.Builder.create(BatEntity::new, EntityCategory.field_6303).setDimensions(0.5F, 0.9F)
+	);
+	public static final EntityType<BeeEntity> field_20346 = register(
+		"bee", EntityType.Builder.create(BeeEntity::new, EntityCategory.field_6294).setDimensions(0.7F, 0.6F)
 	);
 	public static final EntityType<BlazeEntity> field_6099 = register(
 		"blaze", EntityType.Builder.create(BlazeEntity::new, EntityCategory.field_6302).makeFireImmune().setDimensions(0.6F, 1.8F)
@@ -317,7 +321,7 @@ public class EntityType<T extends Entity> {
 		"sheep", EntityType.Builder.create(SheepEntity::new, EntityCategory.field_6294).setDimensions(0.9F, 1.3F)
 	);
 	public static final EntityType<ShulkerEntity> field_6109 = register(
-		"shulker", EntityType.Builder.create(ShulkerEntity::new, EntityCategory.field_6302).makeFireImmune().method_20815().setDimensions(1.0F, 1.0F)
+		"shulker", EntityType.Builder.create(ShulkerEntity::new, EntityCategory.field_6302).makeFireImmune().spawnableFarFromPlayer().setDimensions(1.0F, 1.0F)
 	);
 	public static final EntityType<ShulkerBulletEntity> field_6100 = register(
 		"shulker_bullet", EntityType.Builder.<ShulkerBulletEntity>create(ShulkerBulletEntity::new, EntityCategory.field_17715).setDimensions(0.3125F, 0.3125F)
@@ -393,7 +397,7 @@ public class EntityType<T extends Entity> {
 		"vindicator", EntityType.Builder.create(VindicatorEntity::new, EntityCategory.field_6302).setDimensions(0.6F, 1.95F)
 	);
 	public static final EntityType<PillagerEntity> field_6105 = register(
-		"pillager", EntityType.Builder.create(PillagerEntity::new, EntityCategory.field_6302).method_20815().setDimensions(0.6F, 1.95F)
+		"pillager", EntityType.Builder.create(PillagerEntity::new, EntityCategory.field_6302).spawnableFarFromPlayer().setDimensions(0.6F, 1.95F)
 	);
 	public static final EntityType<WanderingTraderEntity> field_17713 = register(
 		"wandering_trader", EntityType.Builder.create(WanderingTraderEntity::new, EntityCategory.field_6294).setDimensions(0.6F, 1.95F)
@@ -442,7 +446,7 @@ public class EntityType<T extends Entity> {
 	private final boolean saveable;
 	private final boolean summonable;
 	private final boolean fireImmune;
-	private final boolean field_19423;
+	private final boolean spawnableFarFromPlayer;
 	@Nullable
 	private String translationKey;
 	@Nullable
@@ -452,15 +456,15 @@ public class EntityType<T extends Entity> {
 	private final EntityDimensions dimensions;
 
 	private static <T extends Entity> EntityType<T> register(String string, EntityType.Builder<T> builder) {
-		return Registry.register(Registry.ENTITY_TYPE, string, builder.build(string));
+		return Registry.register(Registry.field_11145, string, builder.build(string));
 	}
 
 	public static Identifier getId(EntityType<?> entityType) {
-		return Registry.ENTITY_TYPE.getId(entityType);
+		return Registry.field_11145.getId(entityType);
 	}
 
 	public static Optional<EntityType<?>> get(String string) {
-		return Registry.ENTITY_TYPE.getOrEmpty(Identifier.tryParse(string));
+		return Registry.field_11145.getOrEmpty(Identifier.tryParse(string));
 	}
 
 	public EntityType(
@@ -474,7 +478,7 @@ public class EntityType<T extends Entity> {
 	) {
 		this.factory = entityFactory;
 		this.category = entityCategory;
-		this.field_19423 = bl4;
+		this.spawnableFarFromPlayer = bl4;
 		this.saveable = bl;
 		this.summonable = bl2;
 		this.fireImmune = bl3;
@@ -530,19 +534,19 @@ public class EntityType<T extends Entity> {
 		} else {
 			double d;
 			if (bl) {
-				entity.setPosition((double)blockPos.getX() + 0.5, (double)(blockPos.getY() + 1), (double)blockPos.getZ() + 0.5);
+				entity.updatePosition((double)blockPos.getX() + 0.5, (double)(blockPos.getY() + 1), (double)blockPos.getZ() + 0.5);
 				d = getOriginY(world, blockPos, bl2, entity.getBoundingBox());
 			} else {
 				d = 0.0;
 			}
 
-			entity.setPositionAndAngles(
+			entity.refreshPositionAndAngles(
 				(double)blockPos.getX() + 0.5, (double)blockPos.getY() + d, (double)blockPos.getZ() + 0.5, MathHelper.wrapDegrees(world.random.nextFloat() * 360.0F), 0.0F
 			);
 			if (entity instanceof MobEntity) {
 				MobEntity mobEntity = (MobEntity)entity;
 				mobEntity.headYaw = mobEntity.yaw;
-				mobEntity.field_6283 = mobEntity.yaw;
+				mobEntity.bodyYaw = mobEntity.yaw;
 				mobEntity.initialize(world, world.getLocalDifficulty(new BlockPos(mobEntity)), spawnType, null, compoundTag);
 				mobEntity.playAmbientSound();
 			}
@@ -556,18 +560,18 @@ public class EntityType<T extends Entity> {
 		}
 	}
 
-	protected static double getOriginY(ViewableWorld viewableWorld, BlockPos blockPos, boolean bl, Box box) {
+	protected static double getOriginY(WorldView worldView, BlockPos blockPos, boolean bl, Box box) {
 		Box box2 = new Box(blockPos);
 		if (bl) {
 			box2 = box2.stretch(0.0, -1.0, 0.0);
 		}
 
-		Stream<VoxelShape> stream = viewableWorld.getCollisionShapes(null, box2, Collections.emptySet());
+		Stream<VoxelShape> stream = worldView.getCollisions(null, box2, Collections.emptySet());
 		return 1.0 + VoxelShapes.calculateMaxOffset(Direction.Axis.field_11052, box, stream, bl ? -2.0 : -1.0);
 	}
 
 	public static void loadFromEntityTag(World world, @Nullable PlayerEntity playerEntity, @Nullable Entity entity, @Nullable CompoundTag compoundTag) {
-		if (compoundTag != null && compoundTag.containsKey("EntityTag", 10)) {
+		if (compoundTag != null && compoundTag.contains("EntityTag", 10)) {
 			MinecraftServer minecraftServer = world.getServer();
 			if (minecraftServer != null && entity != null) {
 				if (world.isClient
@@ -595,8 +599,8 @@ public class EntityType<T extends Entity> {
 		return this.fireImmune;
 	}
 
-	public boolean method_20814() {
-		return this.field_19423;
+	public boolean isSpawnableFarFromPlayer() {
+		return this.spawnableFarFromPlayer;
 	}
 
 	public EntityCategory getCategory() {
@@ -605,7 +609,7 @@ public class EntityType<T extends Entity> {
 
 	public String getTranslationKey() {
 		if (this.translationKey == null) {
-			this.translationKey = SystemUtil.createTranslationKey("entity", Registry.ENTITY_TYPE.getId(this));
+			this.translationKey = Util.createTranslationKey("entity", Registry.field_11145.getId(this));
 		}
 
 		return this.translationKey;
@@ -621,7 +625,7 @@ public class EntityType<T extends Entity> {
 
 	public Identifier getLootTableId() {
 		if (this.lootTableId == null) {
-			Identifier identifier = Registry.ENTITY_TYPE.getId(this);
+			Identifier identifier = Registry.field_11145.getId(this);
 			this.lootTableId = new Identifier(identifier.getNamespace(), "entities/" + identifier.getPath());
 		}
 
@@ -643,11 +647,11 @@ public class EntityType<T extends Entity> {
 
 	@Nullable
 	public static Entity createInstanceFromId(int i, World world) {
-		return newInstance(world, Registry.ENTITY_TYPE.get(i));
+		return newInstance(world, Registry.field_11145.get(i));
 	}
 
 	public static Optional<Entity> getEntityFromTag(CompoundTag compoundTag, World world) {
-		return SystemUtil.ifPresentOrElse(
+		return Util.ifPresentOrElse(
 			fromTag(compoundTag).map(entityType -> entityType.create(world)),
 			entity -> entity.fromTag(compoundTag),
 			() -> LOGGER.warn("Skipping Entity with id {}", compoundTag.getString("id"))
@@ -669,17 +673,17 @@ public class EntityType<T extends Entity> {
 	}
 
 	public static Optional<EntityType<?>> fromTag(CompoundTag compoundTag) {
-		return Registry.ENTITY_TYPE.getOrEmpty(new Identifier(compoundTag.getString("id")));
+		return Registry.field_11145.getOrEmpty(new Identifier(compoundTag.getString("id")));
 	}
 
 	@Nullable
 	public static Entity loadEntityWithPassengers(CompoundTag compoundTag, World world, Function<Entity, Entity> function) {
 		return (Entity)loadEntityFromTag(compoundTag, world).map(function).map(entity -> {
-			if (compoundTag.containsKey("Passengers", 9)) {
+			if (compoundTag.contains("Passengers", 9)) {
 				ListTag listTag = compoundTag.getList("Passengers", 10);
 
 				for (int i = 0; i < listTag.size(); i++) {
-					Entity entity2 = loadEntityWithPassengers(listTag.getCompoundTag(i), world, function);
+					Entity entity2 = loadEntityWithPassengers(listTag.getCompound(i), world, function);
 					if (entity2 != null) {
 						entity2.startRiding(entity, true);
 					}
@@ -787,13 +791,13 @@ public class EntityType<T extends Entity> {
 		private boolean saveable = true;
 		private boolean summonable = true;
 		private boolean fireImmune;
-		private boolean field_19424;
+		private boolean spawnableFarFromPlayer;
 		private EntityDimensions size = EntityDimensions.changing(0.6F, 1.8F);
 
 		private Builder(EntityType.EntityFactory<T> entityFactory, EntityCategory entityCategory) {
 			this.factory = entityFactory;
 			this.category = entityCategory;
-			this.field_19424 = entityCategory == EntityCategory.field_6294 || entityCategory == EntityCategory.field_17715;
+			this.spawnableFarFromPlayer = entityCategory == EntityCategory.field_6294 || entityCategory == EntityCategory.field_17715;
 		}
 
 		public static <T extends Entity> EntityType.Builder<T> create(EntityType.EntityFactory<T> entityFactory, EntityCategory entityCategory) {
@@ -824,8 +828,8 @@ public class EntityType<T extends Entity> {
 			return this;
 		}
 
-		public EntityType.Builder<T> method_20815() {
-			this.field_19424 = true;
+		public EntityType.Builder<T> spawnableFarFromPlayer() {
+			this.spawnableFarFromPlayer = true;
 			return this;
 		}
 
@@ -842,7 +846,7 @@ public class EntityType<T extends Entity> {
 				}
 			}
 
-			return new EntityType<>(this.factory, this.category, this.saveable, this.summonable, this.fireImmune, this.field_19424, this.size);
+			return new EntityType<>(this.factory, this.category, this.saveable, this.summonable, this.fireImmune, this.spawnableFarFromPlayer, this.size);
 		}
 	}
 

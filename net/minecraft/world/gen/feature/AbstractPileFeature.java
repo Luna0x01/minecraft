@@ -11,13 +11,13 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
-public abstract class AbstractPileFeature extends Feature<DefaultFeatureConfig> {
-	public AbstractPileFeature(Function<Dynamic<?>, ? extends DefaultFeatureConfig> function) {
+public class AbstractPileFeature extends Feature<BlockPileFeatureConfig> {
+	public AbstractPileFeature(Function<Dynamic<?>, ? extends BlockPileFeatureConfig> function) {
 		super(function);
 	}
 
-	public boolean method_16709(
-		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DefaultFeatureConfig defaultFeatureConfig
+	public boolean generate(
+		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, BlockPileFeatureConfig blockPileFeatureConfig
 	) {
 		if (blockPos.getY() < 5) {
 			return false;
@@ -29,9 +29,9 @@ public abstract class AbstractPileFeature extends Feature<DefaultFeatureConfig> 
 				int k = blockPos.getX() - blockPos2.getX();
 				int l = blockPos.getZ() - blockPos2.getZ();
 				if ((float)(k * k + l * l) <= random.nextFloat() * 10.0F - random.nextFloat() * 6.0F) {
-					this.addPileBlock(iWorld, blockPos2, random);
+					this.addPileBlock(iWorld, blockPos2, random, blockPileFeatureConfig);
 				} else if ((double)random.nextFloat() < 0.031) {
-					this.addPileBlock(iWorld, blockPos2, random);
+					this.addPileBlock(iWorld, blockPos2, random, blockPileFeatureConfig);
 				}
 			}
 
@@ -45,11 +45,9 @@ public abstract class AbstractPileFeature extends Feature<DefaultFeatureConfig> 
 		return blockState.getBlock() == Blocks.field_10194 ? random.nextBoolean() : blockState.isSideSolidFullSquare(iWorld, blockPos2, Direction.field_11036);
 	}
 
-	private void addPileBlock(IWorld iWorld, BlockPos blockPos, Random random) {
+	private void addPileBlock(IWorld iWorld, BlockPos blockPos, Random random, BlockPileFeatureConfig blockPileFeatureConfig) {
 		if (iWorld.isAir(blockPos) && this.canPlacePileBlock(iWorld, blockPos, random)) {
-			iWorld.setBlockState(blockPos, this.getPileBlockState(iWorld), 4);
+			iWorld.setBlockState(blockPos, blockPileFeatureConfig.field_21229.getBlockState(random, blockPos), 4);
 		}
 	}
-
-	protected abstract BlockState getPileBlockState(IWorld iWorld);
 }

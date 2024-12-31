@@ -7,9 +7,10 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.LeadItem;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.tag.BlockTags;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -20,12 +21,12 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class FenceBlock extends HorizontalConnectedBlock {
-	private final VoxelShape[] SHAPES;
+	private final VoxelShape[] cullingShapes;
 
 	public FenceBlock(Block.Settings settings) {
 		super(2.0F, 2.0F, 16.0F, 16.0F, 24.0F, settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(NORTH, Boolean.valueOf(false))
 				.with(EAST, Boolean.valueOf(false))
@@ -33,12 +34,12 @@ public class FenceBlock extends HorizontalConnectedBlock {
 				.with(WEST, Boolean.valueOf(false))
 				.with(WATERLOGGED, Boolean.valueOf(false))
 		);
-		this.SHAPES = this.createShapes(2.0F, 1.0F, 16.0F, 6.0F, 15.0F);
+		this.cullingShapes = this.createShapes(2.0F, 1.0F, 16.0F, 6.0F, 15.0F);
 	}
 
 	@Override
-	public VoxelShape method_9571(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return this.SHAPES[this.getShapeIndex(blockState)];
+	public VoxelShape getCullingShape(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return this.cullingShapes[this.getShapeIndex(blockState)];
 	}
 
 	@Override
@@ -50,16 +51,16 @@ public class FenceBlock extends HorizontalConnectedBlock {
 		Block block = blockState.getBlock();
 		boolean bl2 = block.matches(BlockTags.field_16584) && blockState.getMaterial() == this.material;
 		boolean bl3 = block instanceof FenceGateBlock && FenceGateBlock.canWallConnect(blockState, direction);
-		return !canConnect(block) && bl || bl2 || bl3;
+		return !cannotConnect(block) && bl || bl2 || bl3;
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		if (!world.isClient) {
-			return LeadItem.attachHeldMobsToBlock(playerEntity, world, blockPos);
-		} else {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		if (world.isClient) {
 			ItemStack itemStack = playerEntity.getStackInHand(hand);
-			return itemStack.getItem() == Items.field_8719 || itemStack.isEmpty();
+			return itemStack.getItem() == Items.field_8719 ? ActionResult.field_5812 : ActionResult.field_5811;
+		} else {
+			return LeadItem.attachHeldMobsToBlock(playerEntity, world, blockPos);
 		}
 	}
 
@@ -109,7 +110,7 @@ public class FenceBlock extends HorizontalConnectedBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(NORTH, EAST, WEST, SOUTH, WATERLOGGED);
 	}
 }

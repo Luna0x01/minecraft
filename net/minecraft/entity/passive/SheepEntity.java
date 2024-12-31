@@ -10,7 +10,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.container.Container;
 import net.minecraft.container.ContainerType;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
@@ -36,6 +35,7 @@ import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeType;
@@ -44,17 +44,16 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
-import net.minecraft.world.loot.LootTables;
 
 public class SheepEntity extends AnimalEntity {
 	private static final TrackedData<Byte> COLOR = DataTracker.registerData(SheepEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private static final Map<DyeColor, ItemConvertible> DROPS = SystemUtil.consume(Maps.newEnumMap(DyeColor.class), enumMap -> {
+	private static final Map<DyeColor, ItemConvertible> DROPS = Util.make(Maps.newEnumMap(DyeColor.class), enumMap -> {
 		enumMap.put(DyeColor.field_7952, Blocks.field_10446);
 		enumMap.put(DyeColor.field_7946, Blocks.field_10095);
 		enumMap.put(DyeColor.field_7958, Blocks.field_10215);
@@ -217,9 +216,11 @@ public class SheepEntity extends AnimalEntity {
 			if (!this.world.isClient) {
 				itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
 			}
-		}
 
-		return super.interactMob(playerEntity, hand);
+			return true;
+		} else {
+			return super.interactMob(playerEntity, hand);
+		}
 	}
 
 	public void dropItems() {
@@ -316,7 +317,7 @@ public class SheepEntity extends AnimalEntity {
 		}
 	}
 
-	public SheepEntity method_6640(PassiveEntity passiveEntity) {
+	public SheepEntity createChild(PassiveEntity passiveEntity) {
 		SheepEntity sheepEntity = (SheepEntity)passiveEntity;
 		SheepEntity sheepEntity2 = EntityType.field_6115.create(this.world);
 		sheepEntity2.setColor(this.getChildColor(this, sheepEntity));
@@ -333,12 +334,11 @@ public class SheepEntity extends AnimalEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
-		entityData = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 		this.setColor(generateDefaultColor(iWorld.getRandom()));
-		return entityData;
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
 	private DyeColor getChildColor(AnimalEntity animalEntity, AnimalEntity animalEntity2) {

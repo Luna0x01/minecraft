@@ -14,12 +14,12 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.Packet;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -54,7 +54,7 @@ public class ShulkerBulletEntity extends Entity {
 
 	public ShulkerBulletEntity(World world, double d, double e, double f, double g, double h, double i) {
 		this(EntityType.field_6100, world);
-		this.setPositionAndAngles(d, e, f, this.yaw, this.pitch);
+		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
 		this.setVelocity(g, h, i);
 	}
 
@@ -65,7 +65,7 @@ public class ShulkerBulletEntity extends Entity {
 		double d = (double)blockPos.getX() + 0.5;
 		double e = (double)blockPos.getY() + 0.5;
 		double f = (double)blockPos.getZ() + 0.5;
-		this.setPositionAndAngles(d, e, f, this.yaw, this.pitch);
+		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
 		this.target = entity;
 		this.direction = Direction.field_11036;
 		this.method_7486(axis);
@@ -80,7 +80,7 @@ public class ShulkerBulletEntity extends Entity {
 	protected void writeCustomDataToTag(CompoundTag compoundTag) {
 		if (this.owner != null) {
 			BlockPos blockPos = new BlockPos(this.owner);
-			CompoundTag compoundTag2 = TagHelper.serializeUuid(this.owner.getUuid());
+			CompoundTag compoundTag2 = NbtHelper.fromUuid(this.owner.getUuid());
 			compoundTag2.putInt("X", blockPos.getX());
 			compoundTag2.putInt("Y", blockPos.getY());
 			compoundTag2.putInt("Z", blockPos.getZ());
@@ -89,7 +89,7 @@ public class ShulkerBulletEntity extends Entity {
 
 		if (this.target != null) {
 			BlockPos blockPos2 = new BlockPos(this.target);
-			CompoundTag compoundTag3 = TagHelper.serializeUuid(this.target.getUuid());
+			CompoundTag compoundTag3 = NbtHelper.fromUuid(this.target.getUuid());
 			compoundTag3.putInt("X", blockPos2.getX());
 			compoundTag3.putInt("Y", blockPos2.getY());
 			compoundTag3.putInt("Z", blockPos2.getZ());
@@ -112,19 +112,19 @@ public class ShulkerBulletEntity extends Entity {
 		this.field_7635 = compoundTag.getDouble("TXD");
 		this.field_7633 = compoundTag.getDouble("TYD");
 		this.field_7625 = compoundTag.getDouble("TZD");
-		if (compoundTag.containsKey("Dir", 99)) {
+		if (compoundTag.contains("Dir", 99)) {
 			this.direction = Direction.byId(compoundTag.getInt("Dir"));
 		}
 
-		if (compoundTag.containsKey("Owner", 10)) {
+		if (compoundTag.contains("Owner", 10)) {
 			CompoundTag compoundTag2 = compoundTag.getCompound("Owner");
-			this.ownerUuid = TagHelper.deserializeUuid(compoundTag2);
+			this.ownerUuid = NbtHelper.toUuid(compoundTag2);
 			this.ownerPos = new BlockPos(compoundTag2.getInt("X"), compoundTag2.getInt("Y"), compoundTag2.getInt("Z"));
 		}
 
-		if (compoundTag.containsKey("Target", 10)) {
+		if (compoundTag.contains("Target", 10)) {
 			CompoundTag compoundTag3 = compoundTag.getCompound("Target");
-			this.targetUuid = TagHelper.deserializeUuid(compoundTag3);
+			this.targetUuid = NbtHelper.toUuid(compoundTag3);
 			this.targetPos = new BlockPos(compoundTag3.getInt("X"), compoundTag3.getInt("Y"), compoundTag3.getInt("Z"));
 		}
 	}
@@ -144,7 +144,7 @@ public class ShulkerBulletEntity extends Entity {
 			blockPos = new BlockPos(this).down();
 		} else {
 			d = (double)this.target.getHeight() * 0.5;
-			blockPos = new BlockPos(this.target.x, this.target.y + d, this.target.z);
+			blockPos = new BlockPos(this.target.getX(), this.target.getY() + d, this.target.getZ());
 		}
 
 		double e = (double)blockPos.getX() + 0.5;
@@ -187,15 +187,15 @@ public class ShulkerBulletEntity extends Entity {
 				direction = (Direction)list.get(this.random.nextInt(list.size()));
 			}
 
-			e = this.x + (double)direction.getOffsetX();
-			f = this.y + (double)direction.getOffsetY();
-			g = this.z + (double)direction.getOffsetZ();
+			e = this.getX() + (double)direction.getOffsetX();
+			f = this.getY() + (double)direction.getOffsetY();
+			g = this.getZ() + (double)direction.getOffsetZ();
 		}
 
 		this.setDirection(direction);
-		double h = e - this.x;
-		double j = f - this.y;
-		double k = g - this.z;
+		double h = e - this.getX();
+		double j = f - this.getY();
+		double k = g - this.getZ();
 		double l = (double)MathHelper.sqrt(h * h + j * j + k * k);
 		if (l == 0.0) {
 			this.field_7635 = 0.0;
@@ -212,77 +212,82 @@ public class ShulkerBulletEntity extends Entity {
 	}
 
 	@Override
-	public void tick() {
-		if (!this.world.isClient && this.world.getDifficulty() == Difficulty.field_5801) {
+	public void checkDespawn() {
+		if (this.world.getDifficulty() == Difficulty.field_5801) {
 			this.remove();
-		} else {
-			super.tick();
-			if (!this.world.isClient) {
-				if (this.target == null && this.targetUuid != null) {
-					for (LivingEntity livingEntity : this.world.getEntities(LivingEntity.class, new Box(this.targetPos.add(-2, -2, -2), this.targetPos.add(2, 2, 2)))) {
-						if (livingEntity.getUuid().equals(this.targetUuid)) {
-							this.target = livingEntity;
-							break;
-						}
-					}
+		}
+	}
 
-					this.targetUuid = null;
+	@Override
+	public void tick() {
+		super.tick();
+		if (!this.world.isClient) {
+			if (this.target == null && this.targetUuid != null) {
+				for (LivingEntity livingEntity : this.world
+					.getNonSpectatingEntities(LivingEntity.class, new Box(this.targetPos.add(-2, -2, -2), this.targetPos.add(2, 2, 2)))) {
+					if (livingEntity.getUuid().equals(this.targetUuid)) {
+						this.target = livingEntity;
+						break;
+					}
 				}
 
-				if (this.owner == null && this.ownerUuid != null) {
-					for (LivingEntity livingEntity2 : this.world.getEntities(LivingEntity.class, new Box(this.ownerPos.add(-2, -2, -2), this.ownerPos.add(2, 2, 2)))) {
-						if (livingEntity2.getUuid().equals(this.ownerUuid)) {
-							this.owner = livingEntity2;
-							break;
-						}
-					}
+				this.targetUuid = null;
+			}
 
-					this.ownerUuid = null;
+			if (this.owner == null && this.ownerUuid != null) {
+				for (LivingEntity livingEntity2 : this.world
+					.getNonSpectatingEntities(LivingEntity.class, new Box(this.ownerPos.add(-2, -2, -2), this.ownerPos.add(2, 2, 2)))) {
+					if (livingEntity2.getUuid().equals(this.ownerUuid)) {
+						this.owner = livingEntity2;
+						break;
+					}
 				}
 
-				if (this.target == null || !this.target.isAlive() || this.target instanceof PlayerEntity && ((PlayerEntity)this.target).isSpectator()) {
-					if (!this.hasNoGravity()) {
-						this.setVelocity(this.getVelocity().add(0.0, -0.04, 0.0));
-					}
-				} else {
-					this.field_7635 = MathHelper.clamp(this.field_7635 * 1.025, -1.0, 1.0);
-					this.field_7633 = MathHelper.clamp(this.field_7633 * 1.025, -1.0, 1.0);
-					this.field_7625 = MathHelper.clamp(this.field_7625 * 1.025, -1.0, 1.0);
-					Vec3d vec3d = this.getVelocity();
-					this.setVelocity(vec3d.add((this.field_7635 - vec3d.x) * 0.2, (this.field_7633 - vec3d.y) * 0.2, (this.field_7625 - vec3d.z) * 0.2));
-				}
+				this.ownerUuid = null;
+			}
 
-				HitResult hitResult = ProjectileUtil.getCollision(this, true, false, this.owner, RayTraceContext.ShapeType.field_17558);
-				if (hitResult.getType() != HitResult.Type.field_1333) {
-					this.onHit(hitResult);
+			if (this.target == null || !this.target.isAlive() || this.target instanceof PlayerEntity && ((PlayerEntity)this.target).isSpectator()) {
+				if (!this.hasNoGravity()) {
+					this.setVelocity(this.getVelocity().add(0.0, -0.04, 0.0));
+				}
+			} else {
+				this.field_7635 = MathHelper.clamp(this.field_7635 * 1.025, -1.0, 1.0);
+				this.field_7633 = MathHelper.clamp(this.field_7633 * 1.025, -1.0, 1.0);
+				this.field_7625 = MathHelper.clamp(this.field_7625 * 1.025, -1.0, 1.0);
+				Vec3d vec3d = this.getVelocity();
+				this.setVelocity(vec3d.add((this.field_7635 - vec3d.x) * 0.2, (this.field_7633 - vec3d.y) * 0.2, (this.field_7625 - vec3d.z) * 0.2));
+			}
+
+			HitResult hitResult = ProjectileUtil.getCollision(this, true, false, this.owner, RayTraceContext.ShapeType.field_17558);
+			if (hitResult.getType() != HitResult.Type.field_1333) {
+				this.onHit(hitResult);
+			}
+		}
+
+		Vec3d vec3d2 = this.getVelocity();
+		this.updatePosition(this.getX() + vec3d2.x, this.getY() + vec3d2.y, this.getZ() + vec3d2.z);
+		ProjectileUtil.method_7484(this, 0.5F);
+		if (this.world.isClient) {
+			this.world.addParticle(ParticleTypes.field_11207, this.getX() - vec3d2.x, this.getY() - vec3d2.y + 0.15, this.getZ() - vec3d2.z, 0.0, 0.0, 0.0);
+		} else if (this.target != null && !this.target.removed) {
+			if (this.field_7627 > 0) {
+				this.field_7627--;
+				if (this.field_7627 == 0) {
+					this.method_7486(this.direction == null ? null : this.direction.getAxis());
 				}
 			}
 
-			Vec3d vec3d2 = this.getVelocity();
-			this.setPosition(this.x + vec3d2.x, this.y + vec3d2.y, this.z + vec3d2.z);
-			ProjectileUtil.method_7484(this, 0.5F);
-			if (this.world.isClient) {
-				this.world.addParticle(ParticleTypes.field_11207, this.x - vec3d2.x, this.y - vec3d2.y + 0.15, this.z - vec3d2.z, 0.0, 0.0, 0.0);
-			} else if (this.target != null && !this.target.removed) {
-				if (this.field_7627 > 0) {
-					this.field_7627--;
-					if (this.field_7627 == 0) {
-						this.method_7486(this.direction == null ? null : this.direction.getAxis());
-					}
-				}
-
-				if (this.direction != null) {
-					BlockPos blockPos = new BlockPos(this);
-					Direction.Axis axis = this.direction.getAxis();
-					if (this.world.doesBlockHaveSolidTopSurface(blockPos.offset(this.direction), this)) {
+			if (this.direction != null) {
+				BlockPos blockPos = new BlockPos(this);
+				Direction.Axis axis = this.direction.getAxis();
+				if (this.world.isTopSolid(blockPos.offset(this.direction), this)) {
+					this.method_7486(axis);
+				} else {
+					BlockPos blockPos2 = new BlockPos(this.target);
+					if (axis == Direction.Axis.field_11048 && blockPos.getX() == blockPos2.getX()
+						|| axis == Direction.Axis.field_11051 && blockPos.getZ() == blockPos2.getZ()
+						|| axis == Direction.Axis.field_11052 && blockPos.getY() == blockPos2.getY()) {
 						this.method_7486(axis);
-					} else {
-						BlockPos blockPos2 = new BlockPos(this.target);
-						if (axis == Direction.Axis.field_11048 && blockPos.getX() == blockPos2.getX()
-							|| axis == Direction.Axis.field_11051 && blockPos.getZ() == blockPos2.getZ()
-							|| axis == Direction.Axis.field_11052 && blockPos.getY() == blockPos2.getY()) {
-							this.method_7486(axis);
-						}
 					}
 				}
 			}
@@ -295,18 +300,13 @@ public class ShulkerBulletEntity extends Entity {
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
+	public boolean shouldRender(double d) {
 		return d < 16384.0;
 	}
 
 	@Override
 	public float getBrightnessAtEyes() {
 		return 1.0F;
-	}
-
-	@Override
-	public int getLightmapCoordinates() {
-		return 15728880;
 	}
 
 	protected void onHit(HitResult hitResult) {
@@ -316,11 +316,11 @@ public class ShulkerBulletEntity extends Entity {
 			if (bl) {
 				this.dealDamage(this.owner, entity);
 				if (entity instanceof LivingEntity) {
-					((LivingEntity)entity).addPotionEffect(new StatusEffectInstance(StatusEffects.field_5902, 200));
+					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5902, 200));
 				}
 			}
 		} else {
-			((ServerWorld)this.world).spawnParticles(ParticleTypes.field_11236, this.x, this.y, this.z, 2, 0.2, 0.2, 0.2, 0.0);
+			((ServerWorld)this.world).spawnParticles(ParticleTypes.field_11236, this.getX(), this.getY(), this.getZ(), 2, 0.2, 0.2, 0.2, 0.0);
 			this.playSound(SoundEvents.field_14895, 1.0F, 1.0F);
 		}
 
@@ -336,7 +336,7 @@ public class ShulkerBulletEntity extends Entity {
 	public boolean damage(DamageSource damageSource, float f) {
 		if (!this.world.isClient) {
 			this.playSound(SoundEvents.field_14977, 1.0F, 1.0F);
-			((ServerWorld)this.world).spawnParticles(ParticleTypes.field_11205, this.x, this.y, this.z, 15, 0.2, 0.2, 0.2, 0.0);
+			((ServerWorld)this.world).spawnParticles(ParticleTypes.field_11205, this.getX(), this.getY(), this.getZ(), 15, 0.2, 0.2, 0.2, 0.0);
 			this.remove();
 		}
 

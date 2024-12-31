@@ -51,7 +51,7 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		packetByteBuf.writeVarInt(this.teleportId);
 	}
 
-	public void method_11740(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onPlayerPositionLook(this);
 	}
 

@@ -1,9 +1,10 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.render.entity.model.TropicalFishEntityModelA;
 import net.minecraft.client.render.entity.model.TropicalFishEntityModelB;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.TropicalFishEntity;
 
 public class TropicalFishSomethingFeatureRenderer extends FeatureRenderer<TropicalFishEntity, EntityModel<TropicalFishEntity>> {
@@ -14,20 +15,37 @@ public class TropicalFishSomethingFeatureRenderer extends FeatureRenderer<Tropic
 		super(featureRendererContext);
 	}
 
-	public void method_4205(TropicalFishEntity tropicalFishEntity, float f, float g, float h, float i, float j, float k, float l) {
-		if (!tropicalFishEntity.isInvisible()) {
-			EntityModel<TropicalFishEntity> entityModel = (EntityModel<TropicalFishEntity>)(tropicalFishEntity.getShape() == 0 ? this.modelA : this.modelB);
-			this.bindTexture(tropicalFishEntity.getVarietyId());
-			float[] fs = tropicalFishEntity.getPatternColorComponents();
-			GlStateManager.color3f(fs[0], fs[1], fs[2]);
-			this.getModel().copyStateTo(entityModel);
-			entityModel.animateModel(tropicalFishEntity, f, g, h);
-			entityModel.render(tropicalFishEntity, f, g, i, j, k, l);
-		}
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return true;
+	public void render(
+		MatrixStack matrixStack,
+		VertexConsumerProvider vertexConsumerProvider,
+		int i,
+		TropicalFishEntity tropicalFishEntity,
+		float f,
+		float g,
+		float h,
+		float j,
+		float k,
+		float l
+	) {
+		EntityModel<TropicalFishEntity> entityModel = (EntityModel<TropicalFishEntity>)(tropicalFishEntity.getShape() == 0 ? this.modelA : this.modelB);
+		float[] fs = tropicalFishEntity.getPatternColorComponents();
+		render(
+			this.getContextModel(),
+			entityModel,
+			tropicalFishEntity.getVarietyId(),
+			matrixStack,
+			vertexConsumerProvider,
+			i,
+			tropicalFishEntity,
+			f,
+			g,
+			j,
+			k,
+			l,
+			h,
+			fs[0],
+			fs[1],
+			fs[2]
+		);
 	}
 }

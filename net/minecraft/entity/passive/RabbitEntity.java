@@ -7,7 +7,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CarrotsBlock;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnType;
@@ -41,15 +40,15 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import net.minecraft.world.biome.Biome;
 
 public class RabbitEntity extends AnimalEntity {
@@ -84,11 +83,11 @@ public class RabbitEntity extends AnimalEntity {
 
 	@Override
 	protected float getJumpVelocity() {
-		if (!this.horizontalCollision && (!this.moveControl.isMoving() || !(this.moveControl.getTargetY() > this.y + 0.5))) {
+		if (!this.horizontalCollision && (!this.moveControl.isMoving() || !(this.moveControl.getTargetY() > this.getY() + 0.5))) {
 			Path path = this.navigation.getCurrentPath();
 			if (path != null && path.getCurrentNodeIndex() < path.getLength()) {
 				Vec3d vec3d = path.getNodePosition(this);
-				if (vec3d.y > this.y + 0.5) {
+				if (vec3d.y > this.getY() + 0.5) {
 					return 0.5F;
 				}
 			}
@@ -166,8 +165,8 @@ public class RabbitEntity extends AnimalEntity {
 			if (this.getRabbitType() == 99 && this.ticksUntilJump == 0) {
 				LivingEntity livingEntity = this.getTarget();
 				if (livingEntity != null && this.squaredDistanceTo(livingEntity) < 16.0) {
-					this.lookTowards(livingEntity.x, livingEntity.z);
-					this.moveControl.moveTo(livingEntity.x, livingEntity.y, livingEntity.z, this.moveControl.getSpeed());
+					this.lookTowards(livingEntity.getX(), livingEntity.getZ());
+					this.moveControl.moveTo(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), this.moveControl.getSpeed());
 					this.startJump();
 					this.lastOnGround = true;
 				}
@@ -198,7 +197,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	private void lookTowards(double d, double e) {
-		this.yaw = (float)(MathHelper.atan2(e - this.z, d - this.x) * 180.0F / (float)Math.PI) - 90.0F;
+		this.yaw = (float)(MathHelper.atan2(e - this.getZ(), d - this.getX()) * 180.0F / (float)Math.PI) - 90.0F;
 	}
 
 	private void method_6611() {
@@ -298,7 +297,7 @@ public class RabbitEntity extends AnimalEntity {
 		return item == Items.field_8179 || item == Items.field_8071 || item == Blocks.field_10182.asItem();
 	}
 
-	public RabbitEntity method_6620(PassiveEntity passiveEntity) {
+	public RabbitEntity createChild(PassiveEntity passiveEntity) {
 		RabbitEntity rabbitEntity = EntityType.field_6140.create(this.world);
 		int i = this.chooseType(this.world);
 		if (this.random.nextInt(20) != 0) {
@@ -330,7 +329,7 @@ public class RabbitEntity extends AnimalEntity {
 			this.targetSelector.add(2, new FollowTargetGoal(this, PlayerEntity.class, true));
 			this.targetSelector.add(2, new FollowTargetGoal(this, WolfEntity.class, true));
 			if (!this.hasCustomName()) {
-				this.setCustomName(new TranslatableText(SystemUtil.createTranslationKey("entity", KILLER_BUNNY)));
+				this.setCustomName(new TranslatableText(Util.createTranslationKey("entity", KILLER_BUNNY)));
 			}
 		}
 
@@ -339,25 +338,18 @@ public class RabbitEntity extends AnimalEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
-		entityData = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 		int i = this.chooseType(iWorld);
-		boolean bl = false;
 		if (entityData instanceof RabbitEntity.RabbitEntityData) {
 			i = ((RabbitEntity.RabbitEntityData)entityData).type;
-			bl = true;
 		} else {
 			entityData = new RabbitEntity.RabbitEntityData(i);
 		}
 
 		this.setRabbitType(i);
-		if (bl) {
-			this.setBreedingAge(-24000);
-		}
-
-		return entityData;
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
 	private int chooseType(IWorld iWorld) {
@@ -372,9 +364,9 @@ public class RabbitEntity extends AnimalEntity {
 		}
 	}
 
-	public static boolean method_20669(EntityType<RabbitEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+	public static boolean canSpawn(EntityType<RabbitEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
 		Block block = iWorld.getBlockState(blockPos.down()).getBlock();
-		return (block == Blocks.field_10219 || block == Blocks.field_10477 || block == Blocks.field_10102) && iWorld.getLightLevel(blockPos, 0) > 8;
+		return (block == Blocks.field_10219 || block == Blocks.field_10477 || block == Blocks.field_10102) && iWorld.getBaseLightLevel(blockPos, 0) > 8;
 	}
 
 	private boolean wantsCarrots() {
@@ -443,7 +435,7 @@ public class RabbitEntity extends AnimalEntity {
 					Integer integer = blockState.get(CarrotsBlock.AGE);
 					if (integer == 0) {
 						world.setBlockState(blockPos, Blocks.field_10124.getDefaultState(), 2);
-						world.breakBlock(blockPos, true);
+						world.breakBlock(blockPos, true, this.rabbit);
 					} else {
 						world.setBlockState(blockPos, blockState.with(CarrotsBlock.AGE, Integer.valueOf(integer - 1)), 2);
 						world.playLevelEvent(2001, blockPos, Block.getRawIdFromState(blockState));
@@ -458,11 +450,11 @@ public class RabbitEntity extends AnimalEntity {
 		}
 
 		@Override
-		protected boolean isTargetPos(ViewableWorld viewableWorld, BlockPos blockPos) {
-			Block block = viewableWorld.getBlockState(blockPos).getBlock();
+		protected boolean isTargetPos(WorldView worldView, BlockPos blockPos) {
+			Block block = worldView.getBlockState(blockPos).getBlock();
 			if (block == Blocks.field_10362 && this.wantsCarrots && !this.field_6861) {
 				blockPos = blockPos.up();
-				BlockState blockState = viewableWorld.getBlockState(blockPos);
+				BlockState blockState = worldView.getBlockState(blockPos);
 				block = blockState.getBlock();
 				if (block instanceof CarrotsBlock && ((CarrotsBlock)block).isMature(blockState)) {
 					this.field_6861 = true;
@@ -514,11 +506,12 @@ public class RabbitEntity extends AnimalEntity {
 		}
 	}
 
-	public static class RabbitEntityData implements EntityData {
+	public static class RabbitEntityData extends PassiveEntity.EntityData {
 		public final int type;
 
 		public RabbitEntityData(int i) {
 			this.type = i;
+			this.setBabyChance(1.0F);
 		}
 	}
 
@@ -574,7 +567,7 @@ public class RabbitEntity extends AnimalEntity {
 
 		@Override
 		public void moveTo(double d, double e, double f, double g) {
-			if (this.rabbit.isInsideWater()) {
+			if (this.rabbit.isTouchingWater()) {
 				g = 1.5;
 			}
 

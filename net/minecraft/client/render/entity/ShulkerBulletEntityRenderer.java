@@ -1,57 +1,50 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.ShulkerBulletEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.projectile.ShulkerBulletEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class ShulkerBulletEntityRenderer extends EntityRenderer<ShulkerBulletEntity> {
 	private static final Identifier SKIN = new Identifier("textures/entity/shulker/spark.png");
+	private static final RenderLayer field_21744 = RenderLayer.getEntityTranslucent(SKIN);
 	private final ShulkerBulletEntityModel<ShulkerBulletEntity> model = new ShulkerBulletEntityModel<>();
 
 	public ShulkerBulletEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	private float method_4104(float f, float g, float h) {
-		float i = g - f;
-
-		while (i < -180.0F) {
-			i += 360.0F;
-		}
-
-		while (i >= 180.0F) {
-			i -= 360.0F;
-		}
-
-		return f + h * i;
+	protected int getBlockLight(ShulkerBulletEntity shulkerBulletEntity, float f) {
+		return 15;
 	}
 
-	public void method_4103(ShulkerBulletEntity shulkerBulletEntity, double d, double e, double f, float g, float h) {
-		GlStateManager.pushMatrix();
-		float i = this.method_4104(shulkerBulletEntity.prevYaw, shulkerBulletEntity.yaw, h);
-		float j = MathHelper.lerp(h, shulkerBulletEntity.prevPitch, shulkerBulletEntity.pitch);
-		float k = (float)shulkerBulletEntity.age + h;
-		GlStateManager.translatef((float)d, (float)e + 0.15F, (float)f);
-		GlStateManager.rotatef(MathHelper.sin(k * 0.1F) * 180.0F, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotatef(MathHelper.cos(k * 0.1F) * 180.0F, 1.0F, 0.0F, 0.0F);
-		GlStateManager.rotatef(MathHelper.sin(k * 0.15F) * 360.0F, 0.0F, 0.0F, 1.0F);
-		float l = 0.03125F;
-		GlStateManager.enableRescaleNormal();
-		GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
-		this.bindEntityTexture(shulkerBulletEntity);
-		this.model.render(shulkerBulletEntity, 0.0F, 0.0F, 0.0F, i, j, 0.03125F);
-		GlStateManager.enableBlend();
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 0.5F);
-		GlStateManager.scalef(1.5F, 1.5F, 1.5F);
-		this.model.render(shulkerBulletEntity, 0.0F, 0.0F, 0.0F, i, j, 0.03125F);
-		GlStateManager.disableBlend();
-		GlStateManager.popMatrix();
-		super.render(shulkerBulletEntity, d, e, f, g, h);
+	public void render(ShulkerBulletEntity shulkerBulletEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		matrixStack.push();
+		float h = MathHelper.lerpAngle(shulkerBulletEntity.prevYaw, shulkerBulletEntity.yaw, g);
+		float j = MathHelper.lerp(g, shulkerBulletEntity.prevPitch, shulkerBulletEntity.pitch);
+		float k = (float)shulkerBulletEntity.age + g;
+		matrixStack.translate(0.0, 0.15F, 0.0);
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(MathHelper.sin(k * 0.1F) * 180.0F));
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(MathHelper.cos(k * 0.1F) * 180.0F));
+		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(MathHelper.sin(k * 0.15F) * 360.0F));
+		matrixStack.scale(-0.5F, -0.5F, 0.5F);
+		this.model.setAngles(shulkerBulletEntity, 0.0F, 0.0F, 0.0F, h, j);
+		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(this.model.getLayer(SKIN));
+		this.model.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
+		matrixStack.scale(1.5F, 1.5F, 1.5F);
+		VertexConsumer vertexConsumer2 = vertexConsumerProvider.getBuffer(field_21744);
+		this.model.render(matrixStack, vertexConsumer2, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 0.15F);
+		matrixStack.pop();
+		super.render(shulkerBulletEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_4105(ShulkerBulletEntity shulkerBulletEntity) {
+	public Identifier getTexture(ShulkerBulletEntity shulkerBulletEntity) {
 		return SKIN;
 	}
 }

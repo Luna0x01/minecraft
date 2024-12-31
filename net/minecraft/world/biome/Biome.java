@@ -23,8 +23,9 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.IdList;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.WeightedPicker;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.BlockPos;
@@ -33,7 +34,7 @@ import net.minecraft.util.math.noise.OctaveSimplexNoiseSampler;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.LightType;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.GenerationStep;
@@ -42,13 +43,9 @@ import net.minecraft.world.gen.carver.CarverConfig;
 import net.minecraft.world.gen.carver.ConfiguredCarver;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
-import net.minecraft.world.gen.decorator.Decorator;
-import net.minecraft.world.gen.decorator.DecoratorConfig;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
-import net.minecraft.world.gen.feature.DecoratedFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.FeatureConfig;
-import net.minecraft.world.gen.feature.FlowerFeature;
 import net.minecraft.world.gen.feature.StructureFeature;
 import net.minecraft.world.gen.surfacebuilder.ConfiguredSurfaceBuilder;
 import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
@@ -60,8 +57,8 @@ public abstract class Biome {
 	public static final Logger LOGGER = LogManager.getLogger();
 	public static final Set<Biome> BIOMES = Sets.newHashSet();
 	public static final IdList<Biome> PARENT_BIOME_ID_MAP = new IdList<>();
-	protected static final OctaveSimplexNoiseSampler TEMPERATURE_NOISE = new OctaveSimplexNoiseSampler(new Random(1234L), 1);
-	public static final OctaveSimplexNoiseSampler FOLIAGE_NOISE = new OctaveSimplexNoiseSampler(new Random(2345L), 1);
+	protected static final OctaveSimplexNoiseSampler TEMPERATURE_NOISE = new OctaveSimplexNoiseSampler(new ChunkRandom(1234L), 0, 0);
+	public static final OctaveSimplexNoiseSampler FOLIAGE_NOISE = new OctaveSimplexNoiseSampler(new ChunkRandom(2345L), 0, 0);
 	@Nullable
 	protected String translationKey;
 	protected final float depth;
@@ -70,17 +67,18 @@ public abstract class Biome {
 	protected final float downfall;
 	protected final int waterColor;
 	protected final int waterFogColor;
+	private final int skyColor;
 	@Nullable
 	protected final String parent;
 	protected final ConfiguredSurfaceBuilder<?> surfaceBuilder;
 	protected final Biome.Category category;
 	protected final Biome.Precipitation precipitation;
 	protected final Map<GenerationStep.Carver, List<ConfiguredCarver<?>>> carvers = Maps.newHashMap();
-	protected final Map<GenerationStep.Feature, List<ConfiguredFeature<?>>> features = Maps.newHashMap();
-	protected final List<ConfiguredFeature<?>> flowerFeatures = Lists.newArrayList();
+	protected final Map<GenerationStep.Feature, List<ConfiguredFeature<?, ?>>> features = Maps.newHashMap();
+	protected final List<ConfiguredFeature<?, ?>> flowerFeatures = Lists.newArrayList();
 	protected final Map<StructureFeature<?>, FeatureConfig> structureFeatures = Maps.newHashMap();
 	private final Map<EntityCategory, List<Biome.SpawnEntry>> spawns = Maps.newHashMap();
-	private final ThreadLocal<Long2FloatLinkedOpenHashMap> temperatureCache = ThreadLocal.withInitial(() -> SystemUtil.get(() -> {
+	private final ThreadLocal<Long2FloatLinkedOpenHashMap> temperatureCache = ThreadLocal.withInitial(() -> Util.make(() -> {
 			Long2FloatLinkedOpenHashMap long2FloatLinkedOpenHashMap = new Long2FloatLinkedOpenHashMap(1024, 0.25F) {
 				protected void rehash(int i) {
 				}
@@ -90,19 +88,12 @@ public abstract class Biome {
 		}));
 
 	@Nullable
-	public static Biome getParentBiome(Biome biome) {
-		return PARENT_BIOME_ID_MAP.get(Registry.BIOME.getRawId(biome));
+	public static Biome getModifiedBiome(Biome biome) {
+		return PARENT_BIOME_ID_MAP.get(Registry.field_11153.getRawId(biome));
 	}
 
 	public static <C extends CarverConfig> ConfiguredCarver<C> configureCarver(Carver<C> carver, C carverConfig) {
 		return new ConfiguredCarver<>(carver, carverConfig);
-	}
-
-	public static <F extends FeatureConfig, D extends DecoratorConfig> ConfiguredFeature<?> configureFeature(
-		Feature<F> feature, F featureConfig, Decorator<D> decorator, D decoratorConfig
-	) {
-		Feature<DecoratedFeatureConfig> feature2 = feature instanceof FlowerFeature ? Feature.field_13561 : Feature.field_13572;
-		return new ConfiguredFeature<>(feature2, new DecoratedFeatureConfig(feature, featureConfig, decorator, decoratorConfig));
 	}
 
 	protected Biome(Biome.Settings settings) {
@@ -124,6 +115,7 @@ public abstract class Biome {
 			this.downfall = settings.downfall;
 			this.waterColor = settings.waterColor;
 			this.waterFogColor = settings.waterFogColor;
+			this.skyColor = this.calculateSkyColor();
 			this.parent = settings.parent;
 
 			for (GenerationStep.Feature feature : GenerationStep.Feature.values()) {
@@ -142,10 +134,15 @@ public abstract class Biome {
 		return this.parent != null;
 	}
 
-	public int getSkyColor(float f) {
+	private int calculateSkyColor() {
+		float f = this.temperature;
 		f /= 3.0F;
 		f = MathHelper.clamp(f, -1.0F, 1.0F);
 		return MathHelper.hsvToRgb(0.62222224F - f * 0.05F, 0.5F + f * 0.1F, 1.0F);
+	}
+
+	public int getSkyColor() {
+		return this.skyColor;
 	}
 
 	protected void addSpawn(EntityCategory entityCategory, Biome.SpawnEntry spawnEntry) {
@@ -170,7 +167,7 @@ public abstract class Biome {
 
 	protected float computeTemperature(BlockPos blockPos) {
 		if (blockPos.getY() > 64) {
-			float f = (float)(TEMPERATURE_NOISE.sample((double)((float)blockPos.getX() / 8.0F), (double)((float)blockPos.getZ() / 8.0F)) * 4.0);
+			float f = (float)(TEMPERATURE_NOISE.sample((double)((float)blockPos.getX() / 8.0F), (double)((float)blockPos.getZ() / 8.0F), false) * 4.0);
 			return this.getTemperature() - (f + (float)blockPos.getY() - 64.0F) * 0.05F / 30.0F;
 		} else {
 			return this.getTemperature();
@@ -194,26 +191,26 @@ public abstract class Biome {
 		}
 	}
 
-	public boolean canSetSnow(ViewableWorld viewableWorld, BlockPos blockPos) {
-		return this.canSetSnow(viewableWorld, blockPos, true);
+	public boolean canSetIce(WorldView worldView, BlockPos blockPos) {
+		return this.canSetIce(worldView, blockPos, true);
 	}
 
-	public boolean canSetSnow(ViewableWorld viewableWorld, BlockPos blockPos, boolean bl) {
+	public boolean canSetIce(WorldView worldView, BlockPos blockPos, boolean bl) {
 		if (this.getTemperature(blockPos) >= 0.15F) {
 			return false;
 		} else {
-			if (blockPos.getY() >= 0 && blockPos.getY() < 256 && viewableWorld.getLightLevel(LightType.field_9282, blockPos) < 10) {
-				BlockState blockState = viewableWorld.getBlockState(blockPos);
-				FluidState fluidState = viewableWorld.getFluidState(blockPos);
+			if (blockPos.getY() >= 0 && blockPos.getY() < 256 && worldView.getLightLevel(LightType.field_9282, blockPos) < 10) {
+				BlockState blockState = worldView.getBlockState(blockPos);
+				FluidState fluidState = worldView.getFluidState(blockPos);
 				if (fluidState.getFluid() == Fluids.WATER && blockState.getBlock() instanceof FluidBlock) {
 					if (!bl) {
 						return true;
 					}
 
-					boolean bl2 = viewableWorld.isWaterAt(blockPos.west())
-						&& viewableWorld.isWaterAt(blockPos.east())
-						&& viewableWorld.isWaterAt(blockPos.north())
-						&& viewableWorld.isWaterAt(blockPos.south());
+					boolean bl2 = worldView.isWater(blockPos.west())
+						&& worldView.isWater(blockPos.east())
+						&& worldView.isWater(blockPos.north())
+						&& worldView.isWater(blockPos.south());
 					if (!bl2) {
 						return true;
 					}
@@ -224,13 +221,13 @@ public abstract class Biome {
 		}
 	}
 
-	public boolean canSetIce(ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canSetSnow(WorldView worldView, BlockPos blockPos) {
 		if (this.getTemperature(blockPos) >= 0.15F) {
 			return false;
 		} else {
-			if (blockPos.getY() >= 0 && blockPos.getY() < 256 && viewableWorld.getLightLevel(LightType.field_9282, blockPos) < 10) {
-				BlockState blockState = viewableWorld.getBlockState(blockPos);
-				if (blockState.isAir() && Blocks.field_10477.getDefaultState().canPlaceAt(viewableWorld, blockPos)) {
+			if (blockPos.getY() >= 0 && blockPos.getY() < 256 && worldView.getLightLevel(LightType.field_9282, blockPos) < 10) {
+				BlockState blockState = worldView.getBlockState(blockPos);
+				if (blockState.isAir() && Blocks.field_10477.getDefaultState().canPlaceAt(worldView, blockPos)) {
 					return true;
 				}
 			}
@@ -239,7 +236,7 @@ public abstract class Biome {
 		}
 	}
 
-	public void addFeature(GenerationStep.Feature feature, ConfiguredFeature<?> configuredFeature) {
+	public void addFeature(GenerationStep.Feature feature, ConfiguredFeature<?, ?> configuredFeature) {
 		if (configuredFeature.feature == Feature.field_13561) {
 			this.flowerFeatures.add(configuredFeature);
 		}
@@ -255,8 +252,8 @@ public abstract class Biome {
 		return (List<ConfiguredCarver<?>>)this.carvers.computeIfAbsent(carver, carverx -> Lists.newArrayList());
 	}
 
-	public <C extends FeatureConfig> void addStructureFeature(StructureFeature<C> structureFeature, C featureConfig) {
-		this.structureFeatures.put(structureFeature, featureConfig);
+	public <C extends FeatureConfig> void addStructureFeature(ConfiguredFeature<C, ? extends StructureFeature<C>> configuredFeature) {
+		this.structureFeatures.put(configuredFeature.feature, configuredFeature.config);
 	}
 
 	public <C extends FeatureConfig> boolean hasStructureFeature(StructureFeature<C> structureFeature) {
@@ -268,12 +265,12 @@ public abstract class Biome {
 		return (C)this.structureFeatures.get(structureFeature);
 	}
 
-	public List<ConfiguredFeature<?>> getFlowerFeatures() {
+	public List<ConfiguredFeature<?, ?>> getFlowerFeatures() {
 		return this.flowerFeatures;
 	}
 
-	public List<ConfiguredFeature<?>> getFeaturesForStep(GenerationStep.Feature feature) {
-		return (List<ConfiguredFeature<?>>)this.features.get(feature);
+	public List<ConfiguredFeature<?, ?>> getFeaturesForStep(GenerationStep.Feature feature) {
+		return (List<ConfiguredFeature<?, ?>>)this.features.get(feature);
 	}
 
 	public void generateFeatureStep(
@@ -286,14 +283,16 @@ public abstract class Biome {
 	) {
 		int i = 0;
 
-		for (ConfiguredFeature<?> configuredFeature : (List)this.features.get(feature)) {
+		for (ConfiguredFeature<?, ?> configuredFeature : (List)this.features.get(feature)) {
 			chunkRandom.setFeatureSeed(l, i, feature.ordinal());
 
 			try {
 				configuredFeature.generate(iWorld, chunkGenerator, chunkRandom, blockPos);
 			} catch (Exception var13) {
 				CrashReport crashReport = CrashReport.create(var13, "Feature placement");
-				crashReport.addElement("Feature").add("Id", Registry.FEATURE.getId(configuredFeature.feature)).add("Description", configuredFeature.feature::toString);
+				crashReport.addElement("Feature")
+					.add("Id", Registry.field_11138.getId(configuredFeature.feature))
+					.add("Description", (CrashCallable<String>)(() -> configuredFeature.feature.toString()));
 				throw new CrashException(crashReport);
 			}
 
@@ -301,14 +300,14 @@ public abstract class Biome {
 		}
 	}
 
-	public int getGrassColorAt(BlockPos blockPos) {
-		double d = (double)MathHelper.clamp(this.getTemperature(blockPos), 0.0F, 1.0F);
-		double e = (double)MathHelper.clamp(this.getRainfall(), 0.0F, 1.0F);
-		return GrassColors.getColor(d, e);
+	public int getGrassColorAt(double d, double e) {
+		double f = (double)MathHelper.clamp(this.getTemperature(), 0.0F, 1.0F);
+		double g = (double)MathHelper.clamp(this.getRainfall(), 0.0F, 1.0F);
+		return GrassColors.getColor(f, g);
 	}
 
-	public int getFoliageColorAt(BlockPos blockPos) {
-		double d = (double)MathHelper.clamp(this.getTemperature(blockPos), 0.0F, 1.0F);
+	public int getFoliageColor() {
+		double d = (double)MathHelper.clamp(this.getTemperature(), 0.0F, 1.0F);
 		double e = (double)MathHelper.clamp(this.getRainfall(), 0.0F, 1.0F);
 		return FoliageColors.getColor(d, e);
 	}
@@ -342,7 +341,7 @@ public abstract class Biome {
 
 	public String getTranslationKey() {
 		if (this.translationKey == null) {
-			this.translationKey = SystemUtil.createTranslationKey("biome", Registry.BIOME.getId(this));
+			this.translationKey = Util.createTranslationKey("biome", Registry.field_11153.getId(this));
 		}
 
 		return this.translationKey;

@@ -5,11 +5,8 @@ import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.StructureFeature;
@@ -35,58 +32,51 @@ public class StructureFeatures {
 	public static final StructureFeature<?> field_16698 = register("Village", Feature.VILLAGE);
 
 	private static StructureFeature<?> register(String string, StructureFeature<?> structureFeature) {
-		return Registry.register(Registry.STRUCTURE_FEATURE, string.toLowerCase(Locale.ROOT), structureFeature);
+		return Registry.register(Registry.field_16644, string.toLowerCase(Locale.ROOT), structureFeature);
 	}
 
 	public static void initialize() {
 	}
 
 	@Nullable
-	public static StructureStart readStructureStart(
-		ChunkGenerator<?> chunkGenerator, StructureManager structureManager, BiomeSource biomeSource, CompoundTag compoundTag
-	) {
+	public static StructureStart readStructureStart(ChunkGenerator<?> chunkGenerator, StructureManager structureManager, CompoundTag compoundTag) {
 		String string = compoundTag.getString("id");
 		if ("INVALID".equals(string)) {
 			return StructureStart.DEFAULT;
 		} else {
-			StructureFeature<?> structureFeature = Registry.STRUCTURE_FEATURE.get(new Identifier(string.toLowerCase(Locale.ROOT)));
+			StructureFeature<?> structureFeature = Registry.field_16644.get(new Identifier(string.toLowerCase(Locale.ROOT)));
 			if (structureFeature == null) {
 				LOGGER.error("Unknown feature id: {}", string);
 				return null;
 			} else {
 				int i = compoundTag.getInt("ChunkX");
 				int j = compoundTag.getInt("ChunkZ");
-				Biome biome = compoundTag.containsKey("biome")
-					? Registry.BIOME.get(new Identifier(compoundTag.getString("biome")))
-					: biomeSource.getBiome(new BlockPos((i << 4) + 9, 0, (j << 4) + 9));
-				MutableIntBoundingBox mutableIntBoundingBox = compoundTag.containsKey("BB")
-					? new MutableIntBoundingBox(compoundTag.getIntArray("BB"))
-					: MutableIntBoundingBox.empty();
+				int k = compoundTag.getInt("references");
+				BlockBox blockBox = compoundTag.contains("BB") ? new BlockBox(compoundTag.getIntArray("BB")) : BlockBox.empty();
 				ListTag listTag = compoundTag.getList("Children", 10);
 
 				try {
-					StructureStart structureStart = structureFeature.getStructureStartFactory()
-						.create(structureFeature, i, j, biome, mutableIntBoundingBox, 0, chunkGenerator.getSeed());
+					StructureStart structureStart = structureFeature.getStructureStartFactory().create(structureFeature, i, j, blockBox, k, chunkGenerator.getSeed());
 
-					for (int k = 0; k < listTag.size(); k++) {
-						CompoundTag compoundTag2 = listTag.getCompoundTag(k);
+					for (int l = 0; l < listTag.size(); l++) {
+						CompoundTag compoundTag2 = listTag.getCompound(l);
 						String string2 = compoundTag2.getString("id");
-						StructurePieceType structurePieceType = Registry.STRUCTURE_PIECE.get(new Identifier(string2.toLowerCase(Locale.ROOT)));
+						StructurePieceType structurePieceType = Registry.field_16645.get(new Identifier(string2.toLowerCase(Locale.ROOT)));
 						if (structurePieceType == null) {
 							LOGGER.error("Unknown structure piece id: {}", string2);
 						} else {
 							try {
 								StructurePiece structurePiece = structurePieceType.load(structureManager, compoundTag2);
 								structureStart.children.add(structurePiece);
-							} catch (Exception var17) {
-								LOGGER.error("Exception loading structure piece with id {}", string2, var17);
+							} catch (Exception var16) {
+								LOGGER.error("Exception loading structure piece with id {}", string2, var16);
 							}
 						}
 					}
 
 					return structureStart;
-				} catch (Exception var18) {
-					LOGGER.error("Failed Start with id {}", string, var18);
+				} catch (Exception var17) {
+					LOGGER.error("Failed Start with id {}", string, var17);
 					return null;
 				}
 			}

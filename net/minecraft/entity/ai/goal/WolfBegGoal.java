@@ -43,7 +43,7 @@ public class WolfBegGoal extends Goal {
 	@Override
 	public void start() {
 		this.wolf.setBegging(true);
-		this.timer = 40 + this.wolf.getRand().nextInt(40);
+		this.timer = 40 + this.wolf.getRandom().nextInt(40);
 	}
 
 	@Override
@@ -54,9 +54,7 @@ public class WolfBegGoal extends Goal {
 
 	@Override
 	public void tick() {
-		this.wolf
-			.getLookControl()
-			.lookAt(this.begFrom.x, this.begFrom.y + (double)this.begFrom.getStandingEyeHeight(), this.begFrom.z, 10.0F, (float)this.wolf.getLookPitchSpeed());
+		this.wolf.getLookControl().lookAt(this.begFrom.getX(), this.begFrom.getEyeY(), this.begFrom.getZ(), 10.0F, (float)this.wolf.getLookPitchSpeed());
 		this.timer--;
 	}
 

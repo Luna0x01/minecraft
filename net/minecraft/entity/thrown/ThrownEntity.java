@@ -10,10 +10,10 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ProjectileUtil;
 import net.minecraft.entity.projectile.Projectile;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.Packet;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
@@ -39,18 +39,18 @@ public abstract class ThrownEntity extends Entity implements Projectile {
 
 	protected ThrownEntity(EntityType<? extends ThrownEntity> entityType, double d, double e, double f, World world) {
 		this(entityType, world);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 	}
 
 	protected ThrownEntity(EntityType<? extends ThrownEntity> entityType, LivingEntity livingEntity, World world) {
-		this(entityType, livingEntity.x, livingEntity.y + (double)livingEntity.getStandingEyeHeight() - 0.1F, livingEntity.z, world);
+		this(entityType, livingEntity.getX(), livingEntity.getEyeY() - 0.1F, livingEntity.getZ(), world);
 		this.owner = livingEntity;
 		this.ownerUuid = livingEntity.getUuid();
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
-		double e = this.getBoundingBox().averageDimension() * 4.0;
+	public boolean shouldRender(double d) {
+		double e = this.getBoundingBox().getAverageSideLength() * 4.0;
 		if (Double.isNaN(e)) {
 			e = 4.0;
 		}
@@ -96,9 +96,6 @@ public abstract class ThrownEntity extends Entity implements Projectile {
 
 	@Override
 	public void tick() {
-		this.prevRenderX = this.x;
-		this.prevRenderY = this.y;
-		this.prevRenderZ = this.z;
 		super.tick();
 		if (this.shake > 0) {
 			this.shake--;
@@ -137,19 +134,19 @@ public abstract class ThrownEntity extends Entity implements Projectile {
 			if (hitResult.getType() == HitResult.Type.field_1332 && this.world.getBlockState(((BlockHitResult)hitResult).getBlockPos()).getBlock() == Blocks.field_10316
 				)
 			 {
-				this.setInPortal(((BlockHitResult)hitResult).getBlockPos());
+				this.setInNetherPortal(((BlockHitResult)hitResult).getBlockPos());
 			} else {
 				this.onCollision(hitResult);
 			}
 		}
 
 		Vec3d vec3d = this.getVelocity();
-		this.x = this.x + vec3d.x;
-		this.y = this.y + vec3d.y;
-		this.z = this.z + vec3d.z;
-		float f = MathHelper.sqrt(squaredHorizontalLength(vec3d));
+		double d = this.getX() + vec3d.x;
+		double e = this.getY() + vec3d.y;
+		double f = this.getZ() + vec3d.z;
+		float g = MathHelper.sqrt(squaredHorizontalLength(vec3d));
 		this.yaw = (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI);
-		this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)f) * 180.0F / (float)Math.PI);
+		this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)g) * 180.0F / (float)Math.PI);
 
 		while (this.pitch - this.prevPitch < -180.0F) {
 			this.prevPitch -= 360.0F;
@@ -169,25 +166,25 @@ public abstract class ThrownEntity extends Entity implements Projectile {
 
 		this.pitch = MathHelper.lerp(0.2F, this.prevPitch, this.pitch);
 		this.yaw = MathHelper.lerp(0.2F, this.prevYaw, this.yaw);
-		float h;
-		if (this.isInsideWater()) {
+		float j;
+		if (this.isTouchingWater()) {
 			for (int i = 0; i < 4; i++) {
-				float g = 0.25F;
-				this.world.addParticle(ParticleTypes.field_11247, this.x - vec3d.x * 0.25, this.y - vec3d.y * 0.25, this.z - vec3d.z * 0.25, vec3d.x, vec3d.y, vec3d.z);
+				float h = 0.25F;
+				this.world.addParticle(ParticleTypes.field_11247, d - vec3d.x * 0.25, e - vec3d.y * 0.25, f - vec3d.z * 0.25, vec3d.x, vec3d.y, vec3d.z);
 			}
 
-			h = 0.8F;
+			j = 0.8F;
 		} else {
-			h = 0.99F;
+			j = 0.99F;
 		}
 
-		this.setVelocity(vec3d.multiply((double)h));
+		this.setVelocity(vec3d.multiply((double)j));
 		if (!this.hasNoGravity()) {
 			Vec3d vec3d2 = this.getVelocity();
 			this.setVelocity(vec3d2.x, vec3d2.y - (double)this.getGravity(), vec3d2.z);
 		}
 
-		this.setPosition(this.x, this.y, this.z);
+		this.updatePosition(d, e, f);
 	}
 
 	protected float getGravity() {
@@ -202,9 +199,9 @@ public abstract class ThrownEntity extends Entity implements Projectile {
 		compoundTag.putInt("yTile", this.blockY);
 		compoundTag.putInt("zTile", this.blockZ);
 		compoundTag.putByte("shake", (byte)this.shake);
-		compoundTag.putByte("inGround", (byte)(this.inGround ? 1 : 0));
+		compoundTag.putBoolean("inGround", this.inGround);
 		if (this.ownerUuid != null) {
-			compoundTag.put("owner", TagHelper.serializeUuid(this.ownerUuid));
+			compoundTag.put("owner", NbtHelper.fromUuid(this.ownerUuid));
 		}
 	}
 
@@ -214,21 +211,21 @@ public abstract class ThrownEntity extends Entity implements Projectile {
 		this.blockY = compoundTag.getInt("yTile");
 		this.blockZ = compoundTag.getInt("zTile");
 		this.shake = compoundTag.getByte("shake") & 255;
-		this.inGround = compoundTag.getByte("inGround") == 1;
+		this.inGround = compoundTag.getBoolean("inGround");
 		this.owner = null;
-		if (compoundTag.containsKey("owner", 10)) {
-			this.ownerUuid = TagHelper.deserializeUuid(compoundTag.getCompound("owner"));
+		if (compoundTag.contains("owner", 10)) {
+			this.ownerUuid = NbtHelper.toUuid(compoundTag.getCompound("owner"));
 		}
 	}
 
 	@Nullable
 	public LivingEntity getOwner() {
-		if (this.owner == null && this.ownerUuid != null && this.world instanceof ServerWorld) {
+		if ((this.owner == null || this.owner.removed) && this.ownerUuid != null && this.world instanceof ServerWorld) {
 			Entity entity = ((ServerWorld)this.world).getEntity(this.ownerUuid);
 			if (entity instanceof LivingEntity) {
 				this.owner = (LivingEntity)entity;
 			} else {
-				this.ownerUuid = null;
+				this.owner = null;
 			}
 		}
 

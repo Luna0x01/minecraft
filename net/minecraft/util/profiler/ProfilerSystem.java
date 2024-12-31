@@ -1,35 +1,42 @@
 package net.minecraft.util.profiler;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-import net.minecraft.util.SystemUtil;
+import javax.annotation.Nullable;
+import net.minecraft.util.Util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ProfilerSystem implements ReadableProfiler {
 	private static final long TIMEOUT_NANOSECONDS = Duration.ofMillis(100L).toNanos();
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final List<String> nameList = Lists.newArrayList();
+	private final List<String> path = Lists.newArrayList();
 	private final LongList timeList = new LongArrayList();
-	private final Object2LongMap<String> nameDurationMap = new Object2LongOpenHashMap();
-	private final Object2LongMap<String> field_19381 = new Object2LongOpenHashMap();
-	private final IntSupplier field_16266;
-	private final long field_15732;
-	private final int field_15729;
+	private final Map<String, ProfilerSystem.LocatedInfo> locationInfos = Maps.newHashMap();
+	private final IntSupplier endTickGetter;
+	private final long startTime;
+	private final int startTick;
 	private String location = "";
 	private boolean tickStarted;
+	@Nullable
+	private ProfilerSystem.LocatedInfo currentInfo;
+	private final boolean checkTimeout;
 
-	public ProfilerSystem(long l, IntSupplier intSupplier) {
-		this.field_15732 = l;
-		this.field_15729 = intSupplier.getAsInt();
-		this.field_16266 = intSupplier;
+	public ProfilerSystem(long l, IntSupplier intSupplier, boolean bl) {
+		this.startTime = l;
+		this.startTick = intSupplier.getAsInt();
+		this.endTickGetter = intSupplier;
+		this.checkTimeout = bl;
 	}
 
 	@Override
@@ -39,7 +46,7 @@ public class ProfilerSystem implements ReadableProfiler {
 		} else {
 			this.tickStarted = true;
 			this.location = "";
-			this.nameList.clear();
+			this.path.clear();
 			this.push("root");
 		}
 	}
@@ -54,7 +61,7 @@ public class ProfilerSystem implements ReadableProfiler {
 			if (!this.location.isEmpty()) {
 				LOGGER.error(
 					"Profiler tick ended before path was fully popped (remainder: '{}'). Mismatched push/pop?",
-					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.method_21721(this.location)}
+					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.getHumanReadableName(this.location)}
 				);
 			}
 		}
@@ -70,8 +77,9 @@ public class ProfilerSystem implements ReadableProfiler {
 			}
 
 			this.location = this.location + string;
-			this.nameList.add(this.location);
-			this.timeList.add(SystemUtil.getMeasuringTimeNano());
+			this.path.add(this.location);
+			this.timeList.add(Util.getMeasuringTimeNano());
+			this.currentInfo = null;
 		}
 	}
 
@@ -87,20 +95,22 @@ public class ProfilerSystem implements ReadableProfiler {
 		} else if (this.timeList.isEmpty()) {
 			LOGGER.error("Tried to pop one too many times! Mismatched push() and pop()?");
 		} else {
-			long l = SystemUtil.getMeasuringTimeNano();
+			long l = Util.getMeasuringTimeNano();
 			long m = this.timeList.removeLong(this.timeList.size() - 1);
-			this.nameList.remove(this.nameList.size() - 1);
+			this.path.remove(this.path.size() - 1);
 			long n = l - m;
-			this.nameDurationMap.put(this.location, this.nameDurationMap.getLong(this.location) + n);
-			this.field_19381.put(this.location, this.field_19381.getLong(this.location) + 1L);
-			if (n > TIMEOUT_NANOSECONDS) {
+			ProfilerSystem.LocatedInfo locatedInfo = this.getCurrentInfo();
+			locatedInfo.time = locatedInfo.time + n;
+			locatedInfo.visits = locatedInfo.visits + 1L;
+			if (this.checkTimeout && n > TIMEOUT_NANOSECONDS) {
 				LOGGER.warn(
 					"Something's taking too long! '{}' took aprox {} ms",
-					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.method_21721(this.location), () -> (double)n / 1000000.0}
+					new org.apache.logging.log4j.util.Supplier[]{() -> ProfileResult.getHumanReadableName(this.location), () -> (double)n / 1000000.0}
 				);
 			}
 
-			this.location = this.nameList.isEmpty() ? "" : (String)this.nameList.get(this.nameList.size() - 1);
+			this.location = this.path.isEmpty() ? "" : (String)this.path.get(this.path.size() - 1);
+			this.currentInfo = null;
 		}
 	}
 
@@ -116,10 +126,50 @@ public class ProfilerSystem implements ReadableProfiler {
 		this.push(supplier);
 	}
 
+	private ProfilerSystem.LocatedInfo getCurrentInfo() {
+		if (this.currentInfo == null) {
+			this.currentInfo = (ProfilerSystem.LocatedInfo)this.locationInfos.computeIfAbsent(this.location, string -> new ProfilerSystem.LocatedInfo());
+		}
+
+		return this.currentInfo;
+	}
+
 	@Override
-	public ProfileResult getResults() {
-		return new ProfileResultImpl(
-			this.nameDurationMap, this.field_19381, this.field_15732, this.field_15729, SystemUtil.getMeasuringTimeNano(), this.field_16266.getAsInt()
-		);
+	public void visit(String string) {
+		this.getCurrentInfo().counts.addTo(string, 1L);
+	}
+
+	@Override
+	public void visit(Supplier<String> supplier) {
+		this.getCurrentInfo().counts.addTo(supplier.get(), 1L);
+	}
+
+	@Override
+	public ProfileResult getResult() {
+		return new ProfileResultImpl(this.locationInfos, this.startTime, this.startTick, Util.getMeasuringTimeNano(), this.endTickGetter.getAsInt());
+	}
+
+	static class LocatedInfo implements ProfileLocationInfo {
+		private long time;
+		private long visits;
+		private Object2LongOpenHashMap<String> counts = new Object2LongOpenHashMap();
+
+		private LocatedInfo() {
+		}
+
+		@Override
+		public long getTotalTime() {
+			return this.time;
+		}
+
+		@Override
+		public long getVisitCount() {
+			return this.visits;
+		}
+
+		@Override
+		public Object2LongMap<String> getCounts() {
+			return Object2LongMaps.unmodifiable(this.counts);
+		}
 	}
 }

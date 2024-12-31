@@ -25,7 +25,7 @@ import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +34,7 @@ public class TagContainer<T> {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Gson GSON = new Gson();
 	private static final int JSON_EXTENSION_LENGTH = ".json".length();
-	private Map<Identifier, Tag<T>> idMap = ImmutableMap.of();
+	private Map<Identifier, Tag<T>> entries = ImmutableMap.of();
 	private final Function<Identifier, Optional<T>> getter;
 	private final String dataType;
 	private final boolean ordered;
@@ -49,22 +49,22 @@ public class TagContainer<T> {
 
 	@Nullable
 	public Tag<T> get(Identifier identifier) {
-		return (Tag<T>)this.idMap.get(identifier);
+		return (Tag<T>)this.entries.get(identifier);
 	}
 
 	public Tag<T> getOrCreate(Identifier identifier) {
-		Tag<T> tag = (Tag<T>)this.idMap.get(identifier);
+		Tag<T> tag = (Tag<T>)this.entries.get(identifier);
 		return tag == null ? new Tag<>(identifier) : tag;
 	}
 
 	public Collection<Identifier> getKeys() {
-		return this.idMap.keySet();
+		return this.entries.keySet();
 	}
 
 	public Collection<Identifier> getTagsFor(T object) {
 		List<Identifier> list = Lists.newArrayList();
 
-		for (Entry<Identifier, Tag<T>> entry : this.idMap.entrySet()) {
+		for (Entry<Identifier, Tag<T>> entry : this.entries.entrySet()) {
 			if (((Tag)entry.getValue()).contains(object)) {
 				list.add(entry.getKey());
 			}
@@ -103,7 +103,7 @@ public class TagContainer<T> {
 												resource.getResourcePackName()
 											);
 										} else {
-											((Tag.Builder)map.computeIfAbsent(identifier2, identifierx -> SystemUtil.consume(Tag.Builder.create(), builder -> builder.ordered(this.ordered))))
+											((Tag.Builder)map.computeIfAbsent(identifier2, identifierx -> Util.make(Tag.Builder.create(), builder -> builder.ordered(this.ordered))))
 												.fromJson(this.getter, jsonObject);
 										}
 									} catch (Throwable var53) {
@@ -186,14 +186,14 @@ public class TagContainer<T> {
 		map.forEach((identifierx, builderx) -> {
 			Tag var10000 = (Tag)map2.put(identifierx, builderx.build(identifierx));
 		});
-		this.method_20735(map2);
+		this.setEntries(map2);
 	}
 
-	protected void method_20735(Map<Identifier, Tag<T>> map) {
-		this.idMap = ImmutableMap.copyOf(map);
+	protected void setEntries(Map<Identifier, Tag<T>> map) {
+		this.entries = ImmutableMap.copyOf(map);
 	}
 
 	public Map<Identifier, Tag<T>> getEntries() {
-		return this.idMap;
+		return this.entries;
 	}
 }

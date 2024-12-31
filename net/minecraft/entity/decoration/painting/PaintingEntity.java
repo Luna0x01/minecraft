@@ -32,7 +32,7 @@ public class PaintingEntity extends AbstractDecorationEntity {
 		List<PaintingMotive> list = Lists.newArrayList();
 		int i = 0;
 
-		for (PaintingMotive paintingMotive : Registry.MOTIVE) {
+		for (PaintingMotive paintingMotive : Registry.field_11150) {
 			this.motive = paintingMotive;
 			this.setFacing(direction);
 			if (this.method_6888()) {
@@ -68,13 +68,13 @@ public class PaintingEntity extends AbstractDecorationEntity {
 
 	@Override
 	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		compoundTag.putString("Motive", Registry.MOTIVE.getId(this.motive).toString());
+		compoundTag.putString("Motive", Registry.field_11150.getId(this.motive).toString());
 		super.writeCustomDataToTag(compoundTag);
 	}
 
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		this.motive = Registry.MOTIVE.get(Identifier.tryParse(compoundTag.getString("Motive")));
+		this.motive = Registry.field_11150.get(Identifier.tryParse(compoundTag.getString("Motive")));
 		super.readCustomDataFromTag(compoundTag);
 	}
 
@@ -109,14 +109,14 @@ public class PaintingEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	public void setPositionAndAngles(double d, double e, double f, float g, float h) {
-		this.setPosition(d, e, f);
+	public void refreshPositionAndAngles(double d, double e, double f, float g, float h) {
+		this.updatePosition(d, e, f);
 	}
 
 	@Override
 	public void updateTrackedPositionAndAngles(double d, double e, double f, float g, float h, int i, boolean bl) {
-		BlockPos blockPos = this.blockPos.add(d - this.x, e - this.y, f - this.z);
-		this.setPosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+		BlockPos blockPos = this.blockPos.add(d - this.getX(), e - this.getY(), f - this.getZ());
+		this.updatePosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
 	}
 
 	@Override

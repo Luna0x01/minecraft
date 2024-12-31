@@ -8,9 +8,10 @@ import java.util.Random;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class EmptyPoolElement extends StructurePoolElement {
 	public static final EmptyPoolElement INSTANCE = new EmptyPoolElement();
@@ -27,13 +28,19 @@ public class EmptyPoolElement extends StructurePoolElement {
 	}
 
 	@Override
-	public MutableIntBoundingBox getBoundingBox(StructureManager structureManager, BlockPos blockPos, BlockRotation blockRotation) {
-		return MutableIntBoundingBox.empty();
+	public BlockBox getBoundingBox(StructureManager structureManager, BlockPos blockPos, BlockRotation blockRotation) {
+		return BlockBox.empty();
 	}
 
 	@Override
 	public boolean generate(
-		StructureManager structureManager, IWorld iWorld, BlockPos blockPos, BlockRotation blockRotation, MutableIntBoundingBox mutableIntBoundingBox, Random random
+		StructureManager structureManager,
+		IWorld iWorld,
+		ChunkGenerator<?> chunkGenerator,
+		BlockPos blockPos,
+		BlockRotation blockRotation,
+		BlockBox blockBox,
+		Random random
 	) {
 		return true;
 	}

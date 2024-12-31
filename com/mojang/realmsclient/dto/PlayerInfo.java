@@ -3,9 +3,9 @@ package com.mojang.realmsclient.dto;
 public class PlayerInfo extends ValueObject {
 	private String name;
 	private String uuid;
-	private boolean operator = false;
-	private boolean accepted = false;
-	private boolean online = false;
+	private boolean operator;
+	private boolean accepted;
+	private boolean online;
 
 	public String getName() {
 		return this.name;

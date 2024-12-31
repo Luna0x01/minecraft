@@ -2,7 +2,6 @@ package net.minecraft.entity.passive;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.SpawnType;
@@ -48,6 +47,7 @@ public class HorseEntity extends HorseBaseEntity {
 		"textures/entity/horse/horse_markings_blackdots.png"
 	};
 	private static final String[] HORSE_MARKING_TEX_ID = new String[]{"", "wo_", "wmo", "wdo", "bdo"};
+	@Nullable
 	private String textureLocation;
 	private final String[] textureLayers = new String[2];
 
@@ -75,7 +75,7 @@ public class HorseEntity extends HorseBaseEntity {
 	}
 
 	private void equipArmor(ItemStack itemStack) {
-		this.setEquippedStack(EquipmentSlot.field_6174, itemStack);
+		this.equipStack(EquipmentSlot.field_6174, itemStack);
 		this.setEquipmentDropChance(EquipmentSlot.field_6174, 0.0F);
 	}
 
@@ -83,7 +83,7 @@ public class HorseEntity extends HorseBaseEntity {
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
 		this.setVariant(compoundTag.getInt("Variant"));
-		if (compoundTag.containsKey("ArmorItem", 10)) {
+		if (compoundTag.contains("ArmorItem", 10)) {
 			ItemStack itemStack = ItemStack.fromTag(compoundTag.getCompound("ArmorItem"));
 			if (!itemStack.isEmpty() && this.canEquip(itemStack)) {
 				this.items.setInvStack(1, itemStack);
@@ -135,6 +135,7 @@ public class HorseEntity extends HorseBaseEntity {
 	protected void updateSaddle() {
 		super.updateSaddle();
 		this.setArmorTypeFromStack(this.items.getInvStack(1));
+		this.setEquipmentDropChance(EquipmentSlot.field_6174, 0.0F);
 	}
 
 	private void setArmorTypeFromStack(ItemStack itemStack) {
@@ -220,7 +221,7 @@ public class HorseEntity extends HorseBaseEntity {
 			return super.interactMob(playerEntity, hand);
 		} else {
 			if (!this.isBaby()) {
-				if (this.isTame() && playerEntity.isSneaking()) {
+				if (this.isTame() && playerEntity.shouldCancelInteraction()) {
 					this.openInventory(playerEntity);
 					return true;
 				}
@@ -321,27 +322,26 @@ public class HorseEntity extends HorseBaseEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
-		entityData = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 		int i;
-		if (entityData instanceof HorseEntity.class_1499) {
-			i = ((HorseEntity.class_1499)entityData).field_6994;
+		if (entityData instanceof HorseEntity.EntityData) {
+			i = ((HorseEntity.EntityData)entityData).variant;
 		} else {
 			i = this.random.nextInt(7);
-			entityData = new HorseEntity.class_1499(i);
+			entityData = new HorseEntity.EntityData(i);
 		}
 
 		this.setVariant(i | this.random.nextInt(5) << 8);
-		return entityData;
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
-	public static class class_1499 implements EntityData {
-		public final int field_6994;
+	public static class EntityData extends PassiveEntity.EntityData {
+		public final int variant;
 
-		public class_1499(int i) {
-			this.field_6994 = i;
+		public EntityData(int i) {
+			this.variant = i;
 		}
 	}
 }

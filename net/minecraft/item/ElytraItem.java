@@ -4,7 +4,6 @@ import net.minecraft.block.DispenserBlock;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
@@ -32,11 +31,11 @@ public class ElytraItem extends Item {
 		EquipmentSlot equipmentSlot = MobEntity.getPreferredEquipmentSlot(itemStack);
 		ItemStack itemStack2 = playerEntity.getEquippedStack(equipmentSlot);
 		if (itemStack2.isEmpty()) {
-			playerEntity.setEquippedStack(equipmentSlot, itemStack.copy());
+			playerEntity.equipStack(equipmentSlot, itemStack.copy());
 			itemStack.setCount(0);
-			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+			return TypedActionResult.success(itemStack);
 		} else {
-			return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+			return TypedActionResult.fail(itemStack);
 		}
 	}
 }

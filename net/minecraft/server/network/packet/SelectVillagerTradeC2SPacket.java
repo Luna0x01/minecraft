@@ -25,7 +25,7 @@ public class SelectVillagerTradeC2SPacket implements Packet<ServerPlayPacketList
 		packetByteBuf.writeVarInt(this.tradeId);
 	}
 
-	public void method_12430(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onVillagerTradeSelect(this);
 	}
 

@@ -24,9 +24,9 @@ public final class SnowyBeachBiome extends Biome {
 				.waterFogColor(329011)
 				.parent(null)
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.BURIED_TREASURE, new BuriedTreasureFeatureConfig(0.01F));
-		this.addStructureFeature(Feature.SHIPWRECK, new ShipwreckFeatureConfig(true));
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.BURIED_TREASURE.configure(new BuriedTreasureFeatureConfig(0.01F)));
+		this.addStructureFeature(Feature.SHIPWRECK.configure(new ShipwreckFeatureConfig(true)));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);

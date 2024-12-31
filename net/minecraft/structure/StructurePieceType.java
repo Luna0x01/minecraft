@@ -64,6 +64,6 @@ public interface StructurePieceType {
 	StructurePiece load(StructureManager structureManager, CompoundTag compoundTag);
 
 	static StructurePieceType register(StructurePieceType structurePieceType, String string) {
-		return Registry.register(Registry.STRUCTURE_PIECE, string.toLowerCase(Locale.ROOT), structurePieceType);
+		return Registry.register(Registry.field_16645, string.toLowerCase(Locale.ROOT), structurePieceType);
 	}
 }

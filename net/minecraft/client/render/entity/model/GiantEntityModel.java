@@ -11,7 +11,7 @@ public class GiantEntityModel extends AbstractZombieModel<GiantEntity> {
 		super(f, 0.0F, 64, bl ? 32 : 64);
 	}
 
-	public boolean method_17792(GiantEntity giantEntity) {
+	public boolean isAttacking(GiantEntity giantEntity) {
 		return false;
 	}
 }

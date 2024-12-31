@@ -15,6 +15,7 @@ import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.WeightedPicker;
@@ -32,10 +33,10 @@ import org.apache.logging.log4j.Logger;
 public final class SpawnHelper {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	public static void spawnEntitiesInChunk(EntityCategory entityCategory, World world, WorldChunk worldChunk, BlockPos blockPos) {
-		ChunkGenerator<?> chunkGenerator = world.getChunkManager().getChunkGenerator();
+	public static void spawnEntitiesInChunk(EntityCategory entityCategory, ServerWorld serverWorld, WorldChunk worldChunk, BlockPos blockPos) {
+		ChunkGenerator<?> chunkGenerator = serverWorld.getChunkManager().getChunkGenerator();
 		int i = 0;
-		BlockPos blockPos2 = method_8657(world, worldChunk);
+		BlockPos blockPos2 = getSpawnPos(serverWorld, worldChunk);
 		int j = blockPos2.getX();
 		int k = blockPos2.getY();
 		int l = blockPos2.getZ();
@@ -59,12 +60,12 @@ public final class SpawnHelper {
 						label115: {
 							label114:
 							if (s < q) {
-								n += world.random.nextInt(6) - world.random.nextInt(6);
-								o += world.random.nextInt(6) - world.random.nextInt(6);
+								n += serverWorld.random.nextInt(6) - serverWorld.random.nextInt(6);
+								o += serverWorld.random.nextInt(6) - serverWorld.random.nextInt(6);
 								mutable.set(n, k, o);
 								float f = (float)n + 0.5F;
 								float g = (float)o + 0.5F;
-								PlayerEntity playerEntity = world.getClosestPlayer((double)f, (double)g, -1.0);
+								PlayerEntity playerEntity = serverWorld.getClosestPlayer((double)f, (double)g, -1.0);
 								if (playerEntity == null) {
 									break label115;
 								}
@@ -75,40 +76,40 @@ public final class SpawnHelper {
 								}
 
 								ChunkPos chunkPos = new ChunkPos(mutable);
-								if (!Objects.equals(chunkPos, worldChunk.getPos()) && !world.getChunkManager().shouldTickChunk(chunkPos)) {
+								if (!Objects.equals(chunkPos, worldChunk.getPos()) && !serverWorld.getChunkManager().shouldTickChunk(chunkPos)) {
 									break label115;
 								}
 
 								if (spawnEntry == null) {
-									spawnEntry = method_8664(chunkGenerator, entityCategory, world.random, mutable);
+									spawnEntry = pickRandomSpawnEntry(chunkGenerator, entityCategory, serverWorld.random, mutable);
 									if (spawnEntry == null) {
 										break label114;
 									}
 
-									q = spawnEntry.minGroupSize + world.random.nextInt(1 + spawnEntry.maxGroupSize - spawnEntry.minGroupSize);
+									q = spawnEntry.minGroupSize + serverWorld.random.nextInt(1 + spawnEntry.maxGroupSize - spawnEntry.minGroupSize);
 								}
 
-								if (spawnEntry.type.getCategory() == EntityCategory.field_17715 || !spawnEntry.type.method_20814() && d > 16384.0) {
+								if (spawnEntry.type.getCategory() == EntityCategory.field_17715 || !spawnEntry.type.isSpawnableFarFromPlayer() && d > 16384.0) {
 									break label115;
 								}
 
 								EntityType<?> entityType = spawnEntry.type;
-								if (!entityType.isSummonable() || !method_8659(chunkGenerator, entityCategory, spawnEntry, mutable)) {
+								if (!entityType.isSummonable() || !containsSpawnEntry(chunkGenerator, entityCategory, spawnEntry, mutable)) {
 									break label115;
 								}
 
 								SpawnRestriction.Location location = SpawnRestriction.getLocation(entityType);
-								if (!canSpawn(location, world, mutable, entityType)
-									|| !SpawnRestriction.method_20638(entityType, world, SpawnType.field_16459, mutable, world.random)
-									|| !world.doesNotCollide(entityType.createSimpleBoundingBox((double)f, (double)k, (double)g))) {
+								if (!canSpawn(location, serverWorld, mutable, entityType)
+									|| !SpawnRestriction.canSpawn(entityType, serverWorld, SpawnType.field_16459, mutable, serverWorld.random)
+									|| !serverWorld.doesNotCollide(entityType.createSimpleBoundingBox((double)f, (double)k, (double)g))) {
 									break label115;
 								}
 
 								MobEntity mobEntity;
 								try {
-									Entity entity = entityType.create(world);
+									Entity entity = entityType.create(serverWorld);
 									if (!(entity instanceof MobEntity)) {
-										throw new IllegalStateException("Trying to spawn a non-mob: " + Registry.ENTITY_TYPE.getId(entityType));
+										throw new IllegalStateException("Trying to spawn a non-mob: " + Registry.field_11145.getId(entityType));
 									}
 
 									mobEntity = (MobEntity)entity;
@@ -117,15 +118,15 @@ public final class SpawnHelper {
 									return;
 								}
 
-								mobEntity.setPositionAndAngles((double)f, (double)k, (double)g, world.random.nextFloat() * 360.0F, 0.0F);
-								if (d > 16384.0 && mobEntity.canImmediatelyDespawn(d) || !mobEntity.canSpawn(world, SpawnType.field_16459) || !mobEntity.canSpawn(world)) {
+								mobEntity.refreshPositionAndAngles((double)f, (double)k, (double)g, serverWorld.random.nextFloat() * 360.0F, 0.0F);
+								if (d > 16384.0 && mobEntity.canImmediatelyDespawn(d) || !mobEntity.canSpawn(serverWorld, SpawnType.field_16459) || !mobEntity.canSpawn(serverWorld)) {
 									break label115;
 								}
 
-								entityData = mobEntity.initialize(world, world.getLocalDifficulty(new BlockPos(mobEntity)), SpawnType.field_16459, entityData, null);
+								entityData = mobEntity.initialize(serverWorld, serverWorld.getLocalDifficulty(new BlockPos(mobEntity)), SpawnType.field_16459, entityData, null);
 								i++;
 								r++;
-								world.spawnEntity(mobEntity);
+								serverWorld.spawnEntity(mobEntity);
 								if (i >= mobEntity.getLimitPerChunk()) {
 									return;
 								}
@@ -147,17 +148,17 @@ public final class SpawnHelper {
 	}
 
 	@Nullable
-	private static Biome.SpawnEntry method_8664(ChunkGenerator<?> chunkGenerator, EntityCategory entityCategory, Random random, BlockPos blockPos) {
+	private static Biome.SpawnEntry pickRandomSpawnEntry(ChunkGenerator<?> chunkGenerator, EntityCategory entityCategory, Random random, BlockPos blockPos) {
 		List<Biome.SpawnEntry> list = chunkGenerator.getEntitySpawnList(entityCategory, blockPos);
 		return list.isEmpty() ? null : WeightedPicker.getRandom(random, list);
 	}
 
-	private static boolean method_8659(ChunkGenerator<?> chunkGenerator, EntityCategory entityCategory, Biome.SpawnEntry spawnEntry, BlockPos blockPos) {
+	private static boolean containsSpawnEntry(ChunkGenerator<?> chunkGenerator, EntityCategory entityCategory, Biome.SpawnEntry spawnEntry, BlockPos blockPos) {
 		List<Biome.SpawnEntry> list = chunkGenerator.getEntitySpawnList(entityCategory, blockPos);
 		return list.isEmpty() ? false : list.contains(spawnEntry);
 	}
 
-	private static BlockPos method_8657(World world, WorldChunk worldChunk) {
+	private static BlockPos getSpawnPos(World world, WorldChunk worldChunk) {
 		ChunkPos chunkPos = worldChunk.getPos();
 		int i = chunkPos.getStartX() + world.random.nextInt(16);
 		int j = chunkPos.getStartZ() + world.random.nextInt(16);
@@ -167,7 +168,7 @@ public final class SpawnHelper {
 	}
 
 	public static boolean isClearForSpawn(BlockView blockView, BlockPos blockPos, BlockState blockState, FluidState fluidState) {
-		if (blockState.method_21743(blockView, blockPos)) {
+		if (blockState.isFullCube(blockView, blockPos)) {
 			return false;
 		} else if (blockState.emitsRedstonePower()) {
 			return false;
@@ -176,26 +177,26 @@ public final class SpawnHelper {
 		}
 	}
 
-	public static boolean canSpawn(SpawnRestriction.Location location, ViewableWorld viewableWorld, BlockPos blockPos, @Nullable EntityType<?> entityType) {
+	public static boolean canSpawn(SpawnRestriction.Location location, WorldView worldView, BlockPos blockPos, @Nullable EntityType<?> entityType) {
 		if (location == SpawnRestriction.Location.field_19350) {
 			return true;
-		} else if (entityType != null && viewableWorld.getWorldBorder().contains(blockPos)) {
-			BlockState blockState = viewableWorld.getBlockState(blockPos);
-			FluidState fluidState = viewableWorld.getFluidState(blockPos);
+		} else if (entityType != null && worldView.getWorldBorder().contains(blockPos)) {
+			BlockState blockState = worldView.getBlockState(blockPos);
+			FluidState fluidState = worldView.getFluidState(blockPos);
 			BlockPos blockPos2 = blockPos.up();
 			BlockPos blockPos3 = blockPos.down();
 			switch (location) {
 				case field_6318:
 					return fluidState.matches(FluidTags.field_15517)
-						&& viewableWorld.getFluidState(blockPos3).matches(FluidTags.field_15517)
-						&& !viewableWorld.getBlockState(blockPos2).isSimpleFullBlock(viewableWorld, blockPos2);
+						&& worldView.getFluidState(blockPos3).matches(FluidTags.field_15517)
+						&& !worldView.getBlockState(blockPos2).isSimpleFullBlock(worldView, blockPos2);
 				case field_6317:
 				default:
-					BlockState blockState2 = viewableWorld.getBlockState(blockPos3);
-					return !blockState2.allowsSpawning(viewableWorld, blockPos3, entityType)
+					BlockState blockState2 = worldView.getBlockState(blockPos3);
+					return !blockState2.allowsSpawning(worldView, blockPos3, entityType)
 						? false
-						: isClearForSpawn(viewableWorld, blockPos, blockState, fluidState)
-							&& isClearForSpawn(viewableWorld, blockPos2, viewableWorld.getBlockState(blockPos2), viewableWorld.getFluidState(blockPos2));
+						: isClearForSpawn(worldView, blockPos, blockState, fluidState)
+							&& isClearForSpawn(worldView, blockPos2, worldView.getBlockState(blockPos2), worldView.getFluidState(blockPos2));
 			}
 		} else {
 			return false;
@@ -221,13 +222,13 @@ public final class SpawnHelper {
 					boolean bl = false;
 
 					for (int s = 0; !bl && s < 4; s++) {
-						BlockPos blockPos = method_8658(iWorld, spawnEntry.type, n, o);
+						BlockPos blockPos = getEntitySpawnPos(iWorld, spawnEntry.type, n, o);
 						if (spawnEntry.type.isSummonable() && canSpawn(SpawnRestriction.Location.field_6317, iWorld, blockPos, spawnEntry.type)) {
 							float f = spawnEntry.type.getWidth();
 							double d = MathHelper.clamp((double)n, (double)k + (double)f, (double)k + 16.0 - (double)f);
 							double e = MathHelper.clamp((double)o, (double)l + (double)f, (double)l + 16.0 - (double)f);
 							if (!iWorld.doesNotCollide(spawnEntry.type.createSimpleBoundingBox(d, (double)blockPos.getY(), e))
-								|| !SpawnRestriction.method_20638(spawnEntry.type, iWorld, SpawnType.field_16472, new BlockPos(d, (double)blockPos.getY(), e), iWorld.getRandom())) {
+								|| !SpawnRestriction.canSpawn(spawnEntry.type, iWorld, SpawnType.field_16472, new BlockPos(d, (double)blockPos.getY(), e), iWorld.getRandom())) {
 								continue;
 							}
 
@@ -239,7 +240,7 @@ public final class SpawnHelper {
 								continue;
 							}
 
-							entity.setPositionAndAngles(d, (double)blockPos.getY(), e, random.nextFloat() * 360.0F, 0.0F);
+							entity.refreshPositionAndAngles(d, (double)blockPos.getY(), e, random.nextFloat() * 360.0F, 0.0F);
 							if (entity instanceof MobEntity) {
 								MobEntity mobEntity = (MobEntity)entity;
 								if (mobEntity.canSpawn(iWorld, SpawnType.field_16472) && mobEntity.canSpawn(iWorld)) {
@@ -261,9 +262,9 @@ public final class SpawnHelper {
 		}
 	}
 
-	private static BlockPos method_8658(ViewableWorld viewableWorld, @Nullable EntityType<?> entityType, int i, int j) {
-		BlockPos blockPos = new BlockPos(i, viewableWorld.getTop(SpawnRestriction.getHeightMapType(entityType), i, j), j);
+	private static BlockPos getEntitySpawnPos(WorldView worldView, @Nullable EntityType<?> entityType, int i, int j) {
+		BlockPos blockPos = new BlockPos(i, worldView.getTopY(SpawnRestriction.getHeightmapType(entityType), i, j), j);
 		BlockPos blockPos2 = blockPos.down();
-		return viewableWorld.getBlockState(blockPos2).canPlaceAtSide(viewableWorld, blockPos2, BlockPlacementEnvironment.field_50) ? blockPos2 : blockPos;
+		return worldView.getBlockState(blockPos2).canPlaceAtSide(worldView, blockPos2, BlockPlacementEnvironment.field_50) ? blockPos2 : blockPos;
 	}
 }

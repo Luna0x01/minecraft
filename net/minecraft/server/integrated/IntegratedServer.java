@@ -8,6 +8,7 @@ import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import net.minecraft.SharedConstants;
@@ -39,7 +40,7 @@ public class IntegratedServer extends MinecraftServer {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MinecraftClient client;
 	private final LevelInfo levelInfo;
-	private boolean field_5524;
+	private boolean paused;
 	private int lanPort = -1;
 	private LanServerPinger lanPinger;
 	private UUID localPlayerUuid;
@@ -89,6 +90,7 @@ public class IntegratedServer extends MinecraftServer {
 			levelProperties.setLevelName(string2);
 		}
 
+		levelProperties.method_24285(this.getServerModName(), this.method_24307().isPresent());
 		this.loadWorldDataPacks(worldSaveHandler.getWorldDir(), levelProperties);
 		WorldGenerationProgressListener worldGenerationProgressListener = this.worldGenerationProgressListenerFactory.create(11);
 		this.createWorlds(worldSaveHandler, levelProperties, this.levelInfo, worldGenerationProgressListener);
@@ -116,10 +118,10 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	public void tick(BooleanSupplier booleanSupplier) {
-		boolean bl = this.field_5524;
-		this.field_5524 = MinecraftClient.getInstance().getNetworkHandler() != null && MinecraftClient.getInstance().isPaused();
+		boolean bl = this.paused;
+		this.paused = MinecraftClient.getInstance().getNetworkHandler() != null && MinecraftClient.getInstance().isPaused();
 		DisableableProfiler disableableProfiler = this.getProfiler();
-		if (!bl && this.field_5524) {
+		if (!bl && this.paused) {
 			disableableProfiler.push("autoSave");
 			LOGGER.info("Saving and pausing game...");
 			this.getPlayerManager().saveAllPlayerData();
@@ -127,9 +129,9 @@ public class IntegratedServer extends MinecraftServer {
 			disableableProfiler.pop();
 		}
 
-		if (!this.field_5524) {
+		if (!this.paused) {
 			super.tick(booleanSupplier);
-			int i = Math.max(2, this.client.options.viewDistance + -2);
+			int i = Math.max(2, this.client.options.viewDistance + -1);
 			if (i != this.getPlayerManager().getViewDistance()) {
 				LOGGER.info("Changing view distance to {}, from {}", i, this.getPlayerManager().getViewDistance());
 				this.getPlayerManager().setViewDistance(i);
@@ -194,23 +196,24 @@ public class IntegratedServer extends MinecraftServer {
 		crashReport.getSystemDetailsSection()
 			.add(
 				"Is Modded",
-				(CrashCallable<String>)(() -> {
-					String string = ClientBrandRetriever.getClientModName();
-					if (!string.equals("vanilla")) {
-						return "Definitely; Client brand changed to '" + string + "'";
-					} else {
-						string = this.getServerModName();
-						if (!"vanilla".equals(string)) {
-							return "Definitely; Server brand changed to '" + string + "'";
-						} else {
-							return MinecraftClient.class.getSigners() == null
-								? "Very likely; Jar signature invalidated"
-								: "Probably not. Jar signature remains and both client + server brands are untouched.";
-						}
-					}
-				})
+				(CrashCallable<String>)(() -> (String)this.method_24307().orElse("Probably not. Jar signature remains and both client + server brands are untouched."))
 			);
 		return crashReport;
+	}
+
+	@Override
+	public Optional<String> method_24307() {
+		String string = ClientBrandRetriever.getClientModName();
+		if (!string.equals("vanilla")) {
+			return Optional.of("Definitely; Client brand changed to '" + string + "'");
+		} else {
+			string = this.getServerModName();
+			if (!"vanilla".equals(string)) {
+				return Optional.of("Definitely; Server brand changed to '" + string + "'");
+			} else {
+				return MinecraftClient.class.getSigners() == null ? Optional.of("Very likely; Jar signature invalidated") : Optional.empty();
+			}
+		}
 	}
 
 	@Override
@@ -253,7 +256,7 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	public void stop(boolean bl) {
-		this.executeSync(() -> {
+		this.submitAndJoin(() -> {
 			for (ServerPlayerEntity serverPlayerEntity : Lists.newArrayList(this.getPlayerManager().getPlayerList())) {
 				if (!serverPlayerEntity.getUuid().equals(this.localPlayerUuid)) {
 					this.getPlayerManager().remove(serverPlayerEntity);
@@ -294,7 +297,7 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
-	public int method_21714() {
+	public int getFunctionPermissionLevel() {
 		return 2;
 	}
 

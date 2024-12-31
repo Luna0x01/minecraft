@@ -1,5 +1,6 @@
 package net.minecraft.server.command;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -31,7 +32,12 @@ public class EffectCommand {
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("effect")
 						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.then(
-						CommandManager.literal("clear")
+						((LiteralArgumentBuilder)CommandManager.literal("clear")
+								.executes(
+									commandContext -> executeClear(
+											(ServerCommandSource)commandContext.getSource(), ImmutableList.of(((ServerCommandSource)commandContext.getSource()).getEntityOrThrow())
+										)
+								))
 							.then(
 								((RequiredArgumentBuilder)CommandManager.argument("targets", EntityArgumentType.entities())
 										.executes(commandContext -> executeClear((ServerCommandSource)commandContext.getSource(), EntityArgumentType.getEntities(commandContext, "targets"))))
@@ -128,7 +134,7 @@ public class EffectCommand {
 		for (Entity entity : collection) {
 			if (entity instanceof LivingEntity) {
 				StatusEffectInstance statusEffectInstance = new StatusEffectInstance(statusEffect, k, i, false, bl);
-				if (((LivingEntity)entity).addPotionEffect(statusEffectInstance)) {
+				if (((LivingEntity)entity).addStatusEffect(statusEffectInstance)) {
 					j++;
 				}
 			}
@@ -139,11 +145,10 @@ public class EffectCommand {
 		} else {
 			if (collection.size() == 1) {
 				serverCommandSource.sendFeedback(
-					new TranslatableText("commands.effect.give.success.single", statusEffect.method_5560(), ((Entity)collection.iterator().next()).getDisplayName(), k / 20),
-					true
+					new TranslatableText("commands.effect.give.success.single", statusEffect.getName(), ((Entity)collection.iterator().next()).getDisplayName(), k / 20), true
 				);
 			} else {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.effect.give.success.multiple", statusEffect.method_5560(), collection.size(), k / 20), true);
+				serverCommandSource.sendFeedback(new TranslatableText("commands.effect.give.success.multiple", statusEffect.getName(), collection.size(), k / 20), true);
 			}
 
 			return j;
@@ -154,7 +159,7 @@ public class EffectCommand {
 		int i = 0;
 
 		for (Entity entity : collection) {
-			if (entity instanceof LivingEntity && ((LivingEntity)entity).clearPotionEffects()) {
+			if (entity instanceof LivingEntity && ((LivingEntity)entity).clearStatusEffects()) {
 				i++;
 			}
 		}
@@ -188,13 +193,11 @@ public class EffectCommand {
 		} else {
 			if (collection.size() == 1) {
 				serverCommandSource.sendFeedback(
-					new TranslatableText("commands.effect.clear.specific.success.single", statusEffect.method_5560(), ((Entity)collection.iterator().next()).getDisplayName()),
+					new TranslatableText("commands.effect.clear.specific.success.single", statusEffect.getName(), ((Entity)collection.iterator().next()).getDisplayName()),
 					true
 				);
 			} else {
-				serverCommandSource.sendFeedback(
-					new TranslatableText("commands.effect.clear.specific.success.multiple", statusEffect.method_5560(), collection.size()), true
-				);
+				serverCommandSource.sendFeedback(new TranslatableText("commands.effect.clear.specific.success.multiple", statusEffect.getName(), collection.size()), true);
 			}
 
 			return i;

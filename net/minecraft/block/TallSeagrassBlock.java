@@ -15,7 +15,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class TallSeagrassBlock extends ReplaceableTallPlantBlock implements FluidFillable {
 	public static final EnumProperty<DoubleBlockHalf> HALF = ReplaceableTallPlantBlock.HALF;
@@ -55,13 +55,13 @@ public class TallSeagrassBlock extends ReplaceableTallPlantBlock implements Flui
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		if (blockState.get(HALF) == DoubleBlockHalf.field_12609) {
-			BlockState blockState2 = viewableWorld.getBlockState(blockPos.down());
+			BlockState blockState2 = worldView.getBlockState(blockPos.down());
 			return blockState2.getBlock() == this && blockState2.get(HALF) == DoubleBlockHalf.field_12607;
 		} else {
-			FluidState fluidState = viewableWorld.getFluidState(blockPos);
-			return super.canPlaceAt(blockState, viewableWorld, blockPos) && fluidState.matches(FluidTags.field_15517) && fluidState.getLevel() == 8;
+			FluidState fluidState = worldView.getFluidState(blockPos);
+			return super.canPlaceAt(blockState, worldView, blockPos) && fluidState.matches(FluidTags.field_15517) && fluidState.getLevel() == 8;
 		}
 	}
 

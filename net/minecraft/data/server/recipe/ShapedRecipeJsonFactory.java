@@ -87,11 +87,11 @@ public class ShapedRecipeJsonFactory {
 	}
 
 	public void offerTo(Consumer<RecipeJsonProvider> consumer) {
-		this.offerTo(consumer, Registry.ITEM.getId(this.output));
+		this.offerTo(consumer, Registry.field_11142.getId(this.output));
 	}
 
 	public void offerTo(Consumer<RecipeJsonProvider> consumer, String string) {
-		Identifier identifier = Registry.ITEM.getId(this.output);
+		Identifier identifier = Registry.field_11142.getId(this.output);
 		if (new Identifier(string).equals(identifier)) {
 			throw new IllegalStateException("Shaped Recipe " + string + " should remove its 'save' argument");
 		} else {
@@ -192,7 +192,7 @@ public class ShapedRecipeJsonFactory {
 
 			jsonObject.add("key", jsonObject2);
 			JsonObject jsonObject3 = new JsonObject();
-			jsonObject3.addProperty("item", Registry.ITEM.getId(this.output).toString());
+			jsonObject3.addProperty("item", Registry.field_11142.getId(this.output).toString());
 			if (this.resultCount > 1) {
 				jsonObject3.addProperty("count", this.resultCount);
 			}

@@ -40,7 +40,7 @@ public class CaveSpiderEntity extends SpiderEntity {
 				}
 
 				if (i > 0) {
-					((LivingEntity)entity).addPotionEffect(new StatusEffectInstance(StatusEffects.field_5899, i * 20, 0));
+					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5899, i * 20, 0));
 				}
 			}
 

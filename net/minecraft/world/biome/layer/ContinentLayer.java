@@ -1,5 +1,8 @@
 package net.minecraft.world.biome.layer;
 
+import net.minecraft.world.biome.layer.type.InitLayer;
+import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
+
 public enum ContinentLayer implements InitLayer {
 	field_16103;
 

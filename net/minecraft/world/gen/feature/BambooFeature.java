@@ -7,7 +7,6 @@ import net.minecraft.block.BambooBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.Heightmap;
@@ -30,7 +29,7 @@ public class BambooFeature extends Feature<ProbabilityConfig> {
 		super(function);
 	}
 
-	public boolean method_12718(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, ProbabilityConfig probabilityConfig
 	) {
 		int i = 0;
@@ -47,8 +46,8 @@ public class BambooFeature extends Feature<ProbabilityConfig> {
 							int n = l - blockPos.getX();
 							int o = m - blockPos.getZ();
 							if (n * n + o * o <= k * k) {
-								mutable2.set(l, iWorld.getTop(Heightmap.Type.field_13202, l, m) - 1, m);
-								if (iWorld.getBlockState(mutable2).getBlock().matches(BlockTags.field_15464)) {
+								mutable2.set(l, iWorld.getTopY(Heightmap.Type.field_13202, l, m) - 1, m);
+								if (isDirt(iWorld.getBlockState(mutable2).getBlock())) {
 									iWorld.setBlockState(mutable2, Blocks.field_10520.getDefaultState(), 2);
 								}
 							}

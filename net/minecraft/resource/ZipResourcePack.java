@@ -69,7 +69,7 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 		while (enumeration.hasMoreElements()) {
 			ZipEntry zipEntry = (ZipEntry)enumeration.nextElement();
 			String string = zipEntry.getName();
-			if (string.startsWith(resourceType.getName() + "/")) {
+			if (string.startsWith(resourceType.getDirectory() + "/")) {
 				List<String> list = Lists.newArrayList(TYPE_NAMESPACE_SPLITTER.split(string));
 				if (list.size() > 1) {
 					String string2 = (String)list.get(1);
@@ -98,7 +98,7 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 	}
 
 	@Override
-	public Collection<Identifier> findResources(ResourceType resourceType, String string, int i, Predicate<String> predicate) {
+	public Collection<Identifier> findResources(ResourceType resourceType, String string, String string2, int i, Predicate<String> predicate) {
 		ZipFile zipFile;
 		try {
 			zipFile = this.getZipFile();
@@ -108,23 +108,18 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 
 		Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
 		List<Identifier> list = Lists.newArrayList();
-		String string2 = resourceType.getName() + "/";
+		String string3 = resourceType.getDirectory() + "/" + string + "/";
+		String string4 = string3 + string2 + "/";
 
 		while (enumeration.hasMoreElements()) {
 			ZipEntry zipEntry = (ZipEntry)enumeration.nextElement();
-			if (!zipEntry.isDirectory() && zipEntry.getName().startsWith(string2)) {
-				String string3 = zipEntry.getName().substring(string2.length());
-				if (!string3.endsWith(".mcmeta")) {
-					int j = string3.indexOf(47);
-					if (j >= 0) {
-						String string4 = string3.substring(j + 1);
-						if (string4.startsWith(string + "/")) {
-							String[] strings = string4.substring(string.length() + 2).split("/");
-							if (strings.length >= i + 1 && predicate.test(string4)) {
-								String string5 = string3.substring(0, j);
-								list.add(new Identifier(string5, string4));
-							}
-						}
+			if (!zipEntry.isDirectory()) {
+				String string5 = zipEntry.getName();
+				if (!string5.endsWith(".mcmeta") && string5.startsWith(string4)) {
+					String string6 = string5.substring(string3.length());
+					String[] strings = string6.split("/");
+					if (strings.length >= i + 1 && predicate.test(strings[strings.length - 1])) {
+						list.add(new Identifier(string, string6));
 					}
 				}
 			}

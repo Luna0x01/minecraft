@@ -1,72 +1,30 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-public class CuredZombieVillagerCriterion implements Criterion<CuredZombieVillagerCriterion.Conditions> {
+public class CuredZombieVillagerCriterion extends AbstractCriterion<CuredZombieVillagerCriterion.Conditions> {
 	private static final Identifier ID = new Identifier("cured_zombie_villager");
-	private final Map<PlayerAdvancementTracker, CuredZombieVillagerCriterion.Handler> handlers = Maps.newHashMap();
 
 	@Override
 	public Identifier getId() {
 		return ID;
 	}
 
-	@Override
-	public void beginTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer
-	) {
-		CuredZombieVillagerCriterion.Handler handler = (CuredZombieVillagerCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler == null) {
-			handler = new CuredZombieVillagerCriterion.Handler(playerAdvancementTracker);
-			this.handlers.put(playerAdvancementTracker, handler);
-		}
-
-		handler.addCondition(conditionsContainer);
-	}
-
-	@Override
-	public void endTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer
-	) {
-		CuredZombieVillagerCriterion.Handler handler = (CuredZombieVillagerCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler != null) {
-			handler.removeCondition(conditionsContainer);
-			if (handler.isEmpty()) {
-				this.handlers.remove(playerAdvancementTracker);
-			}
-		}
-	}
-
-	@Override
-	public void endTracking(PlayerAdvancementTracker playerAdvancementTracker) {
-		this.handlers.remove(playerAdvancementTracker);
-	}
-
-	public CuredZombieVillagerCriterion.Conditions method_8830(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		EntityPredicate entityPredicate = EntityPredicate.deserialize(jsonObject.get("zombie"));
-		EntityPredicate entityPredicate2 = EntityPredicate.deserialize(jsonObject.get("villager"));
+	public CuredZombieVillagerCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+		EntityPredicate entityPredicate = EntityPredicate.fromJson(jsonObject.get("zombie"));
+		EntityPredicate entityPredicate2 = EntityPredicate.fromJson(jsonObject.get("villager"));
 		return new CuredZombieVillagerCriterion.Conditions(entityPredicate, entityPredicate2);
 	}
 
-	public void handle(ServerPlayerEntity serverPlayerEntity, ZombieEntity zombieEntity, VillagerEntity villagerEntity) {
-		CuredZombieVillagerCriterion.Handler handler = (CuredZombieVillagerCriterion.Handler)this.handlers.get(serverPlayerEntity.getAdvancementManager());
-		if (handler != null) {
-			handler.handle(serverPlayerEntity, zombieEntity, villagerEntity);
-		}
+	public void trigger(ServerPlayerEntity serverPlayerEntity, ZombieEntity zombieEntity, VillagerEntity villagerEntity) {
+		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(serverPlayerEntity, zombieEntity, villagerEntity));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
@@ -93,47 +51,6 @@ public class CuredZombieVillagerCriterion implements Criterion<CuredZombieVillag
 			jsonObject.add("zombie", this.zombie.serialize());
 			jsonObject.add("villager", this.villager.serialize());
 			return jsonObject;
-		}
-	}
-
-	static class Handler {
-		private final PlayerAdvancementTracker manager;
-		private final Set<Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions>> conditions = Sets.newHashSet();
-
-		public Handler(PlayerAdvancementTracker playerAdvancementTracker) {
-			this.manager = playerAdvancementTracker;
-		}
-
-		public boolean isEmpty() {
-			return this.conditions.isEmpty();
-		}
-
-		public void addCondition(Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer) {
-			this.conditions.add(conditionsContainer);
-		}
-
-		public void removeCondition(Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer) {
-			this.conditions.remove(conditionsContainer);
-		}
-
-		public void handle(ServerPlayerEntity serverPlayerEntity, ZombieEntity zombieEntity, VillagerEntity villagerEntity) {
-			List<Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions>> list = null;
-
-			for (Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer : this.conditions) {
-				if (conditionsContainer.getConditions().matches(serverPlayerEntity, zombieEntity, villagerEntity)) {
-					if (list == null) {
-						list = Lists.newArrayList();
-					}
-
-					list.add(conditionsContainer);
-				}
-			}
-
-			if (list != null) {
-				for (Criterion.ConditionsContainer<CuredZombieVillagerCriterion.Conditions> conditionsContainer2 : list) {
-					conditionsContainer2.apply(this.manager);
-				}
-			}
 		}
 	}
 }

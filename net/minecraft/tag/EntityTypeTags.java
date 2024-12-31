@@ -10,6 +10,8 @@ public class EntityTypeTags {
 	private static int latestVersion;
 	public static final Tag<EntityType<?>> field_15507 = register("skeletons");
 	public static final Tag<EntityType<?>> field_19168 = register("raiders");
+	public static final Tag<EntityType<?>> field_20631 = register("beehive_inhabitors");
+	public static final Tag<EntityType<?>> field_21508 = register("arrows");
 
 	public static void setContainer(TagContainer<EntityType<?>> tagContainer) {
 		container = tagContainer;
@@ -32,7 +34,7 @@ public class EntityTypeTags {
 			super(identifier);
 		}
 
-		public boolean method_15084(EntityType<?> entityType) {
+		public boolean contains(EntityType<?> entityType) {
 			if (this.version != EntityTypeTags.latestVersion) {
 				this.delegate = EntityTypeTags.container.getOrCreate(this.getId());
 				this.version = EntityTypeTags.latestVersion;

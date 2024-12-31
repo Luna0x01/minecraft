@@ -1,51 +1,50 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import javax.annotation.Nullable;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.render.entity.model.LargePufferfishEntityModel;
 import net.minecraft.client.render.entity.model.MediumPufferfishEntityModel;
 import net.minecraft.client.render.entity.model.SmallPufferfishEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.PufferfishEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class PufferfishEntityRenderer extends MobEntityRenderer<PufferfishEntity, EntityModel<PufferfishEntity>> {
 	private static final Identifier SKIN = new Identifier("textures/entity/fish/pufferfish.png");
-	private int field_4765;
+	private int modelSize;
 	private final SmallPufferfishEntityModel<PufferfishEntity> smallModel = new SmallPufferfishEntityModel<>();
 	private final MediumPufferfishEntityModel<PufferfishEntity> mediumModel = new MediumPufferfishEntityModel<>();
 	private final LargePufferfishEntityModel<PufferfishEntity> largeModel = new LargePufferfishEntityModel<>();
 
 	public PufferfishEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new LargePufferfishEntityModel<>(), 0.2F);
-		this.field_4765 = 3;
+		this.modelSize = 3;
 	}
 
-	@Nullable
-	protected Identifier method_4096(PufferfishEntity pufferfishEntity) {
+	public Identifier getTexture(PufferfishEntity pufferfishEntity) {
 		return SKIN;
 	}
 
-	public void method_4094(PufferfishEntity pufferfishEntity, double d, double e, double f, float g, float h) {
-		int i = pufferfishEntity.getPuffState();
-		if (i != this.field_4765) {
-			if (i == 0) {
+	public void render(PufferfishEntity pufferfishEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		int j = pufferfishEntity.getPuffState();
+		if (j != this.modelSize) {
+			if (j == 0) {
 				this.model = this.smallModel;
-			} else if (i == 1) {
+			} else if (j == 1) {
 				this.model = this.mediumModel;
 			} else {
 				this.model = this.largeModel;
 			}
 		}
 
-		this.field_4765 = i;
-		this.field_4673 = 0.1F + 0.1F * (float)i;
-		super.method_4072(pufferfishEntity, d, e, f, g, h);
+		this.modelSize = j;
+		this.shadowSize = 0.1F + 0.1F * (float)j;
+		super.render(pufferfishEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected void method_4095(PufferfishEntity pufferfishEntity, float f, float g, float h) {
-		GlStateManager.translatef(0.0F, MathHelper.cos(f * 0.05F) * 0.08F, 0.0F);
-		super.setupTransforms(pufferfishEntity, f, g, h);
+	protected void setupTransforms(PufferfishEntity pufferfishEntity, MatrixStack matrixStack, float f, float g, float h) {
+		matrixStack.translate(0.0, (double)(MathHelper.cos(f * 0.05F) * 0.08F), 0.0);
+		super.setupTransforms(pufferfishEntity, matrixStack, f, g, h);
 	}
 }

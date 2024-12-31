@@ -8,10 +8,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -36,7 +37,7 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 	protected TrapdoorBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(FACING, Direction.field_11043)
 				.with(OPEN, Boolean.valueOf(false))
@@ -80,9 +81,9 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (this.material == Material.METAL) {
-			return false;
+			return ActionResult.field_5811;
 		} else {
 			blockState = blockState.cycle(OPEN);
 			world.setBlockState(blockPos, blockState, 2);
@@ -91,7 +92,7 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 			}
 
 			this.playToggleSound(playerEntity, world, blockPos, (Boolean)blockState.get(OPEN));
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -144,12 +145,7 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, OPEN, HALF, POWERED, WATERLOGGED);
 	}
 

@@ -1,0 +1,54 @@
+package net.minecraft.client.font;
+
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.util.Util;
+
+public enum WhiteRectangleGlyph implements RenderableGlyph {
+	field_20912;
+
+	private static final NativeImage IMAGE = Util.make(new NativeImage(NativeImage.Format.field_4997, 5, 8, false), nativeImage -> {
+		for (int i = 0; i < 8; i++) {
+			for (int j = 0; j < 5; j++) {
+				if (j != 0 && j + 1 != 5 && i != 0 && i + 1 != 8) {
+					boolean var4 = false;
+				} else {
+					boolean var10000 = true;
+				}
+
+				nativeImage.setPixelRgba(j, i, -1);
+			}
+		}
+
+		nativeImage.untrack();
+	});
+
+	@Override
+	public int getWidth() {
+		return 5;
+	}
+
+	@Override
+	public int getHeight() {
+		return 8;
+	}
+
+	@Override
+	public float getAdvance() {
+		return 6.0F;
+	}
+
+	@Override
+	public float getOversample() {
+		return 1.0F;
+	}
+
+	@Override
+	public void upload(int i, int j) {
+		IMAGE.upload(0, i, j, false);
+	}
+
+	@Override
+	public boolean hasColor() {
+		return true;
+	}
+}

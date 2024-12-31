@@ -11,25 +11,25 @@ import net.minecraft.block.ChestBlock;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.mob.IllagerEntity;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.structure.processor.BlockIgnoreStructureProcessor;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.loot.LootTables;
 
 public class WoodlandMansionGenerator {
 	public static void addPieces(
 		StructureManager structureManager, BlockPos blockPos, BlockRotation blockRotation, List<WoodlandMansionGenerator.Piece> list, Random random
 	) {
-		WoodlandMansionGenerator.class_3474 lv = new WoodlandMansionGenerator.class_3474(random);
+		WoodlandMansionGenerator.MansionParameters mansionParameters = new WoodlandMansionGenerator.MansionParameters(random);
 		WoodlandMansionGenerator.LayoutGenerator layoutGenerator = new WoodlandMansionGenerator.LayoutGenerator(structureManager, random);
-		layoutGenerator.generate(blockPos, blockRotation, list, lv);
+		layoutGenerator.generate(blockPos, blockRotation, list, mansionParameters);
 	}
 
 	static class FirstFloorRoomPool extends WoodlandMansionGenerator.RoomPool {
@@ -92,7 +92,9 @@ public class WoodlandMansionGenerator {
 			this.random = random;
 		}
 
-		public void generate(BlockPos blockPos, BlockRotation blockRotation, List<WoodlandMansionGenerator.Piece> list, WoodlandMansionGenerator.class_3474 arg) {
+		public void generate(
+			BlockPos blockPos, BlockRotation blockRotation, List<WoodlandMansionGenerator.Piece> list, WoodlandMansionGenerator.MansionParameters mansionParameters
+		) {
 			WoodlandMansionGenerator.GenerationPiece generationPiece = new WoodlandMansionGenerator.GenerationPiece();
 			generationPiece.position = blockPos;
 			generationPiece.rotation = blockRotation;
@@ -105,12 +107,12 @@ public class WoodlandMansionGenerator {
 			if (!list.isEmpty()) {
 			}
 
-			WoodlandMansionGenerator.class_3478 lv = arg.field_15440;
-			WoodlandMansionGenerator.class_3478 lv2 = arg.field_15439;
-			this.field_15446 = arg.field_15442 + 1;
-			this.field_15445 = arg.field_15441 + 1;
-			int i = arg.field_15442 + 1;
-			int j = arg.field_15441;
+			WoodlandMansionGenerator.class_3478 lv = mansionParameters.field_15440;
+			WoodlandMansionGenerator.class_3478 lv2 = mansionParameters.field_15439;
+			this.field_15446 = mansionParameters.field_15442 + 1;
+			this.field_15445 = mansionParameters.field_15441 + 1;
+			int i = mansionParameters.field_15442 + 1;
+			int j = mansionParameters.field_15441;
 			this.addRoof(list, generationPiece, lv, Direction.field_11035, this.field_15446, this.field_15445, i, j);
 			this.addRoof(list, generationPiece2, lv, Direction.field_11035, this.field_15446, this.field_15445, i, j);
 			WoodlandMansionGenerator.GenerationPiece generationPiece3 = new WoodlandMansionGenerator.GenerationPiece();
@@ -121,7 +123,7 @@ public class WoodlandMansionGenerator {
 
 			for (int k = 0; k < lv2.field_15453 && !bl; k++) {
 				for (int l = lv2.field_15454 - 1; l >= 0 && !bl; l--) {
-					if (WoodlandMansionGenerator.class_3474.method_15047(lv2, l, k)) {
+					if (WoodlandMansionGenerator.MansionParameters.method_15047(lv2, l, k)) {
 						generationPiece3.position = generationPiece3.position.offset(blockRotation.rotate(Direction.field_11035), 8 + (k - this.field_15445) * 8);
 						generationPiece3.position = generationPiece3.position.offset(blockRotation.rotate(Direction.field_11034), (l - this.field_15446) * 8);
 						this.method_15052(list, generationPiece3);
@@ -142,7 +144,7 @@ public class WoodlandMansionGenerator {
 
 			for (int m = 0; m < 3; m++) {
 				BlockPos blockPos2 = blockPos.up(8 * m + (m == 2 ? 3 : 0));
-				WoodlandMansionGenerator.class_3478 lv3 = arg.field_15443[m];
+				WoodlandMansionGenerator.class_3478 lv3 = mansionParameters.field_15443[m];
 				WoodlandMansionGenerator.class_3478 lv4 = m == 2 ? lv2 : lv;
 				String string = m == 0 ? "carpet_south_1" : "carpet_south_2";
 				String string2 = m == 0 ? "carpet_west_1" : "carpet_west_2";
@@ -225,7 +227,7 @@ public class WoodlandMansionGenerator {
 
 							BlockPos blockPos4 = blockPos2.offset(blockRotation.rotate(Direction.field_11035), 8 + (p - this.field_15445) * 8);
 							blockPos4 = blockPos4.offset(blockRotation.rotate(Direction.field_11034), -1 + (q - this.field_15446) * 8);
-							if (WoodlandMansionGenerator.class_3474.method_15047(lv4, q - 1, p) && !arg.method_15039(lv4, q - 1, p, m, t)) {
+							if (WoodlandMansionGenerator.MansionParameters.method_15047(lv4, q - 1, p) && !mansionParameters.method_15039(lv4, q - 1, p, m, t)) {
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, direction2 == Direction.field_11039 ? string4 : string3, blockPos4, blockRotation));
 							}
 
@@ -234,7 +236,7 @@ public class WoodlandMansionGenerator {
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, direction2 == Direction.field_11034 ? string4 : string3, blockPos5, blockRotation));
 							}
 
-							if (WoodlandMansionGenerator.class_3474.method_15047(lv4, q, p + 1) && !arg.method_15039(lv4, q, p + 1, m, t)) {
+							if (WoodlandMansionGenerator.MansionParameters.method_15047(lv4, q, p + 1) && !mansionParameters.method_15039(lv4, q, p + 1, m, t)) {
 								BlockPos blockPos6 = blockPos4.offset(blockRotation.rotate(Direction.field_11035), 7);
 								blockPos6 = blockPos6.offset(blockRotation.rotate(Direction.field_11034), 7);
 								list.add(
@@ -257,12 +259,12 @@ public class WoodlandMansionGenerator {
 							if (s == 65536) {
 								this.addSmallRoom(list, blockPos4, blockRotation, direction2, roomPools[m]);
 							} else if (s == 131072 && direction2 != null) {
-								Direction direction3 = arg.method_15040(lv4, q, p, m, t);
+								Direction direction3 = mansionParameters.method_15040(lv4, q, p, m, t);
 								boolean bl3 = (r & 4194304) == 4194304;
 								this.addMediumRoom(list, blockPos4, blockRotation, direction3, direction2, roomPools[m], bl3);
 							} else if (s == 262144 && direction2 != null && direction2 != Direction.field_11036) {
 								Direction direction4 = direction2.rotateYClockwise();
-								if (!arg.method_15039(lv4, q + direction4.getOffsetX(), p + direction4.getOffsetZ(), m, t)) {
+								if (!mansionParameters.method_15039(lv4, q + direction4.getOffsetX(), p + direction4.getOffsetZ(), m, t)) {
 									direction4 = direction4.getOpposite();
 								}
 
@@ -291,14 +293,14 @@ public class WoodlandMansionGenerator {
 			Direction direction2 = direction;
 
 			do {
-				if (!WoodlandMansionGenerator.class_3474.method_15047(arg, m + direction.getOffsetX(), n + direction.getOffsetZ())) {
+				if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, m + direction.getOffsetX(), n + direction.getOffsetZ())) {
 					this.method_15058(list, generationPiece);
 					direction = direction.rotateYClockwise();
 					if (m != k || n != l || direction2 != direction) {
 						this.method_15052(list, generationPiece);
 					}
-				} else if (WoodlandMansionGenerator.class_3474.method_15047(arg, m + direction.getOffsetX(), n + direction.getOffsetZ())
-					&& WoodlandMansionGenerator.class_3474.method_15047(
+				} else if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, m + direction.getOffsetX(), n + direction.getOffsetZ())
+					&& WoodlandMansionGenerator.MansionParameters.method_15047(
 						arg,
 						m + direction.getOffsetX() + direction.rotateYCounterclockwise().getOffsetX(),
 						n + direction.getOffsetZ() + direction.rotateYCounterclockwise().getOffsetZ()
@@ -328,26 +330,26 @@ public class WoodlandMansionGenerator {
 				for (int j = 0; j < arg.field_15454; j++) {
 					BlockPos blockPos16 = blockPos.offset(blockRotation.rotate(Direction.field_11035), 8 + (i - this.field_15445) * 8);
 					blockPos16 = blockPos16.offset(blockRotation.rotate(Direction.field_11034), (j - this.field_15446) * 8);
-					boolean bl = arg2 != null && WoodlandMansionGenerator.class_3474.method_15047(arg2, j, i);
-					if (WoodlandMansionGenerator.class_3474.method_15047(arg, j, i) && !bl) {
+					boolean bl = arg2 != null && WoodlandMansionGenerator.MansionParameters.method_15047(arg2, j, i);
+					if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, j, i) && !bl) {
 						list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof", blockPos16.up(3), blockRotation));
-						if (!WoodlandMansionGenerator.class_3474.method_15047(arg, j + 1, i)) {
+						if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, j + 1, i)) {
 							BlockPos blockPos3 = blockPos16.offset(blockRotation.rotate(Direction.field_11034), 6);
 							list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_front", blockPos3, blockRotation));
 						}
 
-						if (!WoodlandMansionGenerator.class_3474.method_15047(arg, j - 1, i)) {
+						if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, j - 1, i)) {
 							BlockPos blockPos4 = blockPos16.offset(blockRotation.rotate(Direction.field_11034), 0);
 							blockPos4 = blockPos4.offset(blockRotation.rotate(Direction.field_11035), 7);
 							list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_front", blockPos4, blockRotation.rotate(BlockRotation.field_11464)));
 						}
 
-						if (!WoodlandMansionGenerator.class_3474.method_15047(arg, j, i - 1)) {
+						if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, j, i - 1)) {
 							BlockPos blockPos5 = blockPos16.offset(blockRotation.rotate(Direction.field_11039), 1);
 							list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_front", blockPos5, blockRotation.rotate(BlockRotation.field_11465)));
 						}
 
-						if (!WoodlandMansionGenerator.class_3474.method_15047(arg, j, i + 1)) {
+						if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, j, i + 1)) {
 							BlockPos blockPos6 = blockPos16.offset(blockRotation.rotate(Direction.field_11034), 6);
 							blockPos6 = blockPos6.offset(blockRotation.rotate(Direction.field_11035), 6);
 							list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_front", blockPos6, blockRotation.rotate(BlockRotation.field_11463)));
@@ -361,53 +363,53 @@ public class WoodlandMansionGenerator {
 					for (int l = 0; l < arg.field_15454; l++) {
 						BlockPos var17 = blockPos.offset(blockRotation.rotate(Direction.field_11035), 8 + (k - this.field_15445) * 8);
 						var17 = var17.offset(blockRotation.rotate(Direction.field_11034), (l - this.field_15446) * 8);
-						boolean bl2 = WoodlandMansionGenerator.class_3474.method_15047(arg2, l, k);
-						if (WoodlandMansionGenerator.class_3474.method_15047(arg, l, k) && bl2) {
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l + 1, k)) {
+						boolean bl2 = WoodlandMansionGenerator.MansionParameters.method_15047(arg2, l, k);
+						if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, l, k) && bl2) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l + 1, k)) {
 								BlockPos blockPos8 = var17.offset(blockRotation.rotate(Direction.field_11034), 7);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall", blockPos8, blockRotation));
 							}
 
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l - 1, k)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l - 1, k)) {
 								BlockPos blockPos9 = var17.offset(blockRotation.rotate(Direction.field_11039), 1);
 								blockPos9 = blockPos9.offset(blockRotation.rotate(Direction.field_11035), 6);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall", blockPos9, blockRotation.rotate(BlockRotation.field_11464)));
 							}
 
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l, k - 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l, k - 1)) {
 								BlockPos blockPos10 = var17.offset(blockRotation.rotate(Direction.field_11039), 0);
 								blockPos10 = blockPos10.offset(blockRotation.rotate(Direction.field_11043), 1);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall", blockPos10, blockRotation.rotate(BlockRotation.field_11465)));
 							}
 
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l, k + 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l, k + 1)) {
 								BlockPos blockPos11 = var17.offset(blockRotation.rotate(Direction.field_11034), 6);
 								blockPos11 = blockPos11.offset(blockRotation.rotate(Direction.field_11035), 7);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall", blockPos11, blockRotation.rotate(BlockRotation.field_11463)));
 							}
 
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l + 1, k)) {
-								if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l, k - 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l + 1, k)) {
+								if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l, k - 1)) {
 									BlockPos blockPos12 = var17.offset(blockRotation.rotate(Direction.field_11034), 7);
 									blockPos12 = blockPos12.offset(blockRotation.rotate(Direction.field_11043), 2);
 									list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall_corner", blockPos12, blockRotation));
 								}
 
-								if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l, k + 1)) {
+								if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l, k + 1)) {
 									BlockPos blockPos13 = var17.offset(blockRotation.rotate(Direction.field_11034), 8);
 									blockPos13 = blockPos13.offset(blockRotation.rotate(Direction.field_11035), 7);
 									list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall_corner", blockPos13, blockRotation.rotate(BlockRotation.field_11463)));
 								}
 							}
 
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l - 1, k)) {
-								if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l, k - 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l - 1, k)) {
+								if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l, k - 1)) {
 									BlockPos blockPos14 = var17.offset(blockRotation.rotate(Direction.field_11039), 2);
 									blockPos14 = blockPos14.offset(blockRotation.rotate(Direction.field_11043), 1);
 									list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall_corner", blockPos14, blockRotation.rotate(BlockRotation.field_11465)));
 								}
 
-								if (!WoodlandMansionGenerator.class_3474.method_15047(arg, l, k + 1)) {
+								if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, l, k + 1)) {
 									BlockPos blockPos15 = var17.offset(blockRotation.rotate(Direction.field_11039), 1);
 									blockPos15 = blockPos15.offset(blockRotation.rotate(Direction.field_11035), 8);
 									list.add(new WoodlandMansionGenerator.Piece(this.manager, "small_wall_corner", blockPos15, blockRotation.rotate(BlockRotation.field_11464)));
@@ -422,42 +424,42 @@ public class WoodlandMansionGenerator {
 				for (int n = 0; n < arg.field_15454; n++) {
 					BlockPos var19 = blockPos.offset(blockRotation.rotate(Direction.field_11035), 8 + (m - this.field_15445) * 8);
 					var19 = var19.offset(blockRotation.rotate(Direction.field_11034), (n - this.field_15446) * 8);
-					boolean bl3 = arg2 != null && WoodlandMansionGenerator.class_3474.method_15047(arg2, n, m);
-					if (WoodlandMansionGenerator.class_3474.method_15047(arg, n, m) && !bl3) {
-						if (!WoodlandMansionGenerator.class_3474.method_15047(arg, n + 1, m)) {
+					boolean bl3 = arg2 != null && WoodlandMansionGenerator.MansionParameters.method_15047(arg2, n, m);
+					if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, n, m) && !bl3) {
+						if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, n + 1, m)) {
 							BlockPos blockPos17 = var19.offset(blockRotation.rotate(Direction.field_11034), 6);
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, n, m + 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, n, m + 1)) {
 								BlockPos blockPos18 = blockPos17.offset(blockRotation.rotate(Direction.field_11035), 6);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_corner", blockPos18, blockRotation));
-							} else if (WoodlandMansionGenerator.class_3474.method_15047(arg, n + 1, m + 1)) {
+							} else if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, n + 1, m + 1)) {
 								BlockPos blockPos19 = blockPos17.offset(blockRotation.rotate(Direction.field_11035), 5);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_inner_corner", blockPos19, blockRotation));
 							}
 
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, n, m - 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, n, m - 1)) {
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_corner", blockPos17, blockRotation.rotate(BlockRotation.field_11465)));
-							} else if (WoodlandMansionGenerator.class_3474.method_15047(arg, n + 1, m - 1)) {
+							} else if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, n + 1, m - 1)) {
 								BlockPos blockPos20 = var19.offset(blockRotation.rotate(Direction.field_11034), 9);
 								blockPos20 = blockPos20.offset(blockRotation.rotate(Direction.field_11043), 2);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_inner_corner", blockPos20, blockRotation.rotate(BlockRotation.field_11463)));
 							}
 						}
 
-						if (!WoodlandMansionGenerator.class_3474.method_15047(arg, n - 1, m)) {
+						if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, n - 1, m)) {
 							BlockPos blockPos21 = var19.offset(blockRotation.rotate(Direction.field_11034), 0);
 							blockPos21 = blockPos21.offset(blockRotation.rotate(Direction.field_11035), 0);
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, n, m + 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, n, m + 1)) {
 								BlockPos blockPos22 = blockPos21.offset(blockRotation.rotate(Direction.field_11035), 6);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_corner", blockPos22, blockRotation.rotate(BlockRotation.field_11463)));
-							} else if (WoodlandMansionGenerator.class_3474.method_15047(arg, n - 1, m + 1)) {
+							} else if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, n - 1, m + 1)) {
 								BlockPos blockPos23 = blockPos21.offset(blockRotation.rotate(Direction.field_11035), 8);
 								blockPos23 = blockPos23.offset(blockRotation.rotate(Direction.field_11039), 3);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_inner_corner", blockPos23, blockRotation.rotate(BlockRotation.field_11465)));
 							}
 
-							if (!WoodlandMansionGenerator.class_3474.method_15047(arg, n, m - 1)) {
+							if (!WoodlandMansionGenerator.MansionParameters.method_15047(arg, n, m - 1)) {
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_corner", blockPos21, blockRotation.rotate(BlockRotation.field_11464)));
-							} else if (WoodlandMansionGenerator.class_3474.method_15047(arg, n - 1, m - 1)) {
+							} else if (WoodlandMansionGenerator.MansionParameters.method_15047(arg, n - 1, m - 1)) {
 								BlockPos blockPos24 = blockPos21.offset(blockRotation.rotate(Direction.field_11035), 1);
 								list.add(new WoodlandMansionGenerator.Piece(this.manager, "roof_inner_corner", blockPos24, blockRotation.rotate(BlockRotation.field_11464)));
 							}
@@ -681,162 +683,16 @@ public class WoodlandMansionGenerator {
 		}
 	}
 
-	public static class Piece extends SimpleStructurePiece {
-		private final String template;
-		private final BlockRotation rotation;
-		private final BlockMirror mirror;
-
-		public Piece(StructureManager structureManager, String string, BlockPos blockPos, BlockRotation blockRotation) {
-			this(structureManager, string, blockPos, blockRotation, BlockMirror.field_11302);
-		}
-
-		public Piece(StructureManager structureManager, String string, BlockPos blockPos, BlockRotation blockRotation, BlockMirror blockMirror) {
-			super(StructurePieceType.WOODLAND_MANSION, 0);
-			this.template = string;
-			this.pos = blockPos;
-			this.rotation = blockRotation;
-			this.mirror = blockMirror;
-			this.method_15068(structureManager);
-		}
-
-		public Piece(StructureManager structureManager, CompoundTag compoundTag) {
-			super(StructurePieceType.WOODLAND_MANSION, compoundTag);
-			this.template = compoundTag.getString("Template");
-			this.rotation = BlockRotation.valueOf(compoundTag.getString("Rot"));
-			this.mirror = BlockMirror.valueOf(compoundTag.getString("Mi"));
-			this.method_15068(structureManager);
-		}
-
-		private void method_15068(StructureManager structureManager) {
-			Structure structure = structureManager.getStructureOrBlank(new Identifier("woodland_mansion/" + this.template));
-			StructurePlacementData structurePlacementData = new StructurePlacementData()
-				.setIgnoreEntities(true)
-				.setRotation(this.rotation)
-				.setMirrored(this.mirror)
-				.addProcessor(BlockIgnoreStructureProcessor.IGNORE_STRUCTURE_BLOCKS);
-			this.setStructureData(structure, this.pos, structurePlacementData);
-		}
-
-		@Override
-		protected void toNbt(CompoundTag compoundTag) {
-			super.toNbt(compoundTag);
-			compoundTag.putString("Template", this.template);
-			compoundTag.putString("Rot", this.placementData.getRotation().name());
-			compoundTag.putString("Mi", this.placementData.getMirror().name());
-		}
-
-		@Override
-		protected void handleMetadata(String string, BlockPos blockPos, IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox) {
-			if (string.startsWith("Chest")) {
-				BlockRotation blockRotation = this.placementData.getRotation();
-				BlockState blockState = Blocks.field_10034.getDefaultState();
-				if ("ChestWest".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11039));
-				} else if ("ChestEast".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11034));
-				} else if ("ChestSouth".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11035));
-				} else if ("ChestNorth".equals(string)) {
-					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11043));
-				}
-
-				this.addChest(iWorld, mutableIntBoundingBox, random, blockPos, LootTables.field_484, blockState);
-			} else {
-				IllagerEntity illagerEntity;
-				switch (string) {
-					case "Mage":
-						illagerEntity = EntityType.field_6090.create(iWorld.getWorld());
-						break;
-					case "Warrior":
-						illagerEntity = EntityType.field_6117.create(iWorld.getWorld());
-						break;
-					default:
-						return;
-				}
-
-				illagerEntity.setPersistent();
-				illagerEntity.setPositionAndAngles(blockPos, 0.0F, 0.0F);
-				illagerEntity.initialize(iWorld, iWorld.getLocalDifficulty(new BlockPos(illagerEntity)), SpawnType.field_16474, null, null);
-				iWorld.spawnEntity(illagerEntity);
-				iWorld.setBlockState(blockPos, Blocks.field_10124.getDefaultState(), 2);
-			}
-		}
-	}
-
-	abstract static class RoomPool {
-		private RoomPool() {
-		}
-
-		public abstract String getSmallRoom(Random random);
-
-		public abstract String getSmallSecretRoom(Random random);
-
-		public abstract String getMediumFunctionalRoom(Random random, boolean bl);
-
-		public abstract String getMediumGenericRoom(Random random, boolean bl);
-
-		public abstract String getMediumSecretRoom(Random random);
-
-		public abstract String getBigRoom(Random random);
-
-		public abstract String getBigSecretRoom(Random random);
-	}
-
-	static class SecondFloorRoomPool extends WoodlandMansionGenerator.RoomPool {
-		private SecondFloorRoomPool() {
-		}
-
-		@Override
-		public String getSmallRoom(Random random) {
-			return "1x1_b" + (random.nextInt(4) + 1);
-		}
-
-		@Override
-		public String getSmallSecretRoom(Random random) {
-			return "1x1_as" + (random.nextInt(4) + 1);
-		}
-
-		@Override
-		public String getMediumFunctionalRoom(Random random, boolean bl) {
-			return bl ? "1x2_c_stairs" : "1x2_c" + (random.nextInt(4) + 1);
-		}
-
-		@Override
-		public String getMediumGenericRoom(Random random, boolean bl) {
-			return bl ? "1x2_d_stairs" : "1x2_d" + (random.nextInt(5) + 1);
-		}
-
-		@Override
-		public String getMediumSecretRoom(Random random) {
-			return "1x2_se" + (random.nextInt(1) + 1);
-		}
-
-		@Override
-		public String getBigRoom(Random random) {
-			return "2x2_b" + (random.nextInt(5) + 1);
-		}
-
-		@Override
-		public String getBigSecretRoom(Random random) {
-			return "2x2_s1";
-		}
-	}
-
-	static class ThirdFloorRoomPool extends WoodlandMansionGenerator.SecondFloorRoomPool {
-		private ThirdFloorRoomPool() {
-		}
-	}
-
-	static class class_3474 {
-		private final Random field_15438;
+	static class MansionParameters {
+		private final Random random;
 		private final WoodlandMansionGenerator.class_3478 field_15440;
 		private final WoodlandMansionGenerator.class_3478 field_15439;
 		private final WoodlandMansionGenerator.class_3478[] field_15443;
 		private final int field_15442;
 		private final int field_15441;
 
-		public class_3474(Random random) {
-			this.field_15438 = random;
+		public MansionParameters(Random random) {
+			this.random = random;
 			int i = 11;
 			this.field_15442 = 7;
 			this.field_15441 = 4;
@@ -897,8 +753,8 @@ public class WoodlandMansionGenerator {
 				arg.method_15061(i + direction.getOffsetX(), j + direction.getOffsetZ(), 0, 1);
 
 				for (int l = 0; l < 8; l++) {
-					Direction direction2 = Direction.fromHorizontal(this.field_15438.nextInt(4));
-					if (direction2 != direction.getOpposite() && (direction2 != Direction.field_11034 || !this.field_15438.nextBoolean())) {
+					Direction direction2 = Direction.fromHorizontal(this.random.nextInt(4));
+					if (direction2 != direction.getOpposite() && (direction2 != Direction.field_11034 || !this.random.nextBoolean())) {
 						int m = i + direction.getOffsetX();
 						int n = j + direction.getOffsetZ();
 						if (arg.method_15066(m + direction2.getOffsetX(), n + direction2.getOffsetZ()) == 0
@@ -970,7 +826,7 @@ public class WoodlandMansionGenerator {
 			if (list.isEmpty()) {
 				this.field_15439.method_15062(0, 0, this.field_15439.field_15454, this.field_15439.field_15453, 5);
 			} else {
-				Pair<Integer, Integer> pair = (Pair<Integer, Integer>)list.get(this.field_15438.nextInt(list.size()));
+				Pair<Integer, Integer> pair = (Pair<Integer, Integer>)list.get(this.random.nextInt(list.size()));
 				int m = lv.method_15066(pair.getLeft(), pair.getRight());
 				lv.method_15065(pair.getLeft(), pair.getRight(), m | 4194304);
 				Direction direction = this.method_15040(this.field_15440, pair.getLeft(), pair.getRight(), 1, m & 65535);
@@ -1002,7 +858,7 @@ public class WoodlandMansionGenerator {
 					this.field_15439.method_15062(0, 0, this.field_15439.field_15454, this.field_15439.field_15453, 5);
 					lv.method_15065(pair.getLeft(), pair.getRight(), m);
 				} else {
-					Direction direction3 = (Direction)list2.get(this.field_15438.nextInt(list2.size()));
+					Direction direction3 = (Direction)list2.get(this.random.nextInt(list2.size()));
 					this.method_15045(this.field_15439, n + direction3.getOffsetX(), o + direction3.getOffsetZ(), direction3, 4);
 
 					while (this.method_15046(this.field_15439)) {
@@ -1022,7 +878,7 @@ public class WoodlandMansionGenerator {
 				}
 			}
 
-			Collections.shuffle(list, this.field_15438);
+			Collections.shuffle(list, this.random);
 			int k = 10;
 
 			for (Pair<Integer, Integer> pair : list) {
@@ -1075,8 +931,8 @@ public class WoodlandMansionGenerator {
 						r = 131072;
 					}
 
-					int s = this.field_15438.nextBoolean() ? n : o;
-					int t = this.field_15438.nextBoolean() ? p : q;
+					int s = this.random.nextBoolean() ? n : o;
+					int t = this.random.nextBoolean() ? p : q;
 					int u = 2097152;
 					if (!arg.method_15067(s, t, 1)) {
 						s = s == n ? o : n;
@@ -1108,6 +964,152 @@ public class WoodlandMansionGenerator {
 					k++;
 				}
 			}
+		}
+	}
+
+	public static class Piece extends SimpleStructurePiece {
+		private final String template;
+		private final BlockRotation rotation;
+		private final BlockMirror mirror;
+
+		public Piece(StructureManager structureManager, String string, BlockPos blockPos, BlockRotation blockRotation) {
+			this(structureManager, string, blockPos, blockRotation, BlockMirror.field_11302);
+		}
+
+		public Piece(StructureManager structureManager, String string, BlockPos blockPos, BlockRotation blockRotation, BlockMirror blockMirror) {
+			super(StructurePieceType.WOODLAND_MANSION, 0);
+			this.template = string;
+			this.pos = blockPos;
+			this.rotation = blockRotation;
+			this.mirror = blockMirror;
+			this.method_15068(structureManager);
+		}
+
+		public Piece(StructureManager structureManager, CompoundTag compoundTag) {
+			super(StructurePieceType.WOODLAND_MANSION, compoundTag);
+			this.template = compoundTag.getString("Template");
+			this.rotation = BlockRotation.valueOf(compoundTag.getString("Rot"));
+			this.mirror = BlockMirror.valueOf(compoundTag.getString("Mi"));
+			this.method_15068(structureManager);
+		}
+
+		private void method_15068(StructureManager structureManager) {
+			Structure structure = structureManager.getStructureOrBlank(new Identifier("woodland_mansion/" + this.template));
+			StructurePlacementData structurePlacementData = new StructurePlacementData()
+				.setIgnoreEntities(true)
+				.setRotation(this.rotation)
+				.setMirrored(this.mirror)
+				.addProcessor(BlockIgnoreStructureProcessor.IGNORE_STRUCTURE_BLOCKS);
+			this.setStructureData(structure, this.pos, structurePlacementData);
+		}
+
+		@Override
+		protected void toNbt(CompoundTag compoundTag) {
+			super.toNbt(compoundTag);
+			compoundTag.putString("Template", this.template);
+			compoundTag.putString("Rot", this.placementData.getRotation().name());
+			compoundTag.putString("Mi", this.placementData.getMirror().name());
+		}
+
+		@Override
+		protected void handleMetadata(String string, BlockPos blockPos, IWorld iWorld, Random random, BlockBox blockBox) {
+			if (string.startsWith("Chest")) {
+				BlockRotation blockRotation = this.placementData.getRotation();
+				BlockState blockState = Blocks.field_10034.getDefaultState();
+				if ("ChestWest".equals(string)) {
+					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11039));
+				} else if ("ChestEast".equals(string)) {
+					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11034));
+				} else if ("ChestSouth".equals(string)) {
+					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11035));
+				} else if ("ChestNorth".equals(string)) {
+					blockState = blockState.with(ChestBlock.FACING, blockRotation.rotate(Direction.field_11043));
+				}
+
+				this.addChest(iWorld, blockBox, random, blockPos, LootTables.field_484, blockState);
+			} else {
+				IllagerEntity illagerEntity;
+				switch (string) {
+					case "Mage":
+						illagerEntity = EntityType.field_6090.create(iWorld.getWorld());
+						break;
+					case "Warrior":
+						illagerEntity = EntityType.field_6117.create(iWorld.getWorld());
+						break;
+					default:
+						return;
+				}
+
+				illagerEntity.setPersistent();
+				illagerEntity.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
+				illagerEntity.initialize(iWorld, iWorld.getLocalDifficulty(new BlockPos(illagerEntity)), SpawnType.field_16474, null, null);
+				iWorld.spawnEntity(illagerEntity);
+				iWorld.setBlockState(blockPos, Blocks.field_10124.getDefaultState(), 2);
+			}
+		}
+	}
+
+	abstract static class RoomPool {
+		private RoomPool() {
+		}
+
+		public abstract String getSmallRoom(Random random);
+
+		public abstract String getSmallSecretRoom(Random random);
+
+		public abstract String getMediumFunctionalRoom(Random random, boolean bl);
+
+		public abstract String getMediumGenericRoom(Random random, boolean bl);
+
+		public abstract String getMediumSecretRoom(Random random);
+
+		public abstract String getBigRoom(Random random);
+
+		public abstract String getBigSecretRoom(Random random);
+	}
+
+	static class SecondFloorRoomPool extends WoodlandMansionGenerator.RoomPool {
+		private SecondFloorRoomPool() {
+		}
+
+		@Override
+		public String getSmallRoom(Random random) {
+			return "1x1_b" + (random.nextInt(4) + 1);
+		}
+
+		@Override
+		public String getSmallSecretRoom(Random random) {
+			return "1x1_as" + (random.nextInt(4) + 1);
+		}
+
+		@Override
+		public String getMediumFunctionalRoom(Random random, boolean bl) {
+			return bl ? "1x2_c_stairs" : "1x2_c" + (random.nextInt(4) + 1);
+		}
+
+		@Override
+		public String getMediumGenericRoom(Random random, boolean bl) {
+			return bl ? "1x2_d_stairs" : "1x2_d" + (random.nextInt(5) + 1);
+		}
+
+		@Override
+		public String getMediumSecretRoom(Random random) {
+			return "1x2_se" + (random.nextInt(1) + 1);
+		}
+
+		@Override
+		public String getBigRoom(Random random) {
+			return "2x2_b" + (random.nextInt(5) + 1);
+		}
+
+		@Override
+		public String getBigSecretRoom(Random random) {
+			return "2x2_s1";
+		}
+	}
+
+	static class ThirdFloorRoomPool extends WoodlandMansionGenerator.SecondFloorRoomPool {
+		private ThirdFloorRoomPool() {
 		}
 	}
 

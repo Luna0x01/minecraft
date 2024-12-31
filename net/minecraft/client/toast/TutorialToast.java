@@ -1,6 +1,6 @@
 package net.minecraft.client.toast;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.text.Text;
@@ -26,7 +26,7 @@ public class TutorialToast implements Toast {
 	@Override
 	public Toast.Visibility draw(ToastManager toastManager, long l) {
 		toastManager.getGame().getTextureManager().bindTexture(TOASTS_TEX);
-		GlStateManager.color3f(1.0F, 1.0F, 1.0F);
+		RenderSystem.color3f(1.0F, 1.0F, 1.0F);
 		toastManager.blit(0, 0, 0, 96, 160, 32);
 		this.type.drawIcon(toastManager, 6, 6);
 		if (this.description == null) {
@@ -78,9 +78,9 @@ public class TutorialToast implements Toast {
 		}
 
 		public void drawIcon(DrawableHelper drawableHelper, int i, int j) {
-			GlStateManager.enableBlend();
+			RenderSystem.enableBlend();
 			drawableHelper.blit(i, j, 176 + this.textureSlotX * 20, this.textureSlotY * 20, 20, 20);
-			GlStateManager.enableBlend();
+			RenderSystem.enableBlend();
 		}
 	}
 }

@@ -13,14 +13,14 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.StructureFeature;
 
 public class FeatureUpdater {
-	private static final Map<String, String> OLD_TO_NEW = SystemUtil.consume(Maps.newHashMap(), hashMap -> {
+	private static final Map<String, String> OLD_TO_NEW = Util.make(Maps.newHashMap(), hashMap -> {
 		hashMap.put("Village", "Village");
 		hashMap.put("Mineshaft", "Mineshaft");
 		hashMap.put("Mansion", "Mansion");
@@ -33,7 +33,7 @@ public class FeatureUpdater {
 		hashMap.put("Fortress", "Fortress");
 		hashMap.put("EndCity", "EndCity");
 	});
-	private static final Map<String, String> ANCIENT_TO_OLD = SystemUtil.consume(Maps.newHashMap(), hashMap -> {
+	private static final Map<String, String> ANCIENT_TO_OLD = Util.make(Maps.newHashMap(), hashMap -> {
 		hashMap.put("Iglu", "Igloo");
 		hashMap.put("TeDP", "Desert_Pyramid");
 		hashMap.put("TeJP", "Jungle_Pyramid");
@@ -80,7 +80,7 @@ public class FeatureUpdater {
 
 		for (String string : this.field_17659) {
 			StructureFeature<?> structureFeature = (StructureFeature<?>)Feature.STRUCTURES.get(string.toLowerCase(Locale.ROOT));
-			if (!compoundTag4.containsKey(string, 12) && structureFeature != null) {
+			if (!compoundTag4.contains(string, 12) && structureFeature != null) {
 				int i = structureFeature.getRadius();
 				LongList longList = new LongArrayList();
 
@@ -152,7 +152,7 @@ public class FeatureUpdater {
 				CompoundTag compoundTag = new CompoundTag();
 
 				try {
-					compoundTag = persistentStateManager.method_17923(string, 1493).getCompound("data").getCompound("Features");
+					compoundTag = persistentStateManager.readTag(string, 1493).getCompound("data").getCompound("Features");
 					if (compoundTag.isEmpty()) {
 						continue;
 					}
@@ -164,7 +164,7 @@ public class FeatureUpdater {
 					long l = ChunkPos.toLong(compoundTag2.getInt("ChunkX"), compoundTag2.getInt("ChunkZ"));
 					ListTag listTag = compoundTag2.getList("Children", 10);
 					if (!listTag.isEmpty()) {
-						String string3 = listTag.getCompoundTag(0).getString("id");
+						String string3 = listTag.getCompound(0).getString("id");
 						String string4 = (String)ANCIENT_TO_OLD.get(string3);
 						if (string4 != null) {
 							compoundTag2.putString("id", string4);

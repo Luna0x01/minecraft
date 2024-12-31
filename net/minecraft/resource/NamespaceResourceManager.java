@@ -1,8 +1,10 @@
 package net.minecraft.resource;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -19,19 +21,20 @@ public class NamespaceResourceManager implements ResourceManager {
 	private static final Logger LOGGER = LogManager.getLogger();
 	protected final List<ResourcePack> packList = Lists.newArrayList();
 	private final ResourceType type;
+	private final String namespace;
 
-	public NamespaceResourceManager(ResourceType resourceType) {
+	public NamespaceResourceManager(ResourceType resourceType, String string) {
 		this.type = resourceType;
+		this.namespace = string;
 	}
 
-	@Override
 	public void addPack(ResourcePack resourcePack) {
 		this.packList.add(resourcePack);
 	}
 
 	@Override
 	public Set<String> getAllNamespaces() {
-		return Collections.emptySet();
+		return ImmutableSet.of(this.namespace);
 	}
 
 	@Override
@@ -115,7 +118,7 @@ public class NamespaceResourceManager implements ResourceManager {
 		List<Identifier> list = Lists.newArrayList();
 
 		for (ResourcePack resourcePack : this.packList) {
-			list.addAll(resourcePack.findResources(this.type, string, Integer.MAX_VALUE, predicate));
+			list.addAll(resourcePack.findResources(this.type, this.namespace, string, Integer.MAX_VALUE, predicate));
 		}
 
 		Collections.sort(list);
@@ -126,20 +129,19 @@ public class NamespaceResourceManager implements ResourceManager {
 		return new Identifier(identifier.getNamespace(), identifier.getPath() + ".mcmeta");
 	}
 
-	static class DebugInputStream extends InputStream {
-		private final InputStream parent;
+	static class DebugInputStream extends FilterInputStream {
 		private final String leakMessage;
 		private boolean closed;
 
 		public DebugInputStream(InputStream inputStream, Identifier identifier, String string) {
-			this.parent = inputStream;
+			super(inputStream);
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			new Exception().printStackTrace(new PrintStream(byteArrayOutputStream));
 			this.leakMessage = "Leaked resource: '" + identifier + "' loaded from pack: '" + string + "'\n" + byteArrayOutputStream;
 		}
 
 		public void close() throws IOException {
-			this.parent.close();
+			super.close();
 			this.closed = true;
 		}
 
@@ -149,10 +151,6 @@ public class NamespaceResourceManager implements ResourceManager {
 			}
 
 			super.finalize();
-		}
-
-		public int read() throws IOException {
-			return this.parent.read();
 		}
 	}
 }

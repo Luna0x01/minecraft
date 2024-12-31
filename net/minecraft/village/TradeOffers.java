@@ -34,16 +34,16 @@ import net.minecraft.item.map.MapState;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.recipe.BrewingRecipeRegistry;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
 
 public class TradeOffers {
-	public static final Map<VillagerProfession, Int2ObjectMap<TradeOffers.Factory[]>> PROFESSION_TO_LEVELED_TRADE = SystemUtil.consume(
+	public static final Map<VillagerProfession, Int2ObjectMap<TradeOffers.Factory[]>> PROFESSION_TO_LEVELED_TRADE = Util.make(
 		Maps.newHashMap(),
 		hashMap -> {
 			hashMap.put(
@@ -273,7 +273,7 @@ public class TradeOffers {
 							new TradeOffers.Factory[]{
 								new TradeOffers.BuyForOneEmeraldFactory(Items.field_8407, 24, 16, 2),
 								new TradeOffers.EnchantBookFactory(1),
-								new TradeOffers.SellItemFactory(Blocks.field_10504, 6, 3, 12, 1)
+								new TradeOffers.SellItemFactory(Blocks.field_10504, 9, 1, 12, 1)
 							}
 						)
 						.put(
@@ -708,7 +708,7 @@ public class TradeOffers {
 
 		@Override
 		public TradeOffer create(Entity entity, Random random) {
-			Enchantment enchantment = Registry.ENCHANTMENT.getRandom(random);
+			Enchantment enchantment = Registry.field_11160.getRandom(random);
 			int i = MathHelper.nextInt(random, enchantment.getMinimumLevel(), enchantment.getMaximumLevel());
 			ItemStack itemStack = EnchantedBookItem.forEnchantment(new InfoEnchantment(enchantment, i));
 			int j = 2 + random.nextInt(5 + i * 10) + 3 * i;
@@ -899,16 +899,20 @@ public class TradeOffers {
 		@Nullable
 		@Override
 		public TradeOffer create(Entity entity, Random random) {
-			World world = entity.world;
-			BlockPos blockPos = world.locateStructure(this.structure, new BlockPos(entity), 100, true);
-			if (blockPos != null) {
-				ItemStack itemStack = FilledMapItem.createMap(world, blockPos.getX(), blockPos.getZ(), (byte)2, true, true);
-				FilledMapItem.fillExplorationMap(world, itemStack);
-				MapState.addDecorationsTag(itemStack, blockPos, "+", this.iconType);
-				itemStack.setCustomName(new TranslatableText("filled_map." + this.structure.toLowerCase(Locale.ROOT)));
-				return new TradeOffer(new ItemStack(Items.field_8687, this.price), new ItemStack(Items.field_8251), itemStack, this.maxUses, this.experience, 0.2F);
-			} else {
+			if (!(entity.world instanceof ServerWorld)) {
 				return null;
+			} else {
+				ServerWorld serverWorld = (ServerWorld)entity.world;
+				BlockPos blockPos = serverWorld.locateStructure(this.structure, new BlockPos(entity), 100, true);
+				if (blockPos != null) {
+					ItemStack itemStack = FilledMapItem.createMap(serverWorld, blockPos.getX(), blockPos.getZ(), (byte)2, true, true);
+					FilledMapItem.fillExplorationMap(serverWorld, itemStack);
+					MapState.addDecorationsTag(itemStack, blockPos, "+", this.iconType);
+					itemStack.setCustomName(new TranslatableText("filled_map." + this.structure.toLowerCase(Locale.ROOT)));
+					return new TradeOffer(new ItemStack(Items.field_8687, this.price), new ItemStack(Items.field_8251), itemStack, this.maxUses, this.experience, 0.2F);
+				} else {
+					return null;
+				}
 			}
 		}
 	}
@@ -937,7 +941,7 @@ public class TradeOffers {
 		@Override
 		public TradeOffer create(Entity entity, Random random) {
 			ItemStack itemStack = new ItemStack(Items.field_8687, this.price);
-			List<Potion> list = (List<Potion>)Registry.POTION
+			List<Potion> list = (List<Potion>)Registry.field_11143
 				.stream()
 				.filter(potionx -> !potionx.getEffects().isEmpty() && BrewingRecipeRegistry.isBrewable(potionx))
 				.collect(Collectors.toList());
@@ -976,8 +980,8 @@ public class TradeOffers {
 		private final int experience;
 
 		public TypeAwareBuyForOneEmeraldFactory(int i, int j, int k, Map<VillagerType, Item> map) {
-			Registry.VILLAGER_TYPE.stream().filter(villagerType -> !map.containsKey(villagerType)).findAny().ifPresent(villagerType -> {
-				throw new IllegalStateException("Missing trade for villager type: " + Registry.VILLAGER_TYPE.getId(villagerType));
+			Registry.field_17166.stream().filter(villagerType -> !map.containsKey(villagerType)).findAny().ifPresent(villagerType -> {
+				throw new IllegalStateException("Missing trade for villager type: " + Registry.field_17166.getId(villagerType));
 			});
 			this.map = map;
 			this.count = i;

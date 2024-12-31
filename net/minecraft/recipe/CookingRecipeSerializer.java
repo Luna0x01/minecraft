@@ -18,7 +18,7 @@ public class CookingRecipeSerializer<T extends AbstractCookingRecipe> implements
 		this.recipeFactory = recipeFactory;
 	}
 
-	public T method_17736(Identifier identifier, JsonObject jsonObject) {
+	public T read(Identifier identifier, JsonObject jsonObject) {
 		String string = JsonHelper.getString(jsonObject, "group", "");
 		JsonElement jsonElement = (JsonElement)(JsonHelper.hasArray(jsonObject, "ingredient")
 			? JsonHelper.getArray(jsonObject, "ingredient")
@@ -27,14 +27,14 @@ public class CookingRecipeSerializer<T extends AbstractCookingRecipe> implements
 		String string2 = JsonHelper.getString(jsonObject, "result");
 		Identifier identifier2 = new Identifier(string2);
 		ItemStack itemStack = new ItemStack(
-			(ItemConvertible)Registry.ITEM.getOrEmpty(identifier2).orElseThrow(() -> new IllegalStateException("Item: " + string2 + " does not exist"))
+			(ItemConvertible)Registry.field_11142.getOrEmpty(identifier2).orElseThrow(() -> new IllegalStateException("Item: " + string2 + " does not exist"))
 		);
 		float f = JsonHelper.getFloat(jsonObject, "experience", 0.0F);
 		int i = JsonHelper.getInt(jsonObject, "cookingtime", this.cookingTime);
 		return this.recipeFactory.create(identifier, string, ingredient, itemStack, f, i);
 	}
 
-	public T method_17737(Identifier identifier, PacketByteBuf packetByteBuf) {
+	public T read(Identifier identifier, PacketByteBuf packetByteBuf) {
 		String string = packetByteBuf.readString(32767);
 		Ingredient ingredient = Ingredient.fromPacket(packetByteBuf);
 		ItemStack itemStack = packetByteBuf.readItemStack();
@@ -43,7 +43,7 @@ public class CookingRecipeSerializer<T extends AbstractCookingRecipe> implements
 		return this.recipeFactory.create(identifier, string, ingredient, itemStack, f, i);
 	}
 
-	public void method_17735(PacketByteBuf packetByteBuf, T abstractCookingRecipe) {
+	public void write(PacketByteBuf packetByteBuf, T abstractCookingRecipe) {
 		packetByteBuf.writeString(abstractCookingRecipe.group);
 		abstractCookingRecipe.input.write(packetByteBuf);
 		packetByteBuf.writeItemStack(abstractCookingRecipe.output);

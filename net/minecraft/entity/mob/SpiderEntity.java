@@ -129,8 +129,8 @@ public class SpiderEntity extends HostileEntity {
 	}
 
 	@Override
-	public boolean isPotionEffective(StatusEffectInstance statusEffectInstance) {
-		return statusEffectInstance.getEffectType() == StatusEffects.field_5899 ? false : super.isPotionEffective(statusEffectInstance);
+	public boolean canHaveStatusEffect(StatusEffectInstance statusEffectInstance) {
+		return statusEffectInstance.getEffectType() == StatusEffects.field_5899 ? false : super.canHaveStatusEffect(statusEffectInstance);
 	}
 
 	public boolean getCanClimb() {
@@ -156,7 +156,7 @@ public class SpiderEntity extends HostileEntity {
 		entityData = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 		if (iWorld.getRandom().nextInt(100) == 0) {
 			SkeletonEntity skeletonEntity = EntityType.field_6137.create(this.world);
-			skeletonEntity.setPositionAndAngles(this.x, this.y, this.z, this.yaw, 0.0F);
+			skeletonEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, 0.0F);
 			skeletonEntity.initialize(iWorld, localDifficulty, spawnType, null, null);
 			iWorld.spawnEntity(skeletonEntity);
 			skeletonEntity.startRiding(this);
@@ -172,7 +172,7 @@ public class SpiderEntity extends HostileEntity {
 		if (entityData instanceof SpiderEntity.SpawnEffectData) {
 			StatusEffect statusEffect = ((SpiderEntity.SpawnEffectData)entityData).effect;
 			if (statusEffect != null) {
-				this.addPotionEffect(new StatusEffectInstance(statusEffect, Integer.MAX_VALUE));
+				this.addStatusEffect(new StatusEffectInstance(statusEffect, Integer.MAX_VALUE));
 			}
 		}
 
@@ -197,7 +197,7 @@ public class SpiderEntity extends HostileEntity {
 		@Override
 		public boolean shouldContinue() {
 			float f = this.mob.getBrightnessAtEyes();
-			if (f >= 0.5F && this.mob.getRand().nextInt(100) == 0) {
+			if (f >= 0.5F && this.mob.getRandom().nextInt(100) == 0) {
 				this.mob.setTarget(null);
 				return false;
 			} else {

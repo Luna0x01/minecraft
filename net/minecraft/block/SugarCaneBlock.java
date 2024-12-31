@@ -3,7 +3,8 @@ package net.minecraft.block;
 import java.util.Random;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.FluidTags;
@@ -12,8 +13,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class SugarCaneBlock extends Block {
 	public static final IntProperty AGE = Properties.AGE_15;
@@ -21,7 +21,7 @@ public class SugarCaneBlock extends Block {
 
 	protected SugarCaneBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(AGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -30,23 +30,23 @@ public class SugarCaneBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(world, blockPos)) {
-			world.breakBlock(blockPos, true);
-		} else if (world.isAir(blockPos.up())) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
+			serverWorld.breakBlock(blockPos, true);
+		} else if (serverWorld.isAir(blockPos.up())) {
 			int i = 1;
 
-			while (world.getBlockState(blockPos.down(i)).getBlock() == this) {
+			while (serverWorld.getBlockState(blockPos.down(i)).getBlock() == this) {
 				i++;
 			}
 
 			if (i < 3) {
 				int j = (Integer)blockState.get(AGE);
 				if (j == 15) {
-					world.setBlockState(blockPos.up(), this.getDefaultState());
-					world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(0)), 4);
+					serverWorld.setBlockState(blockPos.up(), this.getDefaultState());
+					serverWorld.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(0)), 4);
 				} else {
-					world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(j + 1)), 4);
+					serverWorld.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(j + 1)), 4);
 				}
 			}
 		}
@@ -64,8 +64,8 @@ public class SugarCaneBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		Block block = viewableWorld.getBlockState(blockPos.down()).getBlock();
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		Block block = worldView.getBlockState(blockPos.down()).getBlock();
 		if (block == this) {
 			return true;
 		} else {
@@ -78,8 +78,8 @@ public class SugarCaneBlock extends Block {
 				BlockPos blockPos2 = blockPos.down();
 
 				for (Direction direction : Direction.Type.field_11062) {
-					BlockState blockState2 = viewableWorld.getBlockState(blockPos2.offset(direction));
-					FluidState fluidState = viewableWorld.getFluidState(blockPos2.offset(direction));
+					BlockState blockState2 = worldView.getBlockState(blockPos2.offset(direction));
+					FluidState fluidState = worldView.getFluidState(blockPos2.offset(direction));
 					if (fluidState.matches(FluidTags.field_15517) || blockState2.getBlock() == Blocks.field_10110) {
 						return true;
 					}
@@ -91,12 +91,7 @@ public class SugarCaneBlock extends Block {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(AGE);
 	}
 }

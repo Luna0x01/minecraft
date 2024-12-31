@@ -18,7 +18,7 @@ import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.level.LevelProperties;
 
-public interface IWorld extends EntityView, ViewableWorld, ModifiableTestableWorld {
+public interface IWorld extends EntityView, WorldView, ModifiableTestableWorld {
 	long getSeed();
 
 	default float getMoonSize() {
@@ -71,12 +71,17 @@ public interface IWorld extends EntityView, ViewableWorld, ModifiableTestableWor
 	}
 
 	@Override
-	default Stream<VoxelShape> method_20743(@Nullable Entity entity, Box box, Set<Entity> set) {
-		return EntityView.super.method_20743(entity, box, set);
+	default Stream<VoxelShape> getEntityCollisions(@Nullable Entity entity, Box box, Set<Entity> set) {
+		return EntityView.super.getEntityCollisions(entity, box, set);
 	}
 
 	@Override
 	default boolean intersectsEntities(@Nullable Entity entity, VoxelShape voxelShape) {
 		return EntityView.super.intersectsEntities(entity, voxelShape);
+	}
+
+	@Override
+	default BlockPos getTopPosition(Heightmap.Type type, BlockPos blockPos) {
+		return WorldView.super.getTopPosition(type, blockPos);
 	}
 }

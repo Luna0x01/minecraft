@@ -13,7 +13,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Direction;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -21,16 +21,18 @@ public class MultipartBakedModel implements BakedModel {
 	private final List<Pair<Predicate<BlockState>, BakedModel>> components;
 	protected final boolean ambientOcclusion;
 	protected final boolean depthGui;
+	protected final boolean field_21863;
 	protected final Sprite sprite;
 	protected final ModelTransformation transformations;
 	protected final ModelItemPropertyOverrideList itemPropertyOverrides;
-	private final Map<BlockState, BitSet> field_5431 = new Object2ObjectOpenCustomHashMap(SystemUtil.identityHashStrategy());
+	private final Map<BlockState, BitSet> stateCache = new Object2ObjectOpenCustomHashMap(Util.identityHashStrategy());
 
 	public MultipartBakedModel(List<Pair<Predicate<BlockState>, BakedModel>> list) {
 		this.components = list;
 		BakedModel bakedModel = (BakedModel)((Pair)list.iterator().next()).getRight();
 		this.ambientOcclusion = bakedModel.useAmbientOcclusion();
-		this.depthGui = bakedModel.hasDepthInGui();
+		this.depthGui = bakedModel.hasDepth();
+		this.field_21863 = bakedModel.isSideLit();
 		this.sprite = bakedModel.getSprite();
 		this.transformations = bakedModel.getTransformation();
 		this.itemPropertyOverrides = bakedModel.getItemPropertyOverrides();
@@ -41,7 +43,7 @@ public class MultipartBakedModel implements BakedModel {
 		if (blockState == null) {
 			return Collections.emptyList();
 		} else {
-			BitSet bitSet = (BitSet)this.field_5431.get(blockState);
+			BitSet bitSet = (BitSet)this.stateCache.get(blockState);
 			if (bitSet == null) {
 				bitSet = new BitSet();
 
@@ -52,7 +54,7 @@ public class MultipartBakedModel implements BakedModel {
 					}
 				}
 
-				this.field_5431.put(blockState, bitSet);
+				this.stateCache.put(blockState, bitSet);
 			}
 
 			List<BakedQuad> list = Lists.newArrayList();
@@ -74,8 +76,13 @@ public class MultipartBakedModel implements BakedModel {
 	}
 
 	@Override
-	public boolean hasDepthInGui() {
+	public boolean hasDepth() {
 		return this.depthGui;
+	}
+
+	@Override
+	public boolean isSideLit() {
+		return this.field_21863;
 	}
 
 	@Override

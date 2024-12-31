@@ -1,7 +1,7 @@
 package net.minecraft.client.gui.hud.spectator;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import java.util.Random;
 import net.minecraft.client.MinecraftClient;
@@ -110,7 +110,7 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 			}
 
 			MinecraftClient.getInstance().getTextureManager().bindTexture(this.skinId);
-			GlStateManager.color4f(f, f, f, (float)i / 255.0F);
+			RenderSystem.color4f(f, f, f, (float)i / 255.0F);
 			DrawableHelper.blit(2, 2, 12, 12, 8.0F, 8.0F, 8, 8, 64, 64);
 			DrawableHelper.blit(2, 2, 12, 12, 40.0F, 8.0F, 8, 8, 64, 64);
 		}

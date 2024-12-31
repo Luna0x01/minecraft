@@ -55,7 +55,7 @@ public abstract class TameableEntity extends AnimalEntity {
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
 		String string;
-		if (compoundTag.containsKey("OwnerUUID", 8)) {
+		if (compoundTag.contains("OwnerUUID", 8)) {
 			string = compoundTag.getString("OwnerUUID");
 		} else {
 			String string2 = compoundTag.getString("Owner");
@@ -93,16 +93,7 @@ public abstract class TameableEntity extends AnimalEntity {
 			double d = this.random.nextGaussian() * 0.02;
 			double e = this.random.nextGaussian() * 0.02;
 			double f = this.random.nextGaussian() * 0.02;
-			this.world
-				.addParticle(
-					particleEffect,
-					this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
-					this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					d,
-					e,
-					f
-				);
+			this.world.addParticle(particleEffect, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), d, e, f);
 		}
 	}
 
@@ -161,7 +152,7 @@ public abstract class TameableEntity extends AnimalEntity {
 		this.setTamed(true);
 		this.setOwnerUuid(playerEntity.getUuid());
 		if (playerEntity instanceof ServerPlayerEntity) {
-			Criterions.TAME_ANIMAL.handle((ServerPlayerEntity)playerEntity, this);
+			Criterions.TAME_ANIMAL.trigger((ServerPlayerEntity)playerEntity, this);
 		}
 	}
 

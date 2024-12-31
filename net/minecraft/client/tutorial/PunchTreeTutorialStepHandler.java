@@ -38,7 +38,7 @@ public class PunchTreeTutorialStepHandler implements TutorialStepHandler {
 						return;
 					}
 
-					if (FindTreeTutorialStepHandler.method_4896(clientPlayerEntity)) {
+					if (FindTreeTutorialStepHandler.hasBrokenTreeBlocks(clientPlayerEntity)) {
 						this.manager.setStep(TutorialStep.field_5655);
 						return;
 					}

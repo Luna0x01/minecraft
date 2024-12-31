@@ -55,7 +55,7 @@ public class WitherRoseBlock extends FlowerBlock {
 			if (entity instanceof LivingEntity) {
 				LivingEntity livingEntity = (LivingEntity)entity;
 				if (!livingEntity.isInvulnerableTo(DamageSource.WITHER)) {
-					livingEntity.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5920, 40));
+					livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5920, 40));
 				}
 			}
 		}

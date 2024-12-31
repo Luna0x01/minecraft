@@ -10,9 +10,9 @@ import net.minecraft.structure.NetherFortressGenerator;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructurePiece;
 import net.minecraft.structure.StructureStart;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class NetherFortressFeature extends StructureFeature<DefaultFeatureConfig> {
@@ -31,7 +31,7 @@ public class NetherFortressFeature extends StructureFeature<DefaultFeatureConfig
 	}
 
 	@Override
-	public boolean shouldStartAt(ChunkGenerator<?> chunkGenerator, Random random, int i, int j) {
+	public boolean shouldStartAt(BiomeAccess biomeAccess, ChunkGenerator<?> chunkGenerator, Random random, int i, int j, Biome biome) {
 		int k = i >> 4;
 		int l = j >> 4;
 		random.setSeed((long)(k ^ l << 4) ^ chunkGenerator.getSeed());
@@ -40,11 +40,8 @@ public class NetherFortressFeature extends StructureFeature<DefaultFeatureConfig
 			return false;
 		} else if (i != (k << 4) + 4 + random.nextInt(8)) {
 			return false;
-		} else if (j != (l << 4) + 4 + random.nextInt(8)) {
-			return false;
 		} else {
-			Biome biome = chunkGenerator.getBiomeSource().getBiome(new BlockPos((i << 4) + 9, 0, (j << 4) + 9));
-			return chunkGenerator.hasStructure(biome, Feature.NETHER_BRIDGE);
+			return j != (l << 4) + 4 + random.nextInt(8) ? false : chunkGenerator.hasStructure(biome, this);
 		}
 	}
 
@@ -69,8 +66,8 @@ public class NetherFortressFeature extends StructureFeature<DefaultFeatureConfig
 	}
 
 	public static class Start extends StructureStart {
-		public Start(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l) {
-			super(structureFeature, i, j, biome, mutableIntBoundingBox, k, l);
+		public Start(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
+			super(structureFeature, i, j, blockBox, k, l);
 		}
 
 		@Override

@@ -8,7 +8,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.SwordItem;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
@@ -19,8 +20,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class BambooBlock extends Block implements Fertilizable {
 	protected static final VoxelShape SMALL_LEAVES_SHAPE = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 16.0, 11.0);
@@ -32,11 +33,11 @@ public class BambooBlock extends Block implements Fertilizable {
 
 	public BambooBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(AGE, Integer.valueOf(0)).with(LEAVES, BambooLeaves.field_12469).with(STAGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)).with(LEAVES, BambooLeaves.field_12469).with(STAGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(AGE, LEAVES, STAGE);
 	}
 
@@ -93,22 +94,22 @@ public class BambooBlock extends Block implements Fertilizable {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(world, blockPos)) {
-			world.breakBlock(blockPos, true);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
+			serverWorld.breakBlock(blockPos, true);
 		} else if ((Integer)blockState.get(STAGE) == 0) {
-			if (random.nextInt(3) == 0 && world.isAir(blockPos.up()) && world.getLightLevel(blockPos.up(), 0) >= 9) {
-				int i = this.countBambooBelow(world, blockPos) + 1;
+			if (random.nextInt(3) == 0 && serverWorld.isAir(blockPos.up()) && serverWorld.getBaseLightLevel(blockPos.up(), 0) >= 9) {
+				int i = this.countBambooBelow(serverWorld, blockPos) + 1;
 				if (i < 16) {
-					this.updateLeaves(blockState, world, blockPos, random, i);
+					this.updateLeaves(blockState, serverWorld, blockPos, random, i);
 				}
 			}
 		}
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return viewableWorld.getBlockState(blockPos.down()).matches(BlockTags.field_15497);
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return worldView.getBlockState(blockPos.down()).matches(BlockTags.field_15497);
 	}
 
 	@Override
@@ -139,20 +140,20 @@ public class BambooBlock extends Block implements Fertilizable {
 	}
 
 	@Override
-	public void grow(World world, Random random, BlockPos blockPos, BlockState blockState) {
-		int i = this.countBambooAbove(world, blockPos);
-		int j = this.countBambooBelow(world, blockPos);
+	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
+		int i = this.countBambooAbove(serverWorld, blockPos);
+		int j = this.countBambooBelow(serverWorld, blockPos);
 		int k = i + j + 1;
 		int l = 1 + random.nextInt(2);
 
 		for (int m = 0; m < l; m++) {
 			BlockPos blockPos2 = blockPos.up(i);
-			BlockState blockState2 = world.getBlockState(blockPos2);
-			if (k >= 16 || (Integer)blockState2.get(STAGE) == 1 || !world.isAir(blockPos2.up())) {
+			BlockState blockState2 = serverWorld.getBlockState(blockPos2);
+			if (k >= 16 || (Integer)blockState2.get(STAGE) == 1 || !serverWorld.isAir(blockPos2.up())) {
 				return;
 			}
 
-			this.updateLeaves(blockState2, world, blockPos2, random, k);
+			this.updateLeaves(blockState2, serverWorld, blockPos2, random, k);
 			i++;
 			k++;
 		}
@@ -161,11 +162,6 @@ public class BambooBlock extends Block implements Fertilizable {
 	@Override
 	public float calcBlockBreakingDelta(BlockState blockState, PlayerEntity playerEntity, BlockView blockView, BlockPos blockPos) {
 		return playerEntity.getMainHandStack().getItem() instanceof SwordItem ? 1.0F : super.calcBlockBreakingDelta(blockState, playerEntity, blockView, blockPos);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
 	}
 
 	protected void updateLeaves(BlockState blockState, World world, BlockPos blockPos, Random random, int i) {

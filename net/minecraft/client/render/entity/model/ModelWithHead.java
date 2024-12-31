@@ -1,11 +1,7 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import net.minecraft.client.model.ModelPart;
 
 public interface ModelWithHead {
-	Cuboid getHead();
-
-	default void setHeadAngle(float f) {
-		this.getHead().applyTransform(f);
-	}
+	ModelPart getHead();
 }

@@ -10,7 +10,7 @@ public class StainedGlassPaneBlock extends PaneBlock implements ColoredBlock {
 		super(settings);
 		this.color = dyeColor;
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(NORTH, Boolean.valueOf(false))
 				.with(EAST, Boolean.valueOf(false))
@@ -23,10 +23,5 @@ public class StainedGlassPaneBlock extends PaneBlock implements ColoredBlock {
 	@Override
 	public DyeColor getColor() {
 		return this.color;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9179;
 	}
 }

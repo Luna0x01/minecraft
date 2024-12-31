@@ -42,6 +42,7 @@ public abstract class IllagerEntity extends RaiderEntity {
 		field_7208,
 		field_7213,
 		field_7210,
-		field_19012;
+		field_19012,
+		field_21512;
 	}
 }

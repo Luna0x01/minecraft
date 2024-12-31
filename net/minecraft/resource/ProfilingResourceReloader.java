@@ -6,8 +6,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import net.minecraft.util.SystemUtil;
 import net.minecraft.util.Unit;
+import net.minecraft.util.Util;
 import net.minecraft.util.profiler.ProfileResult;
 import net.minecraft.util.profiler.ProfilerSystem;
 import org.apache.logging.log4j.LogManager;
@@ -28,22 +28,22 @@ public class ProfilingResourceReloader extends ResourceReloader<ProfilingResourc
 			(synchronizer, resourceManagerx, resourceReloadListener, executor2x, executor3) -> {
 				AtomicLong atomicLong = new AtomicLong();
 				AtomicLong atomicLong2 = new AtomicLong();
-				ProfilerSystem profilerSystem = new ProfilerSystem(SystemUtil.getMeasuringTimeNano(), () -> 0);
-				ProfilerSystem profilerSystem2 = new ProfilerSystem(SystemUtil.getMeasuringTimeNano(), () -> 0);
+				ProfilerSystem profilerSystem = new ProfilerSystem(Util.getMeasuringTimeNano(), () -> 0, false);
+				ProfilerSystem profilerSystem2 = new ProfilerSystem(Util.getMeasuringTimeNano(), () -> 0, false);
 				CompletableFuture<Void> completableFuturex = resourceReloadListener.reload(
 					synchronizer, resourceManagerx, profilerSystem, profilerSystem2, runnable -> executor2x.execute(() -> {
-							long l = SystemUtil.getMeasuringTimeNano();
+							long l = Util.getMeasuringTimeNano();
 							runnable.run();
-							atomicLong.addAndGet(SystemUtil.getMeasuringTimeNano() - l);
+							atomicLong.addAndGet(Util.getMeasuringTimeNano() - l);
 						}), runnable -> executor3.execute(() -> {
-							long l = SystemUtil.getMeasuringTimeNano();
+							long l = Util.getMeasuringTimeNano();
 							runnable.run();
-							atomicLong2.addAndGet(SystemUtil.getMeasuringTimeNano() - l);
+							atomicLong2.addAndGet(Util.getMeasuringTimeNano() - l);
 						})
 				);
 				return completableFuturex.thenApplyAsync(
 					void_ -> new ProfilingResourceReloader.Summary(
-							resourceReloadListener.getClass().getSimpleName(), profilerSystem.getResults(), profilerSystem2.getResults(), atomicLong, atomicLong2
+							resourceReloadListener.getName(), profilerSystem.getResult(), profilerSystem2.getResult(), atomicLong, atomicLong2
 						),
 					executor2
 				);
@@ -67,17 +67,6 @@ public class ProfilingResourceReloader extends ResourceReloader<ProfilingResourc
 			int l = j + k;
 			String string = summary.name;
 			LOGGER.info(string + " took approximately " + l + " ms (" + j + " ms preparing, " + k + " ms applying)");
-			String string2 = profileResult.getTimingTreeString();
-			if (string2.length() > 0) {
-				LOGGER.debug(string + " preparations:\n" + string2);
-			}
-
-			String string3 = profileResult2.getTimingTreeString();
-			if (string3.length() > 0) {
-				LOGGER.debug(string + " reload:\n" + string3);
-			}
-
-			LOGGER.info("----------");
 			i += k;
 		}
 

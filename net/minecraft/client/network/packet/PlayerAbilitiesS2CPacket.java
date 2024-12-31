@@ -61,7 +61,7 @@ public class PlayerAbilitiesS2CPacket implements Packet<ClientPlayPacketListener
 		packetByteBuf.writeFloat(this.fovModifier);
 	}
 
-	public void method_11697(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onPlayerAbilities(this);
 	}
 

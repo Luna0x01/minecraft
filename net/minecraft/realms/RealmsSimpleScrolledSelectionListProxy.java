@@ -1,6 +1,7 @@
 package net.minecraft.realms;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ListWidget;
 import net.minecraft.client.render.BufferBuilder;
@@ -62,61 +63,59 @@ public class RealmsSimpleScrolledSelectionListProxy extends ListWidget {
 			int k = this.getScrollbarPosition();
 			int l = k + 6;
 			this.capYPosition();
-			GlStateManager.disableLighting();
-			GlStateManager.disableFog();
 			Tessellator tessellator = Tessellator.getInstance();
-			BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-			int m = this.field_2180 + this.width / 2 - this.getRowWidth() / 2 + 2;
-			int n = this.field_2166 + 4 - (int)this.field_2175;
+			BufferBuilder bufferBuilder = tessellator.getBuffer();
+			int m = this.left + this.width / 2 - this.getRowWidth() / 2 + 2;
+			int n = this.top + 4 - (int)this.scroll;
 			if (this.renderHeader) {
 				this.renderHeader(m, n, tessellator);
 			}
 
 			this.renderList(m, n, i, j, f);
-			GlStateManager.disableDepthTest();
-			this.renderHoleBackground(0, this.field_2166, 255, 255);
-			this.renderHoleBackground(this.field_2165, this.height, 255, 255);
-			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(
-				GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE
+			RenderSystem.disableDepthTest();
+			this.renderHoleBackground(0, this.top, 255, 255);
+			this.renderHoleBackground(this.bottom, this.height, 255, 255);
+			RenderSystem.enableBlend();
+			RenderSystem.blendFuncSeparate(
+				GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ZERO, GlStateManager.DstFactor.ONE
 			);
-			GlStateManager.disableAlphaTest();
-			GlStateManager.shadeModel(7425);
-			GlStateManager.disableTexture();
+			RenderSystem.disableAlphaTest();
+			RenderSystem.shadeModel(7425);
+			RenderSystem.disableTexture();
 			int o = this.getMaxScroll();
 			if (o > 0) {
-				int p = (this.field_2165 - this.field_2166) * (this.field_2165 - this.field_2166) / this.getMaxPosition();
-				p = MathHelper.clamp(p, 32, this.field_2165 - this.field_2166 - 8);
-				int q = (int)this.field_2175 * (this.field_2165 - this.field_2166 - p) / o + this.field_2166;
-				if (q < this.field_2166) {
-					q = this.field_2166;
+				int p = (this.bottom - this.top) * (this.bottom - this.top) / this.getMaxPosition();
+				p = MathHelper.clamp(p, 32, this.bottom - this.top - 8);
+				int q = (int)this.scroll * (this.bottom - this.top - p) / o + this.top;
+				if (q < this.top) {
+					q = this.top;
 				}
 
-				bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
-				bufferBuilder.vertex((double)k, (double)this.field_2165, 0.0).texture(0.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)l, (double)this.field_2165, 0.0).texture(1.0, 1.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)l, (double)this.field_2166, 0.0).texture(1.0, 0.0).color(0, 0, 0, 255).next();
-				bufferBuilder.vertex((double)k, (double)this.field_2166, 0.0).texture(0.0, 0.0).color(0, 0, 0, 255).next();
+				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+				bufferBuilder.vertex((double)k, (double)this.bottom, 0.0).texture(0.0F, 1.0F).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)l, (double)this.bottom, 0.0).texture(1.0F, 1.0F).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)l, (double)this.top, 0.0).texture(1.0F, 0.0F).color(0, 0, 0, 255).next();
+				bufferBuilder.vertex((double)k, (double)this.top, 0.0).texture(0.0F, 0.0F).color(0, 0, 0, 255).next();
 				tessellator.draw();
-				bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
-				bufferBuilder.vertex((double)k, (double)(q + p), 0.0).texture(0.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)l, (double)(q + p), 0.0).texture(1.0, 1.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)l, (double)q, 0.0).texture(1.0, 0.0).color(128, 128, 128, 255).next();
-				bufferBuilder.vertex((double)k, (double)q, 0.0).texture(0.0, 0.0).color(128, 128, 128, 255).next();
+				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+				bufferBuilder.vertex((double)k, (double)(q + p), 0.0).texture(0.0F, 1.0F).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)l, (double)(q + p), 0.0).texture(1.0F, 1.0F).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)l, (double)q, 0.0).texture(1.0F, 0.0F).color(128, 128, 128, 255).next();
+				bufferBuilder.vertex((double)k, (double)q, 0.0).texture(0.0F, 0.0F).color(128, 128, 128, 255).next();
 				tessellator.draw();
-				bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
-				bufferBuilder.vertex((double)k, (double)(q + p - 1), 0.0).texture(0.0, 1.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)(l - 1), (double)(q + p - 1), 0.0).texture(1.0, 1.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)(l - 1), (double)q, 0.0).texture(1.0, 0.0).color(192, 192, 192, 255).next();
-				bufferBuilder.vertex((double)k, (double)q, 0.0).texture(0.0, 0.0).color(192, 192, 192, 255).next();
+				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+				bufferBuilder.vertex((double)k, (double)(q + p - 1), 0.0).texture(0.0F, 1.0F).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)(l - 1), (double)(q + p - 1), 0.0).texture(1.0F, 1.0F).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)(l - 1), (double)q, 0.0).texture(1.0F, 0.0F).color(192, 192, 192, 255).next();
+				bufferBuilder.vertex((double)k, (double)q, 0.0).texture(0.0F, 0.0F).color(192, 192, 192, 255).next();
 				tessellator.draw();
 			}
 
 			this.renderDecorations(i, j);
-			GlStateManager.enableTexture();
-			GlStateManager.shadeModel(7424);
-			GlStateManager.enableAlphaTest();
-			GlStateManager.disableBlend();
+			RenderSystem.enableTexture();
+			RenderSystem.shadeModel(7424);
+			RenderSystem.enableAlphaTest();
+			RenderSystem.disableBlend();
 		}
 	}
 

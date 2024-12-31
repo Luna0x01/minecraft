@@ -1,14 +1,14 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.EntityType;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class SoulSandBlock extends Block {
 	protected static final VoxelShape COLLISION_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 14.0, 16.0);
@@ -23,13 +23,8 @@ public class SoulSandBlock extends Block {
 	}
 
 	@Override
-	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
-		entity.setVelocity(entity.getVelocity().multiply(0.4, 1.0, 0.4));
-	}
-
-	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		BubbleColumnBlock.update(world, blockPos.up(), false);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		BubbleColumnBlock.update(serverWorld, blockPos.up(), false);
 	}
 
 	@Override
@@ -43,7 +38,7 @@ public class SoulSandBlock extends Block {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 20;
 	}
 
@@ -59,6 +54,11 @@ public class SoulSandBlock extends Block {
 
 	@Override
 	public boolean allowsSpawning(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityType<?> entityType) {
+		return true;
+	}
+
+	@Override
+	public boolean hasInWallOverlay(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return true;
 	}
 }

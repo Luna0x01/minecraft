@@ -15,16 +15,18 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPointerImpl;
@@ -33,13 +35,13 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Position;
 import net.minecraft.util.math.PositionImpl;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class DispenserBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = FacingBlock.FACING;
 	public static final BooleanProperty TRIGGERED = Properties.TRIGGERED;
-	private static final Map<Item, DispenserBehavior> BEHAVIORS = SystemUtil.consume(
+	private static final Map<Item, DispenserBehavior> BEHAVIORS = Util.make(
 		new Object2ObjectOpenHashMap(), object2ObjectOpenHashMap -> object2ObjectOpenHashMap.defaultReturnValue(new ItemDispenserBehavior())
 	);
 
@@ -49,18 +51,18 @@ public class DispenserBlock extends BlockWithEntity {
 
 	protected DispenserBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(TRIGGERED, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(TRIGGERED, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 4;
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof DispenserBlockEntity) {
@@ -72,7 +74,7 @@ public class DispenserBlock extends BlockWithEntity {
 				}
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -108,10 +110,8 @@ public class DispenserBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!world.isClient) {
-			this.dispense(world, blockPos);
-		}
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		this.dispense(serverWorld, blockPos);
 	}
 
 	@Override
@@ -181,7 +181,7 @@ public class DispenserBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, TRIGGERED);
 	}
 }

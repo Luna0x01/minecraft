@@ -1,14 +1,15 @@
 package net.minecraft.world.biome.source;
 
-public class TheEndBiomeSourceConfig implements BiomeSourceConfig {
-	private long field_9814;
+import net.minecraft.world.level.LevelProperties;
 
-	public TheEndBiomeSourceConfig method_9205(long l) {
-		this.field_9814 = l;
-		return this;
+public class TheEndBiomeSourceConfig implements BiomeSourceConfig {
+	private final long seed;
+
+	public TheEndBiomeSourceConfig(LevelProperties levelProperties) {
+		this.seed = levelProperties.getSeed();
 	}
 
-	public long method_9204() {
-		return this.field_9814;
+	public long getSeed() {
+		return this.seed;
 	}
 }

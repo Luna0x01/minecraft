@@ -33,7 +33,7 @@ public class HealthUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		packetByteBuf.writeFloat(this.saturation);
 	}
 
-	public void method_11832(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onHealthUpdate(this);
 	}
 

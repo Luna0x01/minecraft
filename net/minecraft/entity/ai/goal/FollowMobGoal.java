@@ -16,9 +16,9 @@ public class FollowMobGoal extends Goal {
 	private MobEntity target;
 	private final double speed;
 	private final EntityNavigation navigation;
-	private int field_6431;
+	private int updateCountdownTicks;
 	private final float minDistance;
-	private float field_6437;
+	private float oldWaterPathFindingPenalty;
 	private final float maxDistance;
 
 	public FollowMobGoal(MobEntity mobEntity, double d, float f, float g) {
@@ -56,37 +56,38 @@ public class FollowMobGoal extends Goal {
 
 	@Override
 	public void start() {
-		this.field_6431 = 0;
-		this.field_6437 = this.mob.getPathNodeTypeWeight(PathNodeType.field_18);
-		this.mob.setPathNodeTypeWeight(PathNodeType.field_18, 0.0F);
+		this.updateCountdownTicks = 0;
+		this.oldWaterPathFindingPenalty = this.mob.getPathfindingPenalty(PathNodeType.field_18);
+		this.mob.setPathfindingPenalty(PathNodeType.field_18, 0.0F);
 	}
 
 	@Override
 	public void stop() {
 		this.target = null;
 		this.navigation.stop();
-		this.mob.setPathNodeTypeWeight(PathNodeType.field_18, this.field_6437);
+		this.mob.setPathfindingPenalty(PathNodeType.field_18, this.oldWaterPathFindingPenalty);
 	}
 
 	@Override
 	public void tick() {
 		if (this.target != null && !this.mob.isLeashed()) {
 			this.mob.getLookControl().lookAt(this.target, 10.0F, (float)this.mob.getLookPitchSpeed());
-			if (--this.field_6431 <= 0) {
-				this.field_6431 = 10;
-				double d = this.mob.x - this.target.x;
-				double e = this.mob.y - this.target.y;
-				double f = this.mob.z - this.target.z;
+			if (--this.updateCountdownTicks <= 0) {
+				this.updateCountdownTicks = 10;
+				double d = this.mob.getX() - this.target.getX();
+				double e = this.mob.getY() - this.target.getY();
+				double f = this.mob.getZ() - this.target.getZ();
 				double g = d * d + e * e + f * f;
 				if (!(g <= (double)(this.minDistance * this.minDistance))) {
 					this.navigation.startMovingTo(this.target, this.speed);
 				} else {
 					this.navigation.stop();
 					LookControl lookControl = this.target.getLookControl();
-					if (g <= (double)this.minDistance || lookControl.getLookX() == this.mob.x && lookControl.getLookY() == this.mob.y && lookControl.getLookZ() == this.mob.z) {
-						double h = this.target.x - this.mob.x;
-						double i = this.target.z - this.mob.z;
-						this.navigation.startMovingTo(this.mob.x - h, this.mob.y, this.mob.z - i, this.speed);
+					if (g <= (double)this.minDistance
+						|| lookControl.getLookX() == this.mob.getX() && lookControl.getLookY() == this.mob.getY() && lookControl.getLookZ() == this.mob.getZ()) {
+						double h = this.target.getX() - this.mob.getX();
+						double i = this.target.getZ() - this.mob.getZ();
+						this.navigation.startMovingTo(this.mob.getX() - h, this.mob.getY(), this.mob.getZ() - i, this.speed);
 					}
 				}
 			}

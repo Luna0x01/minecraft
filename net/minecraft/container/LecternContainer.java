@@ -33,17 +33,17 @@ public class LecternContainer extends Container {
 	public boolean onButtonClick(PlayerEntity playerEntity, int i) {
 		if (i >= 100) {
 			int j = i - 100;
-			this.setProperties(0, j);
+			this.setProperty(0, j);
 			return true;
 		} else {
 			switch (i) {
 				case 1:
 					int l = this.propertyDelegate.get(0);
-					this.setProperties(0, l - 1);
+					this.setProperty(0, l - 1);
 					return true;
 				case 2:
 					int k = this.propertyDelegate.get(0);
-					this.setProperties(0, k + 1);
+					this.setProperty(0, k + 1);
 					return true;
 				case 3:
 					if (!playerEntity.canModifyWorld()) {
@@ -64,8 +64,8 @@ public class LecternContainer extends Container {
 	}
 
 	@Override
-	public void setProperties(int i, int j) {
-		super.setProperties(i, j);
+	public void setProperty(int i, int j) {
+		super.setProperty(i, j);
 		this.sendContentUpdates();
 	}
 

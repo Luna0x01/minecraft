@@ -18,7 +18,7 @@ public class BrewingRecipeRegistry {
 	private static final List<Ingredient> POTION_TYPES = Lists.newArrayList();
 	private static final Predicate<ItemStack> POTION_TYPE_PREDICATE = itemStack -> {
 		for (Ingredient ingredient : POTION_TYPES) {
-			if (ingredient.method_8093(itemStack)) {
+			if (ingredient.test(itemStack)) {
 				return true;
 			}
 		}
@@ -34,7 +34,7 @@ public class BrewingRecipeRegistry {
 		int i = 0;
 
 		for (int j = ITEM_RECIPES.size(); i < j; i++) {
-			if (((BrewingRecipeRegistry.Recipe)ITEM_RECIPES.get(i)).ingredient.method_8093(itemStack)) {
+			if (((BrewingRecipeRegistry.Recipe)ITEM_RECIPES.get(i)).ingredient.test(itemStack)) {
 				return true;
 			}
 		}
@@ -46,7 +46,7 @@ public class BrewingRecipeRegistry {
 		int i = 0;
 
 		for (int j = POTION_RECIPES.size(); i < j; i++) {
-			if (((BrewingRecipeRegistry.Recipe)POTION_RECIPES.get(i)).ingredient.method_8093(itemStack)) {
+			if (((BrewingRecipeRegistry.Recipe)POTION_RECIPES.get(i)).ingredient.test(itemStack)) {
 				return true;
 			}
 		}
@@ -76,7 +76,7 @@ public class BrewingRecipeRegistry {
 
 		for (int j = ITEM_RECIPES.size(); i < j; i++) {
 			BrewingRecipeRegistry.Recipe<Item> recipe = (BrewingRecipeRegistry.Recipe<Item>)ITEM_RECIPES.get(i);
-			if (recipe.input == item && recipe.ingredient.method_8093(itemStack2)) {
+			if (recipe.input == item && recipe.ingredient.test(itemStack2)) {
 				return true;
 			}
 		}
@@ -90,7 +90,7 @@ public class BrewingRecipeRegistry {
 
 		for (int j = POTION_RECIPES.size(); i < j; i++) {
 			BrewingRecipeRegistry.Recipe<Potion> recipe = (BrewingRecipeRegistry.Recipe<Potion>)POTION_RECIPES.get(i);
-			if (recipe.input == potion && recipe.ingredient.method_8093(itemStack2)) {
+			if (recipe.input == potion && recipe.ingredient.test(itemStack2)) {
 				return true;
 			}
 		}
@@ -106,7 +106,7 @@ public class BrewingRecipeRegistry {
 
 			for (int j = ITEM_RECIPES.size(); i < j; i++) {
 				BrewingRecipeRegistry.Recipe<Item> recipe = (BrewingRecipeRegistry.Recipe<Item>)ITEM_RECIPES.get(i);
-				if (recipe.input == item && recipe.ingredient.method_8093(itemStack)) {
+				if (recipe.input == item && recipe.ingredient.test(itemStack)) {
 					return PotionUtil.setPotion(new ItemStack(recipe.output), potion);
 				}
 			}
@@ -115,7 +115,7 @@ public class BrewingRecipeRegistry {
 
 			for (int l = POTION_RECIPES.size(); i < l; i++) {
 				BrewingRecipeRegistry.Recipe<Potion> recipe2 = (BrewingRecipeRegistry.Recipe<Potion>)POTION_RECIPES.get(i);
-				if (recipe2.input == potion && recipe2.ingredient.method_8093(itemStack)) {
+				if (recipe2.input == potion && recipe2.ingredient.test(itemStack)) {
 					return PotionUtil.setPotion(new ItemStack(item), recipe2.output);
 				}
 			}
@@ -189,9 +189,9 @@ public class BrewingRecipeRegistry {
 
 	private static void registerItemRecipe(Item item, Item item2, Item item3) {
 		if (!(item instanceof PotionItem)) {
-			throw new IllegalArgumentException("Expected a potion, got: " + Registry.ITEM.getId(item));
+			throw new IllegalArgumentException("Expected a potion, got: " + Registry.field_11142.getId(item));
 		} else if (!(item3 instanceof PotionItem)) {
-			throw new IllegalArgumentException("Expected a potion, got: " + Registry.ITEM.getId(item3));
+			throw new IllegalArgumentException("Expected a potion, got: " + Registry.field_11142.getId(item3));
 		} else {
 			ITEM_RECIPES.add(new BrewingRecipeRegistry.Recipe<>(item, Ingredient.ofItems(item2), item3));
 		}
@@ -199,7 +199,7 @@ public class BrewingRecipeRegistry {
 
 	private static void registerPotionType(Item item) {
 		if (!(item instanceof PotionItem)) {
-			throw new IllegalArgumentException("Expected a potion, got: " + Registry.ITEM.getId(item));
+			throw new IllegalArgumentException("Expected a potion, got: " + Registry.field_11142.getId(item));
 		} else {
 			POTION_TYPES.add(Ingredient.ofItems(item));
 		}

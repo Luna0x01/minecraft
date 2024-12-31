@@ -2,6 +2,8 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -9,6 +11,15 @@ import net.minecraft.world.World;
 public class WetSpongeBlock extends Block {
 	protected WetSpongeBlock(Block.Settings settings) {
 		super(settings);
+	}
+
+	@Override
+	public void onBlockAdded(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
+		if (world.getDimension().doesWaterVaporize()) {
+			world.setBlockState(blockPos, Blocks.field_10258.getDefaultState(), 3);
+			world.playLevelEvent(2009, blockPos, 0);
+			world.playSound(null, blockPos, SoundEvents.field_15102, SoundCategory.field_15245, 1.0F, (1.0F + world.getRandom().nextFloat() * 0.2F) * 0.7F);
+		}
 	}
 
 	@Override

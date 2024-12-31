@@ -4,14 +4,15 @@ import java.util.Random;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class AbstractPressurePlateBlock extends Block {
 	protected static final VoxelShape PRESSED_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 0.5, 15.0);
@@ -28,7 +29,7 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 20;
 	}
 
@@ -47,18 +48,16 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		BlockPos blockPos2 = blockPos.down();
-		return isSolidMediumSquare(viewableWorld, blockPos2) || isSolidSmallSquare(viewableWorld, blockPos2, Direction.field_11036);
+		return topCoversMediumSquare(worldView, blockPos2) || sideCoversSmallSquare(worldView, blockPos2, Direction.field_11036);
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!world.isClient) {
-			int i = this.getRedstoneOutput(blockState);
-			if (i > 0) {
-				this.updatePlateState(world, blockPos, blockState, i);
-			}
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		int i = this.getRedstoneOutput(blockState);
+		if (i > 0) {
+			this.updatePlateState(serverWorld, blockPos, blockState, i);
 		}
 	}
 
@@ -80,7 +79,7 @@ public abstract class AbstractPressurePlateBlock extends Block {
 			BlockState blockState2 = this.setRedstoneOutput(blockState, j);
 			world.setBlockState(blockPos, blockState2, 2);
 			this.updateNeighbors(world, blockPos);
-			world.scheduleBlockRender(blockPos, blockState, blockState2);
+			world.checkBlockRerender(blockPos, blockState, blockState2);
 		}
 
 		if (!bl2 && bl) {

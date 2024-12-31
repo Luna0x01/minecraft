@@ -13,7 +13,7 @@ public class SwampSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> {
 		super(function);
 	}
 
-	public void method_15333(
+	public void generate(
 		Random random,
 		Chunk chunk,
 		Biome biome,
@@ -27,7 +27,7 @@ public class SwampSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> {
 		long m,
 		TernarySurfaceConfig ternarySurfaceConfig
 	) {
-		double e = Biome.FOLIAGE_NOISE.sample((double)i * 0.25, (double)j * 0.25);
+		double e = Biome.FOLIAGE_NOISE.sample((double)i * 0.25, (double)j * 0.25, false);
 		if (e > 0.0) {
 			int n = i & 15;
 			int o = j & 15;

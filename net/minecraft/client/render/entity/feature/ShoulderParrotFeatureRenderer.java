@@ -1,9 +1,12 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.ParrotEntityRenderer;
 import net.minecraft.client.render.entity.model.ParrotEntityModel;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
@@ -15,27 +18,23 @@ public class ShoulderParrotFeatureRenderer<T extends PlayerEntity> extends Featu
 		super(featureRendererContext);
 	}
 
-	public void method_4185(T playerEntity, float f, float g, float h, float i, float j, float k, float l) {
-		GlStateManager.enableRescaleNormal();
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.renderShoulderParrot(playerEntity, f, g, h, j, k, l, true);
-		this.renderShoulderParrot(playerEntity, f, g, h, j, k, l, false);
-		GlStateManager.disableRescaleNormal();
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T playerEntity, float f, float g, float h, float j, float k, float l
+	) {
+		this.renderShoulderParrot(matrixStack, vertexConsumerProvider, i, playerEntity, f, g, k, l, true);
+		this.renderShoulderParrot(matrixStack, vertexConsumerProvider, i, playerEntity, f, g, k, l, false);
 	}
 
-	private void renderShoulderParrot(T playerEntity, float f, float g, float h, float i, float j, float k, boolean bl) {
+	private void renderShoulderParrot(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T playerEntity, float f, float g, float h, float j, boolean bl
+	) {
 		CompoundTag compoundTag = bl ? playerEntity.getShoulderEntityLeft() : playerEntity.getShoulderEntityRight();
 		EntityType.get(compoundTag.getString("id")).filter(entityType -> entityType == EntityType.field_6104).ifPresent(entityType -> {
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef(bl ? 0.4F : -0.4F, playerEntity.isInSneakingPose() ? -1.3F : -1.5F, 0.0F);
-			this.bindTexture(ParrotEntityRenderer.SKINS[compoundTag.getInt("Variant")]);
-			this.model.method_17106(f, g, i, j, k, playerEntity.age);
-			GlStateManager.popMatrix();
+			matrixStack.push();
+			matrixStack.translate(bl ? 0.4F : -0.4F, playerEntity.isInSneakingPose() ? -1.3F : -1.5, 0.0);
+			VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(this.model.getLayer(ParrotEntityRenderer.SKINS[compoundTag.getInt("Variant")]));
+			this.model.method_17106(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, f, g, h, j, playerEntity.age);
+			matrixStack.pop();
 		});
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return false;
 	}
 }

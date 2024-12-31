@@ -158,9 +158,9 @@ public class TeleportCommand {
 				serverCommandSource,
 				entity2,
 				(ServerWorld)entity.world,
-				entity.x,
-				entity.y,
-				entity.z,
+				entity.getX(),
+				entity.getY(),
+				entity.getZ(),
 				EnumSet.noneOf(PlayerPositionLookS2CPacket.Flag.class),
 				entity.yaw,
 				entity.pitch,
@@ -248,10 +248,10 @@ public class TeleportCommand {
 	) {
 		if (entity instanceof ServerPlayerEntity) {
 			ChunkPos chunkPos = new ChunkPos(new BlockPos(d, e, f));
-			serverWorld.method_14178().addTicket(ChunkTicketType.field_19347, chunkPos, 1, entity.getEntityId());
+			serverWorld.getChunkManager().addTicket(ChunkTicketType.field_19347, chunkPos, 1, entity.getEntityId());
 			entity.stopRiding();
 			if (((ServerPlayerEntity)entity).isSleeping()) {
-				((ServerPlayerEntity)entity).wakeUp(true, true, false);
+				((ServerPlayerEntity)entity).wakeUp(true, true);
 			}
 
 			if (serverWorld == entity.world) {
@@ -266,7 +266,7 @@ public class TeleportCommand {
 			float j = MathHelper.wrapDegrees(h);
 			j = MathHelper.clamp(j, -90.0F, 90.0F);
 			if (serverWorld == entity.world) {
-				entity.setPositionAndAngles(d, e, f, i, j);
+				entity.refreshPositionAndAngles(d, e, f, i, j);
 				entity.setHeadYaw(i);
 			} else {
 				entity.detach();
@@ -278,9 +278,9 @@ public class TeleportCommand {
 				}
 
 				entity.copyFrom(entity2);
-				entity.setPositionAndAngles(d, e, f, i, j);
+				entity.refreshPositionAndAngles(d, e, f, i, j);
 				entity.setHeadYaw(i);
-				serverWorld.method_18769(entity);
+				serverWorld.onDimensionChanged(entity);
 				entity2.removed = true;
 			}
 		}

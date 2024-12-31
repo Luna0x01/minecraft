@@ -49,7 +49,7 @@ public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	public EntitySpawnS2CPacket(Entity entity, int i) {
-		this(entity.getEntityId(), entity.getUuid(), entity.x, entity.y, entity.z, entity.pitch, entity.yaw, entity.getType(), i, entity.getVelocity());
+		this(entity.getEntityId(), entity.getUuid(), entity.getX(), entity.getY(), entity.getZ(), entity.pitch, entity.yaw, entity.getType(), i, entity.getVelocity());
 	}
 
 	public EntitySpawnS2CPacket(Entity entity, EntityType<?> entityType, int i, BlockPos blockPos) {
@@ -71,7 +71,7 @@ public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void read(PacketByteBuf packetByteBuf) throws IOException {
 		this.id = packetByteBuf.readVarInt();
 		this.uuid = packetByteBuf.readUuid();
-		this.entityTypeId = Registry.ENTITY_TYPE.get(packetByteBuf.readVarInt());
+		this.entityTypeId = Registry.field_11145.get(packetByteBuf.readVarInt());
 		this.x = packetByteBuf.readDouble();
 		this.y = packetByteBuf.readDouble();
 		this.z = packetByteBuf.readDouble();
@@ -87,7 +87,7 @@ public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void write(PacketByteBuf packetByteBuf) throws IOException {
 		packetByteBuf.writeVarInt(this.id);
 		packetByteBuf.writeUuid(this.uuid);
-		packetByteBuf.writeVarInt(Registry.ENTITY_TYPE.getRawId(this.entityTypeId));
+		packetByteBuf.writeVarInt(Registry.field_11145.getRawId(this.entityTypeId));
 		packetByteBuf.writeDouble(this.x);
 		packetByteBuf.writeDouble(this.y);
 		packetByteBuf.writeDouble(this.z);
@@ -99,7 +99,7 @@ public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		packetByteBuf.writeShort(this.velocityZ);
 	}
 
-	public void method_11178(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onEntitySpawn(this);
 	}
 

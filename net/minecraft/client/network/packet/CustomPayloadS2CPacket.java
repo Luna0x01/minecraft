@@ -19,6 +19,10 @@ public class CustomPayloadS2CPacket implements Packet<ClientPlayPacketListener> 
 	public static final Identifier DEBUG_VILLAGE_SECTIONS = new Identifier("debug/village_sections");
 	public static final Identifier DEBUG_GOAL_SELECTOR = new Identifier("debug/goal_selector");
 	public static final Identifier DEBUG_BRAIN = new Identifier("debug/brain");
+	public static final Identifier DEBUG_BEE = new Identifier("debug/bee");
+	public static final Identifier DEBUG_HIVE = new Identifier("debug/hive");
+	public static final Identifier DEBUG_GAME_TEST_ADD_MARKER = new Identifier("debug/game_test_add_marker");
+	public static final Identifier DEBUG_GAME_TEST_CLEAR = new Identifier("debug/game_test_clear");
 	public static final Identifier DEBUG_RAIDS = new Identifier("debug/raids");
 	private Identifier channel;
 	private PacketByteBuf data;
@@ -51,7 +55,7 @@ public class CustomPayloadS2CPacket implements Packet<ClientPlayPacketListener> 
 		packetByteBuf.writeBytes(this.data.copy());
 	}
 
-	public void method_11457(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onCustomPayload(this);
 	}
 

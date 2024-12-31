@@ -3,7 +3,6 @@ package net.minecraft.world.gen.feature;
 import com.mojang.datafixers.Dynamic;
 import java.util.Random;
 import java.util.function.Function;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
@@ -15,33 +14,37 @@ public class SpringFeature extends Feature<SpringFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_13979(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, SpringFeatureConfig springFeatureConfig
 	) {
-		if (!Block.isNaturalStone(iWorld.getBlockState(blockPos.up()).getBlock())) {
+		if (!springFeatureConfig.validBlocks.contains(iWorld.getBlockState(blockPos.up()).getBlock())) {
 			return false;
-		} else if (!Block.isNaturalStone(iWorld.getBlockState(blockPos.down()).getBlock())) {
+		} else if (springFeatureConfig.requiresBlockBelow && !springFeatureConfig.validBlocks.contains(iWorld.getBlockState(blockPos.down()).getBlock())) {
 			return false;
 		} else {
 			BlockState blockState = iWorld.getBlockState(blockPos);
-			if (!blockState.isAir() && !Block.isNaturalStone(blockState.getBlock())) {
+			if (!blockState.isAir() && !springFeatureConfig.validBlocks.contains(blockState.getBlock())) {
 				return false;
 			} else {
 				int i = 0;
 				int j = 0;
-				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.west()).getBlock())) {
+				if (springFeatureConfig.validBlocks.contains(iWorld.getBlockState(blockPos.west()).getBlock())) {
 					j++;
 				}
 
-				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.east()).getBlock())) {
+				if (springFeatureConfig.validBlocks.contains(iWorld.getBlockState(blockPos.east()).getBlock())) {
 					j++;
 				}
 
-				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.north()).getBlock())) {
+				if (springFeatureConfig.validBlocks.contains(iWorld.getBlockState(blockPos.north()).getBlock())) {
 					j++;
 				}
 
-				if (Block.isNaturalStone(iWorld.getBlockState(blockPos.south()).getBlock())) {
+				if (springFeatureConfig.validBlocks.contains(iWorld.getBlockState(blockPos.south()).getBlock())) {
+					j++;
+				}
+
+				if (springFeatureConfig.validBlocks.contains(iWorld.getBlockState(blockPos.down()).getBlock())) {
 					j++;
 				}
 
@@ -62,7 +65,11 @@ public class SpringFeature extends Feature<SpringFeatureConfig> {
 					k++;
 				}
 
-				if (j == 3 && k == 1) {
+				if (iWorld.isAir(blockPos.down())) {
+					k++;
+				}
+
+				if (j == springFeatureConfig.rockCount && k == springFeatureConfig.holeCount) {
 					iWorld.setBlockState(blockPos, springFeatureConfig.state.getBlockState(), 2);
 					iWorld.getFluidTickScheduler().schedule(blockPos, springFeatureConfig.state.getFluid(), 0);
 					i++;

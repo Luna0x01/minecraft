@@ -1,71 +1,33 @@
 package net.minecraft.client.render;
 
-import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.datafixers.util.Pair;
 import java.nio.ByteBuffer;
-import java.util.List;
+import org.lwjgl.system.MemoryUtil;
 
 public class BufferRenderer {
-	public void draw(BufferBuilder bufferBuilder) {
-		if (bufferBuilder.getVertexCount() > 0) {
-			VertexFormat vertexFormat = bufferBuilder.getVertexFormat();
-			int i = vertexFormat.getVertexSize();
-			ByteBuffer byteBuffer = bufferBuilder.getByteBuffer();
-			List<VertexFormatElement> list = vertexFormat.getElements();
-
-			for (int j = 0; j < list.size(); j++) {
-				VertexFormatElement vertexFormatElement = (VertexFormatElement)list.get(j);
-				VertexFormatElement.Type type = vertexFormatElement.getType();
-				int k = vertexFormatElement.getFormat().getGlId();
-				int l = vertexFormatElement.getIndex();
-				byteBuffer.position(vertexFormat.getElementOffset(j));
-				switch (type) {
-					case field_1633:
-						GlStateManager.vertexPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GlStateManager.enableClientState(32884);
-						break;
-					case field_1636:
-						GLX.glClientActiveTexture(GLX.GL_TEXTURE0 + l);
-						GlStateManager.texCoordPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GlStateManager.enableClientState(32888);
-						GLX.glClientActiveTexture(GLX.GL_TEXTURE0);
-						break;
-					case COLOR:
-						GlStateManager.colorPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GlStateManager.enableClientState(32886);
-						break;
-					case field_1635:
-						GlStateManager.normalPointer(k, i, byteBuffer);
-						GlStateManager.enableClientState(32885);
-				}
-			}
-
-			GlStateManager.drawArrays(bufferBuilder.getDrawMode(), 0, bufferBuilder.getVertexCount());
-			int m = 0;
-
-			for (int n = list.size(); m < n; m++) {
-				VertexFormatElement vertexFormatElement2 = (VertexFormatElement)list.get(m);
-				VertexFormatElement.Type type2 = vertexFormatElement2.getType();
-				int o = vertexFormatElement2.getIndex();
-				switch (type2) {
-					case field_1633:
-						GlStateManager.disableClientState(32884);
-						break;
-					case field_1636:
-						GLX.glClientActiveTexture(GLX.GL_TEXTURE0 + o);
-						GlStateManager.disableClientState(32888);
-						GLX.glClientActiveTexture(GLX.GL_TEXTURE0);
-						break;
-					case COLOR:
-						GlStateManager.disableClientState(32886);
-						GlStateManager.clearCurrentColor();
-						break;
-					case field_1635:
-						GlStateManager.disableClientState(32885);
-				}
-			}
+	public static void draw(BufferBuilder bufferBuilder) {
+		if (!RenderSystem.isOnRenderThread()) {
+			RenderSystem.recordRenderCall(() -> {
+				Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pairx = bufferBuilder.popData();
+				BufferBuilder.DrawArrayParameters drawArrayParametersx = (BufferBuilder.DrawArrayParameters)pairx.getFirst();
+				draw((ByteBuffer)pairx.getSecond(), drawArrayParametersx.getMode(), drawArrayParametersx.getVertexFormat(), drawArrayParametersx.getCount());
+			});
+		} else {
+			Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = bufferBuilder.popData();
+			BufferBuilder.DrawArrayParameters drawArrayParameters = (BufferBuilder.DrawArrayParameters)pair.getFirst();
+			draw((ByteBuffer)pair.getSecond(), drawArrayParameters.getMode(), drawArrayParameters.getVertexFormat(), drawArrayParameters.getCount());
 		}
+	}
 
-		bufferBuilder.clear();
+	private static void draw(ByteBuffer byteBuffer, int i, VertexFormat vertexFormat, int j) {
+		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
+		byteBuffer.clear();
+		if (j > 0) {
+			vertexFormat.startDrawing(MemoryUtil.memAddress(byteBuffer));
+			GlStateManager.drawArrays(i, 0, j);
+			vertexFormat.endDrawing();
+		}
 	}
 }

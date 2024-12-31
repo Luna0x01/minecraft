@@ -6,11 +6,12 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -26,7 +27,7 @@ public class NoteBlock extends Block {
 	public NoteBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory.getDefaultState().with(INSTRUMENT, Instrument.field_12648).with(NOTE, Integer.valueOf(0)).with(POWERED, Boolean.valueOf(false))
+			this.stateManager.getDefaultState().with(INSTRUMENT, Instrument.field_12648).with(NOTE, Integer.valueOf(0)).with(POWERED, Boolean.valueOf(false))
 		);
 	}
 
@@ -64,15 +65,15 @@ public class NoteBlock extends Block {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
 			blockState = blockState.cycle(NOTE);
 			world.setBlockState(blockPos, blockState, 3);
 			this.playNote(world, blockPos);
 			playerEntity.incrementStat(Stats.field_15393);
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -96,7 +97,7 @@ public class NoteBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(INSTRUMENT, POWERED, NOTE);
 	}
 }

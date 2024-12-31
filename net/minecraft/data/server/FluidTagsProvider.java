@@ -11,13 +11,13 @@ import net.minecraft.util.registry.Registry;
 
 public class FluidTagsProvider extends AbstractTagProvider<Fluid> {
 	public FluidTagsProvider(DataGenerator dataGenerator) {
-		super(dataGenerator, Registry.FLUID);
+		super(dataGenerator, Registry.field_11154);
 	}
 
 	@Override
 	protected void configure() {
-		this.method_10512(FluidTags.field_15517).add(Fluids.WATER, Fluids.FLOWING_WATER);
-		this.method_10512(FluidTags.field_15518).add(Fluids.LAVA, Fluids.FLOWING_LAVA);
+		this.getOrCreateTagBuilder(FluidTags.field_15517).add(Fluids.WATER, Fluids.FLOWING_WATER);
+		this.getOrCreateTagBuilder(FluidTags.field_15518).add(Fluids.LAVA, Fluids.FLOWING_LAVA);
 	}
 
 	@Override
@@ -31,7 +31,7 @@ public class FluidTagsProvider extends AbstractTagProvider<Fluid> {
 	}
 
 	@Override
-	protected void method_10511(TagContainer<Fluid> tagContainer) {
+	protected void setContainer(TagContainer<Fluid> tagContainer) {
 		FluidTags.setContainer(tagContainer);
 	}
 }

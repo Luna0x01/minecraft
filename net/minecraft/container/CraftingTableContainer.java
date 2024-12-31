@@ -3,7 +3,7 @@ package net.minecraft.container;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.network.packet.GuiSlotUpdateS2CPacket;
+import net.minecraft.client.network.packet.ContainerSlotUpdateS2CPacket;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.CraftingInventory;
@@ -66,7 +66,7 @@ public class CraftingTableContainer extends CraftingContainer<CraftingInventory>
 			}
 
 			craftingResultInventory.setInvStack(0, itemStack);
-			serverPlayerEntity.networkHandler.sendPacket(new GuiSlotUpdateS2CPacket(i, 0, itemStack));
+			serverPlayerEntity.networkHandler.sendPacket(new ContainerSlotUpdateS2CPacket(i, 0, itemStack));
 		}
 	}
 
@@ -105,7 +105,7 @@ public class CraftingTableContainer extends CraftingContainer<CraftingInventory>
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
@@ -116,13 +116,15 @@ public class CraftingTableContainer extends CraftingContainer<CraftingInventory>
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
-			} else if (i >= 10 && i < 37) {
-				if (!this.insertItem(itemStack2, 37, 46, false)) {
-					return ItemStack.EMPTY;
-				}
-			} else if (i >= 37 && i < 46) {
-				if (!this.insertItem(itemStack2, 10, 37, false)) {
-					return ItemStack.EMPTY;
+			} else if (i >= 10 && i < 46) {
+				if (!this.insertItem(itemStack2, 1, 10, false)) {
+					if (i < 37) {
+						if (!this.insertItem(itemStack2, 37, 46, false)) {
+							return ItemStack.EMPTY;
+						}
+					} else if (!this.insertItem(itemStack2, 10, 37, false)) {
+						return ItemStack.EMPTY;
+					}
 				}
 			} else if (!this.insertItem(itemStack2, 10, 46, false)) {
 				return ItemStack.EMPTY;

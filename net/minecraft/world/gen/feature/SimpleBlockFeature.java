@@ -13,7 +13,7 @@ public class SimpleBlockFeature extends Feature<SimpleBlockFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_13929(
+	public boolean generate(
 		IWorld iWorld,
 		ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator,
 		Random random,

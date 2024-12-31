@@ -26,8 +26,8 @@ import net.minecraft.tag.ItemTags;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MooshroomEntity extends CowEntity {
@@ -41,12 +41,12 @@ public class MooshroomEntity extends CowEntity {
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos blockPos, ViewableWorld viewableWorld) {
-		return viewableWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10402 ? 10.0F : viewableWorld.getBrightness(blockPos) - 0.5F;
+	public float getPathfindingFavor(BlockPos blockPos, WorldView worldView) {
+		return worldView.getBlockState(blockPos.down()).getBlock() == Blocks.field_10402 ? 10.0F : worldView.getBrightness(blockPos) - 0.5F;
 	}
 
-	public static boolean method_20665(EntityType<MooshroomEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		return iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10402 && iWorld.getLightLevel(blockPos, 0) > 8;
+	public static boolean canSpawn(EntityType<MooshroomEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		return iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10402 && iWorld.getBaseLightLevel(blockPos, 0) > 8;
 	}
 
 	@Override
@@ -68,7 +68,7 @@ public class MooshroomEntity extends CowEntity {
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (itemStack.getItem() == Items.field_8428 && this.getBreedingAge() >= 0 && !playerEntity.abilities.creativeMode) {
+		if (itemStack.getItem() == Items.field_8428 && !this.isBaby() && !playerEntity.abilities.creativeMode) {
 			itemStack.decrement(1);
 			boolean bl = false;
 			ItemStack itemStack2;
@@ -97,23 +97,29 @@ public class MooshroomEntity extends CowEntity {
 
 			this.playSound(soundEvent, 1.0F, 1.0F);
 			return true;
-		} else if (itemStack.getItem() == Items.field_8868 && this.getBreedingAge() >= 0) {
-			this.world.addParticle(ParticleTypes.field_11236, this.x, this.y + (double)(this.getHeight() / 2.0F), this.z, 0.0, 0.0, 0.0);
+		} else if (itemStack.getItem() == Items.field_8868 && !this.isBaby()) {
+			this.world.addParticle(ParticleTypes.field_11236, this.getX(), this.getBodyY(0.5), this.getZ(), 0.0, 0.0, 0.0);
 			if (!this.world.isClient) {
 				this.remove();
 				CowEntity cowEntity = EntityType.field_6085.create(this.world);
-				cowEntity.setPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
+				cowEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
 				cowEntity.setHealth(this.getHealth());
-				cowEntity.field_6283 = this.field_6283;
+				cowEntity.bodyYaw = this.bodyYaw;
 				if (this.hasCustomName()) {
 					cowEntity.setCustomName(this.getCustomName());
+					cowEntity.setCustomNameVisible(this.isCustomNameVisible());
 				}
 
+				if (this.isPersistent()) {
+					cowEntity.setPersistent();
+				}
+
+				cowEntity.setInvulnerable(this.isInvulnerable());
 				this.world.spawnEntity(cowEntity);
 
 				for (int i = 0; i < 5; i++) {
 					this.world
-						.spawnEntity(new ItemEntity(this.world, this.x, this.y + (double)this.getHeight(), this.z, new ItemStack(this.getMooshroomType().mushroom.getBlock())));
+						.spawnEntity(new ItemEntity(this.world, this.getX(), this.getBodyY(1.0), this.getZ(), new ItemStack(this.getMooshroomType().mushroom.getBlock())));
 				}
 
 				itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
@@ -128,9 +134,9 @@ public class MooshroomEntity extends CowEntity {
 						this.world
 							.addParticle(
 								ParticleTypes.field_11251,
-								this.x + (double)(this.random.nextFloat() / 2.0F),
-								this.y + (double)(this.getHeight() / 2.0F),
-								this.z + (double)(this.random.nextFloat() / 2.0F),
+								this.getX() + (double)(this.random.nextFloat() / 2.0F),
+								this.getBodyY(0.5),
+								this.getZ() + (double)(this.random.nextFloat() / 2.0F),
 								0.0,
 								(double)(this.random.nextFloat() / 5.0F),
 								0.0
@@ -146,9 +152,9 @@ public class MooshroomEntity extends CowEntity {
 						this.world
 							.addParticle(
 								ParticleTypes.field_11245,
-								this.x + (double)(this.random.nextFloat() / 2.0F),
-								this.y + (double)(this.getHeight() / 2.0F),
-								this.z + (double)(this.random.nextFloat() / 2.0F),
+								this.getX() + (double)(this.random.nextFloat() / 2.0F),
+								this.getBodyY(0.5),
+								this.getZ() + (double)(this.random.nextFloat() / 2.0F),
 								0.0,
 								(double)(this.random.nextFloat() / 5.0F),
 								0.0
@@ -179,11 +185,11 @@ public class MooshroomEntity extends CowEntity {
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
 		this.setType(MooshroomEntity.Type.fromName(compoundTag.getString("Type")));
-		if (compoundTag.containsKey("EffectId", 1)) {
+		if (compoundTag.contains("EffectId", 1)) {
 			this.stewEffect = StatusEffect.byRawId(compoundTag.getByte("EffectId"));
 		}
 
-		if (compoundTag.containsKey("EffectDuration", 3)) {
+		if (compoundTag.contains("EffectDuration", 3)) {
 			this.stewEffectDuration = compoundTag.getInt("EffectDuration");
 		}
 	}
@@ -201,7 +207,7 @@ public class MooshroomEntity extends CowEntity {
 		return MooshroomEntity.Type.fromName(this.dataTracker.get(TYPE));
 	}
 
-	public MooshroomEntity method_6495(PassiveEntity passiveEntity) {
+	public MooshroomEntity createChild(PassiveEntity passiveEntity) {
 		MooshroomEntity mooshroomEntity = EntityType.field_6143.create(this.world);
 		mooshroomEntity.setType(this.chooseBabyType((MooshroomEntity)passiveEntity));
 		return mooshroomEntity;
@@ -221,8 +227,8 @@ public class MooshroomEntity extends CowEntity {
 	}
 
 	public static enum Type {
-		field_18109("red", Blocks.field_10559.getDefaultState()),
-		field_18110("brown", Blocks.field_10251.getDefaultState());
+		field_18109,
+		field_18110;
 
 		private final String name;
 		private final BlockState mushroom;
@@ -244,6 +250,43 @@ public class MooshroomEntity extends CowEntity {
 			}
 
 			return field_18109;
+		}
+
+		static {
+			// $VF: Couldn't be decompiled
+			// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
+			//
+			// Bytecode:
+			// 00: new net/minecraft/entity/passive/MooshroomEntity$Type
+			// 03: dup
+			// 04: ldc "RED"
+			// 06: bipush 0
+			// 07: ldc "red"
+			// 09: getstatic net/minecraft/block/Blocks.field_10559 Lnet/minecraft/block/Block;
+			// 0c: invokevirtual net/minecraft/block/Block.getDefaultState ()Lnet/minecraft/block/BlockState;
+			// 0f: invokespecial net/minecraft/entity/passive/MooshroomEntity$Type.<init> (Ljava/lang/String;ILjava/lang/String;Lnet/minecraft/block/BlockState;)V
+			// 12: putstatic net/minecraft/entity/passive/MooshroomEntity$Type.field_18109 Lnet/minecraft/entity/passive/MooshroomEntity$Type;
+			// 15: new net/minecraft/entity/passive/MooshroomEntity$Type
+			// 18: dup
+			// 19: ldc "BROWN"
+			// 1b: bipush 1
+			// 1c: ldc "brown"
+			// 1e: getstatic net/minecraft/block/Blocks.field_10251 Lnet/minecraft/block/Block;
+			// 21: invokevirtual net/minecraft/block/Block.getDefaultState ()Lnet/minecraft/block/BlockState;
+			// 24: invokespecial net/minecraft/entity/passive/MooshroomEntity$Type.<init> (Ljava/lang/String;ILjava/lang/String;Lnet/minecraft/block/BlockState;)V
+			// 27: putstatic net/minecraft/entity/passive/MooshroomEntity$Type.field_18110 Lnet/minecraft/entity/passive/MooshroomEntity$Type;
+			// 2a: bipush 2
+			// 2b: anewarray 2
+			// 2e: dup
+			// 2f: bipush 0
+			// 30: getstatic net/minecraft/entity/passive/MooshroomEntity$Type.field_18109 Lnet/minecraft/entity/passive/MooshroomEntity$Type;
+			// 33: aastore
+			// 34: dup
+			// 35: bipush 1
+			// 36: getstatic net/minecraft/entity/passive/MooshroomEntity$Type.field_18110 Lnet/minecraft/entity/passive/MooshroomEntity$Type;
+			// 39: aastore
+			// 3a: putstatic net/minecraft/entity/passive/MooshroomEntity$Type.field_18113 [Lnet/minecraft/entity/passive/MooshroomEntity$Type;
+			// 3d: return
 		}
 	}
 }

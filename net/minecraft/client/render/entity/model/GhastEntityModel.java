@@ -1,52 +1,48 @@
 package net.minecraft.client.render.entity.model;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import java.util.Random;
-import net.minecraft.client.model.Cuboid;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class GhastEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid field_3373;
-	private final Cuboid[] field_3372 = new Cuboid[9];
+public class GhastEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+	private final ModelPart[] field_3372 = new ModelPart[9];
+	private final ImmutableList<ModelPart> field_20929;
 
 	public GhastEntityModel() {
-		int i = -16;
-		this.field_3373 = new Cuboid(this, 0, 0);
-		this.field_3373.addBox(-8.0F, -8.0F, -8.0F, 16, 16, 16);
-		this.field_3373.rotationPointY += 8.0F;
+		Builder<ModelPart> builder = ImmutableList.builder();
+		ModelPart modelPart = new ModelPart(this, 0, 0);
+		modelPart.addCuboid(-8.0F, -8.0F, -8.0F, 16.0F, 16.0F, 16.0F);
+		modelPart.pivotY = 17.6F;
+		builder.add(modelPart);
 		Random random = new Random(1660L);
 
-		for (int j = 0; j < this.field_3372.length; j++) {
-			this.field_3372[j] = new Cuboid(this, 0, 0);
-			float f = (((float)(j % 3) - (float)(j / 3 % 2) * 0.5F + 0.25F) / 2.0F * 2.0F - 1.0F) * 5.0F;
-			float g = ((float)(j / 3) / 2.0F * 2.0F - 1.0F) * 5.0F;
-			int k = random.nextInt(7) + 8;
-			this.field_3372[j].addBox(-1.0F, 0.0F, -1.0F, 2, k, 2);
-			this.field_3372[j].rotationPointX = f;
-			this.field_3372[j].rotationPointZ = g;
-			this.field_3372[j].rotationPointY = 15.0F;
+		for (int i = 0; i < this.field_3372.length; i++) {
+			this.field_3372[i] = new ModelPart(this, 0, 0);
+			float f = (((float)(i % 3) - (float)(i / 3 % 2) * 0.5F + 0.25F) / 2.0F * 2.0F - 1.0F) * 5.0F;
+			float g = ((float)(i / 3) / 2.0F * 2.0F - 1.0F) * 5.0F;
+			int j = random.nextInt(7) + 8;
+			this.field_3372[i].addCuboid(-1.0F, 0.0F, -1.0F, 2.0F, (float)j, 2.0F);
+			this.field_3372[i].pivotX = f;
+			this.field_3372[i].pivotZ = g;
+			this.field_3372[i].pivotY = 24.6F;
+			builder.add(this.field_3372[i]);
+		}
+
+		this.field_20929 = builder.build();
+	}
+
+	@Override
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
+		for (int k = 0; k < this.field_3372.length; k++) {
+			this.field_3372[k].pitch = 0.2F * MathHelper.sin(h * 0.3F + (float)k) + 0.4F;
 		}
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
-		for (int l = 0; l < this.field_3372.length; l++) {
-			this.field_3372[l].pitch = 0.2F * MathHelper.sin(h * 0.3F + (float)l) + 0.4F;
-		}
-	}
-
-	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.setAngles(entity, f, g, h, i, j, k);
-		GlStateManager.pushMatrix();
-		GlStateManager.translatef(0.0F, 0.6F, 0.0F);
-		this.field_3373.render(k);
-
-		for (Cuboid cuboid : this.field_3372) {
-			cuboid.render(k);
-		}
-
-		GlStateManager.popMatrix();
+	public Iterable<ModelPart> getParts() {
+		return this.field_20929;
 	}
 }

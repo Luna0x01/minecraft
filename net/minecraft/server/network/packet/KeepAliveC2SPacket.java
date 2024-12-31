@@ -15,7 +15,7 @@ public class KeepAliveC2SPacket implements Packet<ServerPlayPacketListener> {
 		this.id = l;
 	}
 
-	public void method_12266(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onKeepAlive(this);
 	}
 

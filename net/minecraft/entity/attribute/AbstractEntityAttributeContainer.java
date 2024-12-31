@@ -67,4 +67,13 @@ public abstract class AbstractEntityAttributeContainer {
 			}
 		}
 	}
+
+	public void copyFrom(AbstractEntityAttributeContainer abstractEntityAttributeContainer) {
+		this.values().forEach(entityAttributeInstance -> {
+			EntityAttributeInstance entityAttributeInstance2 = abstractEntityAttributeContainer.get(entityAttributeInstance.getAttribute());
+			if (entityAttributeInstance2 != null) {
+				entityAttributeInstance.copyFrom(entityAttributeInstance2);
+			}
+		});
+	}
 }

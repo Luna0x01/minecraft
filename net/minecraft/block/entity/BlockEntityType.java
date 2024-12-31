@@ -9,10 +9,12 @@ import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.datafixers.Schemas;
-import net.minecraft.datafixers.TypeReferences;
+import net.minecraft.datafixer.Schemas;
+import net.minecraft.datafixer.TypeReferences;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.BlockView;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -214,13 +216,16 @@ public class BlockEntityType<T extends BlockEntity> {
 	public static final BlockEntityType<CampfireBlockEntity> field_17380 = create(
 		"campfire", BlockEntityType.Builder.create(CampfireBlockEntity::new, Blocks.field_17350)
 	);
+	public static final BlockEntityType<BeehiveBlockEntity> field_20431 = create(
+		"beehive", BlockEntityType.Builder.create(BeehiveBlockEntity::new, Blocks.field_20421, Blocks.field_20422)
+	);
 	private final Supplier<? extends T> supplier;
 	private final Set<Block> blocks;
 	private final Type<?> type;
 
 	@Nullable
 	public static Identifier getId(BlockEntityType<?> blockEntityType) {
-		return Registry.BLOCK_ENTITY.getId(blockEntityType);
+		return Registry.field_11137.getId(blockEntityType);
 	}
 
 	private static <T extends BlockEntity> BlockEntityType<T> create(String string, BlockEntityType.Builder<T> builder) {
@@ -230,19 +235,18 @@ public class BlockEntityType<T extends BlockEntity> {
 			type = Schemas.getFixer()
 				.getSchema(DataFixUtils.makeKey(SharedConstants.getGameVersion().getWorldVersion()))
 				.getChoiceType(TypeReferences.BLOCK_ENTITY, string);
-		} catch (IllegalStateException var4) {
+		} catch (IllegalArgumentException var4) {
+			LOGGER.error("No data fixer registered for block entity {}", string);
 			if (SharedConstants.isDevelopment) {
 				throw var4;
 			}
-
-			LOGGER.warn("No data fixer registered for block entity {}", string);
 		}
 
 		if (builder.blocks.isEmpty()) {
 			LOGGER.warn("Block entity type {} requires at least one valid block to be defined!", string);
 		}
 
-		return Registry.register(Registry.BLOCK_ENTITY, string, builder.build(type));
+		return Registry.register(Registry.field_11137, string, builder.build(type));
 	}
 
 	public BlockEntityType(Supplier<? extends T> supplier, Set<Block> set, Type<?> type) {
@@ -258,6 +262,12 @@ public class BlockEntityType<T extends BlockEntity> {
 
 	public boolean supports(Block block) {
 		return this.blocks.contains(block);
+	}
+
+	@Nullable
+	public T get(BlockView blockView, BlockPos blockPos) {
+		BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
+		return (T)(blockEntity != null && blockEntity.getType() == this ? blockEntity : null);
 	}
 
 	public static final class Builder<T extends BlockEntity> {

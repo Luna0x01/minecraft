@@ -1,6 +1,11 @@
 package net.minecraft.client.gui.screen;
 
-import net.minecraft.client.gui.screen.controls.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.options.AccessibilityScreen;
+import net.minecraft.client.gui.screen.options.ChatOptionsScreen;
+import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
+import net.minecraft.client.gui.screen.options.LanguageOptionsScreen;
+import net.minecraft.client.gui.screen.options.SkinOptionsScreen;
+import net.minecraft.client.gui.screen.options.SoundOptionsScreen;
 import net.minecraft.client.gui.screen.resourcepack.ResourcePackOptionsScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.LockButtonWidget;
@@ -98,7 +103,7 @@ public class SettingsScreen extends Screen {
 				150,
 				20,
 				I18n.translate("options.skinCustomisation"),
-				buttonWidget -> this.minecraft.openScreen(new SkinOptionsScreen(this))
+				buttonWidget -> this.minecraft.openScreen(new SkinOptionsScreen(this, this.settings))
 			)
 		);
 		this.addButton(
@@ -158,7 +163,7 @@ public class SettingsScreen extends Screen {
 				150,
 				20,
 				I18n.translate("options.resourcepack"),
-				buttonWidget -> this.minecraft.openScreen(new ResourcePackOptionsScreen(this))
+				buttonWidget -> this.minecraft.openScreen(new ResourcePackOptionsScreen(this, this.settings))
 			)
 		);
 		this.addButton(

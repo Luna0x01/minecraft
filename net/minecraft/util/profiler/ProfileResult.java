@@ -6,7 +6,7 @@ import java.util.List;
 public interface ProfileResult {
 	List<ProfilerTiming> getTimings(String string);
 
-	boolean saveToFile(File file);
+	boolean save(File file);
 
 	long getStartTime();
 
@@ -24,9 +24,7 @@ public interface ProfileResult {
 		return this.getEndTick() - this.getStartTick();
 	}
 
-	String getTimingTreeString();
-
-	static String method_21721(String string) {
+	static String getHumanReadableName(String string) {
 		return string.replace('\u001e', '.');
 	}
 }

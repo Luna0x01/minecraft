@@ -7,9 +7,10 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -25,7 +26,7 @@ public abstract class AbstractFurnaceBlock extends BlockWithEntity {
 
 	protected AbstractFurnaceBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(LIT, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(LIT, Boolean.valueOf(false)));
 	}
 
 	@Override
@@ -34,12 +35,13 @@ public abstract class AbstractFurnaceBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		if (!world.isClient) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		if (world.isClient) {
+			return ActionResult.field_5812;
+		} else {
 			this.openContainer(world, blockPos, playerEntity);
+			return ActionResult.field_5812;
 		}
-
-		return true;
 	}
 
 	protected abstract void openContainer(World world, BlockPos blockPos, PlayerEntity playerEntity);
@@ -98,7 +100,7 @@ public abstract class AbstractFurnaceBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, LIT);
 	}
 }

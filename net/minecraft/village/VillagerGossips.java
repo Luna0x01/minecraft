@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 public class VillagerGossips {
 	private final Map<UUID, VillagerGossips.Reputation> entityReputation = Maps.newHashMap();
@@ -104,7 +104,7 @@ public class VillagerGossips {
 	public void deserialize(Dynamic<?> dynamic) {
 		dynamic.asStream()
 			.map(VillagerGossips.GossipEntry::deserialize)
-			.flatMap(SystemUtil::stream)
+			.flatMap(Util::stream)
 			.forEach(gossipEntry -> this.getReputationFor(gossipEntry.target).associatedGossip.put(gossipEntry.type, gossipEntry.value));
 	}
 
@@ -137,7 +137,7 @@ public class VillagerGossips {
 		}
 
 		public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-			return SystemUtil.writeUuid(
+			return Util.writeUuid(
 				"Target",
 				this.target,
 				new Dynamic(
@@ -156,7 +156,7 @@ public class VillagerGossips {
 				.asString()
 				.map(VillageGossipType::byKey)
 				.flatMap(
-					villageGossipType -> SystemUtil.readUuid("Target", dynamic)
+					villageGossipType -> Util.readUuid("Target", dynamic)
 							.flatMap(uUID -> dynamic.get("Value").asNumber().map(number -> new VillagerGossips.GossipEntry(uUID, villageGossipType, number.intValue())))
 				);
 		}

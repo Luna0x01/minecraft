@@ -26,6 +26,6 @@ public class SensorType<U extends Sensor<?>> {
 	}
 
 	private static <U extends Sensor<?>> SensorType<U> register(String string, Supplier<U> supplier) {
-		return Registry.register(Registry.SENSOR_TYPE, new Identifier(string), new SensorType<>(supplier));
+		return Registry.register(Registry.field_18794, new Identifier(string), new SensorType<>(supplier));
 	}
 }

@@ -1,7 +1,7 @@
 package net.minecraft.client.gui.hud;
 
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
@@ -21,12 +21,12 @@ public class BossBarHud extends DrawableHelper {
 
 	public void render() {
 		if (!this.bossBars.isEmpty()) {
-			int i = this.client.window.getScaledWidth();
+			int i = this.client.getWindow().getScaledWidth();
 			int j = 12;
 
 			for (ClientBossBar clientBossBar : this.bossBars.values()) {
 				int k = i / 2 - 91;
-				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 				this.client.getTextureManager().bindTexture(BAR_TEX);
 				this.renderBossBar(k, j, clientBossBar);
 				String string = clientBossBar.getName().asFormattedString();
@@ -35,7 +35,7 @@ public class BossBarHud extends DrawableHelper {
 				int o = j - 9;
 				this.client.textRenderer.drawWithShadow(string, (float)n, (float)o, 16777215);
 				j += 10 + 9;
-				if (j >= this.client.window.getScaledHeight() / 3) {
+				if (j >= this.client.getWindow().getScaledHeight() / 3) {
 					break;
 				}
 			}

@@ -3,18 +3,19 @@ package net.minecraft.structure;
 import java.util.List;
 import java.util.Random;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.structure.processor.BlockIgnoreStructureProcessor;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.feature.ShipwreckFeatureConfig;
-import net.minecraft.world.loot.LootTables;
 
 public class ShipwreckGenerator {
 	private static final BlockPos field_14536 = new BlockPos(4, 0, 15);
@@ -109,7 +110,7 @@ public class ShipwreckGenerator {
 		}
 
 		@Override
-		protected void handleMetadata(String string, BlockPos blockPos, IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox) {
+		protected void handleMetadata(String string, BlockPos blockPos, IWorld iWorld, Random random, BlockBox blockBox) {
 			if ("map_chest".equals(string)) {
 				LootableContainerBlockEntity.setLootTable(iWorld, random, blockPos.down(), LootTables.field_841);
 			} else if ("treasure_chest".equals(string)) {
@@ -120,21 +121,29 @@ public class ShipwreckGenerator {
 		}
 
 		@Override
-		public boolean generate(IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox, ChunkPos chunkPos) {
+		public boolean generate(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
 			int i = 256;
 			int j = 0;
-			BlockPos blockPos = this.pos.add(this.structure.getSize().getX() - 1, 0, this.structure.getSize().getZ() - 1);
+			BlockPos blockPos = this.structure.getSize();
+			Heightmap.Type type = this.grounded ? Heightmap.Type.field_13194 : Heightmap.Type.field_13195;
+			int k = blockPos.getX() * blockPos.getZ();
+			if (k == 0) {
+				j = iWorld.getTopY(type, this.pos.getX(), this.pos.getZ());
+			} else {
+				BlockPos blockPos2 = this.pos.add(blockPos.getX() - 1, 0, blockPos.getZ() - 1);
 
-			for (BlockPos blockPos2 : BlockPos.iterate(this.pos, blockPos)) {
-				int k = iWorld.getTop(this.grounded ? Heightmap.Type.field_13194 : Heightmap.Type.field_13195, blockPos2.getX(), blockPos2.getZ());
-				j += k;
-				i = Math.min(i, k);
+				for (BlockPos blockPos3 : BlockPos.iterate(this.pos, blockPos2)) {
+					int l = iWorld.getTopY(type, blockPos3.getX(), blockPos3.getZ());
+					j += l;
+					i = Math.min(i, l);
+				}
+
+				j /= k;
 			}
 
-			j /= this.structure.getSize().getX() * this.structure.getSize().getZ();
-			int l = this.grounded ? i - this.structure.getSize().getY() / 2 - random.nextInt(3) : j;
-			this.pos = new BlockPos(this.pos.getX(), l, this.pos.getZ());
-			return super.generate(iWorld, random, mutableIntBoundingBox, chunkPos);
+			int m = this.grounded ? i - blockPos.getY() / 2 - random.nextInt(3) : j;
+			this.pos = new BlockPos(this.pos.getX(), m, this.pos.getZ());
+			return super.generate(iWorld, chunkGenerator, random, blockBox, chunkPos);
 		}
 	}
 }

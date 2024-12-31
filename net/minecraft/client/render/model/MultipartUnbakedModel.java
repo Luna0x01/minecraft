@@ -7,6 +7,7 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.mojang.datafixers.util.Pair;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
@@ -21,15 +22,16 @@ import net.minecraft.client.render.model.json.ModelVariantMap;
 import net.minecraft.client.render.model.json.MultipartModelComponent;
 import net.minecraft.client.render.model.json.WeightedUnbakedModel;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.state.StateFactory;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.state.StateManager;
 import net.minecraft.util.Identifier;
 
 public class MultipartUnbakedModel implements UnbakedModel {
-	private final StateFactory<Block, BlockState> stateFactory;
+	private final StateManager<Block, BlockState> stateFactory;
 	private final List<MultipartModelComponent> components;
 
-	public MultipartUnbakedModel(StateFactory<Block, BlockState> stateFactory, List<MultipartModelComponent> list) {
-		this.stateFactory = stateFactory;
+	public MultipartUnbakedModel(StateManager<Block, BlockState> stateManager, List<MultipartModelComponent> list) {
+		this.stateFactory = stateManager;
 		this.components = list;
 	}
 
@@ -71,8 +73,8 @@ public class MultipartUnbakedModel implements UnbakedModel {
 	}
 
 	@Override
-	public Collection<Identifier> getTextureDependencies(Function<Identifier, UnbakedModel> function, Set<String> set) {
-		return (Collection<Identifier>)this.getComponents()
+	public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> function, Set<Pair<String, String>> set) {
+		return (Collection<SpriteIdentifier>)this.getComponents()
 			.stream()
 			.flatMap(multipartModelComponent -> multipartModelComponent.getModel().getTextureDependencies(function, set).stream())
 			.collect(Collectors.toSet());
@@ -80,11 +82,11 @@ public class MultipartUnbakedModel implements UnbakedModel {
 
 	@Nullable
 	@Override
-	public BakedModel bake(ModelLoader modelLoader, Function<Identifier, Sprite> function, ModelBakeSettings modelBakeSettings) {
+	public BakedModel bake(ModelLoader modelLoader, Function<SpriteIdentifier, Sprite> function, ModelBakeSettings modelBakeSettings, Identifier identifier) {
 		MultipartBakedModel.Builder builder = new MultipartBakedModel.Builder();
 
 		for (MultipartModelComponent multipartModelComponent : this.getComponents()) {
-			BakedModel bakedModel = multipartModelComponent.getModel().bake(modelLoader, function, modelBakeSettings);
+			BakedModel bakedModel = multipartModelComponent.getModel().bake(modelLoader, function, modelBakeSettings, identifier);
 			if (bakedModel != null) {
 				builder.addComponent(multipartModelComponent.getPredicate(this.stateFactory), bakedModel);
 			}
@@ -100,7 +102,7 @@ public class MultipartUnbakedModel implements UnbakedModel {
 			this.context = deserializationContext;
 		}
 
-		public MultipartUnbakedModel method_3523(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public MultipartUnbakedModel deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			return new MultipartUnbakedModel(this.context.getStateFactory(), this.deserializeComponents(jsonDeserializationContext, jsonElement.getAsJsonArray()));
 		}
 

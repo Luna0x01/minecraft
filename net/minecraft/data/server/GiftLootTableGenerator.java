@@ -3,23 +3,23 @@ package net.minecraft.data.server;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.minecraft.item.Items;
+import net.minecraft.loot.ConstantLootTableRange;
+import net.minecraft.loot.LootPool;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.LootTables;
+import net.minecraft.loot.UniformLootTableRange;
+import net.minecraft.loot.entry.ItemEntry;
+import net.minecraft.loot.function.SetCountLootFunction;
+import net.minecraft.loot.function.SetNbtLootFunction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
-import net.minecraft.world.loot.ConstantLootTableRange;
-import net.minecraft.world.loot.LootPool;
-import net.minecraft.world.loot.LootSupplier;
-import net.minecraft.world.loot.LootTables;
-import net.minecraft.world.loot.UniformLootTableRange;
-import net.minecraft.world.loot.entry.ItemEntry;
-import net.minecraft.world.loot.function.SetCountLootFunction;
-import net.minecraft.world.loot.function.SetNbtLootFunction;
+import net.minecraft.util.Util;
 
-public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, LootSupplier.Builder>> {
-	public void method_20187(BiConsumer<Identifier, LootSupplier.Builder> biConsumer) {
+public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, LootTable.Builder>> {
+	public void accept(BiConsumer<Identifier, LootTable.Builder> biConsumer) {
 		biConsumer.accept(
 			LootTables.field_16216,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -34,7 +34,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19062,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -46,7 +46,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19063,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -59,7 +59,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19064,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -69,7 +69,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19065,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -79,7 +79,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19066,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -90,7 +90,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19067,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -100,97 +100,93 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19068,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
 						.withEntry(ItemEntry.builder(Items.field_8107).setWeight(26))
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:swiftness"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:swiftness"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:slowness"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:slowness"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:strength"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:strength"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:healing"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:healing"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:harming"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:harming"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:leaping"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:leaping"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:regeneration"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:regeneration"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(
-									SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:fire_resistance")))
-								)
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:fire_resistance"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(
-									SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:water_breathing")))
-								)
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:water_breathing"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:invisibility"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:invisibility"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:night_vision"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:night_vision"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:weakness"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:weakness"))))
 						)
 						.withEntry(
 							ItemEntry.builder(Items.field_8087)
-								.method_438(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
-								.method_438(SetNbtLootFunction.builder(SystemUtil.consume(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:poison"))))
+								.withFunction(SetCountLootFunction.builder(UniformLootTableRange.between(0.0F, 1.0F)))
+								.withFunction(SetNbtLootFunction.builder(Util.make(new CompoundTag(), compoundTag -> compoundTag.putString("Potion", "minecraft:poison"))))
 						)
 				)
 		);
 		biConsumer.accept(
 			LootTables.field_19069,
-			LootSupplier.builder().withPool(LootPool.builder().withRolls(ConstantLootTableRange.create(1)).withEntry(ItemEntry.builder(Items.field_8745)))
+			LootTable.builder().withPool(LootPool.builder().withRolls(ConstantLootTableRange.create(1)).withEntry(ItemEntry.builder(Items.field_8745)))
 		);
 		biConsumer.accept(
 			LootTables.field_19070,
-			LootSupplier.builder().withPool(LootPool.builder().withRolls(ConstantLootTableRange.create(1)).withEntry(ItemEntry.builder(Items.field_8529)))
+			LootTable.builder().withPool(LootPool.builder().withRolls(ConstantLootTableRange.create(1)).withEntry(ItemEntry.builder(Items.field_8529)))
 		);
 		biConsumer.accept(
 			LootTables.field_19071,
-			LootSupplier.builder().withPool(LootPool.builder().withRolls(ConstantLootTableRange.create(1)).withEntry(ItemEntry.builder(Items.CLAY)))
+			LootTable.builder().withPool(LootPool.builder().withRolls(ConstantLootTableRange.create(1)).withEntry(ItemEntry.builder(Items.CLAY)))
 		);
 		biConsumer.accept(
 			LootTables.field_19072,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -214,7 +210,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19073,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))
@@ -226,7 +222,7 @@ public class GiftLootTableGenerator implements Consumer<BiConsumer<Identifier, L
 		);
 		biConsumer.accept(
 			LootTables.field_19074,
-			LootSupplier.builder()
+			LootTable.builder()
 				.withPool(
 					LootPool.builder()
 						.withRolls(ConstantLootTableRange.create(1))

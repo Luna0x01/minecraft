@@ -11,7 +11,7 @@ public interface RecipeJsonProvider {
 
 	default JsonObject toJson() {
 		JsonObject jsonObject = new JsonObject();
-		jsonObject.addProperty("type", Registry.RECIPE_SERIALIZER.getId(this.getSerializer()).toString());
+		jsonObject.addProperty("type", Registry.field_17598.getId(this.getSerializer()).toString());
 		this.serialize(jsonObject);
 		return jsonObject;
 	}

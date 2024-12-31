@@ -6,7 +6,7 @@ import com.mojang.datafixers.types.DynamicOps;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.datafixers.NbtOps;
+import net.minecraft.datafixer.NbtOps;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.structure.rule.AbstractRuleTest;
@@ -66,8 +66,8 @@ public class StructureProcessorRule {
 	public static <T> StructureProcessorRule method_16765(Dynamic<T> dynamic) {
 		Dynamic<T> dynamic2 = dynamic.get("input_predicate").orElseEmptyMap();
 		Dynamic<T> dynamic3 = dynamic.get("location_predicate").orElseEmptyMap();
-		AbstractRuleTest abstractRuleTest = DynamicDeserializer.deserialize(dynamic2, Registry.RULE_TEST, "predicate_type", AlwaysTrueRuleTest.INSTANCE);
-		AbstractRuleTest abstractRuleTest2 = DynamicDeserializer.deserialize(dynamic3, Registry.RULE_TEST, "predicate_type", AlwaysTrueRuleTest.INSTANCE);
+		AbstractRuleTest abstractRuleTest = DynamicDeserializer.deserialize(dynamic2, Registry.field_16792, "predicate_type", AlwaysTrueRuleTest.INSTANCE);
+		AbstractRuleTest abstractRuleTest2 = DynamicDeserializer.deserialize(dynamic3, Registry.field_16792, "predicate_type", AlwaysTrueRuleTest.INSTANCE);
 		BlockState blockState = BlockState.deserialize(dynamic.get("output_state").orElseEmptyMap());
 		CompoundTag compoundTag = (CompoundTag)dynamic.get("output_nbt").map(dynamicx -> (Tag)dynamicx.convert(NbtOps.INSTANCE).getValue()).orElse(null);
 		return new StructureProcessorRule(abstractRuleTest, abstractRuleTest2, blockState, compoundTag);

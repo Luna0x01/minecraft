@@ -35,7 +35,7 @@ public class PlayerActionC2SPacket implements Packet<ServerPlayPacketListener> {
 		packetByteBuf.writeByte(this.direction.getId());
 	}
 
-	public void method_12361(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onPlayerAction(this);
 	}
 

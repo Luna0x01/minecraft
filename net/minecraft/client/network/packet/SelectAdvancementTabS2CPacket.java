@@ -18,7 +18,7 @@ public class SelectAdvancementTabS2CPacket implements Packet<ClientPlayPacketLis
 		this.tabId = identifier;
 	}
 
-	public void method_11794(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onSelectAdvancementTab(this);
 	}
 

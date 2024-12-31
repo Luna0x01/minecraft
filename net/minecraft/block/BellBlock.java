@@ -13,10 +13,12 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -25,12 +27,13 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class BellBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 	private static final EnumProperty<Attachment> ATTACHMENT = Properties.ATTACHMENT;
+	public static final BooleanProperty field_20648 = Properties.POWERED;
 	private static final VoxelShape NORTH_SOUTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 4.0, 16.0, 16.0, 12.0);
 	private static final VoxelShape EAST_WEST_SHAPE = Block.createCuboidShape(4.0, 0.0, 0.0, 12.0, 16.0, 16.0);
 	private static final VoxelShape BELL_WAIST_SHAPE = Block.createCuboidShape(5.0, 6.0, 5.0, 11.0, 13.0, 11.0);
@@ -46,7 +49,21 @@ public class BellBlock extends BlockWithEntity {
 
 	public BellBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(ATTACHMENT, Attachment.field_17098));
+		this.setDefaultState(
+			this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(ATTACHMENT, Attachment.field_17098).with(field_20648, Boolean.valueOf(false))
+		);
+	}
+
+	@Override
+	public void neighborUpdate(BlockState blockState, World world, BlockPos blockPos, Block block, BlockPos blockPos2, boolean bl) {
+		boolean bl2 = world.isReceivingRedstonePower(blockPos);
+		if (bl2 != (Boolean)blockState.get(field_20648)) {
+			if (bl2) {
+				this.ring(world, blockPos, null);
+			}
+
+			world.setBlockState(blockPos, blockState.with(field_20648, Boolean.valueOf(bl2)), 3);
+		}
 	}
 
 	@Override
@@ -54,31 +71,28 @@ public class BellBlock extends BlockWithEntity {
 		if (entity instanceof ProjectileEntity) {
 			Entity entity2 = ((ProjectileEntity)entity).getOwner();
 			PlayerEntity playerEntity = entity2 instanceof PlayerEntity ? (PlayerEntity)entity2 : null;
-			this.ring(world, blockState, world.getBlockEntity(blockHitResult.getBlockPos()), blockHitResult, playerEntity, true);
+			this.ring(world, blockState, blockHitResult, playerEntity, true);
 		}
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		return this.ring(world, blockState, world.getBlockEntity(blockPos), blockHitResult, playerEntity, true);
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		return this.ring(world, blockState, blockHitResult, playerEntity, true) ? ActionResult.field_5812 : ActionResult.field_5811;
 	}
 
-	public boolean ring(
-		World world, BlockState blockState, @Nullable BlockEntity blockEntity, BlockHitResult blockHitResult, @Nullable PlayerEntity playerEntity, boolean bl
-	) {
+	public boolean ring(World world, BlockState blockState, BlockHitResult blockHitResult, @Nullable PlayerEntity playerEntity, boolean bl) {
 		Direction direction = blockHitResult.getSide();
 		BlockPos blockPos = blockHitResult.getBlockPos();
 		boolean bl2 = !bl || this.isPointOnBell(blockState, direction, blockHitResult.getPos().y - (double)blockPos.getY());
-		if (!world.isClient && blockEntity instanceof BellBlockEntity && bl2) {
-			((BellBlockEntity)blockEntity).activate(direction);
-			this.ring(world, blockPos);
-			if (playerEntity != null) {
+		if (bl2) {
+			boolean bl3 = this.ring(world, blockPos, direction);
+			if (bl3 && playerEntity != null) {
 				playerEntity.incrementStat(Stats.field_19255);
 			}
 
 			return true;
 		} else {
-			return true;
+			return false;
 		}
 	}
 
@@ -102,8 +116,19 @@ public class BellBlock extends BlockWithEntity {
 		}
 	}
 
-	private void ring(World world, BlockPos blockPos) {
-		world.playSound(null, blockPos, SoundEvents.field_17265, SoundCategory.field_15245, 2.0F, 1.0F);
+	public boolean ring(World world, BlockPos blockPos, @Nullable Direction direction) {
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+		if (!world.isClient && blockEntity instanceof BellBlockEntity) {
+			if (direction == null) {
+				direction = world.getBlockState(blockPos).get(FACING);
+			}
+
+			((BellBlockEntity)blockEntity).activate(direction);
+			world.playSound(null, blockPos, SoundEvents.field_17265, SoundCategory.field_15245, 2.0F, 1.0F);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	private VoxelShape getShape(BlockState blockState) {
@@ -201,8 +226,8 @@ public class BellBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return WallMountedBlock.canPlaceAt(viewableWorld, blockPos, getPlacementSide(blockState).getOpposite());
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return WallMountedBlock.canPlaceAt(worldView, blockPos, getPlacementSide(blockState).getOpposite());
 	}
 
 	private static Direction getPlacementSide(BlockState blockState) {
@@ -222,8 +247,8 @@ public class BellBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
-		builder.add(FACING, ATTACHMENT);
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+		builder.add(FACING, ATTACHMENT, field_20648);
 	}
 
 	@Nullable

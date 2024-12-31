@@ -37,6 +37,9 @@ public class BlockSoundGroup {
 	public static final BlockSoundGroup SLIME = new BlockSoundGroup(
 		1.0F, 1.0F, SoundEvents.field_15194, SoundEvents.field_15180, SoundEvents.field_14788, SoundEvents.field_14640, SoundEvents.field_14560
 	);
+	public static final BlockSoundGroup HONEY = new BlockSoundGroup(
+		1.0F, 1.0F, SoundEvents.field_21070, SoundEvents.field_21075, SoundEvents.field_21073, SoundEvents.field_21072, SoundEvents.field_21071
+	);
 	public static final BlockSoundGroup WET_GRASS = new BlockSoundGroup(
 		1.0F, 1.0F, SoundEvents.field_15120, SoundEvents.field_14774, SoundEvents.field_15025, SoundEvents.field_14953, SoundEvents.field_15207
 	);

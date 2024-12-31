@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.particle.FireworksSparkParticle;
@@ -42,6 +44,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.RegistryTagManager;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.CuboidBlockIterator;
+import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -49,6 +53,7 @@ import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.shape.VoxelShape;
@@ -57,9 +62,13 @@ import net.minecraft.world.GameRules;
 import net.minecraft.world.LightType;
 import net.minecraft.world.TickScheduler;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.level.ColorResolver;
+import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
 
@@ -73,6 +82,12 @@ public class ClientWorld extends World {
 	private int ticksUntilCaveAmbientSound = this.random.nextInt(12000);
 	private Scoreboard scoreboard = new Scoreboard();
 	private final Map<String, MapState> mapStates = Maps.newHashMap();
+	private int lightningTicksLeft;
+	private final Object2ObjectArrayMap<ColorResolver, BiomeColorCache> colorCache = Util.make(new Object2ObjectArrayMap(3), object2ObjectArrayMap -> {
+		object2ObjectArrayMap.put(BiomeColors.GRASS_COLOR, new BiomeColorCache());
+		object2ObjectArrayMap.put(BiomeColors.FOLIAGE_COLOR, new BiomeColorCache());
+		object2ObjectArrayMap.put(BiomeColors.WATER_COLOR, new BiomeColorCache());
+	});
 
 	public ClientWorld(
 		ClientPlayNetworkHandler clientPlayNetworkHandler, LevelInfo levelInfo, DimensionType dimensionType, int i, Profiler profiler, WorldRenderer worldRenderer
@@ -143,15 +158,13 @@ public class ClientWorld extends World {
 	}
 
 	public void tickEntity(Entity entity) {
-		if (entity instanceof PlayerEntity || this.method_2935().shouldTickEntity(entity)) {
-			entity.prevRenderX = entity.x;
-			entity.prevRenderY = entity.y;
-			entity.prevRenderZ = entity.z;
+		if (entity instanceof PlayerEntity || this.getChunkManager().shouldTickEntity(entity)) {
+			entity.resetPosition(entity.getX(), entity.getY(), entity.getZ());
 			entity.prevYaw = entity.yaw;
 			entity.prevPitch = entity.pitch;
 			if (entity.updateNeeded || entity.isSpectator()) {
 				entity.age++;
-				this.getProfiler().push((Supplier<String>)(() -> Registry.ENTITY_TYPE.getId(entity.getType()).toString()));
+				this.getProfiler().push((Supplier<String>)(() -> Registry.field_11145.getId(entity.getType()).toString()));
 				entity.tick();
 				this.getProfiler().pop();
 			}
@@ -168,10 +181,8 @@ public class ClientWorld extends World {
 	public void tickPassenger(Entity entity, Entity entity2) {
 		if (entity2.removed || entity2.getVehicle() != entity) {
 			entity2.stopRiding();
-		} else if (entity2 instanceof PlayerEntity || this.method_2935().shouldTickEntity(entity2)) {
-			entity2.prevRenderX = entity2.x;
-			entity2.prevRenderY = entity2.y;
-			entity2.prevRenderZ = entity2.z;
+		} else if (entity2 instanceof PlayerEntity || this.getChunkManager().shouldTickEntity(entity2)) {
+			entity2.resetPosition(entity2.getX(), entity2.getY(), entity2.getZ());
 			entity2.prevYaw = entity2.yaw;
 			entity2.prevPitch = entity2.pitch;
 			if (entity2.updateNeeded) {
@@ -190,18 +201,18 @@ public class ClientWorld extends World {
 
 	public void checkChunk(Entity entity) {
 		this.getProfiler().push("chunkCheck");
-		int i = MathHelper.floor(entity.x / 16.0);
-		int j = MathHelper.floor(entity.y / 16.0);
-		int k = MathHelper.floor(entity.z / 16.0);
+		int i = MathHelper.floor(entity.getX() / 16.0);
+		int j = MathHelper.floor(entity.getY() / 16.0);
+		int k = MathHelper.floor(entity.getZ() / 16.0);
 		if (!entity.updateNeeded || entity.chunkX != i || entity.chunkY != j || entity.chunkZ != k) {
 			if (entity.updateNeeded && this.isChunkLoaded(entity.chunkX, entity.chunkZ)) {
-				this.method_8497(entity.chunkX, entity.chunkZ).remove(entity, entity.chunkY);
+				this.getChunk(entity.chunkX, entity.chunkZ).remove(entity, entity.chunkY);
 			}
 
 			if (!entity.teleportRequested() && !this.isChunkLoaded(i, k)) {
 				entity.updateNeeded = false;
 			} else {
-				this.method_8497(i, k).addEntity(entity);
+				this.getChunk(i, k).addEntity(entity);
 			}
 		}
 
@@ -210,7 +221,15 @@ public class ClientWorld extends World {
 
 	public void unloadBlockEntities(WorldChunk worldChunk) {
 		this.unloadedBlockEntities.addAll(worldChunk.getBlockEntities().values());
-		this.chunkManager.getLightingProvider().suppressLight(worldChunk.getPos(), false);
+		this.chunkManager.getLightingProvider().setLightEnabled(worldChunk.getPos(), false);
+	}
+
+	public void resetChunkColor(int i, int j) {
+		this.colorCache.forEach((colorResolver, biomeColorCache) -> biomeColorCache.reset(i, j));
+	}
+
+	public void reloadColor() {
+		this.colorCache.forEach((colorResolver, biomeColorCache) -> biomeColorCache.reset());
 	}
 
 	@Override
@@ -228,7 +247,7 @@ public class ClientWorld extends World {
 				double d = blockPos.getSquaredDistance(blockPos2);
 				if (d >= 4.0 && d <= 256.0) {
 					BlockState blockState = this.getBlockState(blockPos2);
-					if (blockState.isAir() && this.getLightLevel(blockPos2, 0) <= this.random.nextInt(8) && this.getLightLevel(LightType.field_9284, blockPos2) <= 0) {
+					if (blockState.isAir() && this.getBaseLightLevel(blockPos2, 0) <= this.random.nextInt(8) && this.getLightLevel(LightType.field_9284, blockPos2) <= 0) {
 						this.playSound(
 							(double)blockPos2.getX() + 0.5,
 							(double)blockPos2.getY() + 0.5,
@@ -266,7 +285,9 @@ public class ClientWorld extends World {
 	private void addEntityPrivate(int i, Entity entity) {
 		this.removeEntity(i);
 		this.regularEntities.put(i, entity);
-		this.method_2935().method_2857(MathHelper.floor(entity.x / 16.0), MathHelper.floor(entity.z / 16.0), ChunkStatus.field_12803, true).addEntity(entity);
+		this.getChunkManager()
+			.getChunk(MathHelper.floor(entity.getX() / 16.0), MathHelper.floor(entity.getZ() / 16.0), ChunkStatus.field_12803, true)
+			.addEntity(entity);
 	}
 
 	public void removeEntity(int i) {
@@ -280,7 +301,7 @@ public class ClientWorld extends World {
 	private void finishRemovingEntity(Entity entity) {
 		entity.detach();
 		if (entity.updateNeeded) {
-			this.method_8497(entity.chunkX, entity.chunkZ).remove(entity);
+			this.getChunk(entity.chunkX, entity.chunkZ).remove(entity);
 		}
 
 		this.players.remove(entity);
@@ -292,8 +313,8 @@ public class ClientWorld extends World {
 		while (var2.hasNext()) {
 			Entry<Entity> entry = (Entry<Entity>)var2.next();
 			Entity entity = (Entity)entry.getValue();
-			int i = MathHelper.floor(entity.x / 16.0);
-			int j = MathHelper.floor(entity.z / 16.0);
+			int i = MathHelper.floor(entity.getX() / 16.0);
+			int j = MathHelper.floor(entity.getZ() / 16.0);
 			if (i == worldChunk.getPos().x && j == worldChunk.getPos().z) {
 				worldChunk.addEntity(entity);
 			}
@@ -318,10 +339,16 @@ public class ClientWorld extends World {
 	public void doRandomBlockDisplayTicks(int i, int j, int k) {
 		int l = 32;
 		Random random = new Random();
-		ItemStack itemStack = this.client.player.getMainHandStack();
-		boolean bl = this.client.interactionManager.getCurrentGameMode() == GameMode.field_9220
-			&& !itemStack.isEmpty()
-			&& itemStack.getItem() == Blocks.field_10499.asItem();
+		boolean bl = false;
+		if (this.client.interactionManager.getCurrentGameMode() == GameMode.field_9220) {
+			for (ItemStack itemStack : this.client.player.getItemsHand()) {
+				if (itemStack.getItem() == Blocks.field_10499.asItem()) {
+					bl = true;
+					break;
+				}
+			}
+		}
+
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int m = 0; m < 667; m++) {
@@ -349,7 +376,7 @@ public class ClientWorld extends World {
 		}
 
 		if (bl && blockState.getBlock() == Blocks.field_10499) {
-			this.addParticle(ParticleTypes.field_11235, (double)((float)m + 0.5F), (double)((float)n + 0.5F), (double)((float)o + 0.5F), 0.0, 0.0, 0.0);
+			this.addParticle(ParticleTypes.field_11235, (double)m + 0.5, (double)n + 0.5, (double)o + 0.5, 0.0, 0.0, 0.0);
 		}
 	}
 
@@ -494,7 +521,7 @@ public class ClientWorld extends World {
 		return DummyClientTickScheduler.get();
 	}
 
-	public ClientChunkManager method_2935() {
+	public ClientChunkManager getChunkManager() {
 		return (ClientChunkManager)super.getChunkManager();
 	}
 
@@ -530,8 +557,8 @@ public class ClientWorld extends World {
 	}
 
 	@Override
-	public void scheduleBlockRender(BlockPos blockPos, BlockState blockState, BlockState blockState2) {
-		this.worldRenderer.method_21596(blockPos, blockState, blockState2);
+	public void checkBlockRerender(BlockPos blockPos, BlockState blockState, BlockState blockState2) {
+		this.worldRenderer.checkBlockRerender(blockPos, blockState, blockState2);
 	}
 
 	public void scheduleBlockRenders(int i, int j, int k) {
@@ -539,8 +566,8 @@ public class ClientWorld extends World {
 	}
 
 	@Override
-	public void setBlockBreakingProgress(int i, BlockPos blockPos, int j) {
-		this.worldRenderer.setBlockBreakingProgress(i, blockPos, j);
+	public void setBlockBreakingInfo(int i, BlockPos blockPos, int j) {
+		this.worldRenderer.setBlockBreakingInfo(i, blockPos, j);
 	}
 
 	@Override
@@ -586,5 +613,153 @@ public class ClientWorld extends World {
 	@Override
 	public List<AbstractClientPlayerEntity> getPlayers() {
 		return this.players;
+	}
+
+	@Override
+	public Biome getGeneratorStoredBiome(int i, int j, int k) {
+		return Biomes.field_9451;
+	}
+
+	public float method_23783(float f) {
+		float g = this.getSkyAngle(f);
+		float h = 1.0F - (MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.2F);
+		h = MathHelper.clamp(h, 0.0F, 1.0F);
+		h = 1.0F - h;
+		h = (float)((double)h * (1.0 - (double)(this.getRainGradient(f) * 5.0F) / 16.0));
+		h = (float)((double)h * (1.0 - (double)(this.getThunderGradient(f) * 5.0F) / 16.0));
+		return h * 0.8F + 0.2F;
+	}
+
+	public Vec3d method_23777(BlockPos blockPos, float f) {
+		float g = this.getSkyAngle(f);
+		float h = MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.5F;
+		h = MathHelper.clamp(h, 0.0F, 1.0F);
+		Biome biome = this.getBiome(blockPos);
+		int i = biome.getSkyColor();
+		float j = (float)(i >> 16 & 0xFF) / 255.0F;
+		float k = (float)(i >> 8 & 0xFF) / 255.0F;
+		float l = (float)(i & 0xFF) / 255.0F;
+		j *= h;
+		k *= h;
+		l *= h;
+		float m = this.getRainGradient(f);
+		if (m > 0.0F) {
+			float n = (j * 0.3F + k * 0.59F + l * 0.11F) * 0.6F;
+			float o = 1.0F - m * 0.75F;
+			j = j * o + n * (1.0F - o);
+			k = k * o + n * (1.0F - o);
+			l = l * o + n * (1.0F - o);
+		}
+
+		float p = this.getThunderGradient(f);
+		if (p > 0.0F) {
+			float q = (j * 0.3F + k * 0.59F + l * 0.11F) * 0.2F;
+			float r = 1.0F - p * 0.75F;
+			j = j * r + q * (1.0F - r);
+			k = k * r + q * (1.0F - r);
+			l = l * r + q * (1.0F - r);
+		}
+
+		if (this.lightningTicksLeft > 0) {
+			float s = (float)this.lightningTicksLeft - f;
+			if (s > 1.0F) {
+				s = 1.0F;
+			}
+
+			s *= 0.45F;
+			j = j * (1.0F - s) + 0.8F * s;
+			k = k * (1.0F - s) + 0.8F * s;
+			l = l * (1.0F - s) + 1.0F * s;
+		}
+
+		return new Vec3d((double)j, (double)k, (double)l);
+	}
+
+	public Vec3d getCloudsColor(float f) {
+		float g = this.getSkyAngle(f);
+		float h = MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.5F;
+		h = MathHelper.clamp(h, 0.0F, 1.0F);
+		float i = 1.0F;
+		float j = 1.0F;
+		float k = 1.0F;
+		float l = this.getRainGradient(f);
+		if (l > 0.0F) {
+			float m = (i * 0.3F + j * 0.59F + k * 0.11F) * 0.6F;
+			float n = 1.0F - l * 0.95F;
+			i = i * n + m * (1.0F - n);
+			j = j * n + m * (1.0F - n);
+			k = k * n + m * (1.0F - n);
+		}
+
+		i *= h * 0.9F + 0.1F;
+		j *= h * 0.9F + 0.1F;
+		k *= h * 0.85F + 0.15F;
+		float o = this.getThunderGradient(f);
+		if (o > 0.0F) {
+			float p = (i * 0.3F + j * 0.59F + k * 0.11F) * 0.2F;
+			float q = 1.0F - o * 0.95F;
+			i = i * q + p * (1.0F - q);
+			j = j * q + p * (1.0F - q);
+			k = k * q + p * (1.0F - q);
+		}
+
+		return new Vec3d((double)i, (double)j, (double)k);
+	}
+
+	public Vec3d getFogColor(float f) {
+		float g = this.getSkyAngle(f);
+		return this.dimension.getFogColor(g, f);
+	}
+
+	public float method_23787(float f) {
+		float g = this.getSkyAngle(f);
+		float h = 1.0F - (MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.25F);
+		h = MathHelper.clamp(h, 0.0F, 1.0F);
+		return h * h * 0.5F;
+	}
+
+	public double getSkyDarknessHeight() {
+		return this.properties.getGeneratorType() == LevelGeneratorType.FLAT ? 0.0 : 63.0;
+	}
+
+	public int getLightningTicksLeft() {
+		return this.lightningTicksLeft;
+	}
+
+	@Override
+	public void setLightningTicksLeft(int i) {
+		this.lightningTicksLeft = i;
+	}
+
+	@Override
+	public int getColor(BlockPos blockPos, ColorResolver colorResolver) {
+		BiomeColorCache biomeColorCache = (BiomeColorCache)this.colorCache.get(colorResolver);
+		return biomeColorCache.getBiomeColor(blockPos, () -> this.calculateColor(blockPos, colorResolver));
+	}
+
+	public int calculateColor(BlockPos blockPos, ColorResolver colorResolver) {
+		int i = MinecraftClient.getInstance().options.biomeBlendRadius;
+		if (i == 0) {
+			return colorResolver.getColor(this.getBiome(blockPos), (double)blockPos.getX(), (double)blockPos.getZ());
+		} else {
+			int j = (i * 2 + 1) * (i * 2 + 1);
+			int k = 0;
+			int l = 0;
+			int m = 0;
+			CuboidBlockIterator cuboidBlockIterator = new CuboidBlockIterator(
+				blockPos.getX() - i, blockPos.getY(), blockPos.getZ() - i, blockPos.getX() + i, blockPos.getY(), blockPos.getZ() + i
+			);
+			BlockPos.Mutable mutable = new BlockPos.Mutable();
+
+			while (cuboidBlockIterator.step()) {
+				mutable.set(cuboidBlockIterator.getX(), cuboidBlockIterator.getY(), cuboidBlockIterator.getZ());
+				int n = colorResolver.getColor(this.getBiome(mutable), (double)mutable.getX(), (double)mutable.getZ());
+				k += (n & 0xFF0000) >> 16;
+				l += (n & 0xFF00) >> 8;
+				m += n & 0xFF;
+			}
+
+			return (k / j & 0xFF) << 16 | (l / j & 0xFF) << 8 | m / j & 0xFF;
+		}
 	}
 }

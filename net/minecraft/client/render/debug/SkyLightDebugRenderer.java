@@ -1,10 +1,11 @@
 package net.minecraft.client.render.debug;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
@@ -19,40 +20,37 @@ public class SkyLightDebugRenderer implements DebugRenderer.Renderer {
 	}
 
 	@Override
-	public void render(long l) {
-		Camera camera = this.client.gameRenderer.getCamera();
+	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
 		World world = this.client.world;
-		GlStateManager.pushMatrix();
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
-		GlStateManager.disableTexture();
-		BlockPos blockPos = new BlockPos(camera.getPos());
+		RenderSystem.pushMatrix();
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.disableTexture();
+		BlockPos blockPos = new BlockPos(d, e, f);
 		LongSet longSet = new LongOpenHashSet();
 
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
 			int i = world.getLightLevel(LightType.field_9284, blockPos2);
-			float f = (float)(15 - i) / 15.0F * 0.5F + 0.16F;
-			int j = MathHelper.hsvToRgb(f, 0.9F, 0.9F);
-			long m = ChunkSectionPos.toChunkLong(blockPos2.asLong());
-			if (longSet.add(m)) {
-				DebugRenderer.method_19429(
-					world.getChunkManager().getLightingProvider().method_15564(LightType.field_9284, ChunkSectionPos.from(m)),
-					(double)(ChunkSectionPos.unpackLongX(m) * 16 + 8),
-					(double)(ChunkSectionPos.unpackLongY(m) * 16 + 8),
-					(double)(ChunkSectionPos.unpackLongZ(m) * 16 + 8),
+			float g = (float)(15 - i) / 15.0F * 0.5F + 0.16F;
+			int j = MathHelper.hsvToRgb(g, 0.9F, 0.9F);
+			long l = ChunkSectionPos.fromGlobalPos(blockPos2.asLong());
+			if (longSet.add(l)) {
+				DebugRenderer.drawString(
+					world.getChunkManager().getLightingProvider().method_22876(LightType.field_9284, ChunkSectionPos.from(l)),
+					(double)(ChunkSectionPos.getX(l) * 16 + 8),
+					(double)(ChunkSectionPos.getY(l) * 16 + 8),
+					(double)(ChunkSectionPos.getZ(l) * 16 + 8),
 					16711680,
 					0.3F
 				);
 			}
 
 			if (i != 15) {
-				DebugRenderer.method_3714(String.valueOf(i), (double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.25, (double)blockPos2.getZ() + 0.5, j);
+				DebugRenderer.drawString(String.valueOf(i), (double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.25, (double)blockPos2.getZ() + 0.5, j);
 			}
 		}
 
-		GlStateManager.enableTexture();
-		GlStateManager.popMatrix();
+		RenderSystem.enableTexture();
+		RenderSystem.popMatrix();
 	}
 }

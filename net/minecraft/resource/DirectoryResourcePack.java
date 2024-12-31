@@ -15,14 +15,14 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class DirectoryResourcePack extends AbstractFileResourcePack {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final boolean IS_WINDOWS = SystemUtil.getOperatingSystem() == SystemUtil.OperatingSystem.field_1133;
+	private static final boolean IS_WINDOWS = Util.getOperatingSystem() == Util.OperatingSystem.field_1133;
 	private static final CharMatcher BACKSLASH_MATCHER = CharMatcher.is('\\');
 
 	public DirectoryResourcePack(File file) {
@@ -69,7 +69,7 @@ public class DirectoryResourcePack extends AbstractFileResourcePack {
 	@Override
 	public Set<String> getNamespaces(ResourceType resourceType) {
 		Set<String> set = Sets.newHashSet();
-		File file = new File(this.base, resourceType.getName());
+		File file = new File(this.base, resourceType.getDirectory());
 		File[] files = file.listFiles(DirectoryFileFilter.DIRECTORY);
 		if (files != null) {
 			for (File file2 : files) {
@@ -89,14 +89,10 @@ public class DirectoryResourcePack extends AbstractFileResourcePack {
 	}
 
 	@Override
-	public Collection<Identifier> findResources(ResourceType resourceType, String string, int i, Predicate<String> predicate) {
-		File file = new File(this.base, resourceType.getName());
+	public Collection<Identifier> findResources(ResourceType resourceType, String string, String string2, int i, Predicate<String> predicate) {
+		File file = new File(this.base, resourceType.getDirectory());
 		List<Identifier> list = Lists.newArrayList();
-
-		for (String string2 : this.getNamespaces(resourceType)) {
-			this.findFiles(new File(new File(file, string2), string), i, string2, list, string + "/", predicate);
-		}
-
+		this.findFiles(new File(new File(file, string), string2), i, string, list, string2 + "/", predicate);
 		return list;
 	}
 

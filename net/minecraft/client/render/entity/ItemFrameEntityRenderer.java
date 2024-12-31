@@ -1,25 +1,27 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.GuiLighting;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.TexturedRenderLayers;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModelManager;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.map.MapState;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
-	private static final Identifier MAP_BACKGROUND_TEX = new Identifier("textures/map/map_background.png");
 	private static final ModelIdentifier NORMAL_FRAME = new ModelIdentifier("item_frame", "map=false");
 	private static final ModelIdentifier MAP_FRAME = new ModelIdentifier("item_frame", "map=true");
 	private final MinecraftClient client = MinecraftClient.getInstance();
@@ -30,100 +32,87 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 		this.itemRenderer = itemRenderer;
 	}
 
-	public void method_3994(ItemFrameEntity itemFrameEntity, double d, double e, double f, float g, float h) {
-		GlStateManager.pushMatrix();
-		BlockPos blockPos = itemFrameEntity.getDecorationBlockPos();
-		double i = (double)blockPos.getX() - itemFrameEntity.x + d;
-		double j = (double)blockPos.getY() - itemFrameEntity.y + e;
-		double k = (double)blockPos.getZ() - itemFrameEntity.z + f;
-		GlStateManager.translated(i + 0.5, j + 0.5, k + 0.5);
-		GlStateManager.rotatef(itemFrameEntity.pitch, 1.0F, 0.0F, 0.0F);
-		GlStateManager.rotatef(180.0F - itemFrameEntity.yaw, 0.0F, 1.0F, 0.0F);
-		this.renderManager.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
+	public void render(ItemFrameEntity itemFrameEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		super.render(itemFrameEntity, f, g, matrixStack, vertexConsumerProvider, i);
+		matrixStack.push();
+		Direction direction = itemFrameEntity.getHorizontalFacing();
+		Vec3d vec3d = this.getPositionOffset(itemFrameEntity, g);
+		matrixStack.translate(-vec3d.getX(), -vec3d.getY(), -vec3d.getZ());
+		double d = 0.46875;
+		matrixStack.translate((double)direction.getOffsetX() * 0.46875, (double)direction.getOffsetY() * 0.46875, (double)direction.getOffsetZ() * 0.46875);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(itemFrameEntity.pitch));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F - itemFrameEntity.yaw));
 		BlockRenderManager blockRenderManager = this.client.getBlockRenderManager();
 		BakedModelManager bakedModelManager = blockRenderManager.getModels().getModelManager();
 		ModelIdentifier modelIdentifier = itemFrameEntity.getHeldItemStack().getItem() == Items.field_8204 ? MAP_FRAME : NORMAL_FRAME;
-		GlStateManager.pushMatrix();
-		GlStateManager.translatef(-0.5F, -0.5F, -0.5F);
-		if (this.renderOutlines) {
-			GlStateManager.enableColorMaterial();
-			GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(itemFrameEntity));
+		matrixStack.push();
+		matrixStack.translate(-0.5, -0.5, -0.5);
+		blockRenderManager.getModelRenderer()
+			.render(
+				matrixStack.peek(),
+				vertexConsumerProvider.getBuffer(TexturedRenderLayers.getEntitySolid()),
+				null,
+				bakedModelManager.getModel(modelIdentifier),
+				1.0F,
+				1.0F,
+				1.0F,
+				i,
+				OverlayTexture.DEFAULT_UV
+			);
+		matrixStack.pop();
+		ItemStack itemStack = itemFrameEntity.getHeldItemStack();
+		if (!itemStack.isEmpty()) {
+			boolean bl = itemStack.getItem() == Items.field_8204;
+			matrixStack.translate(0.0, 0.0, 0.4375);
+			int j = bl ? itemFrameEntity.getRotation() % 4 * 2 : itemFrameEntity.getRotation();
+			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)j * 360.0F / 8.0F));
+			if (bl) {
+				matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
+				float h = 0.0078125F;
+				matrixStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
+				matrixStack.translate(-64.0, -64.0, 0.0);
+				MapState mapState = FilledMapItem.getOrCreateMapState(itemStack, itemFrameEntity.world);
+				matrixStack.translate(0.0, 0.0, -1.0);
+				if (mapState != null) {
+					this.client.gameRenderer.getMapRenderer().draw(matrixStack, vertexConsumerProvider, mapState, true, i);
+				}
+			} else {
+				matrixStack.scale(0.5F, 0.5F, 0.5F);
+				this.itemRenderer.renderItem(itemStack, ModelTransformation.Mode.field_4319, i, OverlayTexture.DEFAULT_UV, matrixStack, vertexConsumerProvider);
+			}
 		}
 
-		blockRenderManager.getModelRenderer().render(bakedModelManager.getModel(modelIdentifier), 1.0F, 1.0F, 1.0F, 1.0F);
-		if (this.renderOutlines) {
-			GlStateManager.tearDownSolidRenderingTextureCombine();
-			GlStateManager.disableColorMaterial();
-		}
+		matrixStack.pop();
+	}
 
-		GlStateManager.popMatrix();
-		GlStateManager.enableLighting();
-		if (itemFrameEntity.getHeldItemStack().getItem() == Items.field_8204) {
-			GlStateManager.pushLightingAttributes();
-			GuiLighting.enable();
-		}
-
-		GlStateManager.translatef(0.0F, 0.0F, 0.4375F);
-		this.renderItem(itemFrameEntity);
-		if (itemFrameEntity.getHeldItemStack().getItem() == Items.field_8204) {
-			GuiLighting.disable();
-			GlStateManager.popAttributes();
-		}
-
-		GlStateManager.enableLighting();
-		GlStateManager.popMatrix();
-		this.method_3995(
-			itemFrameEntity,
-			d + (double)((float)itemFrameEntity.getHorizontalFacing().getOffsetX() * 0.3F),
-			e - 0.25,
-			f + (double)((float)itemFrameEntity.getHorizontalFacing().getOffsetZ() * 0.3F)
+	public Vec3d getPositionOffset(ItemFrameEntity itemFrameEntity, float f) {
+		return new Vec3d(
+			(double)((float)itemFrameEntity.getHorizontalFacing().getOffsetX() * 0.3F),
+			-0.25,
+			(double)((float)itemFrameEntity.getHorizontalFacing().getOffsetZ() * 0.3F)
 		);
 	}
 
-	@Nullable
-	protected Identifier method_3993(ItemFrameEntity itemFrameEntity) {
-		return null;
+	public Identifier getTexture(ItemFrameEntity itemFrameEntity) {
+		return SpriteAtlasTexture.BLOCK_ATLAS_TEX;
 	}
 
-	private void renderItem(ItemFrameEntity itemFrameEntity) {
-		ItemStack itemStack = itemFrameEntity.getHeldItemStack();
-		if (!itemStack.isEmpty()) {
-			GlStateManager.pushMatrix();
-			boolean bl = itemStack.getItem() == Items.field_8204;
-			int i = bl ? itemFrameEntity.getRotation() % 4 * 2 : itemFrameEntity.getRotation();
-			GlStateManager.rotatef((float)i * 360.0F / 8.0F, 0.0F, 0.0F, 1.0F);
-			if (bl) {
-				GlStateManager.disableLighting();
-				this.renderManager.textureManager.bindTexture(MAP_BACKGROUND_TEX);
-				GlStateManager.rotatef(180.0F, 0.0F, 0.0F, 1.0F);
-				float f = 0.0078125F;
-				GlStateManager.scalef(0.0078125F, 0.0078125F, 0.0078125F);
-				GlStateManager.translatef(-64.0F, -64.0F, 0.0F);
-				MapState mapState = FilledMapItem.getOrCreateMapState(itemStack, itemFrameEntity.world);
-				GlStateManager.translatef(0.0F, 0.0F, -1.0F);
-				if (mapState != null) {
-					this.client.gameRenderer.getMapRenderer().draw(mapState, true);
-				}
-			} else {
-				GlStateManager.scalef(0.5F, 0.5F, 0.5F);
-				this.itemRenderer.renderItem(itemStack, ModelTransformation.Type.field_4319);
-			}
-
-			GlStateManager.popMatrix();
-		}
-	}
-
-	protected void method_3995(ItemFrameEntity itemFrameEntity, double d, double e, double f) {
+	protected boolean hasLabel(ItemFrameEntity itemFrameEntity) {
 		if (MinecraftClient.isHudEnabled()
 			&& !itemFrameEntity.getHeldItemStack().isEmpty()
 			&& itemFrameEntity.getHeldItemStack().hasCustomName()
 			&& this.renderManager.targetedEntity == itemFrameEntity) {
-			double g = itemFrameEntity.squaredDistanceTo(this.renderManager.camera.getPos());
-			float h = itemFrameEntity.isInSneakingPose() ? 32.0F : 64.0F;
-			if (!(g >= (double)(h * h))) {
-				String string = itemFrameEntity.getHeldItemStack().getName().asFormattedString();
-				this.renderLabel(itemFrameEntity, string, d, e, f, 64);
-			}
+			double d = this.renderManager.getSquaredDistanceToCamera(itemFrameEntity);
+			float f = itemFrameEntity.isSneaky() ? 32.0F : 64.0F;
+			return d < (double)(f * f);
+		} else {
+			return false;
 		}
+	}
+
+	protected void renderLabelIfPresent(
+		ItemFrameEntity itemFrameEntity, String string, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i
+	) {
+		super.renderLabelIfPresent(itemFrameEntity, itemFrameEntity.getHeldItemStack().getName().asFormattedString(), matrixStack, vertexConsumerProvider, i);
 	}
 }

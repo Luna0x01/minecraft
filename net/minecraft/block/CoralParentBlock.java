@@ -5,7 +5,7 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.FluidTags;
@@ -14,7 +14,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class CoralParentBlock extends Block implements Waterloggable {
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
@@ -22,7 +22,7 @@ public class CoralParentBlock extends Block implements Waterloggable {
 
 	protected CoralParentBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(WATERLOGGED, Boolean.valueOf(true)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(WATERLOGGED, Boolean.valueOf(true)));
 	}
 
 	protected void checkLivingConditions(BlockState blockState, IWorld iWorld, BlockPos blockPos) {
@@ -58,11 +58,6 @@ public class CoralParentBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
 	public BlockState getStateForNeighborUpdate(
 		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
 	) {
@@ -76,13 +71,13 @@ public class CoralParentBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		BlockPos blockPos2 = blockPos.down();
-		return viewableWorld.getBlockState(blockPos2).isSideSolidFullSquare(viewableWorld, blockPos2, Direction.field_11036);
+		return worldView.getBlockState(blockPos2).isSideSolidFullSquare(worldView, blockPos2, Direction.field_11036);
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(WATERLOGGED);
 	}
 

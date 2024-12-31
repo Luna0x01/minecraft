@@ -32,7 +32,7 @@ public class TagQueryResponseS2CPacket implements Packet<ClientPlayPacketListene
 		packetByteBuf.writeCompoundTag(this.tag);
 	}
 
-	public void method_11909(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onTagQuery(this);
 	}
 

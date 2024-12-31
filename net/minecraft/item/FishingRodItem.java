@@ -6,7 +6,6 @@ import net.minecraft.entity.projectile.FishingBobberEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
@@ -35,17 +34,30 @@ public class FishingRodItem extends Item {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (playerEntity.fishHook != null) {
 			if (!world.isClient) {
-				int i = playerEntity.fishHook.method_6957(itemStack);
+				int i = playerEntity.fishHook.use(itemStack);
 				itemStack.damage(i, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
 			}
 
-			playerEntity.swingHand(hand);
 			world.playSound(
-				null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_15093, SoundCategory.field_15254, 1.0F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+				null,
+				playerEntity.getX(),
+				playerEntity.getY(),
+				playerEntity.getZ(),
+				SoundEvents.field_15093,
+				SoundCategory.field_15254,
+				1.0F,
+				0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 			);
 		} else {
 			world.playSound(
-				null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_14596, SoundCategory.field_15254, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+				null,
+				playerEntity.getX(),
+				playerEntity.getY(),
+				playerEntity.getZ(),
+				SoundEvents.field_14596,
+				SoundCategory.field_15254,
+				0.5F,
+				0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 			);
 			if (!world.isClient) {
 				int j = EnchantmentHelper.getLure(itemStack);
@@ -53,11 +65,10 @@ public class FishingRodItem extends Item {
 				world.spawnEntity(new FishingBobberEntity(playerEntity, world, k, j));
 			}
 
-			playerEntity.swingHand(hand);
 			playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
 		}
 
-		return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+		return TypedActionResult.success(itemStack);
 	}
 
 	@Override

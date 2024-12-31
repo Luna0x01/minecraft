@@ -24,7 +24,7 @@ public class TippedArrowItem extends ArrowItem {
 	@Override
 	public void appendStacks(ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		if (this.isIn(itemGroup)) {
-			for (Potion potion : Registry.POTION) {
+			for (Potion potion : Registry.field_11143) {
 				if (!potion.getEffects().isEmpty()) {
 					defaultedList.add(PotionUtil.setPotion(new ItemStack(this), potion));
 				}
@@ -39,6 +39,6 @@ public class TippedArrowItem extends ArrowItem {
 
 	@Override
 	public String getTranslationKey(ItemStack itemStack) {
-		return PotionUtil.getPotion(itemStack).getName(this.getTranslationKey() + ".effect.");
+		return PotionUtil.getPotion(itemStack).finishTranslationKey(this.getTranslationKey() + ".effect.");
 	}
 }

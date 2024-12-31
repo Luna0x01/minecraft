@@ -46,7 +46,7 @@ public class PlayerInputC2SPacket implements Packet<ServerPlayPacketListener> {
 		packetByteBuf.writeByte(b);
 	}
 
-	public void method_12369(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onPlayerInput(this);
 	}
 

@@ -14,6 +14,10 @@ public interface ResourceReloadListener {
 		Executor executor2
 	);
 
+	default String getName() {
+		return this.getClass().getSimpleName();
+	}
+
 	public interface Synchronizer {
 		<T> CompletableFuture<T> whenPrepared(T object);
 	}

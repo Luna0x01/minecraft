@@ -17,24 +17,24 @@ public class FireworkRocketRecipe extends SpecialCraftingRecipe {
 		super(identifier);
 	}
 
-	public boolean method_17709(CraftingInventory craftingInventory, World world) {
+	public boolean matches(CraftingInventory craftingInventory, World world) {
 		boolean bl = false;
 		int i = 0;
 
 		for (int j = 0; j < craftingInventory.getInvSize(); j++) {
 			ItemStack itemStack = craftingInventory.getInvStack(j);
 			if (!itemStack.isEmpty()) {
-				if (PAPER.method_8093(itemStack)) {
+				if (PAPER.test(itemStack)) {
 					if (bl) {
 						return false;
 					}
 
 					bl = true;
-				} else if (DURATION_MODIFIER.method_8093(itemStack)) {
+				} else if (DURATION_MODIFIER.test(itemStack)) {
 					if (++i > 3) {
 						return false;
 					}
-				} else if (!FIREWORK_STAR.method_8093(itemStack)) {
+				} else if (!FIREWORK_STAR.test(itemStack)) {
 					return false;
 				}
 			}
@@ -43,7 +43,7 @@ public class FireworkRocketRecipe extends SpecialCraftingRecipe {
 		return bl && i >= 1;
 	}
 
-	public ItemStack method_17708(CraftingInventory craftingInventory) {
+	public ItemStack craft(CraftingInventory craftingInventory) {
 		ItemStack itemStack = new ItemStack(Items.field_8639, 3);
 		CompoundTag compoundTag = itemStack.getOrCreateSubTag("Fireworks");
 		ListTag listTag = new ListTag();
@@ -52,9 +52,9 @@ public class FireworkRocketRecipe extends SpecialCraftingRecipe {
 		for (int j = 0; j < craftingInventory.getInvSize(); j++) {
 			ItemStack itemStack2 = craftingInventory.getInvStack(j);
 			if (!itemStack2.isEmpty()) {
-				if (DURATION_MODIFIER.method_8093(itemStack2)) {
+				if (DURATION_MODIFIER.test(itemStack2)) {
 					i++;
-				} else if (FIREWORK_STAR.method_8093(itemStack2)) {
+				} else if (FIREWORK_STAR.test(itemStack2)) {
 					CompoundTag compoundTag2 = itemStack2.getSubTag("Explosion");
 					if (compoundTag2 != null) {
 						listTag.add(compoundTag2);

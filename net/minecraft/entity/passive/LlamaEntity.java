@@ -6,7 +6,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CarpetBlock;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnType;
@@ -36,7 +35,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.ItemTags;
@@ -51,11 +49,11 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 	private static final TrackedData<Integer> ATTR_STRENGTH = DataTracker.registerData(LlamaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Integer> CARPET_COLOR = DataTracker.registerData(LlamaEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Integer> ATTR_VARIANT = DataTracker.registerData(LlamaEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private boolean field_6999;
+	private boolean spit;
 	@Nullable
-	private LlamaEntity field_7000;
+	private LlamaEntity following;
 	@Nullable
-	private LlamaEntity field_6997;
+	private LlamaEntity follower;
 
 	public LlamaEntity(EntityType<? extends LlamaEntity> entityType, World world) {
 		super(entityType, world);
@@ -93,7 +91,7 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 		this.setStrength(compoundTag.getInt("Strength"));
 		super.readCustomDataFromTag(compoundTag);
 		this.setVariant(compoundTag.getInt("Variant"));
-		if (compoundTag.containsKey("DecorItem", 10)) {
+		if (compoundTag.contains("DecorItem", 10)) {
 			this.items.setInvStack(1, ItemStack.fromTag(compoundTag.getCompound("DecorItem")));
 		}
 
@@ -112,7 +110,7 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 		this.goalSelector.add(6, new WanderAroundFarGoal(this, 0.7));
 		this.goalSelector.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goalSelector.add(8, new LookAroundGoal(this));
-		this.targetSelector.add(1, new LlamaEntity.class_1504(this));
+		this.targetSelector.add(1, new LlamaEntity.SpitRevengeGoal(this));
 		this.targetSelector.add(2, new LlamaEntity.ChaseWolvesGoal(this));
 	}
 
@@ -146,10 +144,12 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 	@Override
 	public void updatePassengerPosition(Entity entity) {
 		if (this.hasPassenger(entity)) {
-			float f = MathHelper.cos(this.field_6283 * (float) (Math.PI / 180.0));
-			float g = MathHelper.sin(this.field_6283 * (float) (Math.PI / 180.0));
+			float f = MathHelper.cos(this.bodyYaw * (float) (Math.PI / 180.0));
+			float g = MathHelper.sin(this.bodyYaw * (float) (Math.PI / 180.0));
 			float h = 0.3F;
-			entity.setPosition(this.x + (double)(0.3F * g), this.y + this.getMountedHeightOffset() + entity.getHeightOffset(), this.z - (double)(0.3F * f));
+			entity.updatePosition(
+				this.getX() + (double)(0.3F * g), this.getY() + this.getMountedHeightOffset() + entity.getHeightOffset(), this.getZ() - (double)(0.3F * f)
+			);
 		}
 	}
 
@@ -184,22 +184,13 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 			}
 		}
 
-		if (this.getHealth() < this.getHealthMaximum() && f > 0.0F) {
+		if (this.getHealth() < this.getMaximumHealth() && f > 0.0F) {
 			this.heal(f);
 			bl = true;
 		}
 
 		if (this.isBaby() && i > 0) {
-			this.world
-				.addParticle(
-					ParticleTypes.field_11211,
-					this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
-					this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-					0.0,
-					0.0,
-					0.0
-				);
+			this.world.addParticle(ParticleTypes.field_11211, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), 0.0, 0.0, 0.0);
 			if (!this.world.isClient) {
 				this.growUp(i);
 			}
@@ -217,7 +208,14 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 		if (bl && !this.isSilent()) {
 			this.world
 				.playSound(
-					null, this.x, this.y, this.z, SoundEvents.field_14884, this.getSoundCategory(), 1.0F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
+					null,
+					this.getX(),
+					this.getY(),
+					this.getZ(),
+					SoundEvents.field_14884,
+					this.getSoundCategory(),
+					1.0F,
+					1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
 				);
 		}
 
@@ -225,27 +223,26 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 	}
 
 	@Override
-	protected boolean cannotMove() {
+	protected boolean isImmobile() {
 		return this.getHealth() <= 0.0F || this.isEatingGrass();
 	}
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
-		entityData = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 		this.initializeStrength();
 		int i;
-		if (entityData instanceof LlamaEntity.class_1503) {
-			i = ((LlamaEntity.class_1503)entityData).field_7001;
+		if (entityData instanceof LlamaEntity.EntityData) {
+			i = ((LlamaEntity.EntityData)entityData).variant;
 		} else {
 			i = this.random.nextInt(4);
-			entityData = new LlamaEntity.class_1503(i);
+			entityData = new LlamaEntity.EntityData(i);
 		}
 
 		this.setVariant(i);
-		return entityData;
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
 	@Override
@@ -351,7 +348,7 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 		return animalEntity != this && animalEntity instanceof LlamaEntity && this.canBreed() && ((LlamaEntity)animalEntity).canBreed();
 	}
 
-	public LlamaEntity method_6804(PassiveEntity passiveEntity) {
+	public LlamaEntity createChild(PassiveEntity passiveEntity) {
 		LlamaEntity llamaEntity = this.createChild();
 		this.setChildAttributes(passiveEntity, llamaEntity);
 		LlamaEntity llamaEntity2 = (LlamaEntity)passiveEntity;
@@ -371,27 +368,36 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 
 	private void spitAt(LivingEntity livingEntity) {
 		LlamaSpitEntity llamaSpitEntity = new LlamaSpitEntity(this.world, this);
-		double d = livingEntity.x - this.x;
-		double e = livingEntity.getBoundingBox().minY + (double)(livingEntity.getHeight() / 3.0F) - llamaSpitEntity.y;
-		double f = livingEntity.z - this.z;
+		double d = livingEntity.getX() - this.getX();
+		double e = livingEntity.getBodyY(0.3333333333333333) - llamaSpitEntity.getY();
+		double f = livingEntity.getZ() - this.getZ();
 		float g = MathHelper.sqrt(d * d + f * f) * 0.2F;
 		llamaSpitEntity.setVelocity(d, e + (double)g, f, 1.5F, 10.0F);
 		this.world
 			.playSound(
-				null, this.x, this.y, this.z, SoundEvents.field_14789, this.getSoundCategory(), 1.0F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
+				null,
+				this.getX(),
+				this.getY(),
+				this.getZ(),
+				SoundEvents.field_14789,
+				this.getSoundCategory(),
+				1.0F,
+				1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F
 			);
 		this.world.spawnEntity(llamaSpitEntity);
-		this.field_6999 = true;
+		this.spit = true;
 	}
 
-	private void method_6808(boolean bl) {
-		this.field_6999 = bl;
+	private void setSpit(boolean bl) {
+		this.spit = bl;
 	}
 
 	@Override
-	public void handleFallDamage(float f, float g) {
-		int i = MathHelper.ceil((f * 0.5F - 3.0F) * g);
-		if (i > 0) {
+	public boolean handleFallDamage(float f, float g) {
+		int i = this.computeFallDamage(f, g);
+		if (i <= 0) {
+			return false;
+		} else {
 			if (f >= 6.0F) {
 				this.damage(DamageSource.FALL, (float)i);
 				if (this.hasPassengers()) {
@@ -401,48 +407,35 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 				}
 			}
 
-			BlockState blockState = this.world.getBlockState(new BlockPos(this.x, this.y - 0.2 - (double)this.prevYaw, this.z));
-			if (!blockState.isAir() && !this.isSilent()) {
-				BlockSoundGroup blockSoundGroup = blockState.getSoundGroup();
-				this.world
-					.playSound(
-						null,
-						this.x,
-						this.y,
-						this.z,
-						blockSoundGroup.getStepSound(),
-						this.getSoundCategory(),
-						blockSoundGroup.getVolume() * 0.5F,
-						blockSoundGroup.getPitch() * 0.75F
-					);
-			}
+			this.playBlockFallSound();
+			return true;
 		}
 	}
 
-	public void method_6797() {
-		if (this.field_7000 != null) {
-			this.field_7000.field_6997 = null;
+	public void stopFollowing() {
+		if (this.following != null) {
+			this.following.follower = null;
 		}
 
-		this.field_7000 = null;
+		this.following = null;
 	}
 
-	public void method_6791(LlamaEntity llamaEntity) {
-		this.field_7000 = llamaEntity;
-		this.field_7000.field_6997 = this;
+	public void follow(LlamaEntity llamaEntity) {
+		this.following = llamaEntity;
+		this.following.follower = this;
 	}
 
-	public boolean method_6793() {
-		return this.field_6997 != null;
+	public boolean hasFollower() {
+		return this.follower != null;
 	}
 
 	public boolean isFollowing() {
-		return this.field_7000 != null;
+		return this.following != null;
 	}
 
 	@Nullable
 	public LlamaEntity getFollowing() {
-		return this.field_7000;
+		return this.following;
 	}
 
 	@Override
@@ -478,16 +471,16 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 		}
 	}
 
-	static class class_1503 implements EntityData {
-		public final int field_7001;
+	static class EntityData extends PassiveEntity.EntityData {
+		public final int variant;
 
-		private class_1503(int i) {
-			this.field_7001 = i;
+		private EntityData(int i) {
+			this.variant = i;
 		}
 	}
 
-	static class class_1504 extends RevengeGoal {
-		public class_1504(LlamaEntity llamaEntity) {
+	static class SpitRevengeGoal extends RevengeGoal {
+		public SpitRevengeGoal(LlamaEntity llamaEntity) {
 			super(llamaEntity);
 		}
 
@@ -495,8 +488,8 @@ public class LlamaEntity extends AbstractDonkeyEntity implements RangedAttackMob
 		public boolean shouldContinue() {
 			if (this.mob instanceof LlamaEntity) {
 				LlamaEntity llamaEntity = (LlamaEntity)this.mob;
-				if (llamaEntity.field_6999) {
-					llamaEntity.method_6808(false);
+				if (llamaEntity.spit) {
+					llamaEntity.setSpit(false);
 					return false;
 				}
 			}

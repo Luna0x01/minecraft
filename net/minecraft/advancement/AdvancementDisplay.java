@@ -188,7 +188,7 @@ public class AdvancementDisplay {
 
 	private JsonObject iconToJson() {
 		JsonObject jsonObject = new JsonObject();
-		jsonObject.addProperty("item", Registry.ITEM.getId(this.icon.getItem()).toString());
+		jsonObject.addProperty("item", Registry.field_11142.getId(this.icon.getItem()).toString());
 		if (this.icon.hasTag()) {
 			jsonObject.addProperty("nbt", this.icon.getTag().toString());
 		}

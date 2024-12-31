@@ -1,50 +1,45 @@
 package net.minecraft.client.render.debug;
 
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Locale;
 import java.util.Map;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.ai.pathing.PathNode;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 
 public class PathfindingDebugRenderer implements DebugRenderer.Renderer {
-	private final MinecraftClient client;
 	private final Map<Integer, Path> paths = Maps.newHashMap();
 	private final Map<Integer, Float> field_4617 = Maps.newHashMap();
 	private final Map<Integer, Long> pathTimes = Maps.newHashMap();
 
-	public PathfindingDebugRenderer(MinecraftClient minecraftClient) {
-		this.client = minecraftClient;
-	}
-
 	public void addPath(int i, Path path, float f) {
 		this.paths.put(i, path);
-		this.pathTimes.put(i, SystemUtil.getMeasuringTimeMs());
+		this.pathTimes.put(i, Util.getMeasuringTimeMs());
 		this.field_4617.put(i, f);
 	}
 
 	@Override
-	public void render(long l) {
+	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
 		if (!this.paths.isEmpty()) {
-			long m = SystemUtil.getMeasuringTimeMs();
+			long l = Util.getMeasuringTimeMs();
 
 			for (Integer integer : this.paths.keySet()) {
 				Path path = (Path)this.paths.get(integer);
-				float f = (Float)this.field_4617.get(integer);
-				method_20556(this.method_20557(), path, f, true, true);
+				float g = (Float)this.field_4617.get(integer);
+				drawPath(path, g, true, true, d, e, f);
 			}
 
 			for (Integer integer2 : (Integer[])this.pathTimes.keySet().toArray(new Integer[0])) {
-				if (m - (Long)this.pathTimes.get(integer2) > 20000L) {
+				if (l - (Long)this.pathTimes.get(integer2) > 5000L) {
 					this.paths.remove(integer2);
 					this.pathTimes.remove(integer2);
 				}
@@ -52,29 +47,24 @@ public class PathfindingDebugRenderer implements DebugRenderer.Renderer {
 		}
 	}
 
-	public static void method_20556(Camera camera, Path path, float f, boolean bl, boolean bl2) {
-		GlStateManager.pushMatrix();
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
-		GlStateManager.color4f(0.0F, 1.0F, 0.0F, 0.75F);
-		GlStateManager.disableTexture();
-		GlStateManager.lineWidth(6.0F);
-		method_20558(camera, path, f, bl, bl2);
-		GlStateManager.enableTexture();
-		GlStateManager.disableBlend();
-		GlStateManager.popMatrix();
+	public static void drawPath(Path path, float f, boolean bl, boolean bl2, double d, double e, double g) {
+		RenderSystem.pushMatrix();
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.color4f(0.0F, 1.0F, 0.0F, 0.75F);
+		RenderSystem.disableTexture();
+		RenderSystem.lineWidth(6.0F);
+		drawPathInternal(path, f, bl, bl2, d, e, g);
+		RenderSystem.enableTexture();
+		RenderSystem.disableBlend();
+		RenderSystem.popMatrix();
 	}
 
-	private static void method_20558(Camera camera, Path path, float f, boolean bl, boolean bl2) {
-		method_20555(camera, path);
-		double d = camera.getPos().x;
-		double e = camera.getPos().y;
-		double g = camera.getPos().z;
-		BlockPos blockPos = path.method_48();
-		if (method_20554(camera, blockPos) <= 40.0F) {
-			DebugRenderer.method_19695(
+	private static void drawPathInternal(Path path, float f, boolean bl, boolean bl2, double d, double e, double g) {
+		drawPathLines(path, d, e, g);
+		BlockPos blockPos = path.getTarget();
+		if (getManhattanDistance(blockPos, d, e, g) <= 80.0F) {
+			DebugRenderer.drawBox(
 				new Box(
 						(double)((float)blockPos.getX() + 0.25F),
 						(double)((float)blockPos.getY() + 0.25F),
@@ -92,10 +82,10 @@ public class PathfindingDebugRenderer implements DebugRenderer.Renderer {
 
 			for (int i = 0; i < path.getLength(); i++) {
 				PathNode pathNode = path.getNode(i);
-				if (method_20554(camera, pathNode.method_21652()) <= 40.0F) {
+				if (getManhattanDistance(pathNode.getPos(), d, e, g) <= 80.0F) {
 					float h = i == path.getCurrentNodeIndex() ? 1.0F : 0.0F;
 					float j = i == path.getCurrentNodeIndex() ? 0.0F : 1.0F;
-					DebugRenderer.method_19695(
+					DebugRenderer.drawBox(
 						new Box(
 								(double)((float)pathNode.x + 0.5F - f),
 								(double)((float)pathNode.y + 0.01F * (float)i),
@@ -115,20 +105,42 @@ public class PathfindingDebugRenderer implements DebugRenderer.Renderer {
 		}
 
 		if (bl) {
-			for (PathNode pathNode2 : path.method_37()) {
-				if (method_20554(camera, pathNode2.method_21652()) <= 40.0F) {
-					DebugRenderer.method_3714(String.format("%s", pathNode2.type), (double)pathNode2.x + 0.5, (double)pathNode2.y + 0.75, (double)pathNode2.z + 0.5, -65536);
-					DebugRenderer.method_3714(
-						String.format(Locale.ROOT, "%.2f", pathNode2.field_43), (double)pathNode2.x + 0.5, (double)pathNode2.y + 0.25, (double)pathNode2.z + 0.5, -65536
+			for (PathNode pathNode2 : path.method_22881()) {
+				if (getManhattanDistance(pathNode2.getPos(), d, e, g) <= 80.0F) {
+					DebugRenderer.drawBox(
+						new Box(
+								(double)((float)pathNode2.x + 0.5F - f / 2.0F),
+								(double)((float)pathNode2.y + 0.01F),
+								(double)((float)pathNode2.z + 0.5F - f / 2.0F),
+								(double)((float)pathNode2.x + 0.5F + f / 2.0F),
+								(double)pathNode2.y + 0.1,
+								(double)((float)pathNode2.z + 0.5F + f / 2.0F)
+							)
+							.offset(-d, -e, -g),
+						1.0F,
+						0.8F,
+						0.8F,
+						0.5F
 					);
 				}
 			}
 
-			for (PathNode pathNode3 : path.method_43()) {
-				if (method_20554(camera, pathNode3.method_21652()) <= 40.0F) {
-					DebugRenderer.method_3714(String.format("%s", pathNode3.type), (double)pathNode3.x + 0.5, (double)pathNode3.y + 0.75, (double)pathNode3.z + 0.5, -16776961);
-					DebugRenderer.method_3714(
-						String.format(Locale.ROOT, "%.2f", pathNode3.field_43), (double)pathNode3.x + 0.5, (double)pathNode3.y + 0.25, (double)pathNode3.z + 0.5, -16776961
+			for (PathNode pathNode3 : path.method_22880()) {
+				if (getManhattanDistance(pathNode3.getPos(), d, e, g) <= 80.0F) {
+					DebugRenderer.drawBox(
+						new Box(
+								(double)((float)pathNode3.x + 0.5F - f / 2.0F),
+								(double)((float)pathNode3.y + 0.01F),
+								(double)((float)pathNode3.z + 0.5F - f / 2.0F),
+								(double)((float)pathNode3.x + 0.5F + f / 2.0F),
+								(double)pathNode3.y + 0.1,
+								(double)((float)pathNode3.z + 0.5F + f / 2.0F)
+							)
+							.offset(-d, -e, -g),
+						0.8F,
+						1.0F,
+						1.0F,
+						0.5F
 					);
 				}
 			}
@@ -137,27 +149,24 @@ public class PathfindingDebugRenderer implements DebugRenderer.Renderer {
 		if (bl2) {
 			for (int k = 0; k < path.getLength(); k++) {
 				PathNode pathNode4 = path.getNode(k);
-				if (method_20554(camera, pathNode4.method_21652()) <= 40.0F) {
-					DebugRenderer.method_3714(String.format("%s", pathNode4.type), (double)pathNode4.x + 0.5, (double)pathNode4.y + 0.75, (double)pathNode4.z + 0.5, -1);
-					DebugRenderer.method_3714(
-						String.format(Locale.ROOT, "%.2f", pathNode4.field_43), (double)pathNode4.x + 0.5, (double)pathNode4.y + 0.25, (double)pathNode4.z + 0.5, -1
+				if (getManhattanDistance(pathNode4.getPos(), d, e, g) <= 80.0F) {
+					DebugRenderer.drawString(String.format("%s", pathNode4.type), (double)pathNode4.x + 0.5, (double)pathNode4.y + 0.75, (double)pathNode4.z + 0.5, -1);
+					DebugRenderer.drawString(
+						String.format(Locale.ROOT, "%.2f", pathNode4.penalty), (double)pathNode4.x + 0.5, (double)pathNode4.y + 0.25, (double)pathNode4.z + 0.5, -1
 					);
 				}
 			}
 		}
 	}
 
-	public static void method_20555(Camera camera, Path path) {
+	public static void drawPathLines(Path path, double d, double e, double f) {
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-		double d = camera.getPos().x;
-		double e = camera.getPos().y;
-		double f = camera.getPos().z;
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
 
 		for (int i = 0; i < path.getLength(); i++) {
 			PathNode pathNode = path.getNode(i);
-			if (!(method_20554(camera, pathNode.method_21652()) > 40.0F)) {
+			if (!(getManhattanDistance(pathNode.getPos(), d, e, f) > 80.0F)) {
 				float g = (float)i / (float)path.getLength() * 0.33F;
 				int j = i == 0 ? 0 : MathHelper.hsvToRgb(g, 0.9F, 0.9F);
 				int k = j >> 16 & 0xFF;
@@ -170,15 +179,7 @@ public class PathfindingDebugRenderer implements DebugRenderer.Renderer {
 		tessellator.draw();
 	}
 
-	private static float method_20554(Camera camera, BlockPos blockPos) {
-		return (float)(
-			Math.abs((double)blockPos.getX() - camera.getPos().x)
-				+ Math.abs((double)blockPos.getY() - camera.getPos().y)
-				+ Math.abs((double)blockPos.getZ() - camera.getPos().z)
-		);
-	}
-
-	private Camera method_20557() {
-		return this.client.gameRenderer.getCamera();
+	private static float getManhattanDistance(BlockPos blockPos, double d, double e, double f) {
+		return (float)(Math.abs((double)blockPos.getX() - d) + Math.abs((double)blockPos.getY() - e) + Math.abs((double)blockPos.getZ() - f));
 	}
 }

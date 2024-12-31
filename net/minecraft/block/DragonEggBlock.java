@@ -3,14 +3,15 @@ package net.minecraft.block;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class DragonEggBlock extends FallingBlock {
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
@@ -25,9 +26,9 @@ public class DragonEggBlock extends FallingBlock {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		this.teleport(blockState, world, blockPos);
-		return true;
+		return ActionResult.field_5812;
 	}
 
 	@Override
@@ -54,7 +55,7 @@ public class DragonEggBlock extends FallingBlock {
 					}
 				} else {
 					world.setBlockState(blockPos2, blockState, 2);
-					world.clearBlockState(blockPos, false);
+					world.removeBlock(blockPos, false);
 				}
 
 				return;
@@ -63,7 +64,7 @@ public class DragonEggBlock extends FallingBlock {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 5;
 	}
 

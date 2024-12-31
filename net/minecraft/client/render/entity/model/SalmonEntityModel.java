@@ -1,73 +1,66 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class SalmonEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid field_3546;
-	private final Cuboid field_3548;
-	private final Cuboid field_3547;
-	private final Cuboid field_3545;
-	private final Cuboid field_3543;
-	private final Cuboid field_3549;
-	private final Cuboid field_3542;
-	private final Cuboid field_3544;
+public class SalmonEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+	private final ModelPart torso;
+	private final ModelPart tail;
+	private final ModelPart head;
+	private final ModelPart rightFin;
+	private final ModelPart leftFin;
 
 	public SalmonEntityModel() {
 		this.textureWidth = 32;
 		this.textureHeight = 32;
 		int i = 20;
-		this.field_3546 = new Cuboid(this, 0, 0);
-		this.field_3546.addBox(-1.5F, -2.5F, 0.0F, 3, 5, 8);
-		this.field_3546.setRotationPoint(0.0F, 20.0F, 0.0F);
-		this.field_3548 = new Cuboid(this, 0, 13);
-		this.field_3548.addBox(-1.5F, -2.5F, 0.0F, 3, 5, 8);
-		this.field_3548.setRotationPoint(0.0F, 20.0F, 8.0F);
-		this.field_3547 = new Cuboid(this, 22, 0);
-		this.field_3547.addBox(-1.0F, -2.0F, -3.0F, 2, 4, 3);
-		this.field_3547.setRotationPoint(0.0F, 20.0F, 0.0F);
-		this.field_3549 = new Cuboid(this, 20, 10);
-		this.field_3549.addBox(0.0F, -2.5F, 0.0F, 0, 5, 6);
-		this.field_3549.setRotationPoint(0.0F, 0.0F, 8.0F);
-		this.field_3548.addChild(this.field_3549);
-		this.field_3545 = new Cuboid(this, 2, 1);
-		this.field_3545.addBox(0.0F, 0.0F, 0.0F, 0, 2, 3);
-		this.field_3545.setRotationPoint(0.0F, -4.5F, 5.0F);
-		this.field_3546.addChild(this.field_3545);
-		this.field_3543 = new Cuboid(this, 0, 2);
-		this.field_3543.addBox(0.0F, 0.0F, 0.0F, 0, 2, 4);
-		this.field_3543.setRotationPoint(0.0F, -4.5F, -1.0F);
-		this.field_3548.addChild(this.field_3543);
-		this.field_3542 = new Cuboid(this, -4, 0);
-		this.field_3542.addBox(-2.0F, 0.0F, 0.0F, 2, 0, 2);
-		this.field_3542.setRotationPoint(-1.5F, 21.5F, 0.0F);
-		this.field_3542.roll = (float) (-Math.PI / 4);
-		this.field_3544 = new Cuboid(this, 0, 0);
-		this.field_3544.addBox(0.0F, 0.0F, 0.0F, 2, 0, 2);
-		this.field_3544.setRotationPoint(1.5F, 21.5F, 0.0F);
-		this.field_3544.roll = (float) (Math.PI / 4);
+		this.torso = new ModelPart(this, 0, 0);
+		this.torso.addCuboid(-1.5F, -2.5F, 0.0F, 3.0F, 5.0F, 8.0F);
+		this.torso.setPivot(0.0F, 20.0F, 0.0F);
+		this.tail = new ModelPart(this, 0, 13);
+		this.tail.addCuboid(-1.5F, -2.5F, 0.0F, 3.0F, 5.0F, 8.0F);
+		this.tail.setPivot(0.0F, 20.0F, 8.0F);
+		this.head = new ModelPart(this, 22, 0);
+		this.head.addCuboid(-1.0F, -2.0F, -3.0F, 2.0F, 4.0F, 3.0F);
+		this.head.setPivot(0.0F, 20.0F, 0.0F);
+		ModelPart modelPart = new ModelPart(this, 20, 10);
+		modelPart.addCuboid(0.0F, -2.5F, 0.0F, 0.0F, 5.0F, 6.0F);
+		modelPart.setPivot(0.0F, 0.0F, 8.0F);
+		this.tail.addChild(modelPart);
+		ModelPart modelPart2 = new ModelPart(this, 2, 1);
+		modelPart2.addCuboid(0.0F, 0.0F, 0.0F, 0.0F, 2.0F, 3.0F);
+		modelPart2.setPivot(0.0F, -4.5F, 5.0F);
+		this.torso.addChild(modelPart2);
+		ModelPart modelPart3 = new ModelPart(this, 0, 2);
+		modelPart3.addCuboid(0.0F, 0.0F, 0.0F, 0.0F, 2.0F, 4.0F);
+		modelPart3.setPivot(0.0F, -4.5F, -1.0F);
+		this.tail.addChild(modelPart3);
+		this.rightFin = new ModelPart(this, -4, 0);
+		this.rightFin.addCuboid(-2.0F, 0.0F, 0.0F, 2.0F, 0.0F, 2.0F);
+		this.rightFin.setPivot(-1.5F, 21.5F, 0.0F);
+		this.rightFin.roll = (float) (-Math.PI / 4);
+		this.leftFin = new ModelPart(this, 0, 0);
+		this.leftFin.addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 0.0F, 2.0F);
+		this.leftFin.setPivot(1.5F, 21.5F, 0.0F);
+		this.leftFin.roll = (float) (Math.PI / 4);
 	}
 
 	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.setAngles(entity, f, g, h, i, j, k);
-		this.field_3546.render(k);
-		this.field_3548.render(k);
-		this.field_3547.render(k);
-		this.field_3542.render(k);
-		this.field_3544.render(k);
+	public Iterable<ModelPart> getParts() {
+		return ImmutableList.of(this.torso, this.tail, this.head, this.rightFin, this.leftFin);
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
+		float k = 1.0F;
 		float l = 1.0F;
-		float m = 1.0F;
-		if (!entity.isInsideWater()) {
-			l = 1.3F;
-			m = 1.7F;
+		if (!entity.isTouchingWater()) {
+			k = 1.3F;
+			l = 1.7F;
 		}
 
-		this.field_3548.yaw = -l * 0.25F * MathHelper.sin(m * 0.6F * h);
+		this.tail.yaw = -k * 0.25F * MathHelper.sin(l * 0.6F * h);
 	}
 }

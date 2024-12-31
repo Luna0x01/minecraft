@@ -22,10 +22,10 @@ public abstract class BlockEntity {
 	@Nullable
 	protected World world;
 	protected BlockPos pos = BlockPos.ORIGIN;
-	protected boolean invalid;
+	protected boolean removed;
 	@Nullable
 	private BlockState cachedState;
-	private boolean field_19314;
+	private boolean invalid;
 
 	public BlockEntity(BlockEntityType<?> blockEntityType) {
 		this.type = blockEntityType;
@@ -36,8 +36,9 @@ public abstract class BlockEntity {
 		return this.world;
 	}
 
-	public void setWorld(World world) {
+	public void setLocation(World world, BlockPos blockPos) {
 		this.world = world;
+		this.pos = blockPos.toImmutable();
 	}
 
 	public boolean hasWorld() {
@@ -68,7 +69,7 @@ public abstract class BlockEntity {
 	@Nullable
 	public static BlockEntity createFromTag(CompoundTag compoundTag) {
 		String string = compoundTag.getString("id");
-		return (BlockEntity)Registry.BLOCK_ENTITY.getOrEmpty(new Identifier(string)).map(blockEntityType -> {
+		return (BlockEntity)Registry.field_11137.getOrEmpty(new Identifier(string)).map(blockEntityType -> {
 			try {
 				return blockEntityType.instantiate();
 			} catch (Throwable var3) {
@@ -131,16 +132,16 @@ public abstract class BlockEntity {
 		return this.writeIdentifyingData(new CompoundTag());
 	}
 
-	public boolean isInvalid() {
-		return this.invalid;
+	public boolean isRemoved() {
+		return this.removed;
 	}
 
-	public void invalidate() {
-		this.invalid = true;
+	public void markRemoved() {
+		this.removed = true;
 	}
 
-	public void validate() {
-		this.invalid = false;
+	public void cancelRemoval() {
+		this.removed = false;
 	}
 
 	public boolean onBlockAction(int i, int j) {
@@ -152,7 +153,7 @@ public abstract class BlockEntity {
 	}
 
 	public void populateCrashReport(CrashReportSection crashReportSection) {
-		crashReportSection.add("Name", (CrashCallable<String>)(() -> Registry.BLOCK_ENTITY.getId(this.getType()) + " // " + this.getClass().getCanonicalName()));
+		crashReportSection.add("Name", (CrashCallable<String>)(() -> Registry.field_11137.getId(this.getType()) + " // " + this.getClass().getCanonicalName()));
 		if (this.world != null) {
 			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.getCachedState());
 			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.world.getBlockState(this.pos));
@@ -177,10 +178,10 @@ public abstract class BlockEntity {
 		return this.type;
 	}
 
-	public void method_20525() {
-		if (!this.field_19314) {
-			this.field_19314 = true;
-			LOGGER.warn("Block entity invalid: {} @ {}", new Supplier[]{() -> Registry.BLOCK_ENTITY.getId(this.getType()), this::getPos});
+	public void markInvalid() {
+		if (!this.invalid) {
+			this.invalid = true;
+			LOGGER.warn("Block entity invalid: {} @ {}", new Supplier[]{() -> Registry.field_11137.getId(this.getType()), this::getPos});
 		}
 	}
 }

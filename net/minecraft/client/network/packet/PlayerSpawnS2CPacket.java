@@ -1,10 +1,7 @@
 package net.minecraft.client.network.packet;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
-import javax.annotation.Nullable;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -18,8 +15,6 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	private double z;
 	private byte yaw;
 	private byte pitch;
-	private DataTracker dataTracker;
-	private List<DataTracker.Entry<?>> trackedValues;
 
 	public PlayerSpawnS2CPacket() {
 	}
@@ -27,12 +22,11 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public PlayerSpawnS2CPacket(PlayerEntity playerEntity) {
 		this.id = playerEntity.getEntityId();
 		this.uuid = playerEntity.getGameProfile().getId();
-		this.x = playerEntity.x;
-		this.y = playerEntity.y;
-		this.z = playerEntity.z;
+		this.x = playerEntity.getX();
+		this.y = playerEntity.getY();
+		this.z = playerEntity.getZ();
 		this.yaw = (byte)((int)(playerEntity.yaw * 256.0F / 360.0F));
 		this.pitch = (byte)((int)(playerEntity.pitch * 256.0F / 360.0F));
-		this.dataTracker = playerEntity.getDataTracker();
 	}
 
 	@Override
@@ -44,7 +38,6 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.z = packetByteBuf.readDouble();
 		this.yaw = packetByteBuf.readByte();
 		this.pitch = packetByteBuf.readByte();
-		this.trackedValues = DataTracker.deserializePacket(packetByteBuf);
 	}
 
 	@Override
@@ -56,16 +49,10 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		packetByteBuf.writeDouble(this.z);
 		packetByteBuf.writeByte(this.yaw);
 		packetByteBuf.writeByte(this.pitch);
-		this.dataTracker.toPacketByteBuf(packetByteBuf);
 	}
 
-	public void method_11235(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onPlayerSpawn(this);
-	}
-
-	@Nullable
-	public List<DataTracker.Entry<?>> getTrackedValues() {
-		return this.trackedValues;
 	}
 
 	public int getId() {

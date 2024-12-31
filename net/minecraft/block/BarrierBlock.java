@@ -20,11 +20,6 @@ public class BarrierBlock extends Block {
 	}
 
 	@Override
-	public boolean isOpaque(BlockState blockState) {
-		return false;
-	}
-
-	@Override
 	public float getAmbientOcclusionLightLevel(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return 1.0F;
 	}

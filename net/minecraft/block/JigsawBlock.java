@@ -5,8 +5,9 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.structure.Structure;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -18,11 +19,11 @@ import net.minecraft.world.World;
 public class JigsawBlock extends FacingBlock implements BlockEntityProvider {
 	protected JigsawBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11036));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11036));
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING);
 	}
 
@@ -43,13 +44,13 @@ public class JigsawBlock extends FacingBlock implements BlockEntityProvider {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (blockEntity instanceof JigsawBlockEntity && playerEntity.isCreativeLevelTwoOp()) {
 			playerEntity.openJigsawScreen((JigsawBlockEntity)blockEntity);
-			return true;
+			return ActionResult.field_5812;
 		} else {
-			return false;
+			return ActionResult.field_5811;
 		}
 	}
 

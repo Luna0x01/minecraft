@@ -1,49 +1,80 @@
 package net.minecraft.util.profiler;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Maps;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 import net.minecraft.SharedConstants;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ProfileResultImpl implements ProfileResult {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private final Map<String, Long> timings;
-	private final Map<String, Long> field_19382;
+	private static final ProfileLocationInfo EMPTY_INFO = new ProfileLocationInfo() {
+		@Override
+		public long getTotalTime() {
+			return 0L;
+		}
+
+		@Override
+		public long getVisitCount() {
+			return 0L;
+		}
+
+		@Override
+		public Object2LongMap<String> getCounts() {
+			return Object2LongMaps.emptyMap();
+		}
+	};
+	private static final Splitter SPLITTER = Splitter.on('\u001e');
+	private static final Comparator<Entry<String, ProfileResultImpl.CounterInfo>> COMPARATOR = Entry.comparingByValue(
+			Comparator.comparingLong(counterInfo -> counterInfo.totalTime)
+		)
+		.reversed();
+	private final Map<String, ? extends ProfileLocationInfo> locationInfos;
 	private final long startTime;
 	private final int startTick;
 	private final long endTime;
 	private final int endTick;
-	private final int field_19383;
+	private final int tickDuration;
 
-	public ProfileResultImpl(Map<String, Long> map, Map<String, Long> map2, long l, int i, long m, int j) {
-		this.timings = map;
-		this.field_19382 = map2;
+	public ProfileResultImpl(Map<String, ? extends ProfileLocationInfo> map, long l, int i, long m, int j) {
+		this.locationInfos = map;
 		this.startTime = l;
 		this.startTick = i;
 		this.endTime = m;
 		this.endTick = j;
-		this.field_19383 = j - i;
+		this.tickDuration = j - i;
+	}
+
+	private ProfileLocationInfo getInfo(String string) {
+		ProfileLocationInfo profileLocationInfo = (ProfileLocationInfo)this.locationInfos.get(string);
+		return profileLocationInfo != null ? profileLocationInfo : EMPTY_INFO;
 	}
 
 	@Override
 	public List<ProfilerTiming> getTimings(String string) {
 		String string2 = string;
-		long l = this.timings.containsKey("root") ? (Long)this.timings.get("root") : 0L;
-		long m = (Long)this.timings.getOrDefault(string, -1L);
-		long n = (Long)this.field_19382.getOrDefault(string, 0L);
+		ProfileLocationInfo profileLocationInfo = this.getInfo("root");
+		long l = profileLocationInfo.getTotalTime();
+		ProfileLocationInfo profileLocationInfo2 = this.getInfo(string);
+		long m = profileLocationInfo2.getTotalTime();
+		long n = profileLocationInfo2.getVisitCount();
 		List<ProfilerTiming> list = Lists.newArrayList();
 		if (!string.isEmpty()) {
 			string = string + '\u001e';
@@ -51,9 +82,9 @@ public class ProfileResultImpl implements ProfileResult {
 
 		long o = 0L;
 
-		for (String string3 : this.timings.keySet()) {
-			if (string3.length() > string.length() && string3.startsWith(string) && string3.indexOf(30, string.length() + 1) < 0) {
-				o += this.timings.get(string3);
+		for (String string3 : this.locationInfos.keySet()) {
+			if (isSubpath(string, string3)) {
+				o += this.getInfo(string3).getTotalTime();
 			}
 		}
 
@@ -66,22 +97,15 @@ public class ProfileResultImpl implements ProfileResult {
 			l = o;
 		}
 
-		Set<String> set = Sets.newHashSet(this.timings.keySet());
-		set.addAll(this.field_19382.keySet());
-
-		for (String string4 : set) {
-			if (string4.length() > string.length() && string4.startsWith(string) && string4.indexOf(30, string.length() + 1) < 0) {
-				long p = (Long)this.timings.getOrDefault(string4, 0L);
+		for (String string4 : this.locationInfos.keySet()) {
+			if (isSubpath(string, string4)) {
+				ProfileLocationInfo profileLocationInfo3 = this.getInfo(string4);
+				long p = profileLocationInfo3.getTotalTime();
 				double d = (double)p * 100.0 / (double)o;
 				double e = (double)p * 100.0 / (double)l;
 				String string5 = string4.substring(string.length());
-				long q = (Long)this.field_19382.getOrDefault(string4, 0L);
-				list.add(new ProfilerTiming(string5, d, e, q));
+				list.add(new ProfilerTiming(string5, d, e, profileLocationInfo3.getVisitCount()));
 			}
-		}
-
-		for (String string6 : this.timings.keySet()) {
-			this.timings.put(string6, (Long)this.timings.get(string6) * 999L / 1000L);
 		}
 
 		if ((float)o > f) {
@@ -91,6 +115,28 @@ public class ProfileResultImpl implements ProfileResult {
 		Collections.sort(list);
 		list.add(0, new ProfilerTiming(string2, 100.0, (double)o * 100.0 / (double)l, n));
 		return list;
+	}
+
+	private static boolean isSubpath(String string, String string2) {
+		return string2.length() > string.length() && string2.startsWith(string) && string2.indexOf(30, string.length() + 1) < 0;
+	}
+
+	private Map<String, ProfileResultImpl.CounterInfo> setupCounters() {
+		Map<String, ProfileResultImpl.CounterInfo> map = Maps.newTreeMap();
+		this.locationInfos
+			.forEach(
+				(string, profileLocationInfo) -> {
+					Object2LongMap<String> object2LongMap = profileLocationInfo.getCounts();
+					if (!object2LongMap.isEmpty()) {
+						List<String> list = SPLITTER.splitToList(string);
+						object2LongMap.forEach(
+							(stringx, long_) -> ((ProfileResultImpl.CounterInfo)map.computeIfAbsent(stringx, stringxx -> new ProfileResultImpl.CounterInfo()))
+									.add(list.iterator(), long_)
+						);
+					}
+				}
+			);
+		return map;
 	}
 
 	@Override
@@ -114,7 +160,7 @@ public class ProfileResultImpl implements ProfileResult {
 	}
 
 	@Override
-	public boolean saveToFile(File file) {
+	public boolean save(File file) {
 		file.getParentFile().mkdirs();
 		Writer writer = null;
 
@@ -150,32 +196,48 @@ public class ProfileResultImpl implements ProfileResult {
 		stringBuilder.append("--- BEGIN PROFILE DUMP ---\n\n");
 		this.appendTiming(0, "root", stringBuilder);
 		stringBuilder.append("--- END PROFILE DUMP ---\n\n");
+		Map<String, ProfileResultImpl.CounterInfo> map = this.setupCounters();
+		if (!map.isEmpty()) {
+			stringBuilder.append("--- BEGIN COUNTER DUMP ---\n\n");
+			this.appendCounterDump(map, stringBuilder, i);
+			stringBuilder.append("--- END COUNTER DUMP ---\n\n");
+		}
+
 		return stringBuilder.toString();
 	}
 
-	@Override
-	public String getTimingTreeString() {
-		StringBuilder stringBuilder = new StringBuilder();
-		this.appendTiming(0, "root", stringBuilder);
-		return stringBuilder.toString();
+	private static StringBuilder indent(StringBuilder stringBuilder, int i) {
+		stringBuilder.append(String.format("[%02d] ", i));
+
+		for (int j = 0; j < i; j++) {
+			stringBuilder.append("|   ");
+		}
+
+		return stringBuilder;
 	}
 
 	private void appendTiming(int i, String string, StringBuilder stringBuilder) {
 		List<ProfilerTiming> list = this.getTimings(string);
+		Object2LongMap<String> object2LongMap = ((ProfileLocationInfo)this.locationInfos.get(string)).getCounts();
+		object2LongMap.forEach(
+			(stringx, long_) -> indent(stringBuilder, i)
+					.append('#')
+					.append(stringx)
+					.append(' ')
+					.append(long_)
+					.append('/')
+					.append(long_ / (long)this.tickDuration)
+					.append('\n')
+		);
 		if (list.size() >= 3) {
 			for (int j = 1; j < list.size(); j++) {
 				ProfilerTiming profilerTiming = (ProfilerTiming)list.get(j);
-				stringBuilder.append(String.format("[%02d] ", i));
-
-				for (int k = 0; k < i; k++) {
-					stringBuilder.append("|   ");
-				}
-
-				stringBuilder.append(profilerTiming.name)
+				indent(stringBuilder, i)
+					.append(profilerTiming.name)
 					.append('(')
-					.append(profilerTiming.field_19384)
+					.append(profilerTiming.visitCount)
 					.append('/')
-					.append(String.format(Locale.ROOT, "%.0f", (float)profilerTiming.field_19384 / (float)this.field_19383))
+					.append(String.format(Locale.ROOT, "%.0f", (float)profilerTiming.visitCount / (float)this.tickDuration))
 					.append(')')
 					.append(" - ")
 					.append(String.format(Locale.ROOT, "%.2f", profilerTiming.parentSectionUsagePercentage))
@@ -185,12 +247,39 @@ public class ProfileResultImpl implements ProfileResult {
 				if (!"unspecified".equals(profilerTiming.name)) {
 					try {
 						this.appendTiming(i + 1, string + '\u001e' + profilerTiming.name, stringBuilder);
-					} catch (Exception var8) {
-						stringBuilder.append("[[ EXCEPTION ").append(var8).append(" ]]");
+					} catch (Exception var9) {
+						stringBuilder.append("[[ EXCEPTION ").append(var9).append(" ]]");
 					}
 				}
 			}
 		}
+	}
+
+	private void appendCounter(int i, String string, ProfileResultImpl.CounterInfo counterInfo, int j, StringBuilder stringBuilder) {
+		indent(stringBuilder, i)
+			.append(string)
+			.append(" total:")
+			.append(counterInfo.selfTime)
+			.append('/')
+			.append(counterInfo.totalTime)
+			.append(" average: ")
+			.append(counterInfo.selfTime / (long)j)
+			.append('/')
+			.append(counterInfo.totalTime / (long)j)
+			.append('\n');
+		counterInfo.subCounters
+			.entrySet()
+			.stream()
+			.sorted(COMPARATOR)
+			.forEach(entry -> this.appendCounter(i + 1, (String)entry.getKey(), (ProfileResultImpl.CounterInfo)entry.getValue(), j, stringBuilder));
+	}
+
+	private void appendCounterDump(Map<String, ProfileResultImpl.CounterInfo> map, StringBuilder stringBuilder, int i) {
+		map.forEach((string, counterInfo) -> {
+			stringBuilder.append("-- Counter: ").append(string).append(" --\n");
+			this.appendCounter(0, "root", (ProfileResultImpl.CounterInfo)counterInfo.subCounters.get("root"), i, stringBuilder);
+			stringBuilder.append("\n\n");
+		});
 	}
 
 	private static String generateWittyComment() {
@@ -212,7 +301,7 @@ public class ProfileResultImpl implements ProfileResult {
 		};
 
 		try {
-			return strings[(int)(SystemUtil.getMeasuringTimeNano() % (long)strings.length)];
+			return strings[(int)(Util.getMeasuringTimeNano() % (long)strings.length)];
 		} catch (Throwable var2) {
 			return "Witty comment unavailable :(";
 		}
@@ -220,6 +309,24 @@ public class ProfileResultImpl implements ProfileResult {
 
 	@Override
 	public int getTickSpan() {
-		return this.field_19383;
+		return this.tickDuration;
+	}
+
+	static class CounterInfo {
+		private long selfTime;
+		private long totalTime;
+		private final Map<String, ProfileResultImpl.CounterInfo> subCounters = Maps.newHashMap();
+
+		private CounterInfo() {
+		}
+
+		public void add(Iterator<String> iterator, long l) {
+			this.totalTime += l;
+			if (!iterator.hasNext()) {
+				this.selfTime += l;
+			} else {
+				((ProfileResultImpl.CounterInfo)this.subCounters.computeIfAbsent(iterator.next(), string -> new ProfileResultImpl.CounterInfo())).add(iterator, l);
+			}
+		}
 	}
 }

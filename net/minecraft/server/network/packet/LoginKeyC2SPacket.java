@@ -33,7 +33,7 @@ public class LoginKeyC2SPacket implements Packet<ServerLoginPacketListener> {
 		packetByteBuf.writeByteArray(this.encryptedNonce);
 	}
 
-	public void method_12653(ServerLoginPacketListener serverLoginPacketListener) {
+	public void apply(ServerLoginPacketListener serverLoginPacketListener) {
 		serverLoginPacketListener.onKey(this);
 	}
 

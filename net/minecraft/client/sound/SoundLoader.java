@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionException;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 public class SoundLoader {
 	private final ResourceManager resourceManager;
@@ -92,7 +92,7 @@ public class SoundLoader {
 				} catch (IOException var62) {
 					throw new CompletionException(var62);
 				}
-			}, SystemUtil.getServerWorkerExecutor()));
+			}, Util.getServerWorkerExecutor()));
 	}
 
 	public CompletableFuture<AudioStream> loadStreamed(Identifier identifier) {
@@ -104,7 +104,7 @@ public class SoundLoader {
 			} catch (IOException var4) {
 				throw new CompletionException(var4);
 			}
-		}, SystemUtil.getServerWorkerExecutor());
+		}, Util.getServerWorkerExecutor());
 	}
 
 	public void close() {

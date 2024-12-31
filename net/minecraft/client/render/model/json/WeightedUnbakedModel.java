@@ -6,6 +6,7 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.mojang.datafixers.util.Pair;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +20,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.render.model.WeightedBakedModel;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.util.Identifier;
 
 public class WeightedUnbakedModel implements UnbakedModel {
@@ -53,8 +55,8 @@ public class WeightedUnbakedModel implements UnbakedModel {
 	}
 
 	@Override
-	public Collection<Identifier> getTextureDependencies(Function<Identifier, UnbakedModel> function, Set<String> set) {
-		return (Collection<Identifier>)this.getVariants()
+	public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> function, Set<Pair<String, String>> set) {
+		return (Collection<SpriteIdentifier>)this.getVariants()
 			.stream()
 			.map(ModelVariant::getLocation)
 			.distinct()
@@ -64,7 +66,7 @@ public class WeightedUnbakedModel implements UnbakedModel {
 
 	@Nullable
 	@Override
-	public BakedModel bake(ModelLoader modelLoader, Function<Identifier, Sprite> function, ModelBakeSettings modelBakeSettings) {
+	public BakedModel bake(ModelLoader modelLoader, Function<SpriteIdentifier, Sprite> function, ModelBakeSettings modelBakeSettings, Identifier identifier) {
 		if (this.getVariants().isEmpty()) {
 			return null;
 		} else {
@@ -80,7 +82,7 @@ public class WeightedUnbakedModel implements UnbakedModel {
 	}
 
 	public static class Deserializer implements JsonDeserializer<WeightedUnbakedModel> {
-		public WeightedUnbakedModel method_3499(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public WeightedUnbakedModel deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			List<ModelVariant> list = Lists.newArrayList();
 			if (jsonElement.isJsonArray()) {
 				JsonArray jsonArray = jsonElement.getAsJsonArray();

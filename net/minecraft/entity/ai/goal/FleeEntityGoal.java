@@ -3,7 +3,7 @@ package net.minecraft.entity.ai.goal;
 import java.util.EnumSet;
 import java.util.function.Predicate;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.Path;
@@ -20,8 +20,8 @@ public class FleeEntityGoal<T extends LivingEntity> extends Goal {
 	protected Path fleePath;
 	protected final EntityNavigation fleeingEntityNavigation;
 	protected final Class<T> classToFleeFrom;
-	protected final Predicate<LivingEntity> field_6393;
-	protected final Predicate<LivingEntity> field_6388;
+	protected final Predicate<LivingEntity> extraInclusionSelector;
+	protected final Predicate<LivingEntity> inclusionSelector;
 	private final TargetPredicate withinRangePredicate;
 
 	public FleeEntityGoal(MobEntityWithAi mobEntityWithAi, Class<T> class_, float f, double d, double e) {
@@ -33,11 +33,11 @@ public class FleeEntityGoal<T extends LivingEntity> extends Goal {
 	) {
 		this.mob = mobEntityWithAi;
 		this.classToFleeFrom = class_;
-		this.field_6393 = predicate;
+		this.extraInclusionSelector = predicate;
 		this.fleeDistance = f;
 		this.slowSpeed = d;
 		this.fastSpeed = e;
-		this.field_6388 = predicate2;
+		this.inclusionSelector = predicate2;
 		this.fleeingEntityNavigation = mobEntityWithAi.getNavigation();
 		this.setControls(EnumSet.of(Goal.Control.field_18405));
 		this.withinRangePredicate = new TargetPredicate().setBaseMaxDistance((double)f).setPredicate(predicate2.and(predicate));
@@ -51,19 +51,19 @@ public class FleeEntityGoal<T extends LivingEntity> extends Goal {
 	public boolean canStart() {
 		this.targetEntity = this.mob
 			.world
-			.method_21727(
+			.getClosestEntityIncludingUngeneratedChunks(
 				this.classToFleeFrom,
 				this.withinRangePredicate,
 				this.mob,
-				this.mob.x,
-				this.mob.y,
-				this.mob.z,
+				this.mob.getX(),
+				this.mob.getY(),
+				this.mob.getZ(),
 				this.mob.getBoundingBox().expand((double)this.fleeDistance, 3.0, (double)this.fleeDistance)
 			);
 		if (this.targetEntity == null) {
 			return false;
 		} else {
-			Vec3d vec3d = PathfindingUtil.method_6379(this.mob, 16, 7, new Vec3d(this.targetEntity.x, this.targetEntity.y, this.targetEntity.z));
+			Vec3d vec3d = TargetFinder.findTargetAwayFrom(this.mob, 16, 7, this.targetEntity.getPos());
 			if (vec3d == null) {
 				return false;
 			} else if (this.targetEntity.squaredDistanceTo(vec3d.x, vec3d.y, vec3d.z) < this.targetEntity.squaredDistanceTo(this.mob)) {

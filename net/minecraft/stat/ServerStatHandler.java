@@ -21,14 +21,14 @@ import java.util.Set;
 import java.util.Map.Entry;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.network.packet.StatisticsS2CPacket;
-import net.minecraft.datafixers.DataFixTypes;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
-import net.minecraft.util.TagHelper;
+import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -85,30 +85,30 @@ public class ServerStatHandler extends StatHandler {
 				JsonElement jsonElement = Streams.parse(jsonReader);
 				if (!jsonElement.isJsonNull()) {
 					CompoundTag compoundTag = jsonToCompound(jsonElement.getAsJsonObject());
-					if (!compoundTag.containsKey("DataVersion", 99)) {
+					if (!compoundTag.contains("DataVersion", 99)) {
 						compoundTag.putInt("DataVersion", 1343);
 					}
 
-					compoundTag = TagHelper.update(dataFixer, DataFixTypes.field_19218, compoundTag, compoundTag.getInt("DataVersion"));
-					if (compoundTag.containsKey("stats", 10)) {
+					compoundTag = NbtHelper.update(dataFixer, DataFixTypes.field_19218, compoundTag, compoundTag.getInt("DataVersion"));
+					if (compoundTag.contains("stats", 10)) {
 						CompoundTag compoundTag2 = compoundTag.getCompound("stats");
 
 						for (String string2 : compoundTag2.getKeys()) {
-							if (compoundTag2.containsKey(string2, 10)) {
-								SystemUtil.ifPresentOrElse(
-									Registry.STAT_TYPE.getOrEmpty(new Identifier(string2)),
+							if (compoundTag2.contains(string2, 10)) {
+								Util.ifPresentOrElse(
+									Registry.field_11152.getOrEmpty(new Identifier(string2)),
 									statType -> {
 										CompoundTag compoundTag2x = compoundTag2.getCompound(string2);
 
 										for (String string2x : compoundTag2x.getKeys()) {
-											if (compoundTag2x.containsKey(string2x, 99)) {
-												SystemUtil.ifPresentOrElse(
+											if (compoundTag2x.contains(string2x, 99)) {
+												Util.ifPresentOrElse(
 													this.createStat(statType, string2x),
 													stat -> this.statMap.put(stat, compoundTag2x.getInt(string2x)),
 													() -> LOGGER.warn("Invalid statistic in {}: Don't know what {} is", this.file, string2x)
 												);
 											} else {
-												LOGGER.warn("Invalid statistic value in {}: Don't know what {} is for key {}", this.file, compoundTag2x.getTag(string2x), string2x);
+												LOGGER.warn("Invalid statistic value in {}: Don't know what {} is for key {}", this.file, compoundTag2x.get(string2x), string2x);
 											}
 										}
 									},
@@ -178,7 +178,7 @@ public class ServerStatHandler extends StatHandler {
 		JsonObject jsonObjectx = new JsonObject();
 
 		for (Entry<StatType<?>, JsonObject> entry2 : map.entrySet()) {
-			jsonObjectx.add(Registry.STAT_TYPE.getId((StatType<?>)entry2.getKey()).toString(), (JsonElement)entry2.getValue());
+			jsonObjectx.add(Registry.field_11152.getId((StatType<?>)entry2.getKey()).toString(), (JsonElement)entry2.getValue());
 		}
 
 		JsonObject jsonObject2 = new JsonObject();

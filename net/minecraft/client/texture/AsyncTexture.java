@@ -1,12 +1,15 @@
 package net.minecraft.client.texture;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import javax.annotation.Nullable;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 public class AsyncTexture extends ResourceTexture {
+	@Nullable
 	private CompletableFuture<ResourceTexture.TextureData> future;
 
 	public AsyncTexture(ResourceManager resourceManager, Identifier identifier, Executor executor) {
@@ -31,7 +34,11 @@ public class AsyncTexture extends ResourceTexture {
 
 	@Override
 	public void registerTexture(TextureManager textureManager, ResourceManager resourceManager, Identifier identifier, Executor executor) {
-		this.future = CompletableFuture.supplyAsync(() -> ResourceTexture.TextureData.load(resourceManager, this.location), SystemUtil.getServerWorkerExecutor());
-		this.future.thenRunAsync(() -> textureManager.registerTexture(this.location, this), executor);
+		this.future = CompletableFuture.supplyAsync(() -> ResourceTexture.TextureData.load(resourceManager, this.location), Util.getServerWorkerExecutor());
+		this.future.thenRunAsync(() -> textureManager.registerTexture(this.location, this), method_22808(executor));
+	}
+
+	private static Executor method_22808(Executor executor) {
+		return runnable -> executor.execute(() -> RenderSystem.recordRenderCall(runnable::run));
 	}
 }

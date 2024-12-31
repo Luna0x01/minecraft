@@ -5,8 +5,8 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public enum ResourcePackCompatibility {
-	TOO_OLD("old"),
-	TOO_NEW("new"),
+	field_14223("old"),
+	field_14220("new"),
 	field_14224("compatible");
 
 	private final Text notification;
@@ -23,9 +23,9 @@ public enum ResourcePackCompatibility {
 
 	public static ResourcePackCompatibility from(int i) {
 		if (i < SharedConstants.getGameVersion().getPackVersion()) {
-			return TOO_OLD;
+			return field_14223;
 		} else {
-			return i > SharedConstants.getGameVersion().getPackVersion() ? TOO_NEW : field_14224;
+			return i > SharedConstants.getGameVersion().getPackVersion() ? field_14220 : field_14224;
 		}
 	}
 

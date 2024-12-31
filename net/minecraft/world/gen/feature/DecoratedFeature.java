@@ -14,13 +14,13 @@ public class DecoratedFeature extends Feature<DecoratedFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_12892(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DecoratedFeatureConfig decoratedFeatureConfig
 	) {
 		return decoratedFeatureConfig.decorator.generate(iWorld, chunkGenerator, random, blockPos, decoratedFeatureConfig.feature);
 	}
 
 	public String toString() {
-		return String.format("< %s [%s] >", this.getClass().getSimpleName(), Registry.FEATURE.getId(this));
+		return String.format("< %s [%s] >", this.getClass().getSimpleName(), Registry.field_11138.getId(this));
 	}
 }

@@ -18,26 +18,29 @@ public class FireChargeItem extends Item {
 	@Override
 	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
 		World world = itemUsageContext.getWorld();
-		if (world.isClient) {
-			return ActionResult.field_5812;
-		} else {
-			BlockPos blockPos = itemUsageContext.getBlockPos();
-			BlockState blockState = world.getBlockState(blockPos);
-			if (blockState.getBlock() == Blocks.field_17350) {
-				if (!(Boolean)blockState.get(CampfireBlock.LIT) && !(Boolean)blockState.get(CampfireBlock.WATERLOGGED)) {
-					this.playUseSound(world, blockPos);
-					world.setBlockState(blockPos, blockState.with(CampfireBlock.LIT, Boolean.valueOf(true)));
-				}
-			} else {
-				blockPos = blockPos.offset(itemUsageContext.getSide());
-				if (world.getBlockState(blockPos).isAir()) {
-					this.playUseSound(world, blockPos);
-					world.setBlockState(blockPos, ((FireBlock)Blocks.field_10036).getStateForPosition(world, blockPos));
-				}
+		BlockPos blockPos = itemUsageContext.getBlockPos();
+		BlockState blockState = world.getBlockState(blockPos);
+		boolean bl = false;
+		if (blockState.getBlock() == Blocks.field_17350) {
+			if (!(Boolean)blockState.get(CampfireBlock.LIT) && !(Boolean)blockState.get(CampfireBlock.WATERLOGGED)) {
+				this.playUseSound(world, blockPos);
+				world.setBlockState(blockPos, blockState.with(CampfireBlock.LIT, Boolean.valueOf(true)));
+				bl = true;
 			}
+		} else {
+			blockPos = blockPos.offset(itemUsageContext.getSide());
+			if (world.getBlockState(blockPos).isAir()) {
+				this.playUseSound(world, blockPos);
+				world.setBlockState(blockPos, ((FireBlock)Blocks.field_10036).getStateForPosition(world, blockPos));
+				bl = true;
+			}
+		}
 
+		if (bl) {
 			itemUsageContext.getStack().decrement(1);
 			return ActionResult.field_5812;
+		} else {
+			return ActionResult.field_5814;
 		}
 	}
 

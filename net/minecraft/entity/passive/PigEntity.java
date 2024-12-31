@@ -134,7 +134,9 @@ public class PigEntity extends AnimalEntity {
 
 	@Override
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
-		if (!super.interactMob(playerEntity, hand)) {
+		if (super.interactMob(playerEntity, hand)) {
+			return true;
+		} else {
 			ItemStack itemStack = playerEntity.getStackInHand(hand);
 			if (itemStack.getItem() == Items.field_8448) {
 				itemStack.useOnEntity(playerEntity, this, hand);
@@ -145,14 +147,9 @@ public class PigEntity extends AnimalEntity {
 				}
 
 				return true;
-			} else if (itemStack.getItem() == Items.field_8175) {
-				itemStack.useOnEntity(playerEntity, this, hand);
-				return true;
 			} else {
-				return false;
+				return itemStack.getItem() == Items.field_8175 && itemStack.useOnEntity(playerEntity, this, hand);
 			}
-		} else {
-			return true;
 		}
 	}
 
@@ -179,8 +176,8 @@ public class PigEntity extends AnimalEntity {
 	@Override
 	public void onStruckByLightning(LightningEntity lightningEntity) {
 		ZombiePigmanEntity zombiePigmanEntity = EntityType.field_6050.create(this.world);
-		zombiePigmanEntity.setEquippedStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8845));
-		zombiePigmanEntity.setPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
+		zombiePigmanEntity.equipStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8845));
+		zombiePigmanEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
 		zombiePigmanEntity.setAiDisabled(this.isAiDisabled());
 		if (this.hasCustomName()) {
 			zombiePigmanEntity.setCustomName(this.getCustomName());
@@ -200,10 +197,10 @@ public class PigEntity extends AnimalEntity {
 				this.prevYaw = this.yaw;
 				this.pitch = entity.pitch * 0.5F;
 				this.setRotation(this.yaw, this.pitch);
-				this.field_6283 = this.yaw;
+				this.bodyYaw = this.yaw;
 				this.headYaw = this.yaw;
 				this.stepHeight = 1.0F;
-				this.field_6281 = this.getMovementSpeed() * 0.1F;
+				this.flyingSpeed = this.getMovementSpeed() * 0.1F;
 				if (this.field_6814 && this.field_6812++ > this.field_6813) {
 					this.field_6814 = false;
 				}
@@ -216,13 +213,14 @@ public class PigEntity extends AnimalEntity {
 
 					this.setMovementSpeed(f);
 					super.travel(new Vec3d(0.0, 0.0, 1.0));
+					this.bodyTrackingIncrements = 0;
 				} else {
 					this.setVelocity(Vec3d.ZERO);
 				}
 
 				this.lastLimbDistance = this.limbDistance;
-				double d = this.x - this.prevX;
-				double e = this.z - this.prevZ;
+				double d = this.getX() - this.prevX;
+				double e = this.getZ() - this.prevZ;
 				float g = MathHelper.sqrt(d * d + e * e) * 4.0F;
 				if (g > 1.0F) {
 					g = 1.0F;
@@ -232,7 +230,7 @@ public class PigEntity extends AnimalEntity {
 				this.limbAngle = this.limbAngle + this.limbDistance;
 			} else {
 				this.stepHeight = 0.5F;
-				this.field_6281 = 0.02F;
+				this.flyingSpeed = 0.02F;
 				super.travel(vec3d);
 			}
 		}
@@ -244,18 +242,18 @@ public class PigEntity extends AnimalEntity {
 		} else {
 			this.field_6814 = true;
 			this.field_6812 = 0;
-			this.field_6813 = this.getRand().nextInt(841) + 140;
+			this.field_6813 = this.getRandom().nextInt(841) + 140;
 			this.getDataTracker().set(field_6815, this.field_6813);
 			return true;
 		}
 	}
 
-	public PigEntity method_6574(PassiveEntity passiveEntity) {
+	public PigEntity createChild(PassiveEntity passiveEntity) {
 		return EntityType.field_6093.create(this.world);
 	}
 
 	@Override
 	public boolean isBreedingItem(ItemStack itemStack) {
-		return BREEDING_INGREDIENT.method_8093(itemStack);
+		return BREEDING_INGREDIENT.test(itemStack);
 	}
 }

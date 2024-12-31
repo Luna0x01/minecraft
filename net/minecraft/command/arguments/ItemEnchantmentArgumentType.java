@@ -31,13 +31,13 @@ public class ItemEnchantmentArgumentType implements ArgumentType<Enchantment> {
 		return (Enchantment)commandContext.getArgument(string, Enchantment.class);
 	}
 
-	public Enchantment method_9335(StringReader stringReader) throws CommandSyntaxException {
+	public Enchantment parse(StringReader stringReader) throws CommandSyntaxException {
 		Identifier identifier = Identifier.fromCommandInput(stringReader);
-		return (Enchantment)Registry.ENCHANTMENT.getOrEmpty(identifier).orElseThrow(() -> UNKNOWN_ENCHANTMENT_EXCEPTION.create(identifier));
+		return (Enchantment)Registry.field_11160.getOrEmpty(identifier).orElseThrow(() -> UNKNOWN_ENCHANTMENT_EXCEPTION.create(identifier));
 	}
 
 	public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> commandContext, SuggestionsBuilder suggestionsBuilder) {
-		return CommandSource.suggestIdentifiers(Registry.ENCHANTMENT.getIds(), suggestionsBuilder);
+		return CommandSource.suggestIdentifiers(Registry.field_11160.getIds(), suggestionsBuilder);
 	}
 
 	public Collection<String> getExamples() {

@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.Texture;
+import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.resource.Resource;
@@ -24,25 +24,25 @@ import net.minecraft.util.JsonHelper;
 import org.apache.commons.io.IOUtils;
 
 public class ShaderEffect implements AutoCloseable {
-	private final GlFramebuffer mainTarget;
+	private final Framebuffer mainTarget;
 	private final ResourceManager resourceManager;
 	private final String name;
 	private final List<PostProcessShader> passes = Lists.newArrayList();
-	private final Map<String, GlFramebuffer> targetsByName = Maps.newHashMap();
-	private final List<GlFramebuffer> defaultSizedTargets = Lists.newArrayList();
+	private final Map<String, Framebuffer> targetsByName = Maps.newHashMap();
+	private final List<Framebuffer> defaultSizedTargets = Lists.newArrayList();
 	private Matrix4f projectionMatrix;
 	private int width;
 	private int height;
 	private float time;
 	private float lastTickDelta;
 
-	public ShaderEffect(TextureManager textureManager, ResourceManager resourceManager, GlFramebuffer glFramebuffer, Identifier identifier) throws IOException, JsonSyntaxException {
+	public ShaderEffect(TextureManager textureManager, ResourceManager resourceManager, Framebuffer framebuffer, Identifier identifier) throws IOException, JsonSyntaxException {
 		this.resourceManager = resourceManager;
-		this.mainTarget = glFramebuffer;
+		this.mainTarget = framebuffer;
 		this.time = 0.0F;
 		this.lastTickDelta = 0.0F;
-		this.width = glFramebuffer.viewWidth;
-		this.height = glFramebuffer.viewHeight;
+		this.width = framebuffer.viewportWidth;
+		this.height = framebuffer.viewportHeight;
 		this.name = identifier.toString();
 		this.setupProjectionMatrix();
 		this.parseEffect(textureManager, identifier);
@@ -117,14 +117,14 @@ public class ShaderEffect implements AutoCloseable {
 		String string = JsonHelper.getString(jsonObject, "name");
 		String string2 = JsonHelper.getString(jsonObject, "intarget");
 		String string3 = JsonHelper.getString(jsonObject, "outtarget");
-		GlFramebuffer glFramebuffer = this.getTarget(string2);
-		GlFramebuffer glFramebuffer2 = this.getTarget(string3);
-		if (glFramebuffer == null) {
+		Framebuffer framebuffer = this.getTarget(string2);
+		Framebuffer framebuffer2 = this.getTarget(string3);
+		if (framebuffer == null) {
 			throw new ShaderParseException("Input target '" + string2 + "' does not exist");
-		} else if (glFramebuffer2 == null) {
+		} else if (framebuffer2 == null) {
 			throw new ShaderParseException("Output target '" + string3 + "' does not exist");
 		} else {
-			PostProcessShader postProcessShader = this.addPass(string, glFramebuffer, glFramebuffer2);
+			PostProcessShader postProcessShader = this.addPass(string, framebuffer, framebuffer2);
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "auxtargets", null);
 			if (jsonArray != null) {
 				int i = 0;
@@ -134,8 +134,8 @@ public class ShaderEffect implements AutoCloseable {
 						JsonObject jsonObject2 = JsonHelper.asObject(jsonElement2, "auxtarget");
 						String string4 = JsonHelper.getString(jsonObject2, "name");
 						String string5 = JsonHelper.getString(jsonObject2, "id");
-						GlFramebuffer glFramebuffer3 = this.getTarget(string5);
-						if (glFramebuffer3 == null) {
+						Framebuffer framebuffer3 = this.getTarget(string5);
+						if (framebuffer3 == null) {
 							Identifier identifier = new Identifier("textures/effect/" + string5 + ".png");
 							Resource resource = null;
 
@@ -148,21 +148,21 @@ public class ShaderEffect implements AutoCloseable {
 							}
 
 							textureManager.bindTexture(identifier);
-							Texture texture = textureManager.getTexture(identifier);
+							AbstractTexture abstractTexture = textureManager.getTexture(identifier);
 							int j = JsonHelper.getInt(jsonObject2, "width");
 							int k = JsonHelper.getInt(jsonObject2, "height");
 							boolean bl = JsonHelper.getBoolean(jsonObject2, "bilinear");
 							if (bl) {
-								GlStateManager.texParameter(3553, 10241, 9729);
-								GlStateManager.texParameter(3553, 10240, 9729);
+								RenderSystem.texParameter(3553, 10241, 9729);
+								RenderSystem.texParameter(3553, 10240, 9729);
 							} else {
-								GlStateManager.texParameter(3553, 10241, 9728);
-								GlStateManager.texParameter(3553, 10240, 9728);
+								RenderSystem.texParameter(3553, 10241, 9728);
+								RenderSystem.texParameter(3553, 10240, 9728);
 							}
 
-							postProcessShader.addAuxTarget(string4, texture.getGlId(), j, k);
+							postProcessShader.addAuxTarget(string4, abstractTexture.getGlId(), j, k);
 						} else {
-							postProcessShader.addAuxTarget(string4, glFramebuffer3, glFramebuffer3.texWidth, glFramebuffer3.texHeight);
+							postProcessShader.addAuxTarget(string4, framebuffer3, framebuffer3.textureWidth, framebuffer3.textureHeight);
 						}
 					} catch (Exception var31) {
 						ShaderParseException shaderParseException = ShaderParseException.wrap(var31);
@@ -234,22 +234,22 @@ public class ShaderEffect implements AutoCloseable {
 		}
 	}
 
-	public GlFramebuffer getSecondaryTarget(String string) {
-		return (GlFramebuffer)this.targetsByName.get(string);
+	public Framebuffer getSecondaryTarget(String string) {
+		return (Framebuffer)this.targetsByName.get(string);
 	}
 
 	public void addTarget(String string, int i, int j) {
-		GlFramebuffer glFramebuffer = new GlFramebuffer(i, j, true, MinecraftClient.IS_SYSTEM_MAC);
-		glFramebuffer.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
-		this.targetsByName.put(string, glFramebuffer);
+		Framebuffer framebuffer = new Framebuffer(i, j, true, MinecraftClient.IS_SYSTEM_MAC);
+		framebuffer.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
+		this.targetsByName.put(string, framebuffer);
 		if (i == this.width && j == this.height) {
-			this.defaultSizedTargets.add(glFramebuffer);
+			this.defaultSizedTargets.add(framebuffer);
 		}
 	}
 
 	public void close() {
-		for (GlFramebuffer glFramebuffer : this.targetsByName.values()) {
-			glFramebuffer.delete();
+		for (Framebuffer framebuffer : this.targetsByName.values()) {
+			framebuffer.delete();
 		}
 
 		for (PostProcessShader postProcessShader : this.passes) {
@@ -259,27 +259,27 @@ public class ShaderEffect implements AutoCloseable {
 		this.passes.clear();
 	}
 
-	public PostProcessShader addPass(String string, GlFramebuffer glFramebuffer, GlFramebuffer glFramebuffer2) throws IOException {
-		PostProcessShader postProcessShader = new PostProcessShader(this.resourceManager, string, glFramebuffer, glFramebuffer2);
+	public PostProcessShader addPass(String string, Framebuffer framebuffer, Framebuffer framebuffer2) throws IOException {
+		PostProcessShader postProcessShader = new PostProcessShader(this.resourceManager, string, framebuffer, framebuffer2);
 		this.passes.add(this.passes.size(), postProcessShader);
 		return postProcessShader;
 	}
 
 	private void setupProjectionMatrix() {
-		this.projectionMatrix = Matrix4f.projectionMatrix((float)this.mainTarget.texWidth, (float)this.mainTarget.texHeight, 0.1F, 1000.0F);
+		this.projectionMatrix = Matrix4f.projectionMatrix((float)this.mainTarget.textureWidth, (float)this.mainTarget.textureHeight, 0.1F, 1000.0F);
 	}
 
 	public void setupDimensions(int i, int j) {
-		this.width = this.mainTarget.texWidth;
-		this.height = this.mainTarget.texHeight;
+		this.width = this.mainTarget.textureWidth;
+		this.height = this.mainTarget.textureHeight;
 		this.setupProjectionMatrix();
 
 		for (PostProcessShader postProcessShader : this.passes) {
 			postProcessShader.setProjectionMatrix(this.projectionMatrix);
 		}
 
-		for (GlFramebuffer glFramebuffer : this.defaultSizedTargets) {
-			glFramebuffer.resize(i, j, MinecraftClient.IS_SYSTEM_MAC);
+		for (Framebuffer framebuffer : this.defaultSizedTargets) {
+			framebuffer.resize(i, j, MinecraftClient.IS_SYSTEM_MAC);
 		}
 	}
 
@@ -306,11 +306,11 @@ public class ShaderEffect implements AutoCloseable {
 		return this.name;
 	}
 
-	private GlFramebuffer getTarget(String string) {
+	private Framebuffer getTarget(String string) {
 		if (string == null) {
 			return null;
 		} else {
-			return string.equals("minecraft:main") ? this.mainTarget : (GlFramebuffer)this.targetsByName.get(string);
+			return string.equals("minecraft:main") ? this.mainTarget : (Framebuffer)this.targetsByName.get(string);
 		}
 	}
 }

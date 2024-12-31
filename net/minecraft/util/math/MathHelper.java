@@ -3,18 +3,18 @@ package net.minecraft.util.math;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.IntPredicate;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import org.apache.commons.lang3.math.NumberUtils;
 
 public class MathHelper {
 	public static final float SQUARE_ROOT_OF_TWO = sqrt(2.0F);
-	private static final float[] SINE_TABLE = SystemUtil.consume(new float[65536], fs -> {
+	private static final float[] SINE_TABLE = Util.make(new float[65536], fs -> {
 		for (int ix = 0; ix < fs.length; ix++) {
 			fs[ix] = (float)Math.sin((double)ix * Math.PI * 2.0 / 65536.0);
 		}
 	});
 	private static final Random RANDOM = new Random();
-	private static final int[] MULTIPLY_DE_BRUJIN_BIT_POSITION = new int[]{
+	private static final int[] MULTIPLY_DE_BRUIJN_BIT_POSITION = new int[]{
 		0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
 	};
 	private static final double SMALLEST_FRACTION_FREE_DOUBLE = Double.longBitsToDouble(4805340802404319232L);
@@ -86,6 +86,14 @@ public class MathHelper {
 		}
 	}
 
+	public static long clamp(long l, long m, long n) {
+		if (l < m) {
+			return m;
+		} else {
+			return l > n ? n : l;
+		}
+	}
+
 	public static float clamp(float f, float g, float h) {
 		if (f < g) {
 			return g;
@@ -148,11 +156,11 @@ public class MathHelper {
 		return (double)l / (double)ls.length;
 	}
 
-	public static boolean equalsApproximate(float f, float g) {
+	public static boolean approximatelyEquals(float f, float g) {
 		return Math.abs(g - f) < 1.0E-5F;
 	}
 
-	public static boolean method_20390(double d, double e) {
+	public static boolean approximatelyEquals(double d, double e) {
 		return Math.abs(e - d) < 1.0E-5F;
 	}
 
@@ -215,7 +223,7 @@ public class MathHelper {
 		return abs(subtractAngles(f, g));
 	}
 
-	public static float method_20306(float f, float g, float h) {
+	public static float capRotation(float f, float g, float h) {
 		float i = subtractAngles(f, g);
 		float j = clamp(i, -h, h);
 		return g - j;
@@ -265,13 +273,13 @@ public class MathHelper {
 		return i != 0 && (i & i - 1) == 0;
 	}
 
-	public static int log2DeBrujin(int i) {
+	public static int log2DeBruijn(int i) {
 		i = isPowerOfTwo(i) ? i : smallestEncompassingPowerOfTwo(i);
-		return MULTIPLY_DE_BRUJIN_BIT_POSITION[(int)((long)i * 125613361L >> 27) & 31];
+		return MULTIPLY_DE_BRUIJN_BIT_POSITION[(int)((long)i * 125613361L >> 27) & 31];
 	}
 
 	public static int log2(int i) {
-		return log2DeBrujin(i) - (isPowerOfTwo(i) ? 0 : 1);
+		return log2DeBruijn(i) - (isPowerOfTwo(i) ? 0 : 1);
 	}
 
 	public static int roundUp(int i, int j) {
@@ -298,17 +306,8 @@ public class MathHelper {
 		return (l << 8) + k;
 	}
 
-	public static int multiplyColors(int i, int j) {
-		int k = (i & 0xFF0000) >> 16;
-		int l = (j & 0xFF0000) >> 16;
-		int m = (i & 0xFF00) >> 8;
-		int n = (j & 0xFF00) >> 8;
-		int o = (i & 0xFF) >> 0;
-		int p = (j & 0xFF) >> 0;
-		int q = (int)((float)k * (float)l / 255.0F);
-		int r = (int)((float)m * (float)n / 255.0F);
-		int s = (int)((float)o * (float)p / 255.0F);
-		return i & 0xFF000000 | q << 16 | r << 8 | s;
+	public static float fractionalPart(float f) {
+		return f - (float)floor(f);
 	}
 
 	public static double fractionalPart(double d) {
@@ -388,12 +387,28 @@ public class MathHelper {
 		}
 	}
 
+	public static float fastInverseSqrt(float f) {
+		float g = 0.5F * f;
+		int i = Float.floatToIntBits(f);
+		i = 1597463007 - (i >> 1);
+		f = Float.intBitsToFloat(i);
+		return f * (1.5F - g * f * f);
+	}
+
 	public static double fastInverseSqrt(double d) {
 		double e = 0.5 * d;
 		long l = Double.doubleToRawLongBits(d);
 		l = 6910469410427058090L - (l >> 1);
 		d = Double.longBitsToDouble(l);
 		return d * (1.5 - e * d * d);
+	}
+
+	public static float fastInverseCbrt(float f) {
+		int i = Float.floatToIntBits(f);
+		i = 1419967116 - i / 3;
+		float g = Float.intBitsToFloat(i);
+		g = 0.6666667F * g + 1.0F / (3.0F * g * g * f);
+		return 0.6666667F * g + 1.0F / (3.0F * g * g * f);
 	}
 
 	public static int hsvToRgb(float f, float g, float h) {
@@ -446,7 +461,7 @@ public class MathHelper {
 		return ai << 16 | aj << 8 | ak;
 	}
 
-	public static int method_15354(int i) {
+	public static int idealHash(int i) {
 		i ^= i >>> 16;
 		i *= -2048144789;
 		i ^= i >>> 13;
@@ -501,6 +516,34 @@ public class MathHelper {
 
 	public static float lerpAngleDegrees(float f, float g, float h) {
 		return g + f * wrapDegrees(h - g);
+	}
+
+	@Deprecated
+	public static float lerpAngle(float f, float g, float h) {
+		float i = g - f;
+
+		while (i < -180.0F) {
+			i += 360.0F;
+		}
+
+		while (i >= 180.0F) {
+			i -= 360.0F;
+		}
+
+		return f + h * i;
+	}
+
+	@Deprecated
+	public static float method_22860(double d) {
+		while (d >= 180.0) {
+			d -= 360.0;
+		}
+
+		while (d < -180.0) {
+			d += 360.0;
+		}
+
+		return (float)d;
 	}
 
 	static {

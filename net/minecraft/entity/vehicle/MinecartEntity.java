@@ -16,7 +16,7 @@ public class MinecartEntity extends AbstractMinecartEntity {
 
 	@Override
 	public boolean interact(PlayerEntity playerEntity, Hand hand) {
-		if (playerEntity.isSneaking()) {
+		if (playerEntity.shouldCancelInteraction()) {
 			return false;
 		} else if (this.hasPassengers()) {
 			return true;

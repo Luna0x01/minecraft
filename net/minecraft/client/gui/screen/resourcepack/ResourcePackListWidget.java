@@ -1,13 +1,13 @@
 package net.minecraft.client.gui.screen.resourcepack;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.resource.ClientResourcePackContainer;
+import net.minecraft.client.resource.ClientResourcePackProfile;
 import net.minecraft.resource.ResourcePackCompatibility;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -53,70 +53,72 @@ public abstract class ResourcePackListWidget extends AlwaysSelectedEntryListWidg
 		return this.right - 6;
 	}
 
-	public void addEntry(ResourcePackListWidget.ResourcePackEntry resourcePackEntry) {
+	public void add(ResourcePackListWidget.ResourcePackEntry resourcePackEntry) {
 		this.addEntry(resourcePackEntry);
-		resourcePackEntry.widget = this;
+		resourcePackEntry.resourcePackList = this;
 	}
 
 	public static class ResourcePackEntry extends AlwaysSelectedEntryListWidget.Entry<ResourcePackListWidget.ResourcePackEntry> {
-		private ResourcePackListWidget widget;
+		private ResourcePackListWidget resourcePackList;
 		protected final MinecraftClient client;
 		protected final ResourcePackOptionsScreen screen;
-		private final ClientResourcePackContainer packContainer;
+		private final ClientResourcePackProfile pack;
 
 		public ResourcePackEntry(
-			ResourcePackListWidget resourcePackListWidget, ResourcePackOptionsScreen resourcePackOptionsScreen, ClientResourcePackContainer clientResourcePackContainer
+			ResourcePackListWidget resourcePackListWidget, ResourcePackOptionsScreen resourcePackOptionsScreen, ClientResourcePackProfile clientResourcePackProfile
 		) {
 			this.screen = resourcePackOptionsScreen;
 			this.client = MinecraftClient.getInstance();
-			this.packContainer = clientResourcePackContainer;
-			this.widget = resourcePackListWidget;
+			this.pack = clientResourcePackProfile;
+			this.resourcePackList = resourcePackListWidget;
 		}
 
-		public void method_20145(SelectedResourcePackListWidget selectedResourcePackListWidget) {
-			this.getPackContainer()
-				.getInitialPosition()
-				.insert(selectedResourcePackListWidget.children(), this, ResourcePackListWidget.ResourcePackEntry::getPackContainer, true);
-			this.widget = selectedResourcePackListWidget;
+		public void enable(SelectedResourcePackListWidget selectedResourcePackListWidget) {
+			this.getPack().getInitialPosition().insert(selectedResourcePackListWidget.children(), this, ResourcePackListWidget.ResourcePackEntry::getPack, true);
+			this.method_24232(selectedResourcePackListWidget);
+		}
+
+		public void method_24232(SelectedResourcePackListWidget selectedResourcePackListWidget) {
+			this.resourcePackList = selectedResourcePackListWidget;
 		}
 
 		protected void drawIcon() {
-			this.packContainer.drawIcon(this.client.getTextureManager());
+			this.pack.drawIcon(this.client.getTextureManager());
 		}
 
 		protected ResourcePackCompatibility getCompatibility() {
-			return this.packContainer.getCompatibility();
+			return this.pack.getCompatibility();
 		}
 
 		protected String getDescription() {
-			return this.packContainer.getDescription().asFormattedString();
+			return this.pack.getDescription().asFormattedString();
 		}
 
 		protected String getDisplayName() {
-			return this.packContainer.getDisplayName().asFormattedString();
+			return this.pack.getDisplayName().asFormattedString();
 		}
 
-		public ClientResourcePackContainer getPackContainer() {
-			return this.packContainer;
+		public ClientResourcePackProfile getPack() {
+			return this.pack;
 		}
 
 		@Override
 		public void render(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
 			ResourcePackCompatibility resourcePackCompatibility = this.getCompatibility();
 			if (!resourcePackCompatibility.isCompatible()) {
-				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 				DrawableHelper.fill(k - 1, j - 1, k + l - 9, j + m + 1, -8978432);
 			}
 
 			this.drawIcon();
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			DrawableHelper.blit(k, j, 0.0F, 0.0F, 32, 32, 32, 32);
 			String string = this.getDisplayName();
 			String string2 = this.getDescription();
-			if (this.method_20151() && (this.client.options.touchscreen || bl)) {
+			if (this.isMoveable() && (this.client.options.touchscreen || bl)) {
 				this.client.getTextureManager().bindTexture(ResourcePackListWidget.RESOURCE_PACKS_LOCATION);
 				DrawableHelper.fill(k, j, k + 32, j + 32, -1601138544);
-				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 				int p = n - k;
 				int q = o - j;
 				if (!resourcePackCompatibility.isCompatible()) {
@@ -124,14 +126,14 @@ public abstract class ResourcePackListWidget extends AlwaysSelectedEntryListWidg
 					string2 = resourcePackCompatibility.getNotification().asFormattedString();
 				}
 
-				if (this.method_20152()) {
+				if (this.isSelectable()) {
 					if (p < 32) {
 						DrawableHelper.blit(k, j, 0.0F, 32.0F, 32, 32, 256, 256);
 					} else {
 						DrawableHelper.blit(k, j, 0.0F, 0.0F, 32, 32, 256, 256);
 					}
 				} else {
-					if (this.method_20153()) {
+					if (this.isRemovable()) {
 						if (p < 16) {
 							DrawableHelper.blit(k, j, 32.0F, 32.0F, 32, 32, 256, 256);
 						} else {
@@ -139,7 +141,7 @@ public abstract class ResourcePackListWidget extends AlwaysSelectedEntryListWidg
 						}
 					}
 
-					if (this.canSortUp()) {
+					if (this.canMoveUp()) {
 						if (p < 32 && p > 16 && q < 16) {
 							DrawableHelper.blit(k, j, 96.0F, 32.0F, 32, 32, 256, 256);
 						} else {
@@ -147,7 +149,7 @@ public abstract class ResourcePackListWidget extends AlwaysSelectedEntryListWidg
 						}
 					}
 
-					if (this.canSortDown()) {
+					if (this.canMoveDown()) {
 						if (p < 32 && p > 16 && q > 16) {
 							DrawableHelper.blit(k, j, 64.0F, 32.0F, 32, 32, 256, 256);
 						} else {
@@ -170,46 +172,46 @@ public abstract class ResourcePackListWidget extends AlwaysSelectedEntryListWidg
 			}
 		}
 
-		protected boolean method_20151() {
-			return !this.packContainer.isPositionFixed() || !this.packContainer.canBeSorted();
+		protected boolean isMoveable() {
+			return !this.pack.isPinned() || !this.pack.isAlwaysEnabled();
 		}
 
-		protected boolean method_20152() {
-			return !this.screen.method_2669(this);
+		protected boolean isSelectable() {
+			return !this.screen.isEnabled(this);
 		}
 
-		protected boolean method_20153() {
-			return this.screen.method_2669(this) && !this.packContainer.canBeSorted();
+		protected boolean isRemovable() {
+			return this.screen.isEnabled(this) && !this.pack.isAlwaysEnabled();
 		}
 
-		protected boolean canSortUp() {
-			List<ResourcePackListWidget.ResourcePackEntry> list = this.widget.children();
+		protected boolean canMoveUp() {
+			List<ResourcePackListWidget.ResourcePackEntry> list = this.resourcePackList.children();
 			int i = list.indexOf(this);
-			return i > 0 && !((ResourcePackListWidget.ResourcePackEntry)list.get(i - 1)).packContainer.isPositionFixed();
+			return i > 0 && !((ResourcePackListWidget.ResourcePackEntry)list.get(i - 1)).pack.isPinned();
 		}
 
-		protected boolean canSortDown() {
-			List<ResourcePackListWidget.ResourcePackEntry> list = this.widget.children();
+		protected boolean canMoveDown() {
+			List<ResourcePackListWidget.ResourcePackEntry> list = this.resourcePackList.children();
 			int i = list.indexOf(this);
-			return i >= 0 && i < list.size() - 1 && !((ResourcePackListWidget.ResourcePackEntry)list.get(i + 1)).packContainer.isPositionFixed();
+			return i >= 0 && i < list.size() - 1 && !((ResourcePackListWidget.ResourcePackEntry)list.get(i + 1)).pack.isPinned();
 		}
 
 		@Override
 		public boolean mouseClicked(double d, double e, int i) {
-			double f = d - (double)this.widget.getRowLeft();
-			double g = e - (double)this.widget.getRowTop(this.widget.children().indexOf(this));
-			if (this.method_20151() && f <= 32.0) {
-				if (this.method_20152()) {
-					this.getScreen().setEdited();
+			double f = d - (double)this.resourcePackList.getRowLeft();
+			double g = e - (double)this.resourcePackList.getRowTop(this.resourcePackList.children().indexOf(this));
+			if (this.isMoveable() && f <= 32.0) {
+				if (this.isSelectable()) {
+					this.getScreen().markDirty();
 					ResourcePackCompatibility resourcePackCompatibility = this.getCompatibility();
 					if (resourcePackCompatibility.isCompatible()) {
-						this.getScreen().select(this);
+						this.getScreen().enable(this);
 					} else {
 						Text text = resourcePackCompatibility.getConfirmMessage();
 						this.client.openScreen(new ConfirmScreen(bl -> {
 							this.client.openScreen(this.getScreen());
 							if (bl) {
-								this.getScreen().select(this);
+								this.getScreen().enable(this);
 							}
 						}, ResourcePackListWidget.INCOMPATIBLE_CONFIRM, text));
 					}
@@ -217,26 +219,26 @@ public abstract class ResourcePackListWidget extends AlwaysSelectedEntryListWidg
 					return true;
 				}
 
-				if (f < 16.0 && this.method_20153()) {
-					this.getScreen().remove(this);
+				if (f < 16.0 && this.isRemovable()) {
+					this.getScreen().disable(this);
 					return true;
 				}
 
-				if (f > 16.0 && g < 16.0 && this.canSortUp()) {
-					List<ResourcePackListWidget.ResourcePackEntry> list = this.widget.children();
+				if (f > 16.0 && g < 16.0 && this.canMoveUp()) {
+					List<ResourcePackListWidget.ResourcePackEntry> list = this.resourcePackList.children();
 					int j = list.indexOf(this);
-					list.remove(this);
+					list.remove(j);
 					list.add(j - 1, this);
-					this.getScreen().setEdited();
+					this.getScreen().markDirty();
 					return true;
 				}
 
-				if (f > 16.0 && g > 16.0 && this.canSortDown()) {
-					List<ResourcePackListWidget.ResourcePackEntry> list2 = this.widget.children();
+				if (f > 16.0 && g > 16.0 && this.canMoveDown()) {
+					List<ResourcePackListWidget.ResourcePackEntry> list2 = this.resourcePackList.children();
 					int k = list2.indexOf(this);
-					list2.remove(this);
+					list2.remove(k);
 					list2.add(k + 1, this);
-					this.getScreen().setEdited();
+					this.getScreen().markDirty();
 					return true;
 				}
 			}

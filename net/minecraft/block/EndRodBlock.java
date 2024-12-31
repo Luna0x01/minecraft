@@ -5,7 +5,7 @@ import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
@@ -21,7 +21,7 @@ public class EndRodBlock extends FacingBlock {
 
 	protected EndRodBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11036));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11036));
 	}
 
 	@Override
@@ -77,12 +77,7 @@ public class EndRodBlock extends FacingBlock {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING);
 	}
 

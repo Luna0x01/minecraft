@@ -13,8 +13,8 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.Packet;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.TheEndDimension;
@@ -35,7 +35,7 @@ public class EnderCrystalEntity extends Entity {
 
 	public EnderCrystalEntity(World world, double d, double e, double f) {
 		this(EntityType.field_6110, world);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 	}
 
 	@Override
@@ -51,9 +51,6 @@ public class EnderCrystalEntity extends Entity {
 
 	@Override
 	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
 		this.field_7034++;
 		if (!this.world.isClient) {
 			BlockPos blockPos = new BlockPos(this);
@@ -66,7 +63,7 @@ public class EnderCrystalEntity extends Entity {
 	@Override
 	protected void writeCustomDataToTag(CompoundTag compoundTag) {
 		if (this.getBeamTarget() != null) {
-			compoundTag.put("BeamTarget", TagHelper.serializeBlockPos(this.getBeamTarget()));
+			compoundTag.put("BeamTarget", NbtHelper.fromBlockPos(this.getBeamTarget()));
 		}
 
 		compoundTag.putBoolean("ShowBottom", this.getShowBottom());
@@ -74,11 +71,11 @@ public class EnderCrystalEntity extends Entity {
 
 	@Override
 	protected void readCustomDataFromTag(CompoundTag compoundTag) {
-		if (compoundTag.containsKey("BeamTarget", 10)) {
-			this.setBeamTarget(TagHelper.deserializeBlockPos(compoundTag.getCompound("BeamTarget")));
+		if (compoundTag.contains("BeamTarget", 10)) {
+			this.setBeamTarget(NbtHelper.toBlockPos(compoundTag.getCompound("BeamTarget")));
 		}
 
-		if (compoundTag.containsKey("ShowBottom", 1)) {
+		if (compoundTag.contains("ShowBottom", 1)) {
 			this.setShowBottom(compoundTag.getBoolean("ShowBottom"));
 		}
 	}
@@ -98,7 +95,7 @@ public class EnderCrystalEntity extends Entity {
 			if (!this.removed && !this.world.isClient) {
 				this.remove();
 				if (!damageSource.isExplosive()) {
-					this.world.createExplosion(null, this.x, this.y, this.z, 6.0F, Explosion.DestructionType.field_18687);
+					this.world.createExplosion(null, this.getX(), this.getY(), this.getZ(), 6.0F, Explosion.DestructionType.field_18687);
 				}
 
 				this.crystalDestroyed(damageSource);
@@ -142,8 +139,8 @@ public class EnderCrystalEntity extends Entity {
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
-		return super.shouldRenderAtDistance(d) || this.getBeamTarget() != null;
+	public boolean shouldRender(double d) {
+		return super.shouldRender(d) || this.getBeamTarget() != null;
 	}
 
 	@Override

@@ -44,7 +44,7 @@ public class OpenDoorsTask extends Task<LivingEntity> {
 			.collect(Collectors.toList());
 		Set<BlockPos> set = this.getDoorsOnPath(serverWorld, list, list2);
 		int i = path.getCurrentNodeIndex() - 1;
-		this.method_21698(serverWorld, list2, set, i, livingEntity, brain);
+		this.findAndCloseOpenedDoors(serverWorld, list2, set, i, livingEntity, brain);
 	}
 
 	private Set<BlockPos> getDoorsOnPath(ServerWorld serverWorld, List<GlobalPos> list, List<BlockPos> list2) {
@@ -55,7 +55,7 @@ public class OpenDoorsTask extends Task<LivingEntity> {
 			.collect(Collectors.toSet());
 	}
 
-	private void method_21698(ServerWorld serverWorld, List<BlockPos> list, Set<BlockPos> set, int i, LivingEntity livingEntity, Brain<?> brain) {
+	private void findAndCloseOpenedDoors(ServerWorld serverWorld, List<BlockPos> list, Set<BlockPos> set, int i, LivingEntity livingEntity, Brain<?> brain) {
 		set.forEach(blockPos -> {
 			int j = list.indexOf(blockPos);
 			BlockState blockState = serverWorld.getBlockState(blockPos);
@@ -77,10 +77,10 @@ public class OpenDoorsTask extends Task<LivingEntity> {
 				}
 			}
 		});
-		method_21697(serverWorld, list, i, livingEntity, brain);
+		closeOpenedDoors(serverWorld, list, i, livingEntity, brain);
 	}
 
-	public static void method_21697(ServerWorld serverWorld, List<BlockPos> list, int i, LivingEntity livingEntity, Brain<?> brain) {
+	public static void closeOpenedDoors(ServerWorld serverWorld, List<BlockPos> list, int i, LivingEntity livingEntity, Brain<?> brain) {
 		brain.getOptionalMemory(MemoryModuleType.field_20312).ifPresent(set -> {
 			Iterator<GlobalPos> iterator = set.iterator();
 

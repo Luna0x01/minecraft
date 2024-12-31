@@ -11,7 +11,7 @@ public class CommandException extends RuntimeException {
 		this.message = text;
 	}
 
-	public Text getMessageText() {
+	public Text getTextMessage() {
 		return this.message;
 	}
 }

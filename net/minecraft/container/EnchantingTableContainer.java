@@ -140,7 +140,7 @@ public class EnchantingTableContainer extends Container {
 							List<InfoEnchantment> list = this.getRandomEnchantments(itemStack, m, this.enchantmentPower[m]);
 							if (list != null && !list.isEmpty()) {
 								InfoEnchantment infoEnchantment = (InfoEnchantment)list.get(this.random.nextInt(list.size()));
-								this.enchantmentId[m] = Registry.ENCHANTMENT.getRawId(infoEnchantment.enchantment);
+								this.enchantmentId[m] = Registry.field_11160.getRawId(infoEnchantment.enchantment);
 								this.enchantmentLevel[m] = infoEnchantment.level;
 							}
 						}
@@ -199,7 +199,7 @@ public class EnchantingTableContainer extends Container {
 
 					playerEntity.incrementStat(Stats.field_15420);
 					if (playerEntity instanceof ServerPlayerEntity) {
-						Criterions.ENCHANTED_ITEM.handle((ServerPlayerEntity)playerEntity, itemStack3, j);
+						Criterions.ENCHANTED_ITEM.trigger((ServerPlayerEntity)playerEntity, itemStack3, j);
 					}
 
 					this.inventory.markDirty();
@@ -245,7 +245,7 @@ public class EnchantingTableContainer extends Container {
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
@@ -262,15 +262,15 @@ public class EnchantingTableContainer extends Container {
 					return ItemStack.EMPTY;
 				}
 			} else {
-				if (((Slot)this.slotList.get(0)).hasStack() || !((Slot)this.slotList.get(0)).canInsert(itemStack2)) {
+				if (((Slot)this.slots.get(0)).hasStack() || !((Slot)this.slots.get(0)).canInsert(itemStack2)) {
 					return ItemStack.EMPTY;
 				}
 
 				if (itemStack2.hasTag() && itemStack2.getCount() == 1) {
-					((Slot)this.slotList.get(0)).setStack(itemStack2.copy());
+					((Slot)this.slots.get(0)).setStack(itemStack2.copy());
 					itemStack2.setCount(0);
 				} else if (!itemStack2.isEmpty()) {
-					((Slot)this.slotList.get(0)).setStack(new ItemStack(itemStack2.getItem()));
+					((Slot)this.slots.get(0)).setStack(new ItemStack(itemStack2.getItem()));
 					itemStack2.decrement(1);
 				}
 			}

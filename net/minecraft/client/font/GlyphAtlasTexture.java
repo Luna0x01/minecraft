@@ -1,15 +1,18 @@
 package net.minecraft.client.font;
 
-import com.mojang.blaze3d.platform.TextureUtil;
 import java.io.Closeable;
 import javax.annotation.Nullable;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 
 public class GlyphAtlasTexture extends AbstractTexture implements Closeable {
 	private final Identifier id;
+	private final RenderLayer field_21690;
+	private final RenderLayer field_21691;
 	private final boolean hasColor;
 	private final GlyphAtlasTexture.Slot rootSlot;
 
@@ -18,6 +21,8 @@ public class GlyphAtlasTexture extends AbstractTexture implements Closeable {
 		this.hasColor = bl;
 		this.rootSlot = new GlyphAtlasTexture.Slot(0, 0, 256, 256);
 		TextureUtil.prepareImage(bl ? NativeImage.GLFormat.field_5012 : NativeImage.GLFormat.field_5016, this.getGlId(), 256, 256);
+		this.field_21690 = RenderLayer.getText(identifier);
+		this.field_21691 = RenderLayer.getTextSeeThrough(identifier);
 	}
 
 	@Override
@@ -41,7 +46,8 @@ public class GlyphAtlasTexture extends AbstractTexture implements Closeable {
 				float g = 256.0F;
 				float h = 0.01F;
 				return new GlyphRenderer(
-					this.id,
+					this.field_21690,
+					this.field_21691,
 					((float)slot.x + 0.01F) / 256.0F,
 					((float)slot.x - 0.01F + (float)renderableGlyph.getWidth()) / 256.0F,
 					((float)slot.y + 0.01F) / 256.0F,

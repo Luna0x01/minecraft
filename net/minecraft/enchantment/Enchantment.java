@@ -12,7 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 
 public abstract class Enchantment {
@@ -25,7 +25,7 @@ public abstract class Enchantment {
 
 	@Nullable
 	public static Enchantment byRawId(int i) {
-		return Registry.ENCHANTMENT.get(i);
+		return Registry.field_11160.get(i);
 	}
 
 	protected Enchantment(Enchantment.Weight weight, EnchantmentTarget enchantmentTarget, EquipmentSlot[] equipmentSlots) {
@@ -85,7 +85,7 @@ public abstract class Enchantment {
 
 	protected String getOrCreateTranslationKey() {
 		if (this.translationKey == null) {
-			this.translationKey = SystemUtil.createTranslationKey("enchantment", Registry.ENCHANTMENT.getId(this));
+			this.translationKey = Util.createTranslationKey("enchantment", Registry.field_11160.getId(this));
 		}
 
 		return this.translationKey;

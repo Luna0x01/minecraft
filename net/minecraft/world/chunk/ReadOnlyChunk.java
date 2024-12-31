@@ -18,7 +18,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.ChunkTickScheduler;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.gen.GenerationStep;
 
@@ -145,7 +145,7 @@ public class ReadOnlyChunk extends ProtoChunk {
 	}
 
 	@Override
-	public Biome[] getBiomeArray() {
+	public BiomeArray getBiomeArray() {
 		return this.wrapped.getBiomeArray();
 	}
 
@@ -188,7 +188,7 @@ public class ReadOnlyChunk extends ProtoChunk {
 	}
 
 	@Override
-	public void setBiomeArray(Biome[] biomes) {
+	public void method_22405(BiomeArray biomeArray) {
 	}
 
 	@Override
@@ -197,12 +197,12 @@ public class ReadOnlyChunk extends ProtoChunk {
 	}
 
 	@Override
-	public ChunkTickScheduler<Block> method_12303() {
+	public ChunkTickScheduler<Block> getBlockTickScheduler() {
 		return new ChunkTickScheduler<>(block -> block.getDefaultState().isAir(), this.getPos());
 	}
 
 	@Override
-	public ChunkTickScheduler<Fluid> method_12313() {
+	public ChunkTickScheduler<Fluid> getFluidTickScheduler() {
 		return new ChunkTickScheduler<>(fluid -> fluid == Fluids.field_15906, this.getPos());
 	}
 

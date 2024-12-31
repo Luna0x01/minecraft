@@ -44,7 +44,7 @@ public class SingleItemRecipeJsonFactory {
 	}
 
 	public void offerTo(Consumer<RecipeJsonProvider> consumer, String string) {
-		Identifier identifier = Registry.ITEM.getId(this.output);
+		Identifier identifier = Registry.field_11142.getId(this.output);
 		if (new Identifier(string).equals(identifier)) {
 			throw new IllegalStateException("Single Item Recipe " + string + " should remove its 'save' argument");
 		} else {
@@ -116,7 +116,7 @@ public class SingleItemRecipeJsonFactory {
 			}
 
 			jsonObject.add("ingredient", this.input.toJson());
-			jsonObject.addProperty("result", Registry.ITEM.getId(this.output).toString());
+			jsonObject.addProperty("result", Registry.field_11142.getId(this.output).toString());
 			jsonObject.addProperty("count", this.count);
 		}
 

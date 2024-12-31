@@ -26,8 +26,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class SilverfishEntity extends HostileEntity {
 	private SilverfishEntity.CallForHelpGoal callForHelpGoal;
@@ -54,7 +54,12 @@ public class SilverfishEntity extends HostileEntity {
 
 	@Override
 	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		return 0.1F;
+		// $VF: Couldn't be decompiled
+		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
+		//
+		// Bytecode:
+		// 0: ldc 0.1
+		// 2: freturn
 	}
 
 	@Override
@@ -105,7 +110,7 @@ public class SilverfishEntity extends HostileEntity {
 
 	@Override
 	public void tick() {
-		this.field_6283 = this.yaw;
+		this.bodyYaw = this.yaw;
 		super.tick();
 	}
 
@@ -116,12 +121,12 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos blockPos, ViewableWorld viewableWorld) {
-		return InfestedBlock.isInfestable(viewableWorld.getBlockState(blockPos.down())) ? 10.0F : super.getPathfindingFavor(blockPos, viewableWorld);
+	public float getPathfindingFavor(BlockPos blockPos, WorldView worldView) {
+		return InfestedBlock.isInfestable(worldView.getBlockState(blockPos.down())) ? 10.0F : super.getPathfindingFavor(blockPos, worldView);
 	}
 
-	public static boolean method_20684(EntityType<SilverfishEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		if (method_20681(entityType, iWorld, spawnType, blockPos, random)) {
+	public static boolean canSpawn(EntityType<SilverfishEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		if (canSpawnIgnoreLightLevel(entityType, iWorld, spawnType, blockPos, random)) {
 			PlayerEntity playerEntity = iWorld.getClosestPlayer((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, 5.0, true);
 			return playerEntity == null;
 		} else {
@@ -158,7 +163,7 @@ public class SilverfishEntity extends HostileEntity {
 			this.delay--;
 			if (this.delay <= 0) {
 				World world = this.silverfish.world;
-				Random random = this.silverfish.getRand();
+				Random random = this.silverfish.getRandom();
 				BlockPos blockPos = new BlockPos(this.silverfish);
 
 				for (int i = 0; i <= 5 && i >= -5; i = (i <= 0 ? 1 : 0) - i) {
@@ -169,7 +174,7 @@ public class SilverfishEntity extends HostileEntity {
 							Block block = blockState.getBlock();
 							if (block instanceof InfestedBlock) {
 								if (world.getGameRules().getBoolean(GameRules.field_19388)) {
-									world.breakBlock(blockPos2, true);
+									world.breakBlock(blockPos2, true, this.silverfish);
 								} else {
 									world.setBlockState(blockPos2, ((InfestedBlock)block).getRegularBlock().getDefaultState(), 3);
 								}
@@ -201,10 +206,10 @@ public class SilverfishEntity extends HostileEntity {
 			} else if (!this.mob.getNavigation().isIdle()) {
 				return false;
 			} else {
-				Random random = this.mob.getRand();
+				Random random = this.mob.getRandom();
 				if (this.mob.world.getGameRules().getBoolean(GameRules.field_19388) && random.nextInt(10) == 0) {
 					this.direction = Direction.random(random);
-					BlockPos blockPos = new BlockPos(this.mob.x, this.mob.y + 0.5, this.mob.z).offset(this.direction);
+					BlockPos blockPos = new BlockPos(this.mob.getX(), this.mob.getY() + 0.5, this.mob.getZ()).offset(this.direction);
 					BlockState blockState = this.mob.world.getBlockState(blockPos);
 					if (InfestedBlock.isInfestable(blockState)) {
 						this.canInfest = true;
@@ -228,7 +233,7 @@ public class SilverfishEntity extends HostileEntity {
 				super.start();
 			} else {
 				IWorld iWorld = this.mob.world;
-				BlockPos blockPos = new BlockPos(this.mob.x, this.mob.y + 0.5, this.mob.z).offset(this.direction);
+				BlockPos blockPos = new BlockPos(this.mob.getX(), this.mob.getY() + 0.5, this.mob.getZ()).offset(this.direction);
 				BlockState blockState = iWorld.getBlockState(blockPos);
 				if (InfestedBlock.isInfestable(blockState)) {
 					iWorld.setBlockState(blockPos, InfestedBlock.fromRegularBlock(blockState.getBlock()), 3);

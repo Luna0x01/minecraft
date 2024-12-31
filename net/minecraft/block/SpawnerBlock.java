@@ -30,11 +30,6 @@ public class SpawnerBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
 	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
 		return ItemStack.EMPTY;
 	}

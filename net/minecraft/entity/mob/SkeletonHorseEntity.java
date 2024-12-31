@@ -89,7 +89,7 @@ public class SkeletonHorseEntity extends HorseBaseEntity {
 
 	@Override
 	protected void playJumpSound() {
-		if (this.isInsideWater()) {
+		if (this.isTouchingWater()) {
 			this.playSound(SoundEvents.field_14901, 0.4F, 1.0F);
 		} else {
 			super.playJumpSound();
@@ -168,7 +168,7 @@ public class SkeletonHorseEntity extends HorseBaseEntity {
 			return false;
 		} else if (this.isBaby()) {
 			return super.interactMob(playerEntity, hand);
-		} else if (playerEntity.isSneaking()) {
+		} else if (playerEntity.shouldCancelInteraction()) {
 			this.openInventory(playerEntity);
 			return true;
 		} else if (this.hasPassengers()) {

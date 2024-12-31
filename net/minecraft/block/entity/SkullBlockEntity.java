@@ -9,8 +9,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.ChatUtil;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.UserCache;
 
@@ -38,7 +38,7 @@ public class SkullBlockEntity extends BlockEntity implements Tickable {
 		super.toTag(compoundTag);
 		if (this.owner != null) {
 			CompoundTag compoundTag2 = new CompoundTag();
-			TagHelper.serializeProfile(compoundTag2, this.owner);
+			NbtHelper.fromGameProfile(compoundTag2, this.owner);
 			compoundTag.put("Owner", compoundTag2);
 		}
 
@@ -48,9 +48,9 @@ public class SkullBlockEntity extends BlockEntity implements Tickable {
 	@Override
 	public void fromTag(CompoundTag compoundTag) {
 		super.fromTag(compoundTag);
-		if (compoundTag.containsKey("Owner", 10)) {
-			this.setOwnerAndType(TagHelper.deserializeProfile(compoundTag.getCompound("Owner")));
-		} else if (compoundTag.containsKey("ExtraType", 8)) {
+		if (compoundTag.contains("Owner", 10)) {
+			this.setOwnerAndType(NbtHelper.toGameProfile(compoundTag.getCompound("Owner")));
+		} else if (compoundTag.contains("ExtraType", 8)) {
 			String string = compoundTag.getString("ExtraType");
 			if (!ChatUtil.isEmpty(string)) {
 				this.setOwnerAndType(new GameProfile(null, string));

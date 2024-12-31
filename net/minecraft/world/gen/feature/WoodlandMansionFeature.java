@@ -11,12 +11,13 @@ import net.minecraft.structure.StructurePiece;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.structure.WoodlandMansionGenerator;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
@@ -44,11 +45,11 @@ public class WoodlandMansionFeature extends StructureFeature<DefaultFeatureConfi
 	}
 
 	@Override
-	public boolean shouldStartAt(ChunkGenerator<?> chunkGenerator, Random random, int i, int j) {
+	public boolean shouldStartAt(BiomeAccess biomeAccess, ChunkGenerator<?> chunkGenerator, Random random, int i, int j, Biome biome) {
 		ChunkPos chunkPos = this.getStart(chunkGenerator, random, i, j, 0, 0);
 		if (i == chunkPos.x && j == chunkPos.z) {
-			for (Biome biome : chunkGenerator.getBiomeSource().getBiomesInArea(i * 16 + 9, j * 16 + 9, 32)) {
-				if (!chunkGenerator.hasStructure(biome, Feature.WOODLAND_MANSION)) {
+			for (Biome biome2 : chunkGenerator.getBiomeSource().getBiomesInArea(i * 16 + 9, chunkGenerator.getSeaLevel(), j * 16 + 9, 32)) {
+				if (!chunkGenerator.hasStructure(biome2, this)) {
 					return false;
 				}
 			}
@@ -75,8 +76,8 @@ public class WoodlandMansionFeature extends StructureFeature<DefaultFeatureConfi
 	}
 
 	public static class Start extends StructureStart {
-		public Start(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l) {
-			super(structureFeature, i, j, biome, mutableIntBoundingBox, k, l);
+		public Start(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
+			super(structureFeature, i, j, blockBox, k, l);
 		}
 
 		@Override
@@ -110,12 +111,12 @@ public class WoodlandMansionFeature extends StructureFeature<DefaultFeatureConfi
 		}
 
 		@Override
-		public void generateStructure(IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox, ChunkPos chunkPos) {
-			super.generateStructure(iWorld, random, mutableIntBoundingBox, chunkPos);
+		public void generateStructure(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+			super.generateStructure(iWorld, chunkGenerator, random, blockBox, chunkPos);
 			int i = this.boundingBox.minY;
 
-			for (int j = mutableIntBoundingBox.minX; j <= mutableIntBoundingBox.maxX; j++) {
-				for (int k = mutableIntBoundingBox.minZ; k <= mutableIntBoundingBox.maxZ; k++) {
+			for (int j = blockBox.minX; j <= blockBox.maxX; j++) {
+				for (int k = blockBox.minZ; k <= blockBox.maxZ; k++) {
 					BlockPos blockPos = new BlockPos(j, i, k);
 					if (!iWorld.isAir(blockPos) && this.boundingBox.contains(blockPos)) {
 						boolean bl = false;

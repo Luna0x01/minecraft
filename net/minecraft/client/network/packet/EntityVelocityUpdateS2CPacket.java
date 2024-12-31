@@ -48,7 +48,7 @@ public class EntityVelocityUpdateS2CPacket implements Packet<ClientPlayPacketLis
 		packetByteBuf.writeShort(this.velocityZ);
 	}
 
-	public void method_11817(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onVelocityUpdate(this);
 	}
 

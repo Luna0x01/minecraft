@@ -14,11 +14,13 @@ public class BuiltinBakedModel implements BakedModel {
 	private final ModelTransformation transformation;
 	private final ModelItemPropertyOverrideList itemPropertyOverrides;
 	private final Sprite sprite;
+	private final boolean field_21862;
 
-	public BuiltinBakedModel(ModelTransformation modelTransformation, ModelItemPropertyOverrideList modelItemPropertyOverrideList, Sprite sprite) {
+	public BuiltinBakedModel(ModelTransformation modelTransformation, ModelItemPropertyOverrideList modelItemPropertyOverrideList, Sprite sprite, boolean bl) {
 		this.transformation = modelTransformation;
 		this.itemPropertyOverrides = modelItemPropertyOverrideList;
 		this.sprite = sprite;
+		this.field_21862 = bl;
 	}
 
 	@Override
@@ -32,8 +34,13 @@ public class BuiltinBakedModel implements BakedModel {
 	}
 
 	@Override
-	public boolean hasDepthInGui() {
+	public boolean hasDepth() {
 		return true;
+	}
+
+	@Override
+	public boolean isSideLit() {
+		return this.field_21862;
 	}
 
 	@Override

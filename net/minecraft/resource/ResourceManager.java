@@ -17,6 +17,4 @@ public interface ResourceManager {
 	List<Resource> getAllResources(Identifier identifier) throws IOException;
 
 	Collection<Identifier> findResources(String string, Predicate<String> predicate);
-
-	void addPack(ResourcePack resourcePack);
 }

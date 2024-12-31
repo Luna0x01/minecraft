@@ -27,14 +27,16 @@ public final class EndBiome extends Biome {
 		);
 		this.addFeature(
 			GenerationStep.Feature.field_13173,
-			configureFeature(Feature.field_13522, new EndSpikeFeatureConfig(false, ImmutableList.of(), null), Decorator.field_14250, DecoratorConfig.DEFAULT)
+			Feature.field_13522
+				.configure(new EndSpikeFeatureConfig(false, ImmutableList.of(), null))
+				.createDecoratedFeature(Decorator.field_14250.configure(DecoratorConfig.DEFAULT))
 		);
-		DefaultBiomeFeatures.method_20826(this);
+		DefaultBiomeFeatures.addEndCities(this);
 		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6091, 10, 4, 4));
 	}
 
 	@Override
-	public int getSkyColor(float f) {
+	public int getSkyColor() {
 		return 0;
 	}
 }

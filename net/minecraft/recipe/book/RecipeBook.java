@@ -43,6 +43,10 @@ public class RecipeBook {
 		return recipe == null ? false : this.recipes.contains(recipe.getId());
 	}
 
+	public boolean contains(Identifier identifier) {
+		return this.recipes.contains(identifier);
+	}
+
 	public void remove(Recipe<?> recipe) {
 		this.remove(recipe.getId());
 	}

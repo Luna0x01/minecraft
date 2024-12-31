@@ -26,22 +26,23 @@ public class EndHighlandsBiome extends Biome {
 				.waterFogColor(329011)
 				.parent(null)
 		);
-		this.addStructureFeature(Feature.END_CITY, FeatureConfig.DEFAULT);
+		this.addStructureFeature(Feature.END_CITY.configure(FeatureConfig.DEFAULT));
 		this.addFeature(
 			GenerationStep.Feature.field_13173,
-			configureFeature(
-				Feature.field_13564, EndGatewayFeatureConfig.createConfig(TheEndDimension.SPAWN_POINT, true), Decorator.field_14230, DecoratorConfig.DEFAULT
-			)
+			Feature.field_13564
+				.configure(EndGatewayFeatureConfig.createConfig(TheEndDimension.SPAWN_POINT, true))
+				.createDecoratedFeature(Decorator.field_14230.configure(DecoratorConfig.DEFAULT))
 		);
-		DefaultBiomeFeatures.method_20826(this);
+		DefaultBiomeFeatures.addEndCities(this);
 		this.addFeature(
-			GenerationStep.Feature.field_13178, configureFeature(Feature.field_13552, FeatureConfig.DEFAULT, Decorator.field_14257, DecoratorConfig.DEFAULT)
+			GenerationStep.Feature.field_13178,
+			Feature.field_13552.configure(FeatureConfig.DEFAULT).createDecoratedFeature(Decorator.field_14257.configure(DecoratorConfig.DEFAULT))
 		);
 		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6091, 10, 4, 4));
 	}
 
 	@Override
-	public int getSkyColor(float f) {
+	public int getSkyColor() {
 		return 0;
 	}
 }

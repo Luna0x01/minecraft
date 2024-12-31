@@ -59,7 +59,7 @@ public class AreaEffectCloudEntity extends Entity {
 
 	public AreaEffectCloudEntity(World world, double d, double e, double f) {
 		this(EntityType.field_6083, world);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 	}
 
 	@Override
@@ -78,11 +78,11 @@ public class AreaEffectCloudEntity extends Entity {
 
 	@Override
 	public void calculateDimensions() {
-		double d = this.x;
-		double e = this.y;
-		double f = this.z;
+		double d = this.getX();
+		double e = this.getY();
+		double f = this.getZ();
 		super.calculateDimensions();
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 	}
 
 	public float getRadius() {
@@ -165,10 +165,16 @@ public class AreaEffectCloudEntity extends Entity {
 							int o = l & 0xFF;
 							this.world
 								.addImportantParticle(
-									particleEffect, this.x + (double)j, this.y, this.z + (double)k, (double)((float)m / 255.0F), (double)((float)n / 255.0F), (double)((float)o / 255.0F)
+									particleEffect,
+									this.getX() + (double)j,
+									this.getY(),
+									this.getZ() + (double)k,
+									(double)((float)m / 255.0F),
+									(double)((float)n / 255.0F),
+									(double)((float)o / 255.0F)
 								);
 						} else {
-							this.world.addImportantParticle(particleEffect, this.x + (double)j, this.y, this.z + (double)k, 0.0, 0.0, 0.0);
+							this.world.addImportantParticle(particleEffect, this.getX() + (double)j, this.getY(), this.getZ() + (double)k, 0.0, 0.0, 0.0);
 						}
 					}
 				}
@@ -187,12 +193,24 @@ public class AreaEffectCloudEntity extends Entity {
 						int y = v & 0xFF;
 						this.world
 							.addImportantParticle(
-								particleEffect, this.x + (double)t, this.y, this.z + (double)u, (double)((float)w / 255.0F), (double)((float)x / 255.0F), (double)((float)y / 255.0F)
+								particleEffect,
+								this.getX() + (double)t,
+								this.getY(),
+								this.getZ() + (double)u,
+								(double)((float)w / 255.0F),
+								(double)((float)x / 255.0F),
+								(double)((float)y / 255.0F)
 							);
 					} else {
 						this.world
 							.addImportantParticle(
-								particleEffect, this.x + (double)t, this.y, this.z + (double)u, (0.5 - this.random.nextDouble()) * 0.15, 0.01F, (0.5 - this.random.nextDouble()) * 0.15
+								particleEffect,
+								this.getX() + (double)t,
+								this.getY(),
+								this.getZ() + (double)u,
+								(0.5 - this.random.nextDouble()) * 0.15,
+								0.01F,
+								(0.5 - this.random.nextDouble()) * 0.15
 							);
 					}
 				}
@@ -250,12 +268,12 @@ public class AreaEffectCloudEntity extends Entity {
 				if (list.isEmpty()) {
 					this.affectedEntities.clear();
 				} else {
-					List<LivingEntity> list2 = this.world.getEntities(LivingEntity.class, this.getBoundingBox());
+					List<LivingEntity> list2 = this.world.getNonSpectatingEntities(LivingEntity.class, this.getBoundingBox());
 					if (!list2.isEmpty()) {
 						for (LivingEntity livingEntity : list2) {
 							if (!this.affectedEntities.containsKey(livingEntity) && livingEntity.isAffectedBySplashPotions()) {
-								double d = livingEntity.x - this.x;
-								double e = livingEntity.z - this.z;
+								double d = livingEntity.getX() - this.getX();
+								double e = livingEntity.getZ() - this.getZ();
 								double z = d * d + e * e;
 								if (z <= (double)(f * f)) {
 									this.affectedEntities.put(livingEntity, this.age + this.reapplicationDelay);
@@ -264,7 +282,7 @@ public class AreaEffectCloudEntity extends Entity {
 										if (statusEffectInstance2.getEffectType().isInstant()) {
 											statusEffectInstance2.getEffectType().applyInstantEffect(this, this.getOwner(), livingEntity, statusEffectInstance2.getAmplifier(), 0.5);
 										} else {
-											livingEntity.addPotionEffect(new StatusEffectInstance(statusEffectInstance2));
+											livingEntity.addStatusEffect(new StatusEffectInstance(statusEffectInstance2));
 										}
 									}
 
@@ -334,7 +352,7 @@ public class AreaEffectCloudEntity extends Entity {
 		this.radiusGrowth = compoundTag.getFloat("RadiusPerTick");
 		this.setRadius(compoundTag.getFloat("Radius"));
 		this.ownerUuid = compoundTag.getUuid("OwnerUUID");
-		if (compoundTag.containsKey("Particle", 8)) {
+		if (compoundTag.contains("Particle", 8)) {
 			try {
 				this.setParticleType(ParticleArgumentType.readParameters(new StringReader(compoundTag.getString("Particle"))));
 			} catch (CommandSyntaxException var5) {
@@ -342,20 +360,20 @@ public class AreaEffectCloudEntity extends Entity {
 			}
 		}
 
-		if (compoundTag.containsKey("Color", 99)) {
+		if (compoundTag.contains("Color", 99)) {
 			this.setColor(compoundTag.getInt("Color"));
 		}
 
-		if (compoundTag.containsKey("Potion", 8)) {
+		if (compoundTag.contains("Potion", 8)) {
 			this.setPotion(PotionUtil.getPotion(compoundTag));
 		}
 
-		if (compoundTag.containsKey("Effects", 9)) {
+		if (compoundTag.contains("Effects", 9)) {
 			ListTag listTag = compoundTag.getList("Effects", 10);
 			this.effects.clear();
 
 			for (int i = 0; i < listTag.size(); i++) {
-				StatusEffectInstance statusEffectInstance = StatusEffectInstance.deserialize(listTag.getCompoundTag(i));
+				StatusEffectInstance statusEffectInstance = StatusEffectInstance.fromTag(listTag.getCompound(i));
 				if (statusEffectInstance != null) {
 					this.addEffect(statusEffectInstance);
 				}
@@ -383,14 +401,14 @@ public class AreaEffectCloudEntity extends Entity {
 		}
 
 		if (this.potion != Potions.field_8984 && this.potion != null) {
-			compoundTag.putString("Potion", Registry.POTION.getId(this.potion).toString());
+			compoundTag.putString("Potion", Registry.field_11143.getId(this.potion).toString());
 		}
 
 		if (!this.effects.isEmpty()) {
 			ListTag listTag = new ListTag();
 
 			for (StatusEffectInstance statusEffectInstance : this.effects) {
-				listTag.add(statusEffectInstance.serialize(new CompoundTag()));
+				listTag.add(statusEffectInstance.toTag(new CompoundTag()));
 			}
 
 			compoundTag.put("Effects", listTag);

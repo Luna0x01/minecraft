@@ -220,7 +220,7 @@ public abstract class ItemGroup {
 	}
 
 	public void appendStacks(DefaultedList<ItemStack> defaultedList) {
-		for (Item item : Registry.ITEM) {
+		for (Item item : Registry.field_11142) {
 			item.appendStacks(this, defaultedList);
 		}
 	}

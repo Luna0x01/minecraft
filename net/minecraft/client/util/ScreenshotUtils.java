@@ -1,14 +1,13 @@
 package net.minecraft.client.util;
 
-import com.mojang.blaze3d.platform.GLX;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import net.minecraft.client.gl.GlFramebuffer;
+import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.resource.ResourceImpl;
 import net.minecraft.text.ClickEvent;
@@ -23,12 +22,20 @@ public class ScreenshotUtils {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
 
-	public static void method_1659(File file, int i, int j, GlFramebuffer glFramebuffer, Consumer<Text> consumer) {
-		method_1662(file, null, i, j, glFramebuffer, consumer);
+	public static void saveScreenshot(File file, int i, int j, Framebuffer framebuffer, Consumer<Text> consumer) {
+		saveScreenshot(file, null, i, j, framebuffer, consumer);
 	}
 
-	public static void method_1662(File file, @Nullable String string, int i, int j, GlFramebuffer glFramebuffer, Consumer<Text> consumer) {
-		NativeImage nativeImage = method_1663(i, j, glFramebuffer);
+	public static void saveScreenshot(File file, @Nullable String string, int i, int j, Framebuffer framebuffer, Consumer<Text> consumer) {
+		if (!RenderSystem.isOnRenderThread()) {
+			RenderSystem.recordRenderCall(() -> saveScreenshotInner(file, string, i, j, framebuffer, consumer));
+		} else {
+			saveScreenshotInner(file, string, i, j, framebuffer, consumer);
+		}
+	}
+
+	private static void saveScreenshotInner(File file, @Nullable String string, int i, int j, Framebuffer framebuffer, Consumer<Text> consumer) {
+		NativeImage nativeImage = takeScreenshot(i, j, framebuffer);
 		File file2 = new File(file, "screenshots");
 		file2.mkdir();
 		File file3;
@@ -57,21 +64,13 @@ public class ScreenshotUtils {
 			);
 	}
 
-	public static NativeImage method_1663(int i, int j, GlFramebuffer glFramebuffer) {
-		if (GLX.isUsingFBOs()) {
-			i = glFramebuffer.texWidth;
-			j = glFramebuffer.texHeight;
-		}
-
+	public static NativeImage takeScreenshot(int i, int j, Framebuffer framebuffer) {
+		i = framebuffer.textureWidth;
+		j = framebuffer.textureHeight;
 		NativeImage nativeImage = new NativeImage(i, j, false);
-		if (GLX.isUsingFBOs()) {
-			GlStateManager.bindTexture(glFramebuffer.colorAttachment);
-			nativeImage.loadFromTextureImage(0, true);
-		} else {
-			nativeImage.loadFromMemory(true);
-		}
-
-		nativeImage.method_4319();
+		RenderSystem.bindTexture(framebuffer.colorAttachment);
+		nativeImage.loadFromTextureImage(0, true);
+		nativeImage.mirrorVertically();
 		return nativeImage;
 	}
 

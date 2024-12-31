@@ -4,7 +4,7 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
 
 public class GlfwUtil {
-	public static void method_15973() {
+	public static void makeJvmCrash() {
 		MemoryUtil.memSet(0L, 0, 1L);
 	}
 

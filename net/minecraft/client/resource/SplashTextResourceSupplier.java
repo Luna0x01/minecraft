@@ -31,7 +31,7 @@ public class SplashTextResourceSupplier extends SinglePreparationResourceReloadL
 		this.field_18934 = session;
 	}
 
-	protected List<String> method_18176(ResourceManager resourceManager, Profiler profiler) {
+	protected List<String> prepare(ResourceManager resourceManager, Profiler profiler) {
 		try {
 			Resource resource = MinecraftClient.getInstance().getResourceManager().getResource(RESOURCE_ID);
 			Throwable var4 = null;
@@ -82,7 +82,7 @@ public class SplashTextResourceSupplier extends SinglePreparationResourceReloadL
 		}
 	}
 
-	protected void method_18175(List<String> list, ResourceManager resourceManager, Profiler profiler) {
+	protected void apply(List<String> list, ResourceManager resourceManager, Profiler profiler) {
 		this.splashTexts.clear();
 		this.splashTexts.addAll(list);
 	}

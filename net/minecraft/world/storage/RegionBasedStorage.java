@@ -11,11 +11,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.util.math.ChunkPos;
 
-public abstract class RegionBasedStorage implements AutoCloseable {
-	protected final Long2ObjectLinkedOpenHashMap<RegionFile> cachedRegionFiles = new Long2ObjectLinkedOpenHashMap();
+public final class RegionBasedStorage implements AutoCloseable {
+	private final Long2ObjectLinkedOpenHashMap<RegionFile> cachedRegionFiles = new Long2ObjectLinkedOpenHashMap();
 	private final File directory;
 
-	protected RegionBasedStorage(File file) {
+	RegionBasedStorage(File file) {
 		this.directory = file;
 	}
 
@@ -34,7 +34,7 @@ public abstract class RegionBasedStorage implements AutoCloseable {
 			}
 
 			File file = new File(this.directory, "r." + chunkPos.getRegionX() + "." + chunkPos.getRegionZ() + ".mca");
-			RegionFile regionFile2 = new RegionFile(file);
+			RegionFile regionFile2 = new RegionFile(file, this.directory);
 			this.cachedRegionFiles.putAndMoveToFirst(l, regionFile2);
 			return regionFile2;
 		}
@@ -43,7 +43,7 @@ public abstract class RegionBasedStorage implements AutoCloseable {
 	@Nullable
 	public CompoundTag getTagAt(ChunkPos chunkPos) throws IOException {
 		RegionFile regionFile = this.getRegionFile(chunkPos);
-		DataInputStream dataInputStream = regionFile.getChunkDataInputStream(chunkPos);
+		DataInputStream dataInputStream = regionFile.getChunkInputStream(chunkPos);
 		Throwable var4 = null;
 
 		Object var5;
@@ -73,9 +73,9 @@ public abstract class RegionBasedStorage implements AutoCloseable {
 		return (CompoundTag)var5;
 	}
 
-	protected void setTagAt(ChunkPos chunkPos, CompoundTag compoundTag) throws IOException {
+	protected void write(ChunkPos chunkPos, CompoundTag compoundTag) throws IOException {
 		RegionFile regionFile = this.getRegionFile(chunkPos);
-		DataOutputStream dataOutputStream = regionFile.getChunkDataOutputStream(chunkPos);
+		DataOutputStream dataOutputStream = regionFile.getChunkOutputStream(chunkPos);
 		Throwable var5 = null;
 
 		try {

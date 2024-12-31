@@ -78,7 +78,7 @@ public class AutomaticItemPlacementContext extends ItemPlacementContext {
 	}
 
 	@Override
-	public boolean isPlayerSneaking() {
+	public boolean shouldCancelInteraction() {
 		return false;
 	}
 

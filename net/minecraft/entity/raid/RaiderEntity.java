@@ -14,7 +14,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnType;
-import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.MoveToRaidCenterGoal;
@@ -35,12 +35,12 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.village.PointOfInterestStorage;
-import net.minecraft.village.PointOfInterestType;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
+import net.minecraft.world.poi.PointOfInterestStorage;
+import net.minecraft.world.poi.PointOfInterestType;
 
 public abstract class RaiderEntity extends PatrolEntity {
 	protected static final TrackedData<Boolean> CELEBRATING = DataTracker.registerData(RaiderEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -146,7 +146,7 @@ public abstract class RaiderEntity extends PatrolEntity {
 					int i = 1;
 					if (statusEffectInstance != null) {
 						i += statusEffectInstance.getAmplifier();
-						playerEntity.removePotionEffect(StatusEffects.field_16595);
+						playerEntity.removeStatusEffectInternal(StatusEffects.field_16595);
 					} else {
 						i--;
 					}
@@ -154,7 +154,7 @@ public abstract class RaiderEntity extends PatrolEntity {
 					i = MathHelper.clamp(i, 0, 5);
 					StatusEffectInstance statusEffectInstance2 = new StatusEffectInstance(StatusEffects.field_16595, 120000, i, false, false, true);
 					if (!this.world.getGameRules().getBoolean(GameRules.field_19422)) {
-						playerEntity.addPotionEffect(statusEffectInstance2);
+						playerEntity.addStatusEffect(statusEffectInstance2);
 					}
 				}
 			}
@@ -212,7 +212,7 @@ public abstract class RaiderEntity extends PatrolEntity {
 		super.readCustomDataFromTag(compoundTag);
 		this.wave = compoundTag.getInt("Wave");
 		this.ableToJoinRaid = compoundTag.getBoolean("CanJoinRaid");
-		if (compoundTag.containsKey("RaidId", 3)) {
+		if (compoundTag.contains("RaidId", 3)) {
 			if (this.world instanceof ServerWorld) {
 				this.raid = ((ServerWorld)this.world).getRaidManager().getRaid(compoundTag.getInt("RaidId"));
 			}
@@ -234,11 +234,11 @@ public abstract class RaiderEntity extends PatrolEntity {
 			EquipmentSlot equipmentSlot = EquipmentSlot.field_6169;
 			ItemStack itemStack2 = this.getEquippedStack(equipmentSlot);
 			double d = (double)this.getDropChance(equipmentSlot);
-			if (!itemStack2.isEmpty() && (double)(this.random.nextFloat() - 0.1F) < d) {
+			if (!itemStack2.isEmpty() && (double)Math.max(this.random.nextFloat() - 0.1F, 0.0F) < d) {
 				this.dropStack(itemStack2);
 			}
 
-			this.setEquippedStack(equipmentSlot, itemStack);
+			this.equipStack(equipmentSlot, itemStack);
 			this.sendPickup(itemEntity, itemStack.getCount());
 			itemEntity.remove();
 			this.getRaid().setWaveCaptain(this.getWave(), this);
@@ -358,20 +358,18 @@ public abstract class RaiderEntity extends PatrolEntity {
 		@Override
 		public void tick() {
 			if (this.raider.getNavigation().isIdle()) {
-				int i = this.home.getX();
-				int j = this.home.getY();
-				int k = this.home.getZ();
-				Vec3d vec3d = PathfindingUtil.method_6377(this.raider, 16, 7, new Vec3d((double)i, (double)j, (double)k), (float) (Math.PI / 10));
-				if (vec3d == null) {
-					vec3d = PathfindingUtil.method_6373(this.raider, 8, 7, new Vec3d((double)i, (double)j, (double)k));
+				Vec3d vec3d = new Vec3d(this.home);
+				Vec3d vec3d2 = TargetFinder.findTargetTowards(this.raider, 16, 7, vec3d, (float) (Math.PI / 10));
+				if (vec3d2 == null) {
+					vec3d2 = TargetFinder.findTargetTowards(this.raider, 8, 7, vec3d);
 				}
 
-				if (vec3d == null) {
+				if (vec3d2 == null) {
 					this.finished = true;
 					return;
 				}
 
-				this.raider.getNavigation().startMovingTo(vec3d.x, vec3d.y, vec3d.z, this.speed);
+				this.raider.getNavigation().startMovingTo(vec3d2.x, vec3d2.y, vec3d2.z, this.speed);
 			}
 		}
 

@@ -85,7 +85,7 @@ public class ExplosionS2CPacket implements Packet<ClientPlayPacketListener> {
 		packetByteBuf.writeFloat(this.playerVelocityZ);
 	}
 
-	public void method_11480(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onExplosion(this);
 	}
 

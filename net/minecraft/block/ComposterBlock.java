@@ -13,14 +13,16 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Hand;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -34,7 +36,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 	public static final IntProperty LEVEL = Properties.LEVEL_8;
 	public static final Object2FloatMap<ItemConvertible> ITEM_TO_LEVEL_INCREASE_CHANCE = new Object2FloatOpenHashMap();
 	public static final VoxelShape RAY_TRACE_SHAPE = VoxelShapes.fullCube();
-	private static final VoxelShape[] LEVEL_TO_COLLISION_SHAPE = SystemUtil.consume(
+	private static final VoxelShape[] LEVEL_TO_COLLISION_SHAPE = Util.make(
 		new VoxelShape[9],
 		voxelShapes -> {
 			for (int i = 0; i < 8; i++) {
@@ -130,7 +132,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 
 	public ComposterBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(LEVEL, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, Integer.valueOf(0)));
 	}
 
 	public static void playEffects(World world, BlockPos blockPos, boolean bl) {
@@ -145,7 +147,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 			1.0F,
 			false
 		);
-		double d = blockState.getOutlineShape(world, blockPos).method_1102(Direction.Axis.field_11052, 0.5, 0.5) + 0.03125;
+		double d = blockState.getOutlineShape(world, blockPos).getEndingCoord(Direction.Axis.field_11052, 0.5, 0.5) + 0.03125;
 		double e = 0.13125F;
 		double f = 0.7375F;
 		Random random = world.getRandom();
@@ -189,7 +191,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		int i = (Integer)blockState.get(LEVEL);
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (i < 8 && ITEM_TO_LEVEL_INCREASE_CHANCE.containsKey(itemStack.getItem())) {
@@ -201,7 +203,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 				}
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		} else if (i == 8) {
 			if (!world.isClient) {
 				float f = 0.7F;
@@ -217,9 +219,9 @@ public class ComposterBlock extends Block implements InventoryProvider {
 
 			emptyComposter(blockState, world, blockPos);
 			world.playSound(null, blockPos, SoundEvents.field_17606, SoundCategory.field_15245, 1.0F, 1.0F);
-			return true;
+			return ActionResult.field_5812;
 		} else {
-			return false;
+			return ActionResult.field_5811;
 		}
 	}
 
@@ -244,13 +246,13 @@ public class ComposterBlock extends Block implements InventoryProvider {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
 		if ((Integer)blockState.get(LEVEL) == 7) {
-			world.setBlockState(blockPos, blockState.cycle(LEVEL), 3);
-			world.playSound(null, blockPos, SoundEvents.field_17609, SoundCategory.field_15245, 1.0F, 1.0F);
+			serverWorld.setBlockState(blockPos, blockState.cycle(LEVEL), 3);
+			serverWorld.playSound(null, blockPos, SoundEvents.field_17609, SoundCategory.field_15245, 1.0F, 1.0F);
 		}
 
-		super.onScheduledTick(blockState, world, blockPos, random);
+		super.scheduledTick(blockState, serverWorld, blockPos, random);
 	}
 
 	@Override
@@ -264,7 +266,7 @@ public class ComposterBlock extends Block implements InventoryProvider {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(LEVEL);
 	}
 

@@ -163,17 +163,6 @@ public class DataTracker {
 		return list;
 	}
 
-	public void toPacketByteBuf(PacketByteBuf packetByteBuf) throws IOException {
-		this.lock.readLock().lock();
-
-		for (DataTracker.Entry<?> entry : this.entries.values()) {
-			writeEntryToPacket(packetByteBuf, entry);
-		}
-
-		this.lock.readLock().unlock();
-		packetByteBuf.writeByte(255);
-	}
-
 	@Nullable
 	public List<DataTracker.Entry<?>> getAllEntries() {
 		List<DataTracker.Entry<?>> list = null;

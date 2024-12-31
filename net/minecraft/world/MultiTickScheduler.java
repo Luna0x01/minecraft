@@ -2,7 +2,6 @@ package net.minecraft.world;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
-import net.minecraft.util.TaskPriority;
 import net.minecraft.util.math.BlockPos;
 
 public class MultiTickScheduler<T> implements TickScheduler<T> {
@@ -18,8 +17,8 @@ public class MultiTickScheduler<T> implements TickScheduler<T> {
 	}
 
 	@Override
-	public void schedule(BlockPos blockPos, T object, int i, TaskPriority taskPriority) {
-		((TickScheduler)this.mapper.apply(blockPos)).schedule(blockPos, object, i, taskPriority);
+	public void schedule(BlockPos blockPos, T object, int i, TickPriority tickPriority) {
+		((TickScheduler)this.mapper.apply(blockPos)).schedule(blockPos, object, i, tickPriority);
 	}
 
 	@Override

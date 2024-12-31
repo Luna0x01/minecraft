@@ -1,13 +1,14 @@
 package net.minecraft.client.render.debug;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class WaterDebugRenderer implements DebugRenderer.Renderer {
 	private final MinecraftClient client;
@@ -17,26 +18,20 @@ public class WaterDebugRenderer implements DebugRenderer.Renderer {
 	}
 
 	@Override
-	public void render(long l) {
-		Camera camera = this.client.gameRenderer.getCamera();
-		double d = camera.getPos().x;
-		double e = camera.getPos().y;
-		double f = camera.getPos().z;
+	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
 		BlockPos blockPos = this.client.player.getBlockPos();
-		ViewableWorld viewableWorld = this.client.player.world;
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
-		GlStateManager.color4f(0.0F, 1.0F, 0.0F, 0.75F);
-		GlStateManager.disableTexture();
-		GlStateManager.lineWidth(6.0F);
+		WorldView worldView = this.client.player.world;
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.color4f(0.0F, 1.0F, 0.0F, 0.75F);
+		RenderSystem.disableTexture();
+		RenderSystem.lineWidth(6.0F);
 
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
-			FluidState fluidState = viewableWorld.getFluidState(blockPos2);
+			FluidState fluidState = worldView.getFluidState(blockPos2);
 			if (fluidState.matches(FluidTags.field_15517)) {
-				double g = (double)((float)blockPos2.getY() + fluidState.getHeight(viewableWorld, blockPos2));
-				DebugRenderer.method_19695(
+				double g = (double)((float)blockPos2.getY() + fluidState.getHeight(worldView, blockPos2));
+				DebugRenderer.drawBox(
 					new Box(
 							(double)((float)blockPos2.getX() + 0.01F),
 							(double)((float)blockPos2.getY() + 0.01F),
@@ -55,19 +50,19 @@ public class WaterDebugRenderer implements DebugRenderer.Renderer {
 		}
 
 		for (BlockPos blockPos3 : BlockPos.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
-			FluidState fluidState2 = viewableWorld.getFluidState(blockPos3);
+			FluidState fluidState2 = worldView.getFluidState(blockPos3);
 			if (fluidState2.matches(FluidTags.field_15517)) {
-				DebugRenderer.method_3714(
+				DebugRenderer.drawString(
 					String.valueOf(fluidState2.getLevel()),
 					(double)blockPos3.getX() + 0.5,
-					(double)((float)blockPos3.getY() + fluidState2.getHeight(viewableWorld, blockPos3)),
+					(double)((float)blockPos3.getY() + fluidState2.getHeight(worldView, blockPos3)),
 					(double)blockPos3.getZ() + 0.5,
 					-16777216
 				);
 			}
 		}
 
-		GlStateManager.enableTexture();
-		GlStateManager.disableBlend();
+		RenderSystem.enableTexture();
+		RenderSystem.disableBlend();
 	}
 }

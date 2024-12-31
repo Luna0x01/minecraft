@@ -10,7 +10,7 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -19,15 +19,15 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class BubbleColumnBlock extends Block implements FluidDrainable {
 	public static final BooleanProperty DRAG = Properties.DRAG;
 
 	public BubbleColumnBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(DRAG, Boolean.valueOf(true)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(DRAG, Boolean.valueOf(true)));
 	}
 
 	@Override
@@ -74,8 +74,8 @@ public class BubbleColumnBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		update(world, blockPos.up(), calculateDrag(world, blockPos));
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		update(serverWorld, blockPos.up(), calculateDrag(serverWorld, blockPos));
 	}
 
 	@Override
@@ -101,7 +101,7 @@ public class BubbleColumnBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 5;
 	}
 
@@ -145,8 +145,8 @@ public class BubbleColumnBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		Block block = viewableWorld.getBlockState(blockPos.down()).getBlock();
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		Block block = worldView.getBlockState(blockPos.down()).getBlock();
 		return block == Blocks.field_10422 || block == Blocks.field_10092 || block == Blocks.field_10114;
 	}
 
@@ -156,17 +156,12 @@ public class BubbleColumnBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9179;
-	}
-
-	@Override
 	public BlockRenderType getRenderType(BlockState blockState) {
 		return BlockRenderType.field_11455;
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(DRAG);
 	}
 

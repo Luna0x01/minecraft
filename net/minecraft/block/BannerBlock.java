@@ -4,7 +4,7 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.BlockMirror;
@@ -16,7 +16,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class BannerBlock extends AbstractBannerBlock {
 	public static final IntProperty ROTATION = Properties.ROTATION;
@@ -25,13 +25,13 @@ public class BannerBlock extends AbstractBannerBlock {
 
 	public BannerBlock(DyeColor dyeColor, Block.Settings settings) {
 		super(dyeColor, settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(ROTATION, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(ROTATION, Integer.valueOf(0)));
 		COLORED_BANNERS.put(dyeColor, this);
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return viewableWorld.getBlockState(blockPos.down()).getMaterial().isSolid();
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return worldView.getBlockState(blockPos.down()).getMaterial().isSolid();
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class BannerBlock extends AbstractBannerBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(ROTATION);
 	}
 

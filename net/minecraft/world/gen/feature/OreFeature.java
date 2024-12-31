@@ -16,7 +16,7 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_13628(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, OreFeatureConfig oreFeatureConfig
 	) {
 		float f = random.nextFloat() * (float) Math.PI;
@@ -37,7 +37,7 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 
 		for (int s = n; s <= n + q; s++) {
 			for (int t = p; t <= p + q; t++) {
-				if (o <= iWorld.getTop(Heightmap.Type.field_13195, s, t)) {
+				if (o <= iWorld.getTopY(Heightmap.Type.field_13195, s, t)) {
 					return this.generateVeinPart(iWorld, random, oreFeatureConfig, d, e, h, j, l, m, n, o, p, q, r);
 				}
 			}

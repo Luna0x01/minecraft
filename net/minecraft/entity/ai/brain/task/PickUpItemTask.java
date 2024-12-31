@@ -1,7 +1,7 @@
 package net.minecraft.entity.ai.brain.task;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
+import com.google.common.collect.Lists;
 import java.util.List;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.ai.brain.BlockPosLookTarget;
@@ -14,18 +14,18 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class PickUpItemTask extends Task<VillagerEntity> {
-	private List<ItemEntity> nearbyItems = new ArrayList();
+	private List<ItemEntity> nearbyItems = Lists.newArrayList();
 
 	public PickUpItemTask() {
 		super(ImmutableMap.of(MemoryModuleType.field_18446, MemoryModuleState.field_18457, MemoryModuleType.field_18445, MemoryModuleState.field_18457));
 	}
 
-	protected boolean method_20818(ServerWorld serverWorld, VillagerEntity villagerEntity) {
-		this.nearbyItems = serverWorld.getEntities(ItemEntity.class, villagerEntity.getBoundingBox().expand(4.0, 2.0, 4.0));
+	protected boolean shouldRun(ServerWorld serverWorld, VillagerEntity villagerEntity) {
+		this.nearbyItems = serverWorld.getNonSpectatingEntities(ItemEntity.class, villagerEntity.getBoundingBox().expand(4.0, 2.0, 4.0));
 		return !this.nearbyItems.isEmpty();
 	}
 
-	protected void method_20819(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void run(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		ItemEntity itemEntity = (ItemEntity)this.nearbyItems.get(serverWorld.random.nextInt(this.nearbyItems.size()));
 		if (villagerEntity.canGather(itemEntity.getStack().getItem())) {
 			Vec3d vec3d = itemEntity.getPos();

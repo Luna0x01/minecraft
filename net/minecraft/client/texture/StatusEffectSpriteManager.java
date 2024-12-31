@@ -1,17 +1,18 @@
 package net.minecraft.client.texture;
 
+import java.util.stream.Stream;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class StatusEffectSpriteManager extends SpriteAtlasHolder {
 	public StatusEffectSpriteManager(TextureManager textureManager) {
-		super(textureManager, SpriteAtlasTexture.STATUS_EFFECT_ATLAS_TEX, "textures/mob_effect");
+		super(textureManager, new Identifier("textures/atlas/mob_effects.png"), "mob_effect");
 	}
 
 	@Override
-	protected Iterable<Identifier> getSprites() {
-		return Registry.STATUS_EFFECT.getIds();
+	protected Stream<Identifier> getSprites() {
+		return Registry.STATUS_EFFECT.getIds().stream();
 	}
 
 	public Sprite getSprite(StatusEffect statusEffect) {

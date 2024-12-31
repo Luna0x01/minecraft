@@ -22,7 +22,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.WeightedPicker;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
@@ -34,14 +34,14 @@ public class EnchantmentHelper {
 		if (itemStack.isEmpty()) {
 			return 0;
 		} else {
-			Identifier identifier = Registry.ENCHANTMENT.getId(enchantment);
+			Identifier identifier = Registry.field_11160.getId(enchantment);
 			ListTag listTag = itemStack.getEnchantments();
 
 			for (int i = 0; i < listTag.size(); i++) {
-				CompoundTag compoundTag = listTag.getCompoundTag(i);
+				CompoundTag compoundTag = listTag.getCompound(i);
 				Identifier identifier2 = Identifier.tryParse(compoundTag.getString("id"));
 				if (identifier2 != null && identifier2.equals(identifier)) {
-					return compoundTag.getInt("lvl");
+					return MathHelper.clamp(compoundTag.getInt("lvl"), 0, 255);
 				}
 			}
 
@@ -50,12 +50,16 @@ public class EnchantmentHelper {
 	}
 
 	public static Map<Enchantment, Integer> getEnchantments(ItemStack itemStack) {
-		Map<Enchantment, Integer> map = Maps.newLinkedHashMap();
 		ListTag listTag = itemStack.getItem() == Items.field_8598 ? EnchantedBookItem.getEnchantmentTag(itemStack) : itemStack.getEnchantments();
+		return getEnchantments(listTag);
+	}
+
+	public static Map<Enchantment, Integer> getEnchantments(ListTag listTag) {
+		Map<Enchantment, Integer> map = Maps.newLinkedHashMap();
 
 		for (int i = 0; i < listTag.size(); i++) {
-			CompoundTag compoundTag = listTag.getCompoundTag(i);
-			Registry.ENCHANTMENT.getOrEmpty(Identifier.tryParse(compoundTag.getString("id"))).ifPresent(enchantment -> {
+			CompoundTag compoundTag = listTag.getCompound(i);
+			Registry.field_11160.getOrEmpty(Identifier.tryParse(compoundTag.getString("id"))).ifPresent(enchantment -> {
 				Integer var10000 = (Integer)map.put(enchantment, compoundTag.getInt("lvl"));
 			});
 		}
@@ -71,7 +75,7 @@ public class EnchantmentHelper {
 			if (enchantment != null) {
 				int i = (Integer)entry.getValue();
 				CompoundTag compoundTag = new CompoundTag();
-				compoundTag.putString("id", String.valueOf(Registry.ENCHANTMENT.getId(enchantment)));
+				compoundTag.putString("id", String.valueOf(Registry.field_11160.getId(enchantment)));
 				compoundTag.putShort("lvl", (short)i);
 				listTag.add(compoundTag);
 				if (itemStack.getItem() == Items.field_8598) {
@@ -92,9 +96,9 @@ public class EnchantmentHelper {
 			ListTag listTag = itemStack.getEnchantments();
 
 			for (int i = 0; i < listTag.size(); i++) {
-				String string = listTag.getCompoundTag(i).getString("id");
-				int j = listTag.getCompoundTag(i).getInt("lvl");
-				Registry.ENCHANTMENT.getOrEmpty(Identifier.tryParse(string)).ifPresent(enchantment -> consumer.accept(enchantment, j));
+				String string = listTag.getCompound(i).getString("id");
+				int j = listTag.getCompound(i).getInt("lvl");
+				Registry.field_11160.getOrEmpty(Identifier.tryParse(string)).ifPresent(enchantment -> consumer.accept(enchantment, j));
 			}
 		}
 	}
@@ -237,7 +241,7 @@ public class EnchantmentHelper {
 				}
 			}
 
-			return list.isEmpty() ? null : (Entry)list.get(livingEntity.getRand().nextInt(list.size()));
+			return list.isEmpty() ? null : (Entry)list.get(livingEntity.getRandom().nextInt(list.size()));
 		}
 	}
 
@@ -293,7 +297,7 @@ public class EnchantmentHelper {
 				list.add(WeightedPicker.getRandom(random, list2));
 
 				while (random.nextInt(50) <= i) {
-					remove(list2, SystemUtil.method_20793(list));
+					remove(list2, Util.getLast(list));
 					if (list2.isEmpty()) {
 						break;
 					}
@@ -332,7 +336,7 @@ public class EnchantmentHelper {
 		Item item = itemStack.getItem();
 		boolean bl2 = itemStack.getItem() == Items.field_8529;
 
-		for (Enchantment enchantment : Registry.ENCHANTMENT) {
+		for (Enchantment enchantment : Registry.field_11160) {
 			if ((!enchantment.isTreasure() || bl) && (enchantment.type.isAcceptableItem(item) || bl2)) {
 				for (int j = enchantment.getMaximumLevel(); j > enchantment.getMinimumLevel() - 1; j--) {
 					if (i >= enchantment.getMinimumPower(j) && i <= enchantment.getMaximumPower(j)) {

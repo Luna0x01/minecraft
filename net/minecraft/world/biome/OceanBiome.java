@@ -29,9 +29,9 @@ public final class OceanBiome extends Biome {
 				.waterFogColor(329011)
 				.parent(null)
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.SHIPWRECK, new ShipwreckFeatureConfig(false));
-		this.addStructureFeature(Feature.OCEAN_RUIN, new OceanRuinFeatureConfig(OceanRuinFeature.BiomeType.field_14528, 0.3F, 0.9F));
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.SHIPWRECK.configure(new ShipwreckFeatureConfig(false)));
+		this.addStructureFeature(Feature.OCEAN_RUIN.configure(new OceanRuinFeatureConfig(OceanRuinFeature.BiomeType.field_14528, 0.3F, 0.9F)));
 		DefaultBiomeFeatures.addOceanCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);
@@ -47,7 +47,7 @@ public final class OceanBiome extends Biome {
 		DefaultBiomeFeatures.addSprings(this);
 		this.addFeature(
 			GenerationStep.Feature.field_13178,
-			configureFeature(Feature.field_13567, new SeagrassFeatureConfig(48, 0.3), Decorator.field_14231, DecoratorConfig.DEFAULT)
+			Feature.field_13567.configure(new SeagrassFeatureConfig(48, 0.3)).createDecoratedFeature(Decorator.field_14231.configure(DecoratorConfig.DEFAULT))
 		);
 		DefaultBiomeFeatures.addSeagrassOnStone(this);
 		DefaultBiomeFeatures.addKelp(this);

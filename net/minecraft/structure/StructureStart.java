@@ -6,47 +6,44 @@ import java.util.List;
 import java.util.Random;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.StructureFeature;
 
 public abstract class StructureStart {
-	public static final StructureStart DEFAULT = new StructureStart(Feature.MINESHAFT, 0, 0, Biomes.field_9451, MutableIntBoundingBox.empty(), 0, 0L) {
+	public static final StructureStart DEFAULT = new StructureStart(Feature.MINESHAFT, 0, 0, BlockBox.empty(), 0, 0L) {
 		@Override
 		public void initialize(ChunkGenerator<?> chunkGenerator, StructureManager structureManager, int i, int j, Biome biome) {
 		}
 	};
 	private final StructureFeature<?> feature;
 	protected final List<StructurePiece> children = Lists.newArrayList();
-	protected MutableIntBoundingBox boundingBox;
+	protected BlockBox boundingBox;
 	private final int chunkX;
 	private final int chunkZ;
-	private final Biome biome;
 	private int references;
 	protected final ChunkRandom random;
 
-	public StructureStart(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l) {
+	public StructureStart(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
 		this.feature = structureFeature;
 		this.chunkX = i;
 		this.chunkZ = j;
 		this.references = k;
-		this.biome = biome;
 		this.random = new ChunkRandom();
 		this.random.setStructureSeed(l, i, j);
-		this.boundingBox = mutableIntBoundingBox;
+		this.boundingBox = blockBox;
 	}
 
 	public abstract void initialize(ChunkGenerator<?> chunkGenerator, StructureManager structureManager, int i, int j, Biome biome);
 
-	public MutableIntBoundingBox getBoundingBox() {
+	public BlockBox getBoundingBox() {
 		return this.boundingBox;
 	}
 
@@ -54,13 +51,13 @@ public abstract class StructureStart {
 		return this.children;
 	}
 
-	public void generateStructure(IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox, ChunkPos chunkPos) {
+	public void generateStructure(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
 		synchronized (this.children) {
 			Iterator<StructurePiece> iterator = this.children.iterator();
 
 			while (iterator.hasNext()) {
 				StructurePiece structurePiece = (StructurePiece)iterator.next();
-				if (structurePiece.getBoundingBox().intersects(mutableIntBoundingBox) && !structurePiece.generate(iWorld, random, mutableIntBoundingBox, chunkPos)) {
+				if (structurePiece.getBoundingBox().intersects(blockBox) && !structurePiece.generate(iWorld, chunkGenerator, random, blockBox, chunkPos)) {
 					iterator.remove();
 				}
 			}
@@ -70,18 +67,17 @@ public abstract class StructureStart {
 	}
 
 	protected void setBoundingBoxFromChildren() {
-		this.boundingBox = MutableIntBoundingBox.empty();
+		this.boundingBox = BlockBox.empty();
 
 		for (StructurePiece structurePiece : this.children) {
-			this.boundingBox.setFrom(structurePiece.getBoundingBox());
+			this.boundingBox.encompass(structurePiece.getBoundingBox());
 		}
 	}
 
 	public CompoundTag toTag(int i, int j) {
 		CompoundTag compoundTag = new CompoundTag();
 		if (this.hasChildren()) {
-			compoundTag.putString("id", Registry.STRUCTURE_FEATURE.getId(this.getFeature()).toString());
-			compoundTag.putString("biome", Registry.BIOME.getId(this.biome).toString());
+			compoundTag.putString("id", Registry.field_16644.getId(this.getFeature()).toString());
 			compoundTag.putInt("ChunkX", i);
 			compoundTag.putInt("ChunkZ", j);
 			compoundTag.putInt("references", this.references);
@@ -109,7 +105,7 @@ public abstract class StructureStart {
 		}
 
 		int m = l - this.boundingBox.maxY;
-		this.boundingBox.translate(0, m, 0);
+		this.boundingBox.offset(0, m, 0);
 
 		for (StructurePiece structurePiece : this.children) {
 			structurePiece.translate(0, m, 0);
@@ -126,7 +122,7 @@ public abstract class StructureStart {
 		}
 
 		int n = l - this.boundingBox.minY;
-		this.boundingBox.translate(0, n, 0);
+		this.boundingBox.offset(0, n, 0);
 
 		for (StructurePiece structurePiece : this.children) {
 			structurePiece.translate(0, n, 0);
@@ -155,6 +151,10 @@ public abstract class StructureStart {
 
 	public void incrementReferences() {
 		this.references++;
+	}
+
+	public int method_23676() {
+		return this.references;
 	}
 
 	protected int getReferenceCountToBeInExistingChunk() {

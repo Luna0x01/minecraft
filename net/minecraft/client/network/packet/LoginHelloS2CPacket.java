@@ -35,7 +35,7 @@ public class LoginHelloS2CPacket implements Packet<ClientLoginPacketListener> {
 		packetByteBuf.writeByteArray(this.nonce);
 	}
 
-	public void method_12612(ClientLoginPacketListener clientLoginPacketListener) {
+	public void apply(ClientLoginPacketListener clientLoginPacketListener) {
 		clientLoginPacketListener.onHello(this);
 	}
 

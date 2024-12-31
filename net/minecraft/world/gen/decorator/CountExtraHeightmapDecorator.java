@@ -16,7 +16,7 @@ public class CountExtraHeightmapDecorator extends Decorator<CountExtraChanceDeco
 		super(function);
 	}
 
-	public Stream<BlockPos> method_15919(
+	public Stream<BlockPos> getPositions(
 		IWorld iWorld,
 		ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator,
 		Random random,
@@ -29,9 +29,10 @@ public class CountExtraHeightmapDecorator extends Decorator<CountExtraChanceDeco
 		}
 
 		return IntStream.range(0, i).mapToObj(ix -> {
-			int j = random.nextInt(16);
-			int k = random.nextInt(16);
-			return iWorld.getTopPosition(Heightmap.Type.field_13197, blockPos.add(j, 0, k));
+			int j = random.nextInt(16) + blockPos.getX();
+			int k = random.nextInt(16) + blockPos.getZ();
+			int l = iWorld.getTopY(Heightmap.Type.field_13197, j, k);
+			return new BlockPos(j, l, k);
 		});
 	}
 }

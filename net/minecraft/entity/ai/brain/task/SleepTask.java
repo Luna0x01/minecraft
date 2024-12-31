@@ -8,18 +8,20 @@ import net.minecraft.block.BedBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.Activity;
+import net.minecraft.entity.ai.brain.Brain;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.GlobalPos;
+import net.minecraft.util.Timestamp;
 import net.minecraft.util.math.BlockPos;
 
 public class SleepTask extends Task<LivingEntity> {
-	private long field_18848;
+	private long startTime;
 
 	public SleepTask() {
-		super(ImmutableMap.of(MemoryModuleType.field_18438, MemoryModuleState.field_18456));
+		super(ImmutableMap.of(MemoryModuleType.field_18438, MemoryModuleState.field_18456, MemoryModuleType.field_20616, MemoryModuleState.field_18458));
 	}
 
 	@Override
@@ -27,14 +29,20 @@ public class SleepTask extends Task<LivingEntity> {
 		if (livingEntity.hasVehicle()) {
 			return false;
 		} else {
-			GlobalPos globalPos = (GlobalPos)livingEntity.getBrain().getOptionalMemory(MemoryModuleType.field_18438).get();
+			Brain<?> brain = livingEntity.getBrain();
+			GlobalPos globalPos = (GlobalPos)brain.getOptionalMemory(MemoryModuleType.field_18438).get();
 			if (!Objects.equals(serverWorld.getDimension().getType(), globalPos.getDimension())) {
 				return false;
 			} else {
-				BlockState blockState = serverWorld.getBlockState(globalPos.getPos());
-				return globalPos.getPos().isWithinDistance(livingEntity.getPos(), 2.0)
-					&& blockState.getBlock().matches(BlockTags.field_16443)
-					&& !(Boolean)blockState.get(BedBlock.OCCUPIED);
+				Optional<Timestamp> optional = brain.getOptionalMemory(MemoryModuleType.field_20616);
+				if (optional.isPresent() && serverWorld.getTime() - ((Timestamp)optional.get()).getTime() < 100L) {
+					return false;
+				} else {
+					BlockState blockState = serverWorld.getBlockState(globalPos.getPos());
+					return globalPos.getPos().isWithinDistance(livingEntity.getPos(), 2.0)
+						&& blockState.getBlock().matches(BlockTags.field_16443)
+						&& !(Boolean)blockState.get(BedBlock.OCCUPIED);
+				}
 			}
 		}
 	}
@@ -47,17 +55,17 @@ public class SleepTask extends Task<LivingEntity> {
 		} else {
 			BlockPos blockPos = ((GlobalPos)optional.get()).getPos();
 			return livingEntity.getBrain().hasActivity(Activity.field_18597)
-				&& livingEntity.y > (double)blockPos.getY() + 0.4
+				&& livingEntity.getY() > (double)blockPos.getY() + 0.4
 				&& blockPos.isWithinDistance(livingEntity.getPos(), 1.14);
 		}
 	}
 
 	@Override
 	protected void run(ServerWorld serverWorld, LivingEntity livingEntity, long l) {
-		if (l > this.field_18848) {
+		if (l > this.startTime) {
 			livingEntity.getBrain()
 				.getOptionalMemory(MemoryModuleType.field_20312)
-				.ifPresent(set -> OpenDoorsTask.method_21697(serverWorld, ImmutableList.of(), 0, livingEntity, livingEntity.getBrain()));
+				.ifPresent(set -> OpenDoorsTask.closeOpenedDoors(serverWorld, ImmutableList.of(), 0, livingEntity, livingEntity.getBrain()));
 			livingEntity.sleep(((GlobalPos)livingEntity.getBrain().getOptionalMemory(MemoryModuleType.field_18438).get()).getPos());
 		}
 	}
@@ -71,7 +79,7 @@ public class SleepTask extends Task<LivingEntity> {
 	protected void finishRunning(ServerWorld serverWorld, LivingEntity livingEntity, long l) {
 		if (livingEntity.isSleeping()) {
 			livingEntity.wakeUp();
-			this.field_18848 = l + 40L;
+			this.startTime = l + 40L;
 		}
 	}
 }

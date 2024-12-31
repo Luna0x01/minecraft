@@ -2,7 +2,7 @@ package net.minecraft.entity.vehicle;
 
 import javax.annotation.Nullable;
 import net.minecraft.container.Container;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
@@ -11,6 +11,10 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.DefaultedList;
@@ -21,12 +25,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.loot.LootSupplier;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
-import net.minecraft.world.loot.context.LootContextTypes;
 
-public abstract class StorageMinecartEntity extends AbstractMinecartEntity implements Inventory, NameableContainerProvider {
+public abstract class StorageMinecartEntity extends AbstractMinecartEntity implements Inventory, NameableContainerFactory {
 	private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(36, ItemStack.EMPTY);
 	private boolean field_7733 = true;
 	@Nullable
@@ -145,7 +145,7 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	protected void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
 		this.inventory = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
-		if (compoundTag.containsKey("LootTable", 8)) {
+		if (compoundTag.contains("LootTable", 8)) {
 			this.lootTableId = new Identifier(compoundTag.getString("LootTable"));
 			this.lootSeed = compoundTag.getLong("LootTableSeed");
 		} else {
@@ -160,7 +160,7 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	}
 
 	@Override
-	protected void method_7525() {
+	protected void applySlowdown() {
 		float f = 0.98F;
 		if (this.lootTableId == null) {
 			int i = 15 - Container.calculateComparatorOutput(this);
@@ -172,7 +172,7 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 
 	public void method_7563(@Nullable PlayerEntity playerEntity) {
 		if (this.lootTableId != null && this.world.getServer() != null) {
-			LootSupplier lootSupplier = this.world.getServer().getLootManager().getSupplier(this.lootTableId);
+			LootTable lootTable = this.world.getServer().getLootManager().getSupplier(this.lootTableId);
 			this.lootTableId = null;
 			LootContext.Builder builder = new LootContext.Builder((ServerWorld)this.world)
 				.put(LootContextParameters.field_1232, new BlockPos(this))
@@ -181,7 +181,7 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 				builder.setLuck(playerEntity.getLuck()).put(LootContextParameters.field_1226, playerEntity);
 			}
 
-			lootSupplier.supplyInventory(this, builder.build(LootContextTypes.field_1179));
+			lootTable.supplyInventory(this, builder.build(LootContextTypes.field_1179));
 		}
 	}
 

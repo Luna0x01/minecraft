@@ -32,6 +32,7 @@ public class OpenToLanScreen extends Screen {
 			}
 
 			this.minecraft.inGameHud.getChatHud().addMessage(text);
+			this.minecraft.updateWindowTitle();
 		}));
 		this.addButton(
 			new ButtonWidget(this.width / 2 + 5, this.height - 28, 150, 20, I18n.translate("gui.cancel"), buttonWidget -> this.minecraft.openScreen(this.parent))

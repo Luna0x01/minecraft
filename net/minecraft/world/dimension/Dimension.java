@@ -19,18 +19,14 @@ public abstract class Dimension {
 	protected final float[] lightLevelToBrightness = new float[16];
 	private final float[] backgroundColor = new float[4];
 
-	public Dimension(World world, DimensionType dimensionType) {
+	public Dimension(World world, DimensionType dimensionType, float f) {
 		this.world = world;
 		this.type = dimensionType;
-		this.initializeLightLevelToBrightness();
-	}
-
-	protected void initializeLightLevelToBrightness() {
-		float f = 0.0F;
 
 		for (int i = 0; i <= 15; i++) {
-			float g = 1.0F - (float)i / 15.0F;
-			this.lightLevelToBrightness[i] = (1.0F - g) / (g * 3.0F + 1.0F) * 1.0F + 0.0F;
+			float g = (float)i / 15.0F;
+			float h = g / (4.0F - 3.0F * g);
+			this.lightLevelToBrightness[i] = MathHelper.lerp(f, h, 1.0F);
 		}
 	}
 
@@ -61,7 +57,7 @@ public abstract class Dimension {
 		return 128.0F;
 	}
 
-	public boolean method_12449() {
+	public boolean hasGround() {
 		return true;
 	}
 
@@ -86,8 +82,8 @@ public abstract class Dimension {
 		return this.isNether;
 	}
 
-	public float[] getLightLevelToBrightness() {
-		return this.lightLevelToBrightness;
+	public float getBrightness(int i) {
+		return this.lightLevelToBrightness[i];
 	}
 
 	public WorldBorder createWorldBorder() {
@@ -116,7 +112,7 @@ public abstract class Dimension {
 
 	public abstract boolean canPlayersSleep();
 
-	public abstract boolean shouldRenderFog(int i, int j);
+	public abstract boolean isFogThick(int i, int j);
 
 	public abstract DimensionType getType();
 }

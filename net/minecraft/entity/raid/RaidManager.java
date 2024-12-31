@@ -17,13 +17,13 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.village.PointOfInterest;
-import net.minecraft.village.PointOfInterestStorage;
-import net.minecraft.village.PointOfInterestType;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.poi.PointOfInterest;
+import net.minecraft.world.poi.PointOfInterestStorage;
+import net.minecraft.world.poi.PointOfInterestType;
 
 public class RaidManager extends PersistentState {
 	private final Map<Integer, Raid> raids = Maps.newHashMap();
@@ -93,7 +93,7 @@ public class RaidManager extends PersistentState {
 					.get(PointOfInterestType.ALWAYS_TRUE, blockPos, 64, PointOfInterestStorage.OccupationStatus.field_18488)
 					.collect(Collectors.toList());
 				int i = 0;
-				Vec3d vec3d = new Vec3d(0.0, 0.0, 0.0);
+				Vec3d vec3d = Vec3d.ZERO;
 
 				for (PointOfInterest pointOfInterest : list) {
 					BlockPos blockPos2 = pointOfInterest.getPos();
@@ -129,7 +129,7 @@ public class RaidManager extends PersistentState {
 					serverPlayerEntity.networkHandler.sendPacket(new EntityStatusS2CPacket(serverPlayerEntity, (byte)43));
 					if (!raid.hasSpawned()) {
 						serverPlayerEntity.incrementStat(Stats.field_19256);
-						Criterions.VOLUNTARY_EXILE.handle(serverPlayerEntity);
+						Criterions.VOLUNTARY_EXILE.trigger(serverPlayerEntity);
 					}
 				}
 
@@ -151,7 +151,7 @@ public class RaidManager extends PersistentState {
 		ListTag listTag = compoundTag.getList("Raids", 10);
 
 		for (int i = 0; i < listTag.size(); i++) {
-			CompoundTag compoundTag2 = listTag.getCompoundTag(i);
+			CompoundTag compoundTag2 = listTag.getCompound(i);
 			Raid raid = new Raid(this.world, compoundTag2);
 			this.raids.put(raid.getRaidId(), raid);
 		}

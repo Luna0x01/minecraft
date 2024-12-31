@@ -2,6 +2,7 @@ package net.minecraft.entity.raid;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -13,7 +14,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.block.Blocks;
@@ -58,8 +58,8 @@ public class Raid {
 	private static final TranslatableText EVENT_TEXT = new TranslatableText("event.minecraft.raid");
 	private static final TranslatableText VICTORY_SUFFIX_TEXT = new TranslatableText("event.minecraft.raid.victory");
 	private static final TranslatableText DEFEAT_SUFFIX_TEXT = new TranslatableText("event.minecraft.raid.defeat");
-	private static final Text VICTORY_TITLE = EVENT_TEXT.method_11020().append(" - ").append(VICTORY_SUFFIX_TEXT);
-	private static final Text DEFEAT_TITLE = EVENT_TEXT.method_11020().append(" - ").append(DEFEAT_SUFFIX_TEXT);
+	private static final Text VICTORY_TITLE = EVENT_TEXT.copy().append(" - ").append(VICTORY_SUFFIX_TEXT);
+	private static final Text DEFEAT_TITLE = EVENT_TEXT.copy().append(" - ").append(DEFEAT_SUFFIX_TEXT);
 	private final Map<Integer, RaiderEntity> waveToCaptain = Maps.newHashMap();
 	private final Map<Integer, Set<RaiderEntity>> waveToRaiders = Maps.newHashMap();
 	private final Set<UUID> heroesOfTheVillage = Sets.newHashSet();
@@ -107,11 +107,11 @@ public class Raid {
 		this.waveCount = compoundTag.getInt("NumGroups");
 		this.status = Raid.Status.fromName(compoundTag.getString("Status"));
 		this.heroesOfTheVillage.clear();
-		if (compoundTag.containsKey("HeroesOfTheVillage", 9)) {
+		if (compoundTag.contains("HeroesOfTheVillage", 9)) {
 			ListTag listTag = compoundTag.getList("HeroesOfTheVillage", 10);
 
 			for (int i = 0; i < listTag.size(); i++) {
-				CompoundTag compoundTag2 = listTag.getCompoundTag(i);
+				CompoundTag compoundTag2 = listTag.getCompound(i);
 				UUID uUID = compoundTag2.getUuid("UUID");
 				this.heroesOfTheVillage.add(uUID);
 			}
@@ -205,7 +205,7 @@ public class Raid {
 		if (!this.hasStopped()) {
 			if (this.status == Raid.Status.field_19026) {
 				boolean bl = this.active;
-				this.active = this.world.isBlockLoaded(this.center);
+				this.active = this.world.isChunkLoaded(this.center);
 				if (this.world.getDifficulty() == Difficulty.field_5801) {
 					this.invalidate();
 					return;
@@ -248,7 +248,7 @@ public class Raid {
 					} else {
 						boolean bl2 = this.preCalculatedRavagerSpawnLocation.isPresent();
 						boolean bl3 = !bl2 && this.preRaidTicks % 5 == 0;
-						if (bl2 && !this.world.method_14178().shouldTickChunk(new ChunkPos((BlockPos)this.preCalculatedRavagerSpawnLocation.get()))) {
+						if (bl2 && !this.world.getChunkManager().shouldTickChunk(new ChunkPos((BlockPos)this.preCalculatedRavagerSpawnLocation.get()))) {
 							bl3 = true;
 						}
 
@@ -277,7 +277,7 @@ public class Raid {
 					this.removeObsoleteRaiders();
 					if (i > 0) {
 						if (i <= 2) {
-							this.bar.setName(EVENT_TEXT.method_11020().append(" - ").append(new TranslatableText("event.minecraft.raid.raiders_remaining", i)));
+							this.bar.setName(EVENT_TEXT.copy().append(" - ").append(new TranslatableText("event.minecraft.raid.raiders_remaining", i)));
 						} else {
 							this.bar.setName(EVENT_TEXT);
 						}
@@ -320,11 +320,11 @@ public class Raid {
 							Entity entity = this.world.getEntity(uUID);
 							if (entity instanceof LivingEntity && !entity.isSpectator()) {
 								LivingEntity livingEntity = (LivingEntity)entity;
-								livingEntity.addPotionEffect(new StatusEffectInstance(StatusEffects.field_18980, 48000, this.badOmenLevel - 1, false, false, true));
+								livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.field_18980, 48000, this.badOmenLevel - 1, false, false, true));
 								if (livingEntity instanceof ServerPlayerEntity) {
 									ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)livingEntity;
 									serverPlayerEntity.incrementStat(Stats.field_19257);
-									Criterions.HERO_OF_THE_VILLAGE.handle(serverPlayerEntity);
+									Criterions.HERO_OF_THE_VILLAGE.trigger(serverPlayerEntity);
 								}
 							}
 						}
@@ -427,17 +427,17 @@ public class Raid {
 	private void playRaidHorn(BlockPos blockPos) {
 		float f = 13.0F;
 		int i = 64;
+		Collection<ServerPlayerEntity> collection = this.bar.getPlayers();
 
-		for (PlayerEntity playerEntity : this.world.getPlayers()) {
-			Vec3d vec3d = new Vec3d(playerEntity.x, playerEntity.y, playerEntity.z);
-			Vec3d vec3d2 = new Vec3d((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+		for (ServerPlayerEntity serverPlayerEntity : this.world.getPlayers()) {
+			Vec3d vec3d = serverPlayerEntity.getPos();
+			Vec3d vec3d2 = new Vec3d(blockPos);
 			float g = MathHelper.sqrt((vec3d2.x - vec3d.x) * (vec3d2.x - vec3d.x) + (vec3d2.z - vec3d.z) * (vec3d2.z - vec3d.z));
 			double d = vec3d.x + (double)(13.0F / g) * (vec3d2.x - vec3d.x);
 			double e = vec3d.z + (double)(13.0F / g) * (vec3d2.z - vec3d.z);
-			if (g <= 64.0F || this.world.isNearOccupiedPointOfInterest(new BlockPos(playerEntity))) {
-				((ServerPlayerEntity)playerEntity)
-					.networkHandler
-					.sendPacket(new PlaySoundS2CPacket(SoundEvents.field_17266, SoundCategory.field_15254, d, playerEntity.y, e, 64.0F, 1.0F));
+			if (g <= 64.0F || collection.contains(serverPlayerEntity)) {
+				serverPlayerEntity.networkHandler
+					.sendPacket(new PlaySoundS2CPacket(SoundEvents.field_17266, SoundCategory.field_15254, d, serverPlayerEntity.getY(), e, 64.0F, 1.0F));
 			}
 		}
 	}
@@ -477,7 +477,7 @@ public class Raid {
 					k++;
 					if (raiderEntity2 != null) {
 						this.addRaider(i, raiderEntity2, blockPos, false);
-						raiderEntity2.setPositionAndAngles(blockPos, 0.0F, 0.0F);
+						raiderEntity2.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
 						raiderEntity2.startRiding(raiderEntity);
 					}
 				}
@@ -498,7 +498,7 @@ public class Raid {
 			raiderEntity.setAbleToJoinRaid(true);
 			raiderEntity.setOutOfRaidCounter(0);
 			if (!bl && blockPos != null) {
-				raiderEntity.setPosition((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 1.0, (double)blockPos.getZ() + 0.5);
+				raiderEntity.updatePosition((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 1.0, (double)blockPos.getZ() + 0.5);
 				raiderEntity.initialize(this.world, this.world.getLocalDifficulty(blockPos), SpawnType.field_16467, null, null);
 				raiderEntity.addBonusForWave(i, false);
 				raiderEntity.onGround = true;
@@ -531,7 +531,7 @@ public class Raid {
 		return this.waveToRaiders.values().stream().mapToInt(Set::size).sum();
 	}
 
-	public void removeFromWave(@Nonnull RaiderEntity raiderEntity, boolean bl) {
+	public void removeFromWave(RaiderEntity raiderEntity, boolean bl) {
 		Set<RaiderEntity> set = (Set<RaiderEntity>)this.waveToRaiders.get(raiderEntity.getWave());
 		if (set != null) {
 			boolean bl2 = set.remove(raiderEntity);
@@ -554,16 +554,16 @@ public class Raid {
 	public static ItemStack getOminousBanner() {
 		ItemStack itemStack = new ItemStack(Items.field_8539);
 		CompoundTag compoundTag = itemStack.getOrCreateSubTag("BlockEntityTag");
-		ListTag listTag = new BannerPattern.Builder()
-			.with(BannerPattern.RHOMBUS_MIDDLE, DyeColor.field_7955)
-			.with(BannerPattern.STRIPE_BOTTOM, DyeColor.field_7967)
-			.with(BannerPattern.STRIPE_CENTER, DyeColor.field_7944)
-			.with(BannerPattern.BORDER, DyeColor.field_7967)
-			.with(BannerPattern.STRIPE_MIDDLE, DyeColor.field_7963)
-			.with(BannerPattern.HALF_HORIZONTAL, DyeColor.field_7967)
-			.with(BannerPattern.CIRCLE_MIDDLE, DyeColor.field_7967)
-			.with(BannerPattern.BORDER, DyeColor.field_7963)
-			.build();
+		ListTag listTag = new BannerPattern.Patterns()
+			.add(BannerPattern.field_11821, DyeColor.field_7955)
+			.add(BannerPattern.field_11810, DyeColor.field_7967)
+			.add(BannerPattern.field_11819, DyeColor.field_7944)
+			.add(BannerPattern.field_11840, DyeColor.field_7967)
+			.add(BannerPattern.field_11838, DyeColor.field_7963)
+			.add(BannerPattern.field_11843, DyeColor.field_7967)
+			.add(BannerPattern.field_11826, DyeColor.field_7967)
+			.add(BannerPattern.field_11840, DyeColor.field_7963)
+			.toTag();
 		compoundTag.put("Patterns", listTag);
 		itemStack.setCustomName(new TranslatableText("block.minecraft.ominous_banner").formatted(Formatting.field_1065));
 		return itemStack;
@@ -583,11 +583,11 @@ public class Raid {
 			float f = this.world.random.nextFloat() * (float) (Math.PI * 2);
 			int m = this.center.getX() + MathHelper.floor(MathHelper.cos(f) * 32.0F * (float)k) + this.world.random.nextInt(5);
 			int n = this.center.getZ() + MathHelper.floor(MathHelper.sin(f) * 32.0F * (float)k) + this.world.random.nextInt(5);
-			int o = this.world.getTop(Heightmap.Type.field_13202, m, n);
+			int o = this.world.getTopY(Heightmap.Type.field_13202, m, n);
 			mutable.set(m, o, n);
 			if ((!this.world.isNearOccupiedPointOfInterest(mutable) || i >= 2)
-				&& this.world.isAreaLoaded(mutable.getX() - 10, mutable.getY() - 10, mutable.getZ() - 10, mutable.getX() + 10, mutable.getY() + 10, mutable.getZ() + 10)
-				&& this.world.method_14178().shouldTickChunk(new ChunkPos(mutable))
+				&& this.world.isRegionLoaded(mutable.getX() - 10, mutable.getY() - 10, mutable.getZ() - 10, mutable.getX() + 10, mutable.getY() + 10, mutable.getZ() + 10)
+				&& this.world.getChunkManager().shouldTickChunk(new ChunkPos(mutable))
 				&& (
 					SpawnHelper.canSpawn(SpawnRestriction.Location.field_6317, this.world, mutable, EntityType.field_6134)
 						|| this.world.getBlockState(mutable.down()).getBlock() == Blocks.field_10477 && this.world.getBlockState(mutable).isAir()
@@ -632,7 +632,7 @@ public class Raid {
 
 	public void setWaveCaptain(int i, RaiderEntity raiderEntity) {
 		this.waveToCaptain.put(i, raiderEntity);
-		raiderEntity.setEquippedStack(EquipmentSlot.field_6169, getOminousBanner());
+		raiderEntity.equipStack(EquipmentSlot.field_6169, getOminousBanner());
 		raiderEntity.setEquipmentDropChance(EquipmentSlot.field_6169, 2.0F);
 	}
 

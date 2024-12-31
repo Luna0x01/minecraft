@@ -1,8 +1,9 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.WitchHeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.model.WitchEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.WitchEntity;
 import net.minecraft.util.Identifier;
 
@@ -14,17 +15,17 @@ public class WitchEntityRenderer extends MobEntityRenderer<WitchEntity, WitchEnt
 		this.addFeature(new WitchHeldItemFeatureRenderer<>(this));
 	}
 
-	public void method_4155(WitchEntity witchEntity, double d, double e, double f, float g, float h) {
-		this.model.method_2840(!witchEntity.getMainHandStack().isEmpty());
-		super.method_4072(witchEntity, d, e, f, g, h);
+	public void render(WitchEntity witchEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		this.model.setLiftingNose(!witchEntity.getMainHandStack().isEmpty());
+		super.render(witchEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_4154(WitchEntity witchEntity) {
+	public Identifier getTexture(WitchEntity witchEntity) {
 		return SKIN;
 	}
 
-	protected void method_4157(WitchEntity witchEntity, float f) {
+	protected void scale(WitchEntity witchEntity, MatrixStack matrixStack, float f) {
 		float g = 0.9375F;
-		GlStateManager.scalef(0.9375F, 0.9375F, 0.9375F);
+		matrixStack.scale(0.9375F, 0.9375F, 0.9375F);
 	}
 }

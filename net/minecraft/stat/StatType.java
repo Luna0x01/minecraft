@@ -34,6 +34,6 @@ public class StatType<T> implements Iterable<Stat<T>> {
 	}
 
 	public String getTranslationKey() {
-		return "stat_type." + Registry.STAT_TYPE.getId(this).toString().replace(':', '.');
+		return "stat_type." + Registry.field_11152.getId(this).toString().replace(':', '.');
 	}
 }

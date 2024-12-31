@@ -34,7 +34,7 @@ public class SleepingChatScreen extends ChatScreen {
 			}
 
 			this.chatField.setText("");
-			this.minecraft.inGameHud.getChatHud().method_1820();
+			this.minecraft.inGameHud.getChatHud().resetScroll();
 			return true;
 		}
 

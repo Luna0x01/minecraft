@@ -2,7 +2,7 @@ package net.minecraft.village;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.TagHelper;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.MathHelper;
 
 public class TradeOffer {
@@ -22,21 +22,21 @@ public class TradeOffer {
 		this.secondBuyItem = ItemStack.fromTag(compoundTag.getCompound("buyB"));
 		this.sellItem = ItemStack.fromTag(compoundTag.getCompound("sell"));
 		this.uses = compoundTag.getInt("uses");
-		if (compoundTag.containsKey("maxUses", 99)) {
+		if (compoundTag.contains("maxUses", 99)) {
 			this.maxUses = compoundTag.getInt("maxUses");
 		} else {
 			this.maxUses = 4;
 		}
 
-		if (compoundTag.containsKey("rewardExp", 1)) {
+		if (compoundTag.contains("rewardExp", 1)) {
 			this.rewardingPlayerExperience = compoundTag.getBoolean("rewardExp");
 		}
 
-		if (compoundTag.containsKey("xp", 3)) {
+		if (compoundTag.contains("xp", 3)) {
 			this.traderExperience = compoundTag.getInt("xp");
 		}
 
-		if (compoundTag.containsKey("priceMultiplier", 5)) {
+		if (compoundTag.contains("priceMultiplier", 5)) {
 			this.priceMultiplier = compoundTag.getFloat("priceMultiplier");
 		}
 
@@ -111,7 +111,7 @@ public class TradeOffer {
 		this.uses++;
 	}
 
-	public int method_21725() {
+	public int getDemandBonus() {
 		return this.demandBonus;
 	}
 
@@ -145,6 +145,10 @@ public class TradeOffer {
 
 	public void clearUses() {
 		this.uses = this.maxUses;
+	}
+
+	public boolean method_21834() {
+		return this.uses > 0;
 	}
 
 	public boolean shouldRewardPlayerExperience() {
@@ -183,7 +187,7 @@ public class TradeOffer {
 			}
 
 			return ItemStack.areItemsEqualIgnoreDamage(itemStack3, itemStack2)
-				&& (!itemStack2.hasTag() || itemStack3.hasTag() && TagHelper.areTagsEqual(itemStack2.getTag(), itemStack3.getTag(), false));
+				&& (!itemStack2.hasTag() || itemStack3.hasTag() && NbtHelper.matches(itemStack2.getTag(), itemStack3.getTag(), false));
 		}
 	}
 

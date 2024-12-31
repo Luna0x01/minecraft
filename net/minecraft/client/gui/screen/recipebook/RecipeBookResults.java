@@ -5,14 +5,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ToggleButtonWidget;
-import net.minecraft.client.render.GuiLighting;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.book.RecipeBook;
 
 public class RecipeBookResults {
 	private final List<AnimatedResultButton> resultButtons = Lists.newArrayListWithCapacity(20);
 	private AnimatedResultButton hoveredResultButton;
-	private final RecipeAlternatesWidget alternatesWidget = new RecipeAlternatesWidget();
+	private final RecipeAlternativesWidget alternatesWidget = new RecipeAlternativesWidget();
 	private MinecraftClient client;
 	private final List<RecipeDisplayListener> recipeDisplayListeners = Lists.newArrayList();
 	private List<RecipeResultCollection> resultCollections;
@@ -88,7 +87,6 @@ public class RecipeBookResults {
 			this.client.textRenderer.draw(string, (float)(i - m / 2 + 73), (float)(j + 141), -1);
 		}
 
-		GuiLighting.disable();
 		this.hoveredResultButton = null;
 
 		for (AnimatedResultButton animatedResultButton : this.resultButtons) {
@@ -105,7 +103,7 @@ public class RecipeBookResults {
 
 	public void drawTooltip(int i, int j) {
 		if (this.client.currentScreen != null && this.hoveredResultButton != null && !this.alternatesWidget.isVisible()) {
-			this.client.currentScreen.renderTooltip(this.hoveredResultButton.method_2644(this.client.currentScreen), i, j);
+			this.client.currentScreen.renderTooltip(this.hoveredResultButton.getTooltip(this.client.currentScreen), i, j);
 		}
 	}
 
@@ -151,7 +149,7 @@ public class RecipeBookResults {
 						this.resultCollection = animatedResultButton.getResultCollection();
 					} else if (i == 1 && !this.alternatesWidget.isVisible() && !animatedResultButton.hasResults()) {
 						this.alternatesWidget
-							.showAlternatesForResult(
+							.showAlternativesForResult(
 								this.client,
 								animatedResultButton.getResultCollection(),
 								animatedResultButton.x,

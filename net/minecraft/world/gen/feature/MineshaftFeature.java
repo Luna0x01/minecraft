@@ -10,9 +10,9 @@ import net.minecraft.structure.MineshaftGenerator;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructurePiece;
 import net.minecraft.structure.StructureStart;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
@@ -22,11 +22,10 @@ public class MineshaftFeature extends StructureFeature<MineshaftFeatureConfig> {
 	}
 
 	@Override
-	public boolean shouldStartAt(ChunkGenerator<?> chunkGenerator, Random random, int i, int j) {
+	public boolean shouldStartAt(BiomeAccess biomeAccess, ChunkGenerator<?> chunkGenerator, Random random, int i, int j, Biome biome) {
 		((ChunkRandom)random).setStructureSeed(chunkGenerator.getSeed(), i, j);
-		Biome biome = chunkGenerator.getBiomeSource().getBiome(new BlockPos((i << 4) + 9, 0, (j << 4) + 9));
-		if (chunkGenerator.hasStructure(biome, Feature.MINESHAFT)) {
-			MineshaftFeatureConfig mineshaftFeatureConfig = chunkGenerator.getStructureConfig(biome, Feature.MINESHAFT);
+		if (chunkGenerator.hasStructure(biome, this)) {
+			MineshaftFeatureConfig mineshaftFeatureConfig = chunkGenerator.getStructureConfig(biome, this);
 			double d = mineshaftFeatureConfig.probability;
 			return random.nextDouble() < d;
 		} else {
@@ -50,8 +49,8 @@ public class MineshaftFeature extends StructureFeature<MineshaftFeatureConfig> {
 	}
 
 	public static class Start extends StructureStart {
-		public Start(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l) {
-			super(structureFeature, i, j, biome, mutableIntBoundingBox, k, l);
+		public Start(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
+			super(structureFeature, i, j, blockBox, k, l);
 		}
 
 		@Override
@@ -66,7 +65,7 @@ public class MineshaftFeature extends StructureFeature<MineshaftFeatureConfig> {
 			if (mineshaftFeatureConfig.type == MineshaftFeature.Type.field_13691) {
 				int k = -5;
 				int l = chunkGenerator.getSeaLevel() - this.boundingBox.maxY + this.boundingBox.getBlockCountY() / 2 - -5;
-				this.boundingBox.translate(0, l, 0);
+				this.boundingBox.offset(0, l, 0);
 
 				for (StructurePiece structurePiece : this.children) {
 					structurePiece.translate(0, l, 0);

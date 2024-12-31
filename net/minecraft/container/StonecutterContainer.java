@@ -1,6 +1,5 @@
 package net.minecraft.container;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -12,7 +11,6 @@ import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.StonecuttingRecipe;
 import net.minecraft.sound.SoundCategory;
@@ -21,39 +19,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class StonecutterContainer extends Container {
-	static final ImmutableList<Item> INGREDIENTS = ImmutableList.of(
-		Items.STONE,
-		Items.SANDSTONE,
-		Items.RED_SANDSTONE,
-		Items.QUARTZ_BLOCK,
-		Items.COBBLESTONE,
-		Items.STONE_BRICKS,
-		Items.BRICKS,
-		Items.NETHER_BRICKS,
-		Items.RED_NETHER_BRICKS,
-		Items.PURPUR_BLOCK,
-		Items.PRISMARINE,
-		Items.PRISMARINE_BRICKS,
-		new Item[]{
-			Items.DARK_PRISMARINE,
-			Items.ANDESITE,
-			Items.POLISHED_ANDESITE,
-			Items.GRANITE,
-			Items.POLISHED_GRANITE,
-			Items.DIORITE,
-			Items.POLISHED_DIORITE,
-			Items.MOSSY_STONE_BRICKS,
-			Items.MOSSY_COBBLESTONE,
-			Items.SMOOTH_SANDSTONE,
-			Items.SMOOTH_RED_SANDSTONE,
-			Items.SMOOTH_QUARTZ,
-			Items.END_STONE,
-			Items.END_STONE_BRICKS,
-			Items.SMOOTH_STONE,
-			Items.CUT_SANDSTONE,
-			Items.CUT_RED_SANDSTONE
-		}
-	);
 	private final BlockContext context;
 	private final Property selectedRecipe = Property.create();
 	private final World world;
@@ -192,13 +157,13 @@ public class StonecutterContainer extends Container {
 
 	@Override
 	public boolean canInsertIntoSlot(ItemStack itemStack, Slot slot) {
-		return false;
+		return slot.inventory != this.field_19173 && super.canInsertIntoSlot(itemStack, slot);
 	}
 
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			Item item = itemStack2.getItem();
@@ -214,7 +179,7 @@ public class StonecutterContainer extends Container {
 				if (!this.insertItem(itemStack2, 2, 38, false)) {
 					return ItemStack.EMPTY;
 				}
-			} else if (INGREDIENTS.contains(item)) {
+			} else if (this.world.getRecipeManager().getFirstMatch(RecipeType.field_17641, new BasicInventory(itemStack2), this.world).isPresent()) {
 				if (!this.insertItem(itemStack2, 0, 1, false)) {
 					return ItemStack.EMPTY;
 				}

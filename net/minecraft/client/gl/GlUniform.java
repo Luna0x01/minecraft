@@ -1,6 +1,7 @@
 package net.minecraft.client.gl;
 
-import com.mojang.blaze3d.platform.GLX;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import net.minecraft.client.util.math.Matrix4f;
@@ -34,6 +35,18 @@ public class GlUniform extends Uniform implements AutoCloseable {
 
 		this.loc = -1;
 		this.markStateDirty();
+	}
+
+	public static int getUniformLocation(int i, CharSequence charSequence) {
+		return GlStateManager.getUniformLocation(i, charSequence);
+	}
+
+	public static void uniform1(int i, int j) {
+		RenderSystem.glUniform1i(i, j);
+	}
+
+	public static int getAttribLocation(int i, CharSequence charSequence) {
+		return GlStateManager.getAttribLocation(i, charSequence);
 	}
 
 	public void close() {
@@ -174,7 +187,7 @@ public class GlUniform extends Uniform implements AutoCloseable {
 	@Override
 	public void set(Matrix4f matrix4f) {
 		this.floatData.position(0);
-		matrix4f.putIntoBuffer(this.floatData);
+		matrix4f.writeToBuffer(this.floatData);
 		this.markStateDirty();
 	}
 
@@ -201,16 +214,16 @@ public class GlUniform extends Uniform implements AutoCloseable {
 		this.floatData.clear();
 		switch (this.dataType) {
 			case 0:
-				GLX.glUniform1(this.loc, this.intData);
+				RenderSystem.glUniform1(this.loc, this.intData);
 				break;
 			case 1:
-				GLX.glUniform2(this.loc, this.intData);
+				RenderSystem.glUniform2(this.loc, this.intData);
 				break;
 			case 2:
-				GLX.glUniform3(this.loc, this.intData);
+				RenderSystem.glUniform3(this.loc, this.intData);
 				break;
 			case 3:
-				GLX.glUniform4(this.loc, this.intData);
+				RenderSystem.glUniform4(this.loc, this.intData);
 				break;
 			default:
 				LOGGER.warn("Uniform.upload called, but count value ({}) is  not in the range of 1 to 4. Ignoring.", this.count);
@@ -221,16 +234,16 @@ public class GlUniform extends Uniform implements AutoCloseable {
 		this.floatData.clear();
 		switch (this.dataType) {
 			case 4:
-				GLX.glUniform1(this.loc, this.floatData);
+				RenderSystem.glUniform1(this.loc, this.floatData);
 				break;
 			case 5:
-				GLX.glUniform2(this.loc, this.floatData);
+				RenderSystem.glUniform2(this.loc, this.floatData);
 				break;
 			case 6:
-				GLX.glUniform3(this.loc, this.floatData);
+				RenderSystem.glUniform3(this.loc, this.floatData);
 				break;
 			case 7:
-				GLX.glUniform4(this.loc, this.floatData);
+				RenderSystem.glUniform4(this.loc, this.floatData);
 				break;
 			default:
 				LOGGER.warn("Uniform.upload called, but count value ({}) is not in the range of 1 to 4. Ignoring.", this.count);
@@ -241,13 +254,13 @@ public class GlUniform extends Uniform implements AutoCloseable {
 		this.floatData.clear();
 		switch (this.dataType) {
 			case 8:
-				GLX.glUniformMatrix2(this.loc, false, this.floatData);
+				RenderSystem.glUniformMatrix2(this.loc, false, this.floatData);
 				break;
 			case 9:
-				GLX.glUniformMatrix3(this.loc, false, this.floatData);
+				RenderSystem.glUniformMatrix3(this.loc, false, this.floatData);
 				break;
 			case 10:
-				GLX.glUniformMatrix4(this.loc, false, this.floatData);
+				RenderSystem.glUniformMatrix4(this.loc, false, this.floatData);
 		}
 	}
 }

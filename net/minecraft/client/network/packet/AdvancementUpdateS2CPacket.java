@@ -35,7 +35,7 @@ public class AdvancementUpdateS2CPacket implements Packet<ClientPlayPacketListen
 		this.toSetProgress = Maps.newHashMap(map);
 	}
 
-	public void method_11925(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onAdvancements(this);
 	}
 

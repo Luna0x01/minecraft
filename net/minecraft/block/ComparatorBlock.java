@@ -8,18 +8,20 @@ import net.minecraft.block.entity.ComparatorBlockEntity;
 import net.minecraft.block.enums.ComparatorMode;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TaskPriority;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.TickPriority;
 import net.minecraft.world.World;
 
 public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockEntityProvider {
@@ -28,7 +30,7 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	public ComparatorBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(MODE, ComparatorMode.field_12576)
+			this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(MODE, ComparatorMode.field_12576)
 		);
 	}
 
@@ -52,10 +54,11 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	@Override
 	protected boolean hasPower(World world, BlockPos blockPos, BlockState blockState) {
 		int i = this.getPower(world, blockPos, blockState);
-		if (i >= 15) {
-			return true;
+		if (i == 0) {
+			return false;
 		} else {
-			return i == 0 ? false : i >= this.getMaxInputLevelSides(world, blockPos, blockState);
+			int j = this.getMaxInputLevelSides(world, blockPos, blockState);
+			return i > j ? true : i == j && blockState.get(MODE) == ComparatorMode.field_12576;
 		}
 	}
 
@@ -101,16 +104,16 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (!playerEntity.abilities.allowModifyWorld) {
-			return false;
+			return ActionResult.field_5811;
 		} else {
 			blockState = blockState.cycle(MODE);
 			float f = blockState.get(MODE) == ComparatorMode.field_12578 ? 0.55F : 0.5F;
 			world.playSound(playerEntity, blockPos, SoundEvents.field_14762, SoundCategory.field_15245, 0.3F, f);
 			world.setBlockState(blockPos, blockState, 2);
 			this.update(world, blockPos, blockState);
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -121,8 +124,8 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			int j = blockEntity instanceof ComparatorBlockEntity ? ((ComparatorBlockEntity)blockEntity).getOutputSignal() : 0;
 			if (i != j || (Boolean)blockState.get(POWERED) != this.hasPower(world, blockPos, blockState)) {
-				TaskPriority taskPriority = this.isTargetNotAligned(world, blockPos, blockState) ? TaskPriority.field_9310 : TaskPriority.field_9314;
-				world.getBlockTickScheduler().schedule(blockPos, this, 2, taskPriority);
+				TickPriority tickPriority = this.isTargetNotAligned(world, blockPos, blockState) ? TickPriority.field_9310 : TickPriority.field_9314;
+				world.getBlockTickScheduler().schedule(blockPos, this, 2, tickPriority);
 			}
 		}
 	}
@@ -151,8 +154,8 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		this.update(world, blockPos, blockState);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		this.update(serverWorld, blockPos, blockState);
 	}
 
 	@Override
@@ -168,7 +171,7 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, MODE, POWERED);
 	}
 }

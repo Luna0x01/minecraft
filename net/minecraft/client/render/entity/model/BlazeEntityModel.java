@@ -1,63 +1,67 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
+import java.util.Arrays;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class BlazeEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid[] field_3328 = new Cuboid[12];
-	private final Cuboid field_3329;
+public class BlazeEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+	private final ModelPart[] rods;
+	private final ModelPart head = new ModelPart(this, 0, 0);
+	private final ImmutableList<ModelPart> parts;
 
 	public BlazeEntityModel() {
-		for (int i = 0; i < this.field_3328.length; i++) {
-			this.field_3328[i] = new Cuboid(this, 0, 16);
-			this.field_3328[i].addBox(0.0F, 0.0F, 0.0F, 2, 8, 2);
+		this.head.addCuboid(-4.0F, -4.0F, -4.0F, 8.0F, 8.0F, 8.0F);
+		this.rods = new ModelPart[12];
+
+		for (int i = 0; i < this.rods.length; i++) {
+			this.rods[i] = new ModelPart(this, 0, 16);
+			this.rods[i].addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 8.0F, 2.0F);
 		}
 
-		this.field_3329 = new Cuboid(this, 0, 0);
-		this.field_3329.addBox(-4.0F, -4.0F, -4.0F, 8, 8, 8);
+		Builder<ModelPart> builder = ImmutableList.builder();
+		builder.add(this.head);
+		builder.addAll(Arrays.asList(this.rods));
+		this.parts = builder.build();
 	}
 
 	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.setAngles(entity, f, g, h, i, j, k);
-		this.field_3329.render(k);
-
-		for (Cuboid cuboid : this.field_3328) {
-			cuboid.render(k);
-		}
+	public Iterable<ModelPart> getParts() {
+		return this.parts;
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
-		float l = h * (float) Math.PI * -0.1F;
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
+		float k = h * (float) Math.PI * -0.1F;
 
-		for (int m = 0; m < 4; m++) {
-			this.field_3328[m].rotationPointY = -2.0F + MathHelper.cos(((float)(m * 2) + h) * 0.25F);
-			this.field_3328[m].rotationPointX = MathHelper.cos(l) * 9.0F;
-			this.field_3328[m].rotationPointZ = MathHelper.sin(l) * 9.0F;
-			l++;
+		for (int l = 0; l < 4; l++) {
+			this.rods[l].pivotY = -2.0F + MathHelper.cos(((float)(l * 2) + h) * 0.25F);
+			this.rods[l].pivotX = MathHelper.cos(k) * 9.0F;
+			this.rods[l].pivotZ = MathHelper.sin(k) * 9.0F;
+			k++;
 		}
 
-		l = (float) (Math.PI / 4) + h * (float) Math.PI * 0.03F;
+		k = (float) (Math.PI / 4) + h * (float) Math.PI * 0.03F;
 
-		for (int n = 4; n < 8; n++) {
-			this.field_3328[n].rotationPointY = 2.0F + MathHelper.cos(((float)(n * 2) + h) * 0.25F);
-			this.field_3328[n].rotationPointX = MathHelper.cos(l) * 7.0F;
-			this.field_3328[n].rotationPointZ = MathHelper.sin(l) * 7.0F;
-			l++;
+		for (int m = 4; m < 8; m++) {
+			this.rods[m].pivotY = 2.0F + MathHelper.cos(((float)(m * 2) + h) * 0.25F);
+			this.rods[m].pivotX = MathHelper.cos(k) * 7.0F;
+			this.rods[m].pivotZ = MathHelper.sin(k) * 7.0F;
+			k++;
 		}
 
-		l = 0.47123894F + h * (float) Math.PI * -0.05F;
+		k = 0.47123894F + h * (float) Math.PI * -0.05F;
 
-		for (int o = 8; o < 12; o++) {
-			this.field_3328[o].rotationPointY = 11.0F + MathHelper.cos(((float)o * 1.5F + h) * 0.5F);
-			this.field_3328[o].rotationPointX = MathHelper.cos(l) * 5.0F;
-			this.field_3328[o].rotationPointZ = MathHelper.sin(l) * 5.0F;
-			l++;
+		for (int n = 8; n < 12; n++) {
+			this.rods[n].pivotY = 11.0F + MathHelper.cos(((float)n * 1.5F + h) * 0.5F);
+			this.rods[n].pivotX = MathHelper.cos(k) * 5.0F;
+			this.rods[n].pivotZ = MathHelper.sin(k) * 5.0F;
+			k++;
 		}
 
-		this.field_3329.yaw = i * (float) (Math.PI / 180.0);
-		this.field_3329.pitch = j * (float) (Math.PI / 180.0);
+		this.head.yaw = i * (float) (Math.PI / 180.0);
+		this.head.pitch = j * (float) (Math.PI / 180.0);
 	}
 }

@@ -2,7 +2,7 @@ package net.minecraft.server;
 
 import javax.annotation.Nullable;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -23,7 +23,7 @@ public class WorldGenerationProgressLogger implements WorldGenerationProgressLis
 
 	@Override
 	public void start(ChunkPos chunkPos) {
-		this.nextMessageTime = SystemUtil.getMeasuringTimeMs();
+		this.nextMessageTime = Util.getMeasuringTimeMs();
 		this.startTime = this.nextMessageTime;
 	}
 
@@ -34,7 +34,7 @@ public class WorldGenerationProgressLogger implements WorldGenerationProgressLis
 		}
 
 		int i = this.getProgressPercentage();
-		if (SystemUtil.getMeasuringTimeMs() > this.nextMessageTime) {
+		if (Util.getMeasuringTimeMs() > this.nextMessageTime) {
 			this.nextMessageTime += 500L;
 			LOGGER.info(new TranslatableText("menu.preparingSpawn", MathHelper.clamp(i, 0, 100)).getString());
 		}
@@ -42,7 +42,7 @@ public class WorldGenerationProgressLogger implements WorldGenerationProgressLis
 
 	@Override
 	public void stop() {
-		LOGGER.info("Time elapsed: {} ms", SystemUtil.getMeasuringTimeMs() - this.startTime);
+		LOGGER.info("Time elapsed: {} ms", Util.getMeasuringTimeMs() - this.startTime);
 		this.nextMessageTime = Long.MAX_VALUE;
 	}
 

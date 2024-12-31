@@ -54,6 +54,17 @@ public class SoundEvents {
 	public static final SoundEvent field_15045 = register("block.beacon.ambient");
 	public static final SoundEvent field_19344 = register("block.beacon.deactivate");
 	public static final SoundEvent field_14891 = register("block.beacon.power_select");
+	public static final SoundEvent field_20602 = register("entity.bee.death");
+	public static final SoundEvent field_20603 = register("entity.bee.hurt");
+	public static final SoundEvent field_20604 = register("entity.bee.loop_aggressive");
+	public static final SoundEvent field_20605 = register("entity.bee.loop");
+	public static final SoundEvent field_20606 = register("entity.bee.sting");
+	public static final SoundEvent field_20607 = register("entity.bee.pollinate");
+	public static final SoundEvent field_20608 = register("block.beehive.drip");
+	public static final SoundEvent field_20609 = register("block.beehive.enter");
+	public static final SoundEvent field_20610 = register("block.beehive.exit");
+	public static final SoundEvent field_20611 = register("block.beehive.shear");
+	public static final SoundEvent field_20612 = register("block.beehive.work");
 	public static final SoundEvent field_17265 = register("block.bell.use");
 	public static final SoundEvent field_19167 = register("block.bell.resonate");
 	public static final SoundEvent field_14991 = register("entity.blaze.ambient");
@@ -245,8 +256,8 @@ public class SoundEvents {
 	public static final SoundEvent field_14928 = register("entity.generic.big_fall");
 	public static final SoundEvent field_14821 = register("entity.generic.burn");
 	public static final SoundEvent field_14732 = register("entity.generic.death");
-	public static final SoundEvent field_14643 = register("entity.generic.drink");
-	public static final SoundEvent field_14544 = register("entity.generic.eat");
+	public static final SoundEvent field_20613 = register("entity.generic.drink");
+	public static final SoundEvent field_20614 = register("entity.generic.eat");
 	public static final SoundEvent field_15152 = register("entity.generic.explode");
 	public static final SoundEvent field_15222 = register("entity.generic.extinguish_fire");
 	public static final SoundEvent field_14940 = register("entity.generic.hurt");
@@ -294,6 +305,13 @@ public class SoundEvents {
 	public static final SoundEvent field_14679 = register("entity.guardian.hurt");
 	public static final SoundEvent field_14758 = register("entity.guardian.hurt_land");
 	public static final SoundEvent field_14846 = register("item.hoe.till");
+	public static final SoundEvent field_21070 = register("block.honey_block.break");
+	public static final SoundEvent field_21071 = register("block.honey_block.fall");
+	public static final SoundEvent field_21072 = register("block.honey_block.hit");
+	public static final SoundEvent field_21073 = register("block.honey_block.place");
+	public static final SoundEvent field_21074 = register("block.honey_block.slide");
+	public static final SoundEvent field_21075 = register("block.honey_block.step");
+	public static final SoundEvent field_20615 = register("item.honey_bottle.drink");
 	public static final SoundEvent field_14947 = register("entity.horse.ambient");
 	public static final SoundEvent field_15043 = register("entity.horse.angry");
 	public static final SoundEvent field_15141 = register("entity.horse.armor");
@@ -336,8 +354,10 @@ public class SoundEvents {
 	public static final SoundEvent field_14819 = register("block.iron_door.close");
 	public static final SoundEvent field_14567 = register("block.iron_door.open");
 	public static final SoundEvent field_14649 = register("entity.iron_golem.attack");
+	public static final SoundEvent field_21076 = register("entity.iron_golem.damage");
 	public static final SoundEvent field_15055 = register("entity.iron_golem.death");
 	public static final SoundEvent field_14959 = register("entity.iron_golem.hurt");
+	public static final SoundEvent field_21077 = register("entity.iron_golem.repair");
 	public static final SoundEvent field_15233 = register("entity.iron_golem.step");
 	public static final SoundEvent field_15131 = register("block.iron_trapdoor.close");
 	public static final SoundEvent field_15082 = register("block.iron_trapdoor.open");
@@ -450,7 +470,6 @@ public class SoundEvents {
 	public static final SoundEvent field_14647 = register("entity.parrot.imitate.drowned");
 	public static final SoundEvent field_14777 = register("entity.parrot.imitate.elder_guardian");
 	public static final SoundEvent field_14854 = register("entity.parrot.imitate.ender_dragon");
-	public static final SoundEvent field_14950 = register("entity.parrot.imitate.enderman");
 	public static final SoundEvent field_15022 = register("entity.parrot.imitate.endermite");
 	public static final SoundEvent field_15113 = register("entity.parrot.imitate.evoker");
 	public static final SoundEvent field_14577 = register("entity.parrot.imitate.ghast");
@@ -458,10 +477,8 @@ public class SoundEvents {
 	public static final SoundEvent field_15185 = register("entity.parrot.imitate.husk");
 	public static final SoundEvent field_15064 = register("entity.parrot.imitate.illusioner");
 	public static final SoundEvent field_14963 = register("entity.parrot.imitate.magma_cube");
-	public static final SoundEvent field_18814 = register("entity.parrot.imitate.panda");
 	public static final SoundEvent field_14957 = register("entity.parrot.imitate.phantom");
 	public static final SoundEvent field_18815 = register("entity.parrot.imitate.pillager");
-	public static final SoundEvent field_14866 = register("entity.parrot.imitate.polar_bear");
 	public static final SoundEvent field_18816 = register("entity.parrot.imitate.ravager");
 	public static final SoundEvent field_14768 = register("entity.parrot.imitate.shulker");
 	public static final SoundEvent field_14683 = register("entity.parrot.imitate.silverfish");
@@ -474,9 +491,7 @@ public class SoundEvents {
 	public static final SoundEvent field_14796 = register("entity.parrot.imitate.witch");
 	public static final SoundEvent field_14555 = register("entity.parrot.imitate.wither");
 	public static final SoundEvent field_15073 = register("entity.parrot.imitate.wither_skeleton");
-	public static final SoundEvent field_14942 = register("entity.parrot.imitate.wolf");
 	public static final SoundEvent field_15220 = register("entity.parrot.imitate.zombie");
-	public static final SoundEvent field_15143 = register("entity.parrot.imitate.zombie_pigman");
 	public static final SoundEvent field_14676 = register("entity.parrot.imitate.zombie_villager");
 	public static final SoundEvent field_14602 = register("entity.parrot.step");
 	public static final SoundEvent field_14813 = register("entity.phantom.ambient");
@@ -707,19 +722,19 @@ public class SoundEvents {
 	public static final SoundEvent field_15008 = register("entity.villager.no");
 	public static final SoundEvent field_14933 = register("entity.villager.trade");
 	public static final SoundEvent field_14815 = register("entity.villager.yes");
-	public static final SoundEvent field_18826 = register("entity.villager.work_armorer");
-	public static final SoundEvent field_18827 = register("entity.villager.work_butcher");
-	public static final SoundEvent field_18828 = register("entity.villager.work_cartographer");
-	public static final SoundEvent field_18829 = register("entity.villager.work_cleric");
-	public static final SoundEvent field_18817 = register("entity.villager.work_farmer");
-	public static final SoundEvent field_18818 = register("entity.villager.work_fisherman");
-	public static final SoundEvent field_18819 = register("entity.villager.work_fletcher");
-	public static final SoundEvent field_18820 = register("entity.villager.work_leatherworker");
-	public static final SoundEvent field_18821 = register("entity.villager.work_librarian");
-	public static final SoundEvent field_18822 = register("entity.villager.work_mason");
-	public static final SoundEvent field_18823 = register("entity.villager.work_shepherd");
-	public static final SoundEvent field_18824 = register("entity.villager.work_toolsmith");
-	public static final SoundEvent field_18825 = register("entity.villager.work_weaponsmith");
+	public static final SoundEvent field_20669 = register("entity.villager.work_armorer");
+	public static final SoundEvent field_20670 = register("entity.villager.work_butcher");
+	public static final SoundEvent field_20671 = register("entity.villager.work_cartographer");
+	public static final SoundEvent field_20672 = register("entity.villager.work_cleric");
+	public static final SoundEvent field_20673 = register("entity.villager.work_farmer");
+	public static final SoundEvent field_20674 = register("entity.villager.work_fisherman");
+	public static final SoundEvent field_20675 = register("entity.villager.work_fletcher");
+	public static final SoundEvent field_20676 = register("entity.villager.work_leatherworker");
+	public static final SoundEvent field_20677 = register("entity.villager.work_librarian");
+	public static final SoundEvent field_20678 = register("entity.villager.work_mason");
+	public static final SoundEvent field_20679 = register("entity.villager.work_shepherd");
+	public static final SoundEvent field_20680 = register("entity.villager.work_toolsmith");
+	public static final SoundEvent field_20681 = register("entity.villager.work_weaponsmith");
 	public static final SoundEvent field_14735 = register("entity.vindicator.ambient");
 	public static final SoundEvent field_19151 = register("entity.vindicator.celebrate");
 	public static final SoundEvent field_14642 = register("entity.vindicator.death");
@@ -801,6 +816,6 @@ public class SoundEvents {
 	public static final SoundEvent field_14841 = register("entity.zombie_villager.step");
 
 	private static SoundEvent register(String string) {
-		return Registry.register(Registry.SOUND_EVENT, string, new SoundEvent(new Identifier(string)));
+		return Registry.register(Registry.field_11156, string, new SoundEvent(new Identifier(string)));
 	}
 }

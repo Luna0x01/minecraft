@@ -63,6 +63,6 @@ public class Potions {
 	public static final Potion field_8964 = register("long_slow_falling", new Potion("slow_falling", new StatusEffectInstance(StatusEffects.field_5906, 4800)));
 
 	private static Potion register(String string, Potion potion) {
-		return Registry.register(Registry.POTION, string, potion);
+		return Registry.register(Registry.field_11143, string, potion);
 	}
 }

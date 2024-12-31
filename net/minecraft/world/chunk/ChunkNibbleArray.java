@@ -1,6 +1,7 @@
 package net.minecraft.world.chunk;
 
 import javax.annotation.Nullable;
+import net.minecraft.util.Util;
 
 public class ChunkNibbleArray {
 	@Nullable
@@ -12,7 +13,7 @@ public class ChunkNibbleArray {
 	public ChunkNibbleArray(byte[] bs) {
 		this.byteArray = bs;
 		if (bs.length != 2048) {
-			throw new IllegalArgumentException("ChunkNibbleArrays should be 2048 bytes not: " + bs.length);
+			throw (IllegalArgumentException)Util.throwOrPause(new IllegalArgumentException("ChunkNibbleArrays should be 2048 bytes not: " + bs.length));
 		}
 	}
 

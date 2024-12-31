@@ -1,0 +1,26 @@
+package net.minecraft.client.gui.screen.options;
+
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.options.GameOptions;
+import net.minecraft.text.Text;
+
+public class GameOptionsScreen extends Screen {
+	protected final Screen parent;
+	protected final GameOptions gameOptions;
+
+	public GameOptionsScreen(Screen screen, GameOptions gameOptions, Text text) {
+		super(text);
+		this.parent = screen;
+		this.gameOptions = gameOptions;
+	}
+
+	@Override
+	public void removed() {
+		this.minecraft.options.write();
+	}
+
+	@Override
+	public void onClose() {
+		this.minecraft.openScreen(this.parent);
+	}
+}

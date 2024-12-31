@@ -9,7 +9,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeManager;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
@@ -32,7 +31,7 @@ public class KnowledgeBookItem extends Item {
 			playerEntity.setStackInHand(hand, ItemStack.EMPTY);
 		}
 
-		if (compoundTag != null && compoundTag.containsKey("Recipes", 9)) {
+		if (compoundTag != null && compoundTag.contains("Recipes", 9)) {
 			if (!world.isClient) {
 				ListTag listTag = compoundTag.getList("Recipes", 8);
 				List<Recipe<?>> list = Lists.newArrayList();
@@ -43,7 +42,7 @@ public class KnowledgeBookItem extends Item {
 					Optional<? extends Recipe<?>> optional = recipeManager.get(new Identifier(string));
 					if (!optional.isPresent()) {
 						LOGGER.error("Invalid recipe: {}", string);
-						return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+						return TypedActionResult.fail(itemStack);
 					}
 
 					list.add(optional.get());
@@ -53,10 +52,10 @@ public class KnowledgeBookItem extends Item {
 				playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
 			}
 
-			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+			return TypedActionResult.success(itemStack);
 		} else {
 			LOGGER.error("Tag not valid: {}", compoundTag);
-			return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+			return TypedActionResult.fail(itemStack);
 		}
 	}
 }

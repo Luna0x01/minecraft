@@ -32,8 +32,8 @@ public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.blockLightUpdates = Lists.newArrayList();
 
 		for (int i = 0; i < 18; i++) {
-			ChunkNibbleArray chunkNibbleArray = lightingProvider.get(LightType.field_9284).getChunkLightArray(ChunkSectionPos.from(chunkPos, -1 + i));
-			ChunkNibbleArray chunkNibbleArray2 = lightingProvider.get(LightType.field_9282).getChunkLightArray(ChunkSectionPos.from(chunkPos, -1 + i));
+			ChunkNibbleArray chunkNibbleArray = lightingProvider.get(LightType.field_9284).getLightArray(ChunkSectionPos.from(chunkPos, -1 + i));
+			ChunkNibbleArray chunkNibbleArray2 = lightingProvider.get(LightType.field_9282).getLightArray(ChunkSectionPos.from(chunkPos, -1 + i));
 			if (chunkNibbleArray != null) {
 				if (chunkNibbleArray.isUninitialized()) {
 					this.filledSkyLightMask |= 1 << i;
@@ -64,7 +64,7 @@ public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 
 		for (int k = 0; k < 18; k++) {
 			if ((this.skyLightMask & 1 << k) != 0) {
-				ChunkNibbleArray chunkNibbleArray = lightingProvider.get(LightType.field_9284).getChunkLightArray(ChunkSectionPos.from(chunkPos, -1 + k));
+				ChunkNibbleArray chunkNibbleArray = lightingProvider.get(LightType.field_9284).getLightArray(ChunkSectionPos.from(chunkPos, -1 + k));
 				if (chunkNibbleArray != null && !chunkNibbleArray.isUninitialized()) {
 					this.skyLightUpdates.add(chunkNibbleArray.asByteArray().clone());
 				} else {
@@ -76,7 +76,7 @@ public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 			}
 
 			if ((this.blockLightMask & 1 << k) != 0) {
-				ChunkNibbleArray chunkNibbleArray2 = lightingProvider.get(LightType.field_9282).getChunkLightArray(ChunkSectionPos.from(chunkPos, -1 + k));
+				ChunkNibbleArray chunkNibbleArray2 = lightingProvider.get(LightType.field_9282).getLightArray(ChunkSectionPos.from(chunkPos, -1 + k));
 				if (chunkNibbleArray2 != null && !chunkNibbleArray2.isUninitialized()) {
 					this.blockLightUpdates.add(chunkNibbleArray2.asByteArray().clone());
 				} else {
@@ -132,7 +132,7 @@ public class LightUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 	}
 
-	public void method_11560(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onLightUpdate(this);
 	}
 

@@ -1,8 +1,9 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.WolfCollarFeatureRenderer;
 import net.minecraft.client.render.entity.model.WolfEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.util.Identifier;
 
@@ -16,20 +17,23 @@ public class WolfEntityRenderer extends MobEntityRenderer<WolfEntity, WolfEntity
 		this.addFeature(new WolfCollarFeatureRenderer(this));
 	}
 
-	protected float method_4167(WolfEntity wolfEntity, float f) {
+	protected float getCustomAngle(WolfEntity wolfEntity, float f) {
 		return wolfEntity.method_6714();
 	}
 
-	public void method_4166(WolfEntity wolfEntity, double d, double e, double f, float g, float h) {
-		if (wolfEntity.isWet()) {
-			float i = wolfEntity.getBrightnessAtEyes() * wolfEntity.getWetBrightnessMultiplier(h);
-			GlStateManager.color3f(i, i, i);
+	public void render(WolfEntity wolfEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
+		if (wolfEntity.isFurWet()) {
+			float h = wolfEntity.getBrightnessAtEyes() * wolfEntity.getFurWetBrightnessMultiplier(g);
+			this.model.setColorMultiplier(h, h, h);
 		}
 
-		super.method_4072(wolfEntity, d, e, f, g, h);
+		super.render(wolfEntity, f, g, matrixStack, vertexConsumerProvider, i);
+		if (wolfEntity.isFurWet()) {
+			this.model.setColorMultiplier(1.0F, 1.0F, 1.0F);
+		}
 	}
 
-	protected Identifier method_4165(WolfEntity wolfEntity) {
+	public Identifier getTexture(WolfEntity wolfEntity) {
 		if (wolfEntity.isTamed()) {
 			return TAMED_SKIN;
 		} else {

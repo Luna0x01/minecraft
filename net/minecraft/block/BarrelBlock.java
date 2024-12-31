@@ -10,11 +10,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -31,13 +33,13 @@ public class BarrelBlock extends BlockWithEntity {
 
 	public BarrelBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(OPEN, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(OPEN, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BarrelBlockEntity) {
@@ -45,7 +47,7 @@ public class BarrelBlock extends BlockWithEntity {
 				playerEntity.incrementStat(Stats.field_17271);
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -63,8 +65,8 @@ public class BarrelBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		BlockEntity blockEntity = serverWorld.getBlockEntity(blockPos);
 		if (blockEntity instanceof BarrelBlockEntity) {
 			((BarrelBlockEntity)blockEntity).tick();
 		}
@@ -112,7 +114,7 @@ public class BarrelBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, OPEN);
 	}
 

@@ -54,11 +54,11 @@ public class CookingRecipeJsonFactory {
 	}
 
 	public void offerTo(Consumer<RecipeJsonProvider> consumer) {
-		this.offerTo(consumer, Registry.ITEM.getId(this.output));
+		this.offerTo(consumer, Registry.field_11142.getId(this.output));
 	}
 
 	public void offerTo(Consumer<RecipeJsonProvider> consumer, String string) {
-		Identifier identifier = Registry.ITEM.getId(this.output);
+		Identifier identifier = Registry.field_11142.getId(this.output);
 		Identifier identifier2 = new Identifier(string);
 		if (identifier2.equals(identifier)) {
 			throw new IllegalStateException("Recipe " + identifier2 + " should remove its 'save' argument");
@@ -135,7 +135,7 @@ public class CookingRecipeJsonFactory {
 			}
 
 			jsonObject.add("ingredient", this.ingredient.toJson());
-			jsonObject.addProperty("result", Registry.ITEM.getId(this.result).toString());
+			jsonObject.addProperty("result", Registry.field_11142.getId(this.result).toString());
 			jsonObject.addProperty("experience", this.experience);
 			jsonObject.addProperty("cookingtime", this.cookingTime);
 		}

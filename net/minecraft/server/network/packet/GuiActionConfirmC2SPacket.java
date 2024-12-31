@@ -19,7 +19,7 @@ public class GuiActionConfirmC2SPacket implements Packet<ServerPlayPacketListene
 		this.accepted = bl;
 	}
 
-	public void method_12177(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onConfirmTransaction(this);
 	}
 

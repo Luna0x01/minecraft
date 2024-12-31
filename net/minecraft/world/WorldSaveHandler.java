@@ -8,14 +8,14 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import javax.annotation.Nullable;
-import net.minecraft.datafixers.DataFixTypes;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.structure.StructureManager;
-import net.minecraft.util.SystemUtil;
-import net.minecraft.util.TagHelper;
+import net.minecraft.util.Util;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorage;
 import org.apache.logging.log4j.LogManager;
@@ -25,7 +25,7 @@ public class WorldSaveHandler implements PlayerSaveHandler {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final File worldDir;
 	private final File playerDataDir;
-	private final long saveStartTime = SystemUtil.getMeasuringTimeMs();
+	private final long saveStartTime = Util.getMeasuringTimeMs();
 	private final String worldName;
 	private final StructureManager structureManager;
 	protected final DataFixer dataFixer;
@@ -162,8 +162,8 @@ public class WorldSaveHandler implements PlayerSaveHandler {
 		}
 
 		if (compoundTag != null) {
-			int i = compoundTag.containsKey("DataVersion", 3) ? compoundTag.getInt("DataVersion") : -1;
-			playerEntity.fromTag(TagHelper.update(this.dataFixer, DataFixTypes.field_19213, compoundTag, i));
+			int i = compoundTag.contains("DataVersion", 3) ? compoundTag.getInt("DataVersion") : -1;
+			playerEntity.fromTag(NbtHelper.update(this.dataFixer, DataFixTypes.field_19213, compoundTag, i));
 		}
 
 		return compoundTag;

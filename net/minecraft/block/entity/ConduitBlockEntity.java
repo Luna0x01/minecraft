@@ -16,11 +16,11 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -51,8 +51,8 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 	@Override
 	public void fromTag(CompoundTag compoundTag) {
 		super.fromTag(compoundTag);
-		if (compoundTag.containsKey("target_uuid")) {
-			this.targetUuid = TagHelper.deserializeUuid(compoundTag.getCompound("target_uuid"));
+		if (compoundTag.contains("target_uuid")) {
+			this.targetUuid = NbtHelper.toUuid(compoundTag.getCompound("target_uuid"));
 		} else {
 			this.targetUuid = null;
 		}
@@ -62,7 +62,7 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 	public CompoundTag toTag(CompoundTag compoundTag) {
 		super.toTag(compoundTag);
 		if (this.targetEntity != null) {
-			compoundTag.put("target_uuid", TagHelper.serializeUuid(this.targetEntity.getUuid()));
+			compoundTag.put("target_uuid", NbtHelper.fromUuid(this.targetEntity.getUuid()));
 		}
 
 		return compoundTag;
@@ -116,7 +116,7 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 			for (int j = -1; j <= 1; j++) {
 				for (int k = -1; k <= 1; k++) {
 					BlockPos blockPos = this.pos.add(i, j, k);
-					if (!this.world.isWaterAt(blockPos)) {
+					if (!this.world.isWater(blockPos)) {
 						return false;
 					}
 				}
@@ -156,11 +156,11 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 		Box box = new Box((double)k, (double)l, (double)m, (double)(k + 1), (double)(l + 1), (double)(m + 1))
 			.expand((double)j)
 			.stretch(0.0, (double)this.world.getHeight(), 0.0);
-		List<PlayerEntity> list = this.world.getEntities(PlayerEntity.class, box);
+		List<PlayerEntity> list = this.world.getNonSpectatingEntities(PlayerEntity.class, box);
 		if (!list.isEmpty()) {
 			for (PlayerEntity playerEntity : list) {
-				if (this.pos.isWithinDistance(new BlockPos(playerEntity), (double)j) && playerEntity.isInsideWaterOrRain()) {
-					playerEntity.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5927, 260, 0, true, true));
+				if (this.pos.isWithinDistance(new BlockPos(playerEntity), (double)j) && playerEntity.isTouchingWaterOrRain()) {
+					playerEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5927, 260, 0, true, true));
 				}
 			}
 		}
@@ -176,7 +176,7 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 			this.targetUuid = null;
 		} else if (this.targetEntity == null) {
 			List<LivingEntity> list = this.world
-				.getEntities(LivingEntity.class, this.getAttackZone(), livingEntityx -> livingEntityx instanceof Monster && livingEntityx.isInsideWaterOrRain());
+				.getEntities(LivingEntity.class, this.getAttackZone(), livingEntityx -> livingEntityx instanceof Monster && livingEntityx.isTouchingWaterOrRain());
 			if (!list.isEmpty()) {
 				this.targetEntity = (LivingEntity)list.get(this.world.random.nextInt(list.size()));
 			}
@@ -185,7 +185,10 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 		}
 
 		if (this.targetEntity != null) {
-			this.world.playSound(null, this.targetEntity.x, this.targetEntity.y, this.targetEntity.z, SoundEvents.field_15177, SoundCategory.field_15245, 1.0F, 1.0F);
+			this.world
+				.playSound(
+					null, this.targetEntity.getX(), this.targetEntity.getY(), this.targetEntity.getZ(), SoundEvents.field_15177, SoundCategory.field_15245, 1.0F, 1.0F
+				);
 			this.targetEntity.damage(DamageSource.MAGIC, 4.0F);
 		}
 
@@ -221,27 +224,27 @@ public class ConduitBlockEntity extends BlockEntity implements Tickable {
 
 	private void spawnNautilusParticles() {
 		Random random = this.world.random;
-		float f = MathHelper.sin((float)(this.ticks + 35) * 0.1F) / 2.0F + 0.5F;
-		f = (f * f + f) * 0.3F;
-		Vec3d vec3d = new Vec3d((double)((float)this.pos.getX() + 0.5F), (double)((float)this.pos.getY() + 1.5F + f), (double)((float)this.pos.getZ() + 0.5F));
+		double d = (double)(MathHelper.sin((float)(this.ticks + 35) * 0.1F) / 2.0F + 0.5F);
+		d = (d * d + d) * 0.3F;
+		Vec3d vec3d = new Vec3d((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 1.5 + d, (double)this.pos.getZ() + 0.5);
 
 		for (BlockPos blockPos : this.activatingBlocks) {
 			if (random.nextInt(50) == 0) {
-				float g = -0.5F + random.nextFloat();
-				float h = -2.0F + random.nextFloat();
-				float i = -0.5F + random.nextFloat();
+				float f = -0.5F + random.nextFloat();
+				float g = -2.0F + random.nextFloat();
+				float h = -0.5F + random.nextFloat();
 				BlockPos blockPos2 = blockPos.subtract(this.pos);
-				Vec3d vec3d2 = new Vec3d((double)g, (double)h, (double)i).add((double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
+				Vec3d vec3d2 = new Vec3d((double)f, (double)g, (double)h).add((double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
 				this.world.addParticle(ParticleTypes.field_11229, vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z);
 			}
 		}
 
 		if (this.targetEntity != null) {
-			Vec3d vec3d3 = new Vec3d(this.targetEntity.x, this.targetEntity.y + (double)this.targetEntity.getStandingEyeHeight(), this.targetEntity.z);
-			float j = (-0.5F + random.nextFloat()) * (3.0F + this.targetEntity.getWidth());
-			float k = -1.0F + random.nextFloat() * this.targetEntity.getHeight();
-			float l = (-0.5F + random.nextFloat()) * (3.0F + this.targetEntity.getWidth());
-			Vec3d vec3d4 = new Vec3d((double)j, (double)k, (double)l);
+			Vec3d vec3d3 = new Vec3d(this.targetEntity.getX(), this.targetEntity.getEyeY(), this.targetEntity.getZ());
+			float i = (-0.5F + random.nextFloat()) * (3.0F + this.targetEntity.getWidth());
+			float j = -1.0F + random.nextFloat() * this.targetEntity.getHeight();
+			float k = (-0.5F + random.nextFloat()) * (3.0F + this.targetEntity.getWidth());
+			Vec3d vec3d4 = new Vec3d((double)i, (double)j, (double)k);
 			this.world.addParticle(ParticleTypes.field_11229, vec3d3.x, vec3d3.y, vec3d3.z, vec3d4.x, vec3d4.y, vec3d4.z);
 		}
 	}

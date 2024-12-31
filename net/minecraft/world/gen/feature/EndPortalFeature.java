@@ -18,7 +18,7 @@ public class EndPortalFeature extends Feature<DefaultFeatureConfig> {
 		this.open = bl;
 	}
 
-	public boolean method_13163(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DefaultFeatureConfig defaultFeatureConfig
 	) {
 		for (BlockPos blockPos2 : BlockPos.iterate(

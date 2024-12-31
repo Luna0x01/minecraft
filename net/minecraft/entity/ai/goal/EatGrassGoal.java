@@ -25,7 +25,7 @@ public class EatGrassGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		if (this.mob.getRand().nextInt(this.mob.isBaby() ? 50 : 1000) != 0) {
+		if (this.mob.getRandom().nextInt(this.mob.isBaby() ? 50 : 1000) != 0) {
 			return false;
 		} else {
 			BlockPos blockPos = new BlockPos(this.mob);

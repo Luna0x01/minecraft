@@ -61,7 +61,7 @@ public class SpellParticle extends SpriteBillboardParticle {
 			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle method_3099(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			return new SpellParticle(world, d, e, f, g, h, i, this.spriteProvider);
 		}
 	}
@@ -73,7 +73,7 @@ public class SpellParticle extends SpriteBillboardParticle {
 			this.field_17871 = spriteProvider;
 		}
 
-		public Particle method_3096(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			Particle particle = new SpellParticle(world, d, e, f, g, h, i, this.field_17871);
 			particle.setColorAlpha(0.15F);
 			particle.setColor((float)g, (float)h, (float)i);
@@ -88,7 +88,7 @@ public class SpellParticle extends SpriteBillboardParticle {
 			this.field_17873 = spriteProvider;
 		}
 
-		public Particle method_3098(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			Particle particle = new SpellParticle(world, d, e, f, g, h, i, this.field_17873);
 			particle.setColor((float)g, (float)h, (float)i);
 			return particle;
@@ -102,7 +102,7 @@ public class SpellParticle extends SpriteBillboardParticle {
 			this.field_17872 = spriteProvider;
 		}
 
-		public Particle method_3097(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			return new SpellParticle(world, d, e, f, g, h, i, this.field_17872);
 		}
 	}
@@ -114,7 +114,7 @@ public class SpellParticle extends SpriteBillboardParticle {
 			this.field_17875 = spriteProvider;
 		}
 
-		public Particle method_3100(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			SpellParticle spellParticle = new SpellParticle(world, d, e, f, g, h, i, this.field_17875);
 			float j = world.random.nextFloat() * 0.5F + 0.35F;
 			spellParticle.setColor(1.0F * j, 0.0F * j, 1.0F * j);

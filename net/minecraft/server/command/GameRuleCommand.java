@@ -10,8 +10,8 @@ public class GameRuleCommand {
 	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
 		final LiteralArgumentBuilder<ServerCommandSource> literalArgumentBuilder = (LiteralArgumentBuilder<ServerCommandSource>)CommandManager.literal("gamerule")
 			.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2));
-		GameRules.forEach(
-			new GameRules.RuleConsumer() {
+		GameRules.forEachType(
+			new GameRules.RuleTypeConsumer() {
 				@Override
 				public <T extends GameRules.Rule<T>> void accept(GameRules.RuleKey<T> ruleKey, GameRules.RuleType<T> ruleType) {
 					literalArgumentBuilder.then(
@@ -30,12 +30,12 @@ public class GameRuleCommand {
 		T rule = serverCommandSource.getMinecraftServer().getGameRules().get(ruleKey);
 		rule.set(commandContext, "value");
 		serverCommandSource.sendFeedback(new TranslatableText("commands.gamerule.set", ruleKey.getName(), rule.toString()), true);
-		return rule.toCommandResult();
+		return rule.getCommandResult();
 	}
 
 	private static <T extends GameRules.Rule<T>> int executeQuery(ServerCommandSource serverCommandSource, GameRules.RuleKey<T> ruleKey) {
 		T rule = serverCommandSource.getMinecraftServer().getGameRules().get(ruleKey);
 		serverCommandSource.sendFeedback(new TranslatableText("commands.gamerule.query", ruleKey.getName(), rule.toString()), false);
-		return rule.toCommandResult();
+		return rule.getCommandResult();
 	}
 }

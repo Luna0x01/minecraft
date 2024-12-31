@@ -68,7 +68,7 @@ public class SummonCommand {
 	}
 
 	private static int execute(ServerCommandSource serverCommandSource, Identifier identifier, Vec3d vec3d, CompoundTag compoundTag, boolean bl) throws CommandSyntaxException {
-		CompoundTag compoundTag2 = compoundTag.method_10553();
+		CompoundTag compoundTag2 = compoundTag.copy();
 		compoundTag2.putString("id", identifier.toString());
 		if (EntityType.getId(EntityType.field_6112).equals(identifier)) {
 			LightningEntity lightningEntity = new LightningEntity(serverCommandSource.getWorld(), vec3d.x, vec3d.y, vec3d.z, false);
@@ -78,8 +78,8 @@ public class SummonCommand {
 		} else {
 			ServerWorld serverWorld = serverCommandSource.getWorld();
 			Entity entity = EntityType.loadEntityWithPassengers(compoundTag2, serverWorld, entityx -> {
-				entityx.setPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, entityx.yaw, entityx.pitch);
-				return !serverWorld.method_18768(entityx) ? null : entityx;
+				entityx.refreshPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, entityx.yaw, entityx.pitch);
+				return !serverWorld.tryLoadEntity(entityx) ? null : entityx;
 			});
 			if (entity == null) {
 				throw FAILED_EXCEPTION.create();

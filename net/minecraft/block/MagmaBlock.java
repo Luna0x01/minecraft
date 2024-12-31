@@ -14,10 +14,9 @@ import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ExtendedBlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class MagmaBlock extends Block {
 	public MagmaBlock(Block.Settings settings) {
@@ -34,13 +33,13 @@ public class MagmaBlock extends Block {
 	}
 
 	@Override
-	public int getBlockBrightness(BlockState blockState, ExtendedBlockView extendedBlockView, BlockPos blockPos) {
-		return 15728880;
+	public boolean hasEmissiveLighting(BlockState blockState) {
+		return true;
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		BubbleColumnBlock.update(world, blockPos.up(), true);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		BubbleColumnBlock.update(serverWorld, blockPos.up(), true);
 	}
 
 	@Override
@@ -55,23 +54,20 @@ public class MagmaBlock extends Block {
 	}
 
 	@Override
-	public void onRandomTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+	public void randomTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
 		BlockPos blockPos2 = blockPos.up();
-		if (world.getFluidState(blockPos).matches(FluidTags.field_15517)) {
-			world.playSound(
-				null, blockPos, SoundEvents.field_15102, SoundCategory.field_15245, 0.5F, 2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F
+		if (serverWorld.getFluidState(blockPos).matches(FluidTags.field_15517)) {
+			serverWorld.playSound(
+				null, blockPos, SoundEvents.field_15102, SoundCategory.field_15245, 0.5F, 2.6F + (serverWorld.random.nextFloat() - serverWorld.random.nextFloat()) * 0.8F
 			);
-			if (world instanceof ServerWorld) {
-				((ServerWorld)world)
-					.spawnParticles(
-						ParticleTypes.field_11237, (double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.25, (double)blockPos2.getZ() + 0.5, 8, 0.5, 0.25, 0.5, 0.0
-					);
-			}
+			serverWorld.spawnParticles(
+				ParticleTypes.field_11237, (double)blockPos2.getX() + 0.5, (double)blockPos2.getY() + 0.25, (double)blockPos2.getZ() + 0.5, 8, 0.5, 0.25, 0.5, 0.0
+			);
 		}
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 20;
 	}
 

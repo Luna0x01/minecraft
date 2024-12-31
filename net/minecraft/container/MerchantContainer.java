@@ -98,7 +98,7 @@ public class MerchantContainer extends Container {
 	@Override
 	public ItemStack transferSlot(PlayerEntity playerEntity, int i) {
 		ItemStack itemStack = ItemStack.EMPTY;
-		Slot slot = (Slot)this.slotList.get(i);
+		Slot slot = (Slot)this.slots.get(i);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
@@ -108,7 +108,7 @@ public class MerchantContainer extends Container {
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
-				this.method_20595();
+				this.playYesSound();
 			} else if (i != 0 && i != 1) {
 				if (i >= 3 && i < 30) {
 					if (!this.insertItem(itemStack2, 30, 39, false)) {
@@ -137,10 +137,10 @@ public class MerchantContainer extends Container {
 		return itemStack;
 	}
 
-	private void method_20595() {
+	private void playYesSound() {
 		if (!this.trader.getTraderWorld().isClient) {
 			Entity entity = (Entity)this.trader;
-			this.trader.getTraderWorld().playSound(entity.x, entity.y, entity.z, this.trader.method_18010(), SoundCategory.field_15254, 1.0F, 1.0F, false);
+			this.trader.getTraderWorld().playSound(entity.getX(), entity.getY(), entity.getZ(), this.trader.getYesSound(), SoundCategory.field_15254, 1.0F, 1.0F, false);
 		}
 	}
 
@@ -198,7 +198,7 @@ public class MerchantContainer extends Container {
 	private void autofill(int i, ItemStack itemStack) {
 		if (!itemStack.isEmpty()) {
 			for (int j = 3; j < 39; j++) {
-				ItemStack itemStack2 = ((Slot)this.slotList.get(j)).getStack();
+				ItemStack itemStack2 = ((Slot)this.slots.get(j)).getStack();
 				if (!itemStack2.isEmpty() && this.equals(itemStack, itemStack2)) {
 					ItemStack itemStack3 = this.traderInventory.getInvStack(i);
 					int k = itemStack3.isEmpty() ? 0 : itemStack3.getCount();

@@ -11,6 +11,7 @@ import net.minecraft.advancement.criterion.LocationArrivalCriterion;
 import net.minecraft.advancement.criterion.OnKilledCriterion;
 import net.minecraft.advancement.criterion.PlayerHurtEntityCriterion;
 import net.minecraft.advancement.criterion.ShotCrossbowCriterion;
+import net.minecraft.advancement.criterion.SlideDownBlockCriterion;
 import net.minecraft.advancement.criterion.SummonedEntityCriterion;
 import net.minecraft.advancement.criterion.UsedTotemCriterion;
 import net.minecraft.advancement.criterion.VillagerTradeCriterion;
@@ -19,6 +20,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.raid.Raid;
 import net.minecraft.item.Items;
 import net.minecraft.predicate.DamagePredicate;
+import net.minecraft.predicate.NumberRange;
 import net.minecraft.predicate.entity.DamageSourcePredicate;
 import net.minecraft.predicate.entity.DistancePredicate;
 import net.minecraft.predicate.entity.EntityEquipmentPredicate;
@@ -27,7 +29,6 @@ import net.minecraft.predicate.entity.LocationPredicate;
 import net.minecraft.tag.EntityTypeTags;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.NumberRange;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
@@ -105,7 +106,7 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 		EntityType.field_6134
 	};
 
-	public void method_10335(Consumer<Advancement> consumer) {
+	public void accept(Consumer<Advancement> consumer) {
 		Advancement advancement = Advancement.Task.create()
 			.display(
 				Items.field_8895,
@@ -135,7 +136,7 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 			)
 			.criterion("slept_in_bed", LocationArrivalCriterion.Conditions.createSleptInBed())
 			.build(consumer, "adventure/sleep_in_bed");
-		Advancement advancement3 = this.method_10337(Advancement.Task.create())
+		Advancement advancement3 = this.requireListedBiomesVisited(Advancement.Task.create())
 			.parent(advancement2)
 			.display(
 				Items.field_8285,
@@ -163,7 +164,7 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 			)
 			.criterion("traded", VillagerTradeCriterion.Conditions.any())
 			.build(consumer, "adventure/trade");
-		Advancement advancement5 = this.method_10336(Advancement.Task.create())
+		Advancement advancement5 = this.requireListedMobsKilled(Advancement.Task.create())
 			.parent(advancement)
 			.display(
 				Items.field_8371,
@@ -177,7 +178,7 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 			)
 			.criteriaMerger(CriteriaMerger.OR)
 			.build(consumer, "adventure/kill_a_mob");
-		Advancement advancement6 = this.method_10336(Advancement.Task.create())
+		Advancement advancement6 = this.requireListedMobsKilled(Advancement.Task.create())
 			.parent(advancement5)
 			.display(
 				Items.field_8802,
@@ -207,7 +208,7 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 				"shot_arrow",
 				PlayerHurtEntityCriterion.Conditions.create(
 					DamagePredicate.Builder.create()
-						.type(DamageSourcePredicate.Builder.create().projectile(true).directEntity(EntityPredicate.Builder.create().type(EntityType.field_6122)))
+						.type(DamageSourcePredicate.Builder.create().projectile(true).directEntity(EntityPredicate.Builder.create().type(EntityTypeTags.field_21508)))
 				)
 			)
 			.build(consumer, "adventure/shoot_arrow");
@@ -391,21 +392,35 @@ public class AdventureTabAdvancementGenerator implements Consumer<Consumer<Advan
 			.rewards(AdvancementRewards.Builder.experience(100))
 			.criterion("hero_of_the_village", LocationArrivalCriterion.Conditions.createHeroOfTheVillage())
 			.build(consumer, "adventure/hero_of_the_village");
+		Advancement advancement19 = Advancement.Task.create()
+			.parent(advancement)
+			.display(
+				Blocks.field_21211.asItem(),
+				new TranslatableText("advancements.adventure.honey_block_slide.title"),
+				new TranslatableText("advancements.adventure.honey_block_slide.description"),
+				null,
+				AdvancementFrame.field_1254,
+				true,
+				true,
+				false
+			)
+			.criterion("honey_block_slide", SlideDownBlockCriterion.Conditions.create(Blocks.field_21211))
+			.build(consumer, "adventure/honey_block_slide");
 	}
 
-	private Advancement.Task method_10336(Advancement.Task task) {
+	private Advancement.Task requireListedMobsKilled(Advancement.Task task) {
 		for (EntityType<?> entityType : MONSTERS) {
 			task.criterion(
-				Registry.ENTITY_TYPE.getId(entityType).toString(), OnKilledCriterion.Conditions.createPlayerKilledEntity(EntityPredicate.Builder.create().type(entityType))
+				Registry.field_11145.getId(entityType).toString(), OnKilledCriterion.Conditions.createPlayerKilledEntity(EntityPredicate.Builder.create().type(entityType))
 			);
 		}
 
 		return task;
 	}
 
-	private Advancement.Task method_10337(Advancement.Task task) {
+	private Advancement.Task requireListedBiomesVisited(Advancement.Task task) {
 		for (Biome biome : BIOMES) {
-			task.criterion(Registry.BIOME.getId(biome).toString(), LocationArrivalCriterion.Conditions.create(LocationPredicate.biome(biome)));
+			task.criterion(Registry.field_11153.getId(biome).toString(), LocationArrivalCriterion.Conditions.create(LocationPredicate.biome(biome)));
 		}
 
 		return task;

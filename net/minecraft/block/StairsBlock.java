@@ -10,11 +10,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -25,8 +27,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import net.minecraft.world.explosion.Explosion;
 
 public class StairsBlock extends Block implements Waterloggable {
@@ -88,7 +90,7 @@ public class StairsBlock extends Block implements Waterloggable {
 	protected StairsBlock(BlockState blockState, Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(FACING, Direction.field_11043)
 				.with(HALF, BlockHalf.field_12617)
@@ -134,13 +136,8 @@ public class StairsBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return this.baseBlock.getRenderLayer();
-	}
-
-	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
-		return this.baseBlock.getTickRate(viewableWorld);
+	public int getTickRate(WorldView worldView) {
+		return this.baseBlock.getTickRate(worldView);
 	}
 
 	@Override
@@ -164,13 +161,13 @@ public class StairsBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		this.baseBlock.onScheduledTick(blockState, world, blockPos, random);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		this.baseBlock.scheduledTick(blockState, serverWorld, blockPos, random);
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		return this.baseBlockState.activate(world, playerEntity, hand, blockHitResult);
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		return this.baseBlockState.onUse(world, playerEntity, hand, blockHitResult);
 	}
 
 	@Override
@@ -293,7 +290,7 @@ public class StairsBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, HALF, SHAPE, WATERLOGGED);
 	}
 

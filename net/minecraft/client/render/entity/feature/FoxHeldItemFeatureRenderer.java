@@ -1,9 +1,11 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.FoxEntityModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.passive.FoxEntity;
 import net.minecraft.item.ItemStack;
@@ -13,49 +15,48 @@ public class FoxHeldItemFeatureRenderer extends FeatureRenderer<FoxEntity, FoxEn
 		super(featureRendererContext);
 	}
 
-	public void method_18335(FoxEntity foxEntity, float f, float g, float h, float i, float j, float k, float l) {
-		ItemStack itemStack = foxEntity.getEquippedStack(EquipmentSlot.field_6173);
-		if (!itemStack.isEmpty()) {
-			boolean bl = foxEntity.isSleeping();
-			boolean bl2 = foxEntity.isBaby();
-			GlStateManager.pushMatrix();
-			if (bl2) {
-				float m = 0.75F;
-				GlStateManager.scalef(0.75F, 0.75F, 0.75F);
-				GlStateManager.translatef(0.0F, 8.0F * l, 3.35F * l);
-			}
-
-			GlStateManager.translatef(
-				this.getModel().head.rotationPointX / 16.0F, this.getModel().head.rotationPointY / 16.0F, this.getModel().head.rotationPointZ / 16.0F
-			);
-			float n = foxEntity.getHeadRoll(h) * (180.0F / (float)Math.PI);
-			GlStateManager.rotatef(n, 0.0F, 0.0F, 1.0F);
-			GlStateManager.rotatef(j, 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotatef(k, 1.0F, 0.0F, 0.0F);
-			if (foxEntity.isBaby()) {
-				if (bl) {
-					GlStateManager.translatef(0.4F, 0.26F, 0.15F);
-				} else {
-					GlStateManager.translatef(0.06F, 0.26F, -0.5F);
-				}
-			} else if (bl) {
-				GlStateManager.translatef(0.46F, 0.26F, 0.22F);
-			} else {
-				GlStateManager.translatef(0.06F, 0.27F, -0.5F);
-			}
-
-			GlStateManager.rotatef(90.0F, 1.0F, 0.0F, 0.0F);
-			if (bl) {
-				GlStateManager.rotatef(90.0F, 0.0F, 0.0F, 1.0F);
-			}
-
-			MinecraftClient.getInstance().getItemRenderer().renderHeldItem(itemStack, foxEntity, ModelTransformation.Type.field_4318, false);
-			GlStateManager.popMatrix();
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, FoxEntity foxEntity, float f, float g, float h, float j, float k, float l
+	) {
+		boolean bl = foxEntity.isSleeping();
+		boolean bl2 = foxEntity.isBaby();
+		matrixStack.push();
+		if (bl2) {
+			float m = 0.75F;
+			matrixStack.scale(0.75F, 0.75F, 0.75F);
+			matrixStack.translate(0.0, 0.5, 0.209375F);
 		}
-	}
 
-	@Override
-	public boolean hasHurtOverlay() {
-		return false;
+		matrixStack.translate(
+			(double)(this.getContextModel().head.pivotX / 16.0F),
+			(double)(this.getContextModel().head.pivotY / 16.0F),
+			(double)(this.getContextModel().head.pivotZ / 16.0F)
+		);
+		float n = foxEntity.getHeadRoll(h);
+		matrixStack.multiply(Vector3f.POSITIVE_Z.getRadialQuaternion(n));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(k));
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(l));
+		if (foxEntity.isBaby()) {
+			if (bl) {
+				matrixStack.translate(0.4F, 0.26F, 0.15F);
+			} else {
+				matrixStack.translate(0.06F, 0.26F, -0.5);
+			}
+		} else if (bl) {
+			matrixStack.translate(0.46F, 0.26F, 0.22F);
+		} else {
+			matrixStack.translate(0.06F, 0.27F, -0.5);
+		}
+
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(90.0F));
+		if (bl) {
+			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(90.0F));
+		}
+
+		ItemStack itemStack = foxEntity.getEquippedStack(EquipmentSlot.field_6173);
+		MinecraftClient.getInstance()
+			.getHeldItemRenderer()
+			.renderItem(foxEntity, itemStack, ModelTransformation.Mode.field_4318, false, matrixStack, vertexConsumerProvider, i);
+		matrixStack.pop();
 	}
 }

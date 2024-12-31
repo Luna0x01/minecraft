@@ -1,8 +1,9 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.PhantomEyesFeatureRenderer;
 import net.minecraft.client.render.entity.model.PhantomEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.mob.PhantomEntity;
 import net.minecraft.util.Identifier;
 
@@ -14,19 +15,19 @@ public class PhantomEntityRenderer extends MobEntityRenderer<PhantomEntity, Phan
 		this.addFeature(new PhantomEyesFeatureRenderer<>(this));
 	}
 
-	protected Identifier method_4090(PhantomEntity phantomEntity) {
+	public Identifier getTexture(PhantomEntity phantomEntity) {
 		return SKIN;
 	}
 
-	protected void method_4088(PhantomEntity phantomEntity, float f) {
+	protected void scale(PhantomEntity phantomEntity, MatrixStack matrixStack, float f) {
 		int i = phantomEntity.getPhantomSize();
 		float g = 1.0F + 0.15F * (float)i;
-		GlStateManager.scalef(g, g, g);
-		GlStateManager.translatef(0.0F, 1.3125F, 0.1875F);
+		matrixStack.scale(g, g, g);
+		matrixStack.translate(0.0, 1.3125, 0.1875);
 	}
 
-	protected void method_4089(PhantomEntity phantomEntity, float f, float g, float h) {
-		super.setupTransforms(phantomEntity, f, g, h);
-		GlStateManager.rotatef(phantomEntity.pitch, 1.0F, 0.0F, 0.0F);
+	protected void setupTransforms(PhantomEntity phantomEntity, MatrixStack matrixStack, float f, float g, float h) {
+		super.setupTransforms(phantomEntity, matrixStack, f, g, h);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(phantomEntity.pitch));
 	}
 }

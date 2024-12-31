@@ -9,9 +9,12 @@ import net.minecraft.block.enums.PistonType;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -23,8 +26,6 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
 
 public class PistonExtensionBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = PistonHeadBlock.FACING;
@@ -32,7 +33,7 @@ public class PistonExtensionBlock extends BlockWithEntity {
 
 	public PistonExtensionBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(TYPE, PistonType.field_12637));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(TYPE, PistonType.field_12637));
 	}
 
 	@Nullable
@@ -60,13 +61,8 @@ public class PistonExtensionBlock extends BlockWithEntity {
 		BlockPos blockPos2 = blockPos.offset(((Direction)blockState.get(FACING)).getOpposite());
 		BlockState blockState2 = iWorld.getBlockState(blockPos2);
 		if (blockState2.getBlock() instanceof PistonBlock && (Boolean)blockState2.get(PistonBlock.EXTENDED)) {
-			iWorld.clearBlockState(blockPos2, false);
+			iWorld.removeBlock(blockPos2, false);
 		}
-	}
-
-	@Override
-	public boolean isOpaque(BlockState blockState) {
-		return false;
 	}
 
 	@Override
@@ -80,12 +76,12 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (!world.isClient && world.getBlockEntity(blockPos) == null) {
-			world.clearBlockState(blockPos, false);
-			return true;
+			world.removeBlock(blockPos, false);
+			return ActionResult.field_21466;
 		} else {
-			return false;
+			return ActionResult.field_5811;
 		}
 	}
 
@@ -128,7 +124,7 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, TYPE);
 	}
 

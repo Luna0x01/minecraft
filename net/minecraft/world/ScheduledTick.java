@@ -1,7 +1,6 @@
 package net.minecraft.world;
 
 import java.util.Comparator;
-import net.minecraft.util.TaskPriority;
 import net.minecraft.util.math.BlockPos;
 
 public class ScheduledTick<T> {
@@ -9,19 +8,19 @@ public class ScheduledTick<T> {
 	private final T object;
 	public final BlockPos pos;
 	public final long time;
-	public final TaskPriority priority;
+	public final TickPriority priority;
 	private final long id;
 
 	public ScheduledTick(BlockPos blockPos, T object) {
-		this(blockPos, object, 0L, TaskPriority.field_9314);
+		this(blockPos, object, 0L, TickPriority.field_9314);
 	}
 
-	public ScheduledTick(BlockPos blockPos, T object, long l, TaskPriority taskPriority) {
+	public ScheduledTick(BlockPos blockPos, T object, long l, TickPriority tickPriority) {
 		this.id = idCounter++;
 		this.pos = blockPos.toImmutable();
 		this.object = object;
 		this.time = l;
-		this.priority = taskPriority;
+		this.priority = tickPriority;
 	}
 
 	public boolean equals(Object object) {
@@ -38,15 +37,9 @@ public class ScheduledTick<T> {
 	}
 
 	public static <T> Comparator<ScheduledTick<T>> getComparator() {
-		return (scheduledTick, scheduledTick2) -> {
-			int i = Long.compare(scheduledTick.time, scheduledTick2.time);
-			if (i != 0) {
-				return i;
-			} else {
-				i = scheduledTick.priority.compareTo(scheduledTick2.priority);
-				return i != 0 ? i : Long.compare(scheduledTick.id, scheduledTick2.id);
-			}
-		};
+		return Comparator.comparingLong(scheduledTick -> scheduledTick.time)
+			.thenComparing(scheduledTick -> scheduledTick.priority)
+			.thenComparingLong(scheduledTick -> scheduledTick.id);
 	}
 
 	public String toString() {

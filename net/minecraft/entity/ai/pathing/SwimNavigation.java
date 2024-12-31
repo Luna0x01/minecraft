@@ -3,7 +3,7 @@ package net.minecraft.entity.ai.pathing;
 import net.minecraft.client.network.DebugRendererInfoManager;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.DolphinEntity;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -32,7 +32,7 @@ public class SwimNavigation extends EntityNavigation {
 
 	@Override
 	protected Vec3d getPos() {
-		return new Vec3d(this.entity.x, this.entity.y + (double)this.entity.getHeight() * 0.5, this.entity.z);
+		return new Vec3d(this.entity.getX(), this.entity.getBodyY(0.5), this.entity.getZ());
 	}
 
 	@Override
@@ -47,9 +47,9 @@ public class SwimNavigation extends EntityNavigation {
 				this.method_6339();
 			} else if (this.currentPath != null && this.currentPath.getCurrentNodeIndex() < this.currentPath.getLength()) {
 				Vec3d vec3d = this.currentPath.getNodePosition(this.entity, this.currentPath.getCurrentNodeIndex());
-				if (MathHelper.floor(this.entity.x) == MathHelper.floor(vec3d.x)
-					&& MathHelper.floor(this.entity.y) == MathHelper.floor(vec3d.y)
-					&& MathHelper.floor(this.entity.z) == MathHelper.floor(vec3d.z)) {
+				if (MathHelper.floor(this.entity.getX()) == MathHelper.floor(vec3d.x)
+					&& MathHelper.floor(this.entity.getY()) == MathHelper.floor(vec3d.y)
+					&& MathHelper.floor(this.entity.getZ()) == MathHelper.floor(vec3d.z)) {
 					this.currentPath.setCurrentNodeIndex(this.currentPath.getCurrentNodeIndex() + 1);
 				}
 			}
@@ -75,9 +75,9 @@ public class SwimNavigation extends EntityNavigation {
 
 			int i = 6;
 			Vec3d vec3d3 = this.currentPath.getCurrentPosition();
-			if (Math.abs(this.entity.x - (vec3d3.x + 0.5)) < (double)g
-				&& Math.abs(this.entity.z - (vec3d3.z + 0.5)) < (double)g
-				&& Math.abs(this.entity.y - vec3d3.y) < (double)(g * 2.0F)) {
+			if (Math.abs(this.entity.getX() - (vec3d3.x + 0.5)) < (double)g
+				&& Math.abs(this.entity.getZ() - (vec3d3.z + 0.5)) < (double)g
+				&& Math.abs(this.entity.getY() - vec3d3.y) < (double)(g * 2.0F)) {
 				this.currentPath.next();
 			}
 
@@ -107,7 +107,7 @@ public class SwimNavigation extends EntityNavigation {
 		if (this.currentPath != null && !this.currentPath.isFinished()) {
 			Vec3d vec3d2 = this.currentPath.getCurrentPosition();
 			if (vec3d2.equals(this.field_6680)) {
-				this.field_6670 = this.field_6670 + (SystemUtil.getMeasuringTimeMs() - this.field_6669);
+				this.field_6670 = this.field_6670 + (Util.getMeasuringTimeMs() - this.field_6669);
 			} else {
 				this.field_6680 = vec3d2;
 				double d = vec3d.distanceTo(this.field_6680);
@@ -121,7 +121,7 @@ public class SwimNavigation extends EntityNavigation {
 				this.stop();
 			}
 
-			this.field_6669 = SystemUtil.getMeasuringTimeMs();
+			this.field_6669 = Util.getMeasuringTimeMs();
 		}
 	}
 

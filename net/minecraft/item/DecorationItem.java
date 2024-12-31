@@ -53,9 +53,10 @@ public class DecorationItem extends Item {
 				}
 
 				itemStack.decrement(1);
+				return ActionResult.field_5812;
+			} else {
+				return ActionResult.field_21466;
 			}
-
-			return ActionResult.field_5812;
 		}
 	}
 

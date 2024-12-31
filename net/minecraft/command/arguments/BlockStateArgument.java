@@ -7,9 +7,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Property;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.math.BlockPos;
 
 public class BlockStateArgument implements Predicate<CachedBlockPosition> {
@@ -28,7 +28,7 @@ public class BlockStateArgument implements Predicate<CachedBlockPosition> {
 		return this.state;
 	}
 
-	public boolean method_9493(CachedBlockPosition cachedBlockPosition) {
+	public boolean test(CachedBlockPosition cachedBlockPosition) {
 		BlockState blockState = cachedBlockPosition.getBlockState();
 		if (blockState.getBlock() != this.state.getBlock()) {
 			return false;
@@ -43,7 +43,7 @@ public class BlockStateArgument implements Predicate<CachedBlockPosition> {
 				return true;
 			} else {
 				BlockEntity blockEntity = cachedBlockPosition.getBlockEntity();
-				return blockEntity != null && TagHelper.areTagsEqual(this.data, blockEntity.toTag(new CompoundTag()), true);
+				return blockEntity != null && NbtHelper.matches(this.data, blockEntity.toTag(new CompoundTag()), true);
 			}
 		}
 	}
@@ -55,7 +55,7 @@ public class BlockStateArgument implements Predicate<CachedBlockPosition> {
 			if (this.data != null) {
 				BlockEntity blockEntity = serverWorld.getBlockEntity(blockPos);
 				if (blockEntity != null) {
-					CompoundTag compoundTag = this.data.method_10553();
+					CompoundTag compoundTag = this.data.copy();
 					compoundTag.putInt("x", blockPos.getX());
 					compoundTag.putInt("y", blockPos.getY());
 					compoundTag.putInt("z", blockPos.getZ());

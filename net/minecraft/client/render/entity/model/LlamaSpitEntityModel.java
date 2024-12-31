@@ -1,10 +1,11 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 
-public class LlamaSpitEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid field_3433 = new Cuboid(this);
+public class LlamaSpitEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+	private final ModelPart field_3433 = new ModelPart(this);
 
 	public LlamaSpitEntityModel() {
 		this(0.0F);
@@ -12,19 +13,22 @@ public class LlamaSpitEntityModel<T extends Entity> extends EntityModel<T> {
 
 	public LlamaSpitEntityModel(float f) {
 		int i = 2;
-		this.field_3433.setTextureOffset(0, 0).addBox(-4.0F, 0.0F, 0.0F, 2, 2, 2, f);
-		this.field_3433.setTextureOffset(0, 0).addBox(0.0F, -4.0F, 0.0F, 2, 2, 2, f);
-		this.field_3433.setTextureOffset(0, 0).addBox(0.0F, 0.0F, -4.0F, 2, 2, 2, f);
-		this.field_3433.setTextureOffset(0, 0).addBox(0.0F, 0.0F, 0.0F, 2, 2, 2, f);
-		this.field_3433.setTextureOffset(0, 0).addBox(2.0F, 0.0F, 0.0F, 2, 2, 2, f);
-		this.field_3433.setTextureOffset(0, 0).addBox(0.0F, 2.0F, 0.0F, 2, 2, 2, f);
-		this.field_3433.setTextureOffset(0, 0).addBox(0.0F, 0.0F, 2.0F, 2, 2, 2, f);
-		this.field_3433.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.field_3433.setTextureOffset(0, 0).addCuboid(-4.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
+		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, -4.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
+		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, -4.0F, 2.0F, 2.0F, 2.0F, f);
+		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
+		this.field_3433.setTextureOffset(0, 0).addCuboid(2.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
+		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 2.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
+		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 2.0F, 2.0F, 2.0F, 2.0F, f);
+		this.field_3433.setPivot(0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.setAngles(entity, f, g, h, i, j, k);
-		this.field_3433.render(k);
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
+	}
+
+	@Override
+	public Iterable<ModelPart> getParts() {
+		return ImmutableList.of(this.field_3433);
 	}
 }

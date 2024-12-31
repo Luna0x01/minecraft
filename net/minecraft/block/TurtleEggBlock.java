@@ -12,9 +12,10 @@ import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -31,7 +32,7 @@ public class TurtleEggBlock extends Block {
 
 	public TurtleEggBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(HATCH, Integer.valueOf(0)).with(EGGS, Integer.valueOf(1)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(HATCH, Integer.valueOf(0)).with(EGGS, Integer.valueOf(1)));
 	}
 
 	@Override
@@ -71,24 +72,23 @@ public class TurtleEggBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (this.shouldHatchProgress(world) && this.isSand(world, blockPos)) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (this.shouldHatchProgress(serverWorld) && this.isSand(serverWorld, blockPos)) {
 			int i = (Integer)blockState.get(HATCH);
 			if (i < 2) {
-				world.playSound(null, blockPos, SoundEvents.field_15109, SoundCategory.field_15245, 0.7F, 0.9F + random.nextFloat() * 0.2F);
-				world.setBlockState(blockPos, blockState.with(HATCH, Integer.valueOf(i + 1)), 2);
+				serverWorld.playSound(null, blockPos, SoundEvents.field_15109, SoundCategory.field_15245, 0.7F, 0.9F + random.nextFloat() * 0.2F);
+				serverWorld.setBlockState(blockPos, blockState.with(HATCH, Integer.valueOf(i + 1)), 2);
 			} else {
-				world.playSound(null, blockPos, SoundEvents.field_14902, SoundCategory.field_15245, 0.7F, 0.9F + random.nextFloat() * 0.2F);
-				world.clearBlockState(blockPos, false);
-				if (!world.isClient) {
-					for (int j = 0; j < blockState.get(EGGS); j++) {
-						world.playLevelEvent(2001, blockPos, Block.getRawIdFromState(blockState));
-						TurtleEntity turtleEntity = EntityType.field_6113.create(world);
-						turtleEntity.setBreedingAge(-24000);
-						turtleEntity.setHomePos(blockPos);
-						turtleEntity.setPositionAndAngles((double)blockPos.getX() + 0.3 + (double)j * 0.2, (double)blockPos.getY(), (double)blockPos.getZ() + 0.3, 0.0F, 0.0F);
-						world.spawnEntity(turtleEntity);
-					}
+				serverWorld.playSound(null, blockPos, SoundEvents.field_14902, SoundCategory.field_15245, 0.7F, 0.9F + random.nextFloat() * 0.2F);
+				serverWorld.removeBlock(blockPos, false);
+
+				for (int j = 0; j < blockState.get(EGGS); j++) {
+					serverWorld.playLevelEvent(2001, blockPos, Block.getRawIdFromState(blockState));
+					TurtleEntity turtleEntity = EntityType.field_6113.create(serverWorld);
+					turtleEntity.setBreedingAge(-24000);
+					turtleEntity.setHomePos(blockPos);
+					turtleEntity.refreshPositionAndAngles((double)blockPos.getX() + 0.3 + (double)j * 0.2, (double)blockPos.getY(), (double)blockPos.getZ() + 0.3, 0.0F, 0.0F);
+					serverWorld.spawnEntity(turtleEntity);
 				}
 			}
 		}
@@ -133,17 +133,12 @@ public class TurtleEggBlock extends Block {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
 	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
 		return blockState.get(EGGS) > 1 ? LARGE_SHAPE : SMALL_SHAPE;
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(HATCH, EGGS);
 	}
 

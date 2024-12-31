@@ -21,7 +21,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.MessageType;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.world.GameMode;
 
 public class Realms {
@@ -46,7 +46,7 @@ public class Realms {
 	}
 
 	public static long currentTimeMillis() {
-		return SystemUtil.getMeasuringTimeMs();
+		return Util.getMeasuringTimeMs();
 	}
 
 	public static String getSessionId() {
@@ -66,7 +66,7 @@ public class Realms {
 	}
 
 	public static <V> CompletableFuture<V> execute(Supplier<V> supplier) {
-		return MinecraftClient.getInstance().executeFuture(supplier);
+		return MinecraftClient.getInstance().submit(supplier);
 	}
 
 	public static void execute(Runnable runnable) {
@@ -138,7 +138,7 @@ public class Realms {
 	}
 
 	public static void openUri(String string) {
-		SystemUtil.getOperatingSystem().open(string);
+		Util.getOperatingSystem().open(string);
 	}
 
 	public static void setClipboard(String string) {

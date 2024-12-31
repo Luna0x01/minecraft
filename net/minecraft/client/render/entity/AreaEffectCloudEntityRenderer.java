@@ -1,6 +1,6 @@
 package net.minecraft.client.render.entity;
 
-import javax.annotation.Nullable;
+import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.util.Identifier;
 
@@ -9,8 +9,7 @@ public class AreaEffectCloudEntityRenderer extends EntityRenderer<AreaEffectClou
 		super(entityRenderDispatcher);
 	}
 
-	@Nullable
-	protected Identifier method_3873(AreaEffectCloudEntity areaEffectCloudEntity) {
-		return null;
+	public Identifier getTexture(AreaEffectCloudEntity areaEffectCloudEntity) {
+		return SpriteAtlasTexture.BLOCK_ATLAS_TEX;
 	}
 }

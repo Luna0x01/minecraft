@@ -28,11 +28,11 @@ public class EntitySummonArgumentType implements ArgumentType<Identifier> {
 	}
 
 	private static Identifier validate(Identifier identifier) throws CommandSyntaxException {
-		Registry.ENTITY_TYPE.getOrEmpty(identifier).filter(EntityType::isSummonable).orElseThrow(() -> NOT_FOUND_EXCEPTION.create(identifier));
+		Registry.field_11145.getOrEmpty(identifier).filter(EntityType::isSummonable).orElseThrow(() -> NOT_FOUND_EXCEPTION.create(identifier));
 		return identifier;
 	}
 
-	public Identifier method_9325(StringReader stringReader) throws CommandSyntaxException {
+	public Identifier parse(StringReader stringReader) throws CommandSyntaxException {
 		return validate(Identifier.fromCommandInput(stringReader));
 	}
 

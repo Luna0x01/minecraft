@@ -11,7 +11,7 @@ public class OcelotEntityRenderer extends MobEntityRenderer<OcelotEntity, Ocelot
 		super(entityRenderDispatcher, new OcelotEntityModel<>(0.0F), 0.4F);
 	}
 
-	protected Identifier method_16046(OcelotEntity ocelotEntity) {
+	public Identifier getTexture(OcelotEntity ocelotEntity) {
 		return SKIN;
 	}
 }

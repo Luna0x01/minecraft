@@ -85,7 +85,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		this.address = this.channel.remoteAddress();
 
 		try {
-			this.setState(NetworkState.field_11689);
+			this.setState(NetworkState.field_20590);
 		} catch (Throwable var3) {
 			LOGGER.fatal(var3);
 		}
@@ -126,7 +126,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		}
 	}
 
-	protected void method_10770(ChannelHandlerContext channelHandlerContext, Packet<?> packet) throws Exception {
+	protected void channelRead0(ChannelHandlerContext channelHandlerContext, Packet<?> packet) throws Exception {
 		if (this.channel.isOpen()) {
 			try {
 				handlePacket(packet, this.packetListener);
@@ -281,7 +281,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		return clientConnection;
 	}
 
-	public static ClientConnection connect(SocketAddress socketAddress) {
+	public static ClientConnection connectLocal(SocketAddress socketAddress) {
 		final ClientConnection clientConnection = new ClientConnection(NetworkSide.field_11942);
 		((Bootstrap)((Bootstrap)((Bootstrap)new Bootstrap().group((EventLoopGroup)CLIENT_IO_GROUP_LOCAL.get())).handler(new ChannelInitializer<Channel>() {
 			protected void initChannel(Channel channel) throws Exception {

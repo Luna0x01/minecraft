@@ -14,19 +14,19 @@ import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.LootTables;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.VillagerProfession;
-import net.minecraft.world.loot.LootSupplier;
-import net.minecraft.world.loot.LootTables;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
-import net.minecraft.world.loot.context.LootContextTypes;
 
 public class GiveGiftsToHeroTask extends Task<VillagerEntity> {
-	private static final Map<VillagerProfession, Identifier> GIFTS = SystemUtil.consume(Maps.newHashMap(), hashMap -> {
+	private static final Map<VillagerProfession, Identifier> GIFTS = Util.make(Maps.newHashMap(), hashMap -> {
 		hashMap.put(VillagerProfession.field_17052, LootTables.field_19062);
 		hashMap.put(VillagerProfession.field_17053, LootTables.field_19063);
 		hashMap.put(VillagerProfession.field_17054, LootTables.field_19064);
@@ -61,7 +61,7 @@ public class GiveGiftsToHeroTask extends Task<VillagerEntity> {
 		);
 	}
 
-	protected boolean method_19962(ServerWorld serverWorld, VillagerEntity villagerEntity) {
+	protected boolean shouldRun(ServerWorld serverWorld, VillagerEntity villagerEntity) {
 		if (!this.isNearestPlayerHero(villagerEntity)) {
 			return false;
 		} else if (this.ticksLeft > 0) {
@@ -72,7 +72,7 @@ public class GiveGiftsToHeroTask extends Task<VillagerEntity> {
 		}
 	}
 
-	protected void method_19963(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void run(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		this.done = false;
 		this.startTime = l;
 		PlayerEntity playerEntity = (PlayerEntity)this.getNearestPlayerIfHero(villagerEntity).get();
@@ -80,11 +80,11 @@ public class GiveGiftsToHeroTask extends Task<VillagerEntity> {
 		LookTargetUtil.lookAt(villagerEntity, playerEntity);
 	}
 
-	protected boolean method_19965(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected boolean shouldKeepRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		return this.isNearestPlayerHero(villagerEntity) && !this.done;
 	}
 
-	protected void method_19967(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void keepRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		PlayerEntity playerEntity = (PlayerEntity)this.getNearestPlayerIfHero(villagerEntity).get();
 		LookTargetUtil.lookAt(villagerEntity, playerEntity);
 		if (this.isCloseEnough(villagerEntity, playerEntity)) {
@@ -97,7 +97,7 @@ public class GiveGiftsToHeroTask extends Task<VillagerEntity> {
 		}
 	}
 
-	protected void method_19968(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void finishRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		this.ticksLeft = getNextGiftDelay(serverWorld);
 		villagerEntity.getBrain().forget(MemoryModuleType.field_18447);
 		villagerEntity.getBrain().forget(MemoryModuleType.field_18445);
@@ -116,12 +116,12 @@ public class GiveGiftsToHeroTask extends Task<VillagerEntity> {
 		} else {
 			VillagerProfession villagerProfession = villagerEntity.getVillagerData().getProfession();
 			if (GIFTS.containsKey(villagerProfession)) {
-				LootSupplier lootSupplier = villagerEntity.world.getServer().getLootManager().getSupplier((Identifier)GIFTS.get(villagerProfession));
+				LootTable lootTable = villagerEntity.world.getServer().getLootManager().getSupplier((Identifier)GIFTS.get(villagerProfession));
 				LootContext.Builder builder = new LootContext.Builder((ServerWorld)villagerEntity.world)
 					.put(LootContextParameters.field_1232, new BlockPos(villagerEntity))
 					.put(LootContextParameters.field_1226, villagerEntity)
-					.setRandom(villagerEntity.getRand());
-				return lootSupplier.getDrops(builder.build(LootContextTypes.field_16235));
+					.setRandom(villagerEntity.getRandom());
+				return lootTable.getDrops(builder.build(LootContextTypes.field_16235));
 			} else {
 				return ImmutableList.of(new ItemStack(Items.field_8317));
 			}

@@ -30,7 +30,7 @@ public class EntityAnimationS2CPacket implements Packet<ClientPlayPacketListener
 		packetByteBuf.writeByte(this.animationId);
 	}
 
-	public void method_11268(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onEntityAnimation(this);
 	}
 

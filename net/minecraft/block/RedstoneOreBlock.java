@@ -7,8 +7,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -41,9 +43,14 @@ public class RedstoneOreBlock extends Block {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		light(blockState, world, blockPos);
-		return super.activate(blockState, world, blockPos, playerEntity, hand, blockHitResult);
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		if (world.isClient) {
+			spawnParticles(world, blockPos);
+			return ActionResult.field_5812;
+		} else {
+			light(blockState, world, blockPos);
+			return ActionResult.field_5811;
+		}
 	}
 
 	private static void light(BlockState blockState, World world, BlockPos blockPos) {
@@ -54,9 +61,9 @@ public class RedstoneOreBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
 		if ((Boolean)blockState.get(LIT)) {
-			world.setBlockState(blockPos, blockState.with(LIT, Boolean.valueOf(false)), 3);
+			serverWorld.setBlockState(blockPos, blockState.with(LIT, Boolean.valueOf(false)), 3);
 		}
 	}
 
@@ -93,7 +100,7 @@ public class RedstoneOreBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(LIT);
 	}
 }

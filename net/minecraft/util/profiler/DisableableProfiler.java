@@ -3,22 +3,22 @@ package net.minecraft.util.profiler;
 import java.time.Duration;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class DisableableProfiler implements Profiler {
-	private static final Logger field_19286 = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final long field_16268 = Duration.ofMillis(300L).toNanos();
 	private final IntSupplier tickSupplier;
-	private final DisableableProfiler.ProfilerControllerImpl controller = new DisableableProfiler.ProfilerControllerImpl();
-	private final DisableableProfiler.ProfilerControllerImpl field_16271 = new DisableableProfiler.ProfilerControllerImpl();
+	private final DisableableProfiler.ControllerImpl controller = new DisableableProfiler.ControllerImpl();
+	private final DisableableProfiler.ControllerImpl field_16271 = new DisableableProfiler.ControllerImpl();
 
 	public DisableableProfiler(IntSupplier intSupplier) {
 		this.tickSupplier = intSupplier;
 	}
 
-	public DisableableProfiler.ProfilerController getController() {
+	public DisableableProfiler.Controller getController() {
 		return this.controller;
 	}
 
@@ -64,7 +64,19 @@ public class DisableableProfiler implements Profiler {
 		this.field_16271.profiler.swap(supplier);
 	}
 
-	public interface ProfilerController {
+	@Override
+	public void visit(String string) {
+		this.controller.profiler.visit(string);
+		this.field_16271.profiler.visit(string);
+	}
+
+	@Override
+	public void visit(Supplier<String> supplier) {
+		this.controller.profiler.visit(supplier);
+		this.field_16271.profiler.visit(supplier);
+	}
+
+	public interface Controller {
 		boolean isEnabled();
 
 		ProfileResult disable();
@@ -74,10 +86,10 @@ public class DisableableProfiler implements Profiler {
 		void enable();
 	}
 
-	class ProfilerControllerImpl implements DisableableProfiler.ProfilerController {
+	class ControllerImpl implements DisableableProfiler.Controller {
 		protected ReadableProfiler profiler = DummyProfiler.INSTANCE;
 
-		private ProfilerControllerImpl() {
+		private ControllerImpl() {
 		}
 
 		@Override
@@ -87,20 +99,20 @@ public class DisableableProfiler implements Profiler {
 
 		@Override
 		public ProfileResult disable() {
-			ProfileResult profileResult = this.profiler.getResults();
+			ProfileResult profileResult = this.profiler.getResult();
 			this.profiler = DummyProfiler.INSTANCE;
 			return profileResult;
 		}
 
 		@Override
 		public ProfileResult getResults() {
-			return this.profiler.getResults();
+			return this.profiler.getResult();
 		}
 
 		@Override
 		public void enable() {
 			if (this.profiler == DummyProfiler.INSTANCE) {
-				this.profiler = new ProfilerSystem(SystemUtil.getMeasuringTimeNano(), DisableableProfiler.this.tickSupplier);
+				this.profiler = new ProfilerSystem(Util.getMeasuringTimeNano(), DisableableProfiler.this.tickSupplier, true);
 			}
 		}
 	}

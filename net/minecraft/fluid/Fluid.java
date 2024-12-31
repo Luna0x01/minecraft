@@ -2,11 +2,10 @@ package net.minecraft.fluid;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.IdList;
 import net.minecraft.util.math.BlockPos;
@@ -14,26 +13,26 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class Fluid {
 	public static final IdList<FluidState> STATE_IDS = new IdList<>();
-	protected final StateFactory<Fluid, FluidState> stateFactory;
+	protected final StateManager<Fluid, FluidState> stateManager;
 	private FluidState defaultState;
 
 	protected Fluid() {
-		StateFactory.Builder<Fluid, FluidState> builder = new StateFactory.Builder<>(this);
+		StateManager.Builder<Fluid, FluidState> builder = new StateManager.Builder<>(this);
 		this.appendProperties(builder);
-		this.stateFactory = builder.build(FluidStateImpl::new);
-		this.setDefaultState(this.stateFactory.getDefaultState());
+		this.stateManager = builder.build(FluidStateImpl::new);
+		this.setDefaultState(this.stateManager.getDefaultState());
 	}
 
-	protected void appendProperties(StateFactory.Builder<Fluid, FluidState> builder) {
+	protected void appendProperties(StateManager.Builder<Fluid, FluidState> builder) {
 	}
 
-	public StateFactory<Fluid, FluidState> getStateFactory() {
-		return this.stateFactory;
+	public StateManager<Fluid, FluidState> getStateManager() {
+		return this.stateManager;
 	}
 
 	protected final void setDefaultState(FluidState fluidState) {
@@ -43,8 +42,6 @@ public abstract class Fluid {
 	public final FluidState getDefaultState() {
 		return this.defaultState;
 	}
-
-	protected abstract BlockRenderLayer getRenderLayer();
 
 	public abstract Item getBucketItem();
 
@@ -66,7 +63,7 @@ public abstract class Fluid {
 
 	protected abstract Vec3d getVelocity(BlockView blockView, BlockPos blockPos, FluidState fluidState);
 
-	public abstract int getTickRate(ViewableWorld viewableWorld);
+	public abstract int getTickRate(WorldView worldView);
 
 	protected boolean hasRandomTicks() {
 		return false;
@@ -80,7 +77,7 @@ public abstract class Fluid {
 
 	public abstract float getHeight(FluidState fluidState, BlockView blockView, BlockPos blockPos);
 
-	public abstract float method_20784(FluidState fluidState);
+	public abstract float getHeight(FluidState fluidState);
 
 	protected abstract BlockState toBlockState(FluidState fluidState);
 

@@ -11,9 +11,12 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.util.Util;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,22 +24,22 @@ import org.apache.logging.log4j.Logger;
 public class SnbtProvider implements DataProvider {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final DataGenerator root;
-	private final List<SnbtProvider.class_4460> field_20309 = Lists.newArrayList();
+	private final List<SnbtProvider.Tweaker> write = Lists.newArrayList();
 
 	public SnbtProvider(DataGenerator dataGenerator) {
 		this.root = dataGenerator;
 	}
 
-	public SnbtProvider method_21672(SnbtProvider.class_4460 arg) {
-		this.field_20309.add(arg);
+	public SnbtProvider addWriter(SnbtProvider.Tweaker tweaker) {
+		this.write.add(tweaker);
 		return this;
 	}
 
-	private CompoundTag method_21673(String string, CompoundTag compoundTag) {
+	private CompoundTag write(String string, CompoundTag compoundTag) {
 		CompoundTag compoundTag2 = compoundTag;
 
-		for (SnbtProvider.class_4460 lv : this.field_20309) {
-			compoundTag2 = lv.method_21674(string, compoundTag2);
+		for (SnbtProvider.Tweaker tweaker : this.write) {
+			compoundTag2 = tweaker.write(string, compoundTag2);
 		}
 
 		return compoundTag2;
@@ -45,12 +48,17 @@ public class SnbtProvider implements DataProvider {
 	@Override
 	public void run(DataCache dataCache) throws IOException {
 		Path path = this.root.getOutput();
+		List<CompletableFuture<SnbtProvider.CompressedData>> list = Lists.newArrayList();
 
 		for (Path path2 : this.root.getInputs()) {
 			Files.walk(path2)
 				.filter(pathx -> pathx.toString().endsWith(".snbt"))
-				.forEach(path3 -> this.method_10497(dataCache, path3, this.method_10500(path2, path3), path));
+				.forEach(
+					path2x -> list.add(CompletableFuture.supplyAsync(() -> this.toCompressedNbt(path2x, this.getFileName(path2, path2x)), Util.getServerWorkerExecutor()))
+				);
 		}
+
+		((List)Util.combine(list).join()).stream().filter(Objects::nonNull).forEach(compressedData -> this.write(dataCache, compressedData, path));
 	}
 
 	@Override
@@ -58,73 +66,101 @@ public class SnbtProvider implements DataProvider {
 		return "SNBT -> NBT";
 	}
 
-	private String method_10500(Path path, Path path2) {
+	private String getFileName(Path path, Path path2) {
 		String string = path.relativize(path2).toString().replaceAll("\\\\", "/");
 		return string.substring(0, string.length() - ".snbt".length());
 	}
 
-	private void method_10497(DataCache dataCache, Path path, String string, Path path2) {
+	@Nullable
+	private SnbtProvider.CompressedData toCompressedNbt(Path path, String string) {
 		try {
-			Path path3 = path2.resolve(string + ".nbt");
 			BufferedReader bufferedReader = Files.newBufferedReader(path);
-			Throwable var7 = null;
+			Throwable var4 = null;
 
+			SnbtProvider.CompressedData var9;
 			try {
 				String string2 = IOUtils.toString(bufferedReader);
 				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-				NbtIo.writeCompressed(this.method_21673(string, StringNbtReader.parse(string2)), byteArrayOutputStream);
-				String string3 = SHA1.hashBytes(byteArrayOutputStream.toByteArray()).toString();
-				if (!Objects.equals(dataCache.getOldSha1(path3), string3) || !Files.exists(path3, new LinkOption[0])) {
-					Files.createDirectories(path3.getParent());
-					OutputStream outputStream = Files.newOutputStream(path3);
-					Throwable var12 = null;
-
-					try {
-						outputStream.write(byteArrayOutputStream.toByteArray());
-					} catch (Throwable var39) {
-						var12 = var39;
-						throw var39;
-					} finally {
-						if (outputStream != null) {
-							if (var12 != null) {
-								try {
-									outputStream.close();
-								} catch (Throwable var38) {
-									var12.addSuppressed(var38);
-								}
-							} else {
-								outputStream.close();
-							}
-						}
-					}
-				}
-
-				dataCache.updateSha1(path3, string3);
-			} catch (Throwable var41) {
-				var7 = var41;
-				throw var41;
+				NbtIo.writeCompressed(this.write(string, StringNbtReader.parse(string2)), byteArrayOutputStream);
+				byte[] bs = byteArrayOutputStream.toByteArray();
+				String string3 = SHA1.hashBytes(bs).toString();
+				var9 = new SnbtProvider.CompressedData(string, bs, string3);
+			} catch (Throwable var20) {
+				var4 = var20;
+				throw var20;
 			} finally {
 				if (bufferedReader != null) {
-					if (var7 != null) {
+					if (var4 != null) {
 						try {
 							bufferedReader.close();
-						} catch (Throwable var37) {
-							var7.addSuppressed(var37);
+						} catch (Throwable var19) {
+							var4.addSuppressed(var19);
 						}
 					} else {
 						bufferedReader.close();
 					}
 				}
 			}
-		} catch (CommandSyntaxException var43) {
-			LOGGER.error("Couldn't convert {} from SNBT to NBT at {} as it's invalid SNBT", string, path, var43);
-		} catch (IOException var44) {
-			LOGGER.error("Couldn't convert {} from SNBT to NBT at {}", string, path, var44);
+
+			return var9;
+		} catch (CommandSyntaxException var22) {
+			LOGGER.error("Couldn't convert {} from SNBT to NBT at {} as it's invalid SNBT", string, path, var22);
+		} catch (IOException var23) {
+			LOGGER.error("Couldn't convert {} from SNBT to NBT at {}", string, path, var23);
+		}
+
+		return null;
+	}
+
+	private void write(DataCache dataCache, SnbtProvider.CompressedData compressedData, Path path) {
+		Path path2 = path.resolve(compressedData.name + ".nbt");
+
+		try {
+			if (!Objects.equals(dataCache.getOldSha1(path2), compressedData.sha1) || !Files.exists(path2, new LinkOption[0])) {
+				Files.createDirectories(path2.getParent());
+				OutputStream outputStream = Files.newOutputStream(path2);
+				Throwable var6 = null;
+
+				try {
+					outputStream.write(compressedData.bytes);
+				} catch (Throwable var16) {
+					var6 = var16;
+					throw var16;
+				} finally {
+					if (outputStream != null) {
+						if (var6 != null) {
+							try {
+								outputStream.close();
+							} catch (Throwable var15) {
+								var6.addSuppressed(var15);
+							}
+						} else {
+							outputStream.close();
+						}
+					}
+				}
+			}
+
+			dataCache.updateSha1(path2, compressedData.sha1);
+		} catch (IOException var18) {
+			LOGGER.error("Couldn't write structure {} at {}", compressedData.name, path2, var18);
+		}
+	}
+
+	static class CompressedData {
+		private final String name;
+		private final byte[] bytes;
+		private final String sha1;
+
+		public CompressedData(String string, byte[] bs, String string2) {
+			this.name = string;
+			this.bytes = bs;
+			this.sha1 = string2;
 		}
 	}
 
 	@FunctionalInterface
-	public interface class_4460 {
-		CompoundTag method_21674(String string, CompoundTag compoundTag);
+	public interface Tweaker {
+		CompoundTag write(String string, CompoundTag compoundTag);
 	}
 }

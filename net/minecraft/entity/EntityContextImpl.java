@@ -13,21 +13,19 @@ public class EntityContextImpl implements EntityContext {
 			return bl;
 		}
 	};
-	private final boolean sneaking;
+	private final boolean descending;
 	private final double minY;
 	private final Item heldItem;
 
 	protected EntityContextImpl(boolean bl, double d, Item item) {
-		this.sneaking = bl;
+		this.descending = bl;
 		this.minY = d;
 		this.heldItem = item;
 	}
 
 	@Deprecated
 	protected EntityContextImpl(Entity entity) {
-		boolean var10001 = entity.isSneaking();
-		Item var10003 = entity instanceof LivingEntity ? ((LivingEntity)entity).getMainHandStack().getItem() : Items.AIR;
-		this(var10001, entity.getBoundingBox().minY, var10003);
+		this(entity.isDescending(), entity.getY(), entity instanceof LivingEntity ? ((LivingEntity)entity).getMainHandStack().getItem() : Items.AIR);
 	}
 
 	@Override
@@ -36,8 +34,8 @@ public class EntityContextImpl implements EntityContext {
 	}
 
 	@Override
-	public boolean isSneaking() {
-		return this.sneaking;
+	public boolean isDescending() {
+		return this.descending;
 	}
 
 	@Override

@@ -13,7 +13,7 @@ import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class RuleStructureProcessor extends StructureProcessor {
 	private final ImmutableList<StructureProcessorRule> rules;
@@ -29,14 +29,14 @@ public class RuleStructureProcessor extends StructureProcessor {
 	@Nullable
 	@Override
 	public Structure.StructureBlockInfo process(
-		ViewableWorld viewableWorld,
+		WorldView worldView,
 		BlockPos blockPos,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,
 		StructurePlacementData structurePlacementData
 	) {
 		Random random = new Random(MathHelper.hashCode(structureBlockInfo2.pos));
-		BlockState blockState = viewableWorld.getBlockState(structureBlockInfo2.pos);
+		BlockState blockState = worldView.getBlockState(structureBlockInfo2.pos);
 		UnmodifiableIterator var8 = this.rules.iterator();
 
 		while (var8.hasNext()) {

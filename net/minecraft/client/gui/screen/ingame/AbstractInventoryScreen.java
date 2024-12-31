@@ -1,10 +1,10 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import com.google.common.collect.Ordering;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Collection;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.StatusEffectSpriteManager;
 import net.minecraft.container.Container;
 import net.minecraft.entity.effect.StatusEffect;
@@ -13,7 +13,7 @@ import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 
-public abstract class AbstractInventoryScreen<T extends Container> extends AbstractContainerScreen<T> {
+public abstract class AbstractInventoryScreen<T extends Container> extends ContainerScreen<T> {
 	protected boolean offsetGuiForEffects;
 
 	public AbstractInventoryScreen(T container, PlayerInventory playerInventory, Text text) {
@@ -23,15 +23,15 @@ public abstract class AbstractInventoryScreen<T extends Container> extends Abstr
 	@Override
 	protected void init() {
 		super.init();
-		this.method_2476();
+		this.applyStatusEffectOffset();
 	}
 
-	protected void method_2476() {
+	protected void applyStatusEffectOffset() {
 		if (this.minecraft.player.getStatusEffects().isEmpty()) {
-			this.left = (this.width - this.containerWidth) / 2;
+			this.x = (this.width - this.containerWidth) / 2;
 			this.offsetGuiForEffects = false;
 		} else {
-			this.left = 160 + (this.width - this.containerWidth - 200) / 2;
+			this.x = 160 + (this.width - this.containerWidth - 200) / 2;
 			this.offsetGuiForEffects = true;
 		}
 	}
@@ -40,53 +40,53 @@ public abstract class AbstractInventoryScreen<T extends Container> extends Abstr
 	public void render(int i, int j, float f) {
 		super.render(i, j, f);
 		if (this.offsetGuiForEffects) {
-			this.drawPotionEffects();
+			this.drawStatusEffects();
 		}
 	}
 
-	private void drawPotionEffects() {
-		int i = this.left - 124;
+	private void drawStatusEffects() {
+		int i = this.x - 124;
 		Collection<StatusEffectInstance> collection = this.minecraft.player.getStatusEffects();
 		if (!collection.isEmpty()) {
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			GlStateManager.disableLighting();
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			int j = 33;
 			if (collection.size() > 5) {
 				j = 132 / (collection.size() - 1);
 			}
 
 			Iterable<StatusEffectInstance> iterable = Ordering.natural().sortedCopy(collection);
-			this.method_18642(i, j, iterable);
-			this.method_18643(i, j, iterable);
-			this.method_18644(i, j, iterable);
+			this.drawStatusEffectBackgrounds(i, j, iterable);
+			this.drawStatusEffectSprites(i, j, iterable);
+			this.drawStatusEffectDescriptions(i, j, iterable);
 		}
 	}
 
-	private void method_18642(int i, int j, Iterable<StatusEffectInstance> iterable) {
+	private void drawStatusEffectBackgrounds(int i, int j, Iterable<StatusEffectInstance> iterable) {
 		this.minecraft.getTextureManager().bindTexture(BACKGROUND_TEXTURE);
-		int k = this.top;
+		int k = this.y;
 
 		for (StatusEffectInstance statusEffectInstance : iterable) {
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			this.blit(i, k, 0, 166, 140, 32);
 			k += j;
 		}
 	}
 
-	private void method_18643(int i, int j, Iterable<StatusEffectInstance> iterable) {
-		this.minecraft.getTextureManager().bindTexture(SpriteAtlasTexture.STATUS_EFFECT_ATLAS_TEX);
+	private void drawStatusEffectSprites(int i, int j, Iterable<StatusEffectInstance> iterable) {
 		StatusEffectSpriteManager statusEffectSpriteManager = this.minecraft.getStatusEffectSpriteManager();
-		int k = this.top;
+		int k = this.y;
 
 		for (StatusEffectInstance statusEffectInstance : iterable) {
 			StatusEffect statusEffect = statusEffectInstance.getEffectType();
-			blit(i + 6, k + 7, this.blitOffset, 18, 18, statusEffectSpriteManager.getSprite(statusEffect));
+			Sprite sprite = statusEffectSpriteManager.getSprite(statusEffect);
+			this.minecraft.getTextureManager().bindTexture(sprite.getAtlas().getId());
+			blit(i + 6, k + 7, this.getBlitOffset(), 18, 18, sprite);
 			k += j;
 		}
 	}
 
-	private void method_18644(int i, int j, Iterable<StatusEffectInstance> iterable) {
-		int k = this.top;
+	private void drawStatusEffectDescriptions(int i, int j, Iterable<StatusEffectInstance> iterable) {
+		int k = this.y;
 
 		for (StatusEffectInstance statusEffectInstance : iterable) {
 			String string = I18n.translate(statusEffectInstance.getEffectType().getTranslationKey());

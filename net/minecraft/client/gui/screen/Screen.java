@@ -3,7 +3,7 @@ package net.minecraft.client.gui.screen;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonSyntaxException;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.io.File;
 import java.net.URI;
@@ -21,11 +21,13 @@ import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.StringNbtReader;
@@ -34,7 +36,7 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -130,10 +132,8 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 
 	public void renderTooltip(List<String> list, int i, int j) {
 		if (!list.isEmpty()) {
-			GlStateManager.disableRescaleNormal();
-			GuiLighting.disable();
-			GlStateManager.disableLighting();
-			GlStateManager.disableDepthTest();
+			RenderSystem.disableRescaleNormal();
+			RenderSystem.disableDepthTest();
 			int k = 0;
 
 			for (String string : list) {
@@ -158,7 +158,7 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 				n = this.height - p - 6;
 			}
 
-			this.blitOffset = 300;
+			this.setBlitOffset(300);
 			this.itemRenderer.zOffset = 300.0F;
 			int q = -267386864;
 			this.fillGradient(m - 3, n - 4, m + k + 3, n - 3, -267386864, -267386864);
@@ -172,10 +172,17 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 			this.fillGradient(m + k + 2, n - 3 + 1, m + k + 3, n + p + 3 - 1, 1347420415, 1344798847);
 			this.fillGradient(m - 3, n - 3, m + k + 3, n - 3 + 1, 1347420415, 1347420415);
 			this.fillGradient(m - 3, n + p + 2, m + k + 3, n + p + 3, 1344798847, 1344798847);
+			MatrixStack matrixStack = new MatrixStack();
+			VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
+			matrixStack.translate(0.0, 0.0, (double)this.itemRenderer.zOffset);
+			Matrix4f matrix4f = matrixStack.peek().getModel();
 
 			for (int t = 0; t < list.size(); t++) {
 				String string2 = (String)list.get(t);
-				this.font.drawWithShadow(string2, (float)m, (float)n, -1);
+				if (string2 != null) {
+					this.font.draw(string2, (float)m, (float)n, -1, true, matrix4f, immediate, false, 0, 15728880);
+				}
+
 				if (t == 0) {
 					n += 2;
 				}
@@ -183,12 +190,11 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 				n += 10;
 			}
 
-			this.blitOffset = 0;
+			immediate.draw();
+			this.setBlitOffset(0);
 			this.itemRenderer.zOffset = 0.0F;
-			GlStateManager.enableLighting();
-			GlStateManager.enableDepthTest();
-			GuiLighting.enable();
-			GlStateManager.enableRescaleNormal();
+			RenderSystem.enableDepthTest();
+			RenderSystem.enableRescaleNormal();
 		}
 	}
 
@@ -221,7 +227,7 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 							list.add(text2.asFormattedString());
 						}
 
-						if (compoundTag.containsKey("type", 8)) {
+						if (compoundTag.contains("type", 8)) {
 							String string = compoundTag.getString("type");
 							list.add("Type: " + string);
 						}
@@ -235,8 +241,6 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 			} else if (hoverEvent.getAction() == HoverEvent.Action.field_11762) {
 				this.renderTooltip(this.minecraft.textRenderer.wrapStringToWidthAsList(hoverEvent.getValue().asFormattedString(), Math.max(this.width / 2, 200)), i, j);
 			}
-
-			GlStateManager.disableLighting();
 		}
 	}
 
@@ -285,6 +289,8 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 					this.insertText(clickEvent.getValue(), true);
 				} else if (clickEvent.getAction() == ClickEvent.Action.field_11750) {
 					this.sendMessage(clickEvent.getValue(), false);
+				} else if (clickEvent.getAction() == ClickEvent.Action.field_21462) {
+					this.minecraft.keyboard.setClipboard(clickEvent.getValue());
 				} else {
 					LOGGER.error("Don't know how to handle {}", clickEvent);
 				}
@@ -352,21 +358,19 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 	}
 
 	public void renderDirtBackground(int i) {
-		GlStateManager.disableLighting();
-		GlStateManager.disableFog();
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		this.minecraft.getTextureManager().bindTexture(BACKGROUND_LOCATION);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		float f = 32.0F;
-		bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
-		bufferBuilder.vertex(0.0, (double)this.height, 0.0).texture(0.0, (double)((float)this.height / 32.0F + (float)i)).color(64, 64, 64, 255).next();
+		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+		bufferBuilder.vertex(0.0, (double)this.height, 0.0).texture(0.0F, (float)this.height / 32.0F + (float)i).color(64, 64, 64, 255).next();
 		bufferBuilder.vertex((double)this.width, (double)this.height, 0.0)
-			.texture((double)((float)this.width / 32.0F), (double)((float)this.height / 32.0F + (float)i))
+			.texture((float)this.width / 32.0F, (float)this.height / 32.0F + (float)i)
 			.color(64, 64, 64, 255)
 			.next();
-		bufferBuilder.vertex((double)this.width, 0.0, 0.0).texture((double)((float)this.width / 32.0F), (double)i).color(64, 64, 64, 255).next();
-		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0, (double)i).color(64, 64, 64, 255).next();
+		bufferBuilder.vertex((double)this.width, 0.0, 0.0).texture((float)this.width / 32.0F, (float)i).color(64, 64, 64, 255).next();
+		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0F, (float)i).color(64, 64, 64, 255).next();
 		tessellator.draw();
 	}
 
@@ -384,25 +388,25 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 	}
 
 	private void openLink(URI uRI) {
-		SystemUtil.getOperatingSystem().open(uRI);
+		Util.getOperatingSystem().open(uRI);
 	}
 
 	public static boolean hasControlDown() {
 		return MinecraftClient.IS_SYSTEM_MAC
-			? InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 343)
-				|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 347)
-			: InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 341)
-				|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 345);
+			? InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 343)
+				|| InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 347)
+			: InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 341)
+				|| InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 345);
 	}
 
 	public static boolean hasShiftDown() {
-		return InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 340)
-			|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 344);
+		return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 340)
+			|| InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 344);
 	}
 
 	public static boolean hasAltDown() {
-		return InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 342)
-			|| InputUtil.isKeyPressed(MinecraftClient.getInstance().window.getHandle(), 346);
+		return InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 342)
+			|| InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 346);
 	}
 
 	public static boolean isCut(int i) {

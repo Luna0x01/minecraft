@@ -13,13 +13,13 @@ import net.minecraft.util.math.Direction;
 
 public class WeightedBakedModel implements BakedModel {
 	private final int totalWeight;
-	private final List<WeightedBakedModel.ModelEntry> models;
+	private final List<WeightedBakedModel.Entry> models;
 	private final BakedModel defaultModel;
 
-	public WeightedBakedModel(List<WeightedBakedModel.ModelEntry> list) {
+	public WeightedBakedModel(List<WeightedBakedModel.Entry> list) {
 		this.models = list;
 		this.totalWeight = WeightedPicker.getWeightSum(list);
-		this.defaultModel = ((WeightedBakedModel.ModelEntry)list.get(0)).model;
+		this.defaultModel = ((WeightedBakedModel.Entry)list.get(0)).model;
 	}
 
 	@Override
@@ -33,8 +33,13 @@ public class WeightedBakedModel implements BakedModel {
 	}
 
 	@Override
-	public boolean hasDepthInGui() {
-		return this.defaultModel.hasDepthInGui();
+	public boolean hasDepth() {
+		return this.defaultModel.hasDepth();
+	}
+
+	@Override
+	public boolean isSideLit() {
+		return this.defaultModel.isSideLit();
 	}
 
 	@Override
@@ -58,11 +63,11 @@ public class WeightedBakedModel implements BakedModel {
 	}
 
 	public static class Builder {
-		private final List<WeightedBakedModel.ModelEntry> models = Lists.newArrayList();
+		private final List<WeightedBakedModel.Entry> models = Lists.newArrayList();
 
 		public WeightedBakedModel.Builder add(@Nullable BakedModel bakedModel, int i) {
 			if (bakedModel != null) {
-				this.models.add(new WeightedBakedModel.ModelEntry(bakedModel, i));
+				this.models.add(new WeightedBakedModel.Entry(bakedModel, i));
 			}
 
 			return this;
@@ -73,15 +78,15 @@ public class WeightedBakedModel implements BakedModel {
 			if (this.models.isEmpty()) {
 				return null;
 			} else {
-				return (BakedModel)(this.models.size() == 1 ? ((WeightedBakedModel.ModelEntry)this.models.get(0)).model : new WeightedBakedModel(this.models));
+				return (BakedModel)(this.models.size() == 1 ? ((WeightedBakedModel.Entry)this.models.get(0)).model : new WeightedBakedModel(this.models));
 			}
 		}
 	}
 
-	static class ModelEntry extends WeightedPicker.Entry {
+	static class Entry extends WeightedPicker.Entry {
 		protected final BakedModel model;
 
-		public ModelEntry(BakedModel bakedModel, int i) {
+		public Entry(BakedModel bakedModel, int i) {
 			super(i);
 			this.model = bakedModel;
 		}

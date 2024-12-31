@@ -216,7 +216,7 @@ public class RailPlacementHelper {
 		}
 	}
 
-	public RailPlacementHelper updateBlockState(boolean bl, boolean bl2) {
+	public RailPlacementHelper updateBlockState(boolean bl, boolean bl2, RailShape railShape) {
 		BlockPos blockPos = this.pos.north();
 		BlockPos blockPos2 = this.pos.south();
 		BlockPos blockPos3 = this.pos.west();
@@ -225,105 +225,111 @@ public class RailPlacementHelper {
 		boolean bl4 = this.method_10465(blockPos2);
 		boolean bl5 = this.method_10465(blockPos3);
 		boolean bl6 = this.method_10465(blockPos4);
-		RailShape railShape = null;
-		if ((bl3 || bl4) && !bl5 && !bl6) {
-			railShape = RailShape.field_12665;
+		RailShape railShape2 = null;
+		boolean bl7 = bl3 || bl4;
+		boolean bl8 = bl5 || bl6;
+		if (bl7 && !bl8) {
+			railShape2 = RailShape.field_12665;
 		}
 
-		if ((bl5 || bl6) && !bl3 && !bl4) {
-			railShape = RailShape.field_12674;
+		if (bl8 && !bl7) {
+			railShape2 = RailShape.field_12674;
 		}
 
+		boolean bl9 = bl4 && bl6;
+		boolean bl10 = bl4 && bl5;
+		boolean bl11 = bl3 && bl6;
+		boolean bl12 = bl3 && bl5;
 		if (!this.allowCurves) {
-			if (bl4 && bl6 && !bl3 && !bl5) {
-				railShape = RailShape.field_12664;
+			if (bl9 && !bl3 && !bl5) {
+				railShape2 = RailShape.field_12664;
 			}
 
-			if (bl4 && bl5 && !bl3 && !bl6) {
-				railShape = RailShape.field_12671;
+			if (bl10 && !bl3 && !bl6) {
+				railShape2 = RailShape.field_12671;
 			}
 
-			if (bl3 && bl5 && !bl4 && !bl6) {
-				railShape = RailShape.field_12672;
+			if (bl12 && !bl4 && !bl6) {
+				railShape2 = RailShape.field_12672;
 			}
 
-			if (bl3 && bl6 && !bl4 && !bl5) {
-				railShape = RailShape.field_12663;
+			if (bl11 && !bl4 && !bl5) {
+				railShape2 = RailShape.field_12663;
 			}
 		}
 
-		if (railShape == null) {
-			if (bl3 || bl4) {
-				railShape = RailShape.field_12665;
-			}
-
-			if (bl5 || bl6) {
-				railShape = RailShape.field_12674;
+		if (railShape2 == null) {
+			if (bl7 && bl8) {
+				railShape2 = railShape;
+			} else if (bl7) {
+				railShape2 = RailShape.field_12665;
+			} else if (bl8) {
+				railShape2 = RailShape.field_12674;
 			}
 
 			if (!this.allowCurves) {
 				if (bl) {
-					if (bl4 && bl6) {
-						railShape = RailShape.field_12664;
+					if (bl9) {
+						railShape2 = RailShape.field_12664;
 					}
 
-					if (bl5 && bl4) {
-						railShape = RailShape.field_12671;
+					if (bl10) {
+						railShape2 = RailShape.field_12671;
 					}
 
-					if (bl6 && bl3) {
-						railShape = RailShape.field_12663;
+					if (bl11) {
+						railShape2 = RailShape.field_12663;
 					}
 
-					if (bl3 && bl5) {
-						railShape = RailShape.field_12672;
+					if (bl12) {
+						railShape2 = RailShape.field_12672;
 					}
 				} else {
-					if (bl3 && bl5) {
-						railShape = RailShape.field_12672;
+					if (bl12) {
+						railShape2 = RailShape.field_12672;
 					}
 
-					if (bl6 && bl3) {
-						railShape = RailShape.field_12663;
+					if (bl11) {
+						railShape2 = RailShape.field_12663;
 					}
 
-					if (bl5 && bl4) {
-						railShape = RailShape.field_12671;
+					if (bl10) {
+						railShape2 = RailShape.field_12671;
 					}
 
-					if (bl4 && bl6) {
-						railShape = RailShape.field_12664;
+					if (bl9) {
+						railShape2 = RailShape.field_12664;
 					}
 				}
 			}
 		}
 
-		if (railShape == RailShape.field_12665) {
+		if (railShape2 == RailShape.field_12665) {
 			if (AbstractRailBlock.isRail(this.world, blockPos.up())) {
-				railShape = RailShape.field_12670;
+				railShape2 = RailShape.field_12670;
 			}
 
 			if (AbstractRailBlock.isRail(this.world, blockPos2.up())) {
-				railShape = RailShape.field_12668;
+				railShape2 = RailShape.field_12668;
 			}
 		}
 
-		if (railShape == RailShape.field_12674) {
+		if (railShape2 == RailShape.field_12674) {
 			if (AbstractRailBlock.isRail(this.world, blockPos4.up())) {
-				railShape = RailShape.field_12667;
+				railShape2 = RailShape.field_12667;
 			}
 
 			if (AbstractRailBlock.isRail(this.world, blockPos3.up())) {
-				railShape = RailShape.field_12666;
+				railShape2 = RailShape.field_12666;
 			}
 		}
 
-		if (railShape == null) {
-			railShape = RailShape.field_12665;
+		if (railShape2 == null) {
+			railShape2 = railShape;
 		}
 
-		this.computeNeighbors(railShape);
-		this.state = this.state.with(this.block.getShapeProperty(), railShape);
+		this.computeNeighbors(railShape2);
+		this.state = this.state.with(this.block.getShapeProperty(), railShape2);
 		if (bl2 || this.world.getBlockState(this.pos) != this.state) {
 			this.world.setBlockState(this.pos, this.state, 3);
 

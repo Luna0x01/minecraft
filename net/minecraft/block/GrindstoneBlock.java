@@ -1,14 +1,16 @@
 package net.minecraft.block;
 
 import net.minecraft.block.enums.WallMountLocation;
-import net.minecraft.client.network.ClientDummyContainerProvider;
 import net.minecraft.container.BlockContext;
 import net.minecraft.container.GrindstoneContainer;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
+import net.minecraft.container.SimpleNamedContainerFactory;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.state.StateFactory;
+import net.minecraft.stat.Stats;
+import net.minecraft.state.StateManager;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -18,8 +20,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class GrindstoneBlock extends WallMountedBlock {
 	public static final VoxelShape field_16379 = Block.createCuboidShape(2.0, 0.0, 6.0, 4.0, 7.0, 10.0);
@@ -90,7 +92,7 @@ public class GrindstoneBlock extends WallMountedBlock {
 
 	protected GrindstoneBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(FACE, WallMountLocation.field_12471));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(FACE, WallMountLocation.field_12471));
 	}
 
 	@Override
@@ -141,19 +143,24 @@ public class GrindstoneBlock extends WallMountedBlock {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		return true;
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		playerEntity.openContainer(blockState.createContainerProvider(world, blockPos));
-		return true;
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		if (world.isClient) {
+			return ActionResult.field_5812;
+		} else {
+			playerEntity.openContainer(blockState.createContainerFactory(world, blockPos));
+			playerEntity.incrementStat(Stats.field_21779);
+			return ActionResult.field_5812;
+		}
 	}
 
 	@Override
-	public NameableContainerProvider createContainerProvider(BlockState blockState, World world, BlockPos blockPos) {
-		return new ClientDummyContainerProvider(
+	public NameableContainerFactory createContainerFactory(BlockState blockState, World world, BlockPos blockPos) {
+		return new SimpleNamedContainerFactory(
 			(i, playerInventory, playerEntity) -> new GrindstoneContainer(i, playerInventory, BlockContext.create(world, blockPos)), CONTAINER_NAME
 		);
 	}
@@ -169,7 +176,7 @@ public class GrindstoneBlock extends WallMountedBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, FACE);
 	}
 

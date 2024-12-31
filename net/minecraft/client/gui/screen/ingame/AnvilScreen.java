@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.screen.ingame;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
@@ -15,7 +15,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
 
-public class AnvilScreen extends AbstractContainerScreen<AnvilContainer> implements ContainerListener {
+public class AnvilScreen extends ContainerScreen<AnvilContainer> implements ContainerListener {
 	private static final Identifier BG_TEX = new Identifier("textures/gui/container/anvil.png");
 	private TextFieldWidget nameField;
 
@@ -30,7 +30,7 @@ public class AnvilScreen extends AbstractContainerScreen<AnvilContainer> impleme
 		int i = (this.width - this.containerWidth) / 2;
 		int j = (this.height - this.containerHeight) / 2;
 		this.nameField = new TextFieldWidget(this.font, i + 62, j + 24, 103, 12, I18n.translate("container.repair"));
-		this.nameField.method_1856(false);
+		this.nameField.setFocusUnlocked(false);
 		this.nameField.changeFocus(true);
 		this.nameField.setEditableColor(-1);
 		this.nameField.setUneditableColor(-1);
@@ -62,13 +62,12 @@ public class AnvilScreen extends AbstractContainerScreen<AnvilContainer> impleme
 			this.minecraft.player.closeContainer();
 		}
 
-		return !this.nameField.keyPressed(i, j, k) && !this.nameField.method_20315() ? super.keyPressed(i, j, k) : true;
+		return !this.nameField.keyPressed(i, j, k) && !this.nameField.isActive() ? super.keyPressed(i, j, k) : true;
 	}
 
 	@Override
 	protected void drawForeground(int i, int j) {
-		GlStateManager.disableLighting();
-		GlStateManager.disableBlend();
+		RenderSystem.disableBlend();
 		this.font.draw(this.title.asFormattedString(), 60.0F, 6.0F, 4210752);
 		int k = this.container.getLevelCost();
 		if (k > 0) {
@@ -91,8 +90,6 @@ public class AnvilScreen extends AbstractContainerScreen<AnvilContainer> impleme
 				this.font.drawWithShadow(string, (float)m, 69.0F, l);
 			}
 		}
-
-		GlStateManager.enableLighting();
 	}
 
 	private void onRenamed(String string) {
@@ -112,15 +109,14 @@ public class AnvilScreen extends AbstractContainerScreen<AnvilContainer> impleme
 	public void render(int i, int j, float f) {
 		this.renderBackground();
 		super.render(i, j, f);
-		this.drawMouseoverTooltip(i, j);
-		GlStateManager.disableLighting();
-		GlStateManager.disableBlend();
+		RenderSystem.disableBlend();
 		this.nameField.render(i, j, f);
+		this.drawMouseoverTooltip(i, j);
 	}
 
 	@Override
 	protected void drawBackground(float f, int i, int j) {
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.minecraft.getTextureManager().bindTexture(BG_TEX);
 		int k = (this.width - this.containerWidth) / 2;
 		int l = (this.height - this.containerHeight) / 2;
@@ -140,7 +136,7 @@ public class AnvilScreen extends AbstractContainerScreen<AnvilContainer> impleme
 	public void onContainerSlotUpdate(Container container, int i, ItemStack itemStack) {
 		if (i == 0) {
 			this.nameField.setText(itemStack.isEmpty() ? "" : itemStack.getName().getString());
-			this.nameField.setIsEditable(!itemStack.isEmpty());
+			this.nameField.setEditable(!itemStack.isEmpty());
 		}
 	}
 

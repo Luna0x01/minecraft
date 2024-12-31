@@ -2,10 +2,10 @@ package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.container.Container;
-import net.minecraft.container.ContainerLock;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.ContainerLock;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sound.SoundCategory;
@@ -14,8 +14,8 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Nameable;
 
-public abstract class LockableContainerBlockEntity extends BlockEntity implements Inventory, NameableContainerProvider, Nameable {
-	private ContainerLock lock = ContainerLock.NONE;
+public abstract class LockableContainerBlockEntity extends BlockEntity implements Inventory, NameableContainerFactory, Nameable {
+	private ContainerLock lock = ContainerLock.EMPTY;
 	private Text customName;
 
 	protected LockableContainerBlockEntity(BlockEntityType<?> blockEntityType) {
@@ -25,8 +25,8 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 	@Override
 	public void fromTag(CompoundTag compoundTag) {
 		super.fromTag(compoundTag);
-		this.lock = ContainerLock.deserialize(compoundTag);
-		if (compoundTag.containsKey("CustomName", 8)) {
+		this.lock = ContainerLock.fromTag(compoundTag);
+		if (compoundTag.contains("CustomName", 8)) {
 			this.customName = Text.Serializer.fromJson(compoundTag.getString("CustomName"));
 		}
 	}
@@ -34,7 +34,7 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 	@Override
 	public CompoundTag toTag(CompoundTag compoundTag) {
 		super.toTag(compoundTag);
-		this.lock.serialize(compoundTag);
+		this.lock.toTag(compoundTag);
 		if (this.customName != null) {
 			compoundTag.putString("CustomName", Text.Serializer.toJson(this.customName));
 		}
@@ -69,7 +69,7 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 	}
 
 	public static boolean checkUnlocked(PlayerEntity playerEntity, ContainerLock containerLock, Text text) {
-		if (!playerEntity.isSpectator() && !containerLock.isEmpty(playerEntity.getMainHandStack())) {
+		if (!playerEntity.isSpectator() && !containerLock.canOpen(playerEntity.getMainHandStack())) {
 			playerEntity.addChatMessage(new TranslatableText("container.isLocked", text), true);
 			playerEntity.playSound(SoundEvents.field_14731, SoundCategory.field_15245, 1.0F, 1.0F);
 			return false;

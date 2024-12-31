@@ -3,7 +3,7 @@ package net.minecraft.entity.ai.goal;
 import java.util.EnumSet;
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.server.world.ServerWorld;
@@ -28,9 +28,9 @@ public class GoToVillageGoal extends Goal {
 	public boolean canStart() {
 		if (this.mob.hasPassengers()) {
 			return false;
-		} else if (this.mob.world.isDaylight()) {
+		} else if (this.mob.world.isDay()) {
 			return false;
-		} else if (this.mob.getRand().nextInt(this.searchRange) != 0) {
+		} else if (this.mob.getRandom().nextInt(this.searchRange) != 0) {
 			return false;
 		} else {
 			ServerWorld serverWorld = (ServerWorld)this.mob.world;
@@ -38,7 +38,7 @@ public class GoToVillageGoal extends Goal {
 			if (!serverWorld.isNearOccupiedPointOfInterest(blockPos, 6)) {
 				return false;
 			} else {
-				Vec3d vec3d = PathfindingUtil.findTargetStraight(
+				Vec3d vec3d = TargetFinder.findGroundTarget(
 					this.mob, 15, 7, blockPosx -> (double)(-serverWorld.getOccupiedPointOfInterestDistance(ChunkSectionPos.from(blockPosx)))
 				);
 				this.targetPosition = vec3d == null ? null : new BlockPos(vec3d);
@@ -58,7 +58,7 @@ public class GoToVillageGoal extends Goal {
 			EntityNavigation entityNavigation = this.mob.getNavigation();
 			if (entityNavigation.isIdle() && !this.targetPosition.isWithinDistance(this.mob.getPos(), 10.0)) {
 				Vec3d vec3d = new Vec3d(this.targetPosition);
-				Vec3d vec3d2 = new Vec3d(this.mob.x, this.mob.y, this.mob.z);
+				Vec3d vec3d2 = this.mob.getPos();
 				Vec3d vec3d3 = vec3d2.subtract(vec3d);
 				vec3d = vec3d3.multiply(0.4).add(vec3d);
 				Vec3d vec3d4 = vec3d.subtract(vec3d2).normalize().multiply(10.0).add(vec3d2);
@@ -72,7 +72,7 @@ public class GoToVillageGoal extends Goal {
 	}
 
 	private void findOtherWaypoint() {
-		Random random = this.mob.getRand();
+		Random random = this.mob.getRandom();
 		BlockPos blockPos = this.mob
 			.world
 			.getTopPosition(Heightmap.Type.field_13203, new BlockPos(this.mob).add(-8 + random.nextInt(16), 0, -8 + random.nextInt(16)));

@@ -41,12 +41,15 @@ public class ItemTags {
 	public static final Tag<Item> field_15543 = register("small_flowers");
 	public static final Tag<Item> field_16444 = register("beds");
 	public static final Tag<Item> field_16585 = register("fences");
+	public static final Tag<Item> field_20343 = register("tall_flowers");
+	public static final Tag<Item> field_20344 = register("flowers");
 	public static final Tag<Item> field_15536 = register("boats");
 	public static final Tag<Item> field_15527 = register("fishes");
 	public static final Tag<Item> field_15533 = register("signs");
 	public static final Tag<Item> field_15541 = register("music_discs");
 	public static final Tag<Item> field_17487 = register("coals");
 	public static final Tag<Item> field_18317 = register("arrows");
+	public static final Tag<Item> field_21465 = register("lectern_books");
 
 	public static void setContainer(TagContainer<Item> tagContainer) {
 		container = tagContainer;
@@ -69,7 +72,7 @@ public class ItemTags {
 			super(identifier);
 		}
 
-		public boolean method_15109(Item item) {
+		public boolean contains(Item item) {
 			if (this.version != ItemTags.latestVersion) {
 				this.delegate = ItemTags.container.getOrCreate(this.getId());
 				this.version = ItemTags.latestVersion;

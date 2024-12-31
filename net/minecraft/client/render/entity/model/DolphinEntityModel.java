@@ -1,72 +1,72 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class DolphinEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid field_4656;
-	private final Cuboid field_4658;
-	private final Cuboid field_4657;
-	private final Cuboid field_4655;
+public class DolphinEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+	private final ModelPart body;
+	private final ModelPart tail;
+	private final ModelPart flukes;
 
 	public DolphinEntityModel() {
 		this.textureWidth = 64;
 		this.textureHeight = 64;
 		float f = 18.0F;
 		float g = -8.0F;
-		this.field_4658 = new Cuboid(this, 22, 0);
-		this.field_4658.addBox(-4.0F, -7.0F, 0.0F, 8, 7, 13);
-		this.field_4658.setRotationPoint(0.0F, 22.0F, -5.0F);
-		Cuboid cuboid = new Cuboid(this, 51, 0);
-		cuboid.addBox(-0.5F, 0.0F, 8.0F, 1, 4, 5);
-		cuboid.pitch = (float) (Math.PI / 3);
-		this.field_4658.addChild(cuboid);
-		Cuboid cuboid2 = new Cuboid(this, 48, 20);
-		cuboid2.mirror = true;
-		cuboid2.addBox(-0.5F, -4.0F, 0.0F, 1, 4, 7);
-		cuboid2.setRotationPoint(2.0F, -2.0F, 4.0F);
-		cuboid2.pitch = (float) (Math.PI / 3);
-		cuboid2.roll = (float) (Math.PI * 2.0 / 3.0);
-		this.field_4658.addChild(cuboid2);
-		Cuboid cuboid3 = new Cuboid(this, 48, 20);
-		cuboid3.addBox(-0.5F, -4.0F, 0.0F, 1, 4, 7);
-		cuboid3.setRotationPoint(-2.0F, -2.0F, 4.0F);
-		cuboid3.pitch = (float) (Math.PI / 3);
-		cuboid3.roll = (float) (-Math.PI * 2.0 / 3.0);
-		this.field_4658.addChild(cuboid3);
-		this.field_4657 = new Cuboid(this, 0, 19);
-		this.field_4657.addBox(-2.0F, -2.5F, 0.0F, 4, 5, 11);
-		this.field_4657.setRotationPoint(0.0F, -2.5F, 11.0F);
-		this.field_4657.pitch = -0.10471976F;
-		this.field_4658.addChild(this.field_4657);
-		this.field_4655 = new Cuboid(this, 19, 20);
-		this.field_4655.addBox(-5.0F, -0.5F, 0.0F, 10, 1, 6);
-		this.field_4655.setRotationPoint(0.0F, 0.0F, 9.0F);
-		this.field_4655.pitch = 0.0F;
-		this.field_4657.addChild(this.field_4655);
-		this.field_4656 = new Cuboid(this, 0, 0);
-		this.field_4656.addBox(-4.0F, -3.0F, -3.0F, 8, 7, 6);
-		this.field_4656.setRotationPoint(0.0F, -4.0F, -3.0F);
-		Cuboid cuboid4 = new Cuboid(this, 0, 13);
-		cuboid4.addBox(-1.0F, 2.0F, -7.0F, 2, 2, 4);
-		this.field_4656.addChild(cuboid4);
-		this.field_4658.addChild(this.field_4656);
+		this.body = new ModelPart(this, 22, 0);
+		this.body.addCuboid(-4.0F, -7.0F, 0.0F, 8.0F, 7.0F, 13.0F);
+		this.body.setPivot(0.0F, 22.0F, -5.0F);
+		ModelPart modelPart = new ModelPart(this, 51, 0);
+		modelPart.addCuboid(-0.5F, 0.0F, 8.0F, 1.0F, 4.0F, 5.0F);
+		modelPart.pitch = (float) (Math.PI / 3);
+		this.body.addChild(modelPart);
+		ModelPart modelPart2 = new ModelPart(this, 48, 20);
+		modelPart2.mirror = true;
+		modelPart2.addCuboid(-0.5F, -4.0F, 0.0F, 1.0F, 4.0F, 7.0F);
+		modelPart2.setPivot(2.0F, -2.0F, 4.0F);
+		modelPart2.pitch = (float) (Math.PI / 3);
+		modelPart2.roll = (float) (Math.PI * 2.0 / 3.0);
+		this.body.addChild(modelPart2);
+		ModelPart modelPart3 = new ModelPart(this, 48, 20);
+		modelPart3.addCuboid(-0.5F, -4.0F, 0.0F, 1.0F, 4.0F, 7.0F);
+		modelPart3.setPivot(-2.0F, -2.0F, 4.0F);
+		modelPart3.pitch = (float) (Math.PI / 3);
+		modelPart3.roll = (float) (-Math.PI * 2.0 / 3.0);
+		this.body.addChild(modelPart3);
+		this.tail = new ModelPart(this, 0, 19);
+		this.tail.addCuboid(-2.0F, -2.5F, 0.0F, 4.0F, 5.0F, 11.0F);
+		this.tail.setPivot(0.0F, -2.5F, 11.0F);
+		this.tail.pitch = -0.10471976F;
+		this.body.addChild(this.tail);
+		this.flukes = new ModelPart(this, 19, 20);
+		this.flukes.addCuboid(-5.0F, -0.5F, 0.0F, 10.0F, 1.0F, 6.0F);
+		this.flukes.setPivot(0.0F, 0.0F, 9.0F);
+		this.flukes.pitch = 0.0F;
+		this.tail.addChild(this.flukes);
+		ModelPart modelPart4 = new ModelPart(this, 0, 0);
+		modelPart4.addCuboid(-4.0F, -3.0F, -3.0F, 8.0F, 7.0F, 6.0F);
+		modelPart4.setPivot(0.0F, -4.0F, -3.0F);
+		ModelPart modelPart5 = new ModelPart(this, 0, 13);
+		modelPart5.addCuboid(-1.0F, 2.0F, -7.0F, 2.0F, 2.0F, 4.0F);
+		modelPart4.addChild(modelPart5);
+		this.body.addChild(modelPart4);
 	}
 
 	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.field_4658.render(k);
+	public Iterable<ModelPart> getParts() {
+		return ImmutableList.of(this.body);
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
-		this.field_4658.pitch = j * (float) (Math.PI / 180.0);
-		this.field_4658.yaw = i * (float) (Math.PI / 180.0);
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
+		this.body.pitch = j * (float) (Math.PI / 180.0);
+		this.body.yaw = i * (float) (Math.PI / 180.0);
 		if (Entity.squaredHorizontalLength(entity.getVelocity()) > 1.0E-7) {
-			this.field_4658.pitch = this.field_4658.pitch + -0.05F + -0.05F * MathHelper.cos(h * 0.3F);
-			this.field_4657.pitch = -0.1F * MathHelper.cos(h * 0.3F);
-			this.field_4655.pitch = -0.2F * MathHelper.cos(h * 0.3F);
+			this.body.pitch = this.body.pitch + -0.05F + -0.05F * MathHelper.cos(h * 0.3F);
+			this.tail.pitch = -0.1F * MathHelper.cos(h * 0.3F);
+			this.flukes.pitch = -0.2F * MathHelper.cos(h * 0.3F);
 		}
 	}
 }

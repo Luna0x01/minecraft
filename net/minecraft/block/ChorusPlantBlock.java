@@ -2,20 +2,20 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class ChorusPlantBlock extends ConnectedPlantBlock {
 	protected ChorusPlantBlock(Block.Settings settings) {
 		super(0.3125F, settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(NORTH, Boolean.valueOf(false))
 				.with(EAST, Boolean.valueOf(false))
@@ -62,26 +62,26 @@ public class ChorusPlantBlock extends ConnectedPlantBlock {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(world, blockPos)) {
-			world.breakBlock(blockPos, true);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
+			serverWorld.breakBlock(blockPos, true);
 		}
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos.down());
-		boolean bl = !viewableWorld.getBlockState(blockPos.up()).isAir() && !blockState2.isAir();
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		BlockState blockState2 = worldView.getBlockState(blockPos.down());
+		boolean bl = !worldView.getBlockState(blockPos.up()).isAir() && !blockState2.isAir();
 
 		for (Direction direction : Direction.Type.field_11062) {
 			BlockPos blockPos2 = blockPos.offset(direction);
-			Block block = viewableWorld.getBlockState(blockPos2).getBlock();
+			Block block = worldView.getBlockState(blockPos2).getBlock();
 			if (block == this) {
 				if (bl) {
 					return false;
 				}
 
-				Block block2 = viewableWorld.getBlockState(blockPos2.down()).getBlock();
+				Block block2 = worldView.getBlockState(blockPos2.down()).getBlock();
 				if (block2 == this || block2 == Blocks.field_10471) {
 					return true;
 				}
@@ -93,12 +93,7 @@ public class ChorusPlantBlock extends ConnectedPlantBlock {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(NORTH, EAST, SOUTH, WEST, UP, DOWN);
 	}
 

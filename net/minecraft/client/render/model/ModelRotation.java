@@ -1,11 +1,10 @@
 package net.minecraft.client.render.model;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.stream.Collectors;
+import net.minecraft.client.util.math.Rotation3;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
 
@@ -28,7 +27,6 @@ public enum ModelRotation implements ModelBakeSettings {
 	field_5352(270, 270);
 
 	private static final Map<Integer, ModelRotation> BY_INDEX = (Map<Integer, ModelRotation>)Arrays.stream(values())
-		.sorted(Comparator.comparingInt(modelRotation -> modelRotation.index))
 		.collect(Collectors.toMap(modelRotation -> modelRotation.index, modelRotation -> modelRotation));
 	private final int index;
 	private final Quaternion quaternion;
@@ -42,54 +40,15 @@ public enum ModelRotation implements ModelBakeSettings {
 	private ModelRotation(int j, int k) {
 		this.index = getIndex(j, k);
 		Quaternion quaternion = new Quaternion(new Vector3f(0.0F, 1.0F, 0.0F), (float)(-k), true);
-		quaternion.copyFrom(new Quaternion(new Vector3f(1.0F, 0.0F, 0.0F), (float)(-j), true));
+		quaternion.hamiltonProduct(new Quaternion(new Vector3f(1.0F, 0.0F, 0.0F), (float)(-j), true));
 		this.quaternion = quaternion;
 		this.xRotations = MathHelper.abs(j / 90);
 		this.yRotations = MathHelper.abs(k / 90);
 	}
 
 	@Override
-	public ModelRotation getRotation() {
-		return this;
-	}
-
-	public Quaternion getQuaternion() {
-		return this.quaternion;
-	}
-
-	public Direction apply(Direction direction) {
-		Direction direction2 = direction;
-
-		for (int i = 0; i < this.xRotations; i++) {
-			direction2 = direction2.rotateClockwise(Direction.Axis.field_11048);
-		}
-
-		if (direction2.getAxis() != Direction.Axis.field_11052) {
-			for (int j = 0; j < this.yRotations; j++) {
-				direction2 = direction2.rotateClockwise(Direction.Axis.field_11052);
-			}
-		}
-
-		return direction2;
-	}
-
-	public int method_4706(Direction direction, int i) {
-		int j = i;
-		if (direction.getAxis() == Direction.Axis.field_11048) {
-			j = (i + this.xRotations) % 4;
-		}
-
-		Direction direction2 = direction;
-
-		for (int k = 0; k < this.xRotations; k++) {
-			direction2 = direction2.rotateClockwise(Direction.Axis.field_11048);
-		}
-
-		if (direction2.getAxis() == Direction.Axis.field_11052) {
-			j = (j + this.yRotations) % 4;
-		}
-
-		return j;
+	public Rotation3 getRotation() {
+		return new Rotation3(null, this.quaternion, null, null);
 	}
 
 	public static ModelRotation get(int i, int j) {

@@ -22,7 +22,7 @@ public class SynchronizeRecipesS2CPacket implements Packet<ClientPlayPacketListe
 		this.recipes = Lists.newArrayList(collection);
 	}
 
-	public void method_11997(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onSynchronizeRecipes(this);
 	}
 
@@ -52,14 +52,14 @@ public class SynchronizeRecipesS2CPacket implements Packet<ClientPlayPacketListe
 	public static Recipe<?> readRecipe(PacketByteBuf packetByteBuf) {
 		Identifier identifier = packetByteBuf.readIdentifier();
 		Identifier identifier2 = packetByteBuf.readIdentifier();
-		return ((RecipeSerializer)Registry.RECIPE_SERIALIZER
+		return ((RecipeSerializer)Registry.field_17598
 				.getOrEmpty(identifier)
 				.orElseThrow(() -> new IllegalArgumentException("Unknown recipe serializer " + identifier)))
 			.read(identifier2, packetByteBuf);
 	}
 
 	public static <T extends Recipe<?>> void writeRecipe(T recipe, PacketByteBuf packetByteBuf) {
-		packetByteBuf.writeIdentifier(Registry.RECIPE_SERIALIZER.getId(recipe.getSerializer()));
+		packetByteBuf.writeIdentifier(Registry.field_17598.getId(recipe.getSerializer()));
 		packetByteBuf.writeIdentifier(recipe.getId());
 		((RecipeSerializer<T>)recipe.getSerializer()).write(packetByteBuf, recipe);
 	}

@@ -13,7 +13,6 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.predicate.entity.EntityPredicates;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPointer;
@@ -31,8 +30,7 @@ public class ArmorItem extends Item {
 	public static final DispenserBehavior DISPENSER_BEHAVIOR = new ItemDispenserBehavior() {
 		@Override
 		protected ItemStack dispenseSilently(BlockPointer blockPointer, ItemStack itemStack) {
-			ItemStack itemStack2 = ArmorItem.dispenseArmor(blockPointer, itemStack);
-			return itemStack2.isEmpty() ? super.dispenseSilently(blockPointer, itemStack) : itemStack2;
+			return ArmorItem.dispenseArmor(blockPointer, itemStack) ? itemStack : super.dispenseSilently(blockPointer, itemStack);
 		}
 	};
 	protected final EquipmentSlot slot;
@@ -40,23 +38,23 @@ public class ArmorItem extends Item {
 	protected final float toughness;
 	protected final ArmorMaterial type;
 
-	public static ItemStack dispenseArmor(BlockPointer blockPointer, ItemStack itemStack) {
+	public static boolean dispenseArmor(BlockPointer blockPointer, ItemStack itemStack) {
 		BlockPos blockPos = blockPointer.getBlockPos().offset(blockPointer.getBlockState().get(DispenserBlock.FACING));
 		List<LivingEntity> list = blockPointer.getWorld()
 			.getEntities(LivingEntity.class, new Box(blockPos), EntityPredicates.EXCEPT_SPECTATOR.and(new EntityPredicates.CanPickup(itemStack)));
 		if (list.isEmpty()) {
-			return ItemStack.EMPTY;
+			return false;
 		} else {
 			LivingEntity livingEntity = (LivingEntity)list.get(0);
 			EquipmentSlot equipmentSlot = MobEntity.getPreferredEquipmentSlot(itemStack);
 			ItemStack itemStack2 = itemStack.split(1);
-			livingEntity.setEquippedStack(equipmentSlot, itemStack2);
+			livingEntity.equipStack(equipmentSlot, itemStack2);
 			if (livingEntity instanceof MobEntity) {
 				((MobEntity)livingEntity).setEquipmentDropChance(equipmentSlot, 2.0F);
 				((MobEntity)livingEntity).setPersistent();
 			}
 
-			return itemStack;
+			return true;
 		}
 	}
 
@@ -84,7 +82,7 @@ public class ArmorItem extends Item {
 
 	@Override
 	public boolean canRepair(ItemStack itemStack, ItemStack itemStack2) {
-		return this.type.getRepairIngredient().method_8093(itemStack2) || super.canRepair(itemStack, itemStack2);
+		return this.type.getRepairIngredient().test(itemStack2) || super.canRepair(itemStack, itemStack2);
 	}
 
 	@Override
@@ -93,11 +91,11 @@ public class ArmorItem extends Item {
 		EquipmentSlot equipmentSlot = MobEntity.getPreferredEquipmentSlot(itemStack);
 		ItemStack itemStack2 = playerEntity.getEquippedStack(equipmentSlot);
 		if (itemStack2.isEmpty()) {
-			playerEntity.setEquippedStack(equipmentSlot, itemStack.copy());
+			playerEntity.equipStack(equipmentSlot, itemStack.copy());
 			itemStack.setCount(0);
-			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+			return TypedActionResult.success(itemStack);
 		} else {
-			return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+			return TypedActionResult.fail(itemStack);
 		}
 	}
 

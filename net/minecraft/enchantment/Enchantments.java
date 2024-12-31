@@ -64,6 +64,6 @@ public class Enchantments {
 	public static final Enchantment field_9109 = register("vanishing_curse", new VanishingCurseEnchantment(Enchantment.Weight.field_9091, EquipmentSlot.values()));
 
 	private static Enchantment register(String string, Enchantment enchantment) {
-		return Registry.register(Registry.ENCHANTMENT, string, enchantment);
+		return Registry.register(Registry.field_11160, string, enchantment);
 	}
 }

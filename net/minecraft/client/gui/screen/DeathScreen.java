@@ -1,11 +1,11 @@
 package net.minecraft.client.gui.screen;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.client.util.TextComponentUtil;
+import net.minecraft.client.util.Texts;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -26,33 +26,32 @@ public class DeathScreen extends Screen {
 	@Override
 	protected void init() {
 		this.ticksSinceDeath = 0;
-		String string;
-		String string2;
-		if (this.isHardcore) {
-			string = I18n.translate("deathScreen.spectate");
-			string2 = I18n.translate("deathScreen." + (this.minecraft.isInSingleplayer() ? "deleteWorld" : "leaveServer"));
-		} else {
-			string = I18n.translate("deathScreen.respawn");
-			string2 = I18n.translate("deathScreen.titleScreen");
-		}
-
-		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 72, 200, 20, string, buttonWidgetx -> {
-			this.minecraft.player.requestRespawn();
-			this.minecraft.openScreen(null);
-		}));
+		this.addButton(
+			new ButtonWidget(
+				this.width / 2 - 100,
+				this.height / 4 + 72,
+				200,
+				20,
+				this.isHardcore ? I18n.translate("deathScreen.spectate") : I18n.translate("deathScreen.respawn"),
+				buttonWidgetx -> {
+					this.minecraft.player.requestRespawn();
+					this.minecraft.openScreen(null);
+				}
+			)
+		);
 		ButtonWidget buttonWidget = this.addButton(
 			new ButtonWidget(
 				this.width / 2 - 100,
 				this.height / 4 + 96,
 				200,
 				20,
-				string2,
+				I18n.translate("deathScreen.titleScreen"),
 				buttonWidgetx -> {
 					if (this.isHardcore) {
-						this.minecraft.openScreen(new TitleScreen());
+						this.quitLevel();
 					} else {
 						ConfirmScreen confirmScreen = new ConfirmScreen(
-							this::method_20373,
+							this::onConfirmQuit,
 							new TranslatableText("deathScreen.quit.confirm"),
 							new LiteralText(""),
 							I18n.translate("deathScreen.titleScreen"),
@@ -78,27 +77,31 @@ public class DeathScreen extends Screen {
 		return false;
 	}
 
-	private void method_20373(boolean bl) {
+	private void onConfirmQuit(boolean bl) {
 		if (bl) {
-			if (this.minecraft.world != null) {
-				this.minecraft.world.disconnect();
-			}
-
-			this.minecraft.disconnect(new SaveLevelScreen(new TranslatableText("menu.savingLevel")));
-			this.minecraft.openScreen(new TitleScreen());
+			this.quitLevel();
 		} else {
 			this.minecraft.player.requestRespawn();
 			this.minecraft.openScreen(null);
 		}
 	}
 
+	private void quitLevel() {
+		if (this.minecraft.world != null) {
+			this.minecraft.world.disconnect();
+		}
+
+		this.minecraft.disconnect(new SaveLevelScreen(new TranslatableText("menu.savingLevel")));
+		this.minecraft.openScreen(new TitleScreen());
+	}
+
 	@Override
 	public void render(int i, int j, float f) {
 		this.fillGradient(0, 0, this.width, this.height, 1615855616, -1602211792);
-		GlStateManager.pushMatrix();
-		GlStateManager.scalef(2.0F, 2.0F, 2.0F);
+		RenderSystem.pushMatrix();
+		RenderSystem.scalef(2.0F, 2.0F, 2.0F);
 		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2 / 2, 30, 16777215);
-		GlStateManager.popMatrix();
+		RenderSystem.popMatrix();
 		if (this.message != null) {
 			this.drawCenteredString(this.font, this.message.asFormattedString(), this.width / 2, 85, 16777215);
 		}
@@ -107,7 +110,7 @@ public class DeathScreen extends Screen {
 			this.font, I18n.translate("deathScreen.score") + ": " + Formatting.field_1054 + this.minecraft.player.getScore(), this.width / 2, 100, 16777215
 		);
 		if (this.message != null && j > 85 && j < 85 + 9) {
-			Text text = this.method_2164(i);
+			Text text = this.getTextComponentUnderMouse(i);
 			if (text != null && text.getStyle().getHoverEvent() != null) {
 				this.renderComponentHoverEffect(text, i, j);
 			}
@@ -117,7 +120,7 @@ public class DeathScreen extends Screen {
 	}
 
 	@Nullable
-	public Text method_2164(int i) {
+	public Text getTextComponentUnderMouse(int i) {
 		if (this.message == null) {
 			return null;
 		} else {
@@ -127,7 +130,7 @@ public class DeathScreen extends Screen {
 			int m = k;
 			if (i >= k && i <= l) {
 				for (Text text : this.message) {
-					m += this.minecraft.textRenderer.getStringWidth(TextComponentUtil.getRenderChatMessage(text.asString(), false));
+					m += this.minecraft.textRenderer.getStringWidth(Texts.getRenderChatMessage(text.asString(), false));
 					if (m > i) {
 						return text;
 					}
@@ -143,7 +146,7 @@ public class DeathScreen extends Screen {
 	@Override
 	public boolean mouseClicked(double d, double e, int i) {
 		if (this.message != null && e > 85.0 && e < (double)(85 + 9)) {
-			Text text = this.method_2164((int)d);
+			Text text = this.getTextComponentUnderMouse((int)d);
 			if (text != null && text.getStyle().getClickEvent() != null && text.getStyle().getClickEvent().getAction() == ClickEvent.Action.field_11749) {
 				this.handleComponentClicked(text);
 				return false;

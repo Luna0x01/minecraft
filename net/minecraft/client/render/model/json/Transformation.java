@@ -7,19 +7,38 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.math.Quaternion;
 
 public class Transformation {
-	public static final Transformation NONE = new Transformation(new Vector3f(), new Vector3f(), new Vector3f(1.0F, 1.0F, 1.0F));
+	public static final Transformation IDENTITY = new Transformation(new Vector3f(), new Vector3f(), new Vector3f(1.0F, 1.0F, 1.0F));
 	public final Vector3f rotation;
 	public final Vector3f translation;
 	public final Vector3f scale;
 
 	public Transformation(Vector3f vector3f, Vector3f vector3f2, Vector3f vector3f3) {
-		this.rotation = new Vector3f(vector3f);
-		this.translation = new Vector3f(vector3f2);
-		this.scale = new Vector3f(vector3f3);
+		this.rotation = vector3f.copy();
+		this.translation = vector3f2.copy();
+		this.scale = vector3f3.copy();
+	}
+
+	public void apply(boolean bl, MatrixStack matrixStack) {
+		if (this != IDENTITY) {
+			float f = this.rotation.getX();
+			float g = this.rotation.getY();
+			float h = this.rotation.getZ();
+			if (bl) {
+				g = -g;
+				h = -h;
+			}
+
+			int i = bl ? -1 : 1;
+			matrixStack.translate((double)((float)i * this.translation.getX()), (double)this.translation.getY(), (double)this.translation.getZ());
+			matrixStack.multiply(new Quaternion(f, g, h, true));
+			matrixStack.scale(this.scale.getX(), this.scale.getY(), this.scale.getZ());
+		}
 	}
 
 	public boolean equals(Object object) {
@@ -47,7 +66,7 @@ public class Transformation {
 		protected Deserializer() {
 		}
 
-		public Transformation method_3494(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public Transformation deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Vector3f vector3f = this.parseVector3f(jsonObject, "rotation", DEFAULT_ROATATION);
 			Vector3f vector3f2 = this.parseVector3f(jsonObject, "translation", DEFAULT_TRANSLATION);

@@ -5,7 +5,6 @@ import net.minecraft.entity.thrown.ThrownExperienceBottleEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
@@ -23,12 +22,15 @@ public class ExperienceBottleItem extends Item {
 	@Override
 	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (!playerEntity.abilities.creativeMode) {
-			itemStack.decrement(1);
-		}
-
 		world.playSound(
-			null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_14637, SoundCategory.field_15254, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+			null,
+			playerEntity.getX(),
+			playerEntity.getY(),
+			playerEntity.getZ(),
+			SoundEvents.field_14637,
+			SoundCategory.field_15254,
+			0.5F,
+			0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 		);
 		if (!world.isClient) {
 			ThrownExperienceBottleEntity thrownExperienceBottleEntity = new ThrownExperienceBottleEntity(world, playerEntity);
@@ -38,6 +40,10 @@ public class ExperienceBottleItem extends Item {
 		}
 
 		playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-		return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+		if (!playerEntity.abilities.creativeMode) {
+			itemStack.decrement(1);
+		}
+
+		return TypedActionResult.success(itemStack);
 	}
 }

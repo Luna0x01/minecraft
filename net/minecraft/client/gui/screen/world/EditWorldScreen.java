@@ -16,7 +16,7 @@ import net.minecraft.client.toast.ToastManager;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorage;
@@ -51,7 +51,7 @@ public class EditWorldScreen extends Screen {
 		);
 		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 48 + 5, 200, 20, I18n.translate("selectWorld.edit.openFolder"), buttonWidgetx -> {
 			LevelStorage levelStoragex = this.minecraft.getLevelStorage();
-			SystemUtil.getOperatingSystem().open(levelStoragex.resolveFile(this.levelName, "icon.png").getParentFile());
+			Util.getOperatingSystem().open(levelStoragex.resolveFile(this.levelName, "icon.png").getParentFile());
 		}));
 		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 72 + 5, 200, 20, I18n.translate("selectWorld.edit.backup"), buttonWidgetx -> {
 			LevelStorage levelStoragex = this.minecraft.getLevelStorage();
@@ -68,7 +68,7 @@ public class EditWorldScreen extends Screen {
 				throw new RuntimeException(var5);
 			}
 
-			SystemUtil.getOperatingSystem().open(path.toFile());
+			Util.getOperatingSystem().open(path.toFile());
 		}));
 		this.addButton(
 			new ButtonWidget(

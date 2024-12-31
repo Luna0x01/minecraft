@@ -1,0 +1,24 @@
+package net.minecraft.client.render.chunk;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.RenderLayer;
+
+public class BlockBufferBuilderStorage {
+	private final Map<RenderLayer, BufferBuilder> builders = (Map<RenderLayer, BufferBuilder>)RenderLayer.getBlockLayers()
+		.stream()
+		.collect(Collectors.toMap(renderLayer -> renderLayer, renderLayer -> new BufferBuilder(renderLayer.getExpectedBufferSize())));
+
+	public BufferBuilder get(RenderLayer renderLayer) {
+		return (BufferBuilder)this.builders.get(renderLayer);
+	}
+
+	public void clear() {
+		this.builders.values().forEach(BufferBuilder::clear);
+	}
+
+	public void reset() {
+		this.builders.values().forEach(BufferBuilder::reset);
+	}
+}

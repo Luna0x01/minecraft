@@ -3,7 +3,6 @@ package net.minecraft.entity.passive;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnType;
@@ -43,7 +42,7 @@ public class TraderLlamaEntity extends LlamaEntity {
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("DespawnDelay", 99)) {
+		if (compoundTag.contains("DespawnDelay", 99)) {
 			this.despawnDelay = compoundTag.getInt("DespawnDelay");
 		}
 	}
@@ -95,15 +94,19 @@ public class TraderLlamaEntity extends LlamaEntity {
 
 	@Nullable
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
-		EntityData entityData2 = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 		if (spawnType == SpawnType.field_16467) {
 			this.setBreedingAge(0);
 		}
 
-		return entityData2;
+		if (entityData == null) {
+			entityData = new PassiveEntity.EntityData();
+			((PassiveEntity.EntityData)entityData).setBabyAllowed(false);
+		}
+
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
 	public class DefendTraderGoal extends TrackTargetGoal {

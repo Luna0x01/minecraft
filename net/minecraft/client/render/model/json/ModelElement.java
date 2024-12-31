@@ -30,17 +30,17 @@ public class ModelElement {
 		this.faces = map;
 		this.rotation = modelRotation;
 		this.shade = bl;
-		this.setUvs();
+		this.initTextures();
 	}
 
-	private void setUvs() {
+	private void initTextures() {
 		for (Entry<Direction, ModelElementFace> entry : this.faces.entrySet()) {
-			float[] fs = this.getUvs((Direction)entry.getKey());
+			float[] fs = this.getRotatedMatrix((Direction)entry.getKey());
 			((ModelElementFace)entry.getValue()).textureData.setUvs(fs);
 		}
 	}
 
-	private float[] getUvs(Direction direction) {
+	private float[] getRotatedMatrix(Direction direction) {
 		switch (direction) {
 			case field_11033:
 				return new float[]{this.from.getX(), 16.0F - this.to.getZ(), this.to.getX(), 16.0F - this.from.getZ()};
@@ -62,7 +62,7 @@ public class ModelElement {
 		protected Deserializer() {
 		}
 
-		public ModelElement method_3406(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public ModelElement deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			Vector3f vector3f = this.deserializeFrom(jsonObject);
 			Vector3f vector3f2 = this.deserializeTo(jsonObject);

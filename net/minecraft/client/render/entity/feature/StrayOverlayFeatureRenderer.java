@@ -1,30 +1,24 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.EntityModel;
-import net.minecraft.client.render.entity.model.StrayEntityModel;
+import net.minecraft.client.render.entity.model.SkeletonEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.Identifier;
 
 public class StrayOverlayFeatureRenderer<T extends MobEntity & RangedAttackMob, M extends EntityModel<T>> extends FeatureRenderer<T, M> {
 	private static final Identifier SKIN = new Identifier("textures/entity/skeleton/stray_overlay.png");
-	private final StrayEntityModel<T> model = new StrayEntityModel<>(0.25F, true);
+	private final SkeletonEntityModel<T> model = new SkeletonEntityModel<>(0.25F, true);
 
 	public StrayOverlayFeatureRenderer(FeatureRendererContext<T, M> featureRendererContext) {
 		super(featureRendererContext);
 	}
 
-	public void method_4206(T mobEntity, float f, float g, float h, float i, float j, float k, float l) {
-		this.getModel().copyStateTo(this.model);
-		this.model.method_19689(mobEntity, f, g, h);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.bindTexture(SKIN);
-		this.model.method_17088(mobEntity, f, g, i, j, k, l);
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return true;
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T mobEntity, float f, float g, float h, float j, float k, float l
+	) {
+		render(this.getContextModel(), this.model, SKIN, matrixStack, vertexConsumerProvider, i, mobEntity, f, g, j, k, l, h, 1.0F, 1.0F, 1.0F);
 	}
 }

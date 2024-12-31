@@ -16,9 +16,10 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -45,17 +46,12 @@ public class CauldronBlock extends Block {
 
 	public CauldronBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(LEVEL, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, Integer.valueOf(0)));
 	}
 
 	@Override
 	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
 		return OUTLINE_SHAPE;
-	}
-
-	@Override
-	public boolean isOpaque(BlockState blockState) {
-		return false;
 	}
 
 	@Override
@@ -67,17 +63,17 @@ public class CauldronBlock extends Block {
 	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
 		int i = (Integer)blockState.get(LEVEL);
 		float f = (float)blockPos.getY() + (6.0F + (float)(3 * i)) / 16.0F;
-		if (!world.isClient && entity.isOnFire() && i > 0 && entity.getBoundingBox().minY <= (double)f) {
+		if (!world.isClient && entity.isOnFire() && i > 0 && entity.getY() <= (double)f) {
 			entity.extinguish();
 			this.setLevel(world, blockPos, blockState, i - 1);
 		}
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (itemStack.isEmpty()) {
-			return true;
+			return ActionResult.field_5811;
 		} else {
 			int i = (Integer)blockState.get(LEVEL);
 			Item item = itemStack.getItem();
@@ -92,7 +88,7 @@ public class CauldronBlock extends Block {
 					world.playSound(null, blockPos, SoundEvents.field_14834, SoundCategory.field_15245, 1.0F, 1.0F);
 				}
 
-				return true;
+				return ActionResult.field_5812;
 			} else if (item == Items.field_8550) {
 				if (i == 3 && !world.isClient) {
 					if (!playerEntity.abilities.creativeMode) {
@@ -109,7 +105,7 @@ public class CauldronBlock extends Block {
 					world.playSound(null, blockPos, SoundEvents.field_15126, SoundCategory.field_15245, 1.0F, 1.0F);
 				}
 
-				return true;
+				return ActionResult.field_5812;
 			} else if (item == Items.field_8469) {
 				if (i > 0 && !world.isClient) {
 					if (!playerEntity.abilities.creativeMode) {
@@ -129,7 +125,7 @@ public class CauldronBlock extends Block {
 					this.setLevel(world, blockPos, blockState, i - 1);
 				}
 
-				return true;
+				return ActionResult.field_5812;
 			} else if (item == Items.field_8574 && PotionUtil.getPotion(itemStack) == Potions.field_8991) {
 				if (i < 3 && !world.isClient) {
 					if (!playerEntity.abilities.creativeMode) {
@@ -145,7 +141,7 @@ public class CauldronBlock extends Block {
 					this.setLevel(world, blockPos, blockState, i + 1);
 				}
 
-				return true;
+				return ActionResult.field_5812;
 			} else {
 				if (i > 0 && item instanceof DyeableItem) {
 					DyeableItem dyeableItem = (DyeableItem)item;
@@ -153,7 +149,7 @@ public class CauldronBlock extends Block {
 						dyeableItem.removeColor(itemStack);
 						this.setLevel(world, blockPos, blockState, i - 1);
 						playerEntity.incrementStat(Stats.field_15382);
-						return true;
+						return ActionResult.field_5812;
 					}
 				}
 
@@ -177,23 +173,24 @@ public class CauldronBlock extends Block {
 						}
 					}
 
-					return true;
+					return ActionResult.field_5812;
 				} else if (i > 0 && item instanceof BlockItem) {
 					Block block = ((BlockItem)item).getBlock();
 					if (block instanceof ShulkerBoxBlock && !world.isClient()) {
 						ItemStack itemStack5 = new ItemStack(Blocks.field_10603, 1);
 						if (itemStack.hasTag()) {
-							itemStack5.setTag(itemStack.getTag().method_10553());
+							itemStack5.setTag(itemStack.getTag().copy());
 						}
 
 						playerEntity.setStackInHand(hand, itemStack5);
 						this.setLevel(world, blockPos, blockState, i - 1);
 						playerEntity.incrementStat(Stats.field_15398);
+						return ActionResult.field_5812;
+					} else {
+						return ActionResult.field_21466;
 					}
-
-					return true;
 				} else {
-					return false;
+					return ActionResult.field_5811;
 				}
 			}
 		}
@@ -205,7 +202,7 @@ public class CauldronBlock extends Block {
 	}
 
 	@Override
-	public void onRainTick(World world, BlockPos blockPos) {
+	public void rainTick(World world, BlockPos blockPos) {
 		if (world.random.nextInt(20) == 1) {
 			float f = world.getBiome(blockPos).getTemperature(blockPos);
 			if (!(f < 0.15F)) {
@@ -228,7 +225,7 @@ public class CauldronBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(LEVEL);
 	}
 

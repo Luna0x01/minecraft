@@ -6,7 +6,7 @@ import net.minecraft.world.World;
 public class CampfireSmokeParticle extends SpriteBillboardParticle {
 	private CampfireSmokeParticle(World world, double d, double e, double f, double g, double h, double i, boolean bl) {
 		super(world, d, e, f);
-		this.method_3087(3.0F);
+		this.scale(3.0F);
 		this.setBoundingBoxSpacing(0.25F, 0.25F);
 		if (bl) {
 			this.maxAge = this.random.nextInt(50) + 280;
@@ -50,7 +50,7 @@ public class CampfireSmokeParticle extends SpriteBillboardParticle {
 			this.field_18290 = spriteProvider;
 		}
 
-		public Particle method_17579(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			CampfireSmokeParticle campfireSmokeParticle = new CampfireSmokeParticle(world, d, e, f, g, h, i, false);
 			campfireSmokeParticle.setColorAlpha(0.9F);
 			campfireSmokeParticle.setSprite(this.field_18290);
@@ -65,7 +65,7 @@ public class CampfireSmokeParticle extends SpriteBillboardParticle {
 			this.field_17789 = spriteProvider;
 		}
 
-		public Particle method_18820(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			CampfireSmokeParticle campfireSmokeParticle = new CampfireSmokeParticle(world, d, e, f, g, h, i, true);
 			campfireSmokeParticle.setColorAlpha(0.95F);
 			campfireSmokeParticle.setSprite(this.field_17789);

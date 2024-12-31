@@ -30,13 +30,13 @@ public class DamageTracker {
 	public void setFallDeathSuffix() {
 		this.clearFallDeathSuffix();
 		if (this.entity.isClimbing()) {
-			Block block = this.entity.world.getBlockState(new BlockPos(this.entity.x, this.entity.getBoundingBox().minY, this.entity.z)).getBlock();
+			Block block = this.entity.world.getBlockState(new BlockPos(this.entity)).getBlock();
 			if (block == Blocks.field_9983) {
 				this.fallDeathSuffix = "ladder";
 			} else if (block == Blocks.field_10597) {
 				this.fallDeathSuffix = "vines";
 			}
-		} else if (this.entity.isInsideWater()) {
+		} else if (this.entity.isTouchingWater()) {
 			this.fallDeathSuffix = "water";
 		}
 	}
@@ -52,7 +52,7 @@ public class DamageTracker {
 			this.recentlyAttacked = true;
 			this.ageOnLastAttacked = this.entity.age;
 			this.ageOnLastUpdate = this.ageOnLastAttacked;
-			this.entity.method_6000();
+			this.entity.enterCombat();
 		}
 	}
 
@@ -172,7 +172,7 @@ public class DamageTracker {
 			this.recentlyAttacked = false;
 			this.ageOnLastUpdate = this.entity.age;
 			if (bl) {
-				this.entity.method_6044();
+				this.entity.endCombat();
 			}
 
 			this.recentDamage.clear();

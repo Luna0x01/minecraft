@@ -16,13 +16,16 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DefaultedList;
@@ -38,8 +41,6 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
 
 public class ShulkerBoxBlock extends BlockWithEntity {
 	public static final EnumProperty<Direction> FACING = FacingBlock.FACING;
@@ -50,7 +51,7 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 	public ShulkerBoxBlock(@Nullable DyeColor dyeColor, Block.Settings settings) {
 		super(settings);
 		this.color = dyeColor;
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11036));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11036));
 	}
 
 	@Override
@@ -64,21 +65,16 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasBlockEntityBreakingRender(BlockState blockState) {
-		return true;
-	}
-
-	@Override
 	public BlockRenderType getRenderType(BlockState blockState) {
 		return BlockRenderType.field_11456;
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else if (playerEntity.isSpectator()) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof ShulkerBoxBlockEntity) {
@@ -100,9 +96,9 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 					playerEntity.incrementStat(Stats.field_15418);
 				}
 
-				return true;
+				return ActionResult.field_5812;
 			} else {
-				return false;
+				return ActionResult.field_5811;
 			}
 		}
 	}
@@ -113,7 +109,7 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING);
 	}
 
@@ -186,11 +182,11 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 		super.buildTooltip(itemStack, blockView, list, tooltipContext);
 		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
 		if (compoundTag != null) {
-			if (compoundTag.containsKey("LootTable", 8)) {
+			if (compoundTag.contains("LootTable", 8)) {
 				list.add(new LiteralText("???????"));
 			}
 
-			if (compoundTag.containsKey("Items", 9)) {
+			if (compoundTag.contains("Items", 9)) {
 				DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(27, ItemStack.EMPTY);
 				Inventories.fromTag(compoundTag, defaultedList);
 				int i = 0;
@@ -226,11 +222,6 @@ public class ShulkerBoxBlock extends BlockWithEntity {
 		return blockEntity instanceof ShulkerBoxBlockEntity
 			? VoxelShapes.cuboid(((ShulkerBoxBlockEntity)blockEntity).getBoundingBox(blockState))
 			: VoxelShapes.fullCube();
-	}
-
-	@Override
-	public boolean isOpaque(BlockState blockState) {
-		return false;
 	}
 
 	@Override

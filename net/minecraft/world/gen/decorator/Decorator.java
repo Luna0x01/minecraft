@@ -11,9 +11,11 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
+import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.FeatureConfig;
 
 public abstract class Decorator<DC extends DecoratorConfig> {
+	public static final Decorator<NopeDecoratorConfig> field_14250 = register("nope", new NopeDecorator(NopeDecoratorConfig::deserialize));
 	public static final Decorator<CountDecoratorConfig> field_14238 = register("count_heightmap", new CountHeightmapDecorator(CountDecoratorConfig::deserialize));
 	public static final Decorator<CountDecoratorConfig> field_14245 = register("count_top_solid", new CountTopSolidDecorator(CountDecoratorConfig::deserialize));
 	public static final Decorator<CountDecoratorConfig> field_14253 = register(
@@ -29,7 +31,6 @@ public abstract class Decorator<DC extends DecoratorConfig> {
 	public static final Decorator<NoiseHeightmapDecoratorConfig> field_14236 = register(
 		"noise_heightmap_double", new NoiseHeightmapDoubleDecorator(NoiseHeightmapDecoratorConfig::deserialize)
 	);
-	public static final Decorator<NopeDecoratorConfig> field_14250 = register("nope", new NopeDecorator(NopeDecoratorConfig::deserialize));
 	public static final Decorator<ChanceDecoratorConfig> field_14259 = register(
 		"chance_heightmap", new ChanceHeightmapDecorator(ChanceDecoratorConfig::deserialize)
 	);
@@ -81,9 +82,9 @@ public abstract class Decorator<DC extends DecoratorConfig> {
 	public static final Decorator<CountDecoratorConfig> field_14235 = register("hell_fire", new HellFireDecorator(CountDecoratorConfig::deserialize));
 	public static final Decorator<CountDecoratorConfig> field_14244 = register("magma", new MagmaDecorator(CountDecoratorConfig::deserialize));
 	public static final Decorator<NopeDecoratorConfig> field_14268 = register("emerald_ore", new EmeraldOreDecorator(NopeDecoratorConfig::deserialize));
-	public static final Decorator<LakeDecoratorConfig> field_14237 = register("lava_lake", new LakeLakeDecorator(LakeDecoratorConfig::deserialize));
-	public static final Decorator<LakeDecoratorConfig> field_14242 = register("water_lake", new WaterLakeDecorator(LakeDecoratorConfig::deserialize));
-	public static final Decorator<DungeonDecoratorConfig> field_14265 = register("dungeons", new DungeonsDecorator(DungeonDecoratorConfig::deserialize));
+	public static final Decorator<ChanceDecoratorConfig> field_14237 = register("lava_lake", new LavaLakeDecorator(ChanceDecoratorConfig::deserialize));
+	public static final Decorator<ChanceDecoratorConfig> field_14242 = register("water_lake", new WaterLakeDecorator(ChanceDecoratorConfig::deserialize));
+	public static final Decorator<ChanceDecoratorConfig> field_14265 = register("dungeons", new DungeonsDecorator(ChanceDecoratorConfig::deserialize));
 	public static final Decorator<NopeDecoratorConfig> field_14239 = register("dark_oak_tree", new DarkOakTreeDecorator(NopeDecoratorConfig::deserialize));
 	public static final Decorator<ChanceDecoratorConfig> field_14243 = register("iceberg", new IcebergDecorator(ChanceDecoratorConfig::deserialize));
 	public static final Decorator<CountDecoratorConfig> field_14256 = register("light_gem_chance", new LightGemChanceDecorator(CountDecoratorConfig::deserialize));
@@ -93,7 +94,7 @@ public abstract class Decorator<DC extends DecoratorConfig> {
 	private final Function<Dynamic<?>, ? extends DC> configDeserializer;
 
 	private static <T extends DecoratorConfig, G extends Decorator<T>> G register(String string, G decorator) {
-		return Registry.register(Registry.DECORATOR, string, decorator);
+		return Registry.register(Registry.field_11148, string, decorator);
 	}
 
 	public Decorator(Function<Dynamic<?>, ? extends DC> function) {
@@ -104,13 +105,17 @@ public abstract class Decorator<DC extends DecoratorConfig> {
 		return (DC)this.configDeserializer.apply(dynamic);
 	}
 
-	protected <FC extends FeatureConfig> boolean generate(
+	public ConfiguredDecorator<DC> configure(DC decoratorConfig) {
+		return new ConfiguredDecorator<>(this, decoratorConfig);
+	}
+
+	protected <FC extends FeatureConfig, F extends Feature<FC>> boolean generate(
 		IWorld iWorld,
 		ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator,
 		Random random,
 		BlockPos blockPos,
 		DC decoratorConfig,
-		ConfiguredFeature<FC> configuredFeature
+		ConfiguredFeature<FC, F> configuredFeature
 	) {
 		AtomicBoolean atomicBoolean = new AtomicBoolean(false);
 		this.getPositions(iWorld, chunkGenerator, random, decoratorConfig, blockPos).forEach(blockPosx -> {

@@ -16,18 +16,18 @@ import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.structure.StructureStart;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.BlockViewWithStructures;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.LightType;
+import net.minecraft.world.StructureHolder;
 import net.minecraft.world.TickScheduler;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.light.LightingProvider;
+import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.gen.GenerationStep;
 import org.apache.logging.log4j.LogManager;
 
-public interface Chunk extends BlockViewWithStructures {
+public interface Chunk extends BlockView, StructureHolder {
 	@Nullable
 	BlockState setBlockState(BlockPos blockPos, BlockState blockState, boolean bl);
 
@@ -58,20 +58,6 @@ public interface Chunk extends BlockViewWithStructures {
 
 	ChunkSection[] getSectionArray();
 
-	@Nullable
-	LightingProvider getLightingProvider();
-
-	default int getLightLevel(BlockPos blockPos, int i, boolean bl) {
-		LightingProvider lightingProvider = this.getLightingProvider();
-		if (lightingProvider != null && this.getStatus().isAtLeast(ChunkStatus.field_12805)) {
-			int j = bl ? lightingProvider.get(LightType.field_9284).getLightLevel(blockPos) - i : 0;
-			int k = lightingProvider.get(LightType.field_9282).getLightLevel(blockPos);
-			return Math.max(k, j);
-		} else {
-			return 0;
-		}
-	}
-
 	Collection<Entry<Heightmap.Type, Heightmap>> getHeightmaps();
 
 	void setHeightmap(Heightmap.Type type, long[] ls);
@@ -87,12 +73,6 @@ public interface Chunk extends BlockViewWithStructures {
 	Map<String, StructureStart> getStructureStarts();
 
 	void setStructureStarts(Map<String, StructureStart> map);
-
-	default Biome getBiome(BlockPos blockPos) {
-		int i = blockPos.getX() & 15;
-		int j = blockPos.getZ() & 15;
-		return this.getBiomeArray()[j << 4 | i];
-	}
 
 	default boolean method_12228(int i, int j) {
 		if (i < 0) {
@@ -112,7 +92,8 @@ public interface Chunk extends BlockViewWithStructures {
 		return true;
 	}
 
-	Biome[] getBiomeArray();
+	@Nullable
+	BiomeArray getBiomeArray();
 
 	void setShouldSave(boolean bl);
 
@@ -121,8 +102,6 @@ public interface Chunk extends BlockViewWithStructures {
 	ChunkStatus getStatus();
 
 	void removeBlockEntity(BlockPos blockPos);
-
-	void setLightingProvider(LightingProvider lightingProvider);
 
 	default void markBlockForPostProcessing(BlockPos blockPos) {
 		LogManager.getLogger().warn("Trying to mark a block for PostProcessing @ {}, but this operation is not supported.", blockPos);
@@ -144,10 +123,6 @@ public interface Chunk extends BlockViewWithStructures {
 	@Nullable
 	CompoundTag method_20598(BlockPos blockPos);
 
-	default void setBiomeArray(Biome[] biomes) {
-		throw new UnsupportedOperationException();
-	}
-
 	Stream<BlockPos> getLightSourcesStream();
 
 	TickScheduler<Block> getBlockTickScheduler();
@@ -155,7 +130,7 @@ public interface Chunk extends BlockViewWithStructures {
 	TickScheduler<Fluid> getFluidTickScheduler();
 
 	default BitSet getCarvingMask(GenerationStep.Carver carver) {
-		throw new RuntimeException("Meaningless in this context");
+		throw (RuntimeException)Util.throwOrPause(new RuntimeException("Meaningless in this context"));
 	}
 
 	UpgradeData getUpgradeData();

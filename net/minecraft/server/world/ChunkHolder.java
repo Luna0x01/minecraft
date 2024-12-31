@@ -17,6 +17,7 @@ import net.minecraft.client.network.packet.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.client.network.packet.LightUpdateS2CPacket;
 import net.minecraft.network.Packet;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
@@ -105,7 +106,7 @@ public class ChunkHolder {
 	}
 
 	@Nullable
-	public ChunkStatus getCompletedStatus() {
+	public ChunkStatus method_23270() {
 		for (int i = CHUNK_STATUSES.size() - 1; i >= 0; i--) {
 			ChunkStatus chunkStatus = (ChunkStatus)CHUNK_STATUSES.get(i);
 			CompletableFuture<Either<Chunk, ChunkHolder.Unloaded>> completableFuture = this.getFuture(chunkStatus);
@@ -264,7 +265,7 @@ public class ChunkHolder {
 		this.future = this.future.thenCombine(completableFuture, (chunk, either) -> (Chunk)either.map(chunkx -> chunkx, unloaded -> chunk));
 	}
 
-	public ChunkHolder.LevelType getLevelType() {
+	public ChunkHolder.LevelType method_23271() {
 		return getLevelType(this.level);
 	}
 
@@ -343,7 +344,7 @@ public class ChunkHolder {
 		boolean bl8 = levelType2.isAfter(ChunkHolder.LevelType.field_13877);
 		if (!bl7 && bl8) {
 			if (this.entityTickingFuture != UNLOADED_WORLD_CHUNK_FUTURE) {
-				throw new IllegalStateException();
+				throw (IllegalStateException)Util.throwOrPause(new IllegalStateException());
 			}
 
 			this.entityTickingFuture = threadedAnvilChunkStorage.createEntityTickingChunkFuture(this.pos);

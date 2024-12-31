@@ -6,6 +6,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -18,7 +19,7 @@ public class PumpkinBlock extends GourdBlock {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (itemStack.getItem() == Items.field_8868) {
 			if (!world.isClient) {
@@ -40,9 +41,9 @@ public class PumpkinBlock extends GourdBlock {
 				itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		} else {
-			return super.activate(blockState, world, blockPos, playerEntity, hand, blockHitResult);
+			return super.onUse(blockState, world, blockPos, playerEntity, hand, blockHitResult);
 		}
 	}
 

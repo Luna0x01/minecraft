@@ -24,7 +24,7 @@ public class Activity {
 	}
 
 	private static Activity register(String string) {
-		return Registry.register(Registry.ACTIVITY, string, new Activity(string));
+		return Registry.register(Registry.field_18796, string, new Activity(string));
 	}
 
 	public String toString() {

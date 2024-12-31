@@ -32,7 +32,7 @@ public class ParticleArgumentType implements ArgumentType<ParticleEffect> {
 		return (ParticleEffect)commandContext.getArgument(string, ParticleEffect.class);
 	}
 
-	public ParticleEffect method_9416(StringReader stringReader) throws CommandSyntaxException {
+	public ParticleEffect parse(StringReader stringReader) throws CommandSyntaxException {
 		return readParameters(stringReader);
 	}
 
@@ -42,9 +42,7 @@ public class ParticleArgumentType implements ArgumentType<ParticleEffect> {
 
 	public static ParticleEffect readParameters(StringReader stringReader) throws CommandSyntaxException {
 		Identifier identifier = Identifier.fromCommandInput(stringReader);
-		ParticleType<?> particleType = (ParticleType<?>)Registry.PARTICLE_TYPE
-			.getOrEmpty(identifier)
-			.orElseThrow(() -> UNKNOWN_PARTICLE_EXCEPTION.create(identifier));
+		ParticleType<?> particleType = (ParticleType<?>)Registry.field_11141.getOrEmpty(identifier).orElseThrow(() -> UNKNOWN_PARTICLE_EXCEPTION.create(identifier));
 		return readParameters(stringReader, (ParticleType<ParticleEffect>)particleType);
 	}
 
@@ -53,6 +51,6 @@ public class ParticleArgumentType implements ArgumentType<ParticleEffect> {
 	}
 
 	public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> commandContext, SuggestionsBuilder suggestionsBuilder) {
-		return CommandSource.suggestIdentifiers(Registry.PARTICLE_TYPE.getIds(), suggestionsBuilder);
+		return CommandSource.suggestIdentifiers(Registry.field_11141.getIds(), suggestionsBuilder);
 	}
 }

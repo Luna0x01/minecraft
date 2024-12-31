@@ -15,7 +15,7 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 		ListTag listTag = compoundTag.getList("Recipes", 10);
 
 		for (int i = 0; i < listTag.size(); i++) {
-			this.add(new TradeOffer(listTag.getCompoundTag(i)));
+			this.add(new TradeOffer(listTag.getCompound(i)));
 		}
 	}
 
@@ -55,7 +55,7 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 			packetByteBuf.writeInt(tradeOffer.getTraderExperience());
 			packetByteBuf.writeInt(tradeOffer.getSpecialPrice());
 			packetByteBuf.writeFloat(tradeOffer.getPriceMultiplier());
-			packetByteBuf.writeInt(tradeOffer.method_21725());
+			packetByteBuf.writeInt(tradeOffer.getDemandBonus());
 		}
 	}
 

@@ -3,7 +3,7 @@ package net.minecraft.block;
 import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SmokerBlockEntity;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
@@ -27,7 +27,7 @@ public class SmokerBlock extends AbstractFurnaceBlock {
 	protected void openContainer(World world, BlockPos blockPos, PlayerEntity playerEntity) {
 		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (blockEntity instanceof SmokerBlockEntity) {
-			playerEntity.openContainer((NameableContainerProvider)blockEntity);
+			playerEntity.openContainer((NameableContainerFactory)blockEntity);
 			playerEntity.incrementStat(Stats.field_17273);
 		}
 	}

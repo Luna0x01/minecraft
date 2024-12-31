@@ -1,5 +1,8 @@
 package net.minecraft.world.biome.layer;
 
+import net.minecraft.world.biome.layer.type.SouthEastSamplingLayer;
+import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
+
 public enum AddColdClimatesLayer implements SouthEastSamplingLayer {
 	field_16059;
 

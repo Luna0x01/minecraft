@@ -23,7 +23,8 @@ public final class VoidBiome extends Biome {
 				.parent(null)
 		);
 		this.addFeature(
-			GenerationStep.Feature.field_13179, configureFeature(Feature.field_13591, FeatureConfig.DEFAULT, Decorator.field_14250, DecoratorConfig.DEFAULT)
+			GenerationStep.Feature.field_13179,
+			Feature.field_13591.configure(FeatureConfig.DEFAULT).createDecoratedFeature(Decorator.field_14250.configure(DecoratorConfig.DEFAULT))
 		);
 	}
 }

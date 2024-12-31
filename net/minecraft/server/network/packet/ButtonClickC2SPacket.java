@@ -17,7 +17,7 @@ public class ButtonClickC2SPacket implements Packet<ServerPlayPacketListener> {
 		this.buttonId = j;
 	}
 
-	public void method_12185(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onButtonClick(this);
 	}
 

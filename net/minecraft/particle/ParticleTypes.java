@@ -61,12 +61,16 @@ public class ParticleTypes {
 	public static final DefaultParticleType field_11222 = register("dolphin", false);
 	public static final DefaultParticleType field_17430 = register("campfire_cosy_smoke", true);
 	public static final DefaultParticleType field_17431 = register("campfire_signal_smoke", true);
+	public static final DefaultParticleType field_20534 = register("dripping_honey", false);
+	public static final DefaultParticleType field_20535 = register("falling_honey", false);
+	public static final DefaultParticleType field_20536 = register("landing_honey", false);
+	public static final DefaultParticleType field_20537 = register("falling_nectar", false);
 
 	private static DefaultParticleType register(String string, boolean bl) {
-		return Registry.register(Registry.PARTICLE_TYPE, string, new DefaultParticleType(bl));
+		return Registry.register(Registry.field_11141, string, new DefaultParticleType(bl));
 	}
 
 	private static <T extends ParticleEffect> ParticleType<T> register(String string, ParticleEffect.Factory<T> factory) {
-		return Registry.register(Registry.PARTICLE_TYPE, string, new ParticleType<>(false, factory));
+		return Registry.register(Registry.field_11141, string, new ParticleType<>(false, factory));
 	}
 }

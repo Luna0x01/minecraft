@@ -49,7 +49,7 @@ public class ShapelessRecipe implements CraftingRecipe {
 		return this.input;
 	}
 
-	public boolean method_17730(CraftingInventory craftingInventory, World world) {
+	public boolean matches(CraftingInventory craftingInventory, World world) {
 		RecipeFinder recipeFinder = new RecipeFinder();
 		int i = 0;
 
@@ -64,7 +64,7 @@ public class ShapelessRecipe implements CraftingRecipe {
 		return i == this.input.size() && recipeFinder.findRecipe(this, null);
 	}
 
-	public ItemStack method_17729(CraftingInventory craftingInventory) {
+	public ItemStack craft(CraftingInventory craftingInventory) {
 		return this.output.copy();
 	}
 
@@ -74,7 +74,7 @@ public class ShapelessRecipe implements CraftingRecipe {
 	}
 
 	public static class Serializer implements RecipeSerializer<ShapelessRecipe> {
-		public ShapelessRecipe method_8142(Identifier identifier, JsonObject jsonObject) {
+		public ShapelessRecipe read(Identifier identifier, JsonObject jsonObject) {
 			String string = JsonHelper.getString(jsonObject, "group", "");
 			DefaultedList<Ingredient> defaultedList = getIngredients(JsonHelper.getArray(jsonObject, "ingredients"));
 			if (defaultedList.isEmpty()) {
@@ -100,7 +100,7 @@ public class ShapelessRecipe implements CraftingRecipe {
 			return defaultedList;
 		}
 
-		public ShapelessRecipe method_8141(Identifier identifier, PacketByteBuf packetByteBuf) {
+		public ShapelessRecipe read(Identifier identifier, PacketByteBuf packetByteBuf) {
 			String string = packetByteBuf.readString(32767);
 			int i = packetByteBuf.readVarInt();
 			DefaultedList<Ingredient> defaultedList = DefaultedList.ofSize(i, Ingredient.EMPTY);
@@ -113,7 +113,7 @@ public class ShapelessRecipe implements CraftingRecipe {
 			return new ShapelessRecipe(identifier, string, itemStack, defaultedList);
 		}
 
-		public void method_8143(PacketByteBuf packetByteBuf, ShapelessRecipe shapelessRecipe) {
+		public void write(PacketByteBuf packetByteBuf, ShapelessRecipe shapelessRecipe) {
 			packetByteBuf.writeString(shapelessRecipe.group);
 			packetByteBuf.writeVarInt(shapelessRecipe.input.size());
 

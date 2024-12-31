@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.LecternBlock;
 import net.minecraft.container.Container;
 import net.minecraft.container.LecternContainer;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.container.PropertyDelegate;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -25,7 +25,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
-public class LecternBlockEntity extends BlockEntity implements Clearable, NameableContainerProvider {
+public class LecternBlockEntity extends BlockEntity implements Clearable, NameableContainerFactory {
 	private final Inventory inventory = new Inventory() {
 		@Override
 		public int getInvSize() {
@@ -206,7 +206,7 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 	@Override
 	public void fromTag(CompoundTag compoundTag) {
 		super.fromTag(compoundTag);
-		if (compoundTag.containsKey("Book", 10)) {
+		if (compoundTag.contains("Book", 10)) {
 			this.book = this.resolveBook(ItemStack.fromTag(compoundTag.getCompound("Book")), null);
 		} else {
 			this.book = ItemStack.EMPTY;

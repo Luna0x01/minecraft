@@ -21,7 +21,7 @@ public class TheEndDimension extends Dimension {
 	private final EnderDragonFight enderDragonFight;
 
 	public TheEndDimension(World world, DimensionType dimensionType) {
-		super(world, dimensionType);
+		super(world, dimensionType, 0.0F);
 		CompoundTag compoundTag = world.getLevelProperties().getWorldData(DimensionType.field_13078);
 		this.enderDragonFight = world instanceof ServerWorld ? new EnderDragonFight((ServerWorld)world, compoundTag.getCompound("DragonFight")) : null;
 	}
@@ -34,7 +34,7 @@ public class TheEndDimension extends Dimension {
 		floatingIslandsChunkGeneratorConfig.withCenter(this.getForcedSpawnPoint());
 		return ChunkGeneratorType.field_12770
 			.create(
-				this.world, BiomeSourceType.THE_END.applyConfig(BiomeSourceType.THE_END.getConfig().method_9205(this.world.getSeed())), floatingIslandsChunkGeneratorConfig
+				this.world, BiomeSourceType.THE_END.applyConfig(BiomeSourceType.THE_END.getConfig(this.world.getLevelProperties())), floatingIslandsChunkGeneratorConfig
 			);
 	}
 
@@ -64,7 +64,7 @@ public class TheEndDimension extends Dimension {
 	}
 
 	@Override
-	public boolean method_12449() {
+	public boolean hasGround() {
 		return false;
 	}
 
@@ -103,7 +103,7 @@ public class TheEndDimension extends Dimension {
 	}
 
 	@Override
-	public boolean shouldRenderFog(int i, int j) {
+	public boolean isFogThick(int i, int j) {
 		return false;
 	}
 

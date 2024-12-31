@@ -38,7 +38,7 @@ public class WorldEventS2CPacket implements Packet<ClientPlayPacketListener> {
 		packetByteBuf.writeBoolean(this.global);
 	}
 
-	public void method_11535(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onWorldEvent(this);
 	}
 

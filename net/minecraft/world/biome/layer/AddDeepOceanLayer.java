@@ -1,5 +1,8 @@
 package net.minecraft.world.biome.layer;
 
+import net.minecraft.world.biome.layer.type.CrossSamplingLayer;
+import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
+
 public enum AddDeepOceanLayer implements CrossSamplingLayer {
 	field_16052;
 

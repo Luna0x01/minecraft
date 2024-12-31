@@ -5,8 +5,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.PacketByteBuf;
-import net.minecraft.util.TagHelper;
 
 public class ChunkSection {
 	private static final Palette<BlockState> palette = new IdListPalette<>(Block.STATE_IDS, Blocks.field_10124.getDefaultState());
@@ -25,9 +25,7 @@ public class ChunkSection {
 		this.nonEmptyBlockCount = s;
 		this.randomTickableBlockCount = t;
 		this.nonEmptyFluidCount = u;
-		this.container = new PalettedContainer<>(
-			palette, Block.STATE_IDS, TagHelper::deserializeBlockState, TagHelper::serializeBlockState, Blocks.field_10124.getDefaultState()
-		);
+		this.container = new PalettedContainer<>(palette, Block.STATE_IDS, NbtHelper::toBlockState, NbtHelper::fromBlockState, Blocks.field_10124.getDefaultState());
 	}
 
 	public BlockState getBlockState(int i, int j, int k) {
@@ -113,7 +111,7 @@ public class ChunkSection {
 		this.nonEmptyBlockCount = 0;
 		this.randomTickableBlockCount = 0;
 		this.nonEmptyFluidCount = 0;
-		this.container.method_21732((blockState, i) -> {
+		this.container.count((blockState, i) -> {
 			FluidState fluidState = blockState.getFluidState();
 			if (!blockState.isAir()) {
 				this.nonEmptyBlockCount = (short)(this.nonEmptyBlockCount + i);

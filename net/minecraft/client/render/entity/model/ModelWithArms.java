@@ -1,7 +1,8 @@
 package net.minecraft.client.render.entity.model;
 
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Arm;
 
 public interface ModelWithArms {
-	void setArmAngle(float f, Arm arm);
+	void setArmAngle(Arm arm, MatrixStack matrixStack);
 }

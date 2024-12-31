@@ -1,5 +1,6 @@
 package net.minecraft.client.util;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.WindowSettings;
 
@@ -12,7 +13,7 @@ public final class WindowProvider implements AutoCloseable {
 		this.monitorTracker = new MonitorTracker(Monitor::new);
 	}
 
-	public Window createWindow(WindowSettings windowSettings, String string, String string2) {
+	public Window createWindow(WindowSettings windowSettings, @Nullable String string, String string2) {
 		return new Window(this.client, this.monitorTracker, windowSettings, string, string2);
 	}
 

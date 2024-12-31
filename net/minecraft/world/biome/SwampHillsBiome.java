@@ -2,7 +2,6 @@ package net.minecraft.world.biome;
 
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.EntityType;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.MineshaftFeature;
 import net.minecraft.world.gen.feature.MineshaftFeatureConfig;
@@ -23,7 +22,7 @@ public final class SwampHillsBiome extends Biome {
 				.waterFogColor(2302743)
 				.parent("swamp")
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);
@@ -54,13 +53,13 @@ public final class SwampHillsBiome extends Biome {
 	}
 
 	@Override
-	public int getGrassColorAt(BlockPos blockPos) {
-		double d = FOLIAGE_NOISE.sample((double)blockPos.getX() * 0.0225, (double)blockPos.getZ() * 0.0225);
-		return d < -0.1 ? 5011004 : 6975545;
+	public int getGrassColorAt(double d, double e) {
+		double f = FOLIAGE_NOISE.sample(d * 0.0225, e * 0.0225, false);
+		return f < -0.1 ? 5011004 : 6975545;
 	}
 
 	@Override
-	public int getFoliageColorAt(BlockPos blockPos) {
+	public int getFoliageColor() {
 		return 6975545;
 	}
 }

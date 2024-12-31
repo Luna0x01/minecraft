@@ -1,7 +1,7 @@
 package net.minecraft.block;
 
 import net.minecraft.block.enums.RailShape;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.state.property.Property;
@@ -15,7 +15,7 @@ public class RailBlock extends AbstractRailBlock {
 
 	protected RailBlock(Block.Settings settings) {
 		super(false, settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(SHAPE, RailShape.field_12665));
+		this.setDefaultState(this.stateManager.getDefaultState().with(SHAPE, RailShape.field_12665));
 	}
 
 	@Override
@@ -149,7 +149,7 @@ public class RailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(SHAPE);
 	}
 }

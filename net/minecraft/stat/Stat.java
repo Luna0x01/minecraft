@@ -19,7 +19,7 @@ public class Stat<T> extends ScoreboardCriterion {
 	}
 
 	public static <T> String getName(StatType<T> statType, T object) {
-		return getName(Registry.STAT_TYPE.getId(statType)) + ":" + getName(statType.getRegistry().getId(object));
+		return getName(Registry.field_11152.getId(statType)) + ":" + getName(statType.getRegistry().getId(object));
 	}
 
 	private static <T> String getName(@Nullable Identifier identifier) {

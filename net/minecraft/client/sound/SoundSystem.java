@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -44,6 +45,7 @@ public class SoundSystem {
 	private final Map<SoundInstance, Integer> startTicks = Maps.newHashMap();
 	private final Map<SoundInstance, Integer> soundEndTicks = Maps.newHashMap();
 	private final List<ListenerSoundInstance> listeners = Lists.newArrayList();
+	private final List<TickableSoundInstance> soundsToPlayNextTick = Lists.newArrayList();
 	private final List<Sound> preloadedSounds = Lists.newArrayList();
 
 	public SoundSystem(SoundManager soundManager, GameOptions gameOptions, ResourceManager resourceManager) {
@@ -55,10 +57,10 @@ public class SoundSystem {
 	public void reloadSounds() {
 		unknownSounds.clear();
 
-		for (SoundEvent soundEvent : Registry.SOUND_EVENT) {
+		for (SoundEvent soundEvent : Registry.field_11156) {
 			Identifier identifier = soundEvent.getId();
 			if (this.loader.get(identifier) == null) {
-				LOGGER.warn("Missing sound for event: {}", Registry.SOUND_EVENT.getId(soundEvent));
+				LOGGER.warn("Missing sound for event: {}", Registry.field_11156.getId(soundEvent));
 				unknownSounds.add(identifier);
 			}
 		}
@@ -133,6 +135,7 @@ public class SoundSystem {
 			this.tickingSounds.clear();
 			this.sounds.clear();
 			this.soundEndTicks.clear();
+			this.soundsToPlayNextTick.clear();
 		}
 	}
 
@@ -154,6 +157,8 @@ public class SoundSystem {
 
 	private void tick() {
 		this.ticks++;
+		this.soundsToPlayNextTick.forEach(this::play);
+		this.soundsToPlayNextTick.clear();
 
 		for (TickableSoundInstance tickableSoundInstance : this.tickingSounds) {
 			tickableSoundInstance.tick();
@@ -308,6 +313,10 @@ public class SoundSystem {
 		}
 	}
 
+	public void playNextTick(TickableSoundInstance tickableSoundInstance) {
+		this.soundsToPlayNextTick.add(tickableSoundInstance);
+	}
+
 	public void addPreloadedSound(Sound sound) {
 		this.preloadedSounds.add(sound);
 	}
@@ -339,11 +348,11 @@ public class SoundSystem {
 	public void updateListenerPosition(Camera camera) {
 		if (this.started && camera.isReady()) {
 			Vec3d vec3d = camera.getPos();
-			Vec3d vec3d2 = camera.getHorizontalPlane();
-			Vec3d vec3d3 = camera.getVerticalPlane();
+			Vector3f vector3f = camera.getHorizontalPlane();
+			Vector3f vector3f2 = camera.getVerticalPlane();
 			this.taskQueue.execute(() -> {
 				this.listener.setPosition(vec3d);
-				this.listener.setOrientation(vec3d2, vec3d3);
+				this.listener.setOrientation(vector3f, vector3f2);
 			});
 		}
 	}

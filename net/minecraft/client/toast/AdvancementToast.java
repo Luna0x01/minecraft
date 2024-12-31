@@ -1,11 +1,10 @@
 package net.minecraft.client.toast;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.AdvancementDisplay;
 import net.minecraft.advancement.AdvancementFrame;
-import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvents;
@@ -22,7 +21,7 @@ public class AdvancementToast implements Toast {
 	@Override
 	public Toast.Visibility draw(ToastManager toastManager, long l) {
 		toastManager.getGame().getTextureManager().bindTexture(TOASTS_TEX);
-		GlStateManager.color3f(1.0F, 1.0F, 1.0F);
+		RenderSystem.color3f(1.0F, 1.0F, 1.0F);
 		AdvancementDisplay advancementDisplay = this.advancement.getDisplay();
 		toastManager.blit(0, 0, 0, 0, 160, 32);
 		if (advancementDisplay != null) {
@@ -55,7 +54,6 @@ public class AdvancementToast implements Toast {
 				}
 			}
 
-			GuiLighting.enableForItems();
 			toastManager.getGame().getItemRenderer().renderGuiItem(null, advancementDisplay.getIcon(), 8, 8);
 			return l >= 5000L ? Toast.Visibility.field_2209 : Toast.Visibility.field_2210;
 		} else {

@@ -23,8 +23,8 @@ public final class GiantTreeTaigaBiome extends Biome {
 				.waterFogColor(329011)
 				.parent(null)
 		);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.STRONGHOLD, FeatureConfig.DEFAULT);
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.STRONGHOLD.configure(FeatureConfig.DEFAULT));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);
@@ -40,6 +40,7 @@ public final class GiantTreeTaigaBiome extends Biome {
 		DefaultBiomeFeatures.addDefaultMushrooms(this);
 		DefaultBiomeFeatures.addDefaultVegetation(this);
 		DefaultBiomeFeatures.addSprings(this);
+		DefaultBiomeFeatures.addSweetBerryBushes(this);
 		DefaultBiomeFeatures.addFrozenTopLayer(this);
 		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_6115, 12, 4, 4));
 		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_6093, 10, 4, 4));
@@ -47,6 +48,7 @@ public final class GiantTreeTaigaBiome extends Biome {
 		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_6085, 8, 4, 4));
 		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_6055, 8, 4, 4));
 		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_6140, 4, 2, 3));
+		this.addSpawn(EntityCategory.field_6294, new Biome.SpawnEntry(EntityType.field_17943, 8, 2, 4));
 		this.addSpawn(EntityCategory.field_6303, new Biome.SpawnEntry(EntityType.field_6108, 10, 8, 8));
 		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6079, 100, 4, 4));
 		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6051, 100, 4, 4));

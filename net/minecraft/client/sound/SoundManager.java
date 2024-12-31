@@ -57,7 +57,7 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 		this.soundSystem = new SoundSystem(this, gameOptions, resourceManager);
 	}
 
-	protected SoundManager.SoundList method_18180(ResourceManager resourceManager, Profiler profiler) {
+	protected SoundManager.SoundList prepare(ResourceManager resourceManager, Profiler profiler) {
 		SoundManager.SoundList soundList = new SoundManager.SoundList();
 		profiler.startTick();
 
@@ -94,7 +94,7 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 		return soundList;
 	}
 
-	protected void method_18182(SoundManager.SoundList soundList, ResourceManager resourceManager, Profiler profiler) {
+	protected void apply(SoundManager.SoundList soundList, ResourceManager resourceManager, Profiler profiler) {
 		soundList.addTo(this.sounds, this.soundSystem);
 
 		for (Identifier identifier : this.sounds.keySet()) {
@@ -109,7 +109,7 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 
 		if (LOGGER.isDebugEnabled()) {
 			for (Identifier identifier2 : this.sounds.keySet()) {
-				if (!Registry.SOUND_EVENT.containsId(identifier2)) {
+				if (!Registry.field_11156.containsId(identifier2)) {
 					LOGGER.debug("Not having sound event for: {}", identifier2);
 				}
 			}
@@ -147,6 +147,10 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 
 	public Collection<Identifier> getKeys() {
 		return this.sounds.keySet();
+	}
+
+	public void playNextTick(TickableSoundInstance tickableSoundInstance) {
+		this.soundSystem.playNextTick(tickableSoundInstance);
 	}
 
 	public void play(SoundInstance soundInstance) {
@@ -250,12 +254,12 @@ public class SoundManager extends SinglePreparationResourceReloadListener<SoundM
 								return weightedSoundSet == null ? 0 : weightedSoundSet.getWeight();
 							}
 
-							public Sound method_4883() {
+							public Sound getSound() {
 								WeightedSoundSet weightedSoundSet = (WeightedSoundSet)SoundList.this.loadedSounds.get(identifier2);
 								if (weightedSoundSet == null) {
 									return SoundManager.MISSING_SOUND;
 								} else {
-									Sound sound = weightedSoundSet.method_4887();
+									Sound sound = weightedSoundSet.getSound();
 									return new Sound(
 										sound.getIdentifier().toString(),
 										sound.getVolume() * sound.getVolume(),

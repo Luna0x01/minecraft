@@ -1,7 +1,7 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.model.VexEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.VexEntity;
 import net.minecraft.util.Identifier;
 
@@ -13,11 +13,15 @@ public class VexEntityRenderer extends BipedEntityRenderer<VexEntity, VexEntityM
 		super(entityRenderDispatcher, new VexEntityModel(), 0.3F);
 	}
 
-	protected Identifier method_4144(VexEntity vexEntity) {
+	protected int getBlockLight(VexEntity vexEntity, float f) {
+		return 15;
+	}
+
+	public Identifier getTexture(VexEntity vexEntity) {
 		return vexEntity.isCharging() ? CHARGING_TEXTURE : TEXTURE;
 	}
 
-	protected void method_4143(VexEntity vexEntity, float f) {
-		GlStateManager.scalef(0.4F, 0.4F, 0.4F);
+	protected void scale(VexEntity vexEntity, MatrixStack matrixStack, float f) {
+		matrixStack.scale(0.4F, 0.4F, 0.4F);
 	}
 }

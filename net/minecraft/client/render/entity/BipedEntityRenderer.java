@@ -17,7 +17,7 @@ public class BipedEntityRenderer<T extends MobEntity, M extends BipedEntityModel
 		this.addFeature(new HeldItemFeatureRenderer<>(this));
 	}
 
-	protected Identifier method_3982(T mobEntity) {
+	public Identifier getTexture(T mobEntity) {
 		return SKIN;
 	}
 }

@@ -10,6 +10,6 @@ public interface StructurePoolElementType extends DynamicDeserializer<StructureP
 	StructurePoolElementType field_16972 = register("empty_pool_element", dynamic -> EmptyPoolElement.INSTANCE);
 
 	static StructurePoolElementType register(String string, StructurePoolElementType structurePoolElementType) {
-		return Registry.register(Registry.STRUCTURE_POOL_ELEMENT, string, structurePoolElementType);
+		return Registry.register(Registry.field_16793, string, structurePoolElementType);
 	}
 }

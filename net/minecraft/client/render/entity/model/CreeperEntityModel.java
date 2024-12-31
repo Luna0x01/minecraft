@@ -1,17 +1,18 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class CreeperEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid head;
-	private final Cuboid field_3362;
-	private final Cuboid field_3361;
-	private final Cuboid field_3359;
-	private final Cuboid field_3358;
-	private final Cuboid field_3363;
-	private final Cuboid field_3357;
+public class CreeperEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+	private final ModelPart head;
+	private final ModelPart helmet;
+	private final ModelPart torso;
+	private final ModelPart rightBackLeg;
+	private final ModelPart leftBackLeg;
+	private final ModelPart rightFrontLeg;
+	private final ModelPart leftFrontLeg;
 
 	public CreeperEntityModel() {
 		this(0.0F);
@@ -19,47 +20,41 @@ public class CreeperEntityModel<T extends Entity> extends EntityModel<T> {
 
 	public CreeperEntityModel(float f) {
 		int i = 6;
-		this.head = new Cuboid(this, 0, 0);
-		this.head.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, f);
-		this.head.setRotationPoint(0.0F, 6.0F, 0.0F);
-		this.field_3362 = new Cuboid(this, 32, 0);
-		this.field_3362.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, f + 0.5F);
-		this.field_3362.setRotationPoint(0.0F, 6.0F, 0.0F);
-		this.field_3361 = new Cuboid(this, 16, 16);
-		this.field_3361.addBox(-4.0F, 0.0F, -2.0F, 8, 12, 4, f);
-		this.field_3361.setRotationPoint(0.0F, 6.0F, 0.0F);
-		this.field_3359 = new Cuboid(this, 0, 16);
-		this.field_3359.addBox(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.field_3359.setRotationPoint(-2.0F, 18.0F, 4.0F);
-		this.field_3358 = new Cuboid(this, 0, 16);
-		this.field_3358.addBox(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.field_3358.setRotationPoint(2.0F, 18.0F, 4.0F);
-		this.field_3363 = new Cuboid(this, 0, 16);
-		this.field_3363.addBox(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.field_3363.setRotationPoint(-2.0F, 18.0F, -4.0F);
-		this.field_3357 = new Cuboid(this, 0, 16);
-		this.field_3357.addBox(-2.0F, 0.0F, -2.0F, 4, 6, 4, f);
-		this.field_3357.setRotationPoint(2.0F, 18.0F, -4.0F);
+		this.head = new ModelPart(this, 0, 0);
+		this.head.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, f);
+		this.head.setPivot(0.0F, 6.0F, 0.0F);
+		this.helmet = new ModelPart(this, 32, 0);
+		this.helmet.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, f + 0.5F);
+		this.helmet.setPivot(0.0F, 6.0F, 0.0F);
+		this.torso = new ModelPart(this, 16, 16);
+		this.torso.addCuboid(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, f);
+		this.torso.setPivot(0.0F, 6.0F, 0.0F);
+		this.rightBackLeg = new ModelPart(this, 0, 16);
+		this.rightBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.rightBackLeg.setPivot(-2.0F, 18.0F, 4.0F);
+		this.leftBackLeg = new ModelPart(this, 0, 16);
+		this.leftBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.leftBackLeg.setPivot(2.0F, 18.0F, 4.0F);
+		this.rightFrontLeg = new ModelPart(this, 0, 16);
+		this.rightFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.rightFrontLeg.setPivot(-2.0F, 18.0F, -4.0F);
+		this.leftFrontLeg = new ModelPart(this, 0, 16);
+		this.leftFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.leftFrontLeg.setPivot(2.0F, 18.0F, -4.0F);
 	}
 
 	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.setAngles(entity, f, g, h, i, j, k);
-		this.head.render(k);
-		this.field_3361.render(k);
-		this.field_3359.render(k);
-		this.field_3358.render(k);
-		this.field_3363.render(k);
-		this.field_3357.render(k);
+	public Iterable<ModelPart> getParts() {
+		return ImmutableList.of(this.head, this.torso, this.rightBackLeg, this.leftBackLeg, this.rightFrontLeg, this.leftFrontLeg);
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
 		this.head.yaw = i * (float) (Math.PI / 180.0);
 		this.head.pitch = j * (float) (Math.PI / 180.0);
-		this.field_3359.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
-		this.field_3358.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.field_3363.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.field_3357.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
+		this.rightBackLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
+		this.leftBackLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
+		this.rightFrontLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
+		this.leftFrontLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
 	}
 }

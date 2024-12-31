@@ -89,7 +89,7 @@ public class Int2ObjectBiMap<K> implements IndexedIterable<K> {
 	}
 
 	private int getIdealIndex(@Nullable K object) {
-		return (MathHelper.method_15354(System.identityHashCode(object)) & 2147483647) % this.values.length;
+		return (MathHelper.idealHash(System.identityHashCode(object)) & 2147483647) % this.values.length;
 	}
 
 	private int findIndex(@Nullable K object, int i) {

@@ -11,6 +11,7 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.AbstractFireballEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -22,19 +23,23 @@ import net.minecraft.recipe.CampfireCookingRecipe;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
@@ -44,11 +49,12 @@ public class CampfireBlock extends BlockWithEntity implements Waterloggable {
 	public static final BooleanProperty SIGNAL_FIRE = Properties.SIGNAL_FIRE;
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 	public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
+	private static final VoxelShape field_21580 = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 16.0, 10.0);
 
 	public CampfireBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(LIT, Boolean.valueOf(true))
 				.with(SIGNAL_FIRE, Boolean.valueOf(false))
@@ -58,7 +64,7 @@ public class CampfireBlock extends BlockWithEntity implements Waterloggable {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if ((Boolean)blockState.get(LIT)) {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof CampfireBlockEntity) {
@@ -71,14 +77,15 @@ public class CampfireBlock extends BlockWithEntity implements Waterloggable {
 						)
 					 {
 						playerEntity.incrementStat(Stats.field_17486);
+						return ActionResult.field_5812;
 					}
 
-					return true;
+					return ActionResult.field_21466;
 				}
 			}
 		}
 
-		return false;
+		return ActionResult.field_5811;
 	}
 
 	@Override
@@ -148,11 +155,6 @@ public class CampfireBlock extends BlockWithEntity implements Waterloggable {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
 	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
 		if ((Boolean)blockState.get(LIT)) {
 			if (random.nextInt(10) == 0) {
@@ -211,13 +213,26 @@ public class CampfireBlock extends BlockWithEntity implements Waterloggable {
 		}
 	}
 
+	@Nullable
+	private Entity method_23756(Entity entity) {
+		if (entity instanceof AbstractFireballEntity) {
+			return ((AbstractFireballEntity)entity).owner;
+		} else {
+			return entity instanceof ProjectileEntity ? ((ProjectileEntity)entity).getOwner() : null;
+		}
+	}
+
 	@Override
 	public void onProjectileHit(World world, BlockState blockState, BlockHitResult blockHitResult, Entity entity) {
-		if (!world.isClient && entity instanceof ProjectileEntity) {
-			ProjectileEntity projectileEntity = (ProjectileEntity)entity;
-			if (projectileEntity.isOnFire() && !(Boolean)blockState.get(LIT) && !(Boolean)blockState.get(WATERLOGGED)) {
-				BlockPos blockPos = blockHitResult.getBlockPos();
-				world.setBlockState(blockPos, blockState.with(Properties.LIT, Boolean.valueOf(true)), 11);
+		if (!world.isClient) {
+			boolean bl = entity instanceof AbstractFireballEntity || entity instanceof ProjectileEntity && entity.isOnFire();
+			if (bl) {
+				Entity entity2 = this.method_23756(entity);
+				boolean bl2 = entity2 == null || entity2 instanceof PlayerEntity || world.getGameRules().getBoolean(GameRules.field_19388);
+				if (bl2 && !(Boolean)blockState.get(LIT) && !(Boolean)blockState.get(WATERLOGGED)) {
+					BlockPos blockPos = blockHitResult.getBlockPos();
+					world.setBlockState(blockPos, blockState.with(Properties.LIT, Boolean.valueOf(true)), 11);
+				}
 			}
 		}
 	}
@@ -248,6 +263,28 @@ public class CampfireBlock extends BlockWithEntity implements Waterloggable {
 		}
 	}
 
+	public static boolean isLitCampfireInRange(World world, BlockPos blockPos, int i) {
+		for (int j = 1; j <= i; j++) {
+			BlockPos blockPos2 = blockPos.down(j);
+			BlockState blockState = world.getBlockState(blockPos2);
+			if (isLitCampfire(blockState)) {
+				return true;
+			}
+
+			boolean bl = VoxelShapes.matchesAnywhere(field_21580, blockState.getCollisionShape(world, blockPos, EntityContext.absent()), BooleanBiFunction.AND);
+			if (bl) {
+				BlockState blockState2 = world.getBlockState(blockPos2.down());
+				return isLitCampfire(blockState2);
+			}
+		}
+
+		return false;
+	}
+
+	private static boolean isLitCampfire(BlockState blockState) {
+		return blockState.getBlock() == Blocks.field_17350 && (Boolean)blockState.get(LIT);
+	}
+
 	@Override
 	public FluidState getFluidState(BlockState blockState) {
 		return blockState.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(blockState);
@@ -264,7 +301,7 @@ public class CampfireBlock extends BlockWithEntity implements Waterloggable {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(LIT, SIGNAL_FIRE, WATERLOGGED, FACING);
 	}
 

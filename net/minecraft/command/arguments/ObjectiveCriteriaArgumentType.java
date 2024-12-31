@@ -37,7 +37,7 @@ public class ObjectiveCriteriaArgumentType implements ArgumentType<ScoreboardCri
 		return (ScoreboardCriterion)commandContext.getArgument(string, ScoreboardCriterion.class);
 	}
 
-	public ScoreboardCriterion method_9403(StringReader stringReader) throws CommandSyntaxException {
+	public ScoreboardCriterion parse(StringReader stringReader) throws CommandSyntaxException {
 		int i = stringReader.getCursor();
 
 		while (stringReader.canRead() && stringReader.peek() != ' ') {
@@ -54,7 +54,7 @@ public class ObjectiveCriteriaArgumentType implements ArgumentType<ScoreboardCri
 	public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> commandContext, SuggestionsBuilder suggestionsBuilder) {
 		List<String> list = Lists.newArrayList(ScoreboardCriterion.OBJECTIVES.keySet());
 
-		for (StatType<?> statType : Registry.STAT_TYPE) {
+		for (StatType<?> statType : Registry.field_11152) {
 			for (Object object : statType.getRegistry()) {
 				String string = this.getStatName(statType, object);
 				list.add(string);

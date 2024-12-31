@@ -28,6 +28,7 @@ public class FireballEntity extends AbstractFireballEntity {
 
 	@Override
 	protected void onCollision(HitResult hitResult) {
+		super.onCollision(hitResult);
 		if (!this.world.isClient) {
 			if (hitResult.getType() == HitResult.Type.field_1331) {
 				Entity entity = ((EntityHitResult)hitResult).getEntity();
@@ -38,7 +39,13 @@ public class FireballEntity extends AbstractFireballEntity {
 			boolean bl = this.world.getGameRules().getBoolean(GameRules.field_19388);
 			this.world
 				.createExplosion(
-					null, this.x, this.y, this.z, (float)this.explosionPower, bl, bl ? Explosion.DestructionType.field_18687 : Explosion.DestructionType.field_18685
+					null,
+					this.getX(),
+					this.getY(),
+					this.getZ(),
+					(float)this.explosionPower,
+					bl,
+					bl ? Explosion.DestructionType.field_18687 : Explosion.DestructionType.field_18685
 				);
 			this.remove();
 		}
@@ -53,7 +60,7 @@ public class FireballEntity extends AbstractFireballEntity {
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("ExplosionPower", 99)) {
+		if (compoundTag.contains("ExplosionPower", 99)) {
 			this.explosionPower = compoundTag.getInt("ExplosionPower");
 		}
 	}

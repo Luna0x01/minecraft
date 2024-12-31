@@ -1,17 +1,26 @@
 package net.minecraft.client.util.math;
 
-import java.util.Arrays;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
 
 public class Vector4f {
-	private final float[] components;
+	private float x;
+	private float y;
+	private float z;
+	private float w;
 
 	public Vector4f() {
-		this.components = new float[4];
 	}
 
 	public Vector4f(float f, float g, float h, float i) {
-		this.components = new float[]{f, g, h, i};
+		this.x = f;
+		this.y = g;
+		this.z = h;
+		this.w = i;
+	}
+
+	public Vector4f(Vector3f vector3f) {
+		this(vector3f.getX(), vector3f.getY(), vector3f.getZ(), 1.0F);
 	}
 
 	public boolean equals(Object object) {
@@ -19,51 +28,100 @@ public class Vector4f {
 			return true;
 		} else if (object != null && this.getClass() == object.getClass()) {
 			Vector4f vector4f = (Vector4f)object;
-			return Arrays.equals(this.components, vector4f.components);
+			if (Float.compare(vector4f.x, this.x) != 0) {
+				return false;
+			} else if (Float.compare(vector4f.y, this.y) != 0) {
+				return false;
+			} else {
+				return Float.compare(vector4f.z, this.z) != 0 ? false : Float.compare(vector4f.w, this.w) == 0;
+			}
 		} else {
 			return false;
 		}
 	}
 
 	public int hashCode() {
-		return Arrays.hashCode(this.components);
+		int i = Float.floatToIntBits(this.x);
+		i = 31 * i + Float.floatToIntBits(this.y);
+		i = 31 * i + Float.floatToIntBits(this.z);
+		return 31 * i + Float.floatToIntBits(this.w);
 	}
 
 	public float getX() {
-		return this.components[0];
+		return this.x;
 	}
 
 	public float getY() {
-		return this.components[1];
+		return this.y;
 	}
 
 	public float getZ() {
-		return this.components[2];
+		return this.z;
 	}
 
 	public float getW() {
-		return this.components[3];
+		return this.w;
 	}
 
-	public void multiply(Vector3f vector3f) {
-		this.components[0] = this.components[0] * vector3f.getX();
-		this.components[1] = this.components[1] * vector3f.getY();
-		this.components[2] = this.components[2] * vector3f.getZ();
+	public void multiplyComponentwise(Vector3f vector3f) {
+		this.x = this.x * vector3f.getX();
+		this.y = this.y * vector3f.getY();
+		this.z = this.z * vector3f.getZ();
 	}
 
 	public void set(float f, float g, float h, float i) {
-		this.components[0] = f;
-		this.components[1] = g;
-		this.components[2] = h;
-		this.components[3] = i;
+		this.x = f;
+		this.y = g;
+		this.z = h;
+		this.w = i;
 	}
 
-	public void method_4959(Quaternion quaternion) {
+	public float dotProduct(Vector4f vector4f) {
+		return this.x * vector4f.x + this.y * vector4f.y + this.z * vector4f.z + this.w * vector4f.w;
+	}
+
+	public boolean normalize() {
+		float f = this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
+		if ((double)f < 1.0E-5) {
+			return false;
+		} else {
+			float g = MathHelper.fastInverseSqrt(f);
+			this.x *= g;
+			this.y *= g;
+			this.z *= g;
+			this.w *= g;
+			return true;
+		}
+	}
+
+	public void transform(Matrix4f matrix4f) {
+		float f = this.x;
+		float g = this.y;
+		float h = this.z;
+		float i = this.w;
+		this.x = matrix4f.a00 * f + matrix4f.a01 * g + matrix4f.a02 * h + matrix4f.a03 * i;
+		this.y = matrix4f.a10 * f + matrix4f.a11 * g + matrix4f.a12 * h + matrix4f.a13 * i;
+		this.z = matrix4f.a20 * f + matrix4f.a21 * g + matrix4f.a22 * h + matrix4f.a23 * i;
+		this.w = matrix4f.a30 * f + matrix4f.a31 * g + matrix4f.a32 * h + matrix4f.a33 * i;
+	}
+
+	public void rotate(Quaternion quaternion) {
 		Quaternion quaternion2 = new Quaternion(quaternion);
-		quaternion2.copyFrom(new Quaternion(this.getX(), this.getY(), this.getZ(), 0.0F));
+		quaternion2.hamiltonProduct(new Quaternion(this.getX(), this.getY(), this.getZ(), 0.0F));
 		Quaternion quaternion3 = new Quaternion(quaternion);
-		quaternion3.reverse();
-		quaternion2.copyFrom(quaternion3);
-		this.set(quaternion2.getX(), quaternion2.getY(), quaternion2.getZ(), this.getW());
+		quaternion3.conjugate();
+		quaternion2.hamiltonProduct(quaternion3);
+		this.set(quaternion2.getB(), quaternion2.getC(), quaternion2.getD(), this.getW());
+	}
+
+	public void normalizeProjectiveCoordinates() {
+		this.x = this.x / this.w;
+		this.y = this.y / this.w;
+		this.z = this.z / this.w;
+		this.w = 1.0F;
+	}
+
+	public String toString() {
+		return "[" + this.x + ", " + this.y + ", " + this.z + ", " + this.w + "]";
 	}
 }

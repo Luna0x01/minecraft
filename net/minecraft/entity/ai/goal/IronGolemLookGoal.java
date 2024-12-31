@@ -18,15 +18,21 @@ public class IronGolemLookGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		if (!this.golem.world.isDaylight()) {
+		if (!this.golem.world.isDay()) {
 			return false;
-		} else if (this.golem.getRand().nextInt(8000) != 0) {
+		} else if (this.golem.getRandom().nextInt(8000) != 0) {
 			return false;
 		} else {
 			this.targetVillager = this.golem
 				.world
-				.method_21726(
-					VillagerEntity.class, CLOSE_VILLAGER_PREDICATE, this.golem, this.golem.x, this.golem.y, this.golem.z, this.golem.getBoundingBox().expand(6.0, 2.0, 6.0)
+				.getClosestEntity(
+					VillagerEntity.class,
+					CLOSE_VILLAGER_PREDICATE,
+					this.golem,
+					this.golem.getX(),
+					this.golem.getY(),
+					this.golem.getZ(),
+					this.golem.getBoundingBox().expand(6.0, 2.0, 6.0)
 				);
 			return this.targetVillager != null;
 		}
@@ -40,12 +46,12 @@ public class IronGolemLookGoal extends Goal {
 	@Override
 	public void start() {
 		this.lookCountdown = 400;
-		this.golem.method_6497(true);
+		this.golem.setLookingAtVillager(true);
 	}
 
 	@Override
 	public void stop() {
-		this.golem.method_6497(false);
+		this.golem.setLookingAtVillager(false);
 		this.targetVillager = null;
 	}
 

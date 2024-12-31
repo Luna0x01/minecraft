@@ -2,7 +2,8 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.BlockMirror;
@@ -18,11 +19,11 @@ public class ObserverBlock extends FacingBlock {
 
 	public ObserverBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11035).with(POWERED, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11035).with(POWERED, Boolean.valueOf(false)));
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, POWERED);
 	}
 
@@ -37,15 +38,15 @@ public class ObserverBlock extends FacingBlock {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
 		if ((Boolean)blockState.get(POWERED)) {
-			world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(false)), 2);
+			serverWorld.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(false)), 2);
 		} else {
-			world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(true)), 2);
-			world.getBlockTickScheduler().schedule(blockPos, this, 2);
+			serverWorld.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(true)), 2);
+			serverWorld.getBlockTickScheduler().schedule(blockPos, this, 2);
 		}
 
-		this.updateNeighbors(world, blockPos, blockState);
+		this.updateNeighbors(serverWorld, blockPos, blockState);
 	}
 
 	@Override

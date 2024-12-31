@@ -838,6 +838,9 @@ public class Items {
 	public static final Item field_8727 = register(
 		"bat_spawn_egg", new SpawnEggItem(EntityType.field_6108, 4996656, 986895, new Item.Settings().group(ItemGroup.MISC))
 	);
+	public static final Item field_20413 = register(
+		"bee_spawn_egg", new SpawnEggItem(EntityType.field_20346, 15582019, 4400155, new Item.Settings().group(ItemGroup.MISC))
+	);
 	public static final Item field_8154 = register(
 		"blaze_spawn_egg", new SpawnEggItem(EntityType.field_6099, 16167425, 16775294, new Item.Settings().group(ItemGroup.MISC))
 	);
@@ -1216,19 +1219,19 @@ public class Items {
 	public static final Item field_8766 = register("suspicious_stew", new SuspiciousStewItem(new Item.Settings().maxCount(1).food(FoodComponents.SUSPICIOUS_STEW)));
 	public static final Item LOOM = register(Blocks.field_10083, ItemGroup.DECORATIONS);
 	public static final Item field_8498 = register(
-		"flower_banner_pattern", new BannerPatternItem(BannerPattern.FLOWER, new Item.Settings().maxCount(1).group(ItemGroup.MISC))
+		"flower_banner_pattern", new BannerPatternItem(BannerPattern.field_11812, new Item.Settings().maxCount(1).group(ItemGroup.MISC))
 	);
 	public static final Item field_8573 = register(
-		"creeper_banner_pattern", new BannerPatternItem(BannerPattern.CREEPER, new Item.Settings().maxCount(1).group(ItemGroup.MISC).rarity(Rarity.field_8907))
+		"creeper_banner_pattern", new BannerPatternItem(BannerPattern.field_11823, new Item.Settings().maxCount(1).group(ItemGroup.MISC).rarity(Rarity.field_8907))
 	);
 	public static final Item field_8891 = register(
-		"skull_banner_pattern", new BannerPatternItem(BannerPattern.SKULL, new Item.Settings().maxCount(1).group(ItemGroup.MISC).rarity(Rarity.field_8907))
+		"skull_banner_pattern", new BannerPatternItem(BannerPattern.field_11845, new Item.Settings().maxCount(1).group(ItemGroup.MISC).rarity(Rarity.field_8907))
 	);
 	public static final Item field_8159 = register(
-		"mojang_banner_pattern", new BannerPatternItem(BannerPattern.MOJANG, new Item.Settings().maxCount(1).group(ItemGroup.MISC).rarity(Rarity.field_8904))
+		"mojang_banner_pattern", new BannerPatternItem(BannerPattern.field_11825, new Item.Settings().maxCount(1).group(ItemGroup.MISC).rarity(Rarity.field_8904))
 	);
 	public static final Item field_18674 = register(
-		"globe_banner_pattern", new BannerPatternItem(BannerPattern.GLOBE, new Item.Settings().maxCount(1).group(ItemGroup.MISC))
+		"globe_banner_pattern", new BannerPatternItem(BannerPattern.field_18689, new Item.Settings().maxCount(1).group(ItemGroup.MISC))
 	);
 	public static final Item BARREL = register(Blocks.field_16328, ItemGroup.DECORATIONS);
 	public static final Item SMOKER = register(Blocks.field_16334, ItemGroup.DECORATIONS);
@@ -1245,6 +1248,14 @@ public class Items {
 		"sweet_berries", new AliasedBlockItem(Blocks.field_16999, new Item.Settings().group(ItemGroup.FOOD).food(FoodComponents.SWEET_BERRIES))
 	);
 	public static final Item CAMPFIRE = register(Blocks.field_17350, ItemGroup.DECORATIONS);
+	public static final Item field_20414 = register("honeycomb", new Item(new Item.Settings().group(ItemGroup.MATERIALS)));
+	public static final Item BEE_NEST = register(Blocks.field_20421, ItemGroup.DECORATIONS);
+	public static final Item BEEHIVE = register(Blocks.field_20422, ItemGroup.DECORATIONS);
+	public static final Item field_20417 = register(
+		"honey_bottle", new HoneyBottleItem(new Item.Settings().recipeRemainder(field_8469).food(FoodComponents.HONEY_BOTTLE).group(ItemGroup.FOOD).maxCount(16))
+	);
+	public static final Item HONEY_BLOCK = register(Blocks.field_21211, ItemGroup.DECORATIONS);
+	public static final Item HONEYCOMB_BLOCK = register(Blocks.field_21212, ItemGroup.DECORATIONS);
 
 	private static Item register(Block block) {
 		return register(new BlockItem(block, new Item.Settings()));
@@ -1259,7 +1270,7 @@ public class Items {
 	}
 
 	protected static Item register(Block block, Item item) {
-		return register(Registry.BLOCK.getId(block), item);
+		return register(Registry.field_11146.getId(block), item);
 	}
 
 	private static Item register(String string, Item item) {
@@ -1271,6 +1282,6 @@ public class Items {
 			((BlockItem)item).appendBlocks(Item.BLOCK_ITEMS, item);
 		}
 
-		return Registry.register(Registry.ITEM, identifier, item);
+		return Registry.register(Registry.field_11142, identifier, item);
 	}
 }

@@ -40,10 +40,10 @@ public abstract class EntityTypePredicate {
 				return new EntityTypePredicate.Tagged(tag);
 			} else {
 				Identifier identifier2 = new Identifier(string);
-				EntityType<?> entityType = (EntityType<?>)Registry.ENTITY_TYPE
+				EntityType<?> entityType = (EntityType<?>)Registry.field_11145
 					.getOrEmpty(identifier2)
 					.orElseThrow(
-						() -> new JsonSyntaxException("Unknown entity type '" + identifier2 + "', valid types are: " + COMMA_JOINER.join(Registry.ENTITY_TYPE.getIds()))
+						() -> new JsonSyntaxException("Unknown entity type '" + identifier2 + "', valid types are: " + COMMA_JOINER.join(Registry.field_11145.getIds()))
 					);
 				return new EntityTypePredicate.Single(entityType);
 			}
@@ -74,7 +74,7 @@ public abstract class EntityTypePredicate {
 
 		@Override
 		public JsonElement toJson() {
-			return new JsonPrimitive(Registry.ENTITY_TYPE.getId(this.type).toString());
+			return new JsonPrimitive(Registry.field_11145.getId(this.type).toString());
 		}
 	}
 

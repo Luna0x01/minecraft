@@ -5,9 +5,9 @@ import java.util.Comparator;
 import net.minecraft.util.math.MathHelper;
 
 public enum AttackIndicator {
-	OFF(0, "options.off"),
-	CROSSHAIR(1, "options.attack.crosshair"),
-	HOTBAR(2, "options.attack.hotbar");
+	field_18151(0, "options.off"),
+	field_18152(1, "options.attack.crosshair"),
+	field_18153(2, "options.attack.hotbar");
 
 	private static final AttackIndicator[] VALUES = (AttackIndicator[])Arrays.stream(values())
 		.sorted(Comparator.comparingInt(AttackIndicator::getId))

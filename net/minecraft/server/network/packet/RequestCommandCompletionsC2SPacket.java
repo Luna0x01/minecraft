@@ -29,7 +29,7 @@ public class RequestCommandCompletionsC2SPacket implements Packet<ServerPlayPack
 		packetByteBuf.writeString(this.partialCommand, 32500);
 	}
 
-	public void method_12147(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onRequestCommandCompletions(this);
 	}
 

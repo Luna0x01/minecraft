@@ -5,7 +5,7 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -31,7 +31,7 @@ public class WallSkullBlock extends AbstractSkullBlock {
 
 	protected WallSkullBlock(SkullBlock.SkullType skullType, Block.Settings settings) {
 		super(skullType, settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043));
 	}
 
 	@Override
@@ -75,7 +75,7 @@ public class WallSkullBlock extends AbstractSkullBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING);
 	}
 }

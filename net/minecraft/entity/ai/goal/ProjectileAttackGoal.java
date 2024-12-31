@@ -10,11 +10,11 @@ public class ProjectileAttackGoal extends Goal {
 	private final MobEntity mob;
 	private final RangedAttackMob owner;
 	private LivingEntity target;
-	private int field_6581 = -1;
+	private int updateCountdownTicks = -1;
 	private final double mobSpeed;
-	private int field_6579;
-	private final int field_6578;
-	private final int field_6577;
+	private int seenTargetTicks;
+	private final int minIntervalTicks;
+	private final int maxIntervalTicks;
 	private final float maxShootRange;
 	private final float squaredMaxShootRange;
 
@@ -29,8 +29,8 @@ public class ProjectileAttackGoal extends Goal {
 			this.owner = rangedAttackMob;
 			this.mob = (MobEntity)rangedAttackMob;
 			this.mobSpeed = d;
-			this.field_6578 = i;
-			this.field_6577 = j;
+			this.minIntervalTicks = i;
+			this.maxIntervalTicks = j;
 			this.maxShootRange = f;
 			this.squaredMaxShootRange = f * f;
 			this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
@@ -56,28 +56,28 @@ public class ProjectileAttackGoal extends Goal {
 	@Override
 	public void stop() {
 		this.target = null;
-		this.field_6579 = 0;
-		this.field_6581 = -1;
+		this.seenTargetTicks = 0;
+		this.updateCountdownTicks = -1;
 	}
 
 	@Override
 	public void tick() {
-		double d = this.mob.squaredDistanceTo(this.target.x, this.target.getBoundingBox().minY, this.target.z);
+		double d = this.mob.squaredDistanceTo(this.target.getX(), this.target.getY(), this.target.getZ());
 		boolean bl = this.mob.getVisibilityCache().canSee(this.target);
 		if (bl) {
-			this.field_6579++;
+			this.seenTargetTicks++;
 		} else {
-			this.field_6579 = 0;
+			this.seenTargetTicks = 0;
 		}
 
-		if (!(d > (double)this.squaredMaxShootRange) && this.field_6579 >= 5) {
+		if (!(d > (double)this.squaredMaxShootRange) && this.seenTargetTicks >= 5) {
 			this.mob.getNavigation().stop();
 		} else {
 			this.mob.getNavigation().startMovingTo(this.target, this.mobSpeed);
 		}
 
 		this.mob.getLookControl().lookAt(this.target, 30.0F, 30.0F);
-		if (--this.field_6581 == 0) {
+		if (--this.updateCountdownTicks == 0) {
 			if (!bl) {
 				return;
 			}
@@ -85,10 +85,10 @@ public class ProjectileAttackGoal extends Goal {
 			float f = MathHelper.sqrt(d) / this.maxShootRange;
 			float g = MathHelper.clamp(f, 0.1F, 1.0F);
 			this.owner.attack(this.target, g);
-			this.field_6581 = MathHelper.floor(f * (float)(this.field_6577 - this.field_6578) + (float)this.field_6578);
-		} else if (this.field_6581 < 0) {
+			this.updateCountdownTicks = MathHelper.floor(f * (float)(this.maxIntervalTicks - this.minIntervalTicks) + (float)this.minIntervalTicks);
+		} else if (this.updateCountdownTicks < 0) {
 			float h = MathHelper.sqrt(d) / this.maxShootRange;
-			this.field_6581 = MathHelper.floor(h * (float)(this.field_6577 - this.field_6578) + (float)this.field_6578);
+			this.updateCountdownTicks = MathHelper.floor(h * (float)(this.maxIntervalTicks - this.minIntervalTicks) + (float)this.minIntervalTicks);
 		}
 	}
 }

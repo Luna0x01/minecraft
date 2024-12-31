@@ -25,6 +25,7 @@ public class FontStorage implements AutoCloseable {
 	private final TextureManager textureManager;
 	private final Identifier id;
 	private GlyphRenderer blankGlyphRenderer;
+	private GlyphRenderer whiteRectangleGlyphRenderer;
 	private final List<Font> fonts = Lists.newArrayList();
 	private final Char2ObjectMap<GlyphRenderer> glyphRendererCache = new Char2ObjectOpenHashMap();
 	private final Char2ObjectMap<Glyph> glyphCache = new Char2ObjectOpenHashMap();
@@ -37,24 +38,20 @@ public class FontStorage implements AutoCloseable {
 	}
 
 	public void setFonts(List<Font> list) {
-		for (Font font : this.fonts) {
-			font.close();
-		}
-
-		this.fonts.clear();
+		this.method_24290();
 		this.closeGlyphAtlases();
-		this.glyphAtlases.clear();
 		this.glyphRendererCache.clear();
 		this.glyphCache.clear();
 		this.charactersByWidth.clear();
 		this.blankGlyphRenderer = this.getGlyphRenderer(BlankGlyph.field_2283);
+		this.whiteRectangleGlyphRenderer = this.getGlyphRenderer(WhiteRectangleGlyph.field_20912);
 		Set<Font> set = Sets.newHashSet();
 
 		for (char c = 0; c < '\uffff'; c++) {
-			for (Font font2 : list) {
-				Glyph glyph = (Glyph)(c == ' ' ? SPACE : font2.getGlyph(c));
+			for (Font font : list) {
+				Glyph glyph = (Glyph)(c == ' ' ? SPACE : font.getGlyph(c));
 				if (glyph != null) {
-					set.add(font2);
+					set.add(font);
 					if (glyph != BlankGlyph.field_2283) {
 						((CharList)this.charactersByWidth.computeIfAbsent(MathHelper.ceil(glyph.getAdvance(false)), i -> new CharArrayList())).add(c);
 					}
@@ -67,13 +64,24 @@ public class FontStorage implements AutoCloseable {
 	}
 
 	public void close() {
+		this.method_24290();
 		this.closeGlyphAtlases();
 	}
 
-	public void closeGlyphAtlases() {
+	private void method_24290() {
+		for (Font font : this.fonts) {
+			font.close();
+		}
+
+		this.fonts.clear();
+	}
+
+	private void closeGlyphAtlases() {
 		for (GlyphAtlasTexture glyphAtlasTexture : this.glyphAtlases) {
 			glyphAtlasTexture.close();
 		}
+
+		this.glyphAtlases.clear();
 	}
 
 	public Glyph getGlyph(char c) {
@@ -116,5 +124,9 @@ public class FontStorage implements AutoCloseable {
 	public GlyphRenderer getObfuscatedGlyphRenderer(Glyph glyph) {
 		CharList charList = (CharList)this.charactersByWidth.get(MathHelper.ceil(glyph.getAdvance(false)));
 		return charList != null && !charList.isEmpty() ? this.getGlyphRenderer(charList.get(RANDOM.nextInt(charList.size()))) : this.blankGlyphRenderer;
+	}
+
+	public GlyphRenderer getRectangleRenderer() {
+		return this.whiteRectangleGlyphRenderer;
 	}
 }

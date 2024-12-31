@@ -22,8 +22,8 @@ public class ZombieSiegeManager {
 	private int startY;
 	private int startZ;
 
-	public int tick(ServerWorld serverWorld, boolean bl, boolean bl2) {
-		if (!serverWorld.isDaylight() && bl) {
+	public int spawn(ServerWorld serverWorld, boolean bl, boolean bl2) {
+		if (!serverWorld.isDay() && bl) {
 			float f = serverWorld.getSkyAngle(0.0F);
 			if ((double)f == 0.5) {
 				this.state = serverWorld.random.nextInt(10) == 0 ? ZombieSiegeManager.State.field_18481 : ZombieSiegeManager.State.field_18482;
@@ -99,7 +99,7 @@ public class ZombieSiegeManager {
 				return;
 			}
 
-			zombieEntity.setPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, serverWorld.random.nextFloat() * 360.0F, 0.0F);
+			zombieEntity.refreshPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, serverWorld.random.nextFloat() * 360.0F, 0.0F);
 			serverWorld.spawnEntity(zombieEntity);
 		}
 	}
@@ -109,10 +109,10 @@ public class ZombieSiegeManager {
 		for (int i = 0; i < 10; i++) {
 			int j = blockPos.getX() + serverWorld.random.nextInt(16) - 8;
 			int k = blockPos.getZ() + serverWorld.random.nextInt(16) - 8;
-			int l = serverWorld.getTop(Heightmap.Type.field_13202, j, k);
+			int l = serverWorld.getTopY(Heightmap.Type.field_13202, j, k);
 			BlockPos blockPos2 = new BlockPos(j, l, k);
 			if (serverWorld.isNearOccupiedPointOfInterest(blockPos2)
-				&& HostileEntity.method_20680(EntityType.field_6051, serverWorld, SpawnType.field_16467, blockPos2, serverWorld.random)) {
+				&& HostileEntity.canSpawnInDark(EntityType.field_6051, serverWorld, SpawnType.field_16467, blockPos2, serverWorld.random)) {
 				return new Vec3d((double)blockPos2.getX() + 0.5, (double)blockPos2.getY(), (double)blockPos2.getZ() + 0.5);
 			}
 		}

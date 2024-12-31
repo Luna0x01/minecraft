@@ -2,7 +2,7 @@ package net.minecraft.block;
 
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.BlockMirror;
@@ -19,7 +19,7 @@ public class SkullBlock extends AbstractSkullBlock {
 
 	protected SkullBlock(SkullBlock.SkullType skullType, Block.Settings settings) {
 		super(skullType, settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(ROTATION, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(ROTATION, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class SkullBlock extends AbstractSkullBlock {
 	}
 
 	@Override
-	public VoxelShape method_9571(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public VoxelShape getCullingShape(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return VoxelShapes.empty();
 	}
 
@@ -48,7 +48,7 @@ public class SkullBlock extends AbstractSkullBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(ROTATION);
 	}
 

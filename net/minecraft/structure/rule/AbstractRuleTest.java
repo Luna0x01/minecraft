@@ -15,7 +15,7 @@ public abstract class AbstractRuleTest {
 			dynamicOps.mergeInto(
 				this.serialize(dynamicOps).getValue(),
 				dynamicOps.createString("predicate_type"),
-				dynamicOps.createString(Registry.RULE_TEST.getId(this.getRuleTest()).toString())
+				dynamicOps.createString(Registry.field_16792.getId(this.getRuleTest()).toString())
 			)
 		);
 	}

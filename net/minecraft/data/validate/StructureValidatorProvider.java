@@ -1,29 +1,29 @@
 package net.minecraft.data.validate;
 
 import net.minecraft.data.SnbtProvider;
-import net.minecraft.datafixers.DataFixTypes;
-import net.minecraft.datafixers.Schemas;
+import net.minecraft.datafixer.DataFixTypes;
+import net.minecraft.datafixer.Schemas;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.structure.Structure;
-import net.minecraft.util.TagHelper;
 
-public class StructureValidatorProvider implements SnbtProvider.class_4460 {
+public class StructureValidatorProvider implements SnbtProvider.Tweaker {
 	@Override
-	public CompoundTag method_21674(String string, CompoundTag compoundTag) {
-		return string.startsWith("data/minecraft/structures/") ? method_16878(method_16880(compoundTag)) : compoundTag;
+	public CompoundTag write(String string, CompoundTag compoundTag) {
+		return string.startsWith("data/minecraft/structures/") ? update(addDataVersion(compoundTag)) : compoundTag;
 	}
 
-	private static CompoundTag method_16880(CompoundTag compoundTag) {
-		if (!compoundTag.containsKey("DataVersion", 99)) {
+	private static CompoundTag addDataVersion(CompoundTag compoundTag) {
+		if (!compoundTag.contains("DataVersion", 99)) {
 			compoundTag.putInt("DataVersion", 500);
 		}
 
 		return compoundTag;
 	}
 
-	private static CompoundTag method_16878(CompoundTag compoundTag) {
+	private static CompoundTag update(CompoundTag compoundTag) {
 		Structure structure = new Structure();
-		structure.fromTag(TagHelper.update(Schemas.getFixer(), DataFixTypes.field_19217, compoundTag, compoundTag.getInt("DataVersion")));
+		structure.fromTag(NbtHelper.update(Schemas.getFixer(), DataFixTypes.field_19217, compoundTag, compoundTag.getInt("DataVersion")));
 		return structure.toTag(new CompoundTag());
 	}
 }

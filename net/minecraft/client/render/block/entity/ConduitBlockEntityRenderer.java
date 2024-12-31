@@ -1,181 +1,102 @@
 package net.minecraft.client.render.block.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.block.entity.ConduitBlockEntity;
-import net.minecraft.client.model.Cuboid;
-import net.minecraft.client.model.Model;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Quaternion;
 
 public class ConduitBlockEntityRenderer extends BlockEntityRenderer<ConduitBlockEntity> {
-	private static final Identifier BASE_TEX = new Identifier("textures/entity/conduit/base.png");
-	private static final Identifier CAGE_TEX = new Identifier("textures/entity/conduit/cage.png");
-	private static final Identifier WIND_TEX = new Identifier("textures/entity/conduit/wind.png");
-	private static final Identifier WIND_VERTICAL_TEX = new Identifier("textures/entity/conduit/wind_vertical.png");
-	private static final Identifier OPEN_EYE_TEX = new Identifier("textures/entity/conduit/open_eye.png");
-	private static final Identifier CLOSED_EYE_TEX = new Identifier("textures/entity/conduit/closed_eye.png");
-	private final ConduitBlockEntityRenderer.BaseModel baseModel = new ConduitBlockEntityRenderer.BaseModel();
-	private final ConduitBlockEntityRenderer.CageModel cageModel = new ConduitBlockEntityRenderer.CageModel();
-	private final ConduitBlockEntityRenderer.WindModel windModel = new ConduitBlockEntityRenderer.WindModel();
-	private final ConduitBlockEntityRenderer.EyeModel eyeModel = new ConduitBlockEntityRenderer.EyeModel();
+	public static final SpriteIdentifier BASE_TEX = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/conduit/base"));
+	public static final SpriteIdentifier CAGE_TEX = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/conduit/cage"));
+	public static final SpriteIdentifier WIND_TEX = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/conduit/wind"));
+	public static final SpriteIdentifier WIND_VERTICAL_TEX = new SpriteIdentifier(
+		SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/conduit/wind_vertical")
+	);
+	public static final SpriteIdentifier OPEN_EYE_TEX = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/conduit/open_eye"));
+	public static final SpriteIdentifier CLOSED_EYE_TEX = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/conduit/closed_eye"));
+	private final ModelPart field_20823 = new ModelPart(16, 16, 0, 0);
+	private final ModelPart field_20824;
+	private final ModelPart field_20825;
+	private final ModelPart field_20826;
 
-	public void method_3572(ConduitBlockEntity conduitBlockEntity, double d, double e, double f, float g, int i) {
-		float h = (float)conduitBlockEntity.ticks + g;
+	public ConduitBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
+		super(blockEntityRenderDispatcher);
+		this.field_20823.addCuboid(-4.0F, -4.0F, 0.0F, 8.0F, 8.0F, 0.0F, 0.01F);
+		this.field_20824 = new ModelPart(64, 32, 0, 0);
+		this.field_20824.addCuboid(-8.0F, -8.0F, -8.0F, 16.0F, 16.0F, 16.0F);
+		this.field_20825 = new ModelPart(32, 16, 0, 0);
+		this.field_20825.addCuboid(-3.0F, -3.0F, -3.0F, 6.0F, 6.0F, 6.0F);
+		this.field_20826 = new ModelPart(32, 16, 0, 0);
+		this.field_20826.addCuboid(-4.0F, -4.0F, -4.0F, 8.0F, 8.0F, 8.0F);
+	}
+
+	public void render(ConduitBlockEntity conduitBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
+		float g = (float)conduitBlockEntity.ticks + f;
 		if (!conduitBlockEntity.isActive()) {
-			float j = conduitBlockEntity.getRotation(0.0F);
-			this.bindTexture(BASE_TEX);
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-			GlStateManager.rotatef(j, 0.0F, 1.0F, 0.0F);
-			this.baseModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-			GlStateManager.popMatrix();
-		} else if (conduitBlockEntity.isActive()) {
-			float k = conduitBlockEntity.getRotation(g) * (180.0F / (float)Math.PI);
-			float l = MathHelper.sin(h * 0.1F) / 2.0F + 0.5F;
+			float h = conduitBlockEntity.getRotation(0.0F);
+			VertexConsumer vertexConsumer = BASE_TEX.getVertexConsumer(vertexConsumerProvider, RenderLayer::getEntitySolid);
+			matrixStack.push();
+			matrixStack.translate(0.5, 0.5, 0.5);
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(h));
+			this.field_20825.render(matrixStack, vertexConsumer, i, j);
+			matrixStack.pop();
+		} else {
+			float k = conduitBlockEntity.getRotation(f) * (180.0F / (float)Math.PI);
+			float l = MathHelper.sin(g * 0.1F) / 2.0F + 0.5F;
 			l = l * l + l;
-			this.bindTexture(CAGE_TEX);
-			GlStateManager.disableCull();
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)d + 0.5F, (float)e + 0.3F + l * 0.2F, (float)f + 0.5F);
-			GlStateManager.rotatef(k, 0.5F, 1.0F, 0.5F);
-			this.cageModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-			GlStateManager.popMatrix();
-			int m = 3;
-			int n = conduitBlockEntity.ticks / 3 % 22;
-			this.windModel.method_3573(n);
-			int o = conduitBlockEntity.ticks / 66 % 3;
-			switch (o) {
-				case 0:
-					this.bindTexture(WIND_TEX);
-					GlStateManager.pushMatrix();
-					GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-					this.windModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-					GlStateManager.popMatrix();
-					GlStateManager.pushMatrix();
-					GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-					GlStateManager.scalef(0.875F, 0.875F, 0.875F);
-					GlStateManager.rotatef(180.0F, 1.0F, 0.0F, 0.0F);
-					GlStateManager.rotatef(180.0F, 0.0F, 0.0F, 1.0F);
-					this.windModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-					GlStateManager.popMatrix();
-					break;
-				case 1:
-					this.bindTexture(WIND_VERTICAL_TEX);
-					GlStateManager.pushMatrix();
-					GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-					GlStateManager.rotatef(90.0F, 1.0F, 0.0F, 0.0F);
-					this.windModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-					GlStateManager.popMatrix();
-					GlStateManager.pushMatrix();
-					GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-					GlStateManager.scalef(0.875F, 0.875F, 0.875F);
-					GlStateManager.rotatef(180.0F, 1.0F, 0.0F, 0.0F);
-					GlStateManager.rotatef(180.0F, 0.0F, 0.0F, 1.0F);
-					this.windModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-					GlStateManager.popMatrix();
-					break;
-				case 2:
-					this.bindTexture(WIND_TEX);
-					GlStateManager.pushMatrix();
-					GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-					GlStateManager.rotatef(90.0F, 0.0F, 0.0F, 1.0F);
-					this.windModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-					GlStateManager.popMatrix();
-					GlStateManager.pushMatrix();
-					GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-					GlStateManager.scalef(0.875F, 0.875F, 0.875F);
-					GlStateManager.rotatef(180.0F, 1.0F, 0.0F, 0.0F);
-					GlStateManager.rotatef(180.0F, 0.0F, 0.0F, 1.0F);
-					this.windModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
-					GlStateManager.popMatrix();
+			matrixStack.push();
+			matrixStack.translate(0.5, (double)(0.3F + l * 0.2F), 0.5);
+			Vector3f vector3f = new Vector3f(0.5F, 1.0F, 0.5F);
+			vector3f.normalize();
+			matrixStack.multiply(new Quaternion(vector3f, k, true));
+			this.field_20826.render(matrixStack, CAGE_TEX.getVertexConsumer(vertexConsumerProvider, RenderLayer::getEntityCutoutNoCull), i, j);
+			matrixStack.pop();
+			int m = conduitBlockEntity.ticks / 66 % 3;
+			matrixStack.push();
+			matrixStack.translate(0.5, 0.5, 0.5);
+			if (m == 1) {
+				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(90.0F));
+			} else if (m == 2) {
+				matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(90.0F));
 			}
 
-			Camera camera = this.renderManager.cameraEntity;
-			if (conduitBlockEntity.isEyeOpen()) {
-				this.bindTexture(OPEN_EYE_TEX);
-			} else {
-				this.bindTexture(CLOSED_EYE_TEX);
-			}
-
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)d + 0.5F, (float)e + 0.3F + l * 0.2F, (float)f + 0.5F);
-			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
-			GlStateManager.rotatef(-camera.getYaw(), 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotatef(camera.getPitch(), 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotatef(180.0F, 0.0F, 0.0F, 1.0F);
-			this.eyeModel.render(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.083333336F);
-			GlStateManager.popMatrix();
-		}
-
-		super.render(conduitBlockEntity, d, e, f, g, i);
-	}
-
-	static class BaseModel extends Model {
-		private final Cuboid cuboid;
-
-		public BaseModel() {
-			this.textureWidth = 32;
-			this.textureHeight = 16;
-			this.cuboid = new Cuboid(this, 0, 0);
-			this.cuboid.addBox(-3.0F, -3.0F, -3.0F, 6, 6, 6);
-		}
-
-		public void render(float f, float g, float h, float i, float j, float k) {
-			this.cuboid.render(k);
-		}
-	}
-
-	static class CageModel extends Model {
-		private final Cuboid cuboid;
-
-		public CageModel() {
-			this.textureWidth = 32;
-			this.textureHeight = 16;
-			this.cuboid = new Cuboid(this, 0, 0);
-			this.cuboid.addBox(-4.0F, -4.0F, -4.0F, 8, 8, 8);
-		}
-
-		public void render(float f, float g, float h, float i, float j, float k) {
-			this.cuboid.render(k);
-		}
-	}
-
-	static class EyeModel extends Model {
-		private final Cuboid cuboid;
-
-		public EyeModel() {
-			this.textureWidth = 8;
-			this.textureHeight = 8;
-			this.cuboid = new Cuboid(this, 0, 0);
-			this.cuboid.addBox(-4.0F, -4.0F, 0.0F, 8, 8, 0, 0.01F);
-		}
-
-		public void render(float f, float g, float h, float i, float j, float k) {
-			this.cuboid.render(k);
-		}
-	}
-
-	static class WindModel extends Model {
-		private final Cuboid[] cuboids = new Cuboid[22];
-		private int field_4384;
-
-		public WindModel() {
-			this.textureWidth = 64;
-			this.textureHeight = 1024;
-
-			for (int i = 0; i < 22; i++) {
-				this.cuboids[i] = new Cuboid(this, 0, 32 * i);
-				this.cuboids[i].addBox(-8.0F, -8.0F, -8.0F, 16, 16, 16);
-			}
-		}
-
-		public void render(float f, float g, float h, float i, float j, float k) {
-			this.cuboids[this.field_4384].render(k);
-		}
-
-		public void method_3573(int i) {
-			this.field_4384 = i;
+			VertexConsumer vertexConsumer2 = (m == 1 ? WIND_VERTICAL_TEX : WIND_TEX).getVertexConsumer(vertexConsumerProvider, RenderLayer::getEntityCutoutNoCull);
+			this.field_20824.render(matrixStack, vertexConsumer2, i, j);
+			matrixStack.pop();
+			matrixStack.push();
+			matrixStack.translate(0.5, 0.5, 0.5);
+			matrixStack.scale(0.875F, 0.875F, 0.875F);
+			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(180.0F));
+			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
+			this.field_20824.render(matrixStack, vertexConsumer2, i, j);
+			matrixStack.pop();
+			Camera camera = this.dispatcher.camera;
+			matrixStack.push();
+			matrixStack.translate(0.5, (double)(0.3F + l * 0.2F), 0.5);
+			matrixStack.scale(0.5F, 0.5F, 0.5F);
+			float n = -camera.getYaw();
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(n));
+			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(camera.getPitch()));
+			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
+			float o = 1.3333334F;
+			matrixStack.scale(1.3333334F, 1.3333334F, 1.3333334F);
+			this.field_20823
+				.render(
+					matrixStack,
+					(conduitBlockEntity.isEyeOpen() ? OPEN_EYE_TEX : CLOSED_EYE_TEX).getVertexConsumer(vertexConsumerProvider, RenderLayer::getEntityCutoutNoCull),
+					i,
+					j
+				);
+			matrixStack.pop();
 		}
 	}
 }

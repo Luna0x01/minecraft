@@ -1,7 +1,7 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.model.BatEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -13,21 +13,21 @@ public class BatEntityRenderer extends MobEntityRenderer<BatEntity, BatEntityMod
 		super(entityRenderDispatcher, new BatEntityModel(), 0.25F);
 	}
 
-	protected Identifier method_3883(BatEntity batEntity) {
+	public Identifier getTexture(BatEntity batEntity) {
 		return SKIN;
 	}
 
-	protected void method_3884(BatEntity batEntity, float f) {
-		GlStateManager.scalef(0.35F, 0.35F, 0.35F);
+	protected void scale(BatEntity batEntity, MatrixStack matrixStack, float f) {
+		matrixStack.scale(0.35F, 0.35F, 0.35F);
 	}
 
-	protected void method_3882(BatEntity batEntity, float f, float g, float h) {
+	protected void setupTransforms(BatEntity batEntity, MatrixStack matrixStack, float f, float g, float h) {
 		if (batEntity.isRoosting()) {
-			GlStateManager.translatef(0.0F, -0.1F, 0.0F);
+			matrixStack.translate(0.0, -0.1F, 0.0);
 		} else {
-			GlStateManager.translatef(0.0F, MathHelper.cos(f * 0.3F) * 0.1F, 0.0F);
+			matrixStack.translate(0.0, (double)(MathHelper.cos(f * 0.3F) * 0.1F), 0.0);
 		}
 
-		super.setupTransforms(batEntity, f, g, h);
+		super.setupTransforms(batEntity, matrixStack, f, g, h);
 	}
 }

@@ -2,17 +2,17 @@ package net.minecraft.server;
 
 import java.util.concurrent.Executor;
 import javax.annotation.Nullable;
-import net.minecraft.util.MailboxProcessor;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.thread.TaskExecutor;
 import net.minecraft.world.chunk.ChunkStatus;
 
 public class QueueingWorldGenerationProgressListener implements WorldGenerationProgressListener {
 	private final WorldGenerationProgressListener progressListener;
-	private final MailboxProcessor<Runnable> queue;
+	private final TaskExecutor<Runnable> queue;
 
 	public QueueingWorldGenerationProgressListener(WorldGenerationProgressListener worldGenerationProgressListener, Executor executor) {
 		this.progressListener = worldGenerationProgressListener;
-		this.queue = MailboxProcessor.create(executor, "progressListener");
+		this.queue = TaskExecutor.create(executor, "progressListener");
 	}
 
 	@Override

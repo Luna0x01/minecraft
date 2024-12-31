@@ -1,13 +1,15 @@
 package net.minecraft.client.options;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 import com.google.gson.Gson;
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -22,20 +24,19 @@ import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.PlayerModelPart;
-import net.minecraft.client.resource.ClientResourcePackContainer;
+import net.minecraft.client.resource.ClientResourcePackProfile;
 import net.minecraft.client.tutorial.TutorialStep;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.VideoMode;
-import net.minecraft.datafixers.DataFixTypes;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resource.ResourcePackContainerManager;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.resource.ResourcePackManager;
 import net.minecraft.server.network.packet.ClientSettingsC2SPacket;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.Arm;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.TagHelper;
 import net.minecraft.world.Difficulty;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,16 +57,16 @@ public class GameOptions {
 			return null;
 		}
 	};
-	public static final Splitter COLON_SPLITTER = Splitter.on(':');
+	private static final Splitter COLON_SPLITTER = Splitter.on(':').limit(2);
 	public double mouseSensitivity = 0.5;
 	public int viewDistance = -1;
 	public int maxFps = 120;
-	public CloudRenderMode cloudRenderMode = CloudRenderMode.FANCY;
+	public CloudRenderMode cloudRenderMode = CloudRenderMode.field_18164;
 	public boolean fancyGraphics = true;
-	public AoOption ao = AoOption.MAX;
+	public AoOption ao = AoOption.field_18146;
 	public List<String> resourcePacks = Lists.newArrayList();
 	public List<String> incompatibleResourcePacks = Lists.newArrayList();
-	public ChatVisibility chatVisibility = ChatVisibility.FULL;
+	public ChatVisibility chatVisibility = ChatVisibility.field_7538;
 	public double chatOpacity = 1.0;
 	public double textBackgroundOpacity = 0.5;
 	@Nullable
@@ -85,11 +86,11 @@ public class GameOptions {
 	public int mipmapLevels = 4;
 	private final Map<SoundCategory, Float> soundVolumeLevels = Maps.newEnumMap(SoundCategory.class);
 	public boolean useNativeTransport = true;
-	public AttackIndicator attackIndicator = AttackIndicator.CROSSHAIR;
+	public AttackIndicator attackIndicator = AttackIndicator.field_18152;
 	public TutorialStep tutorialStep = TutorialStep.field_5650;
 	public int biomeBlendRadius = 2;
 	public double mouseWheelSensitivity = 1.0;
-	public boolean field_20308 = true;
+	public boolean rawMouseInput = true;
 	public int glDebugVerbosity = 1;
 	public boolean autoJump = true;
 	public boolean autoSuggestions = true;
@@ -109,19 +110,22 @@ public class GameOptions {
 	public boolean touchscreen;
 	public boolean fullscreen;
 	public boolean bobView = true;
+	public boolean sneakToggled;
+	public boolean sprintToggled;
+	public boolean skipMultiplayerWarning;
 	public final KeyBinding keyForward = new KeyBinding("key.forward", 87, "key.categories.movement");
 	public final KeyBinding keyLeft = new KeyBinding("key.left", 65, "key.categories.movement");
 	public final KeyBinding keyBack = new KeyBinding("key.back", 83, "key.categories.movement");
 	public final KeyBinding keyRight = new KeyBinding("key.right", 68, "key.categories.movement");
 	public final KeyBinding keyJump = new KeyBinding("key.jump", 32, "key.categories.movement");
-	public final KeyBinding keySneak = new KeyBinding("key.sneak", 340, "key.categories.movement");
-	public final KeyBinding keySprint = new KeyBinding("key.sprint", 341, "key.categories.movement");
+	public final KeyBinding keySneak = new StickyKeyBinding("key.sneak", 340, "key.categories.movement", () -> this.sneakToggled);
+	public final KeyBinding keySprint = new StickyKeyBinding("key.sprint", 341, "key.categories.movement", () -> this.sprintToggled);
 	public final KeyBinding keyInventory = new KeyBinding("key.inventory", 69, "key.categories.inventory");
 	public final KeyBinding keySwapHands = new KeyBinding("key.swapHands", 70, "key.categories.inventory");
 	public final KeyBinding keyDrop = new KeyBinding("key.drop", 81, "key.categories.inventory");
-	public final KeyBinding keyUse = new KeyBinding("key.use", InputUtil.Type.MOUSE, 1, "key.categories.gameplay");
-	public final KeyBinding keyAttack = new KeyBinding("key.attack", InputUtil.Type.MOUSE, 0, "key.categories.gameplay");
-	public final KeyBinding keyPickItem = new KeyBinding("key.pickItem", InputUtil.Type.MOUSE, 2, "key.categories.gameplay");
+	public final KeyBinding keyUse = new KeyBinding("key.use", InputUtil.Type.field_1672, 1, "key.categories.gameplay");
+	public final KeyBinding keyAttack = new KeyBinding("key.attack", InputUtil.Type.field_1672, 0, "key.categories.gameplay");
+	public final KeyBinding keyPickItem = new KeyBinding("key.pickItem", InputUtil.Type.field_1672, 2, "key.categories.gameplay");
 	public final KeyBinding keyChat = new KeyBinding("key.chat", 84, "key.categories.multiplayer");
 	public final KeyBinding keyPlayerList = new KeyBinding("key.playerlist", 258, "key.categories.multiplayer");
 	public final KeyBinding keyCommand = new KeyBinding("key.command", 47, "key.categories.multiplayer");
@@ -186,8 +190,8 @@ public class GameOptions {
 	public double fov = 70.0;
 	public double gamma;
 	public int guiScale;
-	public ParticlesOption particles = ParticlesOption.ALL;
-	public NarratorOption narrator = NarratorOption.OFF;
+	public ParticlesOption particles = ParticlesOption.field_18197;
+	public NarratorOption narrator = NarratorOption.field_18176;
 	public String language = "en_us";
 
 	public GameOptions(MinecraftClient minecraftClient, File file) {
@@ -227,302 +231,332 @@ public class GameOptions {
 			}
 
 			this.soundVolumeLevels.clear();
-			List<String> list = IOUtils.readLines(new FileInputStream(this.optionsFile));
 			CompoundTag compoundTag = new CompoundTag();
+			BufferedReader bufferedReader = Files.newReader(this.optionsFile, Charsets.UTF_8);
+			Throwable var3 = null;
 
-			for (String string : list) {
-				try {
-					Iterator<String> iterator = COLON_SPLITTER.omitEmptyStrings().limit(2).split(string).iterator();
-					compoundTag.putString((String)iterator.next(), (String)iterator.next());
-				} catch (Exception var10) {
-					LOGGER.warn("Skipping bad option: {}", string);
+			try {
+				bufferedReader.lines().forEach(stringx -> {
+					try {
+						Iterator<String> iterator = COLON_SPLITTER.split(stringx).iterator();
+						compoundTag.putString((String)iterator.next(), (String)iterator.next());
+					} catch (Exception var3x) {
+						LOGGER.warn("Skipping bad option: {}", stringx);
+					}
+				});
+			} catch (Throwable var17) {
+				var3 = var17;
+				throw var17;
+			} finally {
+				if (bufferedReader != null) {
+					if (var3 != null) {
+						try {
+							bufferedReader.close();
+						} catch (Throwable var16) {
+							var3.addSuppressed(var16);
+						}
+					} else {
+						bufferedReader.close();
+					}
 				}
 			}
 
-			compoundTag = this.method_1626(compoundTag);
+			CompoundTag compoundTag2 = this.update(compoundTag);
 
-			for (String string2 : compoundTag.getKeys()) {
-				String string3 = compoundTag.getString(string2);
+			for (String string : compoundTag2.getKeys()) {
+				String string2 = compoundTag2.getString(string);
 
 				try {
-					if ("autoJump".equals(string2)) {
-						Option.AUTO_JUMP.set(this, string3);
+					if ("autoJump".equals(string)) {
+						Option.AUTO_JUMP.set(this, string2);
 					}
 
-					if ("autoSuggestions".equals(string2)) {
-						Option.AUTO_SUGGESTIONS.set(this, string3);
+					if ("autoSuggestions".equals(string)) {
+						Option.AUTO_SUGGESTIONS.set(this, string2);
 					}
 
-					if ("chatColors".equals(string2)) {
-						Option.CHAT_COLOR.set(this, string3);
+					if ("chatColors".equals(string)) {
+						Option.CHAT_COLOR.set(this, string2);
 					}
 
-					if ("chatLinks".equals(string2)) {
-						Option.CHAT_LINKS.set(this, string3);
+					if ("chatLinks".equals(string)) {
+						Option.CHAT_LINKS.set(this, string2);
 					}
 
-					if ("chatLinksPrompt".equals(string2)) {
-						Option.CHAT_LINKS_PROMPT.set(this, string3);
+					if ("chatLinksPrompt".equals(string)) {
+						Option.CHAT_LINKS_PROMPT.set(this, string2);
 					}
 
-					if ("enableVsync".equals(string2)) {
-						Option.VSYNC.set(this, string3);
+					if ("enableVsync".equals(string)) {
+						Option.VSYNC.set(this, string2);
 					}
 
-					if ("entityShadows".equals(string2)) {
-						Option.ENTITY_SHADOWS.set(this, string3);
+					if ("entityShadows".equals(string)) {
+						Option.ENTITY_SHADOWS.set(this, string2);
 					}
 
-					if ("forceUnicodeFont".equals(string2)) {
-						Option.FORCE_UNICODE_FONT.set(this, string3);
+					if ("forceUnicodeFont".equals(string)) {
+						Option.FORCE_UNICODE_FONT.set(this, string2);
 					}
 
-					if ("discrete_mouse_scroll".equals(string2)) {
-						Option.DISCRETE_MOUSE_SCROLL.set(this, string3);
+					if ("discrete_mouse_scroll".equals(string)) {
+						Option.DISCRETE_MOUSE_SCROLL.set(this, string2);
 					}
 
-					if ("invertYMouse".equals(string2)) {
-						Option.INVERT_MOUSE.set(this, string3);
+					if ("invertYMouse".equals(string)) {
+						Option.INVERT_MOUSE.set(this, string2);
 					}
 
-					if ("realmsNotifications".equals(string2)) {
-						Option.REALMS_NOTIFICATIONS.set(this, string3);
+					if ("realmsNotifications".equals(string)) {
+						Option.REALMS_NOTIFICATIONS.set(this, string2);
 					}
 
-					if ("reducedDebugInfo".equals(string2)) {
-						Option.REDUCED_DEBUG_INFO.set(this, string3);
+					if ("reducedDebugInfo".equals(string)) {
+						Option.REDUCED_DEBUG_INFO.set(this, string2);
 					}
 
-					if ("showSubtitles".equals(string2)) {
-						Option.SUBTITLES.set(this, string3);
+					if ("showSubtitles".equals(string)) {
+						Option.SUBTITLES.set(this, string2);
 					}
 
-					if ("snooperEnabled".equals(string2)) {
-						Option.SNOOPER.set(this, string3);
+					if ("snooperEnabled".equals(string)) {
+						Option.SNOOPER.set(this, string2);
 					}
 
-					if ("touchscreen".equals(string2)) {
-						Option.TOUCHSCREEN.set(this, string3);
+					if ("touchscreen".equals(string)) {
+						Option.TOUCHSCREEN.set(this, string2);
 					}
 
-					if ("fullscreen".equals(string2)) {
-						Option.FULLSCREEN.set(this, string3);
+					if ("fullscreen".equals(string)) {
+						Option.FULLSCREEN.set(this, string2);
 					}
 
-					if ("bobView".equals(string2)) {
-						Option.VIEW_BOBBING.set(this, string3);
+					if ("bobView".equals(string)) {
+						Option.VIEW_BOBBING.set(this, string2);
 					}
 
-					if ("mouseSensitivity".equals(string2)) {
-						this.mouseSensitivity = (double)parseFloat(string3);
+					if ("toggleCrouch".equals(string)) {
+						this.sneakToggled = "true".equals(string2);
 					}
 
-					if ("fov".equals(string2)) {
-						this.fov = (double)(parseFloat(string3) * 40.0F + 70.0F);
+					if ("toggleSprint".equals(string)) {
+						this.sprintToggled = "true".equals(string2);
 					}
 
-					if ("gamma".equals(string2)) {
-						this.gamma = (double)parseFloat(string3);
+					if ("mouseSensitivity".equals(string)) {
+						this.mouseSensitivity = (double)parseFloat(string2);
 					}
 
-					if ("renderDistance".equals(string2)) {
-						this.viewDistance = Integer.parseInt(string3);
+					if ("fov".equals(string)) {
+						this.fov = (double)(parseFloat(string2) * 40.0F + 70.0F);
 					}
 
-					if ("guiScale".equals(string2)) {
-						this.guiScale = Integer.parseInt(string3);
+					if ("gamma".equals(string)) {
+						this.gamma = (double)parseFloat(string2);
 					}
 
-					if ("particles".equals(string2)) {
-						this.particles = ParticlesOption.byId(Integer.parseInt(string3));
+					if ("renderDistance".equals(string)) {
+						this.viewDistance = Integer.parseInt(string2);
 					}
 
-					if ("maxFps".equals(string2)) {
-						this.maxFps = Integer.parseInt(string3);
-						if (this.client.window != null) {
-							this.client.window.setFramerateLimit(this.maxFps);
+					if ("guiScale".equals(string)) {
+						this.guiScale = Integer.parseInt(string2);
+					}
+
+					if ("particles".equals(string)) {
+						this.particles = ParticlesOption.byId(Integer.parseInt(string2));
+					}
+
+					if ("maxFps".equals(string)) {
+						this.maxFps = Integer.parseInt(string2);
+						if (this.client.getWindow() != null) {
+							this.client.getWindow().setFramerateLimit(this.maxFps);
 						}
 					}
 
-					if ("difficulty".equals(string2)) {
-						this.difficulty = Difficulty.byOrdinal(Integer.parseInt(string3));
+					if ("difficulty".equals(string)) {
+						this.difficulty = Difficulty.byOrdinal(Integer.parseInt(string2));
 					}
 
-					if ("fancyGraphics".equals(string2)) {
-						this.fancyGraphics = "true".equals(string3);
+					if ("fancyGraphics".equals(string)) {
+						this.fancyGraphics = "true".equals(string2);
 					}
 
-					if ("tutorialStep".equals(string2)) {
-						this.tutorialStep = TutorialStep.byName(string3);
+					if ("tutorialStep".equals(string)) {
+						this.tutorialStep = TutorialStep.byName(string2);
 					}
 
-					if ("ao".equals(string2)) {
-						if ("true".equals(string3)) {
-							this.ao = AoOption.MAX;
-						} else if ("false".equals(string3)) {
-							this.ao = AoOption.OFF;
+					if ("ao".equals(string)) {
+						if ("true".equals(string2)) {
+							this.ao = AoOption.field_18146;
+						} else if ("false".equals(string2)) {
+							this.ao = AoOption.field_18144;
 						} else {
-							this.ao = AoOption.getOption(Integer.parseInt(string3));
+							this.ao = AoOption.getOption(Integer.parseInt(string2));
 						}
 					}
 
-					if ("renderClouds".equals(string2)) {
-						if ("true".equals(string3)) {
-							this.cloudRenderMode = CloudRenderMode.FANCY;
-						} else if ("false".equals(string3)) {
-							this.cloudRenderMode = CloudRenderMode.OFF;
-						} else if ("fast".equals(string3)) {
-							this.cloudRenderMode = CloudRenderMode.FAST;
+					if ("renderClouds".equals(string)) {
+						if ("true".equals(string2)) {
+							this.cloudRenderMode = CloudRenderMode.field_18164;
+						} else if ("false".equals(string2)) {
+							this.cloudRenderMode = CloudRenderMode.field_18162;
+						} else if ("fast".equals(string2)) {
+							this.cloudRenderMode = CloudRenderMode.field_18163;
 						}
 					}
 
-					if ("attackIndicator".equals(string2)) {
-						this.attackIndicator = AttackIndicator.byId(Integer.parseInt(string3));
+					if ("attackIndicator".equals(string)) {
+						this.attackIndicator = AttackIndicator.byId(Integer.parseInt(string2));
 					}
 
-					if ("resourcePacks".equals(string2)) {
-						this.resourcePacks = JsonHelper.deserialize(GSON, string3, STRING_LIST_TYPE);
+					if ("resourcePacks".equals(string)) {
+						this.resourcePacks = JsonHelper.deserialize(GSON, string2, STRING_LIST_TYPE);
 						if (this.resourcePacks == null) {
 							this.resourcePacks = Lists.newArrayList();
 						}
 					}
 
-					if ("incompatibleResourcePacks".equals(string2)) {
-						this.incompatibleResourcePacks = JsonHelper.deserialize(GSON, string3, STRING_LIST_TYPE);
+					if ("incompatibleResourcePacks".equals(string)) {
+						this.incompatibleResourcePacks = JsonHelper.deserialize(GSON, string2, STRING_LIST_TYPE);
 						if (this.incompatibleResourcePacks == null) {
 							this.incompatibleResourcePacks = Lists.newArrayList();
 						}
 					}
 
-					if ("lastServer".equals(string2)) {
-						this.lastServer = string3;
+					if ("lastServer".equals(string)) {
+						this.lastServer = string2;
 					}
 
-					if ("lang".equals(string2)) {
-						this.language = string3;
+					if ("lang".equals(string)) {
+						this.language = string2;
 					}
 
-					if ("chatVisibility".equals(string2)) {
-						this.chatVisibility = ChatVisibility.byId(Integer.parseInt(string3));
+					if ("chatVisibility".equals(string)) {
+						this.chatVisibility = ChatVisibility.byId(Integer.parseInt(string2));
 					}
 
-					if ("chatOpacity".equals(string2)) {
-						this.chatOpacity = (double)parseFloat(string3);
+					if ("chatOpacity".equals(string)) {
+						this.chatOpacity = (double)parseFloat(string2);
 					}
 
-					if ("textBackgroundOpacity".equals(string2)) {
-						this.textBackgroundOpacity = (double)parseFloat(string3);
+					if ("textBackgroundOpacity".equals(string)) {
+						this.textBackgroundOpacity = (double)parseFloat(string2);
 					}
 
-					if ("backgroundForChatOnly".equals(string2)) {
-						this.backgroundForChatOnly = "true".equals(string3);
+					if ("backgroundForChatOnly".equals(string)) {
+						this.backgroundForChatOnly = "true".equals(string2);
 					}
 
-					if ("fullscreenResolution".equals(string2)) {
-						this.fullscreenResolution = string3;
+					if ("fullscreenResolution".equals(string)) {
+						this.fullscreenResolution = string2;
 					}
 
-					if ("hideServerAddress".equals(string2)) {
-						this.hideServerAddress = "true".equals(string3);
+					if ("hideServerAddress".equals(string)) {
+						this.hideServerAddress = "true".equals(string2);
 					}
 
-					if ("advancedItemTooltips".equals(string2)) {
-						this.advancedItemTooltips = "true".equals(string3);
+					if ("advancedItemTooltips".equals(string)) {
+						this.advancedItemTooltips = "true".equals(string2);
 					}
 
-					if ("pauseOnLostFocus".equals(string2)) {
-						this.pauseOnLostFocus = "true".equals(string3);
+					if ("pauseOnLostFocus".equals(string)) {
+						this.pauseOnLostFocus = "true".equals(string2);
 					}
 
-					if ("overrideHeight".equals(string2)) {
-						this.overrideHeight = Integer.parseInt(string3);
+					if ("overrideHeight".equals(string)) {
+						this.overrideHeight = Integer.parseInt(string2);
 					}
 
-					if ("overrideWidth".equals(string2)) {
-						this.overrideWidth = Integer.parseInt(string3);
+					if ("overrideWidth".equals(string)) {
+						this.overrideWidth = Integer.parseInt(string2);
 					}
 
-					if ("heldItemTooltips".equals(string2)) {
-						this.heldItemTooltips = "true".equals(string3);
+					if ("heldItemTooltips".equals(string)) {
+						this.heldItemTooltips = "true".equals(string2);
 					}
 
-					if ("chatHeightFocused".equals(string2)) {
-						this.chatHeightFocused = (double)parseFloat(string3);
+					if ("chatHeightFocused".equals(string)) {
+						this.chatHeightFocused = (double)parseFloat(string2);
 					}
 
-					if ("chatHeightUnfocused".equals(string2)) {
-						this.chatHeightUnfocused = (double)parseFloat(string3);
+					if ("chatHeightUnfocused".equals(string)) {
+						this.chatHeightUnfocused = (double)parseFloat(string2);
 					}
 
-					if ("chatScale".equals(string2)) {
-						this.chatScale = (double)parseFloat(string3);
+					if ("chatScale".equals(string)) {
+						this.chatScale = (double)parseFloat(string2);
 					}
 
-					if ("chatWidth".equals(string2)) {
-						this.chatWidth = (double)parseFloat(string3);
+					if ("chatWidth".equals(string)) {
+						this.chatWidth = (double)parseFloat(string2);
 					}
 
-					if ("mipmapLevels".equals(string2)) {
-						this.mipmapLevels = Integer.parseInt(string3);
+					if ("mipmapLevels".equals(string)) {
+						this.mipmapLevels = Integer.parseInt(string2);
 					}
 
-					if ("useNativeTransport".equals(string2)) {
-						this.useNativeTransport = "true".equals(string3);
+					if ("useNativeTransport".equals(string)) {
+						this.useNativeTransport = "true".equals(string2);
 					}
 
-					if ("mainHand".equals(string2)) {
-						this.mainArm = "left".equals(string3) ? Arm.field_6182 : Arm.field_6183;
+					if ("mainHand".equals(string)) {
+						this.mainArm = "left".equals(string2) ? Arm.field_6182 : Arm.field_6183;
 					}
 
-					if ("narrator".equals(string2)) {
-						this.narrator = NarratorOption.byId(Integer.parseInt(string3));
+					if ("narrator".equals(string)) {
+						this.narrator = NarratorOption.byId(Integer.parseInt(string2));
 					}
 
-					if ("biomeBlendRadius".equals(string2)) {
-						this.biomeBlendRadius = Integer.parseInt(string3);
+					if ("biomeBlendRadius".equals(string)) {
+						this.biomeBlendRadius = Integer.parseInt(string2);
 					}
 
-					if ("mouseWheelSensitivity".equals(string2)) {
-						this.mouseWheelSensitivity = (double)parseFloat(string3);
+					if ("mouseWheelSensitivity".equals(string)) {
+						this.mouseWheelSensitivity = (double)parseFloat(string2);
 					}
 
-					if ("rawMouseInput".equals(string2)) {
-						this.field_20308 = "true".equals(string3);
+					if ("rawMouseInput".equals(string)) {
+						this.rawMouseInput = "true".equals(string2);
 					}
 
-					if ("glDebugVerbosity".equals(string2)) {
-						this.glDebugVerbosity = Integer.parseInt(string3);
+					if ("glDebugVerbosity".equals(string)) {
+						this.glDebugVerbosity = Integer.parseInt(string2);
+					}
+
+					if ("skipMultiplayerWarning".equals(string)) {
+						this.skipMultiplayerWarning = "true".equals(string2);
 					}
 
 					for (KeyBinding keyBinding : this.keysAll) {
-						if (string2.equals("key_" + keyBinding.getId())) {
-							keyBinding.setKeyCode(InputUtil.fromName(string3));
+						if (string.equals("key_" + keyBinding.getId())) {
+							keyBinding.setKeyCode(InputUtil.fromName(string2));
 						}
 					}
 
 					for (SoundCategory soundCategory : SoundCategory.values()) {
-						if (string2.equals("soundCategory_" + soundCategory.getName())) {
-							this.soundVolumeLevels.put(soundCategory, parseFloat(string3));
+						if (string.equals("soundCategory_" + soundCategory.getName())) {
+							this.soundVolumeLevels.put(soundCategory, parseFloat(string2));
 						}
 					}
 
 					for (PlayerModelPart playerModelPart : PlayerModelPart.values()) {
-						if (string2.equals("modelPart_" + playerModelPart.getName())) {
-							this.setPlayerModelPart(playerModelPart, "true".equals(string3));
+						if (string.equals("modelPart_" + playerModelPart.getName())) {
+							this.setPlayerModelPart(playerModelPart, "true".equals(string2));
 						}
 					}
-				} catch (Exception var11) {
-					LOGGER.warn("Skipping bad option: {}:{}", string2, string3);
+				} catch (Exception var19) {
+					LOGGER.warn("Skipping bad option: {}:{}", string, string2);
 				}
 			}
 
 			KeyBinding.updateKeysByCode();
-		} catch (Exception var12) {
-			LOGGER.error("Failed to load options", var12);
+		} catch (Exception var20) {
+			LOGGER.error("Failed to load options", var20);
 		}
 	}
 
-	private CompoundTag method_1626(CompoundTag compoundTag) {
+	private CompoundTag update(CompoundTag compoundTag) {
 		int i = 0;
 
 		try {
@@ -530,7 +564,7 @@ public class GameOptions {
 		} catch (RuntimeException var4) {
 		}
 
-		return TagHelper.update(this.client.getDataFixer(), DataFixTypes.field_19216, compoundTag, i);
+		return NbtHelper.update(this.client.getDataFixer(), DataFixTypes.field_19216, compoundTag, i);
 	}
 
 	private static float parseFloat(String string) {
@@ -565,6 +599,8 @@ public class GameOptions {
 				printWriter.println("touchscreen:" + Option.TOUCHSCREEN.get(this));
 				printWriter.println("fullscreen:" + Option.FULLSCREEN.get(this));
 				printWriter.println("bobView:" + Option.VIEW_BOBBING.get(this));
+				printWriter.println("toggleCrouch:" + this.sneakToggled);
+				printWriter.println("toggleSprint:" + this.sprintToggled);
 				printWriter.println("mouseSensitivity:" + this.mouseSensitivity);
 				printWriter.println("fov:" + (this.fov - 70.0) / 40.0);
 				printWriter.println("gamma:" + this.gamma);
@@ -577,13 +613,13 @@ public class GameOptions {
 				printWriter.println("ao:" + this.ao.getValue());
 				printWriter.println("biomeBlendRadius:" + this.biomeBlendRadius);
 				switch (this.cloudRenderMode) {
-					case FANCY:
+					case field_18164:
 						printWriter.println("renderClouds:true");
 						break;
-					case FAST:
+					case field_18163:
 						printWriter.println("renderClouds:fast");
 						break;
-					case OFF:
+					case field_18162:
 						printWriter.println("renderClouds:false");
 				}
 
@@ -595,8 +631,8 @@ public class GameOptions {
 				printWriter.println("chatOpacity:" + this.chatOpacity);
 				printWriter.println("textBackgroundOpacity:" + this.textBackgroundOpacity);
 				printWriter.println("backgroundForChatOnly:" + this.backgroundForChatOnly);
-				if (this.client.window.getVideoMode().isPresent()) {
-					printWriter.println("fullscreenResolution:" + ((VideoMode)this.client.window.getVideoMode().get()).asString());
+				if (this.client.getWindow().getVideoMode().isPresent()) {
+					printWriter.println("fullscreenResolution:" + ((VideoMode)this.client.getWindow().getVideoMode().get()).asString());
 				}
 
 				printWriter.println("hideServerAddress:" + this.hideServerAddress);
@@ -618,6 +654,7 @@ public class GameOptions {
 				printWriter.println("mouseWheelSensitivity:" + this.mouseWheelSensitivity);
 				printWriter.println("rawMouseInput:" + Option.RAW_MOUSE_INPUT.get(this));
 				printWriter.println("glDebugVerbosity:" + this.glDebugVerbosity);
+				printWriter.println("skipMultiplayerWarning:" + this.skipMultiplayerWarning);
 
 				for (KeyBinding keyBinding : this.keysAll) {
 					printWriter.println("key_" + keyBinding.getId() + ":" + keyBinding.getName());
@@ -702,39 +739,39 @@ public class GameOptions {
 	}
 
 	public CloudRenderMode getCloudRenderMode() {
-		return this.viewDistance >= 4 ? this.cloudRenderMode : CloudRenderMode.OFF;
+		return this.viewDistance >= 4 ? this.cloudRenderMode : CloudRenderMode.field_18162;
 	}
 
 	public boolean shouldUseNativeTransport() {
 		return this.useNativeTransport;
 	}
 
-	public void addResourcePackContainersToManager(ResourcePackContainerManager<ClientResourcePackContainer> resourcePackContainerManager) {
-		resourcePackContainerManager.callCreators();
-		Set<ClientResourcePackContainer> set = Sets.newLinkedHashSet();
+	public void addResourcePackProfilesToManager(ResourcePackManager<ClientResourcePackProfile> resourcePackManager) {
+		resourcePackManager.scanPacks();
+		Set<ClientResourcePackProfile> set = Sets.newLinkedHashSet();
 		Iterator<String> iterator = this.resourcePacks.iterator();
 
 		while (iterator.hasNext()) {
 			String string = (String)iterator.next();
-			ClientResourcePackContainer clientResourcePackContainer = resourcePackContainerManager.getContainer(string);
-			if (clientResourcePackContainer == null && !string.startsWith("file/")) {
-				clientResourcePackContainer = resourcePackContainerManager.getContainer("file/" + string);
+			ClientResourcePackProfile clientResourcePackProfile = resourcePackManager.getProfile(string);
+			if (clientResourcePackProfile == null && !string.startsWith("file/")) {
+				clientResourcePackProfile = resourcePackManager.getProfile("file/" + string);
 			}
 
-			if (clientResourcePackContainer == null) {
+			if (clientResourcePackProfile == null) {
 				LOGGER.warn("Removed resource pack {} from options because it doesn't seem to exist anymore", string);
 				iterator.remove();
-			} else if (!clientResourcePackContainer.getCompatibility().isCompatible() && !this.incompatibleResourcePacks.contains(string)) {
+			} else if (!clientResourcePackProfile.getCompatibility().isCompatible() && !this.incompatibleResourcePacks.contains(string)) {
 				LOGGER.warn("Removed resource pack {} from options because it is no longer compatible", string);
 				iterator.remove();
-			} else if (clientResourcePackContainer.getCompatibility().isCompatible() && this.incompatibleResourcePacks.contains(string)) {
+			} else if (clientResourcePackProfile.getCompatibility().isCompatible() && this.incompatibleResourcePacks.contains(string)) {
 				LOGGER.info("Removed resource pack {} from incompatibility list because it's now compatible", string);
 				this.incompatibleResourcePacks.remove(string);
 			} else {
-				set.add(clientResourcePackContainer);
+				set.add(clientResourcePackProfile);
 			}
 		}
 
-		resourcePackContainerManager.setEnabled(set);
+		resourcePackManager.setEnabledProfiles(set);
 	}
 }

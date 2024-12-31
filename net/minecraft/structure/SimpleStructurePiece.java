@@ -9,11 +9,12 @@ import net.minecraft.block.enums.StructureBlockMode;
 import net.minecraft.command.arguments.BlockArgumentParser;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,15 +49,15 @@ public abstract class SimpleStructurePiece extends StructurePiece {
 	}
 
 	@Override
-	public boolean generate(IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox, ChunkPos chunkPos) {
-		this.placementData.setBoundingBox(mutableIntBoundingBox);
+	public boolean generate(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+		this.placementData.setBoundingBox(blockBox);
 		this.boundingBox = this.structure.calculateBoundingBox(this.placementData, this.pos);
 		if (this.structure.method_15172(iWorld, this.pos, this.placementData, 2)) {
 			for (Structure.StructureBlockInfo structureBlockInfo : this.structure.method_16445(this.pos, this.placementData, Blocks.field_10465)) {
 				if (structureBlockInfo.tag != null) {
 					StructureBlockMode structureBlockMode = StructureBlockMode.valueOf(structureBlockInfo.tag.getString("mode"));
 					if (structureBlockMode == StructureBlockMode.field_12696) {
-						this.handleMetadata(structureBlockInfo.tag.getString("metadata"), structureBlockInfo.pos, iWorld, random, mutableIntBoundingBox);
+						this.handleMetadata(structureBlockInfo.tag.getString("metadata"), structureBlockInfo.pos, iWorld, random, blockBox);
 					}
 				}
 			}
@@ -75,7 +76,7 @@ public abstract class SimpleStructurePiece extends StructurePiece {
 						} else {
 							LOGGER.error("Error while parsing blockstate {} in jigsaw block @ {}", string, structureBlockInfo2.pos);
 						}
-					} catch (CommandSyntaxException var13) {
+					} catch (CommandSyntaxException var14) {
 						LOGGER.error("Error while parsing blockstate {} in jigsaw block @ {}", string, structureBlockInfo2.pos);
 					}
 
@@ -87,7 +88,7 @@ public abstract class SimpleStructurePiece extends StructurePiece {
 		return true;
 	}
 
-	protected abstract void handleMetadata(String string, BlockPos blockPos, IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox);
+	protected abstract void handleMetadata(String string, BlockPos blockPos, IWorld iWorld, Random random, BlockBox blockBox);
 
 	@Override
 	public void translate(int i, int j, int k) {

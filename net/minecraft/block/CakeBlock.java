@@ -4,9 +4,10 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -14,8 +15,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class CakeBlock extends Block {
 	public static final IntProperty BITES = Properties.BITES;
@@ -31,7 +32,7 @@ public class CakeBlock extends Block {
 
 	protected CakeBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(BITES, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(BITES, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -40,18 +41,24 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		if (!world.isClient) {
-			return this.tryEat(world, blockPos, blockState, playerEntity);
-		} else {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+		if (world.isClient) {
 			ItemStack itemStack = playerEntity.getStackInHand(hand);
-			return this.tryEat(world, blockPos, blockState, playerEntity) || itemStack.isEmpty();
+			if (this.tryEat(world, blockPos, blockState, playerEntity) == ActionResult.field_5812) {
+				return ActionResult.field_5812;
+			}
+
+			if (itemStack.isEmpty()) {
+				return ActionResult.field_21466;
+			}
 		}
+
+		return this.tryEat(world, blockPos, blockState, playerEntity);
 	}
 
-	private boolean tryEat(IWorld iWorld, BlockPos blockPos, BlockState blockState, PlayerEntity playerEntity) {
+	private ActionResult tryEat(IWorld iWorld, BlockPos blockPos, BlockState blockState, PlayerEntity playerEntity) {
 		if (!playerEntity.canConsume(false)) {
-			return false;
+			return ActionResult.field_5811;
 		} else {
 			playerEntity.incrementStat(Stats.field_15369);
 			playerEntity.getHungerManager().add(2, 0.1F);
@@ -59,10 +66,10 @@ public class CakeBlock extends Block {
 			if (i < 6) {
 				iWorld.setBlockState(blockPos, blockState.with(BITES, Integer.valueOf(i + 1)), 3);
 			} else {
-				iWorld.clearBlockState(blockPos, false);
+				iWorld.removeBlock(blockPos, false);
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -76,12 +83,12 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return viewableWorld.getBlockState(blockPos.down()).getMaterial().isSolid();
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return worldView.getBlockState(blockPos.down()).getMaterial().isSolid();
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(BITES);
 	}
 

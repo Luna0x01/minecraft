@@ -4,14 +4,14 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import java.util.Map;
 import java.util.function.Function;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 public enum FontType {
 	field_2312("bitmap", TextureFont.Loader::fromJson),
 	field_2317("ttf", TrueTypeFontLoader::fromJson),
 	field_2313("legacy_unicode", UnicodeTextureFont.Loader::fromJson);
 
-	private static final Map<String, FontType> REGISTRY = SystemUtil.consume(Maps.newHashMap(), hashMap -> {
+	private static final Map<String, FontType> REGISTRY = Util.make(Maps.newHashMap(), hashMap -> {
 		for (FontType fontType : values()) {
 			hashMap.put(fontType.id, fontType);
 		}

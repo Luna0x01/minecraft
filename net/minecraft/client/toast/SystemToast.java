@@ -1,6 +1,6 @@
 package net.minecraft.client.toast;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import javax.annotation.Nullable;
 import net.minecraft.text.Text;
 
@@ -25,7 +25,7 @@ public class SystemToast implements Toast {
 		}
 
 		toastManager.getGame().getTextureManager().bindTexture(TOASTS_TEX);
-		GlStateManager.color3f(1.0F, 1.0F, 1.0F);
+		RenderSystem.color3f(1.0F, 1.0F, 1.0F);
 		toastManager.blit(0, 0, 0, 64, 160, 32);
 		if (this.description == null) {
 			toastManager.getGame().textRenderer.draw(this.title, 18.0F, 12.0F, -256);
@@ -43,7 +43,7 @@ public class SystemToast implements Toast {
 		this.justUpdated = true;
 	}
 
-	public SystemToast.Type method_1989() {
+	public SystemToast.Type getType() {
 		return this.type;
 	}
 
@@ -59,6 +59,7 @@ public class SystemToast implements Toast {
 	public static enum Type {
 		field_2218,
 		field_2219,
-		field_2220;
+		field_2220,
+		field_21809;
 	}
 }

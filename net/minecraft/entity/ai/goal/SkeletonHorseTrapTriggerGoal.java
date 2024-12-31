@@ -23,7 +23,7 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		return this.skeletonHorse.world.isPlayerInRange(this.skeletonHorse.x, this.skeletonHorse.y, this.skeletonHorse.z, 10.0);
+		return this.skeletonHorse.world.isPlayerInRange(this.skeletonHorse.getX(), this.skeletonHorse.getY(), this.skeletonHorse.getZ(), 10.0);
 	}
 
 	@Override
@@ -33,7 +33,7 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 		this.skeletonHorse.setTame(true);
 		this.skeletonHorse.setBreedingAge(0);
 		((ServerWorld)this.skeletonHorse.world)
-			.addLightning(new LightningEntity(this.skeletonHorse.world, this.skeletonHorse.x, this.skeletonHorse.y, this.skeletonHorse.z, true));
+			.addLightning(new LightningEntity(this.skeletonHorse.world, this.skeletonHorse.getX(), this.skeletonHorse.getY(), this.skeletonHorse.getZ(), true));
 		SkeletonEntity skeletonEntity = this.getSkeleton(localDifficulty, this.skeletonHorse);
 		skeletonEntity.startRiding(this.skeletonHorse);
 
@@ -41,14 +41,14 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 			HorseBaseEntity horseBaseEntity = this.getHorse(localDifficulty);
 			SkeletonEntity skeletonEntity2 = this.getSkeleton(localDifficulty, horseBaseEntity);
 			skeletonEntity2.startRiding(horseBaseEntity);
-			horseBaseEntity.addVelocity(this.skeletonHorse.getRand().nextGaussian() * 0.5, 0.0, this.skeletonHorse.getRand().nextGaussian() * 0.5);
+			horseBaseEntity.addVelocity(this.skeletonHorse.getRandom().nextGaussian() * 0.5, 0.0, this.skeletonHorse.getRandom().nextGaussian() * 0.5);
 		}
 	}
 
 	private HorseBaseEntity getHorse(LocalDifficulty localDifficulty) {
 		SkeletonHorseEntity skeletonHorseEntity = EntityType.field_6075.create(this.skeletonHorse.world);
 		skeletonHorseEntity.initialize(this.skeletonHorse.world, localDifficulty, SpawnType.field_16461, null, null);
-		skeletonHorseEntity.setPosition(this.skeletonHorse.x, this.skeletonHorse.y, this.skeletonHorse.z);
+		skeletonHorseEntity.updatePosition(this.skeletonHorse.getX(), this.skeletonHorse.getY(), this.skeletonHorse.getZ());
 		skeletonHorseEntity.timeUntilRegen = 60;
 		skeletonHorseEntity.setPersistent();
 		skeletonHorseEntity.setTame(true);
@@ -60,28 +60,28 @@ public class SkeletonHorseTrapTriggerGoal extends Goal {
 	private SkeletonEntity getSkeleton(LocalDifficulty localDifficulty, HorseBaseEntity horseBaseEntity) {
 		SkeletonEntity skeletonEntity = EntityType.field_6137.create(horseBaseEntity.world);
 		skeletonEntity.initialize(horseBaseEntity.world, localDifficulty, SpawnType.field_16461, null, null);
-		skeletonEntity.setPosition(horseBaseEntity.x, horseBaseEntity.y, horseBaseEntity.z);
+		skeletonEntity.updatePosition(horseBaseEntity.getX(), horseBaseEntity.getY(), horseBaseEntity.getZ());
 		skeletonEntity.timeUntilRegen = 60;
 		skeletonEntity.setPersistent();
 		if (skeletonEntity.getEquippedStack(EquipmentSlot.field_6169).isEmpty()) {
-			skeletonEntity.setEquippedStack(EquipmentSlot.field_6169, new ItemStack(Items.field_8743));
+			skeletonEntity.equipStack(EquipmentSlot.field_6169, new ItemStack(Items.field_8743));
 		}
 
-		skeletonEntity.setEquippedStack(
+		skeletonEntity.equipStack(
 			EquipmentSlot.field_6173,
 			EnchantmentHelper.enchant(
-				skeletonEntity.getRand(),
+				skeletonEntity.getRandom(),
 				skeletonEntity.getMainHandStack(),
-				(int)(5.0F + localDifficulty.getClampedLocalDifficulty() * (float)skeletonEntity.getRand().nextInt(18)),
+				(int)(5.0F + localDifficulty.getClampedLocalDifficulty() * (float)skeletonEntity.getRandom().nextInt(18)),
 				false
 			)
 		);
-		skeletonEntity.setEquippedStack(
+		skeletonEntity.equipStack(
 			EquipmentSlot.field_6169,
 			EnchantmentHelper.enchant(
-				skeletonEntity.getRand(),
+				skeletonEntity.getRandom(),
 				skeletonEntity.getEquippedStack(EquipmentSlot.field_6169),
-				(int)(5.0F + localDifficulty.getClampedLocalDifficulty() * (float)skeletonEntity.getRand().nextInt(18)),
+				(int)(5.0F + localDifficulty.getClampedLocalDifficulty() * (float)skeletonEntity.getRandom().nextInt(18)),
 				false
 			)
 		);

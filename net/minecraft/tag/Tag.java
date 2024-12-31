@@ -16,6 +16,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.Util;
 
 public class Tag<T> {
 	private final Identifier id;
@@ -213,7 +214,7 @@ public class Tag<T> {
 		@Override
 		public void build(Collection<T> collection) {
 			if (this.tag == null) {
-				throw new IllegalStateException("Cannot build unresolved tag entry");
+				throw (IllegalStateException)Util.throwOrPause((T)(new IllegalStateException("Cannot build unresolved tag entry")));
 			} else {
 				collection.addAll(this.tag.values());
 			}

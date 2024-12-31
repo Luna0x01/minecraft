@@ -92,7 +92,7 @@ public class BellBlockEntity extends BlockEntity implements Tickable {
 		if (this.world.getTime() > this.field_19155 + 60L || this.field_19156 == null) {
 			this.field_19155 = this.world.getTime();
 			Box box = new Box(blockPos).expand(48.0);
-			this.field_19156 = this.world.getEntities(LivingEntity.class, box);
+			this.field_19156 = this.world.getNonSpectatingEntities(LivingEntity.class, box);
 		}
 
 		if (!this.world.isClient) {
@@ -137,11 +137,11 @@ public class BellBlockEntity extends BlockEntity implements Tickable {
 					livingEntity -> {
 						float f = 1.0F;
 						float g = MathHelper.sqrt(
-							(livingEntity.x - (double)blockPos.getX()) * (livingEntity.x - (double)blockPos.getX())
-								+ (livingEntity.z - (double)blockPos.getZ()) * (livingEntity.z - (double)blockPos.getZ())
+							(livingEntity.getX() - (double)blockPos.getX()) * (livingEntity.getX() - (double)blockPos.getX())
+								+ (livingEntity.getZ() - (double)blockPos.getZ()) * (livingEntity.getZ() - (double)blockPos.getZ())
 						);
-						double d = (double)((float)blockPos.getX() + 0.5F) + (double)(1.0F / g) * (livingEntity.x - (double)blockPos.getX());
-						double e = (double)((float)blockPos.getZ() + 0.5F) + (double)(1.0F / g) * (livingEntity.z - (double)blockPos.getZ());
+						double d = (double)((float)blockPos.getX() + 0.5F) + (double)(1.0F / g) * (livingEntity.getX() - (double)blockPos.getX());
+						double e = (double)((float)blockPos.getZ() + 0.5F) + (double)(1.0F / g) * (livingEntity.getZ() - (double)blockPos.getZ());
 						int j = MathHelper.clamp((i - 21) / -2, 3, 15);
 
 						for (int k = 0; k < j; k++) {
@@ -164,6 +164,6 @@ public class BellBlockEntity extends BlockEntity implements Tickable {
 	}
 
 	private void method_20520(LivingEntity livingEntity) {
-		livingEntity.addPotionEffect(new StatusEffectInstance(StatusEffects.field_5912, 60));
+		livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5912, 60));
 	}
 }

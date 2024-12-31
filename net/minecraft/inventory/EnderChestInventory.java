@@ -23,7 +23,7 @@ public class EnderChestInventory extends BasicInventory {
 		}
 
 		for (int j = 0; j < listTag.size(); j++) {
-			CompoundTag compoundTag = listTag.getCompoundTag(j);
+			CompoundTag compoundTag = listTag.getCompound(j);
 			int k = compoundTag.getByte("Slot") & 255;
 			if (k >= 0 && k < this.getInvSize()) {
 				this.setInvStack(k, ItemStack.fromTag(compoundTag));

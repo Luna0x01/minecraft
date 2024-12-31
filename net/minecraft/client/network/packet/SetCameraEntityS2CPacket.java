@@ -28,7 +28,7 @@ public class SetCameraEntityS2CPacket implements Packet<ClientPlayPacketListener
 		packetByteBuf.writeVarInt(this.id);
 	}
 
-	public void method_11801(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onSetCameraEntity(this);
 	}
 

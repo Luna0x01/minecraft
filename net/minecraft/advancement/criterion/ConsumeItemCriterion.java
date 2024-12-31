@@ -1,73 +1,31 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.predicate.NbtPredicate;
+import net.minecraft.predicate.NumberRange;
 import net.minecraft.predicate.item.EnchantmentPredicate;
 import net.minecraft.predicate.item.ItemPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.NumberRange;
 
-public class ConsumeItemCriterion implements Criterion<ConsumeItemCriterion.Conditions> {
+public class ConsumeItemCriterion extends AbstractCriterion<ConsumeItemCriterion.Conditions> {
 	private static final Identifier ID = new Identifier("consume_item");
-	private final Map<PlayerAdvancementTracker, ConsumeItemCriterion.Handler> handlers = Maps.newHashMap();
 
 	@Override
 	public Identifier getId() {
 		return ID;
 	}
 
-	@Override
-	public void beginTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions> conditionsContainer
-	) {
-		ConsumeItemCriterion.Handler handler = (ConsumeItemCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler == null) {
-			handler = new ConsumeItemCriterion.Handler(playerAdvancementTracker);
-			this.handlers.put(playerAdvancementTracker, handler);
-		}
-
-		handler.addCondition(conditionsContainer);
+	public ConsumeItemCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+		return new ConsumeItemCriterion.Conditions(ItemPredicate.fromJson(jsonObject.get("item")));
 	}
 
-	@Override
-	public void endTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions> conditionsContainer
-	) {
-		ConsumeItemCriterion.Handler handler = (ConsumeItemCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler != null) {
-			handler.removeCondition(conditionsContainer);
-			if (handler.isEmpty()) {
-				this.handlers.remove(playerAdvancementTracker);
-			}
-		}
-	}
-
-	@Override
-	public void endTracking(PlayerAdvancementTracker playerAdvancementTracker) {
-		this.handlers.remove(playerAdvancementTracker);
-	}
-
-	public ConsumeItemCriterion.Conditions method_8820(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		return new ConsumeItemCriterion.Conditions(ItemPredicate.deserialize(jsonObject.get("item")));
-	}
-
-	public void handle(ServerPlayerEntity serverPlayerEntity, ItemStack itemStack) {
-		ConsumeItemCriterion.Handler handler = (ConsumeItemCriterion.Handler)this.handlers.get(serverPlayerEntity.getAdvancementManager());
-		if (handler != null) {
-			handler.handle(itemStack);
-		}
+	public void trigger(ServerPlayerEntity serverPlayerEntity, ItemStack itemStack) {
+		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(itemStack));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
@@ -84,7 +42,16 @@ public class ConsumeItemCriterion implements Criterion<ConsumeItemCriterion.Cond
 
 		public static ConsumeItemCriterion.Conditions item(ItemConvertible itemConvertible) {
 			return new ConsumeItemCriterion.Conditions(
-				new ItemPredicate(null, itemConvertible.asItem(), NumberRange.IntRange.ANY, NumberRange.IntRange.ANY, new EnchantmentPredicate[0], null, NbtPredicate.ANY)
+				new ItemPredicate(
+					null,
+					itemConvertible.asItem(),
+					NumberRange.IntRange.ANY,
+					NumberRange.IntRange.ANY,
+					EnchantmentPredicate.ARRAY_OF_ANY,
+					EnchantmentPredicate.ARRAY_OF_ANY,
+					null,
+					NbtPredicate.ANY
+				)
 			);
 		}
 
@@ -95,49 +62,8 @@ public class ConsumeItemCriterion implements Criterion<ConsumeItemCriterion.Cond
 		@Override
 		public JsonElement toJson() {
 			JsonObject jsonObject = new JsonObject();
-			jsonObject.add("item", this.item.serialize());
+			jsonObject.add("item", this.item.toJson());
 			return jsonObject;
-		}
-	}
-
-	static class Handler {
-		private final PlayerAdvancementTracker manager;
-		private final Set<Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions>> conditions = Sets.newHashSet();
-
-		public Handler(PlayerAdvancementTracker playerAdvancementTracker) {
-			this.manager = playerAdvancementTracker;
-		}
-
-		public boolean isEmpty() {
-			return this.conditions.isEmpty();
-		}
-
-		public void addCondition(Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions> conditionsContainer) {
-			this.conditions.add(conditionsContainer);
-		}
-
-		public void removeCondition(Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions> conditionsContainer) {
-			this.conditions.remove(conditionsContainer);
-		}
-
-		public void handle(ItemStack itemStack) {
-			List<Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions>> list = null;
-
-			for (Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions> conditionsContainer : this.conditions) {
-				if (conditionsContainer.getConditions().matches(itemStack)) {
-					if (list == null) {
-						list = Lists.newArrayList();
-					}
-
-					list.add(conditionsContainer);
-				}
-			}
-
-			if (list != null) {
-				for (Criterion.ConditionsContainer<ConsumeItemCriterion.Conditions> conditionsContainer2 : list) {
-					conditionsContainer2.apply(this.manager);
-				}
-			}
 		}
 	}
 }

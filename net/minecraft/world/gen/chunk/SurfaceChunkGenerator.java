@@ -12,17 +12,18 @@ import net.minecraft.structure.PoolStructurePiece;
 import net.minecraft.structure.StructurePiece;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.structure.pool.StructurePool;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.util.math.noise.NoiseSampler;
 import net.minecraft.util.math.noise.OctavePerlinNoiseSampler;
 import net.minecraft.util.math.noise.OctaveSimplexNoiseSampler;
+import net.minecraft.util.math.noise.PerlinNoiseSampler;
+import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
@@ -32,7 +33,7 @@ import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.StructureFeature;
 
 public abstract class SurfaceChunkGenerator<T extends ChunkGeneratorConfig> extends ChunkGenerator<T> {
-	private static final float[] field_16649 = SystemUtil.consume(new float[13824], fs -> {
+	private static final float[] field_16649 = Util.make(new float[13824], fs -> {
 		for (int i = 0; i < 24; i++) {
 			for (int j = 0; j < 24; j++) {
 				for (int k = 0; k < 24; k++) {
@@ -65,10 +66,10 @@ public abstract class SurfaceChunkGenerator<T extends ChunkGeneratorConfig> exte
 		this.noiseSizeY = k / this.verticalNoiseResolution;
 		this.noiseSizeZ = 16 / this.horizontalNoiseResolution;
 		this.random = new ChunkRandom(this.seed);
-		this.field_16574 = new OctavePerlinNoiseSampler(this.random, 16);
-		this.field_16581 = new OctavePerlinNoiseSampler(this.random, 16);
-		this.field_16575 = new OctavePerlinNoiseSampler(this.random, 8);
-		this.surfaceDepthNoise = (NoiseSampler)(bl ? new OctaveSimplexNoiseSampler(this.random, 4) : new OctavePerlinNoiseSampler(this.random, 4));
+		this.field_16574 = new OctavePerlinNoiseSampler(this.random, 15, 0);
+		this.field_16581 = new OctavePerlinNoiseSampler(this.random, 15, 0);
+		this.field_16575 = new OctavePerlinNoiseSampler(this.random, 7, 0);
+		this.surfaceDepthNoise = (NoiseSampler)(bl ? new OctaveSimplexNoiseSampler(this.random, 3, 0) : new OctavePerlinNoiseSampler(this.random, 3, 0));
 	}
 
 	private double sampleNoise(int i, int j, int k, double d, double e, double f, double g) {
@@ -82,19 +83,28 @@ public abstract class SurfaceChunkGenerator<T extends ChunkGeneratorConfig> exte
 			double q = OctavePerlinNoiseSampler.maintainPrecision((double)j * e * n);
 			double r = OctavePerlinNoiseSampler.maintainPrecision((double)k * d * n);
 			double s = e * n;
-			h += this.field_16574.getOctave(o).sample(p, q, r, s, (double)j * s) / n;
-			l += this.field_16581.getOctave(o).sample(p, q, r, s, (double)j * s) / n;
+			PerlinNoiseSampler perlinNoiseSampler = this.field_16574.getOctave(o);
+			if (perlinNoiseSampler != null) {
+				h += perlinNoiseSampler.sample(p, q, r, s, (double)j * s) / n;
+			}
+
+			PerlinNoiseSampler perlinNoiseSampler2 = this.field_16581.getOctave(o);
+			if (perlinNoiseSampler2 != null) {
+				l += perlinNoiseSampler2.sample(p, q, r, s, (double)j * s) / n;
+			}
+
 			if (o < 8) {
-				m += this.field_16575
-						.getOctave(o)
-						.sample(
+				PerlinNoiseSampler perlinNoiseSampler3 = this.field_16575.getOctave(o);
+				if (perlinNoiseSampler3 != null) {
+					m += perlinNoiseSampler3.sample(
 							OctavePerlinNoiseSampler.maintainPrecision((double)i * f * n),
 							OctavePerlinNoiseSampler.maintainPrecision((double)j * g * n),
 							OctavePerlinNoiseSampler.maintainPrecision((double)k * f * n),
 							g * n,
 							(double)j * g * n
 						)
-					/ n;
+						/ n;
+				}
 			}
 
 			n /= 2.0;
@@ -193,7 +203,7 @@ public abstract class SurfaceChunkGenerator<T extends ChunkGeneratorConfig> exte
 	}
 
 	@Override
-	public void buildSurface(Chunk chunk) {
+	public void buildSurface(ChunkRegion chunkRegion, Chunk chunk) {
 		ChunkPos chunkPos = chunk.getPos();
 		int i = chunkPos.x;
 		int j = chunkPos.z;
@@ -203,15 +213,15 @@ public abstract class SurfaceChunkGenerator<T extends ChunkGeneratorConfig> exte
 		int k = chunkPos2.getStartX();
 		int l = chunkPos2.getStartZ();
 		double d = 0.0625;
-		Biome[] biomes = chunk.getBiomeArray();
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int m = 0; m < 16; m++) {
 			for (int n = 0; n < 16; n++) {
 				int o = k + m;
 				int p = l + n;
 				int q = chunk.sampleHeightmap(Heightmap.Type.field_13194, m, n) + 1;
-				double e = this.surfaceDepthNoise.sample((double)o * 0.0625, (double)p * 0.0625, 0.0625, (double)m * 0.0625);
-				biomes[n * 16 + m]
+				double e = this.surfaceDepthNoise.sample((double)o * 0.0625, (double)p * 0.0625, 0.0625, (double)m * 0.0625) * 15.0;
+				chunkRegion.getBiome(mutable.set(k + m, q, l + n))
 					.buildSurface(
 						chunkRandom, chunk, o, p, q, e, this.getConfig().getDefaultBlock(), this.getConfig().getDefaultFluid(), this.getSeaLevel(), this.world.getSeed()
 					);
@@ -357,10 +367,10 @@ public abstract class SurfaceChunkGenerator<T extends ChunkGeneratorConfig> exte
 
 								while (objectListIterator.hasNext()) {
 									PoolStructurePiece poolStructurePiece2 = (PoolStructurePiece)objectListIterator.next();
-									MutableIntBoundingBox mutableIntBoundingBox = poolStructurePiece2.getBoundingBox();
-									int at = Math.max(0, Math.max(mutableIntBoundingBox.minX - ai, ai - mutableIntBoundingBox.maxX));
-									int au = z - (mutableIntBoundingBox.minY + poolStructurePiece2.getGroundLevelDelta());
-									int av = Math.max(0, Math.max(mutableIntBoundingBox.minZ - ao, ao - mutableIntBoundingBox.maxZ));
+									BlockBox blockBox = poolStructurePiece2.getBoundingBox();
+									int at = Math.max(0, Math.max(blockBox.minX - ai, ai - blockBox.maxX));
+									int au = z - (blockBox.minY + poolStructurePiece2.getGroundLevelDelta());
+									int av = Math.max(0, Math.max(blockBox.minZ - ao, ao - blockBox.maxZ));
 									as += method_16572(at, au, av) * 0.8;
 								}
 

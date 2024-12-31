@@ -34,7 +34,7 @@ public class InfestedBlock extends Block {
 		super.onStacksDropped(blockState, world, blockPos, itemStack);
 		if (!world.isClient && world.getGameRules().getBoolean(GameRules.field_19392) && EnchantmentHelper.getLevel(Enchantments.field_9099, itemStack) == 0) {
 			SilverfishEntity silverfishEntity = EntityType.field_6125.create(world);
-			silverfishEntity.setPositionAndAngles((double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, 0.0F, 0.0F);
+			silverfishEntity.refreshPositionAndAngles((double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, 0.0F, 0.0F);
 			world.spawnEntity(silverfishEntity);
 			silverfishEntity.playSpawnEffects();
 		}

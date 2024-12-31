@@ -1,6 +1,7 @@
 package net.minecraft.realms;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.UnmodifiableIterator;
 import java.util.List;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
@@ -12,75 +13,20 @@ public class RealmsVertexFormat {
 		this.v = vertexFormat;
 	}
 
-	public RealmsVertexFormat from(VertexFormat vertexFormat) {
-		this.v = vertexFormat;
-		return this;
-	}
-
 	public VertexFormat getVertexFormat() {
 		return this.v;
 	}
 
-	public void clear() {
-		this.v.clear();
-	}
-
-	public int getUvOffset(int i) {
-		return this.v.getUvOffset(i);
-	}
-
-	public int getElementCount() {
-		return this.v.getElementCount();
-	}
-
-	public boolean hasColor() {
-		return this.v.hasColorElement();
-	}
-
-	public boolean hasUv(int i) {
-		return this.v.hasUvElement(i);
-	}
-
-	public RealmsVertexFormatElement getElement(int i) {
-		return new RealmsVertexFormatElement(this.v.getElement(i));
-	}
-
-	public RealmsVertexFormat addElement(RealmsVertexFormatElement realmsVertexFormatElement) {
-		return this.from(this.v.add(realmsVertexFormatElement.getVertexFormatElement()));
-	}
-
-	public int getColorOffset() {
-		return this.v.getColorOffset();
-	}
-
 	public List<RealmsVertexFormatElement> getElements() {
 		List<RealmsVertexFormatElement> list = Lists.newArrayList();
+		UnmodifiableIterator var2 = this.v.getElements().iterator();
 
-		for (VertexFormatElement vertexFormatElement : this.v.getElements()) {
+		while (var2.hasNext()) {
+			VertexFormatElement vertexFormatElement = (VertexFormatElement)var2.next();
 			list.add(new RealmsVertexFormatElement(vertexFormatElement));
 		}
 
 		return list;
-	}
-
-	public boolean hasNormal() {
-		return this.v.hasNormalElement();
-	}
-
-	public int getVertexSize() {
-		return this.v.getVertexSize();
-	}
-
-	public int getOffset(int i) {
-		return this.v.getElementOffset(i);
-	}
-
-	public int getNormalOffset() {
-		return this.v.getNormalOffset();
-	}
-
-	public int getIntegerSize() {
-		return this.v.getVertexSizeInteger();
 	}
 
 	public boolean equals(Object object) {

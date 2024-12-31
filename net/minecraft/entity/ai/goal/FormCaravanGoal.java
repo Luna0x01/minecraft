@@ -30,7 +30,7 @@ public class FormCaravanGoal extends Goal {
 
 			for (Entity entity : list) {
 				LlamaEntity llamaEntity2 = (LlamaEntity)entity;
-				if (llamaEntity2.isFollowing() && !llamaEntity2.method_6793()) {
+				if (llamaEntity2.isFollowing() && !llamaEntity2.hasFollower()) {
 					double e = this.llama.squaredDistanceTo(llamaEntity2);
 					if (!(e > d)) {
 						d = e;
@@ -42,7 +42,7 @@ public class FormCaravanGoal extends Goal {
 			if (llamaEntity == null) {
 				for (Entity entity2 : list) {
 					LlamaEntity llamaEntity3 = (LlamaEntity)entity2;
-					if (llamaEntity3.isLeashed() && !llamaEntity3.method_6793()) {
+					if (llamaEntity3.isLeashed() && !llamaEntity3.hasFollower()) {
 						double f = this.llama.squaredDistanceTo(llamaEntity3);
 						if (!(f > d)) {
 							d = f;
@@ -59,7 +59,7 @@ public class FormCaravanGoal extends Goal {
 			} else if (!llamaEntity.isLeashed() && !this.canFollow(llamaEntity, 1)) {
 				return false;
 			} else {
-				this.llama.method_6791(llamaEntity);
+				this.llama.follow(llamaEntity);
 				return true;
 			}
 		} else {
@@ -95,7 +95,7 @@ public class FormCaravanGoal extends Goal {
 
 	@Override
 	public void stop() {
-		this.llama.method_6797();
+		this.llama.stopFollowing();
 		this.speed = 2.1;
 	}
 
@@ -105,10 +105,10 @@ public class FormCaravanGoal extends Goal {
 			LlamaEntity llamaEntity = this.llama.getFollowing();
 			double d = (double)this.llama.distanceTo(llamaEntity);
 			float f = 2.0F;
-			Vec3d vec3d = new Vec3d(llamaEntity.x - this.llama.x, llamaEntity.y - this.llama.y, llamaEntity.z - this.llama.z)
+			Vec3d vec3d = new Vec3d(llamaEntity.getX() - this.llama.getX(), llamaEntity.getY() - this.llama.getY(), llamaEntity.getZ() - this.llama.getZ())
 				.normalize()
 				.multiply(Math.max(d - 2.0, 0.0));
-			this.llama.getNavigation().startMovingTo(this.llama.x + vec3d.x, this.llama.y + vec3d.y, this.llama.z + vec3d.z, this.speed);
+			this.llama.getNavigation().startMovingTo(this.llama.getX() + vec3d.x, this.llama.getY() + vec3d.y, this.llama.getZ() + vec3d.z, this.speed);
 		}
 	}
 

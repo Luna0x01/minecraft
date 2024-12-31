@@ -49,17 +49,6 @@ public class ChestBlockEntity extends LootableContainerBlockEntity implements Ch
 	}
 
 	@Override
-	public boolean isInvEmpty() {
-		for (ItemStack itemStack : this.inventory) {
-			if (!itemStack.isEmpty()) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	@Override
 	protected Text getContainerName() {
 		return new TranslatableText("container.chest");
 	}
@@ -131,7 +120,7 @@ public class ChestBlockEntity extends LootableContainerBlockEntity implements Ch
 		int l = 0;
 		float f = 5.0F;
 
-		for (PlayerEntity playerEntity : world.getEntities(
+		for (PlayerEntity playerEntity : world.getNonSpectatingEntities(
 			PlayerEntity.class,
 			new Box(
 				(double)((float)i - 5.0F),

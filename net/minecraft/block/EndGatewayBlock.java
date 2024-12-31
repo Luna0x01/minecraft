@@ -3,6 +3,7 @@ package net.minecraft.block;
 import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
@@ -26,9 +27,9 @@ public class EndGatewayBlock extends BlockWithEntity {
 			int i = ((EndGatewayBlockEntity)blockEntity).getDrawnSidesCount();
 
 			for (int j = 0; j < i; j++) {
-				double d = (double)((float)blockPos.getX() + random.nextFloat());
-				double e = (double)((float)blockPos.getY() + random.nextFloat());
-				double f = (double)((float)blockPos.getZ() + random.nextFloat());
+				double d = (double)blockPos.getX() + (double)random.nextFloat();
+				double e = (double)blockPos.getY() + (double)random.nextFloat();
+				double f = (double)blockPos.getZ() + (double)random.nextFloat();
 				double g = ((double)random.nextFloat() - 0.5) * 0.5;
 				double h = ((double)random.nextFloat() - 0.5) * 0.5;
 				double k = ((double)random.nextFloat() - 0.5) * 0.5;
@@ -49,5 +50,10 @@ public class EndGatewayBlock extends BlockWithEntity {
 	@Override
 	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
 		return ItemStack.EMPTY;
+	}
+
+	@Override
+	public boolean canBucketPlace(BlockState blockState, Fluid fluid) {
+		return false;
 	}
 }

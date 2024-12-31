@@ -1,10 +1,14 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.Matrix3f;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
 import net.minecraft.item.ItemStack;
@@ -16,104 +20,104 @@ import net.minecraft.util.math.Vec3d;
 
 public class FishingBobberEntityRenderer extends EntityRenderer<FishingBobberEntity> {
 	private static final Identifier SKIN = new Identifier("textures/entity/fishing_hook.png");
+	private static final RenderLayer field_21742 = RenderLayer.getEntityCutout(SKIN);
 
 	public FishingBobberEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	public void method_3974(FishingBobberEntity fishingBobberEntity, double d, double e, double f, float g, float h) {
+	public void render(FishingBobberEntity fishingBobberEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
 		PlayerEntity playerEntity = fishingBobberEntity.getOwner();
-		if (playerEntity != null && !this.renderOutlines) {
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)d, (float)e, (float)f);
-			GlStateManager.enableRescaleNormal();
-			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
-			this.bindEntityTexture(fishingBobberEntity);
-			Tessellator tessellator = Tessellator.getInstance();
-			BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-			float i = 1.0F;
-			float j = 0.5F;
-			float k = 0.5F;
-			GlStateManager.rotatef(180.0F - this.renderManager.cameraYaw, 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotatef((float)(this.renderManager.gameOptions.perspective == 2 ? -1 : 1) * -this.renderManager.cameraPitch, 1.0F, 0.0F, 0.0F);
-			if (this.renderOutlines) {
-				GlStateManager.enableColorMaterial();
-				GlStateManager.setupSolidRenderingTextureCombine(this.getOutlineColor(fishingBobberEntity));
-			}
-
-			bufferBuilder.begin(7, VertexFormats.POSITION_UV_NORMAL);
-			bufferBuilder.vertex(-0.5, -0.5, 0.0).texture(0.0, 1.0).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(0.5, -0.5, 0.0).texture(1.0, 1.0).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(0.5, 0.5, 0.0).texture(1.0, 0.0).normal(0.0F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(-0.5, 0.5, 0.0).texture(0.0, 0.0).normal(0.0F, 1.0F, 0.0F).next();
-			tessellator.draw();
-			if (this.renderOutlines) {
-				GlStateManager.tearDownSolidRenderingTextureCombine();
-				GlStateManager.disableColorMaterial();
-			}
-
-			GlStateManager.disableRescaleNormal();
-			GlStateManager.popMatrix();
-			int l = playerEntity.getMainArm() == Arm.field_6183 ? 1 : -1;
+		if (playerEntity != null) {
+			matrixStack.push();
+			matrixStack.push();
+			matrixStack.scale(0.5F, 0.5F, 0.5F);
+			matrixStack.multiply(this.renderManager.getRotation());
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
+			MatrixStack.Entry entry = matrixStack.peek();
+			Matrix4f matrix4f = entry.getModel();
+			Matrix3f matrix3f = entry.getNormal();
+			VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(field_21742);
+			method_23840(vertexConsumer, matrix4f, matrix3f, i, 0.0F, 0, 0, 1);
+			method_23840(vertexConsumer, matrix4f, matrix3f, i, 1.0F, 0, 1, 1);
+			method_23840(vertexConsumer, matrix4f, matrix3f, i, 1.0F, 1, 1, 0);
+			method_23840(vertexConsumer, matrix4f, matrix3f, i, 0.0F, 1, 0, 0);
+			matrixStack.pop();
+			int j = playerEntity.getMainArm() == Arm.field_6183 ? 1 : -1;
 			ItemStack itemStack = playerEntity.getMainHandStack();
 			if (itemStack.getItem() != Items.field_8378) {
-				l = -l;
+				j = -j;
 			}
 
-			float m = playerEntity.getHandSwingProgress(h);
-			float n = MathHelper.sin(MathHelper.sqrt(m) * (float) Math.PI);
-			float o = MathHelper.lerp(h, playerEntity.field_6220, playerEntity.field_6283) * (float) (Math.PI / 180.0);
-			double p = (double)MathHelper.sin(o);
-			double q = (double)MathHelper.cos(o);
-			double r = (double)l * 0.35;
-			double s = 0.8;
-			double y;
-			double z;
-			double aa;
-			double ab;
+			float h = playerEntity.getHandSwingProgress(g);
+			float k = MathHelper.sin(MathHelper.sqrt(h) * (float) Math.PI);
+			float l = MathHelper.lerp(g, playerEntity.prevBodyYaw, playerEntity.bodyYaw) * (float) (Math.PI / 180.0);
+			double d = (double)MathHelper.sin(l);
+			double e = (double)MathHelper.cos(l);
+			double m = (double)j * 0.35;
+			double n = 0.8;
+			double t;
+			double u;
+			double v;
+			float w;
 			if ((this.renderManager.gameOptions == null || this.renderManager.gameOptions.perspective <= 0) && playerEntity == MinecraftClient.getInstance().player) {
-				double x = this.renderManager.gameOptions.fov;
-				x /= 100.0;
-				Vec3d vec3d = new Vec3d((double)l * -0.36 * x, -0.045 * x, 0.4);
-				vec3d = vec3d.rotateX(-MathHelper.lerp(h, playerEntity.prevPitch, playerEntity.pitch) * (float) (Math.PI / 180.0));
-				vec3d = vec3d.rotateY(-MathHelper.lerp(h, playerEntity.prevYaw, playerEntity.yaw) * (float) (Math.PI / 180.0));
-				vec3d = vec3d.rotateY(n * 0.5F);
-				vec3d = vec3d.rotateX(-n * 0.7F);
-				y = MathHelper.lerp((double)h, playerEntity.prevX, playerEntity.x) + vec3d.x;
-				z = MathHelper.lerp((double)h, playerEntity.prevY, playerEntity.y) + vec3d.y;
-				aa = MathHelper.lerp((double)h, playerEntity.prevZ, playerEntity.z) + vec3d.z;
-				ab = (double)playerEntity.getStandingEyeHeight();
+				double s = this.renderManager.gameOptions.fov;
+				s /= 100.0;
+				Vec3d vec3d = new Vec3d((double)j * -0.36 * s, -0.045 * s, 0.4);
+				vec3d = vec3d.rotateX(-MathHelper.lerp(g, playerEntity.prevPitch, playerEntity.pitch) * (float) (Math.PI / 180.0));
+				vec3d = vec3d.rotateY(-MathHelper.lerp(g, playerEntity.prevYaw, playerEntity.yaw) * (float) (Math.PI / 180.0));
+				vec3d = vec3d.rotateY(k * 0.5F);
+				vec3d = vec3d.rotateX(-k * 0.7F);
+				t = MathHelper.lerp((double)g, playerEntity.prevX, playerEntity.getX()) + vec3d.x;
+				u = MathHelper.lerp((double)g, playerEntity.prevY, playerEntity.getY()) + vec3d.y;
+				v = MathHelper.lerp((double)g, playerEntity.prevZ, playerEntity.getZ()) + vec3d.z;
+				w = playerEntity.getStandingEyeHeight();
 			} else {
-				y = MathHelper.lerp((double)h, playerEntity.prevX, playerEntity.x) - q * r - p * 0.8;
-				z = playerEntity.prevY + (double)playerEntity.getStandingEyeHeight() + (playerEntity.y - playerEntity.prevY) * (double)h - 0.45;
-				aa = MathHelper.lerp((double)h, playerEntity.prevZ, playerEntity.z) - p * r + q * 0.8;
-				ab = playerEntity.isInSneakingPose() ? -0.1875 : 0.0;
+				t = MathHelper.lerp((double)g, playerEntity.prevX, playerEntity.getX()) - e * m - d * 0.8;
+				u = playerEntity.prevY + (double)playerEntity.getStandingEyeHeight() + (playerEntity.getY() - playerEntity.prevY) * (double)g - 0.45;
+				v = MathHelper.lerp((double)g, playerEntity.prevZ, playerEntity.getZ()) - d * m + e * 0.8;
+				w = playerEntity.isInSneakingPose() ? -0.1875F : 0.0F;
 			}
 
-			double ac = MathHelper.lerp((double)h, fishingBobberEntity.prevX, fishingBobberEntity.x);
-			double ad = MathHelper.lerp((double)h, fishingBobberEntity.prevY, fishingBobberEntity.y) + 0.25;
-			double ae = MathHelper.lerp((double)h, fishingBobberEntity.prevZ, fishingBobberEntity.z);
-			double af = (double)((float)(y - ac));
-			double ag = (double)((float)(z - ad)) + ab;
-			double ah = (double)((float)(aa - ae));
-			GlStateManager.disableTexture();
-			GlStateManager.disableLighting();
-			bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
-			int ai = 16;
+			double x = MathHelper.lerp((double)g, fishingBobberEntity.prevX, fishingBobberEntity.getX());
+			double y = MathHelper.lerp((double)g, fishingBobberEntity.prevY, fishingBobberEntity.getY()) + 0.25;
+			double z = MathHelper.lerp((double)g, fishingBobberEntity.prevZ, fishingBobberEntity.getZ());
+			float aa = (float)(t - x);
+			float ab = (float)(u - y) + w;
+			float ac = (float)(v - z);
+			VertexConsumer vertexConsumer2 = vertexConsumerProvider.getBuffer(RenderLayer.getLines());
+			Matrix4f matrix4f2 = matrixStack.peek().getModel();
+			int ad = 16;
 
-			for (int aj = 0; aj <= 16; aj++) {
-				float ak = (float)aj / 16.0F;
-				bufferBuilder.vertex(d + af * (double)ak, e + ag * (double)(ak * ak + ak) * 0.5 + 0.25, f + ah * (double)ak).color(0, 0, 0, 255).next();
+			for (int ae = 0; ae < 16; ae++) {
+				method_23172(aa, ab, ac, vertexConsumer2, matrix4f2, method_23954(ae, 16));
+				method_23172(aa, ab, ac, vertexConsumer2, matrix4f2, method_23954(ae + 1, 16));
 			}
 
-			tessellator.draw();
-			GlStateManager.enableLighting();
-			GlStateManager.enableTexture();
-			super.render(fishingBobberEntity, d, e, f, g, h);
+			matrixStack.pop();
+			super.render(fishingBobberEntity, f, g, matrixStack, vertexConsumerProvider, i);
 		}
 	}
 
-	protected Identifier method_3975(FishingBobberEntity fishingBobberEntity) {
+	private static float method_23954(int i, int j) {
+		return (float)i / (float)j;
+	}
+
+	private static void method_23840(VertexConsumer vertexConsumer, Matrix4f matrix4f, Matrix3f matrix3f, int i, float f, int j, int k, int l) {
+		vertexConsumer.vertex(matrix4f, f - 0.5F, (float)j - 0.5F, 0.0F)
+			.color(255, 255, 255, 255)
+			.texture((float)k, (float)l)
+			.overlay(OverlayTexture.DEFAULT_UV)
+			.light(i)
+			.normal(matrix3f, 0.0F, 1.0F, 0.0F)
+			.next();
+	}
+
+	private static void method_23172(float f, float g, float h, VertexConsumer vertexConsumer, Matrix4f matrix4f, float i) {
+		vertexConsumer.vertex(matrix4f, f * i, g * (i * i + i) * 0.5F + 0.25F, h * i).color(0, 0, 0, 255).next();
+	}
+
+	public Identifier getTexture(FishingBobberEntity fishingBobberEntity) {
 		return SKIN;
 	}
 }

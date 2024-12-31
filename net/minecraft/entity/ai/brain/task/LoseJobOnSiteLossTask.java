@@ -13,7 +13,7 @@ public class LoseJobOnSiteLossTask extends Task<VillagerEntity> {
 		super(ImmutableMap.of(MemoryModuleType.field_18439, MemoryModuleState.field_18457));
 	}
 
-	protected boolean method_20449(ServerWorld serverWorld, VillagerEntity villagerEntity) {
+	protected boolean shouldRun(ServerWorld serverWorld, VillagerEntity villagerEntity) {
 		VillagerData villagerData = villagerEntity.getVillagerData();
 		return villagerData.getProfession() != VillagerProfession.field_17051
 			&& villagerData.getProfession() != VillagerProfession.field_17062
@@ -21,7 +21,7 @@ public class LoseJobOnSiteLossTask extends Task<VillagerEntity> {
 			&& villagerData.getLevel() <= 1;
 	}
 
-	protected void method_20450(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void run(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		villagerEntity.setVillagerData(villagerEntity.getVillagerData().withProfession(VillagerProfession.field_17051));
 		villagerEntity.reinitializeBrain(serverWorld);
 	}

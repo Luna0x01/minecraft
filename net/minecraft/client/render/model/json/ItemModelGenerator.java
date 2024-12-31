@@ -2,19 +2,20 @@ package net.minecraft.client.render.model.json;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.mojang.datafixers.util.Either;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 
 public class ItemModelGenerator {
 	public static final List<String> LAYERS = Lists.newArrayList(new String[]{"layer0", "layer1", "layer2", "layer3", "layer4"});
 
-	public JsonUnbakedModel create(Function<Identifier, Sprite> function, JsonUnbakedModel jsonUnbakedModel) {
-		Map<String, String> map = Maps.newHashMap();
+	public JsonUnbakedModel create(Function<SpriteIdentifier, Sprite> function, JsonUnbakedModel jsonUnbakedModel) {
+		Map<String, Either<SpriteIdentifier, String>> map = Maps.newHashMap();
 		List<ModelElement> list = Lists.newArrayList();
 
 		for (int i = 0; i < LAYERS.size(); i++) {
@@ -23,36 +24,36 @@ public class ItemModelGenerator {
 				break;
 			}
 
-			String string2 = jsonUnbakedModel.resolveTexture(string);
-			map.put(string, string2);
-			Sprite sprite = (Sprite)function.apply(new Identifier(string2));
-			list.addAll(this.method_3480(i, string, sprite));
+			SpriteIdentifier spriteIdentifier = jsonUnbakedModel.resolveSprite(string);
+			map.put(string, Either.left(spriteIdentifier));
+			Sprite sprite = (Sprite)function.apply(spriteIdentifier);
+			list.addAll(this.addLayerElements(i, string, sprite));
 		}
 
-		map.put("particle", jsonUnbakedModel.textureExists("particle") ? jsonUnbakedModel.resolveTexture("particle") : (String)map.get("layer0"));
+		map.put("particle", jsonUnbakedModel.textureExists("particle") ? Either.left(jsonUnbakedModel.resolveSprite("particle")) : (Either)map.get("layer0"));
 		JsonUnbakedModel jsonUnbakedModel2 = new JsonUnbakedModel(
-			null, list, map, false, false, jsonUnbakedModel.getTransformations(), jsonUnbakedModel.getOverrides()
+			null, list, map, false, jsonUnbakedModel.getGuiLight(), jsonUnbakedModel.getTransformations(), jsonUnbakedModel.getOverrides()
 		);
 		jsonUnbakedModel2.id = jsonUnbakedModel.id;
 		return jsonUnbakedModel2;
 	}
 
-	private List<ModelElement> method_3480(int i, String string, Sprite sprite) {
+	private List<ModelElement> addLayerElements(int i, String string, Sprite sprite) {
 		Map<Direction, ModelElementFace> map = Maps.newHashMap();
 		map.put(Direction.field_11035, new ModelElementFace(null, i, string, new ModelElementTexture(new float[]{0.0F, 0.0F, 16.0F, 16.0F}, 0)));
 		map.put(Direction.field_11043, new ModelElementFace(null, i, string, new ModelElementTexture(new float[]{16.0F, 0.0F, 0.0F, 16.0F}, 0)));
 		List<ModelElement> list = Lists.newArrayList();
 		list.add(new ModelElement(new Vector3f(0.0F, 0.0F, 7.5F), new Vector3f(16.0F, 16.0F, 8.5F), map, null, true));
-		list.addAll(this.method_3481(sprite, string, i));
+		list.addAll(this.addSubComponents(sprite, string, i));
 		return list;
 	}
 
-	private List<ModelElement> method_3481(Sprite sprite, String string, int i) {
+	private List<ModelElement> addSubComponents(Sprite sprite, String string, int i) {
 		float f = (float)sprite.getWidth();
 		float g = (float)sprite.getHeight();
 		List<ModelElement> list = Lists.newArrayList();
 
-		for (ItemModelGenerator.class_802 lv : this.method_3478(sprite)) {
+		for (ItemModelGenerator.Frame frame : this.getFrames(sprite)) {
 			float h = 0.0F;
 			float j = 0.0F;
 			float k = 0.0F;
@@ -63,11 +64,11 @@ public class ItemModelGenerator {
 			float p = 0.0F;
 			float q = 16.0F / f;
 			float r = 16.0F / g;
-			float s = (float)lv.method_3487();
-			float t = (float)lv.method_3485();
-			float u = (float)lv.method_3486();
-			ItemModelGenerator.class_803 lv2 = lv.method_3484();
-			switch (lv2) {
+			float s = (float)frame.getMin();
+			float t = (float)frame.getMax();
+			float u = (float)frame.getLevel();
+			ItemModelGenerator.Side side = frame.getSide();
+			switch (side) {
 				case field_4281:
 					m = s;
 					h = s;
@@ -116,8 +117,8 @@ public class ItemModelGenerator {
 			o *= r;
 			p *= r;
 			Map<Direction, ModelElementFace> map = Maps.newHashMap();
-			map.put(lv2.method_3488(), new ModelElementFace(null, i, string, new ModelElementTexture(new float[]{m, o, n, p}, 0)));
-			switch (lv2) {
+			map.put(side.getDirection(), new ModelElementFace(null, i, string, new ModelElementTexture(new float[]{m, o, n, p}, 0)));
+			switch (side) {
 				case field_4281:
 					list.add(new ModelElement(new Vector3f(h, j, 7.5F), new Vector3f(k, j, 8.5F), map, null, true));
 					break;
@@ -135,19 +136,19 @@ public class ItemModelGenerator {
 		return list;
 	}
 
-	private List<ItemModelGenerator.class_802> method_3478(Sprite sprite) {
+	private List<ItemModelGenerator.Frame> getFrames(Sprite sprite) {
 		int i = sprite.getWidth();
 		int j = sprite.getHeight();
-		List<ItemModelGenerator.class_802> list = Lists.newArrayList();
+		List<ItemModelGenerator.Frame> list = Lists.newArrayList();
 
 		for (int k = 0; k < sprite.getFrameCount(); k++) {
 			for (int l = 0; l < j; l++) {
 				for (int m = 0; m < i; m++) {
-					boolean bl = !this.method_3477(sprite, k, m, l, i, j);
-					this.method_3476(ItemModelGenerator.class_803.field_4281, list, sprite, k, m, l, i, j, bl);
-					this.method_3476(ItemModelGenerator.class_803.field_4277, list, sprite, k, m, l, i, j, bl);
-					this.method_3476(ItemModelGenerator.class_803.field_4278, list, sprite, k, m, l, i, j, bl);
-					this.method_3476(ItemModelGenerator.class_803.field_4283, list, sprite, k, m, l, i, j, bl);
+					boolean bl = !this.isPixelTransparent(sprite, k, m, l, i, j);
+					this.buildCube(ItemModelGenerator.Side.field_4281, list, sprite, k, m, l, i, j, bl);
+					this.buildCube(ItemModelGenerator.Side.field_4277, list, sprite, k, m, l, i, j, bl);
+					this.buildCube(ItemModelGenerator.Side.field_4278, list, sprite, k, m, l, i, j, bl);
+					this.buildCube(ItemModelGenerator.Side.field_4283, list, sprite, k, m, l, i, j, bl);
 				}
 			}
 		}
@@ -155,108 +156,106 @@ public class ItemModelGenerator {
 		return list;
 	}
 
-	private void method_3476(
-		ItemModelGenerator.class_803 arg, List<ItemModelGenerator.class_802> list, Sprite sprite, int i, int j, int k, int l, int m, boolean bl
-	) {
-		boolean bl2 = this.method_3477(sprite, i, j + arg.method_3490(), k + arg.method_3489(), l, m) && bl;
+	private void buildCube(ItemModelGenerator.Side side, List<ItemModelGenerator.Frame> list, Sprite sprite, int i, int j, int k, int l, int m, boolean bl) {
+		boolean bl2 = this.isPixelTransparent(sprite, i, j + side.getOffsetX(), k + side.getOffsetY(), l, m) && bl;
 		if (bl2) {
-			this.method_3482(list, arg, j, k);
+			this.buildCube(list, side, j, k);
 		}
 	}
 
-	private void method_3482(List<ItemModelGenerator.class_802> list, ItemModelGenerator.class_803 arg, int i, int j) {
-		ItemModelGenerator.class_802 lv = null;
+	private void buildCube(List<ItemModelGenerator.Frame> list, ItemModelGenerator.Side side, int i, int j) {
+		ItemModelGenerator.Frame frame = null;
 
-		for (ItemModelGenerator.class_802 lv2 : list) {
-			if (lv2.method_3484() == arg) {
-				int k = arg.method_3491() ? j : i;
-				if (lv2.method_3486() == k) {
-					lv = lv2;
+		for (ItemModelGenerator.Frame frame2 : list) {
+			if (frame2.getSide() == side) {
+				int k = side.isVertical() ? j : i;
+				if (frame2.getLevel() == k) {
+					frame = frame2;
 					break;
 				}
 			}
 		}
 
-		int l = arg.method_3491() ? j : i;
-		int m = arg.method_3491() ? i : j;
-		if (lv == null) {
-			list.add(new ItemModelGenerator.class_802(arg, m, l));
+		int l = side.isVertical() ? j : i;
+		int m = side.isVertical() ? i : j;
+		if (frame == null) {
+			list.add(new ItemModelGenerator.Frame(side, m, l));
 		} else {
-			lv.method_3483(m);
+			frame.expand(m);
 		}
 	}
 
-	private boolean method_3477(Sprite sprite, int i, int j, int k, int l, int m) {
+	private boolean isPixelTransparent(Sprite sprite, int i, int j, int k, int l, int m) {
 		return j >= 0 && k >= 0 && j < l && k < m ? sprite.isPixelTransparent(i, j, k) : true;
 	}
 
-	static class class_802 {
-		private final ItemModelGenerator.class_803 field_4271;
-		private int field_4274;
-		private int field_4273;
-		private final int field_4272;
+	static class Frame {
+		private final ItemModelGenerator.Side side;
+		private int min;
+		private int max;
+		private final int level;
 
-		public class_802(ItemModelGenerator.class_803 arg, int i, int j) {
-			this.field_4271 = arg;
-			this.field_4274 = i;
-			this.field_4273 = i;
-			this.field_4272 = j;
+		public Frame(ItemModelGenerator.Side side, int i, int j) {
+			this.side = side;
+			this.min = i;
+			this.max = i;
+			this.level = j;
 		}
 
-		public void method_3483(int i) {
-			if (i < this.field_4274) {
-				this.field_4274 = i;
-			} else if (i > this.field_4273) {
-				this.field_4273 = i;
+		public void expand(int i) {
+			if (i < this.min) {
+				this.min = i;
+			} else if (i > this.max) {
+				this.max = i;
 			}
 		}
 
-		public ItemModelGenerator.class_803 method_3484() {
-			return this.field_4271;
+		public ItemModelGenerator.Side getSide() {
+			return this.side;
 		}
 
-		public int method_3487() {
-			return this.field_4274;
+		public int getMin() {
+			return this.min;
 		}
 
-		public int method_3485() {
-			return this.field_4273;
+		public int getMax() {
+			return this.max;
 		}
 
-		public int method_3486() {
-			return this.field_4272;
+		public int getLevel() {
+			return this.level;
 		}
 	}
 
-	static enum class_803 {
+	static enum Side {
 		field_4281(Direction.field_11036, 0, -1),
 		field_4277(Direction.field_11033, 0, 1),
 		field_4278(Direction.field_11034, -1, 0),
 		field_4283(Direction.field_11039, 1, 0);
 
-		private final Direction field_4276;
-		private final int field_4280;
-		private final int field_4279;
+		private final Direction direction;
+		private final int offsetX;
+		private final int offsetY;
 
-		private class_803(Direction direction, int j, int k) {
-			this.field_4276 = direction;
-			this.field_4280 = j;
-			this.field_4279 = k;
+		private Side(Direction direction, int j, int k) {
+			this.direction = direction;
+			this.offsetX = j;
+			this.offsetY = k;
 		}
 
-		public Direction method_3488() {
-			return this.field_4276;
+		public Direction getDirection() {
+			return this.direction;
 		}
 
-		public int method_3490() {
-			return this.field_4280;
+		public int getOffsetX() {
+			return this.offsetX;
 		}
 
-		public int method_3489() {
-			return this.field_4279;
+		public int getOffsetY() {
+			return this.offsetY;
 		}
 
-		private boolean method_3491() {
+		private boolean isVertical() {
 			return this == field_4277 || this == field_4281;
 		}
 	}

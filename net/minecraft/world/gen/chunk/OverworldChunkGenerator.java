@@ -3,8 +3,9 @@ package net.minecraft.world.gen.chunk;
 import java.util.List;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.noise.OctavePerlinNoiseSampler;
 import net.minecraft.village.ZombieSiegeManager;
@@ -21,7 +22,7 @@ import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.level.LevelGeneratorType;
 
 public class OverworldChunkGenerator extends SurfaceChunkGenerator<OverworldChunkGeneratorConfig> {
-	private static final float[] BIOME_WEIGHT_TABLE = SystemUtil.consume(new float[25], fs -> {
+	private static final float[] BIOME_WEIGHT_TABLE = Util.make(new float[25], fs -> {
 		for (int i = -2; i <= 2; i++) {
 			for (int j = -2; j <= 2; j++) {
 				float f = 10.0F / MathHelper.sqrt((float)(i * i + j * j) + 0.2F);
@@ -33,13 +34,13 @@ public class OverworldChunkGenerator extends SurfaceChunkGenerator<OverworldChun
 	private final boolean amplified;
 	private final PhantomSpawner phantomSpawner = new PhantomSpawner();
 	private final PillagerSpawner pillagerSpawner = new PillagerSpawner();
-	private final CatSpawner field_19181 = new CatSpawner();
-	private final ZombieSiegeManager field_19430 = new ZombieSiegeManager();
+	private final CatSpawner catSpawner = new CatSpawner();
+	private final ZombieSiegeManager zombieSiegeManager = new ZombieSiegeManager();
 
 	public OverworldChunkGenerator(IWorld iWorld, BiomeSource biomeSource, OverworldChunkGeneratorConfig overworldChunkGeneratorConfig) {
 		super(iWorld, biomeSource, 4, 8, 256, overworldChunkGeneratorConfig, true);
 		this.random.consume(2620);
-		this.noiseSampler = new OctavePerlinNoiseSampler(this.random, 16);
+		this.noiseSampler = new OctavePerlinNoiseSampler(this.random, 15, 0);
 		this.amplified = iWorld.getLevelProperties().getGeneratorType() == LevelGeneratorType.AMPLIFIED;
 	}
 
@@ -47,7 +48,7 @@ public class OverworldChunkGenerator extends SurfaceChunkGenerator<OverworldChun
 	public void populateEntities(ChunkRegion chunkRegion) {
 		int i = chunkRegion.getCenterChunkX();
 		int j = chunkRegion.getCenterChunkZ();
-		Biome biome = chunkRegion.getChunk(i, j).getBiomeArray()[0];
+		Biome biome = chunkRegion.getBiome(new ChunkPos(i, j).getCenterBlockPos());
 		ChunkRandom chunkRandom = new ChunkRandom();
 		chunkRandom.setSeed(chunkRegion.getSeed(), i << 4, j << 4);
 		SpawnHelper.populateEntities(chunkRegion, biome, i, j, chunkRandom);
@@ -82,26 +83,27 @@ public class OverworldChunkGenerator extends SurfaceChunkGenerator<OverworldChun
 		float g = 0.0F;
 		float h = 0.0F;
 		int k = 2;
-		float l = this.biomeSource.getBiomeForNoiseGen(i, j).getDepth();
+		int l = this.getSeaLevel();
+		float m = this.biomeSource.getBiomeForNoiseGen(i, l, j).getDepth();
 
-		for (int m = -2; m <= 2; m++) {
-			for (int n = -2; n <= 2; n++) {
-				Biome biome = this.biomeSource.getBiomeForNoiseGen(i + m, j + n);
-				float o = biome.getDepth();
-				float p = biome.getScale();
-				if (this.amplified && o > 0.0F) {
-					o = 1.0F + o * 2.0F;
-					p = 1.0F + p * 4.0F;
+		for (int n = -2; n <= 2; n++) {
+			for (int o = -2; o <= 2; o++) {
+				Biome biome = this.biomeSource.getBiomeForNoiseGen(i + n, l, j + o);
+				float p = biome.getDepth();
+				float q = biome.getScale();
+				if (this.amplified && p > 0.0F) {
+					p = 1.0F + p * 2.0F;
+					q = 1.0F + q * 4.0F;
 				}
 
-				float q = BIOME_WEIGHT_TABLE[m + 2 + (n + 2) * 5] / (o + 2.0F);
-				if (biome.getDepth() > l) {
-					q /= 2.0F;
+				float r = BIOME_WEIGHT_TABLE[n + 2 + (o + 2) * 5] / (p + 2.0F);
+				if (biome.getDepth() > m) {
+					r /= 2.0F;
 				}
 
-				f += p * q;
-				g += o * q;
-				h += q;
+				f += q * r;
+				g += p * r;
+				h += r;
 			}
 		}
 
@@ -109,13 +111,13 @@ public class OverworldChunkGenerator extends SurfaceChunkGenerator<OverworldChun
 		g /= h;
 		f = f * 0.9F + 0.1F;
 		g = (g * 4.0F - 1.0F) / 8.0F;
-		ds[0] = (double)g + this.method_16414(i, j);
+		ds[0] = (double)g + this.sampleNoise(i, j);
 		ds[1] = (double)f;
 		return ds;
 	}
 
-	private double method_16414(int i, int j) {
-		double d = this.noiseSampler.sample((double)(i * 200), 10.0, (double)(j * 200), 1.0, 0.0, true) / 8000.0;
+	private double sampleNoise(int i, int j) {
+		double d = this.noiseSampler.sample((double)(i * 200), 10.0, (double)(j * 200), 1.0, 0.0, true) * 65535.0 / 8000.0;
 		if (d < 0.0) {
 			d = -d * 0.3;
 		}
@@ -161,8 +163,8 @@ public class OverworldChunkGenerator extends SurfaceChunkGenerator<OverworldChun
 	public void spawnEntities(ServerWorld serverWorld, boolean bl, boolean bl2) {
 		this.phantomSpawner.spawn(serverWorld, bl, bl2);
 		this.pillagerSpawner.spawn(serverWorld, bl, bl2);
-		this.field_19181.spawn(serverWorld, bl, bl2);
-		this.field_19430.tick(serverWorld, bl, bl2);
+		this.catSpawner.spawn(serverWorld, bl, bl2);
+		this.zombieSiegeManager.spawn(serverWorld, bl, bl2);
 	}
 
 	@Override

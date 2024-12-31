@@ -15,7 +15,7 @@ public class JigsawBlockScreen extends Screen {
 	private TextFieldWidget attachmentTypeField;
 	private TextFieldWidget targetPoolField;
 	private TextFieldWidget finalStateField;
-	private ButtonWidget field_19103;
+	private ButtonWidget doneButton;
 
 	public JigsawBlockScreen(JigsawBlockEntity jigsawBlockEntity) {
 		super(NarratorManager.EMPTY);
@@ -56,28 +56,28 @@ public class JigsawBlockScreen extends Screen {
 	@Override
 	protected void init() {
 		this.minecraft.keyboard.enableRepeatEvents(true);
-		this.field_19103 = this.addButton(new ButtonWidget(this.width / 2 - 4 - 150, 210, 150, 20, I18n.translate("gui.done"), buttonWidget -> this.onDone()));
+		this.doneButton = this.addButton(new ButtonWidget(this.width / 2 - 4 - 150, 210, 150, 20, I18n.translate("gui.done"), buttonWidget -> this.onDone()));
 		this.addButton(new ButtonWidget(this.width / 2 + 4, 210, 150, 20, I18n.translate("gui.cancel"), buttonWidget -> this.onCancel()));
 		this.targetPoolField = new TextFieldWidget(this.font, this.width / 2 - 152, 40, 300, 20, I18n.translate("jigsaw_block.target_pool"));
 		this.targetPoolField.setMaxLength(128);
 		this.targetPoolField.setText(this.jigsaw.getTargetPool().toString());
-		this.targetPoolField.setChangedListener(string -> this.method_20118());
+		this.targetPoolField.setChangedListener(string -> this.updateDoneButtonState());
 		this.children.add(this.targetPoolField);
 		this.attachmentTypeField = new TextFieldWidget(this.font, this.width / 2 - 152, 80, 300, 20, I18n.translate("jigsaw_block.attachement_type"));
 		this.attachmentTypeField.setMaxLength(128);
 		this.attachmentTypeField.setText(this.jigsaw.getAttachmentType().toString());
-		this.attachmentTypeField.setChangedListener(string -> this.method_20118());
+		this.attachmentTypeField.setChangedListener(string -> this.updateDoneButtonState());
 		this.children.add(this.attachmentTypeField);
 		this.finalStateField = new TextFieldWidget(this.font, this.width / 2 - 152, 120, 300, 20, I18n.translate("jigsaw_block.final_state"));
 		this.finalStateField.setMaxLength(256);
 		this.finalStateField.setText(this.jigsaw.getFinalState());
 		this.children.add(this.finalStateField);
 		this.setInitialFocus(this.targetPoolField);
-		this.method_20118();
+		this.updateDoneButtonState();
 	}
 
-	protected void method_20118() {
-		this.field_19103.active = Identifier.isValid(this.attachmentTypeField.getText()) & Identifier.isValid(this.targetPoolField.getText());
+	protected void updateDoneButtonState() {
+		this.doneButton.active = Identifier.isValid(this.attachmentTypeField.getText()) & Identifier.isValid(this.targetPoolField.getText());
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class JigsawBlockScreen extends Screen {
 	public boolean keyPressed(int i, int j, int k) {
 		if (super.keyPressed(i, j, k)) {
 			return true;
-		} else if (!this.field_19103.active || i != 257 && i != 335) {
+		} else if (!this.doneButton.active || i != 257 && i != 335) {
 			return false;
 		} else {
 			this.onDone();

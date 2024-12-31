@@ -2,7 +2,7 @@ package net.minecraft.entity.ai.brain.task;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
-import net.minecraft.entity.ai.PathfindingUtil;
+import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.WalkTarget;
@@ -14,8 +14,8 @@ import net.minecraft.util.math.Vec3d;
 
 public class FindWalkTargetTask extends Task<MobEntityWithAi> {
 	private final float walkSpeed;
-	private final int field_19352;
-	private final int field_19353;
+	private final int maxHorizontalDistance;
+	private final int maxVerticalDistance;
 
 	public FindWalkTargetTask(float f) {
 		this(f, 10, 7);
@@ -24,37 +24,34 @@ public class FindWalkTargetTask extends Task<MobEntityWithAi> {
 	public FindWalkTargetTask(float f, int i, int j) {
 		super(ImmutableMap.of(MemoryModuleType.field_18445, MemoryModuleState.field_18457));
 		this.walkSpeed = f;
-		this.field_19352 = i;
-		this.field_19353 = j;
+		this.maxHorizontalDistance = i;
+		this.maxVerticalDistance = j;
 	}
 
-	protected void method_18996(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, long l) {
+	protected void run(ServerWorld serverWorld, MobEntityWithAi mobEntityWithAi, long l) {
 		BlockPos blockPos = new BlockPos(mobEntityWithAi);
 		if (serverWorld.isNearOccupiedPointOfInterest(blockPos)) {
-			this.method_20429(mobEntityWithAi);
+			this.updateWalkTarget(mobEntityWithAi);
 		} else {
 			ChunkSectionPos chunkSectionPos = ChunkSectionPos.from(blockPos);
 			ChunkSectionPos chunkSectionPos2 = LookTargetUtil.getPosClosestToOccupiedPointOfInterest(serverWorld, chunkSectionPos, 2);
 			if (chunkSectionPos2 != chunkSectionPos) {
-				this.method_20430(mobEntityWithAi, chunkSectionPos2);
+				this.updateWalkTarget(mobEntityWithAi, chunkSectionPos2);
 			} else {
-				this.method_20429(mobEntityWithAi);
+				this.updateWalkTarget(mobEntityWithAi);
 			}
 		}
 	}
 
-	private void method_20430(MobEntityWithAi mobEntityWithAi, ChunkSectionPos chunkSectionPos) {
-		BlockPos blockPos = chunkSectionPos.getCenterPos();
+	private void updateWalkTarget(MobEntityWithAi mobEntityWithAi, ChunkSectionPos chunkSectionPos) {
 		Optional<Vec3d> optional = Optional.ofNullable(
-			PathfindingUtil.method_6373(
-				mobEntityWithAi, this.field_19352, this.field_19353, new Vec3d((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ())
-			)
+			TargetFinder.findTargetTowards(mobEntityWithAi, this.maxHorizontalDistance, this.maxVerticalDistance, new Vec3d(chunkSectionPos.getCenterPos()))
 		);
 		mobEntityWithAi.getBrain().setMemory(MemoryModuleType.field_18445, optional.map(vec3d -> new WalkTarget(vec3d, this.walkSpeed, 0)));
 	}
 
-	private void method_20429(MobEntityWithAi mobEntityWithAi) {
-		Optional<Vec3d> optional = Optional.ofNullable(PathfindingUtil.findTargetStraight(mobEntityWithAi, this.field_19352, this.field_19353));
+	private void updateWalkTarget(MobEntityWithAi mobEntityWithAi) {
+		Optional<Vec3d> optional = Optional.ofNullable(TargetFinder.findGroundTarget(mobEntityWithAi, this.maxHorizontalDistance, this.maxVerticalDistance));
 		mobEntityWithAi.getBrain().setMemory(MemoryModuleType.field_18445, optional.map(vec3d -> new WalkTarget(vec3d, this.walkSpeed, 0)));
 	}
 }

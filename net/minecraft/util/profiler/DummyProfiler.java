@@ -37,7 +37,15 @@ public class DummyProfiler implements ReadableProfiler {
 	}
 
 	@Override
-	public ProfileResult getResults() {
+	public void visit(String string) {
+	}
+
+	@Override
+	public void visit(Supplier<String> supplier) {
+	}
+
+	@Override
+	public ProfileResult getResult() {
 		return EmptyProfileResult.INSTANCE;
 	}
 }

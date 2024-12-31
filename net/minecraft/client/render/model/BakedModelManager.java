@@ -6,6 +6,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.resource.ResourceManager;
@@ -13,59 +14,66 @@ import net.minecraft.resource.SinglePreparationResourceReloadListener;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 
-public class BakedModelManager extends SinglePreparationResourceReloadListener<ModelLoader> {
-	private Map<Identifier, BakedModel> modelMap;
-	private final SpriteAtlasTexture spriteAtlas;
-	private final BlockModels blockStateMaps;
+public class BakedModelManager extends SinglePreparationResourceReloadListener<ModelLoader> implements AutoCloseable {
+	private Map<Identifier, BakedModel> models;
+	private SpriteAtlasManager atlasManager;
+	private final BlockModels blockModelCache;
+	private final TextureManager textureManager;
 	private final BlockColors colorMap;
+	private int mipmap;
 	private BakedModel missingModel;
-	private Object2IntMap<BlockState> field_20278;
+	private Object2IntMap<BlockState> stateLookup;
 
-	public BakedModelManager(SpriteAtlasTexture spriteAtlasTexture, BlockColors blockColors) {
-		this.spriteAtlas = spriteAtlasTexture;
+	public BakedModelManager(TextureManager textureManager, BlockColors blockColors, int i) {
+		this.textureManager = textureManager;
 		this.colorMap = blockColors;
-		this.blockStateMaps = new BlockModels(this);
+		this.mipmap = i;
+		this.blockModelCache = new BlockModels(this);
 	}
 
 	public BakedModel getModel(ModelIdentifier modelIdentifier) {
-		return (BakedModel)this.modelMap.getOrDefault(modelIdentifier, this.missingModel);
+		return (BakedModel)this.models.getOrDefault(modelIdentifier, this.missingModel);
 	}
 
 	public BakedModel getMissingModel() {
 		return this.missingModel;
 	}
 
-	public BlockModels getBlockStateMaps() {
-		return this.blockStateMaps;
+	public BlockModels getBlockModels() {
+		return this.blockModelCache;
 	}
 
-	protected ModelLoader method_18178(ResourceManager resourceManager, Profiler profiler) {
+	protected ModelLoader prepare(ResourceManager resourceManager, Profiler profiler) {
 		profiler.startTick();
-		ModelLoader modelLoader = new ModelLoader(resourceManager, this.spriteAtlas, this.colorMap, profiler);
+		ModelLoader modelLoader = new ModelLoader(resourceManager, this.colorMap, profiler, this.mipmap);
 		profiler.endTick();
 		return modelLoader;
 	}
 
-	protected void method_18179(ModelLoader modelLoader, ResourceManager resourceManager, Profiler profiler) {
+	protected void apply(ModelLoader modelLoader, ResourceManager resourceManager, Profiler profiler) {
 		profiler.startTick();
 		profiler.push("upload");
-		modelLoader.upload(profiler);
-		this.modelMap = modelLoader.getBakedModelMap();
-		this.field_20278 = modelLoader.method_21605();
-		this.missingModel = (BakedModel)this.modelMap.get(ModelLoader.MISSING);
+		if (this.atlasManager != null) {
+			this.atlasManager.close();
+		}
+
+		this.atlasManager = modelLoader.upload(this.textureManager, profiler);
+		this.models = modelLoader.getBakedModelMap();
+		this.stateLookup = modelLoader.getStateLookup();
+		this.missingModel = (BakedModel)this.models.get(ModelLoader.MISSING);
 		profiler.swap("cache");
-		this.blockStateMaps.reload();
+		this.blockModelCache.reload();
 		profiler.pop();
 		profiler.endTick();
 	}
 
-	public boolean method_21611(BlockState blockState, BlockState blockState2) {
+	public boolean shouldRerender(BlockState blockState, BlockState blockState2) {
 		if (blockState == blockState2) {
 			return false;
 		} else {
-			int i = this.field_20278.getInt(blockState);
+			int i = this.stateLookup.getInt(blockState);
 			if (i != -1) {
-				int j = this.field_20278.getInt(blockState2);
+				int j = this.stateLookup.getInt(blockState2);
 				if (i == j) {
 					FluidState fluidState = blockState.getFluidState();
 					FluidState fluidState2 = blockState2.getFluidState();
@@ -75,5 +83,17 @@ public class BakedModelManager extends SinglePreparationResourceReloadListener<M
 
 			return true;
 		}
+	}
+
+	public SpriteAtlasTexture method_24153(Identifier identifier) {
+		return this.atlasManager.getAtlas(identifier);
+	}
+
+	public void close() {
+		this.atlasManager.close();
+	}
+
+	public void resetMipmapLevels(int i) {
+		this.mipmap = i;
 	}
 }

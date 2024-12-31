@@ -15,8 +15,9 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Map;
 import javax.annotation.Nullable;
-import net.minecraft.datafixers.DataFixTypes;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
@@ -25,7 +26,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.FileNameUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
-import net.minecraft.util.TagHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -146,12 +146,16 @@ public class StructureManager implements SynchronousResourceReloadListener {
 
 	private Structure readStructure(InputStream inputStream) throws IOException {
 		CompoundTag compoundTag = NbtIo.readCompressed(inputStream);
-		if (!compoundTag.containsKey("DataVersion", 99)) {
+		return this.createStructure(compoundTag);
+	}
+
+	public Structure createStructure(CompoundTag compoundTag) {
+		if (!compoundTag.contains("DataVersion", 99)) {
 			compoundTag.putInt("DataVersion", 500);
 		}
 
 		Structure structure = new Structure();
-		structure.fromTag(TagHelper.update(this.dataFixer, DataFixTypes.field_19217, compoundTag, compoundTag.getInt("DataVersion")));
+		structure.fromTag(NbtHelper.update(this.dataFixer, DataFixTypes.field_19217, compoundTag, compoundTag.getInt("DataVersion")));
 		return structure;
 	}
 
@@ -205,11 +209,11 @@ public class StructureManager implements SynchronousResourceReloadListener {
 		}
 	}
 
-	private Path getStructurePath(Identifier identifier, String string) {
+	public Path getStructurePath(Identifier identifier, String string) {
 		try {
 			Path path = this.generatedPath.resolve(identifier.getNamespace());
 			Path path2 = path.resolve("structures");
-			return FileNameUtil.method_20202(path2, identifier.getPath(), string);
+			return FileNameUtil.getResourcePath(path2, identifier.getPath(), string);
 		} catch (InvalidPathException var5) {
 			throw new InvalidIdentifierException("Invalid resource path: " + identifier, var5);
 		}

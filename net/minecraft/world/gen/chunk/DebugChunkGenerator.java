@@ -11,13 +11,14 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.GenerationStep;
 
 public class DebugChunkGenerator extends ChunkGenerator<DebugChunkGeneratorConfig> {
-	private static final List<BlockState> BLOCK_STATES = (List<BlockState>)StreamSupport.stream(Registry.BLOCK.spliterator(), false)
-		.flatMap(block -> block.getStateFactory().getStates().stream())
+	private static final List<BlockState> BLOCK_STATES = (List<BlockState>)StreamSupport.stream(Registry.field_11146.spliterator(), false)
+		.flatMap(block -> block.getStateManager().getStates().stream())
 		.collect(Collectors.toList());
 	private static final int X_SIDE_LENGTH = MathHelper.ceil(MathHelper.sqrt((float)BLOCK_STATES.size()));
 	private static final int Z_SIDE_LENGTH = MathHelper.ceil((float)BLOCK_STATES.size() / (float)X_SIDE_LENGTH);
@@ -29,11 +30,11 @@ public class DebugChunkGenerator extends ChunkGenerator<DebugChunkGeneratorConfi
 	}
 
 	@Override
-	public void buildSurface(Chunk chunk) {
+	public void buildSurface(ChunkRegion chunkRegion, Chunk chunk) {
 	}
 
 	@Override
-	public void carve(Chunk chunk, GenerationStep.Carver carver) {
+	public void carve(BiomeAccess biomeAccess, Chunk chunk, GenerationStep.Carver carver) {
 	}
 
 	@Override

@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.screen;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.Dynamic;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -11,10 +11,9 @@ import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.NarratorManager;
-import net.minecraft.datafixers.NbtOps;
+import net.minecraft.datafixer.NbtOps;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -34,22 +33,22 @@ public class CustomizeFlatLevelScreen extends Screen {
 	public CustomizeFlatLevelScreen(CreateWorldScreen createWorldScreen, CompoundTag compoundTag) {
 		super(new TranslatableText("createWorld.customize.flat.title"));
 		this.parent = createWorldScreen;
-		this.method_2144(compoundTag);
+		this.setConfigTag(compoundTag);
 	}
 
 	public String getConfigString() {
 		return this.config.toString();
 	}
 
-	public CompoundTag method_2140() {
+	public CompoundTag getConfigTag() {
 		return (CompoundTag)this.config.toDynamic(NbtOps.INSTANCE).getValue();
 	}
 
-	public void method_2139(String string) {
+	public void setConfigString(String string) {
 		this.config = FlatChunkGeneratorConfig.fromString(string);
 	}
 
-	public void method_2144(CompoundTag compoundTag) {
+	public void setConfigTag(CompoundTag compoundTag) {
 		this.config = FlatChunkGeneratorConfig.fromDynamic(new Dynamic(NbtOps.INSTANCE, compoundTag));
 	}
 
@@ -73,7 +72,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 						int j = list.size() - i - 1;
 						list.remove(j);
 						this.layers
-							.method_20094(
+							.setSelected(
 								list.isEmpty() ? null : (CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem)this.layers.children().get(Math.min(i, list.size() - 1))
 							);
 						this.config.updateLayerBlocks();
@@ -88,7 +87,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 			this.method_2145();
 		}));
 		this.addButton(new ButtonWidget(this.width / 2 - 155, this.height - 28, 150, 20, I18n.translate("gui.done"), buttonWidget -> {
-			this.parent.generatorOptionsTag = this.method_2140();
+			this.parent.generatorOptionsTag = this.getConfigTag();
 			this.minecraft.openScreen(this.parent);
 			this.config.updateLayerBlocks();
 			this.method_2145();
@@ -109,6 +108,11 @@ public class CustomizeFlatLevelScreen extends Screen {
 
 	private boolean method_2147() {
 		return this.layers.getSelected() != null;
+	}
+
+	@Override
+	public void onClose() {
+		this.minecraft.openScreen(this.parent);
 	}
 
 	@Override
@@ -138,7 +142,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 			}
 		}
 
-		public void method_20094(@Nullable CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem superflatLayerItem) {
+		public void setSelected(@Nullable CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem superflatLayerItem) {
 			super.setSelected(superflatLayerItem);
 			if (superflatLayerItem != null) {
 				FlatChunkGeneratorLayer flatChunkGeneratorLayer = (FlatChunkGeneratorLayer)CustomizeFlatLevelScreen.this.config
@@ -177,7 +181,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 
 			List<CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem> list = this.children();
 			if (i >= 0 && i < list.size()) {
-				this.method_20094((CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem)list.get(i));
+				this.setSelected((CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem)list.get(i));
 			}
 		}
 
@@ -221,7 +225,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 			@Override
 			public boolean mouseClicked(double d, double e, int i) {
 				if (i == 0) {
-					SuperflatLayersListWidget.this.method_20094(this);
+					SuperflatLayersListWidget.this.setSelected(this);
 					CustomizeFlatLevelScreen.this.method_2145();
 					return true;
 				} else {
@@ -231,20 +235,18 @@ public class CustomizeFlatLevelScreen extends Screen {
 
 			private void method_19375(int i, int j, ItemStack itemStack) {
 				this.method_19373(i + 1, j + 1);
-				GlStateManager.enableRescaleNormal();
+				RenderSystem.enableRescaleNormal();
 				if (!itemStack.isEmpty()) {
-					GuiLighting.enableForItems();
 					CustomizeFlatLevelScreen.this.itemRenderer.renderGuiItemIcon(itemStack, i + 2, j + 2);
-					GuiLighting.disable();
 				}
 
-				GlStateManager.disableRescaleNormal();
+				RenderSystem.disableRescaleNormal();
 			}
 
 			private void method_19373(int i, int j) {
-				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 				SuperflatLayersListWidget.this.minecraft.getTextureManager().bindTexture(DrawableHelper.STATS_ICON_LOCATION);
-				DrawableHelper.blit(i, j, CustomizeFlatLevelScreen.this.blitOffset, 0.0F, 0.0F, 18, 18, 128, 128);
+				DrawableHelper.blit(i, j, CustomizeFlatLevelScreen.this.getBlitOffset(), 0.0F, 0.0F, 18, 18, 128, 128);
 			}
 		}
 	}

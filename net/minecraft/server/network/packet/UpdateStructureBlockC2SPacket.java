@@ -120,7 +120,7 @@ public class UpdateStructureBlockC2SPacket implements Packet<ServerPlayPacketLis
 		packetByteBuf.writeByte(i);
 	}
 
-	public void method_12495(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onStructureBlockUpdate(this);
 	}
 

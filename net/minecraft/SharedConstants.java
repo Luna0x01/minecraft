@@ -6,7 +6,7 @@ import com.mojang.datafixers.types.constant.NamespacedStringType;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetector.Level;
 import net.minecraft.command.TranslatableBuiltInExceptions;
-import net.minecraft.datafixers.schemas.SchemaIdentifierNormalize;
+import net.minecraft.datafixer.schema.SchemaIdentifierNormalize;
 
 public class SharedConstants {
 	public static final Level RESOURCE_LEAK_DETECTOR_DISABLED = Level.DISABLED;

@@ -1,11 +1,10 @@
 package net.minecraft.client.gui.screen.recipebook;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
-import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.container.CraftingContainer;
 import net.minecraft.item.ItemStack;
@@ -57,12 +56,10 @@ public class AnimatedResultButton extends AbstractButtonWidget {
 			this.time += f;
 		}
 
-		GuiLighting.enableForItems();
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
 		minecraftClient.getTextureManager().bindTexture(BG_TEX);
-		GlStateManager.disableLighting();
 		int k = 29;
-		if (!this.results.hasCraftableResults()) {
+		if (!this.results.hasCraftableRecipes()) {
 			k += 25;
 		}
 
@@ -74,10 +71,10 @@ public class AnimatedResultButton extends AbstractButtonWidget {
 		boolean bl = this.bounce > 0.0F;
 		if (bl) {
 			float g = 1.0F + 0.1F * (float)Math.sin((double)(this.bounce / 15.0F * (float) Math.PI));
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)(this.x + 8), (float)(this.y + 12), 0.0F);
-			GlStateManager.scalef(g, g, 1.0F);
-			GlStateManager.translatef((float)(-(this.x + 8)), (float)(-(this.y + 12)), 0.0F);
+			RenderSystem.pushMatrix();
+			RenderSystem.translatef((float)(this.x + 8), (float)(this.y + 12), 0.0F);
+			RenderSystem.scalef(g, g, 1.0F);
+			RenderSystem.translatef((float)(-(this.x + 8)), (float)(-(this.y + 12)), 0.0F);
 			this.bounce -= f;
 		}
 
@@ -86,24 +83,21 @@ public class AnimatedResultButton extends AbstractButtonWidget {
 		this.currentResultIndex = MathHelper.floor(this.time / 30.0F) % list.size();
 		ItemStack itemStack = ((Recipe)list.get(this.currentResultIndex)).getOutput();
 		int m = 4;
-		if (this.results.method_2656() && this.getResults().size() > 1) {
+		if (this.results.hasSingleOutput() && this.getResults().size() > 1) {
 			minecraftClient.getItemRenderer().renderGuiItem(itemStack, this.x + m + 1, this.y + m + 1);
 			m--;
 		}
 
 		minecraftClient.getItemRenderer().renderGuiItem(itemStack, this.x + m, this.y + m);
 		if (bl) {
-			GlStateManager.popMatrix();
+			RenderSystem.popMatrix();
 		}
-
-		GlStateManager.enableLighting();
-		GuiLighting.disable();
 	}
 
 	private List<Recipe<?>> getResults() {
-		List<Recipe<?>> list = this.results.getResultsExclusive(true);
+		List<Recipe<?>> list = this.results.getRecipes(true);
 		if (!this.recipeBook.isFilteringCraftable(this.craftingContainer)) {
-			list.addAll(this.results.getResultsExclusive(false));
+			list.addAll(this.results.getRecipes(false));
 		}
 
 		return list;
@@ -118,7 +112,7 @@ public class AnimatedResultButton extends AbstractButtonWidget {
 		return (Recipe<?>)list.get(this.currentResultIndex);
 	}
 
-	public List<String> method_2644(Screen screen) {
+	public List<String> getTooltip(Screen screen) {
 		ItemStack itemStack = ((Recipe)this.getResults().get(this.currentResultIndex)).getOutput();
 		List<String> list = screen.getTooltipFromItem(itemStack);
 		if (this.results.getResults(this.recipeBook.isFilteringCraftable(this.craftingContainer)).size() > 1) {

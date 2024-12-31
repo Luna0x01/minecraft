@@ -4,17 +4,16 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import net.minecraft.client.render.entity.model.HorseEntityModel;
-import net.minecraft.entity.mob.SkeletonHorseEntity;
-import net.minecraft.entity.mob.ZombieHorseEntity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.util.Identifier;
 
 public class ZombieHorseEntityRenderer extends HorseBaseEntityRenderer<HorseBaseEntity, HorseEntityModel<HorseBaseEntity>> {
-	private static final Map<Class<?>, Identifier> TEXTURES = Maps.newHashMap(
+	private static final Map<EntityType<?>, Identifier> TEXTURES = Maps.newHashMap(
 		ImmutableMap.of(
-			ZombieHorseEntity.class,
+			EntityType.field_6048,
 			new Identifier("textures/entity/horse/horse_zombie.png"),
-			SkeletonHorseEntity.class,
+			EntityType.field_6075,
 			new Identifier("textures/entity/horse/horse_skeleton.png")
 		)
 	);
@@ -23,7 +22,7 @@ public class ZombieHorseEntityRenderer extends HorseBaseEntityRenderer<HorseBase
 		super(entityRenderDispatcher, new HorseEntityModel<>(0.0F), 1.0F);
 	}
 
-	protected Identifier method_4145(HorseBaseEntity horseBaseEntity) {
-		return (Identifier)TEXTURES.get(horseBaseEntity.getClass());
+	public Identifier getTexture(HorseBaseEntity horseBaseEntity) {
+		return (Identifier)TEXTURES.get(horseBaseEntity.getType());
 	}
 }

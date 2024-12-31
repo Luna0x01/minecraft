@@ -18,7 +18,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.server.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityAnchorArgumentType implements ArgumentType<EntityAnchorArgumentType.EntityAnchor> {
@@ -35,7 +35,7 @@ public class EntityAnchorArgumentType implements ArgumentType<EntityAnchorArgume
 		return new EntityAnchorArgumentType();
 	}
 
-	public EntityAnchorArgumentType.EntityAnchor method_9292(StringReader stringReader) throws CommandSyntaxException {
+	public EntityAnchorArgumentType.EntityAnchor parse(StringReader stringReader) throws CommandSyntaxException {
 		int i = stringReader.getCursor();
 		String string = stringReader.readUnquotedString();
 		EntityAnchorArgumentType.EntityAnchor entityAnchor = EntityAnchorArgumentType.EntityAnchor.fromId(string);
@@ -59,7 +59,7 @@ public class EntityAnchorArgumentType implements ArgumentType<EntityAnchorArgume
 		field_9853("feet", (vec3d, entity) -> vec3d),
 		field_9851("eyes", (vec3d, entity) -> new Vec3d(vec3d.x, vec3d.y + (double)entity.getStandingEyeHeight(), vec3d.z));
 
-		private static final Map<String, EntityAnchorArgumentType.EntityAnchor> anchors = SystemUtil.consume(Maps.newHashMap(), hashMap -> {
+		private static final Map<String, EntityAnchorArgumentType.EntityAnchor> anchors = Util.make(Maps.newHashMap(), hashMap -> {
 			for (EntityAnchorArgumentType.EntityAnchor entityAnchor : values()) {
 				hashMap.put(entityAnchor.id, entityAnchor);
 			}
@@ -78,7 +78,7 @@ public class EntityAnchorArgumentType implements ArgumentType<EntityAnchorArgume
 		}
 
 		public Vec3d positionAt(Entity entity) {
-			return (Vec3d)this.offset.apply(new Vec3d(entity.x, entity.y, entity.z), entity);
+			return (Vec3d)this.offset.apply(entity.getPos(), entity);
 		}
 
 		public Vec3d positionAt(ServerCommandSource serverCommandSource) {

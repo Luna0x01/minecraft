@@ -7,6 +7,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -30,9 +31,9 @@ public class BeaconBlock extends BlockWithEntity implements ColoredBlock {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BeaconBlockEntity) {
@@ -40,7 +41,7 @@ public class BeaconBlock extends BlockWithEntity implements ColoredBlock {
 				playerEntity.incrementStat(Stats.field_15416);
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -62,10 +63,5 @@ public class BeaconBlock extends BlockWithEntity implements ColoredBlock {
 				((BeaconBlockEntity)blockEntity).setCustomName(itemStack.getName());
 			}
 		}
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
 	}
 }

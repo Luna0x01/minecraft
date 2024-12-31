@@ -7,15 +7,15 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class Stats {
-	public static final StatType<Block> field_15427 = registerType("mined", Registry.BLOCK);
-	public static final StatType<Item> field_15370 = registerType("crafted", Registry.ITEM);
-	public static final StatType<Item> field_15372 = registerType("used", Registry.ITEM);
-	public static final StatType<Item> field_15383 = registerType("broken", Registry.ITEM);
-	public static final StatType<Item> field_15392 = registerType("picked_up", Registry.ITEM);
-	public static final StatType<Item> field_15405 = registerType("dropped", Registry.ITEM);
-	public static final StatType<EntityType<?>> field_15403 = registerType("killed", Registry.ENTITY_TYPE);
-	public static final StatType<EntityType<?>> field_15411 = registerType("killed_by", Registry.ENTITY_TYPE);
-	public static final StatType<Identifier> field_15419 = registerType("custom", Registry.CUSTOM_STAT);
+	public static final StatType<Block> field_15427 = registerType("mined", Registry.field_11146);
+	public static final StatType<Item> field_15370 = registerType("crafted", Registry.field_11142);
+	public static final StatType<Item> field_15372 = registerType("used", Registry.field_11142);
+	public static final StatType<Item> field_15383 = registerType("broken", Registry.field_11142);
+	public static final StatType<Item> field_15392 = registerType("picked_up", Registry.field_11142);
+	public static final StatType<Item> field_15405 = registerType("dropped", Registry.field_11142);
+	public static final StatType<EntityType<?>> field_15403 = registerType("killed", Registry.field_11145);
+	public static final StatType<EntityType<?>> field_15411 = registerType("killed_by", Registry.field_11145);
+	public static final StatType<Identifier> field_15419 = registerType("custom", Registry.field_11158);
 	public static final Identifier field_15389 = register("leave_game", StatFormatter.DEFAULT);
 	public static final Identifier field_15417 = register("play_one_minute", StatFormatter.TIME);
 	public static final Identifier field_15400 = register("time_since_death", StatFormatter.TIME);
@@ -85,15 +85,17 @@ public class Stats {
 	public static final Identifier field_19255 = register("bell_ring", StatFormatter.DEFAULT);
 	public static final Identifier field_19256 = register("raid_trigger", StatFormatter.DEFAULT);
 	public static final Identifier field_19257 = register("raid_win", StatFormatter.DEFAULT);
+	public static final Identifier field_21778 = register("interact_with_anvil", StatFormatter.DEFAULT);
+	public static final Identifier field_21779 = register("interact_with_grindstone", StatFormatter.DEFAULT);
 
 	private static Identifier register(String string, StatFormatter statFormatter) {
 		Identifier identifier = new Identifier(string);
-		Registry.register(Registry.CUSTOM_STAT, string, identifier);
+		Registry.register(Registry.field_11158, string, identifier);
 		field_15419.getOrCreateStat(identifier, statFormatter);
 		return identifier;
 	}
 
 	private static <T> StatType<T> registerType(String string, Registry<T> registry) {
-		return Registry.register(Registry.STAT_TYPE, string, new StatType<>(registry));
+		return Registry.register(Registry.field_11152, string, new StatType<>(registry));
 	}
 }

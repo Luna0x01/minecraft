@@ -20,11 +20,11 @@ import org.apache.logging.log4j.Logger;
 public class TextureFont implements Font {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final NativeImage image;
-	private final Char2ObjectMap<TextureFont.TextureFontGlyph> characterToGlyphMap;
+	private final Char2ObjectMap<TextureFont.TextureFontGlyph> glyphs;
 
 	public TextureFont(NativeImage nativeImage, Char2ObjectMap<TextureFont.TextureFontGlyph> char2ObjectMap) {
 		this.image = nativeImage;
-		this.characterToGlyphMap = char2ObjectMap;
+		this.glyphs = char2ObjectMap;
 	}
 
 	@Override
@@ -35,7 +35,7 @@ public class TextureFont implements Font {
 	@Nullable
 	@Override
 	public RenderableGlyph getGlyph(char c) {
-		return (RenderableGlyph)this.characterToGlyphMap.get(c);
+		return (RenderableGlyph)this.glyphs.get(c);
 	}
 
 	public static class Loader implements FontLoader {
@@ -204,7 +204,7 @@ public class TextureFont implements Font {
 
 		@Override
 		public void upload(int i, int j) {
-			this.image.upload(0, i, j, this.x, this.y, this.width, this.height, false);
+			this.image.upload(0, i, j, this.x, this.y, this.width, this.height, false, false);
 		}
 
 		@Override

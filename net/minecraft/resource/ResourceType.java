@@ -4,13 +4,13 @@ public enum ResourceType {
 	field_14188("assets"),
 	field_14190("data");
 
-	private final String name;
+	private final String directory;
 
 	private ResourceType(String string2) {
-		this.name = string2;
+		this.directory = string2;
 	}
 
-	public String getName() {
-		return this.name;
+	public String getDirectory() {
+		return this.directory;
 	}
 }

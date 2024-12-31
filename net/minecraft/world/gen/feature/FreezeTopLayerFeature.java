@@ -19,7 +19,7 @@ public class FreezeTopLayerFeature extends Feature<DefaultFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_13978(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DefaultFeatureConfig defaultFeatureConfig
 	) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -29,15 +29,15 @@ public class FreezeTopLayerFeature extends Feature<DefaultFeatureConfig> {
 			for (int j = 0; j < 16; j++) {
 				int k = blockPos.getX() + i;
 				int l = blockPos.getZ() + j;
-				int m = iWorld.getTop(Heightmap.Type.field_13197, k, l);
+				int m = iWorld.getTopY(Heightmap.Type.field_13197, k, l);
 				mutable.set(k, m, l);
 				mutable2.set(mutable).setOffset(Direction.field_11033, 1);
 				Biome biome = iWorld.getBiome(mutable);
-				if (biome.canSetSnow(iWorld, mutable2, false)) {
+				if (biome.canSetIce(iWorld, mutable2, false)) {
 					iWorld.setBlockState(mutable2, Blocks.field_10295.getDefaultState(), 2);
 				}
 
-				if (biome.canSetIce(iWorld, mutable)) {
+				if (biome.canSetSnow(iWorld, mutable)) {
 					iWorld.setBlockState(mutable, Blocks.field_10477.getDefaultState(), 2);
 					BlockState blockState = iWorld.getBlockState(mutable2);
 					if (blockState.contains(SnowyBlock.SNOWY)) {

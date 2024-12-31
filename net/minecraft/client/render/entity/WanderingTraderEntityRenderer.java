@@ -1,9 +1,9 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.client.render.entity.feature.VillagerHeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.model.VillagerResemblingModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.WanderingTraderEntity;
 import net.minecraft.util.Identifier;
 
@@ -16,12 +16,12 @@ public class WanderingTraderEntityRenderer extends MobEntityRenderer<WanderingTr
 		this.addFeature(new VillagerHeldItemFeatureRenderer<>(this));
 	}
 
-	protected Identifier method_18045(WanderingTraderEntity wanderingTraderEntity) {
+	public Identifier getTexture(WanderingTraderEntity wanderingTraderEntity) {
 		return TEXTURE;
 	}
 
-	protected void method_18046(WanderingTraderEntity wanderingTraderEntity, float f) {
+	protected void scale(WanderingTraderEntity wanderingTraderEntity, MatrixStack matrixStack, float f) {
 		float g = 0.9375F;
-		GlStateManager.scalef(0.9375F, 0.9375F, 0.9375F);
+		matrixStack.scale(0.9375F, 0.9375F, 0.9375F);
 	}
 }

@@ -16,4 +16,20 @@ public class TypedActionResult<T> {
 	public T getValue() {
 		return this.value;
 	}
+
+	public static <T> TypedActionResult<T> success(T object) {
+		return new TypedActionResult<>(ActionResult.field_5812, object);
+	}
+
+	public static <T> TypedActionResult<T> consume(T object) {
+		return new TypedActionResult<>(ActionResult.field_21466, object);
+	}
+
+	public static <T> TypedActionResult<T> pass(T object) {
+		return new TypedActionResult<>(ActionResult.field_5811, object);
+	}
+
+	public static <T> TypedActionResult<T> fail(T object) {
+		return new TypedActionResult<>(ActionResult.field_5814, object);
+	}
 }

@@ -21,6 +21,7 @@ import java.util.function.Function;
 import net.minecraft.command.BlockDataObject;
 import net.minecraft.command.DataCommandObject;
 import net.minecraft.command.EntityDataObject;
+import net.minecraft.command.StorageDataObject;
 import net.minecraft.command.arguments.NbtCompoundTagArgumentType;
 import net.minecraft.command.arguments.NbtPathArgumentType;
 import net.minecraft.command.arguments.NbtTagArgumentType;
@@ -51,11 +52,13 @@ public class DataCommand {
 	private static final DynamicCommandExceptionType MODIFY_INVALID_INDEX_EXCEPTION = new DynamicCommandExceptionType(
 		object -> new TranslatableText("commands.data.modify.invalid_index", object)
 	);
-	public static final List<Function<String, DataCommand.ObjectType>> OBJECT_TYPES = ImmutableList.of(EntityDataObject.field_13800, BlockDataObject.field_13786);
-	public static final List<DataCommand.ObjectType> TARGET_OBJECT_TYPES = (List<DataCommand.ObjectType>)OBJECT_TYPES.stream()
+	public static final List<Function<String, DataCommand.ObjectType>> OBJECT_TYPE_FACTORIES = ImmutableList.of(
+		EntityDataObject.TYPE_FACTORY, BlockDataObject.TYPE_FACTORY, StorageDataObject.TYPE_FACTORY
+	);
+	public static final List<DataCommand.ObjectType> TARGET_OBJECT_TYPES = (List<DataCommand.ObjectType>)OBJECT_TYPE_FACTORIES.stream()
 		.map(function -> (DataCommand.ObjectType)function.apply("target"))
 		.collect(ImmutableList.toImmutableList());
-	public static final List<DataCommand.ObjectType> SOURCE_OBJECT_TYPES = (List<DataCommand.ObjectType>)OBJECT_TYPES.stream()
+	public static final List<DataCommand.ObjectType> SOURCE_OBJECT_TYPES = (List<DataCommand.ObjectType>)OBJECT_TYPE_FACTORIES.stream()
 		.map(function -> (DataCommand.ObjectType)function.apply("source"))
 		.collect(ImmutableList.toImmutableList());
 
@@ -143,7 +146,7 @@ public class DataCommand {
 										.then(modifyArgumentCreator.create((commandContext, compoundTag, nbtPath, list) -> nbtPath.put(compoundTag, ((Tag)Iterables.getLast(list))::copy)))
 								)
 								.then(CommandManager.literal("merge").then(modifyArgumentCreator.create((commandContext, compoundTag, nbtPath, list) -> {
-									Collection<Tag> collection = nbtPath.putIfAbsent(compoundTag, CompoundTag::new);
+									Collection<Tag> collection = nbtPath.getOrInit(compoundTag, CompoundTag::new);
 									int i = 0;
 
 									for (Tag tag : collection) {
@@ -152,7 +155,7 @@ public class DataCommand {
 										}
 
 										CompoundTag compoundTag2 = (CompoundTag)tag;
-										CompoundTag compoundTag3 = compoundTag2.method_10553();
+										CompoundTag compoundTag3 = compoundTag2.copy();
 
 										for (Tag tag2 : list) {
 											if (!(tag2 instanceof CompoundTag)) {
@@ -175,7 +178,7 @@ public class DataCommand {
 	}
 
 	private static int executeInsert(int i, CompoundTag compoundTag, NbtPathArgumentType.NbtPath nbtPath, List<Tag> list) throws CommandSyntaxException {
-		Collection<Tag> collection = nbtPath.putIfAbsent(compoundTag, ListTag::new);
+		Collection<Tag> collection = nbtPath.getOrInit(compoundTag, ListTag::new);
 		int j = 0;
 
 		for (Tag tag : collection) {
@@ -259,7 +262,7 @@ public class DataCommand {
 			throw MERGE_FAILED_EXCEPTION.create();
 		} else {
 			dataCommandObject.setTag(compoundTag);
-			((ServerCommandSource)commandContext.getSource()).sendFeedback(dataCommandObject.getModifiedFeedback(), true);
+			((ServerCommandSource)commandContext.getSource()).sendFeedback(dataCommandObject.feedbackModify(), true);
 			return i;
 		}
 	}
@@ -271,7 +274,7 @@ public class DataCommand {
 			throw MERGE_FAILED_EXCEPTION.create();
 		} else {
 			dataCommandObject.setTag(compoundTag);
-			serverCommandSource.sendFeedback(dataCommandObject.getModifiedFeedback(), true);
+			serverCommandSource.sendFeedback(dataCommandObject.feedbackModify(), true);
 			return i;
 		}
 	}
@@ -304,7 +307,7 @@ public class DataCommand {
 			i = tag.asString().length();
 		}
 
-		serverCommandSource.sendFeedback(dataCommandObject.getQueryFeedback(tag), false);
+		serverCommandSource.sendFeedback(dataCommandObject.feedbackQuery(tag), false);
 		return i;
 	}
 
@@ -314,24 +317,24 @@ public class DataCommand {
 			throw GET_INVALID_EXCEPTION.create(nbtPath.toString());
 		} else {
 			int i = MathHelper.floor(((AbstractNumberTag)tag).getDouble() * d);
-			serverCommandSource.sendFeedback(dataCommandObject.getGetFeedback(nbtPath, d, i), false);
+			serverCommandSource.sendFeedback(dataCommandObject.feedbackGet(nbtPath, d, i), false);
 			return i;
 		}
 	}
 
 	private static int executeGet(ServerCommandSource serverCommandSource, DataCommandObject dataCommandObject) throws CommandSyntaxException {
-		serverCommandSource.sendFeedback(dataCommandObject.getQueryFeedback(dataCommandObject.getTag()), false);
+		serverCommandSource.sendFeedback(dataCommandObject.feedbackQuery(dataCommandObject.getTag()), false);
 		return 1;
 	}
 
 	private static int executeMerge(ServerCommandSource serverCommandSource, DataCommandObject dataCommandObject, CompoundTag compoundTag) throws CommandSyntaxException {
 		CompoundTag compoundTag2 = dataCommandObject.getTag();
-		CompoundTag compoundTag3 = compoundTag2.method_10553().copyFrom(compoundTag);
+		CompoundTag compoundTag3 = compoundTag2.copy().copyFrom(compoundTag);
 		if (compoundTag2.equals(compoundTag3)) {
 			throw MERGE_FAILED_EXCEPTION.create();
 		} else {
 			dataCommandObject.setTag(compoundTag3);
-			serverCommandSource.sendFeedback(dataCommandObject.getModifiedFeedback(), true);
+			serverCommandSource.sendFeedback(dataCommandObject.feedbackModify(), true);
 			return 1;
 		}
 	}

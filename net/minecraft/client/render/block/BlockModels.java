@@ -41,15 +41,15 @@ public class BlockModels {
 	public void reload() {
 		this.models.clear();
 
-		for (Block block : Registry.BLOCK) {
-			block.getStateFactory().getStates().forEach(blockState -> {
+		for (Block block : Registry.field_11146) {
+			block.getStateManager().getStates().forEach(blockState -> {
 				BakedModel var10000 = (BakedModel)this.models.put(blockState, this.modelManager.getModel(getModelId(blockState)));
 			});
 		}
 	}
 
 	public static ModelIdentifier getModelId(BlockState blockState) {
-		return getModelId(Registry.BLOCK.getId(blockState.getBlock()), blockState);
+		return getModelId(Registry.field_11146.getId(blockState.getBlock()), blockState);
 	}
 
 	public static ModelIdentifier getModelId(Identifier identifier, BlockState blockState) {
@@ -74,6 +74,6 @@ public class BlockModels {
 	}
 
 	private static <T extends Comparable<T>> String propertyValueToString(Property<T> property, Comparable<?> comparable) {
-		return property.getName((T)comparable);
+		return property.name((T)comparable);
 	}
 }

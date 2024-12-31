@@ -7,9 +7,9 @@ import java.util.List;
 
 public class ScheduleRule {
 	private final List<ScheduleRuleEntry> entries = Lists.newArrayList();
-	private int field_18613;
+	private int prioritizedEntryIndex;
 
-	public ScheduleRule withEntry(int i, float f) {
+	public ScheduleRule add(int i, float f) {
 		this.entries.add(new ScheduleRuleEntry(i, f));
 		this.sort();
 		return this;
@@ -22,17 +22,17 @@ public class ScheduleRule {
 		});
 		this.entries.clear();
 		this.entries.addAll(int2ObjectSortedMap.values());
-		this.field_18613 = 0;
+		this.prioritizedEntryIndex = 0;
 	}
 
 	public float getPriority(int i) {
 		if (this.entries.size() <= 0) {
 			return 0.0F;
 		} else {
-			ScheduleRuleEntry scheduleRuleEntry = (ScheduleRuleEntry)this.entries.get(this.field_18613);
+			ScheduleRuleEntry scheduleRuleEntry = (ScheduleRuleEntry)this.entries.get(this.prioritizedEntryIndex);
 			ScheduleRuleEntry scheduleRuleEntry2 = (ScheduleRuleEntry)this.entries.get(this.entries.size() - 1);
 			boolean bl = i < scheduleRuleEntry.getStartTime();
-			int j = bl ? 0 : this.field_18613;
+			int j = bl ? 0 : this.prioritizedEntryIndex;
 			float f = bl ? scheduleRuleEntry2.getPriority() : scheduleRuleEntry.getPriority();
 
 			for (int k = j; k < this.entries.size(); k++) {
@@ -41,7 +41,7 @@ public class ScheduleRule {
 					break;
 				}
 
-				this.field_18613 = k;
+				this.prioritizedEntryIndex = k;
 				f = scheduleRuleEntry3.getPriority();
 			}
 

@@ -13,7 +13,7 @@ public class LookAtEntityGoal extends Goal {
 	protected Entity target;
 	protected final float range;
 	private int lookTime;
-	private final float chance;
+	protected final float chance;
 	protected final Class<? extends LivingEntity> targetType;
 	protected final TargetPredicate targetPredicate;
 
@@ -41,7 +41,7 @@ public class LookAtEntityGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		if (this.mob.getRand().nextFloat() >= this.chance) {
+		if (this.mob.getRandom().nextFloat() >= this.chance) {
 			return false;
 		} else {
 			if (this.mob.getTarget() != null) {
@@ -49,17 +49,17 @@ public class LookAtEntityGoal extends Goal {
 			}
 
 			if (this.targetType == PlayerEntity.class) {
-				this.target = this.mob.world.getClosestPlayer(this.targetPredicate, this.mob, this.mob.x, this.mob.y + (double)this.mob.getStandingEyeHeight(), this.mob.z);
+				this.target = this.mob.world.getClosestPlayer(this.targetPredicate, this.mob, this.mob.getX(), this.mob.getEyeY(), this.mob.getZ());
 			} else {
 				this.target = this.mob
 					.world
-					.method_21727(
+					.getClosestEntityIncludingUngeneratedChunks(
 						this.targetType,
 						this.targetPredicate,
 						this.mob,
-						this.mob.x,
-						this.mob.y + (double)this.mob.getStandingEyeHeight(),
-						this.mob.z,
+						this.mob.getX(),
+						this.mob.getEyeY(),
+						this.mob.getZ(),
 						this.mob.getBoundingBox().expand((double)this.range, 3.0, (double)this.range)
 					);
 			}
@@ -79,7 +79,7 @@ public class LookAtEntityGoal extends Goal {
 
 	@Override
 	public void start() {
-		this.lookTime = 40 + this.mob.getRand().nextInt(40);
+		this.lookTime = 40 + this.mob.getRandom().nextInt(40);
 	}
 
 	@Override
@@ -89,7 +89,7 @@ public class LookAtEntityGoal extends Goal {
 
 	@Override
 	public void tick() {
-		this.mob.getLookControl().lookAt(this.target.x, this.target.y + (double)this.target.getStandingEyeHeight(), this.target.z);
+		this.mob.getLookControl().lookAt(this.target.getX(), this.target.getEyeY(), this.target.getZ());
 		this.lookTime--;
 	}
 }

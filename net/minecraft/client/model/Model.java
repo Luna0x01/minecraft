@@ -1,15 +1,27 @@
 package net.minecraft.client.model;
 
-import com.google.common.collect.Lists;
-import java.util.List;
-import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
 
-public class Model {
-	public final List<Cuboid> cuboidList = Lists.newArrayList();
+public abstract class Model implements Consumer<ModelPart> {
+	protected final Function<Identifier, RenderLayer> layerFactory;
 	public int textureWidth = 64;
 	public int textureHeight = 32;
 
-	public Cuboid getRandomCuboid(Random random) {
-		return (Cuboid)this.cuboidList.get(random.nextInt(this.cuboidList.size()));
+	public Model(Function<Identifier, RenderLayer> function) {
+		this.layerFactory = function;
 	}
+
+	public void accept(ModelPart modelPart) {
+	}
+
+	public final RenderLayer getLayer(Identifier identifier) {
+		return (RenderLayer)this.layerFactory.apply(identifier);
+	}
+
+	public abstract void render(MatrixStack matrixStack, VertexConsumer vertexConsumer, int i, int j, float f, float g, float h, float k);
 }

@@ -2,7 +2,6 @@ package net.minecraft.client.font;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -16,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Stream;
@@ -37,11 +35,10 @@ import org.apache.logging.log4j.Logger;
 public class FontManager implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final Map<Identifier, TextRenderer> textRenderers = Maps.newHashMap();
-	private final Set<Font> fonts = Sets.newHashSet();
 	private final TextureManager textureManager;
 	private boolean forceUnicodeFont;
 	private final ResourceReloadListener resourceReloadListener = new SinglePreparationResourceReloadListener<Map<Identifier, List<Font>>>() {
-		protected Map<Identifier, List<Font>> method_18638(ResourceManager resourceManager, Profiler profiler) {
+		protected Map<Identifier, List<Font>> prepare(ResourceManager resourceManager, Profiler profiler) {
 			profiler.startTick();
 			Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 			Map<Identifier, List<Font>> map = Maps.newHashMap();
@@ -150,7 +147,7 @@ public class FontManager implements AutoCloseable {
 			return map;
 		}
 
-		protected void method_18635(Map<Identifier, List<Font>> map, ResourceManager resourceManager, Profiler profiler) {
+		protected void apply(Map<Identifier, List<Font>> map, ResourceManager resourceManager, Profiler profiler) {
 			profiler.startTick();
 			profiler.push("reloading");
 			Stream.concat(FontManager.this.textRenderers.keySet().stream(), map.keySet().stream())
@@ -166,9 +163,13 @@ public class FontManager implements AutoCloseable {
 							.setFonts(list);
 					}
 				);
-			map.values().forEach(FontManager.this.fonts::addAll);
 			profiler.pop();
 			profiler.endTick();
+		}
+
+		@Override
+		public String getName() {
+			return "FontManager";
 		}
 	};
 
@@ -206,6 +207,5 @@ public class FontManager implements AutoCloseable {
 
 	public void close() {
 		this.textRenderers.values().forEach(TextRenderer::close);
-		this.fonts.forEach(Font::close);
 	}
 }

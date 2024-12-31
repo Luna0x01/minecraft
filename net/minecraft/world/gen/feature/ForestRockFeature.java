@@ -4,7 +4,6 @@ import com.mojang.datafixers.Dynamic;
 import java.util.Random;
 import java.util.function.Function;
 import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
@@ -15,13 +14,13 @@ public class ForestRockFeature extends Feature<BoulderFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_12813(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, BoulderFeatureConfig boulderFeatureConfig
 	) {
 		while (blockPos.getY() > 3) {
 			if (!iWorld.isAir(blockPos.down())) {
 				Block block = iWorld.getBlockState(blockPos.down()).getBlock();
-				if (block == Blocks.field_10219 || Block.isNaturalDirt(block) || Block.isNaturalStone(block)) {
+				if (isDirt(block) || isStone(block)) {
 					break;
 				}
 			}

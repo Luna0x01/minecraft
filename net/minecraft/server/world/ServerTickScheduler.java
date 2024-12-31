@@ -18,14 +18,14 @@ import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.TaskPriority;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.ScheduledTick;
+import net.minecraft.world.TickPriority;
 import net.minecraft.world.TickScheduler;
 
 public class ServerTickScheduler<T> implements TickScheduler<T> {
@@ -58,7 +58,7 @@ public class ServerTickScheduler<T> implements TickScheduler<T> {
 				i = 65536;
 			}
 
-			ServerChunkManager serverChunkManager = this.world.method_14178();
+			ServerChunkManager serverChunkManager = this.world.getChunkManager();
 			Iterator<ScheduledTick<T>> iterator = this.scheduledTickActionsInOrder.iterator();
 			this.world.getProfiler().push("cleaning");
 
@@ -116,18 +116,18 @@ public class ServerTickScheduler<T> implements TickScheduler<T> {
 		int j = i + 16 + 2;
 		int k = (chunkPos.z << 4) - 2;
 		int l = k + 16 + 2;
-		return this.getScheduledTicks(new MutableIntBoundingBox(i, 0, k, j, 256, l), bl, bl2);
+		return this.getScheduledTicks(new BlockBox(i, 0, k, j, 256, l), bl, bl2);
 	}
 
-	public List<ScheduledTick<T>> getScheduledTicks(MutableIntBoundingBox mutableIntBoundingBox, boolean bl, boolean bl2) {
-		List<ScheduledTick<T>> list = this.transferTicksInBounds(null, this.scheduledTickActionsInOrder, mutableIntBoundingBox, bl);
+	public List<ScheduledTick<T>> getScheduledTicks(BlockBox blockBox, boolean bl, boolean bl2) {
+		List<ScheduledTick<T>> list = this.transferTicksInBounds(null, this.scheduledTickActionsInOrder, blockBox, bl);
 		if (bl && list != null) {
 			this.scheduledTickActions.removeAll(list);
 		}
 
-		list = this.transferTicksInBounds(list, this.currentTickActions, mutableIntBoundingBox, bl);
+		list = this.transferTicksInBounds(list, this.currentTickActions, blockBox, bl);
 		if (!bl2) {
-			list = this.transferTicksInBounds(list, this.consumedTickActions, mutableIntBoundingBox, bl);
+			list = this.transferTicksInBounds(list, this.consumedTickActions, blockBox, bl);
 		}
 
 		return list == null ? Collections.emptyList() : list;
@@ -135,17 +135,14 @@ public class ServerTickScheduler<T> implements TickScheduler<T> {
 
 	@Nullable
 	private List<ScheduledTick<T>> transferTicksInBounds(
-		@Nullable List<ScheduledTick<T>> list, Collection<ScheduledTick<T>> collection, MutableIntBoundingBox mutableIntBoundingBox, boolean bl
+		@Nullable List<ScheduledTick<T>> list, Collection<ScheduledTick<T>> collection, BlockBox blockBox, boolean bl
 	) {
 		Iterator<ScheduledTick<T>> iterator = collection.iterator();
 
 		while (iterator.hasNext()) {
 			ScheduledTick<T> scheduledTick = (ScheduledTick<T>)iterator.next();
 			BlockPos blockPos = scheduledTick.pos;
-			if (blockPos.getX() >= mutableIntBoundingBox.minX
-				&& blockPos.getX() < mutableIntBoundingBox.maxX
-				&& blockPos.getZ() >= mutableIntBoundingBox.minZ
-				&& blockPos.getZ() < mutableIntBoundingBox.maxZ) {
+			if (blockPos.getX() >= blockBox.minX && blockPos.getX() < blockBox.maxX && blockPos.getZ() >= blockBox.minZ && blockPos.getZ() < blockBox.maxZ) {
 				if (bl) {
 					iterator.remove();
 				}
@@ -161,9 +158,9 @@ public class ServerTickScheduler<T> implements TickScheduler<T> {
 		return list;
 	}
 
-	public void copyScheduledTicks(MutableIntBoundingBox mutableIntBoundingBox, BlockPos blockPos) {
-		for (ScheduledTick<T> scheduledTick : this.getScheduledTicks(mutableIntBoundingBox, false, false)) {
-			if (mutableIntBoundingBox.contains(scheduledTick.pos)) {
+	public void copyScheduledTicks(BlockBox blockBox, BlockPos blockPos) {
+		for (ScheduledTick<T> scheduledTick : this.getScheduledTicks(blockBox, false, false)) {
+			if (blockBox.contains(scheduledTick.pos)) {
 				BlockPos blockPos2 = scheduledTick.pos.add(blockPos);
 				T object = scheduledTick.getObject();
 				this.addScheduledTick(new ScheduledTick<>(blockPos2, object, scheduledTick.time, scheduledTick.priority));
@@ -186,7 +183,7 @@ public class ServerTickScheduler<T> implements TickScheduler<T> {
 			compoundTag.putInt("y", scheduledTick.pos.getY());
 			compoundTag.putInt("z", scheduledTick.pos.getZ());
 			compoundTag.putInt("t", (int)(scheduledTick.time - l));
-			compoundTag.putInt("p", scheduledTick.priority.getPriorityIndex());
+			compoundTag.putInt("p", scheduledTick.priority.getIndex());
 			listTag.add(compoundTag);
 		}
 
@@ -199,9 +196,9 @@ public class ServerTickScheduler<T> implements TickScheduler<T> {
 	}
 
 	@Override
-	public void schedule(BlockPos blockPos, T object, int i, TaskPriority taskPriority) {
+	public void schedule(BlockPos blockPos, T object, int i, TickPriority tickPriority) {
 		if (!this.invalidObjPredicate.test(object)) {
-			this.addScheduledTick(new ScheduledTick<>(blockPos, object, (long)i + this.world.getTime(), taskPriority));
+			this.addScheduledTick(new ScheduledTick<>(blockPos, object, (long)i + this.world.getTime(), tickPriority));
 		}
 	}
 

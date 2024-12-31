@@ -39,11 +39,6 @@ public class ElderGuardianEntity extends GuardianEntity {
 		return 60;
 	}
 
-	public void straightenTail() {
-		this.tailAngle = 1.0F;
-		this.prevTailAngle = this.tailAngle;
-	}
-
 	@Override
 	protected SoundEvent getAmbientSound() {
 		return this.isInsideWaterOrBubbleColumn() ? SoundEvents.field_15127 : SoundEvents.field_14569;
@@ -81,13 +76,13 @@ public class ElderGuardianEntity extends GuardianEntity {
 					|| serverPlayerEntity.getStatusEffect(statusEffect).getAmplifier() < 2
 					|| serverPlayerEntity.getStatusEffect(statusEffect).getDuration() < 1200) {
 					serverPlayerEntity.networkHandler.sendPacket(new GameStateChangeS2CPacket(10, 0.0F));
-					serverPlayerEntity.addPotionEffect(new StatusEffectInstance(statusEffect, 6000, 2));
+					serverPlayerEntity.addStatusEffect(new StatusEffectInstance(statusEffect, 6000, 2));
 				}
 			}
 		}
 
-		if (!this.hasWalkTargetRange()) {
-			this.setWalkTarget(new BlockPos(this), 16);
+		if (!this.hasPositionTarget()) {
+			this.setPositionTarget(new BlockPos(this), 16);
 		}
 	}
 }

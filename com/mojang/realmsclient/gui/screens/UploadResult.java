@@ -11,7 +11,7 @@ public class UploadResult {
 
 	public static class Builder {
 		private int statusCode = -1;
-		private String errorMessage = null;
+		private String errorMessage;
 
 		public UploadResult.Builder withStatusCode(int i) {
 			this.statusCode = i;

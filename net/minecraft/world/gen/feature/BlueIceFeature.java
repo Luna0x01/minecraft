@@ -18,7 +18,7 @@ public class BlueIceFeature extends Feature<DefaultFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_12818(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DefaultFeatureConfig defaultFeatureConfig
 	) {
 		if (blockPos.getY() > iWorld.getSeaLevel() - 1) {

@@ -3,7 +3,6 @@ package net.minecraft.fluid;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FluidBlock;
@@ -14,14 +13,14 @@ import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class WaterFluid extends BaseFluid {
 	@Override
@@ -32,11 +31,6 @@ public abstract class WaterFluid extends BaseFluid {
 	@Override
 	public Fluid getStill() {
 		return Fluids.WATER;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9179;
 	}
 
 	@Override
@@ -62,9 +56,9 @@ public abstract class WaterFluid extends BaseFluid {
 		} else if (random.nextInt(10) == 0) {
 			world.addParticle(
 				ParticleTypes.field_11210,
-				(double)((float)blockPos.getX() + random.nextFloat()),
-				(double)((float)blockPos.getY() + random.nextFloat()),
-				(double)((float)blockPos.getZ() + random.nextFloat()),
+				(double)blockPos.getX() + (double)random.nextFloat(),
+				(double)blockPos.getY() + (double)random.nextFloat(),
+				(double)blockPos.getZ() + (double)random.nextFloat(),
 				0.0,
 				0.0,
 				0.0
@@ -90,7 +84,7 @@ public abstract class WaterFluid extends BaseFluid {
 	}
 
 	@Override
-	public int method_15733(ViewableWorld viewableWorld) {
+	public int method_15733(WorldView worldView) {
 		return 4;
 	}
 
@@ -105,12 +99,12 @@ public abstract class WaterFluid extends BaseFluid {
 	}
 
 	@Override
-	public int getLevelDecreasePerBlock(ViewableWorld viewableWorld) {
+	public int getLevelDecreasePerBlock(WorldView worldView) {
 		return 1;
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 5;
 	}
 
@@ -126,7 +120,7 @@ public abstract class WaterFluid extends BaseFluid {
 
 	public static class Flowing extends WaterFluid {
 		@Override
-		protected void appendProperties(StateFactory.Builder<Fluid, FluidState> builder) {
+		protected void appendProperties(StateManager.Builder<Fluid, FluidState> builder) {
 			super.appendProperties(builder);
 			builder.add(LEVEL);
 		}

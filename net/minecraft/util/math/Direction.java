@@ -12,6 +12,9 @@ import java.util.Random;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.StringIdentifiable;
 
@@ -33,9 +36,7 @@ public enum Direction implements StringIdentifiable {
 	private static final Direction[] ALL = values();
 	private static final Map<String, Direction> NAME_MAP = (Map<String, Direction>)Arrays.stream(ALL)
 		.collect(Collectors.toMap(Direction::getName, direction -> direction));
-	private static final Direction[] ID_TO_DIRECTION = (Direction[])Arrays.stream(ALL)
-		.sorted(Comparator.comparingInt(direction -> direction.id))
-		.toArray(Direction[]::new);
+	private static final Direction[] VALUES = (Direction[])Arrays.stream(ALL).sorted(Comparator.comparingInt(direction -> direction.id)).toArray(Direction[]::new);
 	private static final Direction[] HORIZONTAL = (Direction[])Arrays.stream(ALL)
 		.filter(direction -> direction.getAxis().isHorizontal())
 		.sorted(Comparator.comparingInt(direction -> direction.idHorizontal))
@@ -90,6 +91,35 @@ public enum Direction implements StringIdentifiable {
 		return new Direction[]{direction, direction2, direction3, direction3.getOpposite(), direction2.getOpposite(), direction.getOpposite()};
 	}
 
+	public static Direction transform(Matrix4f matrix4f, Direction direction) {
+		Vec3i vec3i = direction.getVector();
+		Vector4f vector4f = new Vector4f((float)vec3i.getX(), (float)vec3i.getY(), (float)vec3i.getZ(), 0.0F);
+		vector4f.transform(matrix4f);
+		return getFacing(vector4f.getX(), vector4f.getY(), vector4f.getZ());
+	}
+
+	public Quaternion getRotationQuaternion() {
+		Quaternion quaternion = Vector3f.POSITIVE_X.getDegreesQuaternion(90.0F);
+		switch (this) {
+			case field_11033:
+				return Vector3f.POSITIVE_X.getDegreesQuaternion(180.0F);
+			case field_11036:
+				return Quaternion.IDENTITY.copy();
+			case field_11043:
+				quaternion.hamiltonProduct(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
+				return quaternion;
+			case field_11035:
+				return quaternion;
+			case field_11039:
+				quaternion.hamiltonProduct(Vector3f.POSITIVE_Z.getDegreesQuaternion(90.0F));
+				return quaternion;
+			case field_11034:
+			default:
+				quaternion.hamiltonProduct(Vector3f.POSITIVE_Z.getDegreesQuaternion(-90.0F));
+				return quaternion;
+		}
+	}
+
 	public int getId() {
 		return this.id;
 	}
@@ -106,76 +136,18 @@ public enum Direction implements StringIdentifiable {
 		return byId(this.idOpposite);
 	}
 
-	public Direction rotateClockwise(Direction.Axis axis) {
-		switch (axis) {
-			case field_11048:
-				if (this != field_11039 && this != field_11034) {
-					return this.rotateXClockwise();
-				}
-
-				return this;
-			case field_11052:
-				if (this != field_11036 && this != field_11033) {
-					return this.rotateYClockwise();
-				}
-
-				return this;
-			case field_11051:
-				if (this != field_11043 && this != field_11035) {
-					return this.rotateZClockwise();
-				}
-
-				return this;
-			default:
-				throw new IllegalStateException("Unable to get CW facing for axis " + axis);
-		}
-	}
-
 	public Direction rotateYClockwise() {
 		switch (this) {
 			case field_11043:
 				return field_11034;
-			case field_11034:
-				return field_11035;
 			case field_11035:
 				return field_11039;
 			case field_11039:
 				return field_11043;
+			case field_11034:
+				return field_11035;
 			default:
 				throw new IllegalStateException("Unable to get Y-rotated facing of " + this);
-		}
-	}
-
-	private Direction rotateXClockwise() {
-		switch (this) {
-			case field_11043:
-				return field_11033;
-			case field_11034:
-			case field_11039:
-			default:
-				throw new IllegalStateException("Unable to get X-rotated facing of " + this);
-			case field_11035:
-				return field_11036;
-			case field_11036:
-				return field_11043;
-			case field_11033:
-				return field_11035;
-		}
-	}
-
-	private Direction rotateZClockwise() {
-		switch (this) {
-			case field_11034:
-				return field_11033;
-			case field_11035:
-			default:
-				throw new IllegalStateException("Unable to get Z-rotated facing of " + this);
-			case field_11039:
-				return field_11036;
-			case field_11036:
-				return field_11034;
-			case field_11033:
-				return field_11039;
 		}
 	}
 
@@ -183,27 +155,31 @@ public enum Direction implements StringIdentifiable {
 		switch (this) {
 			case field_11043:
 				return field_11039;
-			case field_11034:
-				return field_11043;
 			case field_11035:
 				return field_11034;
 			case field_11039:
 				return field_11035;
+			case field_11034:
+				return field_11043;
 			default:
 				throw new IllegalStateException("Unable to get CCW facing of " + this);
 		}
 	}
 
 	public int getOffsetX() {
-		return this.axis == Direction.Axis.field_11048 ? this.direction.offset() : 0;
+		return this.vector.getX();
 	}
 
 	public int getOffsetY() {
-		return this.axis == Direction.Axis.field_11052 ? this.direction.offset() : 0;
+		return this.vector.getY();
 	}
 
 	public int getOffsetZ() {
-		return this.axis == Direction.Axis.field_11051 ? this.direction.offset() : 0;
+		return this.vector.getZ();
+	}
+
+	public Vector3f getUnitVector() {
+		return new Vector3f((float)this.getOffsetX(), (float)this.getOffsetY(), (float)this.getOffsetZ());
 	}
 
 	public String getName() {
@@ -220,7 +196,7 @@ public enum Direction implements StringIdentifiable {
 	}
 
 	public static Direction byId(int i) {
-		return ID_TO_DIRECTION[MathHelper.abs(i % ID_TO_DIRECTION.length)];
+		return VALUES[MathHelper.abs(i % VALUES.length)];
 	}
 
 	public static Direction fromHorizontal(int i) {
@@ -362,11 +338,11 @@ public enum Direction implements StringIdentifiable {
 			return this.name;
 		}
 
-		public static Direction.Axis method_16699(Random random) {
+		public static Direction.Axis pickRandomAxis(Random random) {
 			return values()[random.nextInt(values().length)];
 		}
 
-		public boolean method_10176(@Nullable Direction direction) {
+		public boolean test(@Nullable Direction direction) {
 			return direction != null && direction.getAxis() == this;
 		}
 
@@ -432,7 +408,7 @@ public enum Direction implements StringIdentifiable {
 			return this.facingArray[random.nextInt(this.facingArray.length)];
 		}
 
-		public boolean method_10182(@Nullable Direction direction) {
+		public boolean test(@Nullable Direction direction) {
 			return direction != null && direction.getAxis().getType() == this;
 		}
 

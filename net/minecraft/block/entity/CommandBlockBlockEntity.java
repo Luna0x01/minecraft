@@ -126,12 +126,23 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	public void setAuto(boolean bl) {
 		boolean bl2 = this.auto;
 		this.auto = bl;
-		if (!bl2 && bl && !this.powered && this.world != null && this.getType() != CommandBlockBlockEntity.Type.field_11922) {
-			Block block = this.getCachedState().getBlock();
-			if (block instanceof CommandBlock) {
-				this.updateConditionMet();
-				this.world.getBlockTickScheduler().schedule(this.pos, block, block.getTickRate(this.world));
-			}
+		if (!bl2 && bl && !this.powered && this.world != null && this.getCommandBlockType() != CommandBlockBlockEntity.Type.field_11922) {
+			this.method_23360();
+		}
+	}
+
+	public void method_23359() {
+		CommandBlockBlockEntity.Type type = this.getCommandBlockType();
+		if (type == CommandBlockBlockEntity.Type.field_11923 && (this.powered || this.auto) && this.world != null) {
+			this.method_23360();
+		}
+	}
+
+	private void method_23360() {
+		Block block = this.getCachedState().getBlock();
+		if (block instanceof CommandBlock) {
+			this.updateConditionMet();
+			this.world.getBlockTickScheduler().schedule(this.pos, block, block.getTickRate(this.world));
 		}
 	}
 
@@ -162,7 +173,7 @@ public class CommandBlockBlockEntity extends BlockEntity {
 		this.needsUpdatePacket = bl;
 	}
 
-	public CommandBlockBlockEntity.Type getType() {
+	public CommandBlockBlockEntity.Type getCommandBlockType() {
 		Block block = this.getCachedState().getBlock();
 		if (block == Blocks.field_10525) {
 			return CommandBlockBlockEntity.Type.field_11924;
@@ -179,9 +190,9 @@ public class CommandBlockBlockEntity extends BlockEntity {
 	}
 
 	@Override
-	public void validate() {
+	public void cancelRemoval() {
 		this.resetBlock();
-		super.validate();
+		super.cancelRemoval();
 	}
 
 	public static enum Type {

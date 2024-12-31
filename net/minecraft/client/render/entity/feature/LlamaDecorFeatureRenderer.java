@@ -1,6 +1,11 @@
 package net.minecraft.client.render.entity.feature;
 
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.LlamaEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.LlamaEntity;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
@@ -31,24 +36,24 @@ public class LlamaDecorFeatureRenderer extends FeatureRenderer<LlamaEntity, Llam
 		super(featureRendererContext);
 	}
 
-	public void method_4191(LlamaEntity llamaEntity, float f, float g, float h, float i, float j, float k, float l) {
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, LlamaEntity llamaEntity, float f, float g, float h, float j, float k, float l
+	) {
 		DyeColor dyeColor = llamaEntity.getCarpetColor();
+		Identifier identifier;
 		if (dyeColor != null) {
-			this.bindTexture(LLAMA_DECOR[dyeColor.getId()]);
+			identifier = LLAMA_DECOR[dyeColor.getId()];
 		} else {
 			if (!llamaEntity.isTrader()) {
 				return;
 			}
 
-			this.bindTexture(TRADER_LLAMA_DECOR);
+			identifier = TRADER_LLAMA_DECOR;
 		}
 
-		this.getModel().copyStateTo(this.model);
-		this.model.method_17100(llamaEntity, f, g, i, j, k, l);
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return false;
+		this.getContextModel().copyStateTo(this.model);
+		this.model.setAngles(llamaEntity, f, g, j, k, l);
+		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getEntityCutoutNoCull(identifier));
+		this.model.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
 	}
 }

@@ -19,12 +19,12 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.item.AutomaticItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.Packet;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.FluidTags;
-import net.minecraft.util.TagHelper;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -55,7 +55,7 @@ public class FallingBlockEntity extends Entity {
 		this(EntityType.field_6089, world);
 		this.block = blockState;
 		this.inanimate = true;
-		this.setPosition(d, e + (double)((1.0F - this.getHeight()) / 2.0F), f);
+		this.updatePosition(d, e + (double)((1.0F - this.getHeight()) / 2.0F), f);
 		this.setVelocity(Vec3d.ZERO);
 		this.prevX = d;
 		this.prevY = e;
@@ -96,14 +96,11 @@ public class FallingBlockEntity extends Entity {
 		if (this.block.isAir()) {
 			this.remove();
 		} else {
-			this.prevX = this.x;
-			this.prevY = this.y;
-			this.prevZ = this.z;
 			Block block = this.block.getBlock();
 			if (this.timeFalling++ == 0) {
 				BlockPos blockPos = new BlockPos(this);
 				if (this.world.getBlockState(blockPos).getBlock() == block) {
-					this.world.clearBlockState(blockPos, false);
+					this.world.removeBlock(blockPos, false);
 				} else if (!this.world.isClient) {
 					this.remove();
 					return;
@@ -124,11 +121,7 @@ public class FallingBlockEntity extends Entity {
 					BlockHitResult blockHitResult = this.world
 						.rayTrace(
 							new RayTraceContext(
-								new Vec3d(this.prevX, this.prevY, this.prevZ),
-								new Vec3d(this.x, this.y, this.z),
-								RayTraceContext.ShapeType.field_17558,
-								RayTraceContext.FluidHandling.field_1345,
-								this
+								new Vec3d(this.prevX, this.prevY, this.prevZ), this.getPos(), RayTraceContext.ShapeType.field_17558, RayTraceContext.FluidHandling.field_1345, this
 							)
 						);
 					if (blockHitResult.getType() != HitResult.Type.field_1333 && this.world.getFluidState(blockHitResult.getBlockPos()).matches(FluidTags.field_15517)) {
@@ -146,8 +139,9 @@ public class FallingBlockEntity extends Entity {
 							boolean bl3 = blockState.canReplace(
 								new AutomaticItemPlacementContext(this.world, blockPos2, Direction.field_11033, ItemStack.EMPTY, Direction.field_11036)
 							);
-							boolean bl4 = this.block.canPlaceAt(this.world, blockPos2);
-							if (bl3 && bl4) {
+							boolean bl4 = FallingBlock.canFallThrough(this.world.getBlockState(blockPos2.down())) && (!bl || !bl2);
+							boolean bl5 = this.block.canPlaceAt(this.world, blockPos2) && !bl4;
+							if (bl3 && bl5) {
 								if (this.block.contains(Properties.WATERLOGGED) && this.world.getFluidState(blockPos2).getFluid() == Fluids.WATER) {
 									this.block = this.block.with(Properties.WATERLOGGED, Boolean.valueOf(true));
 								}
@@ -163,7 +157,7 @@ public class FallingBlockEntity extends Entity {
 											CompoundTag compoundTag = blockEntity.toTag(new CompoundTag());
 
 											for (String string : this.blockEntityData.getKeys()) {
-												Tag tag = this.blockEntityData.getTag(string);
+												Tag tag = this.blockEntityData.get(string);
 												if (!"x".equals(string) && !"y".equals(string) && !"z".equals(string)) {
 													compoundTag.put(string, tag.copy());
 												}
@@ -197,7 +191,7 @@ public class FallingBlockEntity extends Entity {
 	}
 
 	@Override
-	public void handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float f, float g) {
 		if (this.hurtEntities) {
 			int i = MathHelper.ceil(f - 1.0F);
 			if (i > 0) {
@@ -219,11 +213,13 @@ public class FallingBlockEntity extends Entity {
 				}
 			}
 		}
+
+		return false;
 	}
 
 	@Override
 	protected void writeCustomDataToTag(CompoundTag compoundTag) {
-		compoundTag.put("BlockState", TagHelper.serializeBlockState(this.block));
+		compoundTag.put("BlockState", NbtHelper.fromBlockState(this.block));
 		compoundTag.putInt("Time", this.timeFalling);
 		compoundTag.putBoolean("DropItem", this.dropItem);
 		compoundTag.putBoolean("HurtEntities", this.hurtEntities);
@@ -236,9 +232,9 @@ public class FallingBlockEntity extends Entity {
 
 	@Override
 	protected void readCustomDataFromTag(CompoundTag compoundTag) {
-		this.block = TagHelper.deserializeBlockState(compoundTag.getCompound("BlockState"));
+		this.block = NbtHelper.toBlockState(compoundTag.getCompound("BlockState"));
 		this.timeFalling = compoundTag.getInt("Time");
-		if (compoundTag.containsKey("HurtEntities", 99)) {
+		if (compoundTag.contains("HurtEntities", 99)) {
 			this.hurtEntities = compoundTag.getBoolean("HurtEntities");
 			this.fallHurtAmount = compoundTag.getFloat("FallHurtAmount");
 			this.fallHurtMax = compoundTag.getInt("FallHurtMax");
@@ -246,11 +242,11 @@ public class FallingBlockEntity extends Entity {
 			this.hurtEntities = true;
 		}
 
-		if (compoundTag.containsKey("DropItem", 99)) {
+		if (compoundTag.contains("DropItem", 99)) {
 			this.dropItem = compoundTag.getBoolean("DropItem");
 		}
 
-		if (compoundTag.containsKey("TileEntityData", 10)) {
+		if (compoundTag.contains("TileEntityData", 10)) {
 			this.blockEntityData = compoundTag.getCompound("TileEntityData");
 		}
 

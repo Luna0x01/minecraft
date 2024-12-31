@@ -1,9 +1,9 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import javax.annotation.Nullable;
 import net.minecraft.client.render.entity.feature.FoxHeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.model.FoxEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.passive.FoxEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -19,15 +19,15 @@ public class FoxEntityRenderer extends MobEntityRenderer<FoxEntity, FoxEntityMod
 		this.addFeature(new FoxHeldItemFeatureRenderer(this));
 	}
 
-	protected void method_18334(FoxEntity foxEntity, float f, float g, float h) {
-		super.setupTransforms(foxEntity, f, g, h);
+	protected void setupTransforms(FoxEntity foxEntity, MatrixStack matrixStack, float f, float g, float h) {
+		super.setupTransforms(foxEntity, matrixStack, f, g, h);
 		if (foxEntity.isChasing() || foxEntity.isWalking()) {
-			GlStateManager.rotatef(-MathHelper.lerp(h, foxEntity.prevPitch, foxEntity.pitch), 1.0F, 0.0F, 0.0F);
+			float i = -MathHelper.lerp(h, foxEntity.prevPitch, foxEntity.pitch);
+			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(i));
 		}
 	}
 
-	@Nullable
-	protected Identifier method_18333(FoxEntity foxEntity) {
+	public Identifier getTexture(FoxEntity foxEntity) {
 		if (foxEntity.getFoxType() == FoxEntity.Type.field_17996) {
 			return foxEntity.isSleeping() ? SLEEPING_SKIN : SKIN;
 		} else {

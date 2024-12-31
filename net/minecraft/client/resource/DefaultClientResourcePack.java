@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.resource.DefaultResourcePack;
 import net.minecraft.resource.ResourceType;
@@ -63,9 +62,9 @@ public class DefaultClientResourcePack extends DefaultResourcePack {
 	}
 
 	@Override
-	public Collection<Identifier> findResources(ResourceType resourceType, String string, int i, Predicate<String> predicate) {
-		Collection<Identifier> collection = super.findResources(resourceType, string, i, predicate);
-		collection.addAll((Collection)this.index.getFilesRecursively(string, i, predicate).stream().map(Identifier::new).collect(Collectors.toList()));
+	public Collection<Identifier> findResources(ResourceType resourceType, String string, String string2, int i, Predicate<String> predicate) {
+		Collection<Identifier> collection = super.findResources(resourceType, string, string2, i, predicate);
+		collection.addAll(this.index.getFilesRecursively(string2, string, i, predicate));
 		return collection;
 	}
 }

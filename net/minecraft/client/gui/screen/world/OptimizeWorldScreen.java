@@ -7,15 +7,15 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.storage.LevelStorage;
 import net.minecraft.world.updater.WorldUpdater;
 
 public class OptimizeWorldScreen extends Screen {
-	private static final Object2IntMap<DimensionType> field_3232 = SystemUtil.consume(
-		new Object2IntOpenCustomHashMap(SystemUtil.identityHashStrategy()), object2IntOpenCustomHashMap -> {
+	private static final Object2IntMap<DimensionType> DIMENSION_COLORS = Util.make(
+		new Object2IntOpenCustomHashMap(Util.identityHashStrategy()), object2IntOpenCustomHashMap -> {
 			object2IntOpenCustomHashMap.put(DimensionType.field_13072, -13408734);
 			object2IntOpenCustomHashMap.put(DimensionType.field_13076, -10075085);
 			object2IntOpenCustomHashMap.put(DimensionType.field_13078, -8943531);
@@ -70,7 +70,7 @@ public class OptimizeWorldScreen extends Screen {
 
 			for (DimensionType dimensionType : DimensionType.getAll()) {
 				int p = MathHelper.floor(this.updater.getProgress(dimensionType) * (float)(l - k));
-				fill(k + o, m, k + o + p, n, field_3232.getInt(dimensionType));
+				fill(k + o, m, k + o + p, n, DIMENSION_COLORS.getInt(dimensionType));
 				o += p;
 			}
 

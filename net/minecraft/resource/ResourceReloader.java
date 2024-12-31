@@ -1,14 +1,14 @@
 package net.minecraft.resource;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.util.SystemUtil;
 import net.minecraft.util.Unit;
+import net.minecraft.util.Util;
 import net.minecraft.util.profiler.DummyProfiler;
 
 public class ResourceReloader<S> implements ResourceReloadMonitor {
@@ -49,7 +49,7 @@ public class ResourceReloader<S> implements ResourceReloadMonitor {
 		this.listenerCount = list.size();
 		this.preparingCount.incrementAndGet();
 		completableFuture.thenRun(this.preparedCount::incrementAndGet);
-		List<CompletableFuture<S>> list2 = new ArrayList();
+		List<CompletableFuture<S>> list2 = Lists.newArrayList();
 		CompletableFuture<?> completableFuture2 = completableFuture;
 		this.waitingListeners = Sets.newHashSet(list);
 
@@ -83,7 +83,7 @@ public class ResourceReloader<S> implements ResourceReloadMonitor {
 			completableFuture2 = completableFuture4;
 		}
 
-		this.applyStageFuture = SystemUtil.thenCombine(list2);
+		this.applyStageFuture = Util.combine(list2);
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class ResourceReloader<S> implements ResourceReloadMonitor {
 	}
 
 	@Override
-	public boolean isLoadStageComplete() {
+	public boolean isPrepareStageComplete() {
 		return this.prepareStageFuture.isDone();
 	}
 

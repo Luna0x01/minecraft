@@ -4,19 +4,22 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.LecternBlockEntity;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.tag.ItemTags;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
@@ -65,7 +68,7 @@ public class LecternBlock extends BlockWithEntity {
 	protected LecternBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(HAS_BOOK, Boolean.valueOf(false))
+			this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(HAS_BOOK, Boolean.valueOf(false))
 		);
 	}
 
@@ -75,7 +78,7 @@ public class LecternBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public VoxelShape method_9571(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public VoxelShape getCullingShape(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return BASE_SHAPE;
 	}
 
@@ -121,7 +124,7 @@ public class LecternBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, POWERED, HAS_BOOK);
 	}
 
@@ -174,10 +177,8 @@ public class LecternBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!world.isClient) {
-			setPowered(world, blockPos, blockState, false);
-		}
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		setPowered(serverWorld, blockPos, blockState, false);
 	}
 
 	@Override
@@ -245,22 +246,23 @@ public class LecternBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if ((Boolean)blockState.get(HAS_BOOK)) {
 			if (!world.isClient) {
 				this.openContainer(world, blockPos, playerEntity);
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		} else {
-			return false;
+			ItemStack itemStack = playerEntity.getStackInHand(hand);
+			return !itemStack.isEmpty() && !itemStack.getItem().isIn(ItemTags.field_21465) ? ActionResult.field_21466 : ActionResult.field_5811;
 		}
 	}
 
 	@Nullable
 	@Override
-	public NameableContainerProvider createContainerProvider(BlockState blockState, World world, BlockPos blockPos) {
-		return !blockState.get(HAS_BOOK) ? null : super.createContainerProvider(blockState, world, blockPos);
+	public NameableContainerFactory createContainerFactory(BlockState blockState, World world, BlockPos blockPos) {
+		return !blockState.get(HAS_BOOK) ? null : super.createContainerFactory(blockState, world, blockPos);
 	}
 
 	private void openContainer(World world, BlockPos blockPos, PlayerEntity playerEntity) {

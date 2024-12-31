@@ -10,9 +10,9 @@ import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.registry.Registry;
 
 public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
-	private float x;
-	private float y;
-	private float z;
+	private double x;
+	private double y;
+	private double z;
 	private float offsetX;
 	private float offsetY;
 	private float offsetZ;
@@ -24,30 +24,30 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 	public ParticleS2CPacket() {
 	}
 
-	public <T extends ParticleEffect> ParticleS2CPacket(T particleEffect, boolean bl, float f, float g, float h, float i, float j, float k, float l, int m) {
+	public <T extends ParticleEffect> ParticleS2CPacket(T particleEffect, boolean bl, double d, double e, double f, float g, float h, float i, float j, int k) {
 		this.parameters = particleEffect;
 		this.longDistance = bl;
-		this.x = f;
-		this.y = g;
-		this.z = h;
-		this.offsetX = i;
-		this.offsetY = j;
-		this.offsetZ = k;
-		this.speed = l;
-		this.count = m;
+		this.x = d;
+		this.y = e;
+		this.z = f;
+		this.offsetX = g;
+		this.offsetY = h;
+		this.offsetZ = i;
+		this.speed = j;
+		this.count = k;
 	}
 
 	@Override
 	public void read(PacketByteBuf packetByteBuf) throws IOException {
-		ParticleType<?> particleType = Registry.PARTICLE_TYPE.get(packetByteBuf.readInt());
+		ParticleType<?> particleType = Registry.field_11141.get(packetByteBuf.readInt());
 		if (particleType == null) {
 			particleType = ParticleTypes.field_11235;
 		}
 
 		this.longDistance = packetByteBuf.readBoolean();
-		this.x = packetByteBuf.readFloat();
-		this.y = packetByteBuf.readFloat();
-		this.z = packetByteBuf.readFloat();
+		this.x = packetByteBuf.readDouble();
+		this.y = packetByteBuf.readDouble();
+		this.z = packetByteBuf.readDouble();
 		this.offsetX = packetByteBuf.readFloat();
 		this.offsetY = packetByteBuf.readFloat();
 		this.offsetZ = packetByteBuf.readFloat();
@@ -62,11 +62,11 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf packetByteBuf) throws IOException {
-		packetByteBuf.writeInt(Registry.PARTICLE_TYPE.getRawId((ParticleType<? extends ParticleEffect>)this.parameters.getType()));
+		packetByteBuf.writeInt(Registry.field_11141.getRawId((ParticleType<? extends ParticleEffect>)this.parameters.getType()));
 		packetByteBuf.writeBoolean(this.longDistance);
-		packetByteBuf.writeFloat(this.x);
-		packetByteBuf.writeFloat(this.y);
-		packetByteBuf.writeFloat(this.z);
+		packetByteBuf.writeDouble(this.x);
+		packetByteBuf.writeDouble(this.y);
+		packetByteBuf.writeDouble(this.z);
 		packetByteBuf.writeFloat(this.offsetX);
 		packetByteBuf.writeFloat(this.offsetY);
 		packetByteBuf.writeFloat(this.offsetZ);
@@ -80,15 +80,15 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	public double getX() {
-		return (double)this.x;
+		return this.x;
 	}
 
 	public double getY() {
-		return (double)this.y;
+		return this.y;
 	}
 
 	public double getZ() {
-		return (double)this.z;
+		return this.z;
 	}
 
 	public float getOffsetX() {
@@ -115,7 +115,7 @@ public class ParticleS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.parameters;
 	}
 
-	public void method_11553(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onParticle(this);
 	}
 }

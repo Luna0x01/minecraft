@@ -6,10 +6,11 @@ import java.util.function.Function;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.VillageGenerator;
 import net.minecraft.structure.VillageStructureStart;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
@@ -37,14 +38,9 @@ public class VillageFeature extends StructureFeature<VillageFeatureConfig> {
 	}
 
 	@Override
-	public boolean shouldStartAt(ChunkGenerator<?> chunkGenerator, Random random, int i, int j) {
+	public boolean shouldStartAt(BiomeAccess biomeAccess, ChunkGenerator<?> chunkGenerator, Random random, int i, int j, Biome biome) {
 		ChunkPos chunkPos = this.getStart(chunkGenerator, random, i, j, 0, 0);
-		if (i == chunkPos.x && j == chunkPos.z) {
-			Biome biome = chunkGenerator.getBiomeSource().getBiome(new BlockPos((i << 4) + 9, 0, (j << 4) + 9));
-			return chunkGenerator.hasStructure(biome, Feature.VILLAGE);
-		} else {
-			return false;
-		}
+		return i == chunkPos.x && j == chunkPos.z ? chunkGenerator.hasStructure(biome, this) : false;
 	}
 
 	@Override
@@ -63,8 +59,8 @@ public class VillageFeature extends StructureFeature<VillageFeatureConfig> {
 	}
 
 	public static class Start extends VillageStructureStart {
-		public Start(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l) {
-			super(structureFeature, i, j, biome, mutableIntBoundingBox, k, l);
+		public Start(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
+			super(structureFeature, i, j, blockBox, k, l);
 		}
 
 		@Override

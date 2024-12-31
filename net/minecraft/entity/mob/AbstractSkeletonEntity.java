@@ -106,7 +106,7 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 					itemStack.setDamage(itemStack.getDamage() + this.random.nextInt(2));
 					if (itemStack.getDamage() >= itemStack.getMaxDamage()) {
 						this.sendEquipmentBreakStatus(EquipmentSlot.field_6169);
-						this.setEquippedStack(EquipmentSlot.field_6169, ItemStack.EMPTY);
+						this.equipStack(EquipmentSlot.field_6169, ItemStack.EMPTY);
 					}
 				}
 
@@ -126,14 +126,14 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 		super.tickRiding();
 		if (this.getVehicle() instanceof MobEntityWithAi) {
 			MobEntityWithAi mobEntityWithAi = (MobEntityWithAi)this.getVehicle();
-			this.field_6283 = mobEntityWithAi.field_6283;
+			this.bodyYaw = mobEntityWithAi.bodyYaw;
 		}
 	}
 
 	@Override
 	protected void initEquipment(LocalDifficulty localDifficulty) {
 		super.initEquipment(localDifficulty);
-		this.setEquippedStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8102));
+		this.equipStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8102));
 	}
 
 	@Nullable
@@ -151,7 +151,7 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 			int i = localDate.get(ChronoField.DAY_OF_MONTH);
 			int j = localDate.get(ChronoField.MONTH_OF_YEAR);
 			if (j == 10 && i == 31 && this.random.nextFloat() < 0.25F) {
-				this.setEquippedStack(EquipmentSlot.field_6169, new ItemStack(this.random.nextFloat() < 0.1F ? Blocks.field_10009 : Blocks.field_10147));
+				this.equipStack(EquipmentSlot.field_6169, new ItemStack(this.random.nextFloat() < 0.1F ? Blocks.field_10009 : Blocks.field_10147));
 				this.armorDropChances[EquipmentSlot.field_6169.getEntitySlotId()] = 0.0F;
 			}
 		}
@@ -182,12 +182,12 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 	public void attack(LivingEntity livingEntity, float f) {
 		ItemStack itemStack = this.getArrowType(this.getStackInHand(ProjectileUtil.getHandPossiblyHolding(this, Items.field_8102)));
 		ProjectileEntity projectileEntity = this.createArrowProjectile(itemStack, f);
-		double d = livingEntity.x - this.x;
-		double e = livingEntity.getBoundingBox().minY + (double)(livingEntity.getHeight() / 3.0F) - projectileEntity.y;
-		double g = livingEntity.z - this.z;
+		double d = livingEntity.getX() - this.getX();
+		double e = livingEntity.getBodyY(0.3333333333333333) - projectileEntity.getY();
+		double g = livingEntity.getZ() - this.getZ();
 		double h = (double)MathHelper.sqrt(d * d + g * g);
 		projectileEntity.setVelocity(d, e + h * 0.2F, g, 1.6F, (float)(14 - this.world.getDifficulty().getId() * 4));
-		this.playSound(SoundEvents.field_14633, 1.0F, 1.0F / (this.getRand().nextFloat() * 0.4F + 0.8F));
+		this.playSound(SoundEvents.field_14633, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
 		this.world.spawnEntity(projectileEntity);
 	}
 
@@ -202,8 +202,8 @@ public abstract class AbstractSkeletonEntity extends HostileEntity implements Ra
 	}
 
 	@Override
-	public void setEquippedStack(EquipmentSlot equipmentSlot, ItemStack itemStack) {
-		super.setEquippedStack(equipmentSlot, itemStack);
+	public void equipStack(EquipmentSlot equipmentSlot, ItemStack itemStack) {
+		super.equipStack(equipmentSlot, itemStack);
 		if (!this.world.isClient) {
 			this.updateAttackType();
 		}

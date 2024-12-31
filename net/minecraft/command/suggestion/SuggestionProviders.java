@@ -13,7 +13,7 @@ import net.minecraft.server.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 
 public class SuggestionProviders {
@@ -33,10 +33,10 @@ public class SuggestionProviders {
 	public static final SuggestionProvider<ServerCommandSource> SUMMONABLE_ENTITIES = register(
 		new Identifier("summonable_entities"),
 		(commandContext, suggestionsBuilder) -> CommandSource.suggestFromIdentifier(
-				Registry.ENTITY_TYPE.stream().filter(EntityType::isSummonable),
+				Registry.field_11145.stream().filter(EntityType::isSummonable),
 				suggestionsBuilder,
 				EntityType::getId,
-				entityType -> new TranslatableText(SystemUtil.createTranslationKey("entity", EntityType.getId(entityType)))
+				entityType -> new TranslatableText(Util.createTranslationKey("entity", EntityType.getId(entityType)))
 			)
 	);
 

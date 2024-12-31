@@ -6,7 +6,8 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.FluidTags;
@@ -16,8 +17,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class FarmlandBlock extends Block {
 	public static final IntProperty MOISTURE = Properties.MOISTURE;
@@ -25,7 +26,7 @@ public class FarmlandBlock extends Block {
 
 	protected FarmlandBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(MOISTURE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(MOISTURE, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -40,9 +41,9 @@ public class FarmlandBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos.up());
-		return !blockState2.getMaterial().isSolid() || blockState2.getBlock() instanceof FenceGateBlock;
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		BlockState blockState2 = worldView.getBlockState(blockPos.up());
+		return !blockState2.getMaterial().isSolid() || blockState2.getBlock() instanceof FenceGateBlock || blockState2.getBlock() instanceof PistonExtensionBlock;
 	}
 
 	@Override
@@ -63,19 +64,19 @@ public class FarmlandBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(world, blockPos)) {
-			setToDirt(blockState, world, blockPos);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
+			setToDirt(blockState, serverWorld, blockPos);
 		} else {
 			int i = (Integer)blockState.get(MOISTURE);
-			if (!isWaterNearby(world, blockPos) && !world.hasRain(blockPos.up())) {
+			if (!isWaterNearby(serverWorld, blockPos) && !serverWorld.hasRain(blockPos.up())) {
 				if (i > 0) {
-					world.setBlockState(blockPos, blockState.with(MOISTURE, Integer.valueOf(i - 1)), 2);
-				} else if (!hasCrop(world, blockPos)) {
-					setToDirt(blockState, world, blockPos);
+					serverWorld.setBlockState(blockPos, blockState.with(MOISTURE, Integer.valueOf(i - 1)), 2);
+				} else if (!hasCrop(serverWorld, blockPos)) {
+					setToDirt(blockState, serverWorld, blockPos);
 				}
 			} else if (i < 7) {
-				world.setBlockState(blockPos, blockState.with(MOISTURE, Integer.valueOf(7)), 2);
+				serverWorld.setBlockState(blockPos, blockState.with(MOISTURE, Integer.valueOf(7)), 2);
 			}
 		}
 	}
@@ -102,9 +103,9 @@ public class FarmlandBlock extends Block {
 		return block instanceof CropBlock || block instanceof StemBlock || block instanceof AttachedStemBlock;
 	}
 
-	private static boolean isWaterNearby(ViewableWorld viewableWorld, BlockPos blockPos) {
+	private static boolean isWaterNearby(WorldView worldView, BlockPos blockPos) {
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-4, 0, -4), blockPos.add(4, 1, 4))) {
-			if (viewableWorld.getFluidState(blockPos2).matches(FluidTags.field_15517)) {
+			if (worldView.getFluidState(blockPos2).matches(FluidTags.field_15517)) {
 				return true;
 			}
 		}
@@ -113,12 +114,17 @@ public class FarmlandBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(MOISTURE);
 	}
 
 	@Override
 	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
 		return false;
+	}
+
+	@Override
+	public boolean hasInWallOverlay(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return true;
 	}
 }

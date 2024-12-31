@@ -21,11 +21,11 @@ public class BooleanProperty extends AbstractProperty<Boolean> {
 	}
 
 	@Override
-	public Optional<Boolean> getValue(String string) {
+	public Optional<Boolean> parse(String string) {
 		return !"true".equals(string) && !"false".equals(string) ? Optional.empty() : Optional.of(Boolean.valueOf(string));
 	}
 
-	public String method_11826(Boolean boolean_) {
+	public String name(Boolean boolean_) {
 		return boolean_.toString();
 	}
 

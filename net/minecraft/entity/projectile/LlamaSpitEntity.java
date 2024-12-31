@@ -29,16 +29,16 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 	public LlamaSpitEntity(World world, LlamaEntity llamaEntity) {
 		this(EntityType.field_6124, world);
 		this.owner = llamaEntity;
-		this.setPosition(
-			llamaEntity.x - (double)(llamaEntity.getWidth() + 1.0F) * 0.5 * (double)MathHelper.sin(llamaEntity.field_6283 * (float) (Math.PI / 180.0)),
-			llamaEntity.y + (double)llamaEntity.getStandingEyeHeight() - 0.1F,
-			llamaEntity.z + (double)(llamaEntity.getWidth() + 1.0F) * 0.5 * (double)MathHelper.cos(llamaEntity.field_6283 * (float) (Math.PI / 180.0))
+		this.updatePosition(
+			llamaEntity.getX() - (double)(llamaEntity.getWidth() + 1.0F) * 0.5 * (double)MathHelper.sin(llamaEntity.bodyYaw * (float) (Math.PI / 180.0)),
+			llamaEntity.getEyeY() - 0.1F,
+			llamaEntity.getZ() + (double)(llamaEntity.getWidth() + 1.0F) * 0.5 * (double)MathHelper.cos(llamaEntity.bodyYaw * (float) (Math.PI / 180.0))
 		);
 	}
 
 	public LlamaSpitEntity(World world, double d, double e, double f, double g, double h, double i) {
 		this(EntityType.field_6124, world);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 
 		for (int j = 0; j < 7; j++) {
 			double k = 0.4 + 0.1 * (double)j;
@@ -63,12 +63,12 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 			this.method_7481(hitResult);
 		}
 
-		this.x = this.x + vec3d.x;
-		this.y = this.y + vec3d.y;
-		this.z = this.z + vec3d.z;
-		float f = MathHelper.sqrt(squaredHorizontalLength(vec3d));
+		double d = this.getX() + vec3d.x;
+		double e = this.getY() + vec3d.y;
+		double f = this.getZ() + vec3d.z;
+		float g = MathHelper.sqrt(squaredHorizontalLength(vec3d));
 		this.yaw = (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI);
-		this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)f) * 180.0F / (float)Math.PI);
+		this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)g) * 180.0F / (float)Math.PI);
 
 		while (this.pitch - this.prevPitch < -180.0F) {
 			this.prevPitch -= 360.0F;
@@ -88,8 +88,8 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 
 		this.pitch = MathHelper.lerp(0.2F, this.prevPitch, this.pitch);
 		this.yaw = MathHelper.lerp(0.2F, this.prevYaw, this.yaw);
-		float g = 0.99F;
-		float h = 0.06F;
+		float h = 0.99F;
+		float i = 0.06F;
 		if (!this.world.containsBlockWithMaterial(this.getBoundingBox(), Material.AIR)) {
 			this.remove();
 		} else if (this.isInsideWaterOrBubbleColumn()) {
@@ -100,7 +100,7 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 				this.setVelocity(this.getVelocity().add(0.0, -0.06F, 0.0));
 			}
 
-			this.setPosition(this.x, this.y, this.z);
+			this.updatePosition(d, e, f);
 		}
 	}
 
@@ -113,7 +113,7 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 			this.yaw = (float)(MathHelper.atan2(d, f) * 180.0F / (float)Math.PI);
 			this.prevPitch = this.pitch;
 			this.prevYaw = this.yaw;
-			this.setPositionAndAngles(this.x, this.y, this.z, this.yaw, this.pitch);
+			this.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
 		}
 	}
 
@@ -146,7 +146,7 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 
 	@Override
 	protected void readCustomDataFromTag(CompoundTag compoundTag) {
-		if (compoundTag.containsKey("Owner", 10)) {
+		if (compoundTag.contains("Owner", 10)) {
 			this.tag = compoundTag.getCompound("Owner");
 		}
 	}
@@ -162,10 +162,10 @@ public class LlamaSpitEntity extends Entity implements Projectile {
 	}
 
 	private void readTag() {
-		if (this.tag != null && this.tag.hasUuid("OwnerUUID")) {
+		if (this.tag != null && this.tag.containsUuid("OwnerUUID")) {
 			UUID uUID = this.tag.getUuid("OwnerUUID");
 
-			for (LlamaEntity llamaEntity : this.world.getEntities(LlamaEntity.class, this.getBoundingBox().expand(15.0))) {
+			for (LlamaEntity llamaEntity : this.world.getNonSpectatingEntities(LlamaEntity.class, this.getBoundingBox().expand(15.0))) {
 				if (llamaEntity.getUuid().equals(uUID)) {
 					this.owner = llamaEntity;
 					break;

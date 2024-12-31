@@ -10,9 +10,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -31,7 +32,7 @@ public class BrewingStandBlock extends BlockWithEntity {
 	public BrewingStandBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(BOTTLE_PROPERTIES[0], Boolean.valueOf(false))
 				.with(BOTTLE_PROPERTIES[1], Boolean.valueOf(false))
@@ -55,9 +56,9 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
@@ -65,7 +66,7 @@ public class BrewingStandBlock extends BlockWithEntity {
 				playerEntity.incrementStat(Stats.field_15407);
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -81,9 +82,9 @@ public class BrewingStandBlock extends BlockWithEntity {
 
 	@Override
 	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		double d = (double)((float)blockPos.getX() + 0.4F + random.nextFloat() * 0.2F);
-		double e = (double)((float)blockPos.getY() + 0.7F + random.nextFloat() * 0.3F);
-		double f = (double)((float)blockPos.getZ() + 0.4F + random.nextFloat() * 0.2F);
+		double d = (double)blockPos.getX() + 0.4 + (double)random.nextFloat() * 0.2;
+		double e = (double)blockPos.getY() + 0.7 + (double)random.nextFloat() * 0.3;
+		double f = (double)blockPos.getZ() + 0.4 + (double)random.nextFloat() * 0.2;
 		world.addParticle(ParticleTypes.field_11251, d, e, f, 0.0, 0.0, 0.0);
 	}
 
@@ -110,12 +111,7 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(BOTTLE_PROPERTIES[0], BOTTLE_PROPERTIES[1], BOTTLE_PROPERTIES[2]);
 	}
 

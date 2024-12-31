@@ -1,8 +1,9 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.SheepEntityModel;
 import net.minecraft.client.render.entity.model.SheepWoolEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
@@ -15,9 +16,13 @@ public class SheepWoolFeatureRenderer extends FeatureRenderer<SheepEntity, Sheep
 		super(featureRendererContext);
 	}
 
-	public void method_4198(SheepEntity sheepEntity, float f, float g, float h, float i, float j, float k, float l) {
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, SheepEntity sheepEntity, float f, float g, float h, float j, float k, float l
+	) {
 		if (!sheepEntity.isSheared() && !sheepEntity.isInvisible()) {
-			this.bindTexture(SKIN);
+			float s;
+			float t;
+			float u;
 			if (sheepEntity.hasCustomName() && "jeb_".equals(sheepEntity.getName().asString())) {
 				int m = 25;
 				int n = sheepEntity.age / 25 + sheepEntity.getEntityId();
@@ -27,20 +32,17 @@ public class SheepWoolFeatureRenderer extends FeatureRenderer<SheepEntity, Sheep
 				float r = ((float)(sheepEntity.age % 25) + h) / 25.0F;
 				float[] fs = SheepEntity.getRgbColor(DyeColor.byId(p));
 				float[] gs = SheepEntity.getRgbColor(DyeColor.byId(q));
-				GlStateManager.color3f(fs[0] * (1.0F - r) + gs[0] * r, fs[1] * (1.0F - r) + gs[1] * r, fs[2] * (1.0F - r) + gs[2] * r);
+				s = fs[0] * (1.0F - r) + gs[0] * r;
+				t = fs[1] * (1.0F - r) + gs[1] * r;
+				u = fs[2] * (1.0F - r) + gs[2] * r;
 			} else {
 				float[] hs = SheepEntity.getRgbColor(sheepEntity.getColor());
-				GlStateManager.color3f(hs[0], hs[1], hs[2]);
+				s = hs[0];
+				t = hs[1];
+				u = hs[2];
 			}
 
-			this.getModel().copyStateTo(this.model);
-			this.model.method_17118(sheepEntity, f, g, h);
-			this.model.render(sheepEntity, f, g, i, j, k, l);
+			render(this.getContextModel(), this.model, SKIN, matrixStack, vertexConsumerProvider, i, sheepEntity, f, g, j, k, l, h, s, t, u);
 		}
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return true;
 	}
 }

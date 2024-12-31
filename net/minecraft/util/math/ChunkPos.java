@@ -7,7 +7,7 @@ import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
 public class ChunkPos {
-	public static final long INVALID = toLong(1875016, 1875016);
+	public static final long MARKER = toLong(1875016, 1875016);
 	public final int x;
 	public final int z;
 
@@ -101,6 +101,10 @@ public class ChunkPos {
 
 	public BlockPos getCenterBlockPos() {
 		return new BlockPos(this.x << 4, 0, this.z << 4);
+	}
+
+	public int method_24022(ChunkPos chunkPos) {
+		return Math.max(Math.abs(this.x - chunkPos.x), Math.abs(this.z - chunkPos.z));
 	}
 
 	public static Stream<ChunkPos> stream(ChunkPos chunkPos, int i) {

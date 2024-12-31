@@ -74,7 +74,7 @@ public class JsonHelper {
 	public static Item asItem(JsonElement jsonElement, String string) {
 		if (jsonElement.isJsonPrimitive()) {
 			String string2 = jsonElement.getAsString();
-			return (Item)Registry.ITEM
+			return (Item)Registry.field_11142
 				.getOrEmpty(new Identifier(string2))
 				.orElseThrow(() -> new JsonSyntaxException("Expected " + string + " to be an item, was unknown string '" + string2 + "'"));
 		} else {
@@ -135,6 +135,14 @@ public class JsonHelper {
 			return jsonElement.getAsLong();
 		} else {
 			throw new JsonSyntaxException("Expected " + string + " to be a Long, was " + getType(jsonElement));
+		}
+	}
+
+	public static long getLong(JsonObject jsonObject, String string) {
+		if (jsonObject.has(string)) {
+			return asLong(jsonObject.get(string), string);
+		} else {
+			throw new JsonSyntaxException("Missing " + string + ", expected to find a Long");
 		}
 	}
 
@@ -210,6 +218,7 @@ public class JsonHelper {
 		}
 	}
 
+	@Nullable
 	public static JsonArray getArray(JsonObject jsonObject, String string, @Nullable JsonArray jsonArray) {
 		return jsonObject.has(string) ? asArray(jsonObject.get(string), string) : jsonArray;
 	}

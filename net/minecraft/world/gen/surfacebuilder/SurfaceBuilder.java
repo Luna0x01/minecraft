@@ -64,7 +64,7 @@ public abstract class SurfaceBuilder<C extends SurfaceConfig> {
 	private final Function<Dynamic<?>, ? extends C> factory;
 
 	private static <C extends SurfaceConfig, F extends SurfaceBuilder<C>> F register(String string, F surfaceBuilder) {
-		return Registry.register(Registry.SURFACE_BUILDER, string, surfaceBuilder);
+		return Registry.register(Registry.field_11147, string, surfaceBuilder);
 	}
 
 	public SurfaceBuilder(Function<Dynamic<?>, ? extends C> function) {

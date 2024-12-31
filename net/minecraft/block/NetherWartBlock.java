@@ -4,13 +4,13 @@ import java.util.Random;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
 
 public class NetherWartBlock extends PlantBlock {
 	public static final IntProperty AGE = Properties.AGE_3;
@@ -23,7 +23,7 @@ public class NetherWartBlock extends PlantBlock {
 
 	protected NetherWartBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(AGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -37,14 +37,14 @@ public class NetherWartBlock extends PlantBlock {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
 		int i = (Integer)blockState.get(AGE);
 		if (i < 3 && random.nextInt(10) == 0) {
 			blockState = blockState.with(AGE, Integer.valueOf(i + 1));
-			world.setBlockState(blockPos, blockState, 2);
+			serverWorld.setBlockState(blockPos, blockState, 2);
 		}
 
-		super.onScheduledTick(blockState, world, blockPos, random);
+		super.scheduledTick(blockState, serverWorld, blockPos, random);
 	}
 
 	@Override
@@ -53,7 +53,7 @@ public class NetherWartBlock extends PlantBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(AGE);
 	}
 }

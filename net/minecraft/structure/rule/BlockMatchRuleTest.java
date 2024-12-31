@@ -17,7 +17,7 @@ public class BlockMatchRuleTest extends AbstractRuleTest {
 	}
 
 	public <T> BlockMatchRuleTest(Dynamic<T> dynamic) {
-		this(Registry.BLOCK.get(new Identifier(dynamic.get("block").asString(""))));
+		this(Registry.field_11146.get(new Identifier(dynamic.get("block").asString(""))));
 	}
 
 	@Override
@@ -33,7 +33,8 @@ public class BlockMatchRuleTest extends AbstractRuleTest {
 	@Override
 	protected <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
 		return new Dynamic(
-			dynamicOps, dynamicOps.createMap(ImmutableMap.of(dynamicOps.createString("block"), dynamicOps.createString(Registry.BLOCK.getId(this.block).toString())))
+			dynamicOps,
+			dynamicOps.createMap(ImmutableMap.of(dynamicOps.createString("block"), dynamicOps.createString(Registry.field_11146.getId(this.block).toString())))
 		);
 	}
 }

@@ -91,7 +91,7 @@ public class CowEntity extends AnimalEntity {
 		}
 	}
 
-	public CowEntity method_6483(PassiveEntity passiveEntity) {
+	public CowEntity createChild(PassiveEntity passiveEntity) {
 		return EntityType.field_6085.create(this.world);
 	}
 

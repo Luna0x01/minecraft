@@ -16,4 +16,8 @@ public interface Profiler {
 	void swap(String string);
 
 	void swap(Supplier<String> supplier);
+
+	void visit(String string);
+
+	void visit(Supplier<String> supplier);
 }

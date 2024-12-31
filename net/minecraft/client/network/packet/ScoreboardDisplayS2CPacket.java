@@ -36,7 +36,7 @@ public class ScoreboardDisplayS2CPacket implements Packet<ClientPlayPacketListen
 		packetByteBuf.writeString(this.name);
 	}
 
-	public void method_11805(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onScoreboardDisplay(this);
 	}
 

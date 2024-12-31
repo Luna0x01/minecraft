@@ -4,7 +4,8 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.BlockTags;
@@ -13,8 +14,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class CocoaBlock extends HorizontalFacingBlock implements Fertilizable {
 	public static final IntProperty AGE = Properties.AGE_2;
@@ -41,22 +42,22 @@ public class CocoaBlock extends HorizontalFacingBlock implements Fertilizable {
 
 	public CocoaBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(AGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (world.random.nextInt(5) == 0) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (serverWorld.random.nextInt(5) == 0) {
 			int i = (Integer)blockState.get(AGE);
 			if (i < 2) {
-				world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(i + 1)), 2);
+				serverWorld.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(i + 1)), 2);
 			}
 		}
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		Block block = viewableWorld.getBlockState(blockPos.offset(blockState.get(FACING))).getBlock();
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		Block block = worldView.getBlockState(blockPos.offset(blockState.get(FACING))).getBlock();
 		return block.matches(BlockTags.field_15474);
 	}
 
@@ -80,13 +81,13 @@ public class CocoaBlock extends HorizontalFacingBlock implements Fertilizable {
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
 		BlockState blockState = this.getDefaultState();
-		ViewableWorld viewableWorld = itemPlacementContext.getWorld();
+		WorldView worldView = itemPlacementContext.getWorld();
 		BlockPos blockPos = itemPlacementContext.getBlockPos();
 
 		for (Direction direction : itemPlacementContext.getPlacementDirections()) {
 			if (direction.getAxis().isHorizontal()) {
 				blockState = blockState.with(FACING, direction);
-				if (blockState.canPlaceAt(viewableWorld, blockPos)) {
+				if (blockState.canPlaceAt(worldView, blockPos)) {
 					return blockState;
 				}
 			}
@@ -115,17 +116,12 @@ public class CocoaBlock extends HorizontalFacingBlock implements Fertilizable {
 	}
 
 	@Override
-	public void grow(World world, Random random, BlockPos blockPos, BlockState blockState) {
-		world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf((Integer)blockState.get(AGE) + 1)), 2);
+	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
+		serverWorld.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf((Integer)blockState.get(AGE) + 1)), 2);
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, AGE);
 	}
 }

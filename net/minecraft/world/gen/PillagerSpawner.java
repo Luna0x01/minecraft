@@ -1,13 +1,16 @@
 package net.minecraft.world.gen;
 
 import java.util.Random;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnType;
 import net.minecraft.entity.mob.PatrolEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.Heightmap;
+import net.minecraft.world.SpawnHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
@@ -17,6 +20,8 @@ public class PillagerSpawner {
 	public int spawn(ServerWorld serverWorld, boolean bl, boolean bl2) {
 		if (!bl) {
 			return 0;
+		} else if (!serverWorld.getGameRules().getBoolean(GameRules.field_21831)) {
+			return 0;
 		} else {
 			Random random = serverWorld.random;
 			this.ticksUntilNextSpawn--;
@@ -25,7 +30,7 @@ public class PillagerSpawner {
 			} else {
 				this.ticksUntilNextSpawn = this.ticksUntilNextSpawn + 12000 + random.nextInt(1200);
 				long l = serverWorld.getTimeOfDay() / 24000L;
-				if (l < 5L || !serverWorld.isDaylight()) {
+				if (l < 5L || !serverWorld.isDay()) {
 					return 0;
 				} else if (random.nextInt(5) != 0) {
 					return 0;
@@ -42,9 +47,8 @@ public class PillagerSpawner {
 						} else {
 							int j = (24 + random.nextInt(24)) * (random.nextBoolean() ? -1 : 1);
 							int k = (24 + random.nextInt(24)) * (random.nextBoolean() ? -1 : 1);
-							BlockPos.Mutable mutable = new BlockPos.Mutable();
-							mutable.set(playerEntity.x, playerEntity.y, playerEntity.z).setOffset(j, 0, k);
-							if (!serverWorld.isAreaLoaded(
+							BlockPos.Mutable mutable = new BlockPos.Mutable(playerEntity).setOffset(j, 0, k);
+							if (!serverWorld.isRegionLoaded(
 								mutable.getX() - 10, mutable.getY() - 10, mutable.getZ() - 10, mutable.getX() + 10, mutable.getY() + 10, mutable.getZ() + 10
 							)) {
 								return 0;
@@ -83,7 +87,10 @@ public class PillagerSpawner {
 	}
 
 	private boolean spawnOneEntity(World world, BlockPos blockPos, Random random, boolean bl) {
-		if (!PatrolEntity.method_20739(EntityType.field_6105, world, SpawnType.field_16527, blockPos, random)) {
+		BlockState blockState = world.getBlockState(blockPos);
+		if (!SpawnHelper.isClearForSpawn(world, blockPos, blockState, blockState.getFluidState())) {
+			return false;
+		} else if (!PatrolEntity.canSpawn(EntityType.field_6105, world, SpawnType.field_16527, blockPos, random)) {
 			return false;
 		} else {
 			PatrolEntity patrolEntity = EntityType.field_6105.create(world);
@@ -93,7 +100,7 @@ public class PillagerSpawner {
 					patrolEntity.setRandomPatrolTarget();
 				}
 
-				patrolEntity.setPosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+				patrolEntity.updatePosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
 				patrolEntity.initialize(world, world.getLocalDifficulty(blockPos), SpawnType.field_16527, null, null);
 				world.spawnEntity(patrolEntity);
 				return true;

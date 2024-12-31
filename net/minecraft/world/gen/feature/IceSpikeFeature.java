@@ -17,7 +17,7 @@ public class IceSpikeFeature extends Feature<DefaultFeatureConfig> {
 		super(function);
 	}
 
-	public boolean method_13408(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DefaultFeatureConfig defaultFeatureConfig
 	) {
 		while (iWorld.isAir(blockPos) && blockPos.getY() > 2) {
@@ -46,14 +46,14 @@ public class IceSpikeFeature extends Feature<DefaultFeatureConfig> {
 						if ((m == 0 && n == 0 || !(g * g + h * h > f * f)) && (m != -l && m != l && n != -l && n != l || !(random.nextFloat() > 0.75F))) {
 							BlockState blockState = iWorld.getBlockState(blockPos.add(m, k, n));
 							Block block = blockState.getBlock();
-							if (blockState.isAir() || Block.isNaturalDirt(block) || block == Blocks.field_10491 || block == Blocks.field_10295) {
+							if (blockState.isAir() || isDirt(block) || block == Blocks.field_10491 || block == Blocks.field_10295) {
 								this.setBlockState(iWorld, blockPos.add(m, k, n), Blocks.field_10225.getDefaultState());
 							}
 
 							if (k != 0 && l > 1) {
 								blockState = iWorld.getBlockState(blockPos.add(m, -k, n));
 								block = blockState.getBlock();
-								if (blockState.isAir() || Block.isNaturalDirt(block) || block == Blocks.field_10491 || block == Blocks.field_10295) {
+								if (blockState.isAir() || isDirt(block) || block == Blocks.field_10491 || block == Blocks.field_10295) {
 									this.setBlockState(iWorld, blockPos.add(m, -k, n), Blocks.field_10225.getDefaultState());
 								}
 							}
@@ -80,7 +80,7 @@ public class IceSpikeFeature extends Feature<DefaultFeatureConfig> {
 					while (blockPos2.getY() > 50) {
 						BlockState blockState2 = iWorld.getBlockState(blockPos2);
 						Block block2 = blockState2.getBlock();
-						if (!blockState2.isAir() && !Block.isNaturalDirt(block2) && block2 != Blocks.field_10491 && block2 != Blocks.field_10295 && block2 != Blocks.field_10225) {
+						if (!blockState2.isAir() && !isDirt(block2) && block2 != Blocks.field_10491 && block2 != Blocks.field_10295 && block2 != Blocks.field_10225) {
 							break;
 						}
 

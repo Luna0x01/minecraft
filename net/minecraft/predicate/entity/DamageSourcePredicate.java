@@ -48,7 +48,7 @@ public class DamageSourcePredicate {
 	}
 
 	public boolean test(ServerPlayerEntity serverPlayerEntity, DamageSource damageSource) {
-		return this.test(serverPlayerEntity.getServerWorld(), new Vec3d(serverPlayerEntity.x, serverPlayerEntity.y, serverPlayerEntity.z), damageSource);
+		return this.test(serverPlayerEntity.getServerWorld(), serverPlayerEntity.getPos(), damageSource);
 	}
 
 	public boolean test(ServerWorld serverWorld, Vec3d vec3d, DamageSource damageSource) {
@@ -60,7 +60,7 @@ public class DamageSourcePredicate {
 			return false;
 		} else if (this.bypassesArmor != null && this.bypassesArmor != damageSource.bypassesArmor()) {
 			return false;
-		} else if (this.bypassesInvulnerability != null && this.bypassesInvulnerability != damageSource.doesDamageToCreative()) {
+		} else if (this.bypassesInvulnerability != null && this.bypassesInvulnerability != damageSource.isOutOfWorld()) {
 			return false;
 		} else if (this.bypassesMagic != null && this.bypassesMagic != damageSource.isUnblockable()) {
 			return false;
@@ -88,8 +88,8 @@ public class DamageSourcePredicate {
 			Boolean boolean6 = getBoolean(jsonObject, "is_fire");
 			Boolean boolean7 = getBoolean(jsonObject, "is_magic");
 			Boolean boolean8 = getBoolean(jsonObject, "is_lightning");
-			EntityPredicate entityPredicate = EntityPredicate.deserialize(jsonObject.get("direct_entity"));
-			EntityPredicate entityPredicate2 = EntityPredicate.deserialize(jsonObject.get("source_entity"));
+			EntityPredicate entityPredicate = EntityPredicate.fromJson(jsonObject.get("direct_entity"));
+			EntityPredicate entityPredicate2 = EntityPredicate.fromJson(jsonObject.get("source_entity"));
 			return new DamageSourcePredicate(boolean_, boolean2, boolean3, boolean4, boolean5, boolean6, boolean7, boolean8, entityPredicate, entityPredicate2);
 		} else {
 			return EMPTY;

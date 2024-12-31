@@ -25,10 +25,10 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.MutableIntBoundingBox;
 
 public class StructureBlockBlockEntity extends BlockEntity {
 	private Identifier structureName;
@@ -111,7 +111,7 @@ public class StructureBlockBlockEntity extends BlockEntity {
 		this.powered = compoundTag.getBoolean("powered");
 		this.showAir = compoundTag.getBoolean("showair");
 		this.showBoundingBox = compoundTag.getBoolean("showboundingbox");
-		if (compoundTag.containsKey("integrity")) {
+		if (compoundTag.contains("integrity")) {
 			this.integrity = compoundTag.getFloat("integrity");
 		} else {
 			this.integrity = 1.0F;
@@ -156,6 +156,10 @@ public class StructureBlockBlockEntity extends BlockEntity {
 
 	public String getStructureName() {
 		return this.structureName == null ? "" : this.structureName.toString();
+	}
+
+	public String getStructurePath() {
+		return this.structureName == null ? "" : this.structureName.getPath();
 	}
 
 	public boolean hasStructureName() {
@@ -279,18 +283,10 @@ public class StructureBlockBlockEntity extends BlockEntity {
 			if (list2.size() < 1) {
 				return false;
 			} else {
-				MutableIntBoundingBox mutableIntBoundingBox = this.makeBoundingBox(blockPos, list2);
-				if (mutableIntBoundingBox.maxX - mutableIntBoundingBox.minX > 1
-					&& mutableIntBoundingBox.maxY - mutableIntBoundingBox.minY > 1
-					&& mutableIntBoundingBox.maxZ - mutableIntBoundingBox.minZ > 1) {
-					this.offset = new BlockPos(
-						mutableIntBoundingBox.minX - blockPos.getX() + 1, mutableIntBoundingBox.minY - blockPos.getY() + 1, mutableIntBoundingBox.minZ - blockPos.getZ() + 1
-					);
-					this.size = new BlockPos(
-						mutableIntBoundingBox.maxX - mutableIntBoundingBox.minX - 1,
-						mutableIntBoundingBox.maxY - mutableIntBoundingBox.minY - 1,
-						mutableIntBoundingBox.maxZ - mutableIntBoundingBox.minZ - 1
-					);
+				BlockBox blockBox = this.makeBoundingBox(blockPos, list2);
+				if (blockBox.maxX - blockBox.minX > 1 && blockBox.maxY - blockBox.minY > 1 && blockBox.maxZ - blockBox.minZ > 1) {
+					this.offset = new BlockPos(blockBox.minX - blockPos.getX() + 1, blockBox.minY - blockPos.getY() + 1, blockBox.minZ - blockPos.getZ() + 1);
+					this.size = new BlockPos(blockBox.maxX - blockBox.minX - 1, blockBox.maxY - blockBox.minY - 1, blockBox.maxZ - blockBox.minZ - 1);
 					this.markDirty();
 					BlockState blockState = this.world.getBlockState(blockPos);
 					this.world.updateListeners(blockPos, blockState, blockState, 3);
@@ -324,37 +320,37 @@ public class StructureBlockBlockEntity extends BlockEntity {
 		return list;
 	}
 
-	private MutableIntBoundingBox makeBoundingBox(BlockPos blockPos, List<StructureBlockBlockEntity> list) {
-		MutableIntBoundingBox mutableIntBoundingBox;
+	private BlockBox makeBoundingBox(BlockPos blockPos, List<StructureBlockBlockEntity> list) {
+		BlockBox blockBox;
 		if (list.size() > 1) {
 			BlockPos blockPos2 = ((StructureBlockBlockEntity)list.get(0)).getPos();
-			mutableIntBoundingBox = new MutableIntBoundingBox(blockPos2, blockPos2);
+			blockBox = new BlockBox(blockPos2, blockPos2);
 		} else {
-			mutableIntBoundingBox = new MutableIntBoundingBox(blockPos, blockPos);
+			blockBox = new BlockBox(blockPos, blockPos);
 		}
 
 		for (StructureBlockBlockEntity structureBlockBlockEntity : list) {
 			BlockPos blockPos3 = structureBlockBlockEntity.getPos();
-			if (blockPos3.getX() < mutableIntBoundingBox.minX) {
-				mutableIntBoundingBox.minX = blockPos3.getX();
-			} else if (blockPos3.getX() > mutableIntBoundingBox.maxX) {
-				mutableIntBoundingBox.maxX = blockPos3.getX();
+			if (blockPos3.getX() < blockBox.minX) {
+				blockBox.minX = blockPos3.getX();
+			} else if (blockPos3.getX() > blockBox.maxX) {
+				blockBox.maxX = blockPos3.getX();
 			}
 
-			if (blockPos3.getY() < mutableIntBoundingBox.minY) {
-				mutableIntBoundingBox.minY = blockPos3.getY();
-			} else if (blockPos3.getY() > mutableIntBoundingBox.maxY) {
-				mutableIntBoundingBox.maxY = blockPos3.getY();
+			if (blockPos3.getY() < blockBox.minY) {
+				blockBox.minY = blockPos3.getY();
+			} else if (blockPos3.getY() > blockBox.maxY) {
+				blockBox.maxY = blockPos3.getY();
 			}
 
-			if (blockPos3.getZ() < mutableIntBoundingBox.minZ) {
-				mutableIntBoundingBox.minZ = blockPos3.getZ();
-			} else if (blockPos3.getZ() > mutableIntBoundingBox.maxZ) {
-				mutableIntBoundingBox.maxZ = blockPos3.getZ();
+			if (blockPos3.getZ() < blockBox.minZ) {
+				blockBox.minZ = blockPos3.getZ();
+			} else if (blockPos3.getZ() > blockBox.maxZ) {
+				blockBox.maxZ = blockPos3.getZ();
 			}
 		}
 
-		return mutableIntBoundingBox;
+		return blockBox;
 	}
 
 	public boolean saveStructure() {
@@ -395,59 +391,59 @@ public class StructureBlockBlockEntity extends BlockEntity {
 	}
 
 	private static Random createRandom(long l) {
-		return l == 0L ? new Random(SystemUtil.getMeasuringTimeMs()) : new Random(l);
+		return l == 0L ? new Random(Util.getMeasuringTimeMs()) : new Random(l);
 	}
 
 	public boolean loadStructure(boolean bl) {
 		if (this.mode == StructureBlockMode.field_12697 && !this.world.isClient && this.structureName != null) {
-			BlockPos blockPos = this.getPos();
-			BlockPos blockPos2 = blockPos.add(this.offset);
 			ServerWorld serverWorld = (ServerWorld)this.world;
 			StructureManager structureManager = serverWorld.getStructureManager();
 
 			Structure structure;
 			try {
 				structure = structureManager.getStructure(this.structureName);
-			} catch (InvalidIdentifierException var10) {
+			} catch (InvalidIdentifierException var6) {
 				return false;
 			}
 
-			if (structure == null) {
-				return false;
-			} else {
-				if (!ChatUtil.isEmpty(structure.getAuthor())) {
-					this.author = structure.getAuthor();
-				}
-
-				BlockPos blockPos3 = structure.getSize();
-				boolean bl2 = this.size.equals(blockPos3);
-				if (!bl2) {
-					this.size = blockPos3;
-					this.markDirty();
-					BlockState blockState = this.world.getBlockState(blockPos);
-					this.world.updateListeners(blockPos, blockState, blockState, 3);
-				}
-
-				if (bl && !bl2) {
-					return false;
-				} else {
-					StructurePlacementData structurePlacementData = new StructurePlacementData()
-						.setMirrored(this.mirror)
-						.setRotation(this.rotation)
-						.setIgnoreEntities(this.ignoreEntities)
-						.setChunkPosition(null);
-					if (this.integrity < 1.0F) {
-						structurePlacementData.clearProcessors()
-							.addProcessor(new BlockRotStructureProcessor(MathHelper.clamp(this.integrity, 0.0F, 1.0F)))
-							.setRandom(createRandom(this.seed));
-					}
-
-					structure.place(this.world, blockPos2, structurePlacementData);
-					return true;
-				}
-			}
+			return structure == null ? false : this.place(bl, structure);
 		} else {
 			return false;
+		}
+	}
+
+	public boolean place(boolean bl, Structure structure) {
+		BlockPos blockPos = this.getPos();
+		if (!ChatUtil.isEmpty(structure.getAuthor())) {
+			this.author = structure.getAuthor();
+		}
+
+		BlockPos blockPos2 = structure.getSize();
+		boolean bl2 = this.size.equals(blockPos2);
+		if (!bl2) {
+			this.size = blockPos2;
+			this.markDirty();
+			BlockState blockState = this.world.getBlockState(blockPos);
+			this.world.updateListeners(blockPos, blockState, blockState, 3);
+		}
+
+		if (bl && !bl2) {
+			return false;
+		} else {
+			StructurePlacementData structurePlacementData = new StructurePlacementData()
+				.setMirrored(this.mirror)
+				.setRotation(this.rotation)
+				.setIgnoreEntities(this.ignoreEntities)
+				.setChunkPosition(null);
+			if (this.integrity < 1.0F) {
+				structurePlacementData.clearProcessors()
+					.addProcessor(new BlockRotStructureProcessor(MathHelper.clamp(this.integrity, 0.0F, 1.0F)))
+					.setRandom(createRandom(this.seed));
+			}
+
+			BlockPos blockPos3 = blockPos.add(this.offset);
+			structure.place(this.world, blockPos3, structurePlacementData);
+			return true;
 		}
 	}
 

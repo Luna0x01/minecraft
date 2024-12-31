@@ -22,7 +22,7 @@ public class PlayerListHeaderS2CPacket implements Packet<ClientPlayPacketListene
 		packetByteBuf.writeText(this.footer);
 	}
 
-	public void method_11907(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onPlayerListHeader(this);
 	}
 

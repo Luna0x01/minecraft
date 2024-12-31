@@ -4,19 +4,21 @@ import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.options.ServerEntry;
+import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.TranslatableText;
 
 public class DirectConnectScreen extends Screen {
 	private ButtonWidget selectServerButton;
-	private final ServerEntry serverEntry;
+	private final ServerInfo serverEntry;
 	private TextFieldWidget addressField;
 	private final BooleanConsumer callback;
+	private final Screen parent;
 
-	public DirectConnectScreen(BooleanConsumer booleanConsumer, ServerEntry serverEntry) {
+	public DirectConnectScreen(Screen screen, BooleanConsumer booleanConsumer, ServerInfo serverInfo) {
 		super(new TranslatableText("selectServer.direct"));
-		this.serverEntry = serverEntry;
+		this.parent = screen;
+		this.serverEntry = serverInfo;
 		this.callback = booleanConsumer;
 	}
 
@@ -46,7 +48,7 @@ public class DirectConnectScreen extends Screen {
 		);
 		this.addressField = new TextFieldWidget(this.font, this.width / 2 - 100, 116, 200, 20, I18n.translate("addServer.enterIp"));
 		this.addressField.setMaxLength(128);
-		this.addressField.method_1876(true);
+		this.addressField.setSelected(true);
 		this.addressField.setText(this.minecraft.options.lastServer);
 		this.addressField.setChangedListener(string -> this.onAddressFieldChanged());
 		this.children.add(this.addressField);
@@ -67,6 +69,11 @@ public class DirectConnectScreen extends Screen {
 	}
 
 	@Override
+	public void onClose() {
+		this.minecraft.openScreen(this.parent);
+	}
+
+	@Override
 	public void removed() {
 		this.minecraft.keyboard.enableRepeatEvents(false);
 		this.minecraft.options.lastServer = this.addressField.getText();
@@ -74,7 +81,8 @@ public class DirectConnectScreen extends Screen {
 	}
 
 	private void onAddressFieldChanged() {
-		this.selectServerButton.active = !this.addressField.getText().isEmpty() && this.addressField.getText().split(":").length > 0;
+		String string = this.addressField.getText();
+		this.selectServerButton.active = !string.isEmpty() && string.split(":").length > 0 && string.indexOf(32) == -1;
 	}
 
 	@Override

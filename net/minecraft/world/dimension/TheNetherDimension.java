@@ -14,25 +14,17 @@ import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 
 public class TheNetherDimension extends Dimension {
+	private static final Vec3d field_21216 = new Vec3d(0.2F, 0.03F, 0.03F);
+
 	public TheNetherDimension(World world, DimensionType dimensionType) {
-		super(world, dimensionType);
+		super(world, dimensionType, 0.1F);
 		this.waterVaporizes = true;
 		this.isNether = true;
 	}
 
 	@Override
 	public Vec3d getFogColor(float f, float g) {
-		return new Vec3d(0.2F, 0.03F, 0.03F);
-	}
-
-	@Override
-	protected void initializeLightLevelToBrightness() {
-		float f = 0.1F;
-
-		for (int i = 0; i <= 15; i++) {
-			float g = 1.0F - (float)i / 15.0F;
-			this.lightLevelToBrightness[i] = (1.0F - g) / (g * 3.0F + 1.0F) * 0.9F + 0.1F;
-		}
+		return field_21216;
 	}
 
 	@Override
@@ -41,7 +33,11 @@ public class TheNetherDimension extends Dimension {
 		cavesChunkGeneratorConfig.setDefaultBlock(Blocks.field_10515.getDefaultState());
 		cavesChunkGeneratorConfig.setDefaultFluid(Blocks.field_10164.getDefaultState());
 		return ChunkGeneratorType.field_12765
-			.create(this.world, BiomeSourceType.FIXED.applyConfig(BiomeSourceType.FIXED.getConfig().setBiome(Biomes.field_9461)), cavesChunkGeneratorConfig);
+			.create(
+				this.world,
+				BiomeSourceType.FIXED.applyConfig(BiomeSourceType.FIXED.getConfig(this.world.getLevelProperties()).setBiome(Biomes.field_9461)),
+				cavesChunkGeneratorConfig
+			);
 	}
 
 	@Override
@@ -72,7 +68,7 @@ public class TheNetherDimension extends Dimension {
 	}
 
 	@Override
-	public boolean shouldRenderFog(int i, int j) {
+	public boolean isFogThick(int i, int j) {
 		return true;
 	}
 

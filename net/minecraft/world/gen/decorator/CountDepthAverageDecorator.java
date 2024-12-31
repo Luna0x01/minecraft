@@ -12,15 +12,15 @@ public class CountDepthAverageDecorator extends SimpleDecorator<CountDepthDecora
 		super(function);
 	}
 
-	public Stream<BlockPos> method_15907(Random random, CountDepthDecoratorConfig countDepthDecoratorConfig, BlockPos blockPos) {
+	public Stream<BlockPos> getPositions(Random random, CountDepthDecoratorConfig countDepthDecoratorConfig, BlockPos blockPos) {
 		int i = countDepthDecoratorConfig.count;
 		int j = countDepthDecoratorConfig.baseline;
 		int k = countDepthDecoratorConfig.spread;
 		return IntStream.range(0, i).mapToObj(kx -> {
-			int l = random.nextInt(16);
-			int m = random.nextInt(k) + random.nextInt(k) - k + j;
-			int n = random.nextInt(16);
-			return blockPos.add(l, m, n);
+			int l = random.nextInt(16) + blockPos.getX();
+			int m = random.nextInt(16) + blockPos.getZ();
+			int n = random.nextInt(k) + random.nextInt(k) - k + j;
+			return new BlockPos(l, n, m);
 		});
 	}
 }

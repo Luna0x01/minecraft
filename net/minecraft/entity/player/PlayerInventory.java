@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.packet.GuiSlotUpdateS2CPacket;
+import net.minecraft.client.network.packet.ContainerSlotUpdateS2CPacket;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
@@ -220,7 +220,7 @@ public class PlayerInventory implements Inventory, Nameable {
 		if (itemStack2.isEmpty()) {
 			itemStack2 = new ItemStack(item, 0);
 			if (itemStack.hasTag()) {
-				itemStack2.setTag(itemStack.getTag().method_10553());
+				itemStack2.setTag(itemStack.getTag().copy());
 			}
 
 			this.setInvStack(i, itemStack2);
@@ -340,7 +340,7 @@ public class PlayerInventory implements Inventory, Nameable {
 
 				int j = itemStack.getMaxCount() - this.getInvStack(i).getCount();
 				if (this.insertStack(i, itemStack.split(j))) {
-					((ServerPlayerEntity)this.player).networkHandler.sendPacket(new GuiSlotUpdateS2CPacket(-2, i, this.getInvStack(i)));
+					((ServerPlayerEntity)this.player).networkHandler.sendPacket(new ContainerSlotUpdateS2CPacket(-2, i, this.getInvStack(i)));
 				}
 			}
 		}
@@ -454,7 +454,7 @@ public class PlayerInventory implements Inventory, Nameable {
 		this.offHand.clear();
 
 		for (int i = 0; i < listTag.size(); i++) {
-			CompoundTag compoundTag = listTag.getCompoundTag(i);
+			CompoundTag compoundTag = listTag.getCompound(i);
 			int j = compoundTag.getByte("Slot") & 255;
 			ItemStack itemStack = ItemStack.fromTag(compoundTag);
 			if (!itemStack.isEmpty()) {

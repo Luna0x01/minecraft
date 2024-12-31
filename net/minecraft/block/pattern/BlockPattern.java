@@ -10,7 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class BlockPattern {
 	private final Predicate<CachedBlockPosition>[][][] pattern;
@@ -64,8 +64,8 @@ public class BlockPattern {
 	}
 
 	@Nullable
-	public BlockPattern.Result searchAround(ViewableWorld viewableWorld, BlockPos blockPos) {
-		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = makeCache(viewableWorld, false);
+	public BlockPattern.Result searchAround(WorldView worldView, BlockPos blockPos) {
+		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = makeCache(worldView, false);
 		int i = Math.max(Math.max(this.width, this.height), this.depth);
 
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos, blockPos.add(i - 1, i - 1, i - 1))) {
@@ -84,8 +84,8 @@ public class BlockPattern {
 		return null;
 	}
 
-	public static LoadingCache<BlockPos, CachedBlockPosition> makeCache(ViewableWorld viewableWorld, boolean bl) {
-		return CacheBuilder.newBuilder().build(new BlockPattern.BlockStateCacheLoader(viewableWorld, bl));
+	public static LoadingCache<BlockPos, CachedBlockPosition> makeCache(WorldView worldView, boolean bl) {
+		return CacheBuilder.newBuilder().build(new BlockPattern.BlockStateCacheLoader(worldView, bl));
 	}
 
 	protected static BlockPos translate(BlockPos blockPos, Direction direction, Direction direction2, int i, int j, int k) {
@@ -104,15 +104,15 @@ public class BlockPattern {
 	}
 
 	static class BlockStateCacheLoader extends CacheLoader<BlockPos, CachedBlockPosition> {
-		private final ViewableWorld world;
+		private final WorldView world;
 		private final boolean forceLoad;
 
-		public BlockStateCacheLoader(ViewableWorld viewableWorld, boolean bl) {
-			this.world = viewableWorld;
+		public BlockStateCacheLoader(WorldView worldView, boolean bl) {
+			this.world = worldView;
 			this.forceLoad = bl;
 		}
 
-		public CachedBlockPosition method_11714(BlockPos blockPos) throws Exception {
+		public CachedBlockPosition load(BlockPos blockPos) throws Exception {
 			return new CachedBlockPosition(this.world, blockPos, this.forceLoad);
 		}
 	}
@@ -164,7 +164,7 @@ public class BlockPattern {
 			return MoreObjects.toStringHelper(this).add("up", this.up).add("forwards", this.forwards).add("frontTopLeft", this.frontTopLeft).toString();
 		}
 
-		public BlockPattern.TeleportTarget method_18478(Direction direction, BlockPos blockPos, double d, Vec3d vec3d, double e) {
+		public BlockPattern.TeleportTarget getTeleportTarget(Direction direction, BlockPos blockPos, double d, Vec3d vec3d, double e) {
 			Direction direction2 = this.getForwards();
 			Direction direction3 = direction2.rotateYClockwise();
 			double f = (double)(this.getFrontTopLeft().getY() + 1) - d * (double)this.getHeight();

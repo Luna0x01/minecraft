@@ -1,70 +1,28 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.item.ItemStack;
 import net.minecraft.predicate.item.ItemPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-public class FilledBucketCriterion implements Criterion<FilledBucketCriterion.Conditions> {
+public class FilledBucketCriterion extends AbstractCriterion<FilledBucketCriterion.Conditions> {
 	private static final Identifier ID = new Identifier("filled_bucket");
-	private final Map<PlayerAdvancementTracker, FilledBucketCriterion.Handler> handlers = Maps.newHashMap();
 
 	@Override
 	public Identifier getId() {
 		return ID;
 	}
 
-	@Override
-	public void beginTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<FilledBucketCriterion.Conditions> conditionsContainer
-	) {
-		FilledBucketCriterion.Handler handler = (FilledBucketCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler == null) {
-			handler = new FilledBucketCriterion.Handler(playerAdvancementTracker);
-			this.handlers.put(playerAdvancementTracker, handler);
-		}
-
-		handler.addCondition(conditionsContainer);
-	}
-
-	@Override
-	public void endTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<FilledBucketCriterion.Conditions> conditionsContainer
-	) {
-		FilledBucketCriterion.Handler handler = (FilledBucketCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler != null) {
-			handler.removeCondition(conditionsContainer);
-			if (handler.isEmpty()) {
-				this.handlers.remove(playerAdvancementTracker);
-			}
-		}
-	}
-
-	@Override
-	public void endTracking(PlayerAdvancementTracker playerAdvancementTracker) {
-		this.handlers.remove(playerAdvancementTracker);
-	}
-
-	public FilledBucketCriterion.Conditions method_8931(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		ItemPredicate itemPredicate = ItemPredicate.deserialize(jsonObject.get("item"));
+	public FilledBucketCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+		ItemPredicate itemPredicate = ItemPredicate.fromJson(jsonObject.get("item"));
 		return new FilledBucketCriterion.Conditions(itemPredicate);
 	}
 
-	public void handle(ServerPlayerEntity serverPlayerEntity, ItemStack itemStack) {
-		FilledBucketCriterion.Handler handler = (FilledBucketCriterion.Handler)this.handlers.get(serverPlayerEntity.getAdvancementManager());
-		if (handler != null) {
-			handler.handle(itemStack);
-		}
+	public void trigger(ServerPlayerEntity serverPlayerEntity, ItemStack itemStack) {
+		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(itemStack));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
@@ -86,49 +44,8 @@ public class FilledBucketCriterion implements Criterion<FilledBucketCriterion.Co
 		@Override
 		public JsonElement toJson() {
 			JsonObject jsonObject = new JsonObject();
-			jsonObject.add("item", this.item.serialize());
+			jsonObject.add("item", this.item.toJson());
 			return jsonObject;
-		}
-	}
-
-	static class Handler {
-		private final PlayerAdvancementTracker manager;
-		private final Set<Criterion.ConditionsContainer<FilledBucketCriterion.Conditions>> conditions = Sets.newHashSet();
-
-		public Handler(PlayerAdvancementTracker playerAdvancementTracker) {
-			this.manager = playerAdvancementTracker;
-		}
-
-		public boolean isEmpty() {
-			return this.conditions.isEmpty();
-		}
-
-		public void addCondition(Criterion.ConditionsContainer<FilledBucketCriterion.Conditions> conditionsContainer) {
-			this.conditions.add(conditionsContainer);
-		}
-
-		public void removeCondition(Criterion.ConditionsContainer<FilledBucketCriterion.Conditions> conditionsContainer) {
-			this.conditions.remove(conditionsContainer);
-		}
-
-		public void handle(ItemStack itemStack) {
-			List<Criterion.ConditionsContainer<FilledBucketCriterion.Conditions>> list = null;
-
-			for (Criterion.ConditionsContainer<FilledBucketCriterion.Conditions> conditionsContainer : this.conditions) {
-				if (conditionsContainer.getConditions().matches(itemStack)) {
-					if (list == null) {
-						list = Lists.newArrayList();
-					}
-
-					list.add(conditionsContainer);
-				}
-			}
-
-			if (list != null) {
-				for (Criterion.ConditionsContainer<FilledBucketCriterion.Conditions> conditionsContainer2 : list) {
-					conditionsContainer2.apply(this.manager);
-				}
-			}
 		}
 	}
 }

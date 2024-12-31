@@ -4,16 +4,18 @@ import com.google.common.collect.Lists;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class TextRenderer implements AutoCloseable {
@@ -37,13 +39,13 @@ public class TextRenderer implements AutoCloseable {
 	}
 
 	public int drawWithShadow(String string, float f, float g, int i) {
-		GlStateManager.enableAlphaTest();
-		return this.draw(string, f, g, i, true);
+		RenderSystem.enableAlphaTest();
+		return this.draw(string, f, g, i, Rotation3.identity().getMatrix(), true);
 	}
 
 	public int draw(String string, float f, float g, int i) {
-		GlStateManager.enableAlphaTest();
-		return this.draw(string, f, g, i, false);
+		RenderSystem.enableAlphaTest();
+		return this.draw(string, f, g, i, Rotation3.identity().getMatrix(), false);
 	}
 
 	public String mirror(String string) {
@@ -56,135 +58,160 @@ public class TextRenderer implements AutoCloseable {
 		}
 	}
 
-	private int draw(String string, float f, float g, int i, boolean bl) {
+	private int draw(String string, float f, float g, int i, Matrix4f matrix4f, boolean bl) {
 		if (string == null) {
 			return 0;
 		} else {
-			if (this.rightToLeft) {
-				string = this.mirror(string);
-			}
-
-			if ((i & -67108864) == 0) {
-				i |= -16777216;
-			}
-
-			if (bl) {
-				this.drawLayer(string, f, g, i, true);
-			}
-
-			f = this.drawLayer(string, f, g, i, false);
-			return (int)f + (bl ? 1 : 0);
+			VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
+			int j = this.draw(string, f, g, i, bl, matrix4f, immediate, false, 0, 15728880);
+			immediate.draw();
+			return j;
 		}
 	}
 
-	private float drawLayer(String string, float f, float g, int i, boolean bl) {
+	public int draw(
+		String string, float f, float g, int i, boolean bl, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, boolean bl2, int j, int k
+	) {
+		return this.drawInternal(string, f, g, i, bl, matrix4f, vertexConsumerProvider, bl2, j, k);
+	}
+
+	private int drawInternal(
+		String string, float f, float g, int i, boolean bl, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, boolean bl2, int j, int k
+	) {
+		if (this.rightToLeft) {
+			string = this.mirror(string);
+		}
+
+		if ((i & -67108864) == 0) {
+			i |= -16777216;
+		}
+
+		if (bl) {
+			this.drawLayer(string, f, g, i, true, matrix4f, vertexConsumerProvider, bl2, j, k);
+		}
+
+		Matrix4f matrix4f2 = matrix4f.copy();
+		matrix4f2.addToLastColumn(new Vector3f(0.0F, 0.0F, 0.001F));
+		f = this.drawLayer(string, f, g, i, false, matrix4f2, vertexConsumerProvider, bl2, j, k);
+		return (int)f + (bl ? 1 : 0);
+	}
+
+	private float drawLayer(
+		String string, float f, float g, int i, boolean bl, Matrix4f matrix4f, VertexConsumerProvider vertexConsumerProvider, boolean bl2, int j, int k
+	) {
 		float h = bl ? 0.25F : 1.0F;
-		float j = (float)(i >> 16 & 0xFF) / 255.0F * h;
-		float k = (float)(i >> 8 & 0xFF) / 255.0F * h;
-		float l = (float)(i & 0xFF) / 255.0F * h;
-		float m = j;
-		float n = k;
-		float o = l;
-		float p = (float)(i >> 24 & 0xFF) / 255.0F;
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-		Identifier identifier = null;
-		bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
-		boolean bl2 = false;
+		float l = (float)(i >> 16 & 0xFF) / 255.0F * h;
+		float m = (float)(i >> 8 & 0xFF) / 255.0F * h;
+		float n = (float)(i & 0xFF) / 255.0F * h;
+		float o = f;
+		float p = l;
+		float q = m;
+		float r = n;
+		float s = (float)(i >> 24 & 0xFF) / 255.0F;
 		boolean bl3 = false;
 		boolean bl4 = false;
 		boolean bl5 = false;
 		boolean bl6 = false;
-		List<TextRenderer.Rectangle> list = Lists.newArrayList();
+		boolean bl7 = false;
+		List<GlyphRenderer.Rectangle> list = Lists.newArrayList();
 
-		for (int q = 0; q < string.length(); q++) {
-			char c = string.charAt(q);
-			if (c == 167 && q + 1 < string.length()) {
-				Formatting formatting = Formatting.byCode(string.charAt(q + 1));
+		for (int t = 0; t < string.length(); t++) {
+			char c = string.charAt(t);
+			if (c == 167 && t + 1 < string.length()) {
+				Formatting formatting = Formatting.byCode(string.charAt(t + 1));
 				if (formatting != null) {
 					if (formatting.affectsGlyphWidth()) {
-						bl2 = false;
 						bl3 = false;
+						bl4 = false;
+						bl7 = false;
 						bl6 = false;
 						bl5 = false;
-						bl4 = false;
-						m = j;
-						n = k;
-						o = l;
+						p = l;
+						q = m;
+						r = n;
 					}
 
 					if (formatting.getColorValue() != null) {
-						int r = formatting.getColorValue();
-						m = (float)(r >> 16 & 0xFF) / 255.0F * h;
-						n = (float)(r >> 8 & 0xFF) / 255.0F * h;
-						o = (float)(r & 0xFF) / 255.0F * h;
+						int u = formatting.getColorValue();
+						p = (float)(u >> 16 & 0xFF) / 255.0F * h;
+						q = (float)(u >> 8 & 0xFF) / 255.0F * h;
+						r = (float)(u & 0xFF) / 255.0F * h;
 					} else if (formatting == Formatting.field_1051) {
-						bl2 = true;
-					} else if (formatting == Formatting.field_1067) {
 						bl3 = true;
-					} else if (formatting == Formatting.field_1055) {
-						bl6 = true;
-					} else if (formatting == Formatting.field_1073) {
-						bl5 = true;
-					} else if (formatting == Formatting.field_1056) {
+					} else if (formatting == Formatting.field_1067) {
 						bl4 = true;
+					} else if (formatting == Formatting.field_1055) {
+						bl7 = true;
+					} else if (formatting == Formatting.field_1073) {
+						bl6 = true;
+					} else if (formatting == Formatting.field_1056) {
+						bl5 = true;
 					}
 				}
 
-				q++;
+				t++;
 			} else {
 				Glyph glyph = this.fontStorage.getGlyph(c);
-				GlyphRenderer glyphRenderer = bl2 && c != ' ' ? this.fontStorage.getObfuscatedGlyphRenderer(glyph) : this.fontStorage.getGlyphRenderer(c);
-				Identifier identifier2 = glyphRenderer.getId();
-				if (identifier2 != null) {
-					if (identifier != identifier2) {
-						tessellator.draw();
-						this.textureManager.bindTexture(identifier2);
-						bufferBuilder.begin(7, VertexFormats.POSITION_UV_COLOR);
-						identifier = identifier2;
-					}
-
-					float s = bl3 ? glyph.getBoldOffset() : 0.0F;
-					float t = bl ? glyph.getShadowOffset() : 0.0F;
-					this.drawGlyph(glyphRenderer, bl3, bl4, s, f + t, g + t, bufferBuilder, m, n, o, p);
+				GlyphRenderer glyphRenderer = bl3 && c != ' ' ? this.fontStorage.getObfuscatedGlyphRenderer(glyph) : this.fontStorage.getGlyphRenderer(c);
+				if (!(glyphRenderer instanceof EmptyGlyphRenderer)) {
+					float v = bl4 ? glyph.getBoldOffset() : 0.0F;
+					float w = bl ? glyph.getShadowOffset() : 0.0F;
+					VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(glyphRenderer.method_24045(bl2));
+					this.drawGlyph(glyphRenderer, bl4, bl5, v, o + w, g + w, matrix4f, vertexConsumer, p, q, r, s, k);
 				}
 
-				float u = glyph.getAdvance(bl3);
-				float v = bl ? 1.0F : 0.0F;
+				float x = glyph.getAdvance(bl4);
+				float y = bl ? 1.0F : 0.0F;
+				if (bl7) {
+					list.add(new GlyphRenderer.Rectangle(o + y - 1.0F, g + y + 4.5F, o + y + x, g + y + 4.5F - 1.0F, -0.01F, p, q, r, s));
+				}
+
 				if (bl6) {
-					list.add(new TextRenderer.Rectangle(f + v - 1.0F, g + v + 4.5F, f + v + u, g + v + 4.5F - 1.0F, m, n, o, p));
+					list.add(new GlyphRenderer.Rectangle(o + y - 1.0F, g + y + 9.0F, o + y + x, g + y + 9.0F - 1.0F, -0.01F, p, q, r, s));
 				}
 
-				if (bl5) {
-					list.add(new TextRenderer.Rectangle(f + v - 1.0F, g + v + 9.0F, f + v + u, g + v + 9.0F - 1.0F, m, n, o, p));
-				}
-
-				f += u;
+				o += x;
 			}
 		}
 
-		tessellator.draw();
+		if (j != 0) {
+			float z = (float)(j >> 24 & 0xFF) / 255.0F;
+			float aa = (float)(j >> 16 & 0xFF) / 255.0F;
+			float ab = (float)(j >> 8 & 0xFF) / 255.0F;
+			float ac = (float)(j & 0xFF) / 255.0F;
+			list.add(new GlyphRenderer.Rectangle(f - 1.0F, g + 9.0F, o + 1.0F, g - 1.0F, 0.01F, aa, ab, ac, z));
+		}
+
 		if (!list.isEmpty()) {
-			GlStateManager.disableTexture();
-			bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
+			GlyphRenderer glyphRenderer2 = this.fontStorage.getRectangleRenderer();
+			VertexConsumer vertexConsumer2 = vertexConsumerProvider.getBuffer(glyphRenderer2.method_24045(bl2));
 
-			for (TextRenderer.Rectangle rectangle : list) {
-				rectangle.draw(bufferBuilder);
+			for (GlyphRenderer.Rectangle rectangle : list) {
+				glyphRenderer2.drawRectangle(rectangle, matrix4f, vertexConsumer2, k);
 			}
-
-			tessellator.draw();
-			GlStateManager.enableTexture();
 		}
 
-		return f;
+		return o;
 	}
 
 	private void drawGlyph(
-		GlyphRenderer glyphRenderer, boolean bl, boolean bl2, float f, float g, float h, BufferBuilder bufferBuilder, float i, float j, float k, float l
+		GlyphRenderer glyphRenderer,
+		boolean bl,
+		boolean bl2,
+		float f,
+		float g,
+		float h,
+		Matrix4f matrix4f,
+		VertexConsumer vertexConsumer,
+		float i,
+		float j,
+		float k,
+		float l,
+		int m
 	) {
-		glyphRenderer.draw(this.textureManager, bl2, g, h, bufferBuilder, i, j, k, l);
+		glyphRenderer.draw(bl2, g, h, matrix4f, vertexConsumer, i, j, k, l, m);
 		if (bl) {
-			glyphRenderer.draw(this.textureManager, bl2, g + f, h, bufferBuilder, i, j, k, l);
+			glyphRenderer.draw(bl2, g + f, h, matrix4f, vertexConsumer, i, j, k, l, m);
 		}
 	}
 
@@ -270,20 +297,23 @@ public class TextRenderer implements AutoCloseable {
 		return string;
 	}
 
-	public void drawStringBounded(String string, int i, int j, int k, int l) {
+	public void drawTrimmed(String string, int i, int j, int k, int l) {
 		string = this.trimEndNewlines(string);
-		this.renderStringBounded(string, i, j, k, l);
+		this.drawWrapped(string, i, j, k, l);
 	}
 
-	private void renderStringBounded(String string, int i, int j, int k, int l) {
-		for (String string2 : this.wrapStringToWidthAsList(string, k)) {
+	private void drawWrapped(String string, int i, int j, int k, int l) {
+		List<String> list = this.wrapStringToWidthAsList(string, k);
+		Matrix4f matrix4f = Rotation3.identity().getMatrix();
+
+		for (String string2 : list) {
 			float f = (float)i;
 			if (this.rightToLeft) {
 				int m = this.getStringWidth(this.mirror(string2));
 				f += (float)(k - m);
 			}
 
-			this.draw(string2, f, (float)j, l, false);
+			this.draw(string2, f, (float)j, l, matrix4f, false);
 			j += 9;
 		}
 	}
@@ -415,34 +445,5 @@ public class TextRenderer implements AutoCloseable {
 
 	public boolean isRightToLeft() {
 		return this.rightToLeft;
-	}
-
-	static class Rectangle {
-		protected final float xMin;
-		protected final float yMin;
-		protected final float xMax;
-		protected final float yMax;
-		protected final float red;
-		protected final float green;
-		protected final float blue;
-		protected final float alpha;
-
-		private Rectangle(float f, float g, float h, float i, float j, float k, float l, float m) {
-			this.xMin = f;
-			this.yMin = g;
-			this.xMax = h;
-			this.yMax = i;
-			this.red = j;
-			this.green = k;
-			this.blue = l;
-			this.alpha = m;
-		}
-
-		public void draw(BufferBuilder bufferBuilder) {
-			bufferBuilder.vertex((double)this.xMin, (double)this.yMin, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
-			bufferBuilder.vertex((double)this.xMax, (double)this.yMin, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
-			bufferBuilder.vertex((double)this.xMax, (double)this.yMax, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
-			bufferBuilder.vertex((double)this.xMin, (double)this.yMax, 0.0).color(this.red, this.green, this.blue, this.alpha).next();
-		}
 	}
 }

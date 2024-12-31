@@ -29,17 +29,17 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootManager;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.loot.LootManager;
-import net.minecraft.world.loot.LootSupplier;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
-import net.minecraft.world.loot.context.LootContextTypes;
 
 public class LootCommand {
 	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> {
@@ -464,8 +464,8 @@ public class LootCommand {
 			builder.putNullable(LootContextParameters.field_1230, entity2);
 			builder.put(LootContextParameters.field_1226, entity);
 			builder.put(LootContextParameters.field_1232, new BlockPos(serverCommandSource.getPosition()));
-			LootSupplier lootSupplier = serverCommandSource.getMinecraftServer().getLootManager().getSupplier(identifier);
-			List<ItemStack> list = lootSupplier.getDrops(builder.build(LootContextTypes.field_1173));
+			LootTable lootTable = serverCommandSource.getMinecraftServer().getLootManager().getSupplier(identifier);
+			List<ItemStack> list = lootTable.getDrops(builder.build(LootContextTypes.field_1173));
 			return target.accept(commandContext, list, listx -> sendDroppedFeedback(serverCommandSource, listx, identifier));
 		}
 	}
@@ -493,8 +493,8 @@ public class LootCommand {
 		CommandContext<ServerCommandSource> commandContext, Identifier identifier, LootContext lootContext, LootCommand.Target target
 	) throws CommandSyntaxException {
 		ServerCommandSource serverCommandSource = (ServerCommandSource)commandContext.getSource();
-		LootSupplier lootSupplier = serverCommandSource.getMinecraftServer().getLootManager().getSupplier(identifier);
-		List<ItemStack> list = lootSupplier.getDrops(lootContext);
+		LootTable lootTable = serverCommandSource.getMinecraftServer().getLootManager().getSupplier(identifier);
+		List<ItemStack> list = lootTable.getDrops(lootContext);
 		return target.accept(commandContext, list, listx -> sendDroppedFeedback(serverCommandSource, listx));
 	}
 

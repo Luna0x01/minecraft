@@ -1,122 +1,124 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 
-public class SpiderEntityModel<T extends Entity> extends EntityModel<T> {
-	private final Cuboid field_3583;
-	private final Cuboid field_3585;
-	private final Cuboid field_3584;
-	private final Cuboid field_3580;
-	private final Cuboid field_3578;
-	private final Cuboid field_3586;
-	private final Cuboid field_3577;
-	private final Cuboid field_3579;
-	private final Cuboid field_3581;
-	private final Cuboid field_3576;
-	private final Cuboid field_3582;
+public class SpiderEntityModel<T extends Entity> extends CompositeEntityModel<T> {
+	private final ModelPart head;
+	private final ModelPart thorax;
+	private final ModelPart abdomen;
+	private final ModelPart rightBackLeg;
+	private final ModelPart leftBackLeg;
+	private final ModelPart rightBackMiddleLeg;
+	private final ModelPart leftBackMiddleLeg;
+	private final ModelPart rightFrontMiddleLeg;
+	private final ModelPart leftFrontMiddleLeg;
+	private final ModelPart rightFrontLeg;
+	private final ModelPart leftFrontLeg;
 
 	public SpiderEntityModel() {
 		float f = 0.0F;
 		int i = 15;
-		this.field_3583 = new Cuboid(this, 32, 4);
-		this.field_3583.addBox(-4.0F, -4.0F, -8.0F, 8, 8, 8, 0.0F);
-		this.field_3583.setRotationPoint(0.0F, 15.0F, -3.0F);
-		this.field_3585 = new Cuboid(this, 0, 0);
-		this.field_3585.addBox(-3.0F, -3.0F, -3.0F, 6, 6, 6, 0.0F);
-		this.field_3585.setRotationPoint(0.0F, 15.0F, 0.0F);
-		this.field_3584 = new Cuboid(this, 0, 12);
-		this.field_3584.addBox(-5.0F, -4.0F, -6.0F, 10, 8, 12, 0.0F);
-		this.field_3584.setRotationPoint(0.0F, 15.0F, 9.0F);
-		this.field_3580 = new Cuboid(this, 18, 0);
-		this.field_3580.addBox(-15.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3580.setRotationPoint(-4.0F, 15.0F, 2.0F);
-		this.field_3578 = new Cuboid(this, 18, 0);
-		this.field_3578.addBox(-1.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3578.setRotationPoint(4.0F, 15.0F, 2.0F);
-		this.field_3586 = new Cuboid(this, 18, 0);
-		this.field_3586.addBox(-15.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3586.setRotationPoint(-4.0F, 15.0F, 1.0F);
-		this.field_3577 = new Cuboid(this, 18, 0);
-		this.field_3577.addBox(-1.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3577.setRotationPoint(4.0F, 15.0F, 1.0F);
-		this.field_3579 = new Cuboid(this, 18, 0);
-		this.field_3579.addBox(-15.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3579.setRotationPoint(-4.0F, 15.0F, 0.0F);
-		this.field_3581 = new Cuboid(this, 18, 0);
-		this.field_3581.addBox(-1.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3581.setRotationPoint(4.0F, 15.0F, 0.0F);
-		this.field_3576 = new Cuboid(this, 18, 0);
-		this.field_3576.addBox(-15.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3576.setRotationPoint(-4.0F, 15.0F, -1.0F);
-		this.field_3582 = new Cuboid(this, 18, 0);
-		this.field_3582.addBox(-1.0F, -1.0F, -1.0F, 16, 2, 2, 0.0F);
-		this.field_3582.setRotationPoint(4.0F, 15.0F, -1.0F);
+		this.head = new ModelPart(this, 32, 4);
+		this.head.addCuboid(-4.0F, -4.0F, -8.0F, 8.0F, 8.0F, 8.0F, 0.0F);
+		this.head.setPivot(0.0F, 15.0F, -3.0F);
+		this.thorax = new ModelPart(this, 0, 0);
+		this.thorax.addCuboid(-3.0F, -3.0F, -3.0F, 6.0F, 6.0F, 6.0F, 0.0F);
+		this.thorax.setPivot(0.0F, 15.0F, 0.0F);
+		this.abdomen = new ModelPart(this, 0, 12);
+		this.abdomen.addCuboid(-5.0F, -4.0F, -6.0F, 10.0F, 8.0F, 12.0F, 0.0F);
+		this.abdomen.setPivot(0.0F, 15.0F, 9.0F);
+		this.rightBackLeg = new ModelPart(this, 18, 0);
+		this.rightBackLeg.addCuboid(-15.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.rightBackLeg.setPivot(-4.0F, 15.0F, 2.0F);
+		this.leftBackLeg = new ModelPart(this, 18, 0);
+		this.leftBackLeg.addCuboid(-1.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.leftBackLeg.setPivot(4.0F, 15.0F, 2.0F);
+		this.rightBackMiddleLeg = new ModelPart(this, 18, 0);
+		this.rightBackMiddleLeg.addCuboid(-15.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.rightBackMiddleLeg.setPivot(-4.0F, 15.0F, 1.0F);
+		this.leftBackMiddleLeg = new ModelPart(this, 18, 0);
+		this.leftBackMiddleLeg.addCuboid(-1.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.leftBackMiddleLeg.setPivot(4.0F, 15.0F, 1.0F);
+		this.rightFrontMiddleLeg = new ModelPart(this, 18, 0);
+		this.rightFrontMiddleLeg.addCuboid(-15.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.rightFrontMiddleLeg.setPivot(-4.0F, 15.0F, 0.0F);
+		this.leftFrontMiddleLeg = new ModelPart(this, 18, 0);
+		this.leftFrontMiddleLeg.addCuboid(-1.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.leftFrontMiddleLeg.setPivot(4.0F, 15.0F, 0.0F);
+		this.rightFrontLeg = new ModelPart(this, 18, 0);
+		this.rightFrontLeg.addCuboid(-15.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.rightFrontLeg.setPivot(-4.0F, 15.0F, -1.0F);
+		this.leftFrontLeg = new ModelPart(this, 18, 0);
+		this.leftFrontLeg.addCuboid(-1.0F, -1.0F, -1.0F, 16.0F, 2.0F, 2.0F, 0.0F);
+		this.leftFrontLeg.setPivot(4.0F, 15.0F, -1.0F);
 	}
 
 	@Override
-	public void render(T entity, float f, float g, float h, float i, float j, float k) {
-		this.setAngles(entity, f, g, h, i, j, k);
-		this.field_3583.render(k);
-		this.field_3585.render(k);
-		this.field_3584.render(k);
-		this.field_3580.render(k);
-		this.field_3578.render(k);
-		this.field_3586.render(k);
-		this.field_3577.render(k);
-		this.field_3579.render(k);
-		this.field_3581.render(k);
-		this.field_3576.render(k);
-		this.field_3582.render(k);
+	public Iterable<ModelPart> getParts() {
+		return ImmutableList.of(
+			this.head,
+			this.thorax,
+			this.abdomen,
+			this.rightBackLeg,
+			this.leftBackLeg,
+			this.rightBackMiddleLeg,
+			this.leftBackMiddleLeg,
+			this.rightFrontMiddleLeg,
+			this.leftFrontMiddleLeg,
+			this.rightFrontLeg,
+			this.leftFrontLeg
+		);
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j, float k) {
-		this.field_3583.yaw = i * (float) (Math.PI / 180.0);
-		this.field_3583.pitch = j * (float) (Math.PI / 180.0);
-		float l = (float) (Math.PI / 4);
-		this.field_3580.roll = (float) (-Math.PI / 4);
-		this.field_3578.roll = (float) (Math.PI / 4);
-		this.field_3586.roll = -0.58119464F;
-		this.field_3577.roll = 0.58119464F;
-		this.field_3579.roll = -0.58119464F;
-		this.field_3581.roll = 0.58119464F;
-		this.field_3576.roll = (float) (-Math.PI / 4);
-		this.field_3582.roll = (float) (Math.PI / 4);
-		float m = -0.0F;
-		float n = (float) (Math.PI / 8);
-		this.field_3580.yaw = (float) (Math.PI / 4);
-		this.field_3578.yaw = (float) (-Math.PI / 4);
-		this.field_3586.yaw = (float) (Math.PI / 8);
-		this.field_3577.yaw = (float) (-Math.PI / 8);
-		this.field_3579.yaw = (float) (-Math.PI / 8);
-		this.field_3581.yaw = (float) (Math.PI / 8);
-		this.field_3576.yaw = (float) (-Math.PI / 4);
-		this.field_3582.yaw = (float) (Math.PI / 4);
-		float o = -(MathHelper.cos(f * 0.6662F * 2.0F + 0.0F) * 0.4F) * g;
-		float p = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) Math.PI) * 0.4F) * g;
-		float q = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) (Math.PI / 2)) * 0.4F) * g;
-		float r = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * g;
-		float s = Math.abs(MathHelper.sin(f * 0.6662F + 0.0F) * 0.4F) * g;
-		float t = Math.abs(MathHelper.sin(f * 0.6662F + (float) Math.PI) * 0.4F) * g;
-		float u = Math.abs(MathHelper.sin(f * 0.6662F + (float) (Math.PI / 2)) * 0.4F) * g;
-		float v = Math.abs(MathHelper.sin(f * 0.6662F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * g;
-		this.field_3580.yaw += o;
-		this.field_3578.yaw += -o;
-		this.field_3586.yaw += p;
-		this.field_3577.yaw += -p;
-		this.field_3579.yaw += q;
-		this.field_3581.yaw += -q;
-		this.field_3576.yaw += r;
-		this.field_3582.yaw += -r;
-		this.field_3580.roll += s;
-		this.field_3578.roll += -s;
-		this.field_3586.roll += t;
-		this.field_3577.roll += -t;
-		this.field_3579.roll += u;
-		this.field_3581.roll += -u;
-		this.field_3576.roll += v;
-		this.field_3582.roll += -v;
+	public void setAngles(T entity, float f, float g, float h, float i, float j) {
+		this.head.yaw = i * (float) (Math.PI / 180.0);
+		this.head.pitch = j * (float) (Math.PI / 180.0);
+		float k = (float) (Math.PI / 4);
+		this.rightBackLeg.roll = (float) (-Math.PI / 4);
+		this.leftBackLeg.roll = (float) (Math.PI / 4);
+		this.rightBackMiddleLeg.roll = -0.58119464F;
+		this.leftBackMiddleLeg.roll = 0.58119464F;
+		this.rightFrontMiddleLeg.roll = -0.58119464F;
+		this.leftFrontMiddleLeg.roll = 0.58119464F;
+		this.rightFrontLeg.roll = (float) (-Math.PI / 4);
+		this.leftFrontLeg.roll = (float) (Math.PI / 4);
+		float l = -0.0F;
+		float m = (float) (Math.PI / 8);
+		this.rightBackLeg.yaw = (float) (Math.PI / 4);
+		this.leftBackLeg.yaw = (float) (-Math.PI / 4);
+		this.rightBackMiddleLeg.yaw = (float) (Math.PI / 8);
+		this.leftBackMiddleLeg.yaw = (float) (-Math.PI / 8);
+		this.rightFrontMiddleLeg.yaw = (float) (-Math.PI / 8);
+		this.leftFrontMiddleLeg.yaw = (float) (Math.PI / 8);
+		this.rightFrontLeg.yaw = (float) (-Math.PI / 4);
+		this.leftFrontLeg.yaw = (float) (Math.PI / 4);
+		float n = -(MathHelper.cos(f * 0.6662F * 2.0F + 0.0F) * 0.4F) * g;
+		float o = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) Math.PI) * 0.4F) * g;
+		float p = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) (Math.PI / 2)) * 0.4F) * g;
+		float q = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * g;
+		float r = Math.abs(MathHelper.sin(f * 0.6662F + 0.0F) * 0.4F) * g;
+		float s = Math.abs(MathHelper.sin(f * 0.6662F + (float) Math.PI) * 0.4F) * g;
+		float t = Math.abs(MathHelper.sin(f * 0.6662F + (float) (Math.PI / 2)) * 0.4F) * g;
+		float u = Math.abs(MathHelper.sin(f * 0.6662F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * g;
+		this.rightBackLeg.yaw += n;
+		this.leftBackLeg.yaw += -n;
+		this.rightBackMiddleLeg.yaw += o;
+		this.leftBackMiddleLeg.yaw += -o;
+		this.rightFrontMiddleLeg.yaw += p;
+		this.leftFrontMiddleLeg.yaw += -p;
+		this.rightFrontLeg.yaw += q;
+		this.leftFrontLeg.yaw += -q;
+		this.rightBackLeg.roll += r;
+		this.leftBackLeg.roll += -r;
+		this.rightBackMiddleLeg.roll += s;
+		this.leftBackMiddleLeg.roll += -s;
+		this.rightFrontMiddleLeg.roll += t;
+		this.leftFrontMiddleLeg.roll += -t;
+		this.rightFrontLeg.roll += u;
+		this.leftFrontLeg.roll += -u;
 	}
 }

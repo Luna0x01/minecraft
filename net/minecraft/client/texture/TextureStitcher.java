@@ -36,8 +36,8 @@ public class TextureStitcher {
 		return this.height;
 	}
 
-	public void add(Sprite sprite) {
-		TextureStitcher.Holder holder = new TextureStitcher.Holder(sprite, this.mipLevel);
+	public void add(Sprite.Info info) {
+		TextureStitcher.Holder holder = new TextureStitcher.Holder(info, this.mipLevel);
 		this.holders.add(holder);
 	}
 
@@ -46,9 +46,9 @@ public class TextureStitcher {
 		list.sort(comparator);
 
 		for (TextureStitcher.Holder holder : list) {
-			if (!this.tryFit(holder)) {
+			if (!this.fit(holder)) {
 				throw new TextureStitcherCannotFitException(
-					holder.sprite, (Collection<Sprite>)list.stream().map(holderx -> holderx.sprite).collect(ImmutableList.toImmutableList())
+					holder.sprite, (Collection<Sprite.Info>)list.stream().map(holderx -> holderx.sprite).collect(ImmutableList.toImmutableList())
 				);
 			}
 		}
@@ -57,36 +57,31 @@ public class TextureStitcher {
 		this.height = MathHelper.smallestEncompassingPowerOfTwo(this.height);
 	}
 
-	public List<Sprite> getStitchedSprites() {
-		List<Sprite> list = Lists.newArrayList();
-
+	public void getStitchedSprites(TextureStitcher.SpriteConsumer spriteConsumer) {
 		for (TextureStitcher.Slot slot : this.slots) {
 			slot.addAllFilledSlots(slotx -> {
 				TextureStitcher.Holder holder = slotx.getTexture();
-				Sprite sprite = holder.sprite;
-				sprite.init(this.width, this.height, slotx.getX(), slotx.getY());
-				list.add(sprite);
+				Sprite.Info info = holder.sprite;
+				spriteConsumer.load(info, this.width, this.height, slotx.getX(), slotx.getY());
 			});
 		}
-
-		return list;
 	}
 
 	private static int applyMipLevel(int i, int j) {
 		return (i >> j) + ((i & (1 << j) - 1) == 0 ? 0 : 1) << j;
 	}
 
-	private boolean tryFit(TextureStitcher.Holder holder) {
+	private boolean fit(TextureStitcher.Holder holder) {
 		for (TextureStitcher.Slot slot : this.slots) {
-			if (slot.tryFit(holder)) {
+			if (slot.fit(holder)) {
 				return true;
 			}
 		}
 
-		return this.method_4552(holder);
+		return this.growAndFit(holder);
 	}
 
-	private boolean method_4552(TextureStitcher.Holder holder) {
+	private boolean growAndFit(TextureStitcher.Holder holder) {
 		int i = MathHelper.smallestEncompassingPowerOfTwo(this.width);
 		int j = MathHelper.smallestEncompassingPowerOfTwo(this.height);
 		int k = MathHelper.smallestEncompassingPowerOfTwo(this.width + holder.width);
@@ -118,21 +113,21 @@ public class TextureStitcher {
 				this.height = this.height + holder.height;
 			}
 
-			slot.tryFit(holder);
+			slot.fit(holder);
 			this.slots.add(slot);
 			return true;
 		}
 	}
 
 	static class Holder {
-		public final Sprite sprite;
+		public final Sprite.Info sprite;
 		public final int width;
 		public final int height;
 
-		public Holder(Sprite sprite, int i) {
-			this.sprite = sprite;
-			this.width = TextureStitcher.applyMipLevel(sprite.getWidth(), i);
-			this.height = TextureStitcher.applyMipLevel(sprite.getHeight(), i);
+		public Holder(Sprite.Info info, int i) {
+			this.sprite = info;
+			this.width = TextureStitcher.applyMipLevel(info.getWidth(), i);
+			this.height = TextureStitcher.applyMipLevel(info.getHeight(), i);
 		}
 
 		public String toString() {
@@ -167,7 +162,7 @@ public class TextureStitcher {
 			return this.y;
 		}
 
-		public boolean tryFit(TextureStitcher.Holder holder) {
+		public boolean fit(TextureStitcher.Holder holder) {
 			if (this.texture != null) {
 				return false;
 			} else {
@@ -201,7 +196,7 @@ public class TextureStitcher {
 						}
 
 						for (TextureStitcher.Slot slot : this.subSlots) {
-							if (slot.tryFit(holder)) {
+							if (slot.fit(holder)) {
 								return true;
 							}
 						}
@@ -239,5 +234,9 @@ public class TextureStitcher {
 				+ this.subSlots
 				+ '}';
 		}
+	}
+
+	public interface SpriteConsumer {
+		void load(Sprite.Info info, int i, int j, int k, int l);
 	}
 }

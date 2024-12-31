@@ -15,7 +15,7 @@ public class ArmorDyeRecipe extends SpecialCraftingRecipe {
 		super(identifier);
 	}
 
-	public boolean method_17701(CraftingInventory craftingInventory, World world) {
+	public boolean matches(CraftingInventory craftingInventory, World world) {
 		ItemStack itemStack = ItemStack.EMPTY;
 		List<ItemStack> list = Lists.newArrayList();
 
@@ -41,7 +41,7 @@ public class ArmorDyeRecipe extends SpecialCraftingRecipe {
 		return !itemStack.isEmpty() && !list.isEmpty();
 	}
 
-	public ItemStack method_17700(CraftingInventory craftingInventory) {
+	public ItemStack craft(CraftingInventory craftingInventory) {
 		List<DyeItem> list = Lists.newArrayList();
 		ItemStack itemStack = ItemStack.EMPTY;
 

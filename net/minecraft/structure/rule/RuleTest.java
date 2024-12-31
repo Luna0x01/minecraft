@@ -12,6 +12,6 @@ public interface RuleTest extends DynamicDeserializer<AbstractRuleTest> {
 	RuleTest field_16984 = register("random_blockstate_match", RandomBlockStateMatchRuleTest::new);
 
 	static RuleTest register(String string, RuleTest ruleTest) {
-		return Registry.register(Registry.RULE_TEST, string, ruleTest);
+		return Registry.register(Registry.field_16792, string, ruleTest);
 	}
 }

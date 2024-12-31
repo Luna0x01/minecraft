@@ -9,7 +9,6 @@ import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
@@ -62,7 +61,7 @@ public class BowItem extends RangedWeaponItem {
 
 						int l = EnchantmentHelper.getLevel(Enchantments.field_9116, itemStack);
 						if (l > 0) {
-							projectileEntity.method_7449(l);
+							projectileEntity.setPunch(l);
 						}
 
 						if (EnchantmentHelper.getLevel(Enchantments.field_9126, itemStack) > 0) {
@@ -79,9 +78,9 @@ public class BowItem extends RangedWeaponItem {
 
 					world.playSound(
 						null,
-						playerEntity.x,
-						playerEntity.y,
-						playerEntity.z,
+						playerEntity.getX(),
+						playerEntity.getY(),
+						playerEntity.getZ(),
 						SoundEvents.field_14600,
 						SoundCategory.PLAYERS,
 						1.0F,
@@ -124,11 +123,11 @@ public class BowItem extends RangedWeaponItem {
 	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		boolean bl = !playerEntity.getArrowType(itemStack).isEmpty();
-		if (playerEntity.abilities.creativeMode || bl) {
-			playerEntity.setCurrentHand(hand);
-			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+		if (!playerEntity.abilities.creativeMode && !bl) {
+			return TypedActionResult.fail(itemStack);
 		} else {
-			return bl ? new TypedActionResult<>(ActionResult.field_5811, itemStack) : new TypedActionResult<>(ActionResult.field_5814, itemStack);
+			playerEntity.setCurrentHand(hand);
+			return TypedActionResult.consume(itemStack);
 		}
 	}
 

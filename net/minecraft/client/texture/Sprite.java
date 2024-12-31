@@ -1,243 +1,143 @@
 package net.minecraft.client.texture;
 
 import com.google.common.collect.Lists;
-import com.mojang.datafixers.util.Pair;
-import java.io.IOException;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.client.render.SpriteTexturedVertexConsumer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.resource.metadata.AnimationFrameResourceMetadata;
 import net.minecraft.client.resource.metadata.AnimationResourceMetadata;
-import net.minecraft.client.util.PngFile;
-import net.minecraft.resource.Resource;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 
-public class Sprite {
-	private final Identifier id;
-	protected final int width;
-	protected final int height;
-	protected NativeImage[] images;
+public class Sprite implements AutoCloseable {
+	private final SpriteAtlasTexture atlas;
+	private final Sprite.Info info;
+	private final AnimationResourceMetadata animationMetadata;
+	protected final NativeImage[] images;
+	private final int[] frameXs;
+	private final int[] frameYs;
 	@Nullable
-	protected int[] frameXs;
-	@Nullable
-	protected int[] frameYs;
-	protected NativeImage[] interpolatedImages;
-	private AnimationResourceMetadata animationMetadata;
-	protected int x;
-	protected int y;
-	private float uMin;
-	private float uMax;
-	private float vMin;
-	private float vMax;
-	protected int frameIndex;
-	protected int frameTicks;
-	private static final float[] srgbLinearMap = SystemUtil.consume(new float[256], fs -> {
-		for (int i = 0; i < fs.length; i++) {
-			fs[i] = (float)Math.pow((double)((float)i / 255.0F), 2.2);
-		}
-	});
+	private final Sprite.Interpolation interpolation;
+	private final int x;
+	private final int y;
+	private final float uMin;
+	private final float uMax;
+	private final float vMin;
+	private final float vMax;
+	private int frameIndex;
+	private int frameTicks;
 
-	protected Sprite(Identifier identifier, int i, int j) {
-		this.id = identifier;
-		this.width = i;
-		this.height = j;
-	}
+	protected Sprite(SpriteAtlasTexture spriteAtlasTexture, Sprite.Info info, int i, int j, int k, int l, int m, NativeImage nativeImage) {
+		this.atlas = spriteAtlasTexture;
+		AnimationResourceMetadata animationResourceMetadata = info.animationData;
+		int n = info.width;
+		int o = info.height;
+		this.x = l;
+		this.y = m;
+		this.uMin = (float)l / (float)j;
+		this.uMax = (float)(l + n) / (float)j;
+		this.vMin = (float)m / (float)k;
+		this.vMax = (float)(m + o) / (float)k;
+		int p = nativeImage.getWidth() / animationResourceMetadata.getWidth(n);
+		int q = nativeImage.getHeight() / animationResourceMetadata.getHeight(o);
+		if (animationResourceMetadata.getFrameCount() > 0) {
+			int r = (Integer)animationResourceMetadata.getFrameIndexSet().stream().max(Integer::compareTo).get() + 1;
+			this.frameXs = new int[r];
+			this.frameYs = new int[r];
+			Arrays.fill(this.frameXs, -1);
+			Arrays.fill(this.frameYs, -1);
 
-	protected Sprite(Identifier identifier, PngFile pngFile, @Nullable AnimationResourceMetadata animationResourceMetadata) {
-		this.id = identifier;
-		if (animationResourceMetadata != null) {
-			Pair<Integer, Integer> pair = getDimensions(animationResourceMetadata.getWidth(), animationResourceMetadata.getHeight(), pngFile.width, pngFile.height);
-			this.width = (Integer)pair.getFirst();
-			this.height = (Integer)pair.getSecond();
-			if (!isDivisibleBy(pngFile.width, this.width) || !isDivisibleBy(pngFile.height, this.height)) {
-				throw new IllegalArgumentException(
-					String.format("Image size %s,%s is not multiply of frame size %s,%s", this.width, this.height, pngFile.width, pngFile.height)
-				);
+			for (int s : animationResourceMetadata.getFrameIndexSet()) {
+				if (s >= p * q) {
+					throw new RuntimeException("invalid frameindex " + s);
+				}
+
+				int t = s / p;
+				int u = s % p;
+				this.frameXs[s] = u;
+				this.frameYs[s] = t;
 			}
 		} else {
-			this.width = pngFile.width;
-			this.height = pngFile.height;
+			List<AnimationFrameResourceMetadata> list = Lists.newArrayList();
+			int v = p * q;
+			this.frameXs = new int[v];
+			this.frameYs = new int[v];
+
+			for (int w = 0; w < q; w++) {
+				for (int x = 0; x < p; x++) {
+					int y = w * p + x;
+					this.frameXs[y] = x;
+					this.frameYs[y] = w;
+					list.add(new AnimationFrameResourceMetadata(y, -1));
+				}
+			}
+
+			animationResourceMetadata = new AnimationResourceMetadata(
+				list, n, o, animationResourceMetadata.getDefaultFrameTime(), animationResourceMetadata.shouldInterpolate()
+			);
 		}
 
+		this.info = new Sprite.Info(info.id, n, o, animationResourceMetadata);
 		this.animationMetadata = animationResourceMetadata;
-	}
 
-	private static Pair<Integer, Integer> getDimensions(int i, int j, int k, int l) {
-		if (i != -1) {
-			return j != -1 ? Pair.of(i, j) : Pair.of(i, l);
-		} else if (j != -1) {
-			return Pair.of(k, j);
-		} else {
-			int m = Math.min(k, l);
-			return Pair.of(m, m);
-		}
-	}
-
-	private static boolean isDivisibleBy(int i, int j) {
-		return i / j * j == i;
-	}
-
-	private void generateMipmapsInternal(int i) {
-		NativeImage[] nativeImages = new NativeImage[i + 1];
-		nativeImages[0] = this.images[0];
-		if (i > 0) {
-			boolean bl = false;
-
-			label71:
-			for (int j = 0; j < this.images[0].getWidth(); j++) {
-				for (int k = 0; k < this.images[0].getHeight(); k++) {
-					if (this.images[0].getPixelRGBA(j, k) >> 24 == 0) {
-						bl = true;
-						break label71;
-					}
-				}
-			}
-
-			for (int l = 1; l <= i; l++) {
-				if (this.images.length > l && this.images[l] != null) {
-					nativeImages[l] = this.images[l];
-				} else {
-					NativeImage nativeImage = nativeImages[l - 1];
-					NativeImage nativeImage2 = new NativeImage(nativeImage.getWidth() >> 1, nativeImage.getHeight() >> 1, false);
-					int m = nativeImage2.getWidth();
-					int n = nativeImage2.getHeight();
-
-					for (int o = 0; o < m; o++) {
-						for (int p = 0; p < n; p++) {
-							nativeImage2.setPixelRGBA(
-								o,
-								p,
-								blendPixels(
-									nativeImage.getPixelRGBA(o * 2 + 0, p * 2 + 0),
-									nativeImage.getPixelRGBA(o * 2 + 1, p * 2 + 0),
-									nativeImage.getPixelRGBA(o * 2 + 0, p * 2 + 1),
-									nativeImage.getPixelRGBA(o * 2 + 1, p * 2 + 1),
-									bl
-								)
-							);
-						}
+		try {
+			try {
+				this.images = MipmapHelper.getMipmapLevelsImages(nativeImage, i);
+			} catch (Throwable var19) {
+				CrashReport crashReport = CrashReport.create(var19, "Generating mipmaps for frame");
+				CrashReportSection crashReportSection = crashReport.addElement("Frame being iterated");
+				crashReportSection.add("First frame", (CrashCallable<String>)(() -> {
+					StringBuilder stringBuilder = new StringBuilder();
+					if (stringBuilder.length() > 0) {
+						stringBuilder.append(", ");
 					}
 
-					nativeImages[l] = nativeImage2;
-				}
+					stringBuilder.append(nativeImage.getWidth()).append("x").append(nativeImage.getHeight());
+					return stringBuilder.toString();
+				}));
+				throw new CrashException(crashReport);
 			}
-
-			for (int q = i + 1; q < this.images.length; q++) {
-				if (this.images[q] != null) {
-					this.images[q].close();
-				}
-			}
+		} catch (Throwable var20) {
+			CrashReport crashReport2 = CrashReport.create(var20, "Applying mipmap");
+			CrashReportSection crashReportSection2 = crashReport2.addElement("Sprite being mipmapped");
+			crashReportSection2.add("Sprite name", (CrashCallable<String>)(() -> this.getId().toString()));
+			crashReportSection2.add("Sprite size", (CrashCallable<String>)(() -> this.getWidth() + " x " + this.getHeight()));
+			crashReportSection2.add("Sprite frames", (CrashCallable<String>)(() -> this.getFrameCount() + " frames"));
+			crashReportSection2.add("Mipmap levels", i);
+			throw new CrashException(crashReport2);
 		}
 
-		this.images = nativeImages;
-	}
-
-	private static int blendPixels(int i, int j, int k, int l, boolean bl) {
-		if (bl) {
-			float f = 0.0F;
-			float g = 0.0F;
-			float h = 0.0F;
-			float m = 0.0F;
-			if (i >> 24 != 0) {
-				f += srgbToLinear(i >> 24);
-				g += srgbToLinear(i >> 16);
-				h += srgbToLinear(i >> 8);
-				m += srgbToLinear(i >> 0);
-			}
-
-			if (j >> 24 != 0) {
-				f += srgbToLinear(j >> 24);
-				g += srgbToLinear(j >> 16);
-				h += srgbToLinear(j >> 8);
-				m += srgbToLinear(j >> 0);
-			}
-
-			if (k >> 24 != 0) {
-				f += srgbToLinear(k >> 24);
-				g += srgbToLinear(k >> 16);
-				h += srgbToLinear(k >> 8);
-				m += srgbToLinear(k >> 0);
-			}
-
-			if (l >> 24 != 0) {
-				f += srgbToLinear(l >> 24);
-				g += srgbToLinear(l >> 16);
-				h += srgbToLinear(l >> 8);
-				m += srgbToLinear(l >> 0);
-			}
-
-			f /= 4.0F;
-			g /= 4.0F;
-			h /= 4.0F;
-			m /= 4.0F;
-			int n = (int)(Math.pow((double)f, 0.45454545454545453) * 255.0);
-			int o = (int)(Math.pow((double)g, 0.45454545454545453) * 255.0);
-			int p = (int)(Math.pow((double)h, 0.45454545454545453) * 255.0);
-			int q = (int)(Math.pow((double)m, 0.45454545454545453) * 255.0);
-			if (n < 96) {
-				n = 0;
-			}
-
-			return n << 24 | o << 16 | p << 8 | q;
+		if (animationResourceMetadata.shouldInterpolate()) {
+			this.interpolation = new Sprite.Interpolation(info, i);
 		} else {
-			int r = blendPixelsComponent(i, j, k, l, 24);
-			int s = blendPixelsComponent(i, j, k, l, 16);
-			int t = blendPixelsComponent(i, j, k, l, 8);
-			int u = blendPixelsComponent(i, j, k, l, 0);
-			return r << 24 | s << 16 | t << 8 | u;
+			this.interpolation = null;
 		}
-	}
-
-	private static int blendPixelsComponent(int i, int j, int k, int l, int m) {
-		float f = srgbToLinear(i >> m);
-		float g = srgbToLinear(j >> m);
-		float h = srgbToLinear(k >> m);
-		float n = srgbToLinear(l >> m);
-		float o = (float)((double)((float)Math.pow((double)(f + g + h + n) * 0.25, 0.45454545454545453)));
-		return (int)((double)o * 255.0);
-	}
-
-	private static float srgbToLinear(int i) {
-		return srgbLinearMap[i & 0xFF];
 	}
 
 	private void upload(int i) {
-		int j = 0;
-		int k = 0;
-		if (this.frameXs != null) {
-			j = this.frameXs[i] * this.width;
-			k = this.frameYs[i] * this.height;
-		}
-
+		int j = this.frameXs[i] * this.info.width;
+		int k = this.frameYs[i] * this.info.height;
 		this.upload(j, k, this.images);
 	}
 
 	private void upload(int i, int j, NativeImage[] nativeImages) {
 		for (int k = 0; k < this.images.length; k++) {
-			nativeImages[k].upload(k, this.x >> k, this.y >> k, i >> k, j >> k, this.width >> k, this.height >> k, this.images.length > 1);
+			nativeImages[k].upload(k, this.x >> k, this.y >> k, i >> k, j >> k, this.info.width >> k, this.info.height >> k, this.images.length > 1, false);
 		}
 	}
 
-	public void init(int i, int j, int k, int l) {
-		this.x = k;
-		this.y = l;
-		this.uMin = (float)k / (float)i;
-		this.uMax = (float)(k + this.width) / (float)i;
-		this.vMin = (float)l / (float)j;
-		this.vMax = (float)(l + this.height) / (float)j;
-	}
-
 	public int getWidth() {
-		return this.width;
+		return this.info.width;
 	}
 
 	public int getHeight() {
-		return this.height;
+		return this.info.height;
 	}
 
 	public float getMinU() {
@@ -248,14 +148,9 @@ public class Sprite {
 		return this.uMax;
 	}
 
-	public float getU(double d) {
+	public float getFrameU(double d) {
 		float f = this.uMax - this.uMin;
 		return this.uMin + f * (float)d / 16.0F;
-	}
-
-	public float getXFromU(float f) {
-		float g = this.uMax - this.uMin;
-		return (f - this.uMin) / g * 16.0F;
 	}
 
 	public float getMinV() {
@@ -266,18 +161,77 @@ public class Sprite {
 		return this.vMax;
 	}
 
-	public float getV(double d) {
+	public float getFrameV(double d) {
 		float f = this.vMax - this.vMin;
 		return this.vMin + f * (float)d / 16.0F;
 	}
 
-	public float getYFromV(float f) {
-		float g = this.vMax - this.vMin;
-		return (f - this.vMin) / g * 16.0F;
+	public Identifier getId() {
+		return this.info.id;
 	}
 
-	public Identifier getId() {
-		return this.id;
+	public SpriteAtlasTexture getAtlas() {
+		return this.atlas;
+	}
+
+	public int getFrameCount() {
+		return this.frameXs.length;
+	}
+
+	public void close() {
+		for (NativeImage nativeImage : this.images) {
+			if (nativeImage != null) {
+				nativeImage.close();
+			}
+		}
+
+		if (this.interpolation != null) {
+			this.interpolation.close();
+		}
+	}
+
+	public String toString() {
+		int i = this.frameXs.length;
+		return "TextureAtlasSprite{name='"
+			+ this.info.id
+			+ '\''
+			+ ", frameCount="
+			+ i
+			+ ", x="
+			+ this.x
+			+ ", y="
+			+ this.y
+			+ ", height="
+			+ this.info.height
+			+ ", width="
+			+ this.info.width
+			+ ", u0="
+			+ this.uMin
+			+ ", u1="
+			+ this.uMax
+			+ ", v0="
+			+ this.vMin
+			+ ", v1="
+			+ this.vMax
+			+ '}';
+	}
+
+	public boolean isPixelTransparent(int i, int j, int k) {
+		return (this.images[0].getPixelRgba(j + this.frameXs[i] * this.info.width, k + this.frameYs[i] * this.info.height) >> 24 & 0xFF) == 0;
+	}
+
+	public void upload() {
+		this.upload(0);
+	}
+
+	private float getFrameDeltaFactor() {
+		float f = (float)this.info.width / (this.uMax - this.uMin);
+		float g = (float)this.info.height / (this.vMax - this.vMin);
+		return Math.max(g, f);
+	}
+
+	public float getAnimationFrameDelta() {
+		return 4.0F / this.getFrameDeltaFactor();
 	}
 
 	public void tickAnimation() {
@@ -291,204 +245,105 @@ public class Sprite {
 			if (i != k && k >= 0 && k < this.getFrameCount()) {
 				this.upload(k);
 			}
-		} else if (this.animationMetadata.shouldInterpolate()) {
-			this.interpolateFrames();
+		} else if (this.interpolation != null) {
+			if (!RenderSystem.isOnRenderThread()) {
+				RenderSystem.recordRenderCall(() -> interpolation.method_24128());
+			} else {
+				this.interpolation.method_24128();
+			}
 		}
 	}
 
-	private void interpolateFrames() {
-		double d = 1.0 - (double)this.frameTicks / (double)this.animationMetadata.getFrameTime(this.frameIndex);
-		int i = this.animationMetadata.getFrameIndex(this.frameIndex);
-		int j = this.animationMetadata.getFrameCount() == 0 ? this.getFrameCount() : this.animationMetadata.getFrameCount();
-		int k = this.animationMetadata.getFrameIndex((this.frameIndex + 1) % j);
-		if (i != k && k >= 0 && k < this.getFrameCount()) {
-			if (this.interpolatedImages == null || this.interpolatedImages.length != this.images.length) {
-				if (this.interpolatedImages != null) {
-					for (NativeImage nativeImage : this.interpolatedImages) {
-						if (nativeImage != null) {
-							nativeImage.close();
+	public boolean isAnimated() {
+		return this.animationMetadata.getFrameCount() > 1;
+	}
+
+	public VertexConsumer getTextureSpecificVertexConsumer(VertexConsumer vertexConsumer) {
+		return new SpriteTexturedVertexConsumer(vertexConsumer, this);
+	}
+
+	public static final class Info {
+		private final Identifier id;
+		private final int width;
+		private final int height;
+		private final AnimationResourceMetadata animationData;
+
+		public Info(Identifier identifier, int i, int j, AnimationResourceMetadata animationResourceMetadata) {
+			this.id = identifier;
+			this.width = i;
+			this.height = j;
+			this.animationData = animationResourceMetadata;
+		}
+
+		public Identifier getId() {
+			return this.id;
+		}
+
+		public int getWidth() {
+			return this.width;
+		}
+
+		public int getHeight() {
+			return this.height;
+		}
+	}
+
+	final class Interpolation implements AutoCloseable {
+		private final NativeImage[] images;
+
+		private Interpolation(Sprite.Info info, int i) {
+			this.images = new NativeImage[i + 1];
+
+			for (int j = 0; j < this.images.length; j++) {
+				int k = info.width >> j;
+				int l = info.height >> j;
+				if (this.images[j] == null) {
+					this.images[j] = new NativeImage(k, l, false);
+				}
+			}
+		}
+
+		private void method_24128() {
+			double d = 1.0 - (double)Sprite.this.frameTicks / (double)Sprite.this.animationMetadata.getFrameTime(Sprite.this.frameIndex);
+			int i = Sprite.this.animationMetadata.getFrameIndex(Sprite.this.frameIndex);
+			int j = Sprite.this.animationMetadata.getFrameCount() == 0 ? Sprite.this.getFrameCount() : Sprite.this.animationMetadata.getFrameCount();
+			int k = Sprite.this.animationMetadata.getFrameIndex((Sprite.this.frameIndex + 1) % j);
+			if (i != k && k >= 0 && k < Sprite.this.getFrameCount()) {
+				for (int l = 0; l < this.images.length; l++) {
+					int m = Sprite.this.info.width >> l;
+					int n = Sprite.this.info.height >> l;
+
+					for (int o = 0; o < n; o++) {
+						for (int p = 0; p < m; p++) {
+							int q = this.method_24130(i, l, p, o);
+							int r = this.method_24130(k, l, p, o);
+							int s = this.method_24129(d, q >> 16 & 0xFF, r >> 16 & 0xFF);
+							int t = this.method_24129(d, q >> 8 & 0xFF, r >> 8 & 0xFF);
+							int u = this.method_24129(d, q & 0xFF, r & 0xFF);
+							this.images[l].setPixelRgba(p, o, q & 0xFF000000 | s << 16 | t << 8 | u);
 						}
 					}
 				}
 
-				this.interpolatedImages = new NativeImage[this.images.length];
+				Sprite.this.upload(0, 0, this.images);
 			}
-
-			for (int l = 0; l < this.images.length; l++) {
-				int m = this.width >> l;
-				int n = this.height >> l;
-				if (this.interpolatedImages[l] == null) {
-					this.interpolatedImages[l] = new NativeImage(m, n, false);
-				}
-
-				for (int o = 0; o < n; o++) {
-					for (int p = 0; p < m; p++) {
-						int q = this.getFramePixel(i, l, p, o);
-						int r = this.getFramePixel(k, l, p, o);
-						int s = this.lerp(d, q >> 16 & 0xFF, r >> 16 & 0xFF);
-						int t = this.lerp(d, q >> 8 & 0xFF, r >> 8 & 0xFF);
-						int u = this.lerp(d, q & 0xFF, r & 0xFF);
-						this.interpolatedImages[l].setPixelRGBA(p, o, q & 0xFF000000 | s << 16 | t << 8 | u);
-					}
-				}
-			}
-
-			this.upload(0, 0, this.interpolatedImages);
-		}
-	}
-
-	private int lerp(double d, int i, int j) {
-		return (int)(d * (double)i + (1.0 - d) * (double)j);
-	}
-
-	public int getFrameCount() {
-		return this.frameXs == null ? 0 : this.frameXs.length;
-	}
-
-	public void load(Resource resource, int i) throws IOException {
-		NativeImage nativeImage = NativeImage.read(resource.getInputStream());
-		this.images = new NativeImage[i];
-		this.images[0] = nativeImage;
-		int j;
-		if (this.animationMetadata != null && this.animationMetadata.getWidth() != -1) {
-			j = nativeImage.getWidth() / this.animationMetadata.getWidth();
-		} else {
-			j = nativeImage.getWidth() / this.width;
 		}
 
-		int l;
-		if (this.animationMetadata != null && this.animationMetadata.getHeight() != -1) {
-			l = nativeImage.getHeight() / this.animationMetadata.getHeight();
-		} else {
-			l = nativeImage.getHeight() / this.height;
+		private int method_24130(int i, int j, int k, int l) {
+			return Sprite.this.images[j]
+				.getPixelRgba(k + (Sprite.this.frameXs[i] * Sprite.this.info.width >> j), l + (Sprite.this.frameYs[i] * Sprite.this.info.height >> j));
 		}
 
-		if (this.animationMetadata != null && this.animationMetadata.getFrameCount() > 0) {
-			int n = (Integer)this.animationMetadata.getFrameIndexSet().stream().max(Integer::compareTo).get() + 1;
-			this.frameXs = new int[n];
-			this.frameYs = new int[n];
-			Arrays.fill(this.frameXs, -1);
-			Arrays.fill(this.frameYs, -1);
-
-			for (int o : this.animationMetadata.getFrameIndexSet()) {
-				if (o >= j * l) {
-					throw new RuntimeException("invalid frameindex " + o);
-				}
-
-				int p = o / j;
-				int q = o % j;
-				this.frameXs[o] = q;
-				this.frameYs[o] = p;
-			}
-		} else {
-			List<AnimationFrameResourceMetadata> list = Lists.newArrayList();
-			int r = j * l;
-			this.frameXs = new int[r];
-			this.frameYs = new int[r];
-
-			for (int s = 0; s < l; s++) {
-				for (int t = 0; t < j; t++) {
-					int u = s * j + t;
-					this.frameXs[u] = t;
-					this.frameYs[u] = s;
-					list.add(new AnimationFrameResourceMetadata(u, -1));
-				}
-			}
-
-			int v = 1;
-			boolean bl = false;
-			if (this.animationMetadata != null) {
-				v = this.animationMetadata.getDefaultFrameTime();
-				bl = this.animationMetadata.shouldInterpolate();
-			}
-
-			this.animationMetadata = new AnimationResourceMetadata(list, this.width, this.height, v, bl);
+		private int method_24129(double d, int i, int j) {
+			return (int)(d * (double)i + (1.0 - d) * (double)j);
 		}
-	}
 
-	public void generateMipmaps(int i) {
-		try {
-			this.generateMipmapsInternal(i);
-		} catch (Throwable var5) {
-			CrashReport crashReport = CrashReport.create(var5, "Generating mipmaps for frame");
-			CrashReportSection crashReportSection = crashReport.addElement("Frame being iterated");
-			crashReportSection.add("Frame sizes", (CrashCallable<String>)(() -> {
-				StringBuilder stringBuilder = new StringBuilder();
-
-				for (NativeImage nativeImage : this.images) {
-					if (stringBuilder.length() > 0) {
-						stringBuilder.append(", ");
-					}
-
-					stringBuilder.append(nativeImage == null ? "null" : nativeImage.getWidth() + "x" + nativeImage.getHeight());
-				}
-
-				return stringBuilder.toString();
-			}));
-			throw new CrashException(crashReport);
-		}
-	}
-
-	public void destroy() {
-		if (this.images != null) {
+		public void close() {
 			for (NativeImage nativeImage : this.images) {
 				if (nativeImage != null) {
 					nativeImage.close();
 				}
 			}
 		}
-
-		this.images = null;
-		if (this.interpolatedImages != null) {
-			for (NativeImage nativeImage2 : this.interpolatedImages) {
-				if (nativeImage2 != null) {
-					nativeImage2.close();
-				}
-			}
-		}
-
-		this.interpolatedImages = null;
-	}
-
-	public boolean isAnimated() {
-		return this.animationMetadata != null && this.animationMetadata.getFrameCount() > 1;
-	}
-
-	public String toString() {
-		int i = this.frameXs == null ? 0 : this.frameXs.length;
-		return "TextureAtlasSprite{name='"
-			+ this.id
-			+ '\''
-			+ ", frameCount="
-			+ i
-			+ ", x="
-			+ this.x
-			+ ", y="
-			+ this.y
-			+ ", height="
-			+ this.height
-			+ ", width="
-			+ this.width
-			+ ", u0="
-			+ this.uMin
-			+ ", u1="
-			+ this.uMax
-			+ ", v0="
-			+ this.vMin
-			+ ", v1="
-			+ this.vMax
-			+ '}';
-	}
-
-	private int getFramePixel(int i, int j, int k, int l) {
-		return this.images[j].getPixelRGBA(k + (this.frameXs[i] * this.width >> j), l + (this.frameYs[i] * this.height >> j));
-	}
-
-	public boolean isPixelTransparent(int i, int j, int k) {
-		return (this.images[0].getPixelRGBA(j + this.frameXs[i] * this.width, k + this.frameYs[i] * this.height) >> 24 & 0xFF) == 0;
-	}
-
-	public void upload() {
-		this.upload(0);
 	}
 }

@@ -46,6 +46,6 @@ public interface RecipeSerializer<T extends Recipe<?>> {
 	void write(PacketByteBuf packetByteBuf, T recipe);
 
 	static <S extends RecipeSerializer<T>, T extends Recipe<?>> S register(String string, S recipeSerializer) {
-		return Registry.register(Registry.RECIPE_SERIALIZER, string, recipeSerializer);
+		return Registry.register(Registry.field_17598, string, recipeSerializer);
 	}
 }

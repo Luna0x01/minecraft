@@ -2,6 +2,7 @@ package net.minecraft.server.command;
 
 import com.google.common.collect.Maps;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -12,6 +13,8 @@ import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
 import java.util.Map;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.network.packet.CommandTreeS2CPacket;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.suggestion.SuggestionProviders;
@@ -36,6 +39,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,6 +88,7 @@ public class CommandManager {
 		SetBlockCommand.register(this.dispatcher);
 		SpawnPointCommand.register(this.dispatcher);
 		SetWorldSpawnCommand.register(this.dispatcher);
+		SpectateCommand.register(this.dispatcher);
 		SpreadPlayersCommand.register(this.dispatcher);
 		StopSoundCommand.register(this.dispatcher);
 		SummonCommand.register(this.dispatcher);
@@ -97,6 +102,10 @@ public class CommandManager {
 		TriggerCommand.register(this.dispatcher);
 		WeatherCommand.register(this.dispatcher);
 		WorldBorderCommand.register(this.dispatcher);
+		if (SharedConstants.isDevelopment) {
+			TestCommand.register(this.dispatcher);
+		}
+
 		if (bl) {
 			BanIpCommand.register(this.dispatcher);
 			BanListCommand.register(this.dispatcher);
@@ -134,7 +143,7 @@ public class CommandManager {
 		try {
 			return this.dispatcher.execute(stringReader, serverCommandSource);
 		} catch (CommandException var13) {
-			serverCommandSource.sendError(var13.getMessageText());
+			serverCommandSource.sendError(var13.getTextMessage());
 			return 0;
 		} catch (CommandSyntaxException var14) {
 			serverCommandSource.sendError(Texts.toText(var14.getRawMessage()));
@@ -161,6 +170,7 @@ public class CommandManager {
 		} catch (Exception var15) {
 			Text text3 = new LiteralText(var15.getMessage() == null ? var15.getClass().getName() : var15.getMessage());
 			if (LOGGER.isDebugEnabled()) {
+				LOGGER.error("Command exception: {}", string, var15);
 				StackTraceElement[] stackTraceElements = var15.getStackTrace();
 
 				for (int j = 0; j < Math.min(stackTraceElements.length, 3); j++) {
@@ -176,6 +186,11 @@ public class CommandManager {
 			serverCommandSource.sendError(
 				new TranslatableText("command.failed").styled(style -> style.setHoverEvent(new HoverEvent(HoverEvent.Action.field_11762, text3)))
 			);
+			if (SharedConstants.isDevelopment) {
+				serverCommandSource.sendError(new LiteralText(Util.getInnermostMessage(var15)));
+				LOGGER.error("'" + string + "' threw an exception", var15);
+			}
+
 			var20 = 0;
 		} finally {
 			serverCommandSource.getMinecraftServer().getProfiler().pop();
@@ -248,6 +263,19 @@ public class CommandManager {
 
 	public CommandDispatcher<ServerCommandSource> getDispatcher() {
 		return this.dispatcher;
+	}
+
+	@Nullable
+	public static <S> CommandSyntaxException getException(ParseResults<S> parseResults) {
+		if (!parseResults.getReader().canRead()) {
+			return null;
+		} else if (parseResults.getExceptions().size() == 1) {
+			return (CommandSyntaxException)parseResults.getExceptions().values().iterator().next();
+		} else {
+			return parseResults.getContext().getRange().isEmpty()
+				? CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().createWithContext(parseResults.getReader())
+				: CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(parseResults.getReader());
+		}
 	}
 
 	@FunctionalInterface

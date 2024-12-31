@@ -3,7 +3,7 @@ package net.minecraft.block;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -14,7 +14,7 @@ public class PaneBlock extends HorizontalConnectedBlock {
 	protected PaneBlock(Block.Settings settings) {
 		super(1.0F, 1.0F, 16.0F, 16.0F, 16.0F, settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(NORTH, Boolean.valueOf(false))
 				.with(EAST, Boolean.valueOf(false))
@@ -79,16 +79,11 @@ public class PaneBlock extends HorizontalConnectedBlock {
 
 	public final boolean connectsTo(BlockState blockState, boolean bl) {
 		Block block = blockState.getBlock();
-		return !canConnect(block) && bl || block instanceof PaneBlock;
+		return !cannotConnect(block) && bl || block instanceof PaneBlock;
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.CUTOUT_MIPPED;
-	}
-
-	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(NORTH, EAST, WEST, SOUTH, WATERLOGGED);
 	}
 }

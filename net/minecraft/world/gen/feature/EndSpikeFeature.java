@@ -42,7 +42,7 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 		return (List<EndSpikeFeature.Spike>)CACHE.getUnchecked(l);
 	}
 
-	public boolean method_15887(
+	public boolean generate(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, EndSpikeFeatureConfig endSpikeFeatureConfig
 	) {
 		List<EndSpikeFeature.Spike> list = endSpikeFeatureConfig.getSpikes();
@@ -65,7 +65,8 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 		for (BlockPos blockPos : BlockPos.iterate(
 			new BlockPos(spike.getCenterX() - i, 0, spike.getCenterZ() - i), new BlockPos(spike.getCenterX() + i, spike.getHeight() + 10, spike.getCenterZ() + i)
 		)) {
-			if (blockPos.isWithinDistance(new BlockPos(spike.getCenterX(), blockPos.getY(), spike.getCenterZ()), (double)i) && blockPos.getY() < spike.getHeight()) {
+			if (blockPos.getSquaredDistance((double)spike.getCenterX(), (double)blockPos.getY(), (double)spike.getCenterZ(), false) <= (double)(i * i + 1)
+				&& blockPos.getY() < spike.getHeight()) {
 				this.setBlockState(iWorld, blockPos, Blocks.field_10540.getDefaultState());
 			} else if (blockPos.getY() > 65) {
 				this.setBlockState(iWorld, blockPos, Blocks.field_10124.getDefaultState());
@@ -103,7 +104,7 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 		EnderCrystalEntity enderCrystalEntity = EntityType.field_6110.create(iWorld.getWorld());
 		enderCrystalEntity.setBeamTarget(endSpikeFeatureConfig.getPos());
 		enderCrystalEntity.setInvulnerable(endSpikeFeatureConfig.isCrystalInvulerable());
-		enderCrystalEntity.setPositionAndAngles(
+		enderCrystalEntity.refreshPositionAndAngles(
 			(double)((float)spike.getCenterX() + 0.5F), (double)(spike.getHeight() + 1), (double)((float)spike.getCenterZ() + 0.5F), random.nextFloat() * 360.0F, 0.0F
 		);
 		iWorld.spawnEntity(enderCrystalEntity);
@@ -155,7 +156,7 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 			return this.boundingBox;
 		}
 
-		<T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
+		public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
 			Builder<T, T> builder = ImmutableMap.builder();
 			builder.put(dynamicOps.createString("centerX"), dynamicOps.createInt(this.centerX));
 			builder.put(dynamicOps.createString("centerZ"), dynamicOps.createInt(this.centerZ));
@@ -180,7 +181,7 @@ public class EndSpikeFeature extends Feature<EndSpikeFeatureConfig> {
 		private SpikeCache() {
 		}
 
-		public List<EndSpikeFeature.Spike> method_14507(Long long_) {
+		public List<EndSpikeFeature.Spike> load(Long long_) {
 			List<Integer> list = (List<Integer>)IntStream.range(0, 10).boxed().collect(Collectors.toList());
 			Collections.shuffle(list, new Random(long_));
 			List<EndSpikeFeature.Spike> list2 = Lists.newArrayList();

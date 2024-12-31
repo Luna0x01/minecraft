@@ -29,7 +29,7 @@ public class SpectralArrowEntity extends ProjectileEntity {
 	public void tick() {
 		super.tick();
 		if (this.world.isClient && !this.inGround) {
-			this.world.addParticle(ParticleTypes.field_11213, this.x, this.y, this.z, 0.0, 0.0, 0.0);
+			this.world.addParticle(ParticleTypes.field_11213, this.getX(), this.getY(), this.getZ(), 0.0, 0.0, 0.0);
 		}
 	}
 
@@ -42,13 +42,13 @@ public class SpectralArrowEntity extends ProjectileEntity {
 	protected void onHit(LivingEntity livingEntity) {
 		super.onHit(livingEntity);
 		StatusEffectInstance statusEffectInstance = new StatusEffectInstance(StatusEffects.field_5912, this.duration, 0);
-		livingEntity.addPotionEffect(statusEffectInstance);
+		livingEntity.addStatusEffect(statusEffectInstance);
 	}
 
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("Duration")) {
+		if (compoundTag.contains("Duration")) {
 			this.duration = compoundTag.getInt("Duration");
 		}
 	}

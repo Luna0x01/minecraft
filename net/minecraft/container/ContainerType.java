@@ -25,7 +25,7 @@ public class ContainerType<T extends Container> {
 	public static final ContainerType<MerchantContainer> field_17340 = register("merchant", MerchantContainer::new);
 	public static final ContainerType<ShulkerBoxContainer> field_17341 = register("shulker_box", ShulkerBoxContainer::new);
 	public static final ContainerType<SmokerContainer> field_17342 = register("smoker", SmokerContainer::new);
-	public static final ContainerType<CartographyTableContainer> field_17343 = register("cartography", CartographyTableContainer::new);
+	public static final ContainerType<CartographyTableContainer> field_17343 = register("cartography_table", CartographyTableContainer::new);
 	public static final ContainerType<StonecutterContainer> field_17625 = register("stonecutter", StonecutterContainer::new);
 	private final ContainerType.Factory<T> factory;
 

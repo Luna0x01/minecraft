@@ -7,16 +7,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.loot.LootSupplier;
-import net.minecraft.world.loot.context.LootContext;
-import net.minecraft.world.loot.context.LootContextParameters;
-import net.minecraft.world.loot.context.LootContextTypes;
 
 public abstract class LootableContainerBlockEntity extends LockableContainerBlockEntity {
 	@Nullable
@@ -35,7 +35,7 @@ public abstract class LootableContainerBlockEntity extends LockableContainerBloc
 	}
 
 	protected boolean deserializeLootTable(CompoundTag compoundTag) {
-		if (compoundTag.containsKey("LootTable", 8)) {
+		if (compoundTag.contains("LootTable", 8)) {
 			this.lootTableId = new Identifier(compoundTag.getString("LootTable"));
 			this.lootTableSeed = compoundTag.getLong("LootTableSeed");
 			return true;
@@ -59,7 +59,7 @@ public abstract class LootableContainerBlockEntity extends LockableContainerBloc
 
 	public void checkLootInteraction(@Nullable PlayerEntity playerEntity) {
 		if (this.lootTableId != null && this.world.getServer() != null) {
-			LootSupplier lootSupplier = this.world.getServer().getLootManager().getSupplier(this.lootTableId);
+			LootTable lootTable = this.world.getServer().getLootManager().getSupplier(this.lootTableId);
 			this.lootTableId = null;
 			LootContext.Builder builder = new LootContext.Builder((ServerWorld)this.world)
 				.put(LootContextParameters.field_1232, new BlockPos(this.pos))
@@ -68,13 +68,19 @@ public abstract class LootableContainerBlockEntity extends LockableContainerBloc
 				builder.setLuck(playerEntity.getLuck()).put(LootContextParameters.field_1226, playerEntity);
 			}
 
-			lootSupplier.supplyInventory(this, builder.build(LootContextTypes.field_1179));
+			lootTable.supplyInventory(this, builder.build(LootContextTypes.field_1179));
 		}
 	}
 
 	public void setLootTable(Identifier identifier, long l) {
 		this.lootTableId = identifier;
 		this.lootTableSeed = l;
+	}
+
+	@Override
+	public boolean isInvEmpty() {
+		this.checkLootInteraction(null);
+		return this.getInvStackList().stream().allMatch(ItemStack::isEmpty);
 	}
 
 	@Override

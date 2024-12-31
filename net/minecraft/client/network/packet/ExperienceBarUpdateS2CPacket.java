@@ -33,7 +33,7 @@ public class ExperienceBarUpdateS2CPacket implements Packet<ClientPlayPacketList
 		packetByteBuf.writeVarInt(this.experienceLevel);
 	}
 
-	public void method_11829(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onExperienceBarUpdate(this);
 	}
 

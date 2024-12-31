@@ -162,7 +162,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 	}
 
-	public void method_11721(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onPlayerList(this);
 	}
 

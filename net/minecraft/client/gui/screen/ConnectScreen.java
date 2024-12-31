@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientLoginNetworkHandler;
-import net.minecraft.client.options.ServerEntry;
+import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.NarratorManager;
 import net.minecraft.network.ClientConnection;
@@ -16,8 +16,8 @@ import net.minecraft.server.network.packet.HandshakeC2SPacket;
 import net.minecraft.server.network.packet.LoginHelloC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
 import net.minecraft.util.UncaughtExceptionLogger;
+import net.minecraft.util.Util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,15 +28,15 @@ public class ConnectScreen extends Screen {
 	private boolean connectingCancelled;
 	private final Screen parent;
 	private Text status = new TranslatableText("connect.connecting");
-	private long field_19097 = -1L;
+	private long narratorTimer = -1L;
 
-	public ConnectScreen(Screen screen, MinecraftClient minecraftClient, ServerEntry serverEntry) {
+	public ConnectScreen(Screen screen, MinecraftClient minecraftClient, ServerInfo serverInfo) {
 		super(NarratorManager.EMPTY);
 		this.minecraft = minecraftClient;
 		this.parent = screen;
-		ServerAddress serverAddress = ServerAddress.parse(serverEntry.address);
+		ServerAddress serverAddress = ServerAddress.parse(serverInfo.address);
 		minecraftClient.disconnect();
-		minecraftClient.setCurrentServerEntry(serverEntry);
+		minecraftClient.setCurrentServerEntry(serverInfo);
 		this.connect(serverAddress.getAddress(), serverAddress.getPort());
 	}
 
@@ -67,7 +67,7 @@ public class ConnectScreen extends Screen {
 								ConnectScreen.this.connection, ConnectScreen.this.minecraft, ConnectScreen.this.parent, text -> ConnectScreen.this.setStatus(text)
 							)
 						);
-					ConnectScreen.this.connection.send(new HandshakeC2SPacket(string, i, NetworkState.field_11688));
+					ConnectScreen.this.connection.send(new HandshakeC2SPacket(string, i, NetworkState.field_20593));
 					ConnectScreen.this.connection.send(new LoginHelloC2SPacket(ConnectScreen.this.minecraft.getSession().getProfile()));
 				} catch (UnknownHostException var4) {
 					if (ConnectScreen.this.connectingCancelled) {
@@ -134,9 +134,9 @@ public class ConnectScreen extends Screen {
 	@Override
 	public void render(int i, int j, float f) {
 		this.renderBackground();
-		long l = SystemUtil.getMeasuringTimeMs();
-		if (l - this.field_19097 > 2000L) {
-			this.field_19097 = l;
+		long l = Util.getMeasuringTimeMs();
+		if (l - this.narratorTimer > 2000L) {
+			this.narratorTimer = l;
 			NarratorManager.INSTANCE.narrate(new TranslatableText("narrator.joining").getString());
 		}
 

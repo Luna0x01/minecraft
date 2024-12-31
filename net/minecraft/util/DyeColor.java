@@ -61,10 +61,6 @@ public enum DyeColor implements StringIdentifiable {
 		return this.name;
 	}
 
-	public int getColorSwapped() {
-		return this.colorSwapped;
-	}
-
 	public float[] getColorComponents() {
 		return this.colorComponents;
 	}

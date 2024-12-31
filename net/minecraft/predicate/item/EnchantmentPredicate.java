@@ -8,13 +8,14 @@ import com.google.gson.JsonSyntaxException;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.predicate.NumberRange;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.NumberRange;
 import net.minecraft.util.registry.Registry;
 
 public class EnchantmentPredicate {
 	public static final EnchantmentPredicate ANY = new EnchantmentPredicate();
+	public static final EnchantmentPredicate[] ARRAY_OF_ANY = new EnchantmentPredicate[0];
 	private final Enchantment enchantment;
 	private final NumberRange.IntRange levels;
 
@@ -57,10 +58,10 @@ public class EnchantmentPredicate {
 		} else {
 			JsonObject jsonObject = new JsonObject();
 			if (this.enchantment != null) {
-				jsonObject.addProperty("enchantment", Registry.ENCHANTMENT.getId(this.enchantment).toString());
+				jsonObject.addProperty("enchantment", Registry.field_11160.getId(this.enchantment).toString());
 			}
 
-			jsonObject.add("levels", this.levels.serialize());
+			jsonObject.add("levels", this.levels.toJson());
 			return jsonObject;
 		}
 	}
@@ -71,7 +72,7 @@ public class EnchantmentPredicate {
 			Enchantment enchantment = null;
 			if (jsonObject.has("enchantment")) {
 				Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "enchantment"));
-				enchantment = (Enchantment)Registry.ENCHANTMENT
+				enchantment = (Enchantment)Registry.field_11160
 					.getOrEmpty(identifier)
 					.orElseThrow(() -> new JsonSyntaxException("Unknown enchantment '" + identifier + "'"));
 			}
@@ -94,7 +95,7 @@ public class EnchantmentPredicate {
 
 			return enchantmentPredicates;
 		} else {
-			return new EnchantmentPredicate[0];
+			return ARRAY_OF_ANY;
 		}
 	}
 }

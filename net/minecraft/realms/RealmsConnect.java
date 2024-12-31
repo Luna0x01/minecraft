@@ -49,7 +49,7 @@ public class RealmsConnect {
 							return;
 						}
 
-						RealmsConnect.this.connection.send(new HandshakeC2SPacket(string, i, NetworkState.field_11688));
+						RealmsConnect.this.connection.send(new HandshakeC2SPacket(string, i, NetworkState.field_20593));
 						if (RealmsConnect.this.aborted) {
 							return;
 						}

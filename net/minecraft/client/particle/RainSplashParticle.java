@@ -48,7 +48,7 @@ public class RainSplashParticle extends SpriteBillboardParticle {
 				this.world
 					.getBlockState(blockPos)
 					.getCollisionShape(this.world, blockPos)
-					.method_1102(Direction.Axis.field_11052, this.x - (double)blockPos.getX(), this.z - (double)blockPos.getZ()),
+					.getEndingCoord(Direction.Axis.field_11052, this.x - (double)blockPos.getX(), this.z - (double)blockPos.getZ()),
 				(double)this.world.getFluidState(blockPos).getHeight(this.world, blockPos)
 			);
 			if (d > 0.0 && this.y < (double)blockPos.getY() + d) {
@@ -64,7 +64,7 @@ public class RainSplashParticle extends SpriteBillboardParticle {
 			this.field_17891 = spriteProvider;
 		}
 
-		public Particle method_3116(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			RainSplashParticle rainSplashParticle = new RainSplashParticle(world, d, e, f);
 			rainSplashParticle.setSprite(this.field_17891);
 			return rainSplashParticle;

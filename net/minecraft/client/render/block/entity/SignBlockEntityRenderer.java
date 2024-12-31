@@ -1,144 +1,112 @@
 package net.minecraft.client.render.block.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
+import net.minecraft.block.AbstractSignBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.SignBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.render.entity.model.SignBlockEntityModel;
-import net.minecraft.client.util.TextComponentUtil;
+import net.minecraft.client.model.Model;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.TexturedRenderLayers;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.Texts;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.SignType;
 import net.minecraft.util.math.Direction;
 
 public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity> {
-	private static final Identifier OAK_TEX = new Identifier("textures/entity/signs/oak.png");
-	private static final Identifier SPRUCE_TEX = new Identifier("textures/entity/signs/spruce.png");
-	private static final Identifier BIRCH_TEX = new Identifier("textures/entity/signs/birch.png");
-	private static final Identifier ACACIA_TEX = new Identifier("textures/entity/signs/acacia.png");
-	private static final Identifier JUNGLE_TEX = new Identifier("textures/entity/signs/jungle.png");
-	private static final Identifier DARK_OAK_TEX = new Identifier("textures/entity/signs/dark_oak.png");
-	private final SignBlockEntityModel model = new SignBlockEntityModel();
+	private final SignBlockEntityRenderer.SignModel model = new SignBlockEntityRenderer.SignModel();
 
-	public void method_3582(SignBlockEntity signBlockEntity, double d, double e, double f, float g, int i) {
+	public SignBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
+		super(blockEntityRenderDispatcher);
+	}
+
+	public void render(SignBlockEntity signBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
 		BlockState blockState = signBlockEntity.getCachedState();
-		GlStateManager.pushMatrix();
-		float h = 0.6666667F;
+		matrixStack.push();
+		float g = 0.6666667F;
 		if (blockState.getBlock() instanceof SignBlock) {
-			GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-			GlStateManager.rotatef(-((float)((Integer)blockState.get(SignBlock.ROTATION) * 360) / 16.0F), 0.0F, 1.0F, 0.0F);
-			this.model.getSignpostModel().visible = true;
+			matrixStack.translate(0.5, 0.5, 0.5);
+			float h = -((float)((Integer)blockState.get(SignBlock.ROTATION) * 360) / 16.0F);
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(h));
+			this.model.foot.visible = true;
 		} else {
-			GlStateManager.translatef((float)d + 0.5F, (float)e + 0.5F, (float)f + 0.5F);
-			GlStateManager.rotatef(-((Direction)blockState.get(WallSignBlock.FACING)).asRotation(), 0.0F, 1.0F, 0.0F);
-			GlStateManager.translatef(0.0F, -0.3125F, -0.4375F);
-			this.model.getSignpostModel().visible = false;
+			matrixStack.translate(0.5, 0.5, 0.5);
+			float k = -((Direction)blockState.get(WallSignBlock.FACING)).asRotation();
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(k));
+			matrixStack.translate(0.0, -0.3125, -0.4375);
+			this.model.foot.visible = false;
 		}
 
-		if (i >= 0) {
-			this.bindTexture(DESTROY_STAGE_TEXTURES[i]);
-			GlStateManager.matrixMode(5890);
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(4.0F, 2.0F, 1.0F);
-			GlStateManager.translatef(0.0625F, 0.0625F, 0.0625F);
-			GlStateManager.matrixMode(5888);
-		} else {
-			this.bindTexture(this.getModelTexture(blockState.getBlock()));
-		}
+		matrixStack.push();
+		matrixStack.scale(0.6666667F, -0.6666667F, -0.6666667F);
+		SpriteIdentifier spriteIdentifier = getModelTexture(blockState.getBlock());
+		VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumerProvider, this.model::getLayer);
+		this.model.field.render(matrixStack, vertexConsumer, i, j);
+		this.model.foot.render(matrixStack, vertexConsumer, i, j);
+		matrixStack.pop();
+		TextRenderer textRenderer = this.dispatcher.getTextRenderer();
+		float l = 0.010416667F;
+		matrixStack.translate(0.0, 0.33333334F, 0.046666667F);
+		matrixStack.scale(0.010416667F, -0.010416667F, 0.010416667F);
+		int m = signBlockEntity.getTextColor().getSignColor();
+		double d = 0.4;
+		int n = (int)((double)NativeImage.method_24033(m) * 0.4);
+		int o = (int)((double)NativeImage.method_24034(m) * 0.4);
+		int p = (int)((double)NativeImage.method_24035(m) * 0.4);
+		int q = NativeImage.method_24031(0, p, o, n);
 
-		GlStateManager.enableRescaleNormal();
-		GlStateManager.pushMatrix();
-		GlStateManager.scalef(0.6666667F, -0.6666667F, -0.6666667F);
-		this.model.render();
-		GlStateManager.popMatrix();
-		TextRenderer textRenderer = this.getFontRenderer();
-		float j = 0.010416667F;
-		GlStateManager.translatef(0.0F, 0.33333334F, 0.046666667F);
-		GlStateManager.scalef(0.010416667F, -0.010416667F, 0.010416667F);
-		GlStateManager.normal3f(0.0F, 0.0F, -0.010416667F);
-		GlStateManager.depthMask(false);
-		int k = signBlockEntity.getTextColor().getSignColor();
-		if (i < 0) {
-			for (int l = 0; l < 4; l++) {
-				String string = signBlockEntity.getTextBeingEditedOnRow(l, text -> {
-					List<Text> list = TextComponentUtil.wrapLines(text, 90, textRenderer, false, true);
-					return list.isEmpty() ? "" : ((Text)list.get(0)).asFormattedString();
-				});
-				if (string != null) {
-					textRenderer.draw(string, (float)(-textRenderer.getStringWidth(string) / 2), (float)(l * 10 - signBlockEntity.text.length * 5), k);
-					if (l == signBlockEntity.getCurrentRow() && signBlockEntity.getSelectionStart() >= 0) {
-						int m = textRenderer.getStringWidth(string.substring(0, Math.max(Math.min(signBlockEntity.getSelectionStart(), string.length()), 0)));
-						int n = textRenderer.isRightToLeft() ? -1 : 1;
-						int o = (m - textRenderer.getStringWidth(string) / 2) * n;
-						int p = l * 10 - signBlockEntity.text.length * 5;
-						if (signBlockEntity.isCaretVisible()) {
-							if (signBlockEntity.getSelectionStart() < string.length()) {
-								DrawableHelper.fill(o, p - 1, o + 1, p + 9, 0xFF000000 | k);
-							} else {
-								textRenderer.draw("_", (float)o, (float)p, k);
-							}
-						}
-
-						if (signBlockEntity.getSelectionEnd() != signBlockEntity.getSelectionStart()) {
-							int q = Math.min(signBlockEntity.getSelectionStart(), signBlockEntity.getSelectionEnd());
-							int r = Math.max(signBlockEntity.getSelectionStart(), signBlockEntity.getSelectionEnd());
-							int s = (textRenderer.getStringWidth(string.substring(0, q)) - textRenderer.getStringWidth(string) / 2) * n;
-							int t = (textRenderer.getStringWidth(string.substring(0, r)) - textRenderer.getStringWidth(string) / 2) * n;
-							this.method_16210(Math.min(s, t), p, Math.max(s, t), p + 9);
-						}
-					}
-				}
+		for (int r = 0; r < 4; r++) {
+			String string = signBlockEntity.getTextBeingEditedOnRow(r, text -> {
+				List<Text> list = Texts.wrapLines(text, 90, textRenderer, false, true);
+				return list.isEmpty() ? "" : ((Text)list.get(0)).asFormattedString();
+			});
+			if (string != null) {
+				float s = (float)(-textRenderer.getStringWidth(string) / 2);
+				textRenderer.draw(
+					string, s, (float)(r * 10 - signBlockEntity.text.length * 5), q, false, matrixStack.peek().getModel(), vertexConsumerProvider, false, 0, i
+				);
 			}
 		}
 
-		GlStateManager.depthMask(true);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.popMatrix();
-		if (i >= 0) {
-			GlStateManager.matrixMode(5890);
-			GlStateManager.popMatrix();
-			GlStateManager.matrixMode(5888);
-		}
+		matrixStack.pop();
 	}
 
-	private Identifier getModelTexture(Block block) {
-		if (block == Blocks.field_10121 || block == Blocks.field_10187) {
-			return OAK_TEX;
-		} else if (block == Blocks.field_10411 || block == Blocks.field_10088) {
-			return SPRUCE_TEX;
-		} else if (block == Blocks.field_10231 || block == Blocks.field_10391) {
-			return BIRCH_TEX;
-		} else if (block == Blocks.field_10284 || block == Blocks.field_10401) {
-			return ACACIA_TEX;
-		} else if (block == Blocks.field_10544 || block == Blocks.field_10587) {
-			return JUNGLE_TEX;
+	public static SpriteIdentifier getModelTexture(Block block) {
+		SignType signType;
+		if (block instanceof AbstractSignBlock) {
+			signType = ((AbstractSignBlock)block).getSignType();
 		} else {
-			return block != Blocks.field_10330 && block != Blocks.field_10265 ? OAK_TEX : DARK_OAK_TEX;
+			signType = SignType.OAK;
 		}
+
+		return TexturedRenderLayers.getSignTextureId(signType);
 	}
 
-	private void method_16210(int i, int j, int k, int l) {
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
-		GlStateManager.color4f(0.0F, 0.0F, 255.0F, 255.0F);
-		GlStateManager.disableTexture();
-		GlStateManager.enableColorLogicOp();
-		GlStateManager.logicOp(GlStateManager.LogicOp.field_5110);
-		bufferBuilder.begin(7, VertexFormats.POSITION);
-		bufferBuilder.vertex((double)i, (double)l, 0.0).next();
-		bufferBuilder.vertex((double)k, (double)l, 0.0).next();
-		bufferBuilder.vertex((double)k, (double)j, 0.0).next();
-		bufferBuilder.vertex((double)i, (double)j, 0.0).next();
-		tessellator.draw();
-		GlStateManager.disableColorLogicOp();
-		GlStateManager.enableTexture();
+	public static final class SignModel extends Model {
+		public final ModelPart field = new ModelPart(64, 32, 0, 0);
+		public final ModelPart foot;
+
+		public SignModel() {
+			super(RenderLayer::getEntityCutoutNoCull);
+			this.field.addCuboid(-12.0F, -14.0F, -1.0F, 24.0F, 12.0F, 2.0F, 0.0F);
+			this.foot = new ModelPart(64, 32, 0, 14);
+			this.foot.addCuboid(-1.0F, -2.0F, -1.0F, 2.0F, 14.0F, 2.0F, 0.0F);
+		}
+
+		@Override
+		public void render(MatrixStack matrixStack, VertexConsumer vertexConsumer, int i, int j, float f, float g, float h, float k) {
+			this.field.render(matrixStack, vertexConsumer, i, j, f, g, h, k);
+			this.foot.render(matrixStack, vertexConsumer, i, j, f, g, h, k);
+		}
 	}
 }

@@ -7,7 +7,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.HitResult;
@@ -30,7 +29,7 @@ public class BoatItem extends Item {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1347);
 		if (hitResult.getType() == HitResult.Type.field_1333) {
-			return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+			return TypedActionResult.pass(itemStack);
 		} else {
 			Vec3d vec3d = playerEntity.getRotationVec(1.0F);
 			double d = 5.0;
@@ -41,7 +40,7 @@ public class BoatItem extends Item {
 				for (Entity entity : list) {
 					Box box = entity.getBoundingBox().expand((double)entity.getTargetingMargin());
 					if (box.contains(vec3d2)) {
-						return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+						return TypedActionResult.pass(itemStack);
 					}
 				}
 			}
@@ -51,21 +50,20 @@ public class BoatItem extends Item {
 				boatEntity.setBoatType(this.type);
 				boatEntity.yaw = playerEntity.yaw;
 				if (!world.doesNotCollide(boatEntity, boatEntity.getBoundingBox().expand(-0.1))) {
-					return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+					return TypedActionResult.fail(itemStack);
 				} else {
 					if (!world.isClient) {
 						world.spawnEntity(boatEntity);
-					}
-
-					if (!playerEntity.abilities.creativeMode) {
-						itemStack.decrement(1);
+						if (!playerEntity.abilities.creativeMode) {
+							itemStack.decrement(1);
+						}
 					}
 
 					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-					return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+					return TypedActionResult.success(itemStack);
 				}
 			} else {
-				return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+				return TypedActionResult.pass(itemStack);
 			}
 		}
 	}

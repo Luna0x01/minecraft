@@ -15,7 +15,7 @@ public interface RecipeType<T extends Recipe<?>> {
 	RecipeType<StonecuttingRecipe> field_17641 = register("stonecutting");
 
 	static <T extends Recipe<?>> RecipeType<T> register(String string) {
-		return Registry.register(Registry.RECIPE_TYPE, new Identifier(string), new RecipeType<T>() {
+		return Registry.register(Registry.field_17597, new Identifier(string), new RecipeType<T>() {
 			public String toString() {
 				return string;
 			}

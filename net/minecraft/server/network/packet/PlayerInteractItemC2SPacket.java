@@ -26,7 +26,7 @@ public class PlayerInteractItemC2SPacket implements Packet<ServerPlayPacketListe
 		packetByteBuf.writeEnumConstant(this.hand);
 	}
 
-	public void method_12550(ServerPlayPacketListener serverPlayPacketListener) {
+	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
 		serverPlayPacketListener.onPlayerInteractItem(this);
 	}
 

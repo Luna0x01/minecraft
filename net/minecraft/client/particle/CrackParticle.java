@@ -37,38 +37,38 @@ public class CrackParticle extends SpriteBillboardParticle {
 
 	@Override
 	protected float getMinU() {
-		return this.sprite.getU((double)((this.field_17783 + 1.0F) / 4.0F * 16.0F));
+		return this.sprite.getFrameU((double)((this.field_17783 + 1.0F) / 4.0F * 16.0F));
 	}
 
 	@Override
 	protected float getMaxU() {
-		return this.sprite.getU((double)(this.field_17783 / 4.0F * 16.0F));
+		return this.sprite.getFrameU((double)(this.field_17783 / 4.0F * 16.0F));
 	}
 
 	@Override
 	protected float getMinV() {
-		return this.sprite.getV((double)(this.field_17784 / 4.0F * 16.0F));
+		return this.sprite.getFrameV((double)(this.field_17784 / 4.0F * 16.0F));
 	}
 
 	@Override
 	protected float getMaxV() {
-		return this.sprite.getV((double)((this.field_17784 + 1.0F) / 4.0F * 16.0F));
+		return this.sprite.getFrameV((double)((this.field_17784 + 1.0F) / 4.0F * 16.0F));
 	}
 
 	public static class ItemFactory implements ParticleFactory<ItemStackParticleEffect> {
-		public Particle method_3007(ItemStackParticleEffect itemStackParticleEffect, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(ItemStackParticleEffect itemStackParticleEffect, World world, double d, double e, double f, double g, double h, double i) {
 			return new CrackParticle(world, d, e, f, g, h, i, itemStackParticleEffect.getItemStack());
 		}
 	}
 
 	public static class SlimeballFactory implements ParticleFactory<DefaultParticleType> {
-		public Particle method_3008(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			return new CrackParticle(world, d, e, f, new ItemStack(Items.field_8777));
 		}
 	}
 
 	public static class SnowballFactory implements ParticleFactory<DefaultParticleType> {
-		public Particle method_3009(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
+		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
 			return new CrackParticle(world, d, e, f, new ItemStack(Items.field_8543));
 		}
 	}

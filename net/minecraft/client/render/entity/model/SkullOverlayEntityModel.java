@@ -1,21 +1,28 @@
 package net.minecraft.client.render.entity.model;
 
-import net.minecraft.client.model.Cuboid;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 
 public class SkullOverlayEntityModel extends SkullEntityModel {
-	private final Cuboid field_3377 = new Cuboid(this, 32, 0);
+	private final ModelPart field_3377 = new ModelPart(this, 32, 0);
 
 	public SkullOverlayEntityModel() {
 		super(0, 0, 64, 64);
-		this.field_3377.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, 0.25F);
-		this.field_3377.setRotationPoint(0.0F, 0.0F, 0.0F);
+		this.field_3377.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, 0.25F);
+		this.field_3377.setPivot(0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
-	public void render(float f, float g, float h, float i, float j, float k) {
-		super.render(f, g, h, i, j, k);
+	public void render(float f, float g, float h) {
+		super.render(f, g, h);
 		this.field_3377.yaw = this.skull.yaw;
 		this.field_3377.pitch = this.skull.pitch;
-		this.field_3377.render(k);
+	}
+
+	@Override
+	public void render(MatrixStack matrixStack, VertexConsumer vertexConsumer, int i, int j, float f, float g, float h, float k) {
+		super.render(matrixStack, vertexConsumer, i, j, f, g, h, k);
+		this.field_3377.render(matrixStack, vertexConsumer, i, j, f, g, h, k);
 	}
 }

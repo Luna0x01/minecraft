@@ -4,7 +4,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class PlantBlock extends Block {
 	protected PlantBlock(Block.Settings settings) {
@@ -30,18 +30,20 @@ public class PlantBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		BlockPos blockPos2 = blockPos.down();
-		return this.canPlantOnTop(viewableWorld.getBlockState(blockPos2), viewableWorld, blockPos2);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
+		return this.canPlantOnTop(worldView.getBlockState(blockPos2), worldView, blockPos2);
 	}
 
 	@Override
 	public boolean isTranslucent(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return true;
+	}
+
+	@Override
+	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
+		return blockPlacementEnvironment == BlockPlacementEnvironment.field_51 && !this.collidable
+			? true
+			: super.canPlaceAtSide(blockState, blockView, blockPos, blockPlacementEnvironment);
 	}
 }

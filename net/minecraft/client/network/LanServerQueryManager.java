@@ -65,7 +65,7 @@ public class LanServerQueryManager {
 	}
 
 	public static class LanServerEntryList {
-		private final List<LanServerEntry> serverEntries = Lists.newArrayList();
+		private final List<LanServerInfo> serverEntries = Lists.newArrayList();
 		private boolean dirty;
 
 		public synchronized boolean needsUpdate() {
@@ -76,7 +76,7 @@ public class LanServerQueryManager {
 			this.dirty = false;
 		}
 
-		public synchronized List<LanServerEntry> getServers() {
+		public synchronized List<LanServerInfo> getServers() {
 			return Collections.unmodifiableList(this.serverEntries);
 		}
 
@@ -87,16 +87,16 @@ public class LanServerQueryManager {
 				string3 = inetAddress.getHostAddress() + ":" + string3;
 				boolean bl = false;
 
-				for (LanServerEntry lanServerEntry : this.serverEntries) {
-					if (lanServerEntry.getAddressPort().equals(string3)) {
-						lanServerEntry.updateLastTime();
+				for (LanServerInfo lanServerInfo : this.serverEntries) {
+					if (lanServerInfo.getAddressPort().equals(string3)) {
+						lanServerInfo.updateLastTime();
 						bl = true;
 						break;
 					}
 				}
 
 				if (!bl) {
-					this.serverEntries.add(new LanServerEntry(string2, string3));
+					this.serverEntries.add(new LanServerInfo(string2, string3));
 					this.dirty = true;
 				}
 			}

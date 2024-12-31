@@ -1,7 +1,7 @@
 package net.minecraft.client.gui.screen.recipebook;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import java.util.Iterator;
@@ -17,7 +17,6 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.ToggleButtonWidget;
 import net.minecraft.client.recipe.book.ClientRecipeBook;
 import net.minecraft.client.recipe.book.RecipeBookGroup;
-import net.minecraft.client.render.GuiLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.resource.language.LanguageDefinition;
 import net.minecraft.client.resource.language.LanguageManager;
@@ -49,7 +48,7 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 	protected final RecipeBookResults recipesArea = new RecipeBookResults();
 	protected final RecipeFinder recipeFinder = new RecipeFinder();
 	private int cachedInvChangeCount;
-	private boolean field_3087;
+	private boolean searching;
 
 	public void initialize(int i, int j, MinecraftClient minecraftClient, boolean bl, CraftingContainer<?> craftingContainer) {
 		this.client = minecraftClient;
@@ -168,7 +167,7 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 		);
 		List<RecipeResultCollection> list2 = Lists.newArrayList(list);
 		list2.removeIf(recipeResultCollection -> !recipeResultCollection.isInitialized());
-		list2.removeIf(recipeResultCollection -> !recipeResultCollection.hasFittableResults());
+		list2.removeIf(recipeResultCollection -> !recipeResultCollection.hasFittingRecipes());
 		String string = this.searchField.getText();
 		if (!string.isEmpty()) {
 			ObjectSet<RecipeResultCollection> objectSet = new ObjectLinkedOpenHashSet(
@@ -178,7 +177,7 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 		}
 
 		if (this.recipeBook.isFilteringCraftable(this.craftingContainer)) {
-			list2.removeIf(recipeResultCollection -> !recipeResultCollection.hasCraftableResults());
+			list2.removeIf(recipeResultCollection -> !recipeResultCollection.hasCraftableRecipes());
 		}
 
 		this.recipesArea.setResults(list2, bl);
@@ -221,17 +220,14 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 	@Override
 	public void render(int i, int j, float f) {
 		if (this.isOpen()) {
-			GuiLighting.enableForItems();
-			GlStateManager.disableLighting();
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef(0.0F, 0.0F, 100.0F);
+			RenderSystem.pushMatrix();
+			RenderSystem.translatef(0.0F, 0.0F, 100.0F);
 			this.client.getTextureManager().bindTexture(TEXTURE);
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			int k = (this.parentWidth - 147) / 2 - this.leftOffset;
 			int l = (this.parentHeight - 166) / 2;
 			this.blit(k, l, 1, 1, 147, 166);
 			this.searchField.render(i, j, f);
-			GuiLighting.disable();
 
 			for (RecipeGroupButtonWidget recipeGroupButtonWidget : this.tabButtons) {
 				recipeGroupButtonWidget.render(i, j, f);
@@ -239,7 +235,7 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 
 			this.toggleCraftableButton.render(i, j, f);
 			this.recipesArea.draw(k, l, i, j, f);
-			GlStateManager.popMatrix();
+			RenderSystem.popMatrix();
 		}
 	}
 
@@ -348,7 +344,7 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 
 	@Override
 	public boolean keyPressed(int i, int j, int k) {
-		this.field_3087 = false;
+		this.searching = false;
 		if (!this.isOpen() || this.client.player.isSpectator()) {
 			return false;
 		} else if (i == 256 && !this.isWide()) {
@@ -360,8 +356,8 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 		} else if (this.searchField.isFocused() && this.searchField.isVisible() && i != 256) {
 			return true;
 		} else if (this.client.options.keyChat.matchesKey(i, j) && !this.searchField.isFocused()) {
-			this.field_3087 = true;
-			this.searchField.method_1876(true);
+			this.searching = true;
+			this.searchField.setSelected(true);
 			return true;
 		} else {
 			return false;
@@ -370,13 +366,13 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 
 	@Override
 	public boolean keyReleased(int i, int j, int k) {
-		this.field_3087 = false;
+		this.searching = false;
 		return Element.super.keyReleased(i, j, k);
 	}
 
 	@Override
 	public boolean charTyped(char c, int i) {
-		if (this.field_3087) {
+		if (this.searching) {
 			return false;
 		} else if (!this.isOpen() || this.client.player.isSpectator()) {
 			return false;
@@ -406,7 +402,7 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 		if ("excitedze".equals(string)) {
 			LanguageManager languageManager = this.client.getLanguageManager();
 			LanguageDefinition languageDefinition = languageManager.getLanguage("en_pt");
-			if (languageManager.getLanguage().method_4673(languageDefinition) == 0) {
+			if (languageManager.getLanguage().compareTo(languageDefinition) == 0) {
 				return;
 			}
 
@@ -454,7 +450,7 @@ public class RecipeBookWidget extends DrawableHelper implements Drawable, Elemen
 	public void acceptAlignedInput(Iterator<Ingredient> iterator, int i, int j, int k, int l) {
 		Ingredient ingredient = (Ingredient)iterator.next();
 		if (!ingredient.isEmpty()) {
-			Slot slot = (Slot)this.craftingContainer.slotList.get(i);
+			Slot slot = (Slot)this.craftingContainer.slots.get(i);
 			this.ghostSlots.addSlot(ingredient, slot.xPosition, slot.yPosition);
 		}
 	}

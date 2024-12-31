@@ -2,7 +2,6 @@ package net.minecraft.fluid;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FluidBlock;
@@ -12,15 +11,15 @@ import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class LavaFluid extends BaseFluid {
 	@Override
@@ -31,11 +30,6 @@ public abstract class LavaFluid extends BaseFluid {
 	@Override
 	public Fluid getStill() {
 		return Fluids.LAVA;
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9178;
 	}
 
 	@Override
@@ -79,7 +73,7 @@ public abstract class LavaFluid extends BaseFluid {
 
 				for (int j = 0; j < i; j++) {
 					blockPos2 = blockPos2.add(random.nextInt(3) - 1, 1, random.nextInt(3) - 1);
-					if (!world.isHeightValidAndBlockLoaded(blockPos2)) {
+					if (!world.canSetBlock(blockPos2)) {
 						return;
 					}
 
@@ -96,7 +90,7 @@ public abstract class LavaFluid extends BaseFluid {
 			} else {
 				for (int k = 0; k < 3; k++) {
 					BlockPos blockPos3 = blockPos.add(random.nextInt(3) - 1, 0, random.nextInt(3) - 1);
-					if (!world.isHeightValidAndBlockLoaded(blockPos3)) {
+					if (!world.canSetBlock(blockPos3)) {
 						return;
 					}
 
@@ -108,9 +102,9 @@ public abstract class LavaFluid extends BaseFluid {
 		}
 	}
 
-	private boolean method_15819(ViewableWorld viewableWorld, BlockPos blockPos) {
+	private boolean method_15819(WorldView worldView, BlockPos blockPos) {
 		for (Direction direction : Direction.values()) {
-			if (this.method_15817(viewableWorld, blockPos.offset(direction))) {
+			if (this.method_15817(worldView, blockPos.offset(direction))) {
 				return true;
 			}
 		}
@@ -118,10 +112,10 @@ public abstract class LavaFluid extends BaseFluid {
 		return false;
 	}
 
-	private boolean method_15817(ViewableWorld viewableWorld, BlockPos blockPos) {
-		return blockPos.getY() >= 0 && blockPos.getY() < 256 && !viewableWorld.isBlockLoaded(blockPos)
+	private boolean method_15817(WorldView worldView, BlockPos blockPos) {
+		return blockPos.getY() >= 0 && blockPos.getY() < 256 && !worldView.isChunkLoaded(blockPos)
 			? false
-			: viewableWorld.getBlockState(blockPos).getMaterial().isBurnable();
+			: worldView.getBlockState(blockPos).getMaterial().isBurnable();
 	}
 
 	@Nullable
@@ -136,8 +130,8 @@ public abstract class LavaFluid extends BaseFluid {
 	}
 
 	@Override
-	public int method_15733(ViewableWorld viewableWorld) {
-		return viewableWorld.getDimension().doesWaterVaporize() ? 4 : 2;
+	public int method_15733(WorldView worldView) {
+		return worldView.getDimension().doesWaterVaporize() ? 4 : 2;
 	}
 
 	@Override
@@ -151,8 +145,8 @@ public abstract class LavaFluid extends BaseFluid {
 	}
 
 	@Override
-	public int getLevelDecreasePerBlock(ViewableWorld viewableWorld) {
-		return viewableWorld.getDimension().doesWaterVaporize() ? 1 : 2;
+	public int getLevelDecreasePerBlock(WorldView worldView) {
+		return worldView.getDimension().doesWaterVaporize() ? 1 : 2;
 	}
 
 	@Override
@@ -161,8 +155,8 @@ public abstract class LavaFluid extends BaseFluid {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
-		return viewableWorld.getDimension().isNether() ? 10 : 30;
+	public int getTickRate(WorldView worldView) {
+		return worldView.getDimension().isNether() ? 10 : 30;
 	}
 
 	@Override
@@ -218,7 +212,7 @@ public abstract class LavaFluid extends BaseFluid {
 
 	public static class Flowing extends LavaFluid {
 		@Override
-		protected void appendProperties(StateFactory.Builder<Fluid, FluidState> builder) {
+		protected void appendProperties(StateManager.Builder<Fluid, FluidState> builder) {
 			super.appendProperties(builder);
 			builder.add(LEVEL);
 		}

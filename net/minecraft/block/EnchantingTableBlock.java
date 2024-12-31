@@ -4,16 +4,17 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
-import net.minecraft.client.network.ClientDummyContainerProvider;
 import net.minecraft.container.BlockContext;
 import net.minecraft.container.EnchantingTableContainer;
-import net.minecraft.container.NameableContainerProvider;
+import net.minecraft.container.NameableContainerFactory;
+import net.minecraft.container.SimpleNamedContainerFactory;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Nameable;
 import net.minecraft.util.hit.BlockHitResult;
@@ -84,22 +85,22 @@ public class EnchantingTableBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
-			playerEntity.openContainer(blockState.createContainerProvider(world, blockPos));
-			return true;
+			playerEntity.openContainer(blockState.createContainerFactory(world, blockPos));
+			return ActionResult.field_5812;
 		}
 	}
 
 	@Nullable
 	@Override
-	public NameableContainerProvider createContainerProvider(BlockState blockState, World world, BlockPos blockPos) {
+	public NameableContainerFactory createContainerFactory(BlockState blockState, World world, BlockPos blockPos) {
 		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (blockEntity instanceof EnchantingTableBlockEntity) {
 			Text text = ((Nameable)blockEntity).getDisplayName();
-			return new ClientDummyContainerProvider(
+			return new SimpleNamedContainerFactory(
 				(i, playerInventory, playerEntity) -> new EnchantingTableContainer(i, playerInventory, BlockContext.create(world, blockPos)), text
 			);
 		} else {

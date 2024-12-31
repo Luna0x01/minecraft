@@ -23,7 +23,7 @@ public class StatisticsS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.stats = object2IntMap;
 	}
 
-	public void method_11270(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onStatistics(this);
 	}
 
@@ -33,7 +33,7 @@ public class StatisticsS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.stats = new Object2IntOpenHashMap(i);
 
 		for (int j = 0; j < i; j++) {
-			this.readStat(Registry.STAT_TYPE.get(packetByteBuf.readVarInt()), packetByteBuf);
+			this.readStat(Registry.field_11152.get(packetByteBuf.readVarInt()), packetByteBuf);
 		}
 	}
 
@@ -51,7 +51,7 @@ public class StatisticsS2CPacket implements Packet<ClientPlayPacketListener> {
 		while (var2.hasNext()) {
 			Entry<Stat<?>> entry = (Entry<Stat<?>>)var2.next();
 			Stat<?> stat = (Stat<?>)entry.getKey();
-			packetByteBuf.writeVarInt(Registry.STAT_TYPE.getRawId(stat.getType()));
+			packetByteBuf.writeVarInt(Registry.field_11152.getRawId(stat.getType()));
 			packetByteBuf.writeVarInt(this.getStatId(stat));
 			packetByteBuf.writeVarInt(entry.getIntValue());
 		}

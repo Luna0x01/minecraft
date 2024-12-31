@@ -1,11 +1,13 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.BlockRenderManager;
+import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.CowEntityModel;
-import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.passive.MooshroomEntity;
 
 public class MooshroomMushroomFeatureRenderer<T extends MooshroomEntity> extends FeatureRenderer<T, CowEntityModel<T>> {
@@ -13,43 +15,37 @@ public class MooshroomMushroomFeatureRenderer<T extends MooshroomEntity> extends
 		super(featureRendererContext);
 	}
 
-	public void method_4195(T mooshroomEntity, float f, float g, float h, float i, float j, float k, float l) {
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T mooshroomEntity, float f, float g, float h, float j, float k, float l
+	) {
 		if (!mooshroomEntity.isBaby() && !mooshroomEntity.isInvisible()) {
-			BlockState blockState = mooshroomEntity.getMooshroomType().getMushroomState();
-			this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-			GlStateManager.enableCull();
-			GlStateManager.cullFace(GlStateManager.FaceSides.field_5068);
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(1.0F, -1.0F, 1.0F);
-			GlStateManager.translatef(0.2F, 0.35F, 0.5F);
-			GlStateManager.rotatef(42.0F, 0.0F, 1.0F, 0.0F);
 			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
-			blockRenderManager.renderDynamic(blockState, 1.0F);
-			GlStateManager.popMatrix();
-			GlStateManager.pushMatrix();
-			GlStateManager.translatef(0.1F, 0.0F, -0.6F);
-			GlStateManager.rotatef(42.0F, 0.0F, 1.0F, 0.0F);
-			GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
-			blockRenderManager.renderDynamic(blockState, 1.0F);
-			GlStateManager.popMatrix();
-			GlStateManager.popMatrix();
-			GlStateManager.pushMatrix();
-			this.getModel().method_2800().applyTransform(0.0625F);
-			GlStateManager.scalef(1.0F, -1.0F, 1.0F);
-			GlStateManager.translatef(0.0F, 0.7F, -0.2F);
-			GlStateManager.rotatef(12.0F, 0.0F, 1.0F, 0.0F);
-			GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
-			blockRenderManager.renderDynamic(blockState, 1.0F);
-			GlStateManager.popMatrix();
-			GlStateManager.cullFace(GlStateManager.FaceSides.field_5070);
-			GlStateManager.disableCull();
+			BlockState blockState = mooshroomEntity.getMooshroomType().getMushroomState();
+			int m = LivingEntityRenderer.getOverlay(mooshroomEntity, 0.0F);
+			matrixStack.push();
+			matrixStack.translate(0.2F, -0.35F, 0.5);
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-48.0F));
+			matrixStack.scale(-1.0F, -1.0F, 1.0F);
+			matrixStack.translate(-0.5, -0.5, -0.5);
+			blockRenderManager.renderBlockAsEntity(blockState, matrixStack, vertexConsumerProvider, i, m);
+			matrixStack.pop();
+			matrixStack.push();
+			matrixStack.translate(0.2F, -0.35F, 0.5);
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(42.0F));
+			matrixStack.translate(0.1F, 0.0, -0.6F);
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-48.0F));
+			matrixStack.scale(-1.0F, -1.0F, 1.0F);
+			matrixStack.translate(-0.5, -0.5, -0.5);
+			blockRenderManager.renderBlockAsEntity(blockState, matrixStack, vertexConsumerProvider, i, m);
+			matrixStack.pop();
+			matrixStack.push();
+			this.getContextModel().getHead().rotate(matrixStack);
+			matrixStack.translate(0.0, -0.7F, -0.2F);
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-78.0F));
+			matrixStack.scale(-1.0F, -1.0F, 1.0F);
+			matrixStack.translate(-0.5, -0.5, -0.5);
+			blockRenderManager.renderBlockAsEntity(blockState, matrixStack, vertexConsumerProvider, i, m);
+			matrixStack.pop();
 		}
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return true;
 	}
 }

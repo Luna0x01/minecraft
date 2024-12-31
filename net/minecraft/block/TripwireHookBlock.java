@@ -7,9 +7,10 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
@@ -20,8 +21,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class TripwireHookBlock extends Block {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
@@ -35,7 +36,7 @@ public class TripwireHookBlock extends Block {
 	public TripwireHookBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(ATTACHED, Boolean.valueOf(false))
+			this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(ATTACHED, Boolean.valueOf(false))
 		);
 	}
 
@@ -55,11 +56,11 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		Direction direction = blockState.get(FACING);
 		BlockPos blockPos2 = blockPos.offset(direction.getOpposite());
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos2);
-		return direction.getAxis().isHorizontal() && blockState2.isSideSolidFullSquare(viewableWorld, blockPos2, direction) && !blockState2.emitsRedstonePower();
+		BlockState blockState2 = worldView.getBlockState(blockPos2);
+		return direction.getAxis().isHorizontal() && blockState2.isSideSolidFullSquare(worldView, blockPos2, direction) && !blockState2.emitsRedstonePower();
 	}
 
 	@Override
@@ -75,7 +76,7 @@ public class TripwireHookBlock extends Block {
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
 		BlockState blockState = this.getDefaultState().with(POWERED, Boolean.valueOf(false)).with(ATTACHED, Boolean.valueOf(false));
-		ViewableWorld viewableWorld = itemPlacementContext.getWorld();
+		WorldView worldView = itemPlacementContext.getWorld();
 		BlockPos blockPos = itemPlacementContext.getBlockPos();
 		Direction[] directions = itemPlacementContext.getPlacementDirections();
 
@@ -83,7 +84,7 @@ public class TripwireHookBlock extends Block {
 			if (direction.getAxis().isHorizontal()) {
 				Direction direction2 = direction.getOpposite();
 				blockState = blockState.with(FACING, direction2);
-				if (blockState.canPlaceAt(viewableWorld, blockPos)) {
+				if (blockState.canPlaceAt(worldView, blockPos)) {
 					return blockState;
 				}
 			}
@@ -168,8 +169,8 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		this.update(world, blockPos, blockState, false, true, -1, null);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		this.update(serverWorld, blockPos, blockState, false, true, -1, null);
 	}
 
 	private void playSound(World world, BlockPos blockPos, boolean bl, boolean bl2, boolean bl3, boolean bl4) {
@@ -227,11 +228,6 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.CUTOUT_MIPPED;
-	}
-
-	@Override
 	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
 		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
 	}
@@ -242,7 +238,7 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, POWERED, ATTACHED);
 	}
 }

@@ -8,6 +8,7 @@ import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.CampfireBlock;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -67,22 +68,33 @@ public class ShovelItem extends MiningToolItem {
 	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
 		World world = itemUsageContext.getWorld();
 		BlockPos blockPos = itemUsageContext.getBlockPos();
-		if (itemUsageContext.getSide() != Direction.field_11033 && world.getBlockState(blockPos.up()).isAir()) {
-			BlockState blockState = (BlockState)PATH_BLOCKSTATES.get(world.getBlockState(blockPos).getBlock());
-			if (blockState != null) {
-				PlayerEntity playerEntity = itemUsageContext.getPlayer();
+		BlockState blockState = world.getBlockState(blockPos);
+		if (itemUsageContext.getSide() == Direction.field_11033) {
+			return ActionResult.field_5811;
+		} else {
+			PlayerEntity playerEntity = itemUsageContext.getPlayer();
+			BlockState blockState2 = (BlockState)PATH_BLOCKSTATES.get(blockState.getBlock());
+			BlockState blockState3 = null;
+			if (blockState2 != null && world.getBlockState(blockPos.up()).isAir()) {
 				world.playSound(playerEntity, blockPos, SoundEvents.field_14616, SoundCategory.field_15245, 1.0F, 1.0F);
+				blockState3 = blockState2;
+			} else if (blockState.getBlock() instanceof CampfireBlock && (Boolean)blockState.get(CampfireBlock.LIT)) {
+				world.playLevelEvent(null, 1009, blockPos, 0);
+				blockState3 = blockState.with(CampfireBlock.LIT, Boolean.valueOf(false));
+			}
+
+			if (blockState3 != null) {
 				if (!world.isClient) {
-					world.setBlockState(blockPos, blockState, 11);
+					world.setBlockState(blockPos, blockState3, 11);
 					if (playerEntity != null) {
 						itemUsageContext.getStack().damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(itemUsageContext.getHand()));
 					}
 				}
 
 				return ActionResult.field_5812;
+			} else {
+				return ActionResult.field_5811;
 			}
 		}
-
-		return ActionResult.field_5811;
 	}
 }

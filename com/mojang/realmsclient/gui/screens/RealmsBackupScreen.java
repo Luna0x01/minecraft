@@ -1,18 +1,18 @@
 package com.mojang.realmsclient.gui.screens;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.realmsclient.client.RealmsClient;
 import com.mojang.realmsclient.dto.Backup;
 import com.mojang.realmsclient.dto.RealmsServer;
 import com.mojang.realmsclient.dto.RealmsWorldOptions;
 import com.mojang.realmsclient.exception.RealmsServiceException;
+import com.mojang.realmsclient.gui.RealmsConstants;
 import com.mojang.realmsclient.util.RealmsTasks;
 import com.mojang.realmsclient.util.RealmsUtil;
 import java.text.DateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import net.minecraft.class_4359;
 import net.minecraft.realms.RealmListEntry;
 import net.minecraft.realms.Realms;
 import net.minecraft.realms.RealmsButton;
@@ -109,7 +109,7 @@ public class RealmsBackupScreen extends RealmsScreen {
 
 	private void postInit() {
 		this.buttonsAdd(
-			this.downloadButton = new RealmsButton(2, this.width() - 135, class_4359.method_21072(1), 120, 20, getLocalizedString("mco.backup.button.download")) {
+			this.downloadButton = new RealmsButton(2, this.width() - 135, RealmsConstants.row(1), 120, 20, getLocalizedString("mco.backup.button.download")) {
 				@Override
 				public void onPress() {
 					RealmsBackupScreen.this.downloadClicked();
@@ -117,7 +117,7 @@ public class RealmsBackupScreen extends RealmsScreen {
 			}
 		);
 		this.buttonsAdd(
-			this.restoreButton = new RealmsButton(3, this.width() - 135, class_4359.method_21072(3), 120, 20, getLocalizedString("mco.backup.button.restore")) {
+			this.restoreButton = new RealmsButton(3, this.width() - 135, RealmsConstants.row(3), 120, 20, getLocalizedString("mco.backup.button.restore")) {
 				@Override
 				public void onPress() {
 					RealmsBackupScreen.this.restoreClicked(RealmsBackupScreen.this.selectedBackup);
@@ -125,7 +125,7 @@ public class RealmsBackupScreen extends RealmsScreen {
 			}
 		);
 		this.buttonsAdd(
-			this.changesButton = new RealmsButton(4, this.width() - 135, class_4359.method_21072(5), 120, 20, getLocalizedString("mco.backup.changes.tooltip")) {
+			this.changesButton = new RealmsButton(4, this.width() - 135, RealmsConstants.row(5), 120, 20, getLocalizedString("mco.backup.changes.tooltip")) {
 				@Override
 				public void onPress() {
 					Realms.setScreen(new RealmsBackupInfoScreen(RealmsBackupScreen.this, (Backup)RealmsBackupScreen.this.backups.get(RealmsBackupScreen.this.selectedBackup)));
@@ -365,7 +365,7 @@ public class RealmsBackupScreen extends RealmsScreen {
 			RealmsBackupScreen.this.drawString(
 				"Backup (" + RealmsUtil.convertToAgePresentation(System.currentTimeMillis() - backup.lastModifiedDate.getTime()) + ")", i + 40, j + 1, m
 			);
-			RealmsBackupScreen.this.drawString(this.getMediumDatePresentation(backup.lastModifiedDate), i + 40, j + 12, 5000268);
+			RealmsBackupScreen.this.drawString(this.getMediumDatePresentation(backup.lastModifiedDate), i + 40, j + 12, 8421504);
 			int n = RealmsBackupScreen.this.width() - 175;
 			int o = -3;
 			int p = n - 10;
@@ -386,11 +386,11 @@ public class RealmsBackupScreen extends RealmsScreen {
 		private void drawRestore(int i, int j, int k, int l) {
 			boolean bl = k >= i && k <= i + 12 && l >= j && l <= j + 14 && l < RealmsBackupScreen.this.height() - 15 && l > 32;
 			RealmsScreen.bind("realms:textures/gui/realms/restore_icon.png");
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.pushMatrix();
+			RenderSystem.scalef(0.5F, 0.5F, 0.5F);
 			RealmsScreen.blit(i * 2, j * 2, 0.0F, bl ? 28.0F : 0.0F, 23, 28, 23, 56);
-			GlStateManager.popMatrix();
+			RenderSystem.popMatrix();
 			if (bl) {
 				RealmsBackupScreen.this.toolTip = RealmsScreen.getLocalizedString("mco.backup.button.restore");
 			}
@@ -399,11 +399,11 @@ public class RealmsBackupScreen extends RealmsScreen {
 		private void drawInfo(int i, int j, int k, int l) {
 			boolean bl = k >= i && k <= i + 8 && l >= j && l <= j + 8 && l < RealmsBackupScreen.this.height() - 15 && l > 32;
 			RealmsScreen.bind("realms:textures/gui/realms/plus_icon.png");
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.pushMatrix();
+			RenderSystem.scalef(0.5F, 0.5F, 0.5F);
 			RealmsScreen.blit(i * 2, j * 2, 0.0F, bl ? 15.0F : 0.0F, 15, 15, 15, 30);
-			GlStateManager.popMatrix();
+			RenderSystem.popMatrix();
 			if (bl) {
 				RealmsBackupScreen.this.toolTip = RealmsScreen.getLocalizedString("mco.backup.changes.tooltip");
 			}

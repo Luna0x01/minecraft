@@ -26,7 +26,7 @@ public class PaintingSpawnS2CPacket implements Packet<ClientPlayPacketListener> 
 		this.uuid = paintingEntity.getUuid();
 		this.pos = paintingEntity.getDecorationBlockPos();
 		this.facing = paintingEntity.getHorizontalFacing();
-		this.motive = Registry.MOTIVE.getRawId(paintingEntity.motive);
+		this.motive = Registry.field_11150.getRawId(paintingEntity.motive);
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class PaintingSpawnS2CPacket implements Packet<ClientPlayPacketListener> 
 		packetByteBuf.writeByte(this.facing.getHorizontal());
 	}
 
-	public void method_11224(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onPaintingSpawn(this);
 	}
 
@@ -68,6 +68,6 @@ public class PaintingSpawnS2CPacket implements Packet<ClientPlayPacketListener> 
 	}
 
 	public PaintingMotive getMotive() {
-		return Registry.MOTIVE.get(this.motive);
+		return Registry.field_11150.get(this.motive);
 	}
 }

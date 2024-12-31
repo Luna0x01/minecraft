@@ -73,17 +73,17 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 
 	@Override
 	public double getHopperX() {
-		return this.x;
+		return this.getX();
 	}
 
 	@Override
 	public double getHopperY() {
-		return this.y + 0.5;
+		return this.getY() + 0.5;
 	}
 
 	@Override
 	public double getHopperZ() {
-		return this.z;
+		return this.getZ();
 	}
 
 	@Override
@@ -139,7 +139,7 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 	protected void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
 		this.transferCooldown = compoundTag.getInt("TransferCooldown");
-		this.enabled = compoundTag.containsKey("Enabled") ? compoundTag.getBoolean("Enabled") : true;
+		this.enabled = compoundTag.contains("Enabled") ? compoundTag.getBoolean("Enabled") : true;
 	}
 
 	public void setTransferCooldown(int i) {

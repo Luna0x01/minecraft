@@ -9,6 +9,7 @@ import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.entity.EnderEyeEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
@@ -64,22 +65,29 @@ public class EnderEyeItem extends Item {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1348);
 		if (hitResult.getType() == HitResult.Type.field_1332 && world.getBlockState(((BlockHitResult)hitResult).getBlockPos()).getBlock() == Blocks.field_10398) {
-			return new TypedActionResult<>(ActionResult.field_5811, itemStack);
+			return TypedActionResult.pass(itemStack);
 		} else {
 			playerEntity.setCurrentHand(hand);
-			if (!world.isClient) {
-				BlockPos blockPos = world.getChunkManager().getChunkGenerator().locateStructure(world, "Stronghold", new BlockPos(playerEntity), 100, false);
+			if (world instanceof ServerWorld) {
+				BlockPos blockPos = ((ServerWorld)world).getChunkManager().getChunkGenerator().locateStructure(world, "Stronghold", new BlockPos(playerEntity), 100, false);
 				if (blockPos != null) {
-					EnderEyeEntity enderEyeEntity = new EnderEyeEntity(world, playerEntity.x, playerEntity.y + (double)(playerEntity.getHeight() / 2.0F), playerEntity.z);
+					EnderEyeEntity enderEyeEntity = new EnderEyeEntity(world, playerEntity.getX(), playerEntity.getBodyY(0.5), playerEntity.getZ());
 					enderEyeEntity.setItem(itemStack);
 					enderEyeEntity.moveTowards(blockPos);
 					world.spawnEntity(enderEyeEntity);
 					if (playerEntity instanceof ServerPlayerEntity) {
-						Criterions.USED_ENDER_EYE.handle((ServerPlayerEntity)playerEntity, blockPos);
+						Criterions.USED_ENDER_EYE.trigger((ServerPlayerEntity)playerEntity, blockPos);
 					}
 
 					world.playSound(
-						null, playerEntity.x, playerEntity.y, playerEntity.z, SoundEvents.field_15155, SoundCategory.field_15254, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+						null,
+						playerEntity.getX(),
+						playerEntity.getY(),
+						playerEntity.getZ(),
+						SoundEvents.field_15155,
+						SoundCategory.field_15254,
+						0.5F,
+						0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 					);
 					world.playLevelEvent(null, 1003, new BlockPos(playerEntity), 0);
 					if (!playerEntity.abilities.creativeMode) {
@@ -87,11 +95,12 @@ public class EnderEyeItem extends Item {
 					}
 
 					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-					return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+					playerEntity.swingHand(hand, true);
+					return TypedActionResult.success(itemStack);
 				}
 			}
 
-			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+			return TypedActionResult.consume(itemStack);
 		}
 	}
 }

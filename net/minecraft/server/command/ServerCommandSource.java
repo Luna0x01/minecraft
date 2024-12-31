@@ -384,7 +384,7 @@ public class ServerCommandSource implements CommandSource {
 
 	@Override
 	public Collection<Identifier> getSoundIds() {
-		return Registry.SOUND_EVENT.getIds();
+		return Registry.field_11156.getIds();
 	}
 
 	@Override

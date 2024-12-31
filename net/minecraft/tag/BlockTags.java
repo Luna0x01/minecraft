@@ -41,6 +41,9 @@ public class BlockTags {
 	public static final Tag<Block> field_15480 = register("small_flowers");
 	public static final Tag<Block> field_16443 = register("beds");
 	public static final Tag<Block> field_16584 = register("fences");
+	public static final Tag<Block> field_20338 = register("tall_flowers");
+	public static final Tag<Block> field_20339 = register("flowers");
+	public static final Tag<Block> field_21490 = register("shulker_boxes");
 	public static final Tag<Block> field_15470 = register("flower_pots");
 	public static final Tag<Block> field_15460 = register("enderman_holdable");
 	public static final Tag<Block> field_15467 = register("ice");
@@ -52,12 +55,15 @@ public class BlockTags {
 	public static final Tag<Block> field_15483 = register("coral_plants");
 	public static final Tag<Block> field_15488 = register("corals");
 	public static final Tag<Block> field_15497 = register("bamboo_plantable_on");
-	public static final Tag<Block> field_15464 = register("dirt_like");
 	public static final Tag<Block> field_15472 = register("standing_signs");
 	public static final Tag<Block> field_15492 = register("wall_signs");
 	public static final Tag<Block> field_15500 = register("signs");
 	public static final Tag<Block> field_17753 = register("dragon_immune");
 	public static final Tag<Block> field_17754 = register("wither_immune");
+	public static final Tag<Block> field_20340 = register("beehives");
+	public static final Tag<Block> field_20341 = register("crops");
+	public static final Tag<Block> field_20342 = register("bee_growables");
+	public static final Tag<Block> field_21780 = register("portals");
 
 	public static void setContainer(TagContainer<Block> tagContainer) {
 		container = tagContainer;
@@ -80,7 +86,7 @@ public class BlockTags {
 			super(identifier);
 		}
 
-		public boolean method_15076(Block block) {
+		public boolean contains(Block block) {
 			if (this.version != BlockTags.latestVersion) {
 				this.delegate = BlockTags.container.getOrCreate(this.getId());
 				this.version = BlockTags.latestVersion;

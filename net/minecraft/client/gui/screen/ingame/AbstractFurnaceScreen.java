@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.screen.ingame;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.screen.recipebook.AbstractFurnaceRecipeBookScreen;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
@@ -12,11 +12,11 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> extends AbstractContainerScreen<T> implements RecipeBookProvider {
+public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> extends ContainerScreen<T> implements RecipeBookProvider {
 	private static final Identifier RECIPE_BUTTON_TEXTURE = new Identifier("textures/gui/recipe_button.png");
 	public final AbstractFurnaceRecipeBookScreen recipeBook;
 	private boolean narrow;
-	private final Identifier field_18975;
+	private final Identifier background;
 
 	public AbstractFurnaceScreen(
 		T abstractFurnaceContainer,
@@ -27,7 +27,7 @@ public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> 
 	) {
 		super(abstractFurnaceContainer, playerInventory, text);
 		this.recipeBook = abstractFurnaceRecipeBookScreen;
-		this.field_18975 = identifier;
+		this.background = identifier;
 	}
 
 	@Override
@@ -35,12 +35,12 @@ public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> 
 		super.init();
 		this.narrow = this.width < 379;
 		this.recipeBook.initialize(this.width, this.height, this.minecraft, this.narrow, this.container);
-		this.left = this.recipeBook.findLeftEdge(this.narrow, this.width, this.containerWidth);
-		this.addButton(new TexturedButtonWidget(this.left + 20, this.height / 2 - 49, 20, 18, 0, 0, 19, RECIPE_BUTTON_TEXTURE, buttonWidget -> {
+		this.x = this.recipeBook.findLeftEdge(this.narrow, this.width, this.containerWidth);
+		this.addButton(new TexturedButtonWidget(this.x + 20, this.height / 2 - 49, 20, 18, 0, 0, 19, RECIPE_BUTTON_TEXTURE, buttonWidget -> {
 			this.recipeBook.reset(this.narrow);
 			this.recipeBook.toggleOpen();
-			this.left = this.recipeBook.findLeftEdge(this.narrow, this.width, this.containerWidth);
-			((TexturedButtonWidget)buttonWidget).setPos(this.left + 20, this.height / 2 - 49);
+			this.x = this.recipeBook.findLeftEdge(this.narrow, this.width, this.containerWidth);
+			((TexturedButtonWidget)buttonWidget).setPos(this.x + 20, this.height / 2 - 49);
 		}));
 	}
 
@@ -59,11 +59,11 @@ public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> 
 		} else {
 			this.recipeBook.render(i, j, f);
 			super.render(i, j, f);
-			this.recipeBook.drawGhostSlots(this.left, this.top, true, f);
+			this.recipeBook.drawGhostSlots(this.x, this.y, true, f);
 		}
 
 		this.drawMouseoverTooltip(i, j);
-		this.recipeBook.drawTooltip(this.left, this.top, i, j);
+		this.recipeBook.drawTooltip(this.x, this.y, i, j);
 	}
 
 	@Override
@@ -75,10 +75,10 @@ public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> 
 
 	@Override
 	protected void drawBackground(float f, int i, int j) {
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.minecraft.getTextureManager().bindTexture(this.field_18975);
-		int k = this.left;
-		int l = this.top;
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		this.minecraft.getTextureManager().bindTexture(this.background);
+		int k = this.x;
+		int l = this.y;
 		this.blit(k, l, 0, 0, this.containerWidth, this.containerHeight);
 		if (this.container.isBurning()) {
 			int m = this.container.getFuelProgress();
@@ -112,7 +112,7 @@ public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> 
 	@Override
 	protected boolean isClickOutsideBounds(double d, double e, int i, int j, int k) {
 		boolean bl = d < (double)i || e < (double)j || d >= (double)(i + this.containerWidth) || e >= (double)(j + this.containerHeight);
-		return this.recipeBook.isClickOutsideBounds(d, e, this.left, this.top, this.containerWidth, this.containerHeight, k) && bl;
+		return this.recipeBook.isClickOutsideBounds(d, e, this.x, this.y, this.containerWidth, this.containerHeight, k) && bl;
 	}
 
 	@Override
@@ -126,7 +126,7 @@ public abstract class AbstractFurnaceScreen<T extends AbstractFurnaceContainer> 
 	}
 
 	@Override
-	public RecipeBookWidget getRecipeBookGui() {
+	public RecipeBookWidget getRecipeBookWidget() {
 		return this.recipeBook;
 	}
 

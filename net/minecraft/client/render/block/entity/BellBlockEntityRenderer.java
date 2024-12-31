@@ -1,29 +1,41 @@
 package net.minecraft.client.render.block.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.block.entity.BellBlockEntity;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
 public class BellBlockEntityRenderer extends BlockEntityRenderer<BellBlockEntity> {
-	private static final Identifier BELL_BODY_TEXTURE = new Identifier("textures/entity/bell/bell_body.png");
-	private final BellModel model = new BellModel();
+	public static final SpriteIdentifier BELL_BODY_TEXTURE = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/bell/bell_body"));
+	private final ModelPart field_20816 = new ModelPart(32, 32, 0, 0);
 
-	public void method_17139(BellBlockEntity bellBlockEntity, double d, double e, double f, float g, int i) {
-		GlStateManager.pushMatrix();
-		GlStateManager.enableRescaleNormal();
-		this.bindTexture(BELL_BODY_TEXTURE);
-		GlStateManager.translatef((float)d, (float)e, (float)f);
-		float h = (float)bellBlockEntity.ringTicks + g;
-		float j = 0.0F;
+	public BellBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
+		super(blockEntityRenderDispatcher);
+		this.field_20816.addCuboid(-3.0F, -6.0F, -3.0F, 6.0F, 7.0F, 6.0F);
+		this.field_20816.setPivot(8.0F, 12.0F, 8.0F);
+		ModelPart modelPart = new ModelPart(32, 32, 0, 13);
+		modelPart.addCuboid(4.0F, 4.0F, 4.0F, 8.0F, 2.0F, 8.0F);
+		modelPart.setPivot(-8.0F, -12.0F, -8.0F);
+		this.field_20816.addChild(modelPart);
+	}
+
+	public void render(BellBlockEntity bellBlockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
+		float g = (float)bellBlockEntity.ringTicks + f;
+		float h = 0.0F;
 		float k = 0.0F;
 		if (bellBlockEntity.isRinging) {
-			float l = MathHelper.sin(h / (float) Math.PI) / (4.0F + h / 3.0F);
+			float l = MathHelper.sin(g / (float) Math.PI) / (4.0F + g / 3.0F);
 			if (bellBlockEntity.lastSideHit == Direction.field_11043) {
-				j = -l;
+				h = -l;
 			} else if (bellBlockEntity.lastSideHit == Direction.field_11035) {
-				j = l;
+				h = l;
 			} else if (bellBlockEntity.lastSideHit == Direction.field_11034) {
 				k = -l;
 			} else if (bellBlockEntity.lastSideHit == Direction.field_11039) {
@@ -31,8 +43,9 @@ public class BellBlockEntityRenderer extends BlockEntityRenderer<BellBlockEntity
 			}
 		}
 
-		this.model.method_17070(j, k, 0.0625F);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.popMatrix();
+		this.field_20816.pitch = h;
+		this.field_20816.roll = k;
+		VertexConsumer vertexConsumer = BELL_BODY_TEXTURE.getVertexConsumer(vertexConsumerProvider, RenderLayer::getEntitySolid);
+		this.field_20816.render(matrixStack, vertexConsumer, i, j);
 	}
 }

@@ -8,8 +8,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class TorchBlock extends Block {
 	protected static final VoxelShape BOUNDING_SHAPE = Block.createCuboidShape(6.0, 0.0, 6.0, 10.0, 10.0, 10.0);
@@ -33,8 +33,8 @@ public class TorchBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return isSolidSmallSquare(viewableWorld, blockPos.down(), Direction.field_11036);
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return sideCoversSmallSquare(worldView, blockPos.down(), Direction.field_11036);
 	}
 
 	@Override
@@ -44,10 +44,5 @@ public class TorchBlock extends Block {
 		double f = (double)blockPos.getZ() + 0.5;
 		world.addParticle(ParticleTypes.field_11251, d, e, f, 0.0, 0.0, 0.0);
 		world.addParticle(ParticleTypes.field_11240, d, e, f, 0.0, 0.0, 0.0);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
 	}
 }

@@ -15,19 +15,14 @@ public class ChanceHeightmapDoubleDecorator extends Decorator<ChanceDecoratorCon
 		super(function);
 	}
 
-	public Stream<BlockPos> method_14342(
+	public Stream<BlockPos> getPositions(
 		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, ChanceDecoratorConfig chanceDecoratorConfig, BlockPos blockPos
 	) {
 		if (random.nextFloat() < 1.0F / (float)chanceDecoratorConfig.chance) {
-			int i = random.nextInt(16);
-			int j = random.nextInt(16);
-			int k = iWorld.getTopPosition(Heightmap.Type.field_13197, blockPos.add(i, 0, j)).getY() * 2;
-			if (k <= 0) {
-				return Stream.empty();
-			} else {
-				int l = random.nextInt(k);
-				return Stream.of(blockPos.add(i, l, j));
-			}
+			int i = random.nextInt(16) + blockPos.getX();
+			int j = random.nextInt(16) + blockPos.getZ();
+			int k = iWorld.getTopY(Heightmap.Type.field_13197, i, j) * 2;
+			return k <= 0 ? Stream.empty() : Stream.of(new BlockPos(i, random.nextInt(k), j));
 		} else {
 			return Stream.empty();
 		}

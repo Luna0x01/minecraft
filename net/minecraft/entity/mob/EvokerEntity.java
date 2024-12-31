@@ -2,7 +2,6 @@ package net.minecraft.entity.mob;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityType;
@@ -27,9 +26,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
@@ -90,11 +87,6 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	@Override
 	protected void mobTick() {
 		super.mobTick();
-	}
-
-	@Override
-	public void tick() {
-		super.tick();
 	}
 
 	@Override
@@ -164,55 +156,125 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 		@Override
 		protected void castSpell() {
 			LivingEntity livingEntity = EvokerEntity.this.getTarget();
-			double d = Math.min(livingEntity.y, EvokerEntity.this.y);
-			double e = Math.max(livingEntity.y, EvokerEntity.this.y) + 1.0;
-			float f = (float)MathHelper.atan2(livingEntity.z - EvokerEntity.this.z, livingEntity.x - EvokerEntity.this.x);
+			double d = Math.min(livingEntity.getY(), EvokerEntity.this.getY());
+			double e = Math.max(livingEntity.getY(), EvokerEntity.this.getY()) + 1.0;
+			float f = (float)MathHelper.atan2(livingEntity.getZ() - EvokerEntity.this.getZ(), livingEntity.getX() - EvokerEntity.this.getX());
 			if (EvokerEntity.this.squaredDistanceTo(livingEntity) < 9.0) {
 				for (int i = 0; i < 5; i++) {
 					float g = f + (float)i * (float) Math.PI * 0.4F;
-					this.conjureFangs(EvokerEntity.this.x + (double)MathHelper.cos(g) * 1.5, EvokerEntity.this.z + (double)MathHelper.sin(g) * 1.5, d, e, g, 0);
+					this.conjureFangs(EvokerEntity.this.getX() + (double)MathHelper.cos(g) * 1.5, EvokerEntity.this.getZ() + (double)MathHelper.sin(g) * 1.5, d, e, g, 0);
 				}
 
 				for (int j = 0; j < 8; j++) {
 					float h = f + (float)j * (float) Math.PI * 2.0F / 8.0F + (float) (Math.PI * 2.0 / 5.0);
-					this.conjureFangs(EvokerEntity.this.x + (double)MathHelper.cos(h) * 2.5, EvokerEntity.this.z + (double)MathHelper.sin(h) * 2.5, d, e, h, 3);
+					this.conjureFangs(EvokerEntity.this.getX() + (double)MathHelper.cos(h) * 2.5, EvokerEntity.this.getZ() + (double)MathHelper.sin(h) * 2.5, d, e, h, 3);
 				}
 			} else {
 				for (int k = 0; k < 16; k++) {
 					double l = 1.25 * (double)(k + 1);
 					int m = 1 * k;
-					this.conjureFangs(EvokerEntity.this.x + (double)MathHelper.cos(f) * l, EvokerEntity.this.z + (double)MathHelper.sin(f) * l, d, e, f, m);
+					this.conjureFangs(EvokerEntity.this.getX() + (double)MathHelper.cos(f) * l, EvokerEntity.this.getZ() + (double)MathHelper.sin(f) * l, d, e, f, m);
 				}
 			}
 		}
 
 		private void conjureFangs(double d, double e, double f, double g, float h, int i) {
-			BlockPos blockPos = new BlockPos(d, g, e);
-			boolean bl = false;
-			double j = 0.0;
-
-			do {
-				BlockPos blockPos2 = blockPos.down();
-				BlockState blockState = EvokerEntity.this.world.getBlockState(blockPos2);
-				if (blockState.isSideSolidFullSquare(EvokerEntity.this.world, blockPos2, Direction.field_11036)) {
-					if (!EvokerEntity.this.world.isAir(blockPos)) {
-						BlockState blockState2 = EvokerEntity.this.world.getBlockState(blockPos);
-						VoxelShape voxelShape = blockState2.getCollisionShape(EvokerEntity.this.world, blockPos);
-						if (!voxelShape.isEmpty()) {
-							j = voxelShape.getMaximum(Direction.Axis.field_11052);
-						}
-					}
-
-					bl = true;
-					break;
-				}
-
-				blockPos = blockPos.down();
-			} while (blockPos.getY() >= MathHelper.floor(f) - 1);
-
-			if (bl) {
-				EvokerEntity.this.world.spawnEntity(new EvokerFangsEntity(EvokerEntity.this.world, d, (double)blockPos.getY() + j, e, h, i, EvokerEntity.this));
-			}
+			// $VF: Couldn't be decompiled
+			// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
+			//
+			// Bytecode:
+			// 00: new net/minecraft/util/math/BlockPos
+			// 03: dup
+			// 04: dload 1
+			// 05: dload 7
+			// 07: dload 3
+			// 08: invokespecial net/minecraft/util/math/BlockPos.<init> (DDD)V
+			// 0b: astore 11
+			// 0d: bipush 0
+			// 0e: istore 12
+			// 10: dconst_0
+			// 11: dstore 13
+			// 13: aload 11
+			// 15: invokevirtual net/minecraft/util/math/BlockPos.down ()Lnet/minecraft/util/math/BlockPos;
+			// 18: astore 15
+			// 1a: aload 0
+			// 1b: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// 1e: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
+			// 21: aload 15
+			// 23: invokevirtual net/minecraft/world/World.getBlockState (Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;
+			// 26: astore 16
+			// 28: aload 16
+			// 2a: aload 0
+			// 2b: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// 2e: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
+			// 31: aload 15
+			// 33: getstatic net/minecraft/util/math/Direction.field_11036 Lnet/minecraft/util/math/Direction;
+			// 36: invokevirtual net/minecraft/block/BlockState.isSideSolidFullSquare (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z
+			// 39: ifeq 81
+			// 3c: aload 0
+			// 3d: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// 40: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
+			// 43: aload 11
+			// 45: invokevirtual net/minecraft/world/World.isAir (Lnet/minecraft/util/math/BlockPos;)Z
+			// 48: ifne 7b
+			// 4b: aload 0
+			// 4c: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// 4f: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
+			// 52: aload 11
+			// 54: invokevirtual net/minecraft/world/World.getBlockState (Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;
+			// 57: astore 17
+			// 59: aload 17
+			// 5b: aload 0
+			// 5c: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// 5f: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
+			// 62: aload 11
+			// 64: invokevirtual net/minecraft/block/BlockState.getCollisionShape (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/util/shape/VoxelShape;
+			// 67: astore 18
+			// 69: aload 18
+			// 6b: invokevirtual net/minecraft/util/shape/VoxelShape.isEmpty ()Z
+			// 6e: ifne 7b
+			// 71: aload 18
+			// 73: getstatic net/minecraft/util/math/Direction$Axis.field_11052 Lnet/minecraft/util/math/Direction$Axis;
+			// 76: invokevirtual net/minecraft/util/shape/VoxelShape.getMaximum (Lnet/minecraft/util/math/Direction$Axis;)D
+			// 79: dstore 13
+			// 7b: bipush 1
+			// 7c: istore 12
+			// 7e: goto 97
+			// 81: aload 11
+			// 83: invokevirtual net/minecraft/util/math/BlockPos.down ()Lnet/minecraft/util/math/BlockPos;
+			// 86: astore 11
+			// 88: aload 11
+			// 8a: invokevirtual net/minecraft/util/math/BlockPos.getY ()I
+			// 8d: dload 5
+			// 8f: invokestatic net/minecraft/util/math/MathHelper.floor (D)I
+			// 92: bipush 1
+			// 93: isub
+			// 94: if_icmpge 13
+			// 97: iload 12
+			// 99: ifeq c8
+			// 9c: aload 0
+			// 9d: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// a0: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
+			// a3: new net/minecraft/entity/mob/EvokerFangsEntity
+			// a6: dup
+			// a7: aload 0
+			// a8: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// ab: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
+			// ae: dload 1
+			// af: aload 11
+			// b1: invokevirtual net/minecraft/util/math/BlockPos.getY ()I
+			// b4: i2d
+			// b5: dload 13
+			// b7: dadd
+			// b8: dload 3
+			// b9: fload 9
+			// bb: iload 10
+			// bd: aload 0
+			// be: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
+			// c1: invokespecial net/minecraft/entity/mob/EvokerFangsEntity.<init> (Lnet/minecraft/world/World;DDDFILnet/minecraft/entity/LivingEntity;)V
+			// c4: invokevirtual net/minecraft/world/World.spawnEntity (Lnet/minecraft/entity/Entity;)Z
+			// c7: pop
+			// c8: return
 		}
 
 		@Override
@@ -234,10 +296,10 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 		public void tick() {
 			if (EvokerEntity.this.getTarget() != null) {
 				EvokerEntity.this.getLookControl()
-					.lookAt(EvokerEntity.this.getTarget(), (float)EvokerEntity.this.method_5986(), (float)EvokerEntity.this.getLookPitchSpeed());
+					.lookAt(EvokerEntity.this.getTarget(), (float)EvokerEntity.this.getBodyYawSpeed(), (float)EvokerEntity.this.getLookPitchSpeed());
 			} else if (EvokerEntity.this.getWololoTarget() != null) {
 				EvokerEntity.this.getLookControl()
-					.lookAt(EvokerEntity.this.getWololoTarget(), (float)EvokerEntity.this.method_5986(), (float)EvokerEntity.this.getLookPitchSpeed());
+					.lookAt(EvokerEntity.this.getWololoTarget(), (float)EvokerEntity.this.getBodyYawSpeed(), (float)EvokerEntity.this.getLookPitchSpeed());
 			}
 		}
 	}
@@ -280,7 +342,7 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 			for (int i = 0; i < 3; i++) {
 				BlockPos blockPos = new BlockPos(EvokerEntity.this).add(-2 + EvokerEntity.this.random.nextInt(5), 1, -2 + EvokerEntity.this.random.nextInt(5));
 				VexEntity vexEntity = EntityType.field_6059.create(EvokerEntity.this.world);
-				vexEntity.setPositionAndAngles(blockPos, 0.0F, 0.0F);
+				vexEntity.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
 				vexEntity.initialize(EvokerEntity.this.world, EvokerEntity.this.world.getLocalDifficulty(blockPos), SpawnType.field_16471, null, null);
 				vexEntity.setOwner(EvokerEntity.this);
 				vexEntity.setBounds(blockPos);

@@ -1,7 +1,7 @@
 package net.minecraft.client.particle;
 
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.world.World;
 
 public class NoRenderParticle extends Particle {
@@ -14,7 +14,7 @@ public class NoRenderParticle extends Particle {
 	}
 
 	@Override
-	public final void buildGeometry(BufferBuilder bufferBuilder, Camera camera, float f, float g, float h, float i, float j, float k) {
+	public final void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float f) {
 	}
 
 	@Override

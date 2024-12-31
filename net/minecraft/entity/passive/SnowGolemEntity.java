@@ -71,7 +71,7 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("Pumpkin")) {
+		if (compoundTag.contains("Pumpkin")) {
 			this.setHasPumpkin(compoundTag.getBoolean("Pumpkin"));
 		}
 	}
@@ -80,10 +80,10 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	public void tickMovement() {
 		super.tickMovement();
 		if (!this.world.isClient) {
-			int i = MathHelper.floor(this.x);
-			int j = MathHelper.floor(this.y);
-			int k = MathHelper.floor(this.z);
-			if (this.isTouchingWater()) {
+			int i = MathHelper.floor(this.getX());
+			int j = MathHelper.floor(this.getY());
+			int k = MathHelper.floor(this.getZ());
+			if (this.isWet()) {
 				this.damage(DamageSource.DROWN, 1.0F);
 			}
 
@@ -98,9 +98,9 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 			BlockState blockState = Blocks.field_10477.getDefaultState();
 
 			for (int l = 0; l < 4; l++) {
-				i = MathHelper.floor(this.x + (double)((float)(l % 2 * 2 - 1) * 0.25F));
-				j = MathHelper.floor(this.y);
-				k = MathHelper.floor(this.z + (double)((float)(l / 2 % 2 * 2 - 1) * 0.25F));
+				i = MathHelper.floor(this.getX() + (double)((float)(l % 2 * 2 - 1) * 0.25F));
+				j = MathHelper.floor(this.getY());
+				k = MathHelper.floor(this.getZ() + (double)((float)(l / 2 % 2 * 2 - 1) * 0.25F));
 				BlockPos blockPos = new BlockPos(i, j, k);
 				if (this.world.getBlockState(blockPos).isAir()
 					&& this.world.getBiome(blockPos).getTemperature(blockPos) < 0.8F
@@ -114,13 +114,13 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	@Override
 	public void attack(LivingEntity livingEntity, float f) {
 		SnowballEntity snowballEntity = new SnowballEntity(this.world, this);
-		double d = livingEntity.y + (double)livingEntity.getStandingEyeHeight() - 1.1F;
-		double e = livingEntity.x - this.x;
-		double g = d - snowballEntity.y;
-		double h = livingEntity.z - this.z;
+		double d = livingEntity.getEyeY() - 1.1F;
+		double e = livingEntity.getX() - this.getX();
+		double g = d - snowballEntity.getY();
+		double h = livingEntity.getZ() - this.getZ();
 		float i = MathHelper.sqrt(e * e + h * h) * 0.2F;
 		snowballEntity.setVelocity(e, g + (double)i, h, 1.6F, 12.0F);
-		this.playSound(SoundEvents.field_14745, 1.0F, 1.0F / (this.getRand().nextFloat() * 0.4F + 0.8F));
+		this.playSound(SoundEvents.field_14745, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
 		this.world.spawnEntity(snowballEntity);
 	}
 
@@ -132,12 +132,16 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	@Override
 	protected boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (itemStack.getItem() == Items.field_8868 && this.hasPumpkin() && !this.world.isClient) {
-			this.setHasPumpkin(false);
-			itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
-		}
+		if (itemStack.getItem() == Items.field_8868 && this.hasPumpkin()) {
+			if (!this.world.isClient) {
+				this.setHasPumpkin(false);
+				itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(hand));
+			}
 
-		return super.interactMob(playerEntity, hand);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	public boolean hasPumpkin() {

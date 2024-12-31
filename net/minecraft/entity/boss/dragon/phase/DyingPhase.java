@@ -19,12 +19,12 @@ public class DyingPhase extends AbstractPhase {
 	@Override
 	public void clientTick() {
 		if (this.ticks++ % 10 == 0) {
-			float f = (this.dragon.getRand().nextFloat() - 0.5F) * 8.0F;
-			float g = (this.dragon.getRand().nextFloat() - 0.5F) * 4.0F;
-			float h = (this.dragon.getRand().nextFloat() - 0.5F) * 8.0F;
+			float f = (this.dragon.getRandom().nextFloat() - 0.5F) * 8.0F;
+			float g = (this.dragon.getRandom().nextFloat() - 0.5F) * 4.0F;
+			float h = (this.dragon.getRandom().nextFloat() - 0.5F) * 8.0F;
 			this.dragon
 				.world
-				.addParticle(ParticleTypes.field_11221, this.dragon.x + (double)f, this.dragon.y + 2.0 + (double)g, this.dragon.z + (double)h, 0.0, 0.0, 0.0);
+				.addParticle(ParticleTypes.field_11221, this.dragon.getX() + (double)f, this.dragon.getY() + 2.0 + (double)g, this.dragon.getZ() + (double)h, 0.0, 0.0, 0.0);
 		}
 	}
 
@@ -36,7 +36,7 @@ public class DyingPhase extends AbstractPhase {
 			this.field_7041 = new Vec3d((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
 		}
 
-		double d = this.field_7041.squaredDistanceTo(this.dragon.x, this.dragon.y, this.dragon.z);
+		double d = this.field_7041.squaredDistanceTo(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ());
 		if (!(d < 100.0) && !(d > 22500.0) && !this.dragon.horizontalCollision && !this.dragon.verticalCollision) {
 			this.dragon.setHealth(1.0F);
 		} else {

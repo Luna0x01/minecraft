@@ -1,6 +1,5 @@
 package net.minecraft.fluid;
 
-import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
@@ -11,14 +10,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class EmptyFluid extends Fluid {
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9178;
-	}
-
 	@Override
 	public Item getBucketItem() {
 		return Items.AIR;
@@ -35,7 +29,7 @@ public class EmptyFluid extends Fluid {
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return 0;
 	}
 
@@ -55,7 +49,7 @@ public class EmptyFluid extends Fluid {
 	}
 
 	@Override
-	public float method_20784(FluidState fluidState) {
+	public float getHeight(FluidState fluidState) {
 		return 0.0F;
 	}
 

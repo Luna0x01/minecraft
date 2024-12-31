@@ -8,11 +8,13 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -20,8 +22,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class AbstractButtonBlock extends WallMountedBlock {
 	public static final BooleanProperty POWERED = Properties.POWERED;
@@ -46,13 +48,13 @@ public abstract class AbstractButtonBlock extends WallMountedBlock {
 	protected AbstractButtonBlock(boolean bl, Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(FACE, WallMountLocation.field_12471)
+			this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(FACE, WallMountLocation.field_12471)
 		);
 		this.wooden = bl;
 	}
 
 	@Override
-	public int getTickRate(ViewableWorld viewableWorld) {
+	public int getTickRate(WorldView worldView) {
 		return this.wooden ? 30 : 20;
 	}
 
@@ -90,16 +92,20 @@ public abstract class AbstractButtonBlock extends WallMountedBlock {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if ((Boolean)blockState.get(POWERED)) {
-			return true;
+			return ActionResult.field_21466;
 		} else {
-			world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(true)), 3);
+			this.method_21845(blockState, world, blockPos);
 			this.playClickSound(playerEntity, world, blockPos, true);
-			this.updateNeighbors(blockState, world, blockPos);
-			world.getBlockTickScheduler().schedule(blockPos, this, this.getTickRate(world));
-			return true;
+			return ActionResult.field_5812;
 		}
+	}
+
+	public void method_21845(BlockState blockState, World world, BlockPos blockPos) {
+		world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(true)), 3);
+		this.updateNeighbors(blockState, world, blockPos);
+		world.getBlockTickScheduler().schedule(blockPos, this, this.getTickRate(world));
 	}
 
 	protected void playClickSound(@Nullable PlayerEntity playerEntity, IWorld iWorld, BlockPos blockPos, boolean bl) {
@@ -135,14 +141,14 @@ public abstract class AbstractButtonBlock extends WallMountedBlock {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!world.isClient && (Boolean)blockState.get(POWERED)) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if ((Boolean)blockState.get(POWERED)) {
 			if (this.wooden) {
-				this.tryPowerWithProjectiles(blockState, world, blockPos);
+				this.tryPowerWithProjectiles(blockState, serverWorld, blockPos);
 			} else {
-				world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(false)), 3);
-				this.updateNeighbors(blockState, world, blockPos);
-				this.playClickSound(null, world, blockPos, false);
+				serverWorld.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(false)), 3);
+				this.updateNeighbors(blockState, serverWorld, blockPos);
+				this.playClickSound(null, serverWorld, blockPos, false);
 			}
 		}
 	}
@@ -155,7 +161,9 @@ public abstract class AbstractButtonBlock extends WallMountedBlock {
 	}
 
 	private void tryPowerWithProjectiles(BlockState blockState, World world, BlockPos blockPos) {
-		List<? extends Entity> list = world.getEntities(ProjectileEntity.class, blockState.getOutlineShape(world, blockPos).getBoundingBox().offset(blockPos));
+		List<? extends Entity> list = world.getNonSpectatingEntities(
+			ProjectileEntity.class, blockState.getOutlineShape(world, blockPos).getBoundingBox().offset(blockPos)
+		);
 		boolean bl = !list.isEmpty();
 		boolean bl2 = (Boolean)blockState.get(POWERED);
 		if (bl != bl2) {
@@ -175,7 +183,7 @@ public abstract class AbstractButtonBlock extends WallMountedBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, POWERED, FACE);
 	}
 }

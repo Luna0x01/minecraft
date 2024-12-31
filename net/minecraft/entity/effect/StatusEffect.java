@@ -15,7 +15,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
 
 public class StatusEffect {
@@ -41,7 +41,7 @@ public class StatusEffect {
 
 	public void applyUpdateEffect(LivingEntity livingEntity, int i) {
 		if (this == StatusEffects.field_5924) {
-			if (livingEntity.getHealth() < livingEntity.getHealthMaximum()) {
+			if (livingEntity.getHealth() < livingEntity.getMaximumHealth()) {
 				livingEntity.heal(1.0F);
 			}
 		} else if (this == StatusEffects.field_5899) {
@@ -102,19 +102,19 @@ public class StatusEffect {
 		return false;
 	}
 
-	protected String method_5559() {
+	protected String loadTranslationKey() {
 		if (this.translationKey == null) {
-			this.translationKey = SystemUtil.createTranslationKey("effect", Registry.STATUS_EFFECT.getId(this));
+			this.translationKey = Util.createTranslationKey("effect", Registry.STATUS_EFFECT.getId(this));
 		}
 
 		return this.translationKey;
 	}
 
 	public String getTranslationKey() {
-		return this.method_5559();
+		return this.loadTranslationKey();
 	}
 
-	public Text method_5560() {
+	public Text getName() {
 		return new TranslatableText(this.getTranslationKey());
 	}
 
@@ -136,7 +136,7 @@ public class StatusEffect {
 		return this.attributeModifiers;
 	}
 
-	public void method_5562(LivingEntity livingEntity, AbstractEntityAttributeContainer abstractEntityAttributeContainer, int i) {
+	public void onRemoved(LivingEntity livingEntity, AbstractEntityAttributeContainer abstractEntityAttributeContainer, int i) {
 		for (Entry<EntityAttribute, EntityAttributeModifier> entry : this.attributeModifiers.entrySet()) {
 			EntityAttributeInstance entityAttributeInstance = abstractEntityAttributeContainer.get((EntityAttribute)entry.getKey());
 			if (entityAttributeInstance != null) {
@@ -145,7 +145,7 @@ public class StatusEffect {
 		}
 	}
 
-	public void method_5555(LivingEntity livingEntity, AbstractEntityAttributeContainer abstractEntityAttributeContainer, int i) {
+	public void onApplied(LivingEntity livingEntity, AbstractEntityAttributeContainer abstractEntityAttributeContainer, int i) {
 		for (Entry<EntityAttribute, EntityAttributeModifier> entry : this.attributeModifiers.entrySet()) {
 			EntityAttributeInstance entityAttributeInstance = abstractEntityAttributeContainer.get((EntityAttribute)entry.getKey());
 			if (entityAttributeInstance != null) {
@@ -153,18 +153,21 @@ public class StatusEffect {
 				entityAttributeInstance.removeModifier(entityAttributeModifier);
 				entityAttributeInstance.addModifier(
 					new EntityAttributeModifier(
-						entityAttributeModifier.getId(), this.getTranslationKey() + " " + i, this.method_5563(i, entityAttributeModifier), entityAttributeModifier.getOperation()
+						entityAttributeModifier.getId(),
+						this.getTranslationKey() + " " + i,
+						this.adjustModifierAmount(i, entityAttributeModifier),
+						entityAttributeModifier.getOperation()
 					)
 				);
 			}
 		}
 	}
 
-	public double method_5563(int i, EntityAttributeModifier entityAttributeModifier) {
+	public double adjustModifierAmount(int i, EntityAttributeModifier entityAttributeModifier) {
 		return entityAttributeModifier.getAmount() * (double)(i + 1);
 	}
 
-	public boolean method_5573() {
+	public boolean isBeneficial() {
 		return this.type == StatusEffectType.field_18271;
 	}
 }

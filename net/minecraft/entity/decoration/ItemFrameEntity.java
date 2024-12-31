@@ -78,28 +78,29 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	protected void method_6895() {
 		if (this.facing != null) {
 			double d = 0.46875;
-			this.x = (double)this.blockPos.getX() + 0.5 - (double)this.facing.getOffsetX() * 0.46875;
-			this.y = (double)this.blockPos.getY() + 0.5 - (double)this.facing.getOffsetY() * 0.46875;
-			this.z = (double)this.blockPos.getZ() + 0.5 - (double)this.facing.getOffsetZ() * 0.46875;
-			double e = (double)this.getWidthPixels();
-			double f = (double)this.getHeightPixels();
-			double g = (double)this.getWidthPixels();
+			double e = (double)this.blockPos.getX() + 0.5 - (double)this.facing.getOffsetX() * 0.46875;
+			double f = (double)this.blockPos.getY() + 0.5 - (double)this.facing.getOffsetY() * 0.46875;
+			double g = (double)this.blockPos.getZ() + 0.5 - (double)this.facing.getOffsetZ() * 0.46875;
+			this.setPos(e, f, g);
+			double h = (double)this.getWidthPixels();
+			double i = (double)this.getHeightPixels();
+			double j = (double)this.getWidthPixels();
 			Direction.Axis axis = this.facing.getAxis();
 			switch (axis) {
 				case field_11048:
-					e = 1.0;
+					h = 1.0;
 					break;
 				case field_11052:
-					f = 1.0;
+					i = 1.0;
 					break;
 				case field_11051:
-					g = 1.0;
+					j = 1.0;
 			}
 
-			e /= 32.0;
-			f /= 32.0;
-			g /= 32.0;
-			this.setBoundingBox(new Box(this.x - e, this.y - f, this.z - g, this.x + e, this.y + f, this.z + g));
+			h /= 32.0;
+			i /= 32.0;
+			j /= 32.0;
+			this.setBoundingBox(new Box(e - h, f - i, g - j, e + h, f + i, g + j));
 		}
 	}
 
@@ -132,7 +133,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 			return false;
 		} else if (!damageSource.isExplosive() && !this.getHeldItemStack().isEmpty()) {
 			if (!this.world.isClient) {
-				this.method_6936(damageSource.getAttacker(), false);
+				this.dropHeldStack(damageSource.getAttacker(), false);
 				this.playSound(SoundEvents.field_14770, 1.0F, 1.0F);
 			}
 
@@ -153,7 +154,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
+	public boolean shouldRender(double d) {
 		double e = 16.0;
 		e *= 64.0 * getRenderDistanceMultiplier();
 		return d < e * e;
@@ -162,7 +163,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	@Override
 	public void onBreak(@Nullable Entity entity) {
 		this.playSound(SoundEvents.field_14585, 1.0F, 1.0F);
-		this.method_6936(entity, true);
+		this.dropHeldStack(entity, true);
 	}
 
 	@Override
@@ -170,7 +171,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 		this.playSound(SoundEvents.field_14844, 1.0F, 1.0F);
 	}
 
-	private void method_6936(@Nullable Entity entity, boolean bl) {
+	private void dropHeldStack(@Nullable Entity entity, boolean bl) {
 		if (!this.world.getGameRules().getBoolean(GameRules.field_19393)) {
 			if (entity == null) {
 				this.removeFromFrame(this.getHeldItemStack());
@@ -299,7 +300,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 
 			this.setHeldItemStack(itemStack, false);
 			this.setRotation(compoundTag.getByte("ItemRotation"), false);
-			if (compoundTag.containsKey("ItemDropChance", 99)) {
+			if (compoundTag.contains("ItemDropChance", 99)) {
 				this.itemDropChance = compoundTag.getFloat("ItemDropChance");
 			}
 		}
@@ -310,9 +311,11 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	@Override
 	public boolean interact(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		boolean bl = !this.getHeldItemStack().isEmpty();
+		boolean bl2 = !itemStack.isEmpty();
 		if (!this.world.isClient) {
-			if (this.getHeldItemStack().isEmpty()) {
-				if (!itemStack.isEmpty()) {
+			if (!bl) {
+				if (bl2) {
 					this.setHeldItemStack(itemStack);
 					if (!playerEntity.abilities.creativeMode) {
 						itemStack.decrement(1);
@@ -322,9 +325,11 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 				this.playSound(SoundEvents.field_15038, 1.0F, 1.0F);
 				this.setRotation(this.getRotation() + 1);
 			}
-		}
 
-		return true;
+			return true;
+		} else {
+			return bl || bl2;
+		}
 	}
 
 	public int getComparatorPower() {

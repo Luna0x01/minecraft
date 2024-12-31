@@ -6,9 +6,10 @@ import java.util.function.Function;
 import net.minecraft.structure.BuriedTreasureGenerator;
 import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructureStart;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
@@ -18,11 +19,10 @@ public class BuriedTreasureFeature extends StructureFeature<BuriedTreasureFeatur
 	}
 
 	@Override
-	public boolean shouldStartAt(ChunkGenerator<?> chunkGenerator, Random random, int i, int j) {
-		Biome biome = chunkGenerator.getBiomeSource().getBiome(new BlockPos((i << 4) + 9, 0, (j << 4) + 9));
-		if (chunkGenerator.hasStructure(biome, Feature.BURIED_TREASURE)) {
+	public boolean shouldStartAt(BiomeAccess biomeAccess, ChunkGenerator<?> chunkGenerator, Random random, int i, int j, Biome biome) {
+		if (chunkGenerator.hasStructure(biome, this)) {
 			((ChunkRandom)random).setStructureSeed(chunkGenerator.getSeed(), i, j, 10387320);
-			BuriedTreasureFeatureConfig buriedTreasureFeatureConfig = chunkGenerator.getStructureConfig(biome, Feature.BURIED_TREASURE);
+			BuriedTreasureFeatureConfig buriedTreasureFeatureConfig = chunkGenerator.getStructureConfig(biome, this);
 			return random.nextFloat() < buriedTreasureFeatureConfig.probability;
 		} else {
 			return false;
@@ -45,8 +45,8 @@ public class BuriedTreasureFeature extends StructureFeature<BuriedTreasureFeatur
 	}
 
 	public static class Start extends StructureStart {
-		public Start(StructureFeature<?> structureFeature, int i, int j, Biome biome, MutableIntBoundingBox mutableIntBoundingBox, int k, long l) {
-			super(structureFeature, i, j, biome, mutableIntBoundingBox, k, l);
+		public Start(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
+			super(structureFeature, i, j, blockBox, k, l);
 		}
 
 		@Override

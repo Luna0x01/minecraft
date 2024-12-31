@@ -63,12 +63,16 @@ public class ArrowEntity extends ProjectileEntity {
 
 	public static int getCustomPotionColor(ItemStack itemStack) {
 		CompoundTag compoundTag = itemStack.getTag();
-		return compoundTag != null && compoundTag.containsKey("CustomPotionColor", 99) ? compoundTag.getInt("CustomPotionColor") : -1;
+		return compoundTag != null && compoundTag.contains("CustomPotionColor", 99) ? compoundTag.getInt("CustomPotionColor") : -1;
 	}
 
 	private void initColor() {
 		this.colorSet = false;
-		this.dataTracker.set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(this.potion, this.effects)));
+		if (this.potion == Potions.field_8984 && this.effects.isEmpty()) {
+			this.dataTracker.set(COLOR, -1);
+		} else {
+			this.dataTracker.set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(this.potion, this.effects)));
+		}
 	}
 
 	public void addEffect(StatusEffectInstance statusEffectInstance) {
@@ -109,16 +113,7 @@ public class ArrowEntity extends ProjectileEntity {
 			double f = (double)(j >> 0 & 0xFF) / 255.0;
 
 			for (int k = 0; k < i; k++) {
-				this.world
-					.addParticle(
-						ParticleTypes.field_11226,
-						this.x + (this.random.nextDouble() - 0.5) * (double)this.getWidth(),
-						this.y + this.random.nextDouble() * (double)this.getHeight(),
-						this.z + (this.random.nextDouble() - 0.5) * (double)this.getWidth(),
-						d,
-						e,
-						f
-					);
+				this.world.addParticle(ParticleTypes.field_11226, this.getParticleX(0.5), this.getRandomBodyY(), this.getParticleZ(0.5), d, e, f);
 			}
 		}
 	}
@@ -136,7 +131,7 @@ public class ArrowEntity extends ProjectileEntity {
 	public void writeCustomDataToTag(CompoundTag compoundTag) {
 		super.writeCustomDataToTag(compoundTag);
 		if (this.potion != Potions.field_8984 && this.potion != null) {
-			compoundTag.putString("Potion", Registry.POTION.getId(this.potion).toString());
+			compoundTag.putString("Potion", Registry.field_11143.getId(this.potion).toString());
 		}
 
 		if (this.colorSet) {
@@ -147,7 +142,7 @@ public class ArrowEntity extends ProjectileEntity {
 			ListTag listTag = new ListTag();
 
 			for (StatusEffectInstance statusEffectInstance : this.effects) {
-				listTag.add(statusEffectInstance.serialize(new CompoundTag()));
+				listTag.add(statusEffectInstance.toTag(new CompoundTag()));
 			}
 
 			compoundTag.put("CustomPotionEffects", listTag);
@@ -157,7 +152,7 @@ public class ArrowEntity extends ProjectileEntity {
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("Potion", 8)) {
+		if (compoundTag.contains("Potion", 8)) {
 			this.potion = PotionUtil.getPotion(compoundTag);
 		}
 
@@ -165,7 +160,7 @@ public class ArrowEntity extends ProjectileEntity {
 			this.addEffect(statusEffectInstance);
 		}
 
-		if (compoundTag.containsKey("Color", 99)) {
+		if (compoundTag.contains("Color", 99)) {
 			this.setColor(compoundTag.getInt("Color"));
 		} else {
 			this.initColor();
@@ -177,7 +172,7 @@ public class ArrowEntity extends ProjectileEntity {
 		super.onHit(livingEntity);
 
 		for (StatusEffectInstance statusEffectInstance : this.potion.getEffects()) {
-			livingEntity.addPotionEffect(
+			livingEntity.addStatusEffect(
 				new StatusEffectInstance(
 					statusEffectInstance.getEffectType(),
 					Math.max(statusEffectInstance.getDuration() / 8, 1),
@@ -190,7 +185,7 @@ public class ArrowEntity extends ProjectileEntity {
 
 		if (!this.effects.isEmpty()) {
 			for (StatusEffectInstance statusEffectInstance2 : this.effects) {
-				livingEntity.addPotionEffect(statusEffectInstance2);
+				livingEntity.addStatusEffect(statusEffectInstance2);
 			}
 		}
 	}
@@ -221,16 +216,7 @@ public class ArrowEntity extends ProjectileEntity {
 				double f = (double)(i >> 0 & 0xFF) / 255.0;
 
 				for (int j = 0; j < 20; j++) {
-					this.world
-						.addParticle(
-							ParticleTypes.field_11226,
-							this.x + (this.random.nextDouble() - 0.5) * (double)this.getWidth(),
-							this.y + this.random.nextDouble() * (double)this.getHeight(),
-							this.z + (this.random.nextDouble() - 0.5) * (double)this.getWidth(),
-							d,
-							e,
-							f
-						);
+					this.world.addParticle(ParticleTypes.field_11226, this.getParticleX(0.5), this.getRandomBodyY(), this.getParticleZ(0.5), d, e, f);
 				}
 			}
 		} else {

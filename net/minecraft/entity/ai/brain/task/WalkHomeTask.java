@@ -15,24 +15,23 @@ import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.mob.MobEntityWithAi;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.village.PointOfInterestStorage;
-import net.minecraft.village.PointOfInterestType;
+import net.minecraft.world.poi.PointOfInterestStorage;
+import net.minecraft.world.poi.PointOfInterestType;
 
 public class WalkHomeTask extends Task<LivingEntity> {
-	private final float field_20290;
-	private final Long2LongMap field_20291 = new Long2LongOpenHashMap();
-	private int field_20292;
-	private long lastRunTime;
+	private final float speed;
+	private final Long2LongMap positionToExpiry = new Long2LongOpenHashMap();
+	private int tries;
+	private long expiryTimeLimit;
 
 	public WalkHomeTask(float f) {
 		super(ImmutableMap.of(MemoryModuleType.field_18445, MemoryModuleState.field_18457, MemoryModuleType.field_18438, MemoryModuleState.field_18457));
-		this.field_20290 = f;
+		this.speed = f;
 	}
 
 	@Override
 	protected boolean shouldRun(ServerWorld serverWorld, LivingEntity livingEntity) {
-		if (serverWorld.getTime() - this.lastRunTime < 20L) {
+		if (serverWorld.getTime() - this.expiryTimeLimit < 20L) {
 			return false;
 		} else {
 			MobEntityWithAi mobEntityWithAi = (MobEntityWithAi)livingEntity;
@@ -44,40 +43,40 @@ public class WalkHomeTask extends Task<LivingEntity> {
 				48,
 				PointOfInterestStorage.OccupationStatus.field_18489
 			);
-			return optional.isPresent() && !(((BlockPos)optional.get()).getSquaredDistance(new Vec3i(mobEntityWithAi.x, mobEntityWithAi.y, mobEntityWithAi.z)) <= 4.0);
+			return optional.isPresent() && !(((BlockPos)optional.get()).getSquaredDistance(new BlockPos(mobEntityWithAi)) <= 4.0);
 		}
 	}
 
 	@Override
 	protected void run(ServerWorld serverWorld, LivingEntity livingEntity, long l) {
-		this.field_20292 = 0;
-		this.lastRunTime = serverWorld.getTime() + (long)serverWorld.getRandom().nextInt(20);
+		this.tries = 0;
+		this.expiryTimeLimit = serverWorld.getTime() + (long)serverWorld.getRandom().nextInt(20);
 		MobEntityWithAi mobEntityWithAi = (MobEntityWithAi)livingEntity;
 		PointOfInterestStorage pointOfInterestStorage = serverWorld.getPointOfInterestStorage();
 		Predicate<BlockPos> predicate = blockPosx -> {
 			long lx = blockPosx.asLong();
-			if (this.field_20291.containsKey(lx)) {
+			if (this.positionToExpiry.containsKey(lx)) {
 				return false;
-			} else if (++this.field_20292 >= 5) {
+			} else if (++this.tries >= 5) {
 				return false;
 			} else {
-				this.field_20291.put(lx, this.lastRunTime + 40L);
+				this.positionToExpiry.put(lx, this.expiryTimeLimit + 40L);
 				return true;
 			}
 		};
-		Stream<BlockPos> stream = pointOfInterestStorage.method_21647(
+		Stream<BlockPos> stream = pointOfInterestStorage.getPositions(
 			PointOfInterestType.field_18517.getCompletionCondition(), predicate, new BlockPos(livingEntity), 48, PointOfInterestStorage.OccupationStatus.field_18489
 		);
-		Path path = mobEntityWithAi.getNavigation().method_21643(stream, PointOfInterestType.field_18517.method_21648());
-		if (path != null && path.method_21655()) {
-			BlockPos blockPos = path.method_48();
+		Path path = mobEntityWithAi.getNavigation().findPathToAny(stream, PointOfInterestType.field_18517.getSearchDistance());
+		if (path != null && path.reachesTarget()) {
+			BlockPos blockPos = path.getTarget();
 			Optional<PointOfInterestType> optional = pointOfInterestStorage.getType(blockPos);
 			if (optional.isPresent()) {
-				livingEntity.getBrain().putMemory(MemoryModuleType.field_18445, new WalkTarget(blockPos, this.field_20290, 1));
+				livingEntity.getBrain().putMemory(MemoryModuleType.field_18445, new WalkTarget(blockPos, this.speed, 1));
 				DebugRendererInfoManager.sendPointOfInterest(serverWorld, blockPos);
 			}
-		} else if (this.field_20292 < 5) {
-			this.field_20291.long2LongEntrySet().removeIf(entry -> entry.getLongValue() < this.lastRunTime);
+		} else if (this.tries < 5) {
+			this.positionToExpiry.long2LongEntrySet().removeIf(entry -> entry.getLongValue() < this.expiryTimeLimit);
 		}
 	}
 }

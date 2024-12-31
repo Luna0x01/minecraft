@@ -10,12 +10,12 @@ import net.minecraft.util.registry.Registry;
 
 public class BlockStateParticleEffect implements ParticleEffect {
 	public static final ParticleEffect.Factory<BlockStateParticleEffect> PARAMETERS_FACTORY = new ParticleEffect.Factory<BlockStateParticleEffect>() {
-		public BlockStateParticleEffect method_10279(ParticleType<BlockStateParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException {
+		public BlockStateParticleEffect read(ParticleType<BlockStateParticleEffect> particleType, StringReader stringReader) throws CommandSyntaxException {
 			stringReader.expect(' ');
 			return new BlockStateParticleEffect(particleType, new BlockArgumentParser(stringReader, false).parse(false).getBlockState());
 		}
 
-		public BlockStateParticleEffect method_10280(ParticleType<BlockStateParticleEffect> particleType, PacketByteBuf packetByteBuf) {
+		public BlockStateParticleEffect read(ParticleType<BlockStateParticleEffect> particleType, PacketByteBuf packetByteBuf) {
 			return new BlockStateParticleEffect(particleType, Block.STATE_IDS.get(packetByteBuf.readVarInt()));
 		}
 	};
@@ -34,7 +34,7 @@ public class BlockStateParticleEffect implements ParticleEffect {
 
 	@Override
 	public String asString() {
-		return Registry.PARTICLE_TYPE.getId(this.getType()) + " " + BlockArgumentParser.stringifyBlockState(this.blockState);
+		return Registry.field_11141.getId(this.getType()) + " " + BlockArgumentParser.stringifyBlockState(this.blockState);
 	}
 
 	@Override

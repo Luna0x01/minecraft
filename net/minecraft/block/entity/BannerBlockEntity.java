@@ -1,6 +1,7 @@
 package net.minecraft.block.entity;
 
 import com.google.common.collect.Lists;
+import com.mojang.datafixers.util.Pair;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -17,13 +18,15 @@ import net.minecraft.util.DyeColor;
 import net.minecraft.util.Nameable;
 
 public class BannerBlockEntity extends BlockEntity implements Nameable {
+	@Nullable
 	private Text customName;
+	@Nullable
 	private DyeColor baseColor = DyeColor.field_7952;
+	@Nullable
 	private ListTag patternListTag;
 	private boolean patternListTagRead;
-	private List<BannerPattern> patterns;
-	private List<DyeColor> patternColors;
-	private String patternCacheKey;
+	@Nullable
+	private List<Pair<BannerPattern, DyeColor>> patterns;
 
 	public BannerBlockEntity() {
 		super(BlockEntityType.field_11905);
@@ -34,17 +37,21 @@ public class BannerBlockEntity extends BlockEntity implements Nameable {
 		this.baseColor = dyeColor;
 	}
 
-	public void deserialize(ItemStack itemStack, DyeColor dyeColor) {
-		this.patternListTag = null;
+	@Nullable
+	public static ListTag method_24281(ItemStack itemStack) {
+		ListTag listTag = null;
 		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
-		if (compoundTag != null && compoundTag.containsKey("Patterns", 9)) {
-			this.patternListTag = compoundTag.getList("Patterns", 10).method_10612();
+		if (compoundTag != null && compoundTag.contains("Patterns", 9)) {
+			listTag = compoundTag.getList("Patterns", 10).copy();
 		}
 
+		return listTag;
+	}
+
+	public void readFrom(ItemStack itemStack, DyeColor dyeColor) {
+		this.patternListTag = method_24281(itemStack);
 		this.baseColor = dyeColor;
 		this.patterns = null;
-		this.patternColors = null;
-		this.patternCacheKey = "";
 		this.patternListTagRead = true;
 		this.customName = itemStack.hasCustomName() ? itemStack.getName() : null;
 	}
@@ -81,7 +88,7 @@ public class BannerBlockEntity extends BlockEntity implements Nameable {
 	@Override
 	public void fromTag(CompoundTag compoundTag) {
 		super.fromTag(compoundTag);
-		if (compoundTag.containsKey("CustomName", 8)) {
+		if (compoundTag.contains("CustomName", 8)) {
 			this.customName = Text.Serializer.fromJson(compoundTag.getString("CustomName"));
 		}
 
@@ -93,8 +100,6 @@ public class BannerBlockEntity extends BlockEntity implements Nameable {
 
 		this.patternListTag = compoundTag.getList("Patterns", 10);
 		this.patterns = null;
-		this.patternColors = null;
-		this.patternCacheKey = null;
 		this.patternListTagRead = true;
 	}
 
@@ -111,61 +116,40 @@ public class BannerBlockEntity extends BlockEntity implements Nameable {
 
 	public static int getPatternCount(ItemStack itemStack) {
 		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
-		return compoundTag != null && compoundTag.containsKey("Patterns") ? compoundTag.getList("Patterns", 10).size() : 0;
+		return compoundTag != null && compoundTag.contains("Patterns") ? compoundTag.getList("Patterns", 10).size() : 0;
 	}
 
-	public List<BannerPattern> getPatterns() {
-		this.readPattern();
+	public List<Pair<BannerPattern, DyeColor>> getPatterns() {
+		if (this.patterns == null && this.patternListTagRead) {
+			this.patterns = method_24280(this.getColorForState(this::getCachedState), this.patternListTag);
+		}
+
 		return this.patterns;
 	}
 
-	public List<DyeColor> getPatternColors() {
-		this.readPattern();
-		return this.patternColors;
-	}
-
-	public String getPatternCacheKey() {
-		this.readPattern();
-		return this.patternCacheKey;
-	}
-
-	private void readPattern() {
-		if (this.patterns == null || this.patternColors == null || this.patternCacheKey == null) {
-			if (!this.patternListTagRead) {
-				this.patternCacheKey = "";
-			} else {
-				this.patterns = Lists.newArrayList();
-				this.patternColors = Lists.newArrayList();
-				DyeColor dyeColor = this.getColorForState(this::getCachedState);
-				if (dyeColor == null) {
-					this.patternCacheKey = "banner_missing";
-				} else {
-					this.patterns.add(BannerPattern.BASE);
-					this.patternColors.add(dyeColor);
-					this.patternCacheKey = "b" + dyeColor.getId();
-					if (this.patternListTag != null) {
-						for (int i = 0; i < this.patternListTag.size(); i++) {
-							CompoundTag compoundTag = this.patternListTag.getCompoundTag(i);
-							BannerPattern bannerPattern = BannerPattern.byId(compoundTag.getString("Pattern"));
-							if (bannerPattern != null) {
-								this.patterns.add(bannerPattern);
-								int j = compoundTag.getInt("Color");
-								this.patternColors.add(DyeColor.byId(j));
-								this.patternCacheKey = this.patternCacheKey + bannerPattern.getId() + j;
-							}
-						}
-					}
+	public static List<Pair<BannerPattern, DyeColor>> method_24280(DyeColor dyeColor, @Nullable ListTag listTag) {
+		List<Pair<BannerPattern, DyeColor>> list = Lists.newArrayList();
+		list.add(Pair.of(BannerPattern.field_11834, dyeColor));
+		if (listTag != null) {
+			for (int i = 0; i < listTag.size(); i++) {
+				CompoundTag compoundTag = listTag.getCompound(i);
+				BannerPattern bannerPattern = BannerPattern.byId(compoundTag.getString("Pattern"));
+				if (bannerPattern != null) {
+					int j = compoundTag.getInt("Color");
+					list.add(Pair.of(bannerPattern, DyeColor.byId(j)));
 				}
 			}
 		}
+
+		return list;
 	}
 
 	public static void loadFromItemStack(ItemStack itemStack) {
 		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
-		if (compoundTag != null && compoundTag.containsKey("Patterns", 9)) {
+		if (compoundTag != null && compoundTag.contains("Patterns", 9)) {
 			ListTag listTag = compoundTag.getList("Patterns", 10);
 			if (!listTag.isEmpty()) {
-				listTag.method_10536(listTag.size() - 1);
+				listTag.remove(listTag.size() - 1);
 				if (listTag.isEmpty()) {
 					itemStack.removeSubTag("BlockEntityTag");
 				}
@@ -176,7 +160,7 @@ public class BannerBlockEntity extends BlockEntity implements Nameable {
 	public ItemStack getPickStack(BlockState blockState) {
 		ItemStack itemStack = new ItemStack(BannerBlock.getForColor(this.getColorForState(() -> blockState)));
 		if (this.patternListTag != null && !this.patternListTag.isEmpty()) {
-			itemStack.getOrCreateSubTag("BlockEntityTag").put("Patterns", this.patternListTag.method_10612());
+			itemStack.getOrCreateSubTag("BlockEntityTag").put("Patterns", this.patternListTag.copy());
 		}
 
 		if (this.customName != null) {

@@ -4,10 +4,10 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 public interface StatFormatter {
-	DecimalFormat DECIMAL_FORMAT = SystemUtil.consume(
+	DecimalFormat DECIMAL_FORMAT = Util.make(
 		new DecimalFormat("########0.00"), decimalFormat -> decimalFormat.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.ROOT))
 	);
 	StatFormatter DEFAULT = NumberFormat.getIntegerInstance(Locale.US)::format;

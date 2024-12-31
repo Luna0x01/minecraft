@@ -21,13 +21,13 @@ public class EndMidlandsBiome extends Biome {
 				.waterFogColor(329011)
 				.parent(null)
 		);
-		this.addStructureFeature(Feature.END_CITY, FeatureConfig.DEFAULT);
-		DefaultBiomeFeatures.method_20826(this);
+		this.addStructureFeature(Feature.END_CITY.configure(FeatureConfig.DEFAULT));
+		DefaultBiomeFeatures.addEndCities(this);
 		this.addSpawn(EntityCategory.field_6302, new Biome.SpawnEntry(EntityType.field_6091, 10, 4, 4));
 	}
 
 	@Override
-	public int getSkyColor(float f) {
+	public int getSkyColor() {
 		return 0;
 	}
 }

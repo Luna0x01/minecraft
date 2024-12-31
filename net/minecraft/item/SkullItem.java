@@ -4,9 +4,9 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.TagHelper;
 import org.apache.commons.lang3.StringUtils;
 
 public class SkullItem extends WallStandingBlockItem {
@@ -19,11 +19,11 @@ public class SkullItem extends WallStandingBlockItem {
 		if (itemStack.getItem() == Items.PLAYER_HEAD && itemStack.hasTag()) {
 			String string = null;
 			CompoundTag compoundTag = itemStack.getTag();
-			if (compoundTag.containsKey("SkullOwner", 8)) {
+			if (compoundTag.contains("SkullOwner", 8)) {
 				string = compoundTag.getString("SkullOwner");
-			} else if (compoundTag.containsKey("SkullOwner", 10)) {
+			} else if (compoundTag.contains("SkullOwner", 10)) {
 				CompoundTag compoundTag2 = compoundTag.getCompound("SkullOwner");
-				if (compoundTag2.containsKey("Name", 8)) {
+				if (compoundTag2.contains("Name", 8)) {
 					string = compoundTag2.getString("Name");
 				}
 			}
@@ -39,10 +39,10 @@ public class SkullItem extends WallStandingBlockItem {
 	@Override
 	public boolean postProcessTag(CompoundTag compoundTag) {
 		super.postProcessTag(compoundTag);
-		if (compoundTag.containsKey("SkullOwner", 8) && !StringUtils.isBlank(compoundTag.getString("SkullOwner"))) {
+		if (compoundTag.contains("SkullOwner", 8) && !StringUtils.isBlank(compoundTag.getString("SkullOwner"))) {
 			GameProfile gameProfile = new GameProfile(null, compoundTag.getString("SkullOwner"));
 			gameProfile = SkullBlockEntity.loadProperties(gameProfile);
-			compoundTag.put("SkullOwner", TagHelper.serializeProfile(new CompoundTag(), gameProfile));
+			compoundTag.put("SkullOwner", NbtHelper.fromGameProfile(new CompoundTag(), gameProfile));
 			return true;
 		} else {
 			return false;

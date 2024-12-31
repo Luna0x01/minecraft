@@ -1,7 +1,7 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.model.GhastEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.GhastEntity;
 import net.minecraft.util.Identifier;
 
@@ -13,15 +13,14 @@ public class GhastEntityRenderer extends MobEntityRenderer<GhastEntity, GhastEnt
 		super(entityRenderDispatcher, new GhastEntityModel<>(), 1.5F);
 	}
 
-	protected Identifier method_3972(GhastEntity ghastEntity) {
+	public Identifier getTexture(GhastEntity ghastEntity) {
 		return ghastEntity.isShooting() ? ANGRY_SKIN : SKIN;
 	}
 
-	protected void method_3973(GhastEntity ghastEntity, float f) {
+	protected void scale(GhastEntity ghastEntity, MatrixStack matrixStack, float f) {
 		float g = 1.0F;
 		float h = 4.5F;
 		float i = 4.5F;
-		GlStateManager.scalef(4.5F, 4.5F, 4.5F);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		matrixStack.scale(4.5F, 4.5F, 4.5F);
 	}
 }

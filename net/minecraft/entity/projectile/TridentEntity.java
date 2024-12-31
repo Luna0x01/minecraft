@@ -25,9 +25,10 @@ import net.minecraft.world.World;
 
 public class TridentEntity extends ProjectileEntity {
 	private static final TrackedData<Byte> LOYALTY = DataTracker.registerData(TridentEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final TrackedData<Boolean> field_21514 = DataTracker.registerData(TridentEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private ItemStack tridentStack = new ItemStack(Items.field_8547);
 	private boolean dealtDamage;
-	public int field_7649;
+	public int returnTimer;
 
 	public TridentEntity(EntityType<? extends TridentEntity> entityType, World world) {
 		super(entityType, world);
@@ -37,6 +38,7 @@ public class TridentEntity extends ProjectileEntity {
 		super(EntityType.field_6127, livingEntity, world);
 		this.tridentStack = itemStack.copy();
 		this.dataTracker.set(LOYALTY, (byte)EnchantmentHelper.getLoyalty(itemStack));
+		this.dataTracker.set(field_21514, itemStack.hasEnchantmentGlint());
 	}
 
 	public TridentEntity(World world, double d, double e, double f) {
@@ -47,6 +49,7 @@ public class TridentEntity extends ProjectileEntity {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(LOYALTY, (byte)0);
+		this.dataTracker.startTracking(field_21514, false);
 	}
 
 	@Override
@@ -66,19 +69,19 @@ public class TridentEntity extends ProjectileEntity {
 				this.remove();
 			} else if (i > 0) {
 				this.setNoClip(true);
-				Vec3d vec3d = new Vec3d(entity.x - this.x, entity.y + (double)entity.getStandingEyeHeight() - this.y, entity.z - this.z);
-				this.y = this.y + vec3d.y * 0.015 * (double)i;
+				Vec3d vec3d = new Vec3d(entity.getX() - this.getX(), entity.getEyeY() - this.getY(), entity.getZ() - this.getZ());
+				this.setPos(this.getX(), this.getY() + vec3d.y * 0.015 * (double)i, this.getZ());
 				if (this.world.isClient) {
-					this.prevRenderY = this.y;
+					this.lastRenderY = this.getY();
 				}
 
 				double d = 0.05 * (double)i;
 				this.setVelocity(this.getVelocity().multiply(0.95).add(vec3d.normalize().multiply(d)));
-				if (this.field_7649 == 0) {
+				if (this.returnTimer == 0) {
 					this.playSound(SoundEvents.field_14698, 10.0F, 1.0F);
 				}
 
-				this.field_7649++;
+				this.returnTimer++;
 			}
 		}
 
@@ -93,6 +96,10 @@ public class TridentEntity extends ProjectileEntity {
 	@Override
 	protected ItemStack asItemStack() {
 		return this.tridentStack.copy();
+	}
+
+	public boolean method_23751() {
+		return this.dataTracker.get(field_21514);
 	}
 
 	@Nullable
@@ -114,14 +121,20 @@ public class TridentEntity extends ProjectileEntity {
 		DamageSource damageSource = DamageSource.trident(this, (Entity)(entity2 == null ? this : entity2));
 		this.dealtDamage = true;
 		SoundEvent soundEvent = SoundEvents.field_15213;
-		if (entity.damage(damageSource, f) && entity instanceof LivingEntity) {
-			LivingEntity livingEntity2 = (LivingEntity)entity;
-			if (entity2 instanceof LivingEntity) {
-				EnchantmentHelper.onUserDamaged(livingEntity2, entity2);
-				EnchantmentHelper.onTargetDamaged((LivingEntity)entity2, livingEntity2);
+		if (entity.damage(damageSource, f)) {
+			if (entity.getType() == EntityType.field_6091) {
+				return;
 			}
 
-			this.onHit(livingEntity2);
+			if (entity instanceof LivingEntity) {
+				LivingEntity livingEntity2 = (LivingEntity)entity;
+				if (entity2 instanceof LivingEntity) {
+					EnchantmentHelper.onUserDamaged(livingEntity2, entity2);
+					EnchantmentHelper.onTargetDamaged((LivingEntity)entity2, livingEntity2);
+				}
+
+				this.onHit(livingEntity2);
+			}
 		}
 
 		this.setVelocity(this.getVelocity().multiply(-0.01, -0.1, -0.01));
@@ -143,7 +156,7 @@ public class TridentEntity extends ProjectileEntity {
 	}
 
 	@Override
-	protected SoundEvent getSound() {
+	protected SoundEvent getHitSound() {
 		return SoundEvents.field_15104;
 	}
 
@@ -158,7 +171,7 @@ public class TridentEntity extends ProjectileEntity {
 	@Override
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("Trident", 10)) {
+		if (compoundTag.contains("Trident", 10)) {
 			this.tridentStack = ItemStack.fromTag(compoundTag.getCompound("Trident"));
 		}
 
@@ -174,7 +187,7 @@ public class TridentEntity extends ProjectileEntity {
 	}
 
 	@Override
-	protected void age() {
+	public void age() {
 		int i = this.dataTracker.get(LOYALTY);
 		if (this.pickupType != ProjectileEntity.PickupPermission.field_7593 || i <= 0) {
 			super.age();
@@ -187,7 +200,7 @@ public class TridentEntity extends ProjectileEntity {
 	}
 
 	@Override
-	public boolean shouldRenderFrom(double d, double e, double f) {
+	public boolean shouldRender(double d, double e, double f) {
 		return true;
 	}
 }

@@ -1,5 +1,8 @@
 package net.minecraft.world.biome.layer;
 
+import net.minecraft.world.biome.layer.type.IdentitySamplingLayer;
+import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
+
 public enum SimpleLandNoiseLayer implements IdentitySamplingLayer {
 	field_16157;
 

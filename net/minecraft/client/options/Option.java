@@ -6,7 +6,7 @@ import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.Window;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 public abstract class Option {
@@ -17,12 +17,8 @@ public abstract class Option {
 		}, (gameOptions, doubleOption) -> {
 			double d = doubleOption.get(gameOptions);
 			String string = doubleOption.getDisplayPrefix();
-			if (d == 0.0) {
-				return string + I18n.translate("options.off");
-			} else {
-				int i = (int)d * 2 + 1;
-				return string + i + "x" + i;
-			}
+			int i = (int)d * 2 + 1;
+			return string + I18n.translate("options.biomeBlendRadius." + i);
 		}
 	);
 	public static final DoubleOption CHAT_HEIGHT_FOCUSED = new DoubleOption(
@@ -30,7 +26,7 @@ public abstract class Option {
 			gameOptions.chatHeightFocused = double_;
 			MinecraftClient.getInstance().inGameHud.getChatHud().reset();
 		}, (gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
 			return doubleOption.getDisplayPrefix() + ChatHud.getHeight(d) + "px";
 		}
 	);
@@ -39,7 +35,7 @@ public abstract class Option {
 			gameOptions.chatHeightUnfocused = double_;
 			MinecraftClient.getInstance().inGameHud.getChatHud().reset();
 		}, (gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
 			return doubleOption.getDisplayPrefix() + ChatHud.getHeight(d) + "px";
 		}
 	);
@@ -48,7 +44,7 @@ public abstract class Option {
 			gameOptions.chatOpacity = double_;
 			MinecraftClient.getInstance().inGameHud.getChatHud().reset();
 		}, (gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
 			return doubleOption.getDisplayPrefix() + (int)(d * 90.0 + 10.0) + "%";
 		}
 	);
@@ -57,7 +53,7 @@ public abstract class Option {
 			gameOptions.chatScale = double_;
 			MinecraftClient.getInstance().inGameHud.getChatHud().reset();
 		}, (gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
 			String string = doubleOption.getDisplayPrefix();
 			return d == 0.0 ? string + I18n.translate("options.off") : string + (int)(d * 100.0) + "%";
 		}
@@ -67,7 +63,7 @@ public abstract class Option {
 			gameOptions.chatWidth = double_;
 			MinecraftClient.getInstance().inGameHud.getChatHud().reset();
 		}, (gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
 			return doubleOption.getDisplayPrefix() + ChatHud.getWidth(d) + "px";
 		}
 	);
@@ -85,7 +81,7 @@ public abstract class Option {
 	public static final DoubleOption FRAMERATE_LIMIT = new DoubleOption(
 		"options.framerateLimit", 10.0, 260.0, 10.0F, gameOptions -> (double)gameOptions.maxFps, (gameOptions, double_) -> {
 			gameOptions.maxFps = (int)double_.doubleValue();
-			MinecraftClient.getInstance().window.setFramerateLimit(gameOptions.maxFps);
+			MinecraftClient.getInstance().getWindow().setFramerateLimit(gameOptions.maxFps);
 		}, (gameOptions, doubleOption) -> {
 			double d = doubleOption.get(gameOptions);
 			String string = doubleOption.getDisplayPrefix();
@@ -94,7 +90,7 @@ public abstract class Option {
 	);
 	public static final DoubleOption GAMMA = new DoubleOption(
 		"options.gamma", 0.0, 1.0, 0.0F, gameOptions -> gameOptions.gamma, (gameOptions, double_) -> gameOptions.gamma = double_, (gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
 			String string = doubleOption.getDisplayPrefix();
 			if (d == 0.0) {
 				return string + I18n.translate("options.gamma.min");
@@ -124,16 +120,16 @@ public abstract class Option {
 		gameOptions -> gameOptions.mouseWheelSensitivity,
 		(gameOptions, double_) -> gameOptions.mouseWheelSensitivity = double_,
 		(gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
-			return doubleOption.getDisplayPrefix() + String.format("%.2f", doubleOption.method_18616(d));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
+			return doubleOption.getDisplayPrefix() + String.format("%.2f", doubleOption.getValue(d));
 		}
 	);
 	public static final BooleanOption RAW_MOUSE_INPUT = new BooleanOption(
-		"options.rawMouseInput", gameOptions -> gameOptions.field_20308, (gameOptions, boolean_) -> {
-			gameOptions.field_20308 = boolean_;
-			Window window = MinecraftClient.getInstance().window;
+		"options.rawMouseInput", gameOptions -> gameOptions.rawMouseInput, (gameOptions, boolean_) -> {
+			gameOptions.rawMouseInput = boolean_;
+			Window window = MinecraftClient.getInstance().getWindow();
 			if (window != null) {
-				window.method_21668(boolean_);
+				window.setRawMouseMotion(boolean_);
 			}
 		}
 	);
@@ -154,7 +150,7 @@ public abstract class Option {
 		gameOptions -> gameOptions.mouseSensitivity,
 		(gameOptions, double_) -> gameOptions.mouseSensitivity = double_,
 		(gameOptions, doubleOption) -> {
-			double d = doubleOption.method_18611(doubleOption.get(gameOptions));
+			double d = doubleOption.getRatio(doubleOption.get(gameOptions));
 			String string = doubleOption.getDisplayPrefix();
 			if (d == 0.0) {
 				return string + I18n.translate("options.sensitivity.min");
@@ -167,7 +163,7 @@ public abstract class Option {
 		"options.accessibility.text_background_opacity", 0.0, 1.0, 0.0F, gameOptions -> gameOptions.textBackgroundOpacity, (gameOptions, double_) -> {
 			gameOptions.textBackgroundOpacity = double_;
 			MinecraftClient.getInstance().inGameHud.getChatHud().reset();
-		}, (gameOptions, doubleOption) -> doubleOption.getDisplayPrefix() + (int)(doubleOption.method_18611(doubleOption.get(gameOptions)) * 100.0) + "%"
+		}, (gameOptions, doubleOption) -> doubleOption.getDisplayPrefix() + (int)(doubleOption.getRatio(doubleOption.get(gameOptions)) * 100.0) + "%"
 	);
 	public static final CyclingOption AO = new CyclingOption("options.ao", (gameOptions, integer) -> {
 		gameOptions.ao = AoOption.getOption(gameOptions.ao.getValue() + integer);
@@ -196,7 +192,7 @@ public abstract class Option {
 	public static final CyclingOption GUI_SCALE = new CyclingOption(
 		"options.guiScale",
 		(gameOptions, integer) -> gameOptions.guiScale = Integer.remainderUnsigned(
-				gameOptions.guiScale + integer, MinecraftClient.getInstance().window.calculateScaleFactor(0, MinecraftClient.getInstance().forcesUnicodeFont()) + 1
+				gameOptions.guiScale + integer, MinecraftClient.getInstance().getWindow().calculateScaleFactor(0, MinecraftClient.getInstance().forcesUnicodeFont()) + 1
 			),
 		(gameOptions, cyclingOption) -> cyclingOption.getDisplayPrefix()
 				+ (gameOptions.guiScale == 0 ? I18n.translate("options.guiScale.auto") : gameOptions.guiScale)
@@ -212,7 +208,7 @@ public abstract class Option {
 			if (NarratorManager.INSTANCE.isActive()) {
 				gameOptions.narrator = NarratorOption.byId(gameOptions.narrator.getId() + integer);
 			} else {
-				gameOptions.narrator = NarratorOption.OFF;
+				gameOptions.narrator = NarratorOption.field_18176;
 			}
 
 			NarratorManager.INSTANCE.addToast(gameOptions.narrator);
@@ -257,8 +253,8 @@ public abstract class Option {
 	);
 	public static final BooleanOption VSYNC = new BooleanOption("options.vsync", gameOptions -> gameOptions.enableVsync, (gameOptions, boolean_) -> {
 		gameOptions.enableVsync = boolean_;
-		if (MinecraftClient.getInstance().window != null) {
-			MinecraftClient.getInstance().window.setVsync(gameOptions.enableVsync);
+		if (MinecraftClient.getInstance().getWindow() != null) {
+			MinecraftClient.getInstance().getWindow().setVsync(gameOptions.enableVsync);
 		}
 	});
 	public static final BooleanOption ENTITY_SHADOWS = new BooleanOption(
@@ -269,7 +265,7 @@ public abstract class Option {
 			gameOptions.forceUnicodeFont = boolean_;
 			MinecraftClient minecraftClient = MinecraftClient.getInstance();
 			if (minecraftClient.getFontManager() != null) {
-				minecraftClient.getFontManager().setForceUnicodeFont(gameOptions.forceUnicodeFont, SystemUtil.getServerWorkerExecutor(), minecraftClient);
+				minecraftClient.getFontManager().setForceUnicodeFont(gameOptions.forceUnicodeFont, Util.getServerWorkerExecutor(), minecraftClient);
 			}
 		}
 	);
@@ -291,15 +287,25 @@ public abstract class Option {
 
 		return false;
 	}, (gameOptions, boolean_) -> gameOptions.snooperEnabled = boolean_);
+	public static final CyclingOption SNEAK_TOGGLED = new CyclingOption(
+		"key.sneak",
+		(gameOptions, integer) -> gameOptions.sneakToggled = !gameOptions.sneakToggled,
+		(gameOptions, cyclingOption) -> cyclingOption.getDisplayPrefix() + I18n.translate(gameOptions.sneakToggled ? "options.key.toggle" : "options.key.hold")
+	);
+	public static final CyclingOption SPRINT_TOGGLED = new CyclingOption(
+		"key.sprint",
+		(gameOptions, integer) -> gameOptions.sprintToggled = !gameOptions.sprintToggled,
+		(gameOptions, cyclingOption) -> cyclingOption.getDisplayPrefix() + I18n.translate(gameOptions.sprintToggled ? "options.key.toggle" : "options.key.hold")
+	);
 	public static final BooleanOption TOUCHSCREEN = new BooleanOption(
 		"options.touchscreen", gameOptions -> gameOptions.touchscreen, (gameOptions, boolean_) -> gameOptions.touchscreen = boolean_
 	);
 	public static final BooleanOption FULLSCREEN = new BooleanOption("options.fullscreen", gameOptions -> gameOptions.fullscreen, (gameOptions, boolean_) -> {
 		gameOptions.fullscreen = boolean_;
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
-		if (minecraftClient.window != null && minecraftClient.window.isFullscreen() != gameOptions.fullscreen) {
-			minecraftClient.window.toggleFullscreen();
-			gameOptions.fullscreen = minecraftClient.window.isFullscreen();
+		if (minecraftClient.getWindow() != null && minecraftClient.getWindow().isFullscreen() != gameOptions.fullscreen) {
+			minecraftClient.getWindow().toggleFullscreen();
+			gameOptions.fullscreen = minecraftClient.getWindow().isFullscreen();
 		}
 	});
 	public static final BooleanOption VIEW_BOBBING = new BooleanOption(

@@ -1,8 +1,8 @@
 package net.minecraft.world.biome;
 
+import com.google.common.collect.ImmutableList;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.EntityType;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.decorator.Decorator;
 import net.minecraft.world.gen.decorator.DecoratorConfig;
@@ -10,7 +10,6 @@ import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.FeatureConfig;
 import net.minecraft.world.gen.feature.MineshaftFeature;
 import net.minecraft.world.gen.feature.MineshaftFeatureConfig;
-import net.minecraft.world.gen.feature.PlantedFeatureConfig;
 import net.minecraft.world.gen.feature.RandomFeatureConfig;
 import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
 
@@ -29,27 +28,29 @@ public final class DarkForestHillsBiome extends Biome {
 				.waterFogColor(329011)
 				.parent("dark_forest")
 		);
-		this.addStructureFeature(Feature.WOODLAND_MANSION, FeatureConfig.DEFAULT);
-		this.addStructureFeature(Feature.MINESHAFT, new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692));
-		this.addStructureFeature(Feature.STRONGHOLD, FeatureConfig.DEFAULT);
+		this.addStructureFeature(Feature.WOODLAND_MANSION.configure(FeatureConfig.DEFAULT));
+		this.addStructureFeature(Feature.MINESHAFT.configure(new MineshaftFeatureConfig(0.004, MineshaftFeature.Type.field_13692)));
+		this.addStructureFeature(Feature.STRONGHOLD.configure(FeatureConfig.DEFAULT));
 		DefaultBiomeFeatures.addLandCarvers(this);
 		DefaultBiomeFeatures.addDefaultStructures(this);
 		DefaultBiomeFeatures.addDefaultLakes(this);
 		DefaultBiomeFeatures.addDungeons(this);
 		this.addFeature(
 			GenerationStep.Feature.field_13178,
-			configureFeature(
-				Feature.field_13593,
-				new RandomFeatureConfig(
-					new Feature[]{Feature.field_13571, Feature.field_13531, Feature.field_13532, Feature.field_13529},
-					new FeatureConfig[]{new PlantedFeatureConfig(false), new PlantedFeatureConfig(false), FeatureConfig.DEFAULT, FeatureConfig.DEFAULT},
-					new float[]{0.025F, 0.05F, 0.6666667F, 0.1F},
-					Feature.field_13510,
-					FeatureConfig.DEFAULT
-				),
-				Decorator.field_14239,
-				DecoratorConfig.DEFAULT
-			)
+			Feature.field_13593
+				.configure(
+					new RandomFeatureConfig(
+						ImmutableList.of(
+							Feature.field_13571.configure(DefaultBiomeFeatures.HUGE_RED_MUSHROOM_CONFIG).withChance(0.025F),
+							Feature.field_13531.configure(DefaultBiomeFeatures.HUGE_BROWN_MUSHROOM_CONFIG).withChance(0.05F),
+							Feature.field_13532.configure(DefaultBiomeFeatures.DARK_OAK_TREE_CONFIG).withChance(0.6666667F),
+							Feature.field_13510.configure(DefaultBiomeFeatures.BIRCH_TREE_CONFIG).withChance(0.2F),
+							Feature.field_13529.configure(DefaultBiomeFeatures.FANCY_TREE_CONFIG).withChance(0.1F)
+						),
+						Feature.field_13510.configure(DefaultBiomeFeatures.OAK_TREE_CONFIG)
+					)
+				)
+				.createDecoratedFeature(Decorator.field_14239.configure(DecoratorConfig.DEFAULT))
 		);
 		DefaultBiomeFeatures.addForestFlowers(this);
 		DefaultBiomeFeatures.addMineables(this);
@@ -77,8 +78,8 @@ public final class DarkForestHillsBiome extends Biome {
 	}
 
 	@Override
-	public int getGrassColorAt(BlockPos blockPos) {
-		int i = super.getGrassColorAt(blockPos);
+	public int getGrassColorAt(double d, double e) {
+		int i = super.getGrassColorAt(d, e);
 		return (i & 16711422) + 2634762 >> 1;
 	}
 }

@@ -4,17 +4,18 @@ import java.util.Random;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	public static final BooleanProperty LOCKED = Properties.LOCKED;
@@ -23,7 +24,7 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	protected RepeaterBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(FACING, Direction.field_11043)
 				.with(DELAY, Integer.valueOf(1))
@@ -33,12 +34,12 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (!playerEntity.abilities.allowModifyWorld) {
-			return false;
+			return ActionResult.field_5811;
 		} else {
 			world.setBlockState(blockPos, blockState.cycle(DELAY), 3);
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -63,8 +64,8 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	}
 
 	@Override
-	public boolean isLocked(ViewableWorld viewableWorld, BlockPos blockPos, BlockState blockState) {
-		return this.getMaxInputLevelSides(viewableWorld, blockPos, blockState) > 0;
+	public boolean isLocked(WorldView worldView, BlockPos blockPos, BlockState blockState) {
+		return this.getMaxInputLevelSides(worldView, blockPos, blockState) > 0;
 	}
 
 	@Override
@@ -92,7 +93,7 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, DELAY, LOCKED, POWERED);
 	}
 }

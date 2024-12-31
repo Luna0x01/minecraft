@@ -20,7 +20,7 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 	private static final Logger LOG = LogManager.getLogger();
 
 	public ItemTagsProvider(DataGenerator dataGenerator) {
-		super(dataGenerator, Registry.ITEM);
+		super(dataGenerator, Registry.field_11142);
 	}
 
 	@Override
@@ -57,7 +57,9 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 		this.copy(BlockTags.field_15480, ItemTags.field_15543);
 		this.copy(BlockTags.field_16443, ItemTags.field_16444);
 		this.copy(BlockTags.field_16584, ItemTags.field_16585);
-		this.method_10512(ItemTags.field_15556)
+		this.copy(BlockTags.field_20338, ItemTags.field_20343);
+		this.copy(BlockTags.field_20339, ItemTags.field_20344);
+		this.getOrCreateTagBuilder(ItemTags.field_15556)
 			.add(
 				Items.field_8539,
 				Items.field_8824,
@@ -76,10 +78,12 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 				Items.field_8586,
 				Items.field_8572
 			);
-		this.method_10512(ItemTags.field_15536).add(Items.field_8533, Items.field_8486, Items.field_8442, Items.field_8730, Items.field_8094, Items.field_8138);
-		this.method_10512(ItemTags.field_15527).add(Items.field_8429, Items.field_8373, Items.field_8209, Items.field_8509, Items.field_8323, Items.field_8846);
+		this.getOrCreateTagBuilder(ItemTags.field_15536)
+			.add(Items.field_8533, Items.field_8486, Items.field_8442, Items.field_8730, Items.field_8094, Items.field_8138);
+		this.getOrCreateTagBuilder(ItemTags.field_15527)
+			.add(Items.field_8429, Items.field_8373, Items.field_8209, Items.field_8509, Items.field_8323, Items.field_8846);
 		this.copy(BlockTags.field_15472, ItemTags.field_15533);
-		this.method_10512(ItemTags.field_15541)
+		this.getOrCreateTagBuilder(ItemTags.field_15541)
 			.add(
 				Items.field_8144,
 				Items.field_8075,
@@ -94,12 +98,13 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 				Items.field_8731,
 				Items.field_8806
 			);
-		this.method_10512(ItemTags.field_17487).add(Items.field_8713, Items.field_8665);
-		this.method_10512(ItemTags.field_18317).add(Items.field_8107, Items.field_8087, Items.field_8236);
+		this.getOrCreateTagBuilder(ItemTags.field_17487).add(Items.field_8713, Items.field_8665);
+		this.getOrCreateTagBuilder(ItemTags.field_18317).add(Items.field_8107, Items.field_8087, Items.field_8236);
+		this.getOrCreateTagBuilder(ItemTags.field_21465).add(Items.field_8360, Items.field_8674);
 	}
 
 	protected void copy(Tag<Block> tag, Tag<Item> tag2) {
-		Tag.Builder<Item> builder = this.method_10512(tag2);
+		Tag.Builder<Item> builder = this.getOrCreateTagBuilder(tag2);
 
 		for (Tag.Entry<Block> entry : tag.entries()) {
 			Tag.Entry<Item> entry2 = this.convert(entry);
@@ -116,7 +121,7 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 			for (Block block : ((Tag.CollectionEntry)entry).getValues()) {
 				Item item = block.asItem();
 				if (item == Items.AIR) {
-					LOG.warn("Itemless block copied to item tag: {}", Registry.BLOCK.getId(block));
+					LOG.warn("Itemless block copied to item tag: {}", Registry.field_11146.getId(block));
 				} else {
 					list.add(item);
 				}
@@ -139,7 +144,7 @@ public class ItemTagsProvider extends AbstractTagProvider<Item> {
 	}
 
 	@Override
-	protected void method_10511(TagContainer<Item> tagContainer) {
+	protected void setContainer(TagContainer<Item> tagContainer) {
 		ItemTags.setContainer(tagContainer);
 	}
 }

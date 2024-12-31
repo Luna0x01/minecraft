@@ -28,7 +28,7 @@ public class ChunkGeneratorType<C extends ChunkGeneratorConfig, T extends ChunkG
 	private static <C extends ChunkGeneratorConfig, T extends ChunkGenerator<C>> ChunkGeneratorType<C, T> register(
 		String string, ChunkGeneratorFactory<C, T> chunkGeneratorFactory, Supplier<C> supplier, boolean bl
 	) {
-		return Registry.register(Registry.CHUNK_GENERATOR_TYPE, string, new ChunkGeneratorType<>(chunkGeneratorFactory, bl, supplier));
+		return Registry.register(Registry.field_11149, string, new ChunkGeneratorType<>(chunkGeneratorFactory, bl, supplier));
 	}
 
 	public ChunkGeneratorType(ChunkGeneratorFactory<C, T> chunkGeneratorFactory, boolean bl, Supplier<C> supplier) {

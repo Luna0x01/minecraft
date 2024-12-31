@@ -9,7 +9,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.world.World;
 
 public abstract class ThrownItemEntity extends ThrownEntity implements FlyingItemEntity {
@@ -29,7 +29,7 @@ public abstract class ThrownItemEntity extends ThrownEntity implements FlyingIte
 
 	public void setItem(ItemStack itemStack) {
 		if (itemStack.getItem() != this.getDefaultItem() || itemStack.hasTag()) {
-			this.getDataTracker().set(ITEM, SystemUtil.consume(itemStack.copy(), itemStackx -> itemStackx.setCount(1)));
+			this.getDataTracker().set(ITEM, Util.make(itemStack.copy(), itemStackx -> itemStackx.setCount(1)));
 		}
 	}
 

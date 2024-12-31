@@ -162,7 +162,7 @@ public class ParticleCommand {
 			throw FAILED_EXCPETION.create();
 		} else {
 			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.particle.success", Registry.PARTICLE_TYPE.getId((ParticleType<? extends ParticleEffect>)particleEffect.getType()).toString()),
+				new TranslatableText("commands.particle.success", Registry.field_11141.getId((ParticleType<? extends ParticleEffect>)particleEffect.getType()).toString()),
 				true
 			);
 			return j;

@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.annotation.Nullable;
-import net.minecraft.datafixers.DataFixTypes;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.FileNameUtil;
 import net.minecraft.util.ProgressListener;
-import net.minecraft.util.TagHelper;
 import net.minecraft.world.WorldSaveHandler;
 import net.minecraft.world.level.LevelProperties;
 import org.apache.commons.lang3.StringUtils;
@@ -151,10 +151,10 @@ public class LevelStorage {
 		try {
 			CompoundTag compoundTag = NbtIo.readCompressed(new FileInputStream(file));
 			CompoundTag compoundTag2 = compoundTag.getCompound("Data");
-			CompoundTag compoundTag3 = compoundTag2.containsKey("Player", 10) ? compoundTag2.getCompound("Player") : null;
+			CompoundTag compoundTag3 = compoundTag2.contains("Player", 10) ? compoundTag2.getCompound("Player") : null;
 			compoundTag2.remove("Player");
-			int i = compoundTag2.containsKey("DataVersion", 99) ? compoundTag2.getInt("DataVersion") : -1;
-			return new LevelProperties(TagHelper.update(dataFixer, DataFixTypes.field_19212, compoundTag2, i), dataFixer, i, compoundTag3);
+			int i = compoundTag2.contains("DataVersion", 99) ? compoundTag2.getInt("DataVersion") : -1;
+			return new LevelProperties(NbtHelper.update(dataFixer, DataFixTypes.field_19212, compoundTag2, i), dataFixer, i, compoundTag3);
 		} catch (Exception var6) {
 			LOGGER.error("Exception reading {}", file, var6);
 			return null;
@@ -270,7 +270,7 @@ public class LevelStorage {
 		try {
 			final Path path4 = Paths.get(string);
 			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-				public FileVisitResult method_246(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+				public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
 					String string = path4.resolve(path.relativize(path)).toString().replace('\\', '/');
 					ZipEntry zipEntry = new ZipEntry(string);
 					zipOutputStream.putNextEntry(zipEntry);

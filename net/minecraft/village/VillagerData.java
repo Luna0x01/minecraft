@@ -20,8 +20,8 @@ public class VillagerData {
 
 	public VillagerData(Dynamic<?> dynamic) {
 		this(
-			Registry.VILLAGER_TYPE.get(Identifier.tryParse(dynamic.get("type").asString(""))),
-			Registry.VILLAGER_PROFESSION.get(Identifier.tryParse(dynamic.get("profession").asString(""))),
+			Registry.field_17166.get(Identifier.tryParse(dynamic.get("type").asString(""))),
+			Registry.field_17167.get(Identifier.tryParse(dynamic.get("profession").asString(""))),
 			dynamic.get("level").asInt(1)
 		);
 	}
@@ -54,9 +54,9 @@ public class VillagerData {
 		return (T)dynamicOps.createMap(
 			ImmutableMap.of(
 				dynamicOps.createString("type"),
-				dynamicOps.createString(Registry.VILLAGER_TYPE.getId(this.type).toString()),
+				dynamicOps.createString(Registry.field_17166.getId(this.type).toString()),
 				dynamicOps.createString("profession"),
-				dynamicOps.createString(Registry.VILLAGER_PROFESSION.getId(this.profession).toString()),
+				dynamicOps.createString(Registry.field_17167.getId(this.profession).toString()),
 				dynamicOps.createString("level"),
 				dynamicOps.createInt(this.level)
 			)

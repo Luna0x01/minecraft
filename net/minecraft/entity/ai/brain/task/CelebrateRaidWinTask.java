@@ -25,33 +25,32 @@ public class CelebrateRaidWinTask extends Task<VillagerEntity> {
 		super(ImmutableMap.of(), i, j);
 	}
 
-	protected boolean method_19951(ServerWorld serverWorld, VillagerEntity villagerEntity) {
-		this.raid = serverWorld.getRaidAt(new BlockPos(villagerEntity));
-		return this.raid != null && this.raid.hasWon() && SeekSkyTask.isSkyVisible(serverWorld, villagerEntity);
+	protected boolean shouldRun(ServerWorld serverWorld, VillagerEntity villagerEntity) {
+		BlockPos blockPos = new BlockPos(villagerEntity);
+		this.raid = serverWorld.getRaidAt(blockPos);
+		return this.raid != null && this.raid.hasWon() && SeekSkyTask.isSkyVisible(serverWorld, villagerEntity, blockPos);
 	}
 
-	protected boolean method_19952(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected boolean shouldKeepRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		return this.raid != null && !this.raid.hasStopped();
 	}
 
-	protected void method_19953(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+	protected void finishRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		this.raid = null;
 		villagerEntity.getBrain().refreshActivities(serverWorld.getTimeOfDay(), serverWorld.getTime());
 	}
 
-	protected void method_19954(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
-		Random random = villagerEntity.getRand();
+	protected void keepRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
+		Random random = villagerEntity.getRandom();
 		if (random.nextInt(100) == 0) {
 			villagerEntity.playCelebrateSound();
 		}
 
-		if (random.nextInt(200) == 0 && SeekSkyTask.isSkyVisible(serverWorld, villagerEntity)) {
+		if (random.nextInt(200) == 0 && SeekSkyTask.isSkyVisible(serverWorld, villagerEntity, new BlockPos(villagerEntity))) {
 			DyeColor dyeColor = DyeColor.values()[random.nextInt(DyeColor.values().length)];
 			int i = random.nextInt(3);
 			ItemStack itemStack = this.createFirework(dyeColor, i);
-			FireworkEntity fireworkEntity = new FireworkEntity(
-				villagerEntity.world, villagerEntity.x, villagerEntity.y + (double)villagerEntity.getStandingEyeHeight(), villagerEntity.z, itemStack
-			);
+			FireworkEntity fireworkEntity = new FireworkEntity(villagerEntity.world, villagerEntity.getX(), villagerEntity.getEyeY(), villagerEntity.getZ(), itemStack);
 			villagerEntity.world.spawnEntity(fireworkEntity);
 		}
 	}

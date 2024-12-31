@@ -1,12 +1,11 @@
 package com.mojang.realmsclient.gui;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.realmsclient.dto.RealmsServer;
 import com.mojang.realmsclient.dto.RealmsWorldOptions;
 import com.mojang.realmsclient.util.RealmsTextureManager;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.minecraft.realms.Realms;
 import net.minecraft.realms.RealmsButton;
@@ -20,6 +19,7 @@ public class RealmsWorldSlotButton extends RealmsButton {
 	private final RealmsWorldSlotButton.Listener listener;
 	private final int slotIndex;
 	private int animTick;
+	@Nullable
 	private RealmsWorldSlotButton.State state;
 
 	public RealmsWorldSlotButton(
@@ -161,20 +161,20 @@ public class RealmsWorldSlotButton extends RealmsButton {
 
 		if (bl) {
 			float f = 0.85F + 0.15F * RealmsMth.cos((float)this.animTick * 0.2F);
-			GlStateManager.color4f(f, f, f, 1.0F);
+			RenderSystem.color4f(f, f, f, 1.0F);
 		} else {
-			GlStateManager.color4f(0.56F, 0.56F, 0.56F, 1.0F);
+			RenderSystem.color4f(0.56F, 0.56F, 0.56F, 1.0F);
 		}
 
 		RealmsScreen.blit(i + 3, j + 3, 0.0F, 0.0F, 74, 74, 74, 74);
 		Realms.bind("realms:textures/gui/realms/slot_frame.png");
 		boolean bl5 = bl4 && action != RealmsWorldSlotButton.Action.NOTHING;
 		if (bl5) {
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		} else if (bl) {
-			GlStateManager.color4f(0.8F, 0.8F, 0.8F, 1.0F);
+			RenderSystem.color4f(0.8F, 0.8F, 0.8F, 1.0F);
 		} else {
-			GlStateManager.color4f(0.56F, 0.56F, 0.56F, 1.0F);
+			RenderSystem.color4f(0.56F, 0.56F, 0.56F, 1.0F);
 		}
 
 		RealmsScreen.blit(i, j, 0.0F, 0.0F, 80, 80, 80, 80);
@@ -183,7 +183,9 @@ public class RealmsWorldSlotButton extends RealmsButton {
 
 	@Override
 	public void onPress() {
-		this.listener.onSlotClick(this.slotIndex, this.state.action, this.state.minigame, this.state.empty);
+		if (this.state != null) {
+			this.listener.onSlotClick(this.slotIndex, this.state.action, this.state.minigame, this.state.empty);
+		}
 	}
 
 	public static enum Action {
@@ -193,7 +195,7 @@ public class RealmsWorldSlotButton extends RealmsButton {
 	}
 
 	public interface Listener {
-		void onSlotClick(int i, @Nonnull RealmsWorldSlotButton.Action action, boolean bl, boolean bl2);
+		void onSlotClick(int i, RealmsWorldSlotButton.Action action, boolean bl, boolean bl2);
 	}
 
 	public static class State {
@@ -206,16 +208,7 @@ public class RealmsWorldSlotButton extends RealmsButton {
 		public final RealmsWorldSlotButton.Action action;
 		final String actionPrompt;
 
-		State(
-			boolean bl,
-			String string,
-			long l,
-			@Nullable String string2,
-			boolean bl2,
-			boolean bl3,
-			@Nonnull RealmsWorldSlotButton.Action action,
-			@Nullable String string3
-		) {
+		State(boolean bl, String string, long l, @Nullable String string2, boolean bl2, boolean bl3, RealmsWorldSlotButton.Action action, @Nullable String string3) {
 			this.isCurrentlyActiveSlot = bl;
 			this.slotName = string;
 			this.imageId = l;

@@ -15,6 +15,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.network.packet.EntityStatusS2CPacket;
+import net.minecraft.client.network.packet.GameStateChangeS2CPacket;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
@@ -25,23 +26,23 @@ import org.apache.logging.log4j.Logger;
 
 public class GameRules {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Map<GameRules.RuleKey<?>, GameRules.RuleType<?>> RULES = Maps.newTreeMap(Comparator.comparing(ruleKey -> ruleKey.name));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19387 = register("doFireTick", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19388 = register("mobGriefing", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19389 = register("keepInventory", GameRules.BooleanRule.of(false));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19390 = register("doMobSpawning", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19391 = register("doMobLoot", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19392 = register("doTileDrops", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19393 = register("doEntityDrops", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19394 = register("commandBlockOutput", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19395 = register("naturalRegeneration", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19396 = register("doDaylightCycle", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19397 = register("logAdminCommands", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19398 = register("showDeathMessages", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.IntRule> field_19399 = register("randomTickSpeed", GameRules.IntRule.of(3));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19400 = register("sendCommandFeedback", GameRules.BooleanRule.of(true));
+	private static final Map<GameRules.RuleKey<?>, GameRules.RuleType<?>> RULE_TYPES = Maps.newTreeMap(Comparator.comparing(ruleKey -> ruleKey.name));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19387 = register("doFireTick", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19388 = register("mobGriefing", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19389 = register("keepInventory", GameRules.BooleanRule.create(false));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19390 = register("doMobSpawning", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19391 = register("doMobLoot", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19392 = register("doTileDrops", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19393 = register("doEntityDrops", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19394 = register("commandBlockOutput", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19395 = register("naturalRegeneration", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19396 = register("doDaylightCycle", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19397 = register("logAdminCommands", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19398 = register("showDeathMessages", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.IntRule> field_19399 = register("randomTickSpeed", GameRules.IntRule.create(3));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19400 = register("sendCommandFeedback", GameRules.BooleanRule.create(true));
 	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19401 = register(
-		"reducedDebugInfo", GameRules.BooleanRule.of(false, (minecraftServer, booleanRule) -> {
+		"reducedDebugInfo", GameRules.BooleanRule.create(false, (minecraftServer, booleanRule) -> {
 			byte b = (byte)(booleanRule.get() ? 22 : 23);
 
 			for (ServerPlayerEntity serverPlayerEntity : minecraftServer.getPlayerManager().getPlayerList()) {
@@ -49,22 +50,35 @@ public class GameRules {
 			}
 		})
 	);
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19402 = register("spectatorsGenerateChunks", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.IntRule> field_19403 = register("spawnRadius", GameRules.IntRule.of(10));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19404 = register("disableElytraMovementCheck", GameRules.BooleanRule.of(false));
-	public static final GameRules.RuleKey<GameRules.IntRule> field_19405 = register("maxEntityCramming", GameRules.IntRule.of(24));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19406 = register("doWeatherCycle", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19407 = register("doLimitedCrafting", GameRules.BooleanRule.of(false));
-	public static final GameRules.RuleKey<GameRules.IntRule> field_19408 = register("maxCommandChainLength", GameRules.IntRule.of(65536));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19409 = register("announceAdvancements", GameRules.BooleanRule.of(true));
-	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19422 = register("disableRaids", GameRules.BooleanRule.of(false));
-	private final Map<GameRules.RuleKey<?>, GameRules.Rule<?>> rules = (Map<GameRules.RuleKey<?>, GameRules.Rule<?>>)RULES.entrySet()
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19402 = register("spectatorsGenerateChunks", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.IntRule> field_19403 = register("spawnRadius", GameRules.IntRule.create(10));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19404 = register("disableElytraMovementCheck", GameRules.BooleanRule.create(false));
+	public static final GameRules.RuleKey<GameRules.IntRule> field_19405 = register("maxEntityCramming", GameRules.IntRule.create(24));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19406 = register("doWeatherCycle", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19407 = register("doLimitedCrafting", GameRules.BooleanRule.create(false));
+	public static final GameRules.RuleKey<GameRules.IntRule> field_19408 = register("maxCommandChainLength", GameRules.IntRule.create(65536));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19409 = register("announceAdvancements", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_19422 = register("disableRaids", GameRules.BooleanRule.create(false));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_20637 = register("doInsomnia", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_20638 = register(
+		"doImmediateRespawn", GameRules.BooleanRule.create(false, (minecraftServer, booleanRule) -> {
+			for (ServerPlayerEntity serverPlayerEntity : minecraftServer.getPlayerManager().getPlayerList()) {
+				serverPlayerEntity.networkHandler.sendPacket(new GameStateChangeS2CPacket(11, booleanRule.get() ? 1.0F : 0.0F));
+			}
+		})
+	);
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_20634 = register("drowningDamage", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_20635 = register("fallDamage", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_20636 = register("fireDamage", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_21831 = register("doPatrolSpawning", GameRules.BooleanRule.create(true));
+	public static final GameRules.RuleKey<GameRules.BooleanRule> field_21832 = register("doTraderSpawning", GameRules.BooleanRule.create(true));
+	private final Map<GameRules.RuleKey<?>, GameRules.Rule<?>> rules = (Map<GameRules.RuleKey<?>, GameRules.Rule<?>>)RULE_TYPES.entrySet()
 		.stream()
-		.collect(ImmutableMap.toImmutableMap(Entry::getKey, entry -> ((GameRules.RuleType)entry.getValue()).newRule()));
+		.collect(ImmutableMap.toImmutableMap(Entry::getKey, entry -> ((GameRules.RuleType)entry.getValue()).createRule()));
 
 	private static <T extends GameRules.Rule<T>> GameRules.RuleKey<T> register(String string, GameRules.RuleType<T> ruleType) {
 		GameRules.RuleKey<T> ruleKey = new GameRules.RuleKey<>(string);
-		GameRules.RuleType<?> ruleType2 = (GameRules.RuleType<?>)RULES.put(ruleKey, ruleType);
+		GameRules.RuleType<?> ruleType2 = (GameRules.RuleType<?>)RULE_TYPES.put(ruleKey, ruleType);
 		if (ruleType2 != null) {
 			throw new IllegalStateException("Duplicate game rule registration for " + string);
 		} else {
@@ -78,22 +92,26 @@ public class GameRules {
 
 	public CompoundTag toNbt() {
 		CompoundTag compoundTag = new CompoundTag();
-		this.rules.forEach((ruleKey, rule) -> compoundTag.putString(ruleKey.name, rule.valueToString()));
+		this.rules.forEach((ruleKey, rule) -> compoundTag.putString(ruleKey.name, rule.serialize()));
 		return compoundTag;
 	}
 
-	public void fromNbt(CompoundTag compoundTag) {
-		this.rules.forEach((ruleKey, rule) -> rule.setFromString(compoundTag.getString(ruleKey.name)));
+	public void load(CompoundTag compoundTag) {
+		this.rules.forEach((ruleKey, rule) -> {
+			if (compoundTag.contains(ruleKey.name)) {
+				rule.deserialize(compoundTag.getString(ruleKey.name));
+			}
+		});
 	}
 
-	public static void forEach(GameRules.RuleConsumer ruleConsumer) {
-		RULES.forEach((ruleKey, ruleType) -> consumeTyped(ruleConsumer, ruleKey, ruleType));
+	public static void forEachType(GameRules.RuleTypeConsumer ruleTypeConsumer) {
+		RULE_TYPES.forEach((ruleKey, ruleType) -> accept(ruleTypeConsumer, ruleKey, ruleType));
 	}
 
-	private static <T extends GameRules.Rule<T>> void consumeTyped(
-		GameRules.RuleConsumer ruleConsumer, GameRules.RuleKey<?> ruleKey, GameRules.RuleType<?> ruleType
+	private static <T extends GameRules.Rule<T>> void accept(
+		GameRules.RuleTypeConsumer ruleTypeConsumer, GameRules.RuleKey<?> ruleKey, GameRules.RuleType<?> ruleType
 	) {
-		ruleConsumer.accept(ruleKey, ruleType);
+		ruleTypeConsumer.accept(ruleKey, ruleType);
 	}
 
 	public boolean getBoolean(GameRules.RuleKey<GameRules.BooleanRule> ruleKey) {
@@ -107,12 +125,12 @@ public class GameRules {
 	public static class BooleanRule extends GameRules.Rule<GameRules.BooleanRule> {
 		private boolean value;
 
-		private static GameRules.RuleType<GameRules.BooleanRule> of(boolean bl, BiConsumer<MinecraftServer, GameRules.BooleanRule> biConsumer) {
+		private static GameRules.RuleType<GameRules.BooleanRule> create(boolean bl, BiConsumer<MinecraftServer, GameRules.BooleanRule> biConsumer) {
 			return new GameRules.RuleType<>(BoolArgumentType::bool, ruleType -> new GameRules.BooleanRule(ruleType, bl), biConsumer);
 		}
 
-		private static GameRules.RuleType<GameRules.BooleanRule> of(boolean bl) {
-			return of(bl, (minecraftServer, booleanRule) -> {
+		private static GameRules.RuleType<GameRules.BooleanRule> create(boolean bl) {
+			return create(bl, (minecraftServer, booleanRule) -> {
 			});
 		}
 
@@ -132,25 +150,25 @@ public class GameRules {
 
 		public void set(boolean bl, @Nullable MinecraftServer minecraftServer) {
 			this.value = bl;
-			this.notify(minecraftServer);
+			this.changed(minecraftServer);
 		}
 
 		@Override
-		protected String valueToString() {
+		protected String serialize() {
 			return Boolean.toString(this.value);
 		}
 
 		@Override
-		protected void setFromString(String string) {
+		protected void deserialize(String string) {
 			this.value = Boolean.parseBoolean(string);
 		}
 
 		@Override
-		public int toCommandResult() {
+		public int getCommandResult() {
 			return this.value ? 1 : 0;
 		}
 
-		protected GameRules.BooleanRule method_20761() {
+		protected GameRules.BooleanRule getThis() {
 			return this;
 		}
 	}
@@ -158,12 +176,12 @@ public class GameRules {
 	public static class IntRule extends GameRules.Rule<GameRules.IntRule> {
 		private int value;
 
-		private static GameRules.RuleType<GameRules.IntRule> of(int i, BiConsumer<MinecraftServer, GameRules.IntRule> biConsumer) {
+		private static GameRules.RuleType<GameRules.IntRule> create(int i, BiConsumer<MinecraftServer, GameRules.IntRule> biConsumer) {
 			return new GameRules.RuleType<>(IntegerArgumentType::integer, ruleType -> new GameRules.IntRule(ruleType, i), biConsumer);
 		}
 
-		private static GameRules.RuleType<GameRules.IntRule> of(int i) {
-			return of(i, (minecraftServer, intRule) -> {
+		private static GameRules.RuleType<GameRules.IntRule> create(int i) {
+			return create(i, (minecraftServer, intRule) -> {
 			});
 		}
 
@@ -182,12 +200,12 @@ public class GameRules {
 		}
 
 		@Override
-		protected String valueToString() {
+		protected String serialize() {
 			return Integer.toString(this.value);
 		}
 
 		@Override
-		protected void setFromString(String string) {
+		protected void deserialize(String string) {
 			this.value = parseInt(string);
 		}
 
@@ -204,11 +222,11 @@ public class GameRules {
 		}
 
 		@Override
-		public int toCommandResult() {
+		public int getCommandResult() {
 			return this.value;
 		}
 
-		protected GameRules.IntRule method_20770() {
+		protected GameRules.IntRule getThis() {
 			return this;
 		}
 	}
@@ -224,31 +242,26 @@ public class GameRules {
 
 		public void set(CommandContext<ServerCommandSource> commandContext, String string) {
 			this.setFromArgument(commandContext, string);
-			this.notify(((ServerCommandSource)commandContext.getSource()).getMinecraftServer());
+			this.changed(((ServerCommandSource)commandContext.getSource()).getMinecraftServer());
 		}
 
-		protected void notify(@Nullable MinecraftServer minecraftServer) {
+		protected void changed(@Nullable MinecraftServer minecraftServer) {
 			if (minecraftServer != null) {
-				this.type.notifier.accept(minecraftServer, this.getThis());
+				this.type.changeCallback.accept(minecraftServer, this.getThis());
 			}
 		}
 
-		protected abstract void setFromString(String string);
+		protected abstract void deserialize(String string);
 
-		protected abstract String valueToString();
+		protected abstract String serialize();
 
 		public String toString() {
-			return this.valueToString();
+			return this.serialize();
 		}
 
-		public abstract int toCommandResult();
+		public abstract int getCommandResult();
 
 		protected abstract T getThis();
-	}
-
-	@FunctionalInterface
-	public interface RuleConsumer {
-		<T extends GameRules.Rule<T>> void accept(GameRules.RuleKey<T> ruleKey, GameRules.RuleType<T> ruleType);
 	}
 
 	public static final class RuleKey<T extends GameRules.Rule<T>> {
@@ -277,21 +290,26 @@ public class GameRules {
 
 	public static class RuleType<T extends GameRules.Rule<T>> {
 		private final Supplier<ArgumentType<?>> argumentType;
-		private final Function<GameRules.RuleType<T>, T> factory;
-		private final BiConsumer<MinecraftServer, T> notifier;
+		private final Function<GameRules.RuleType<T>, T> ruleFactory;
+		private final BiConsumer<MinecraftServer, T> changeCallback;
 
 		private RuleType(Supplier<ArgumentType<?>> supplier, Function<GameRules.RuleType<T>, T> function, BiConsumer<MinecraftServer, T> biConsumer) {
 			this.argumentType = supplier;
-			this.factory = function;
-			this.notifier = biConsumer;
+			this.ruleFactory = function;
+			this.changeCallback = biConsumer;
 		}
 
 		public RequiredArgumentBuilder<ServerCommandSource, ?> argument(String string) {
 			return CommandManager.argument(string, (ArgumentType<T>)this.argumentType.get());
 		}
 
-		public T newRule() {
-			return (T)this.factory.apply(this);
+		public T createRule() {
+			return (T)this.ruleFactory.apply(this);
 		}
+	}
+
+	@FunctionalInterface
+	public interface RuleTypeConsumer {
+		<T extends GameRules.Rule<T>> void accept(GameRules.RuleKey<T> ruleKey, GameRules.RuleType<T> ruleType);
 	}
 }

@@ -11,10 +11,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.stat.Stats;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.BooleanBiFunction;
@@ -48,7 +49,7 @@ public class HopperBlock extends BlockWithEntity {
 
 	public HopperBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(FACING, Direction.field_11033).with(ENABLED, Boolean.valueOf(true)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11033).with(ENABLED, Boolean.valueOf(true)));
 	}
 
 	@Override
@@ -118,9 +119,9 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		if (world.isClient) {
-			return true;
+			return ActionResult.field_5812;
 		} else {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof HopperBlockEntity) {
@@ -128,7 +129,7 @@ public class HopperBlock extends BlockWithEntity {
 				playerEntity.incrementStat(Stats.field_15366);
 			}
 
-			return true;
+			return ActionResult.field_5812;
 		}
 	}
 
@@ -173,11 +174,6 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.CUTOUT_MIPPED;
-	}
-
-	@Override
 	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
 		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
 	}
@@ -188,7 +184,7 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, ENABLED);
 	}
 

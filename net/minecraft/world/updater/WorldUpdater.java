@@ -20,16 +20,16 @@ import net.minecraft.SharedConstants;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.PersistentStateManager;
-import net.minecraft.world.VersionedChunkStorage;
 import net.minecraft.world.WorldSaveHandler;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorage;
 import net.minecraft.world.storage.RegionFile;
+import net.minecraft.world.storage.VersionedChunkStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,9 +47,7 @@ public class WorldUpdater {
 	private volatile int totalChunkCount;
 	private volatile int upgradedChunkCount;
 	private volatile int skippedChunkCount;
-	private final Object2FloatMap<DimensionType> dimensionProgress = Object2FloatMaps.synchronize(
-		new Object2FloatOpenCustomHashMap(SystemUtil.identityHashStrategy())
-	);
+	private final Object2FloatMap<DimensionType> dimensionProgress = Object2FloatMaps.synchronize(new Object2FloatOpenCustomHashMap(Util.identityHashStrategy()));
 	private volatile Text status = new TranslatableText("optimizeWorld.stage.counting");
 	private static final Pattern REGION_FILE_PATTERN = Pattern.compile("^r\\.(-?[0-9]+)\\.(-?[0-9]+)\\.mca$");
 	private final PersistentStateManager persistentStateManager;
@@ -60,13 +58,14 @@ public class WorldUpdater {
 		this.worldSaveHandler = levelStorage.createSaveHandler(string, null);
 		this.worldSaveHandler.saveWorld(levelProperties);
 		this.persistentStateManager = new PersistentStateManager(
-			new File(DimensionType.field_13072.getFile(this.worldSaveHandler.getWorldDir()), "data"), this.worldSaveHandler.getDataFixer()
+			new File(DimensionType.field_13072.getSaveDirectory(this.worldSaveHandler.getWorldDir()), "data"), this.worldSaveHandler.getDataFixer()
 		);
 		this.worldDirectory = this.worldSaveHandler.getWorldDir();
 		this.updateThread = UPDATE_THREAD_FACTORY.newThread(this::updateWorld);
 		this.updateThread.setUncaughtExceptionHandler((thread, throwable) -> {
 			LOGGER.error("Error upgrading world", throwable);
 			this.status = new TranslatableText("optimizeWorld.stage.failed");
+			this.isDone = true;
 		});
 		this.updateThread.start();
 	}
@@ -99,12 +98,12 @@ public class WorldUpdater {
 			Builder<DimensionType, VersionedChunkStorage> builder2 = ImmutableMap.builder();
 
 			for (DimensionType dimensionType2 : DimensionType.getAll()) {
-				File file2 = dimensionType2.getFile(file);
+				File file2 = dimensionType2.getSaveDirectory(file);
 				builder2.put(dimensionType2, new VersionedChunkStorage(new File(file2, "region"), this.worldSaveHandler.getDataFixer()));
 			}
 
 			ImmutableMap<DimensionType, VersionedChunkStorage> immutableMap2 = builder2.build();
-			long l = SystemUtil.getMeasuringTimeMs();
+			long l = Util.getMeasuringTimeMs();
 			this.status = new TranslatableText("optimizeWorld.stage.upgrading");
 
 			while (this.keepUpgradingChunks) {
@@ -119,16 +118,21 @@ public class WorldUpdater {
 						boolean bl2 = false;
 
 						try {
-							CompoundTag compoundTag = versionedChunkStorage.getTagAt(chunkPos);
+							CompoundTag compoundTag = versionedChunkStorage.getNbt(chunkPos);
 							if (compoundTag != null) {
 								int i = VersionedChunkStorage.getDataVersion(compoundTag);
 								CompoundTag compoundTag2 = versionedChunkStorage.updateChunkTag(dimensionType3, () -> this.persistentStateManager, compoundTag);
+								CompoundTag compoundTag3 = compoundTag2.getCompound("Level");
+								ChunkPos chunkPos2 = new ChunkPos(compoundTag3.getInt("xPos"), compoundTag3.getInt("zPos"));
+								if (!chunkPos2.equals(chunkPos)) {
+									LOGGER.warn("Chunk {} has invalid position {}", chunkPos, chunkPos2);
+								}
+
 								boolean bl3 = i < SharedConstants.getGameVersion().getWorldVersion();
 								if (this.eraseCache) {
-									CompoundTag compoundTag3 = compoundTag2.getCompound("Level");
-									bl3 = bl3 || compoundTag3.containsKey("Heightmaps");
+									bl3 = bl3 || compoundTag3.contains("Heightmaps");
 									compoundTag3.remove("Heightmaps");
-									bl3 = bl3 || compoundTag3.containsKey("isLightOn");
+									bl3 = bl3 || compoundTag3.contains("isLightOn");
 									compoundTag3.remove("isLightOn");
 								}
 
@@ -137,15 +141,15 @@ public class WorldUpdater {
 									bl2 = true;
 								}
 							}
-						} catch (CrashException var23) {
-							Throwable throwable = var23.getCause();
+						} catch (CrashException var24) {
+							Throwable throwable = var24.getCause();
 							if (!(throwable instanceof IOException)) {
-								throw var23;
+								throw var24;
 							}
 
 							LOGGER.error("Error upgrading chunk {}", chunkPos, throwable);
-						} catch (IOException var24) {
-							LOGGER.error("Error upgrading chunk {}", chunkPos, var24);
+						} catch (IOException var25) {
+							LOGGER.error("Error upgrading chunk {}", chunkPos, var25);
 						}
 
 						if (bl2) {
@@ -169,27 +173,27 @@ public class WorldUpdater {
 			}
 
 			this.status = new TranslatableText("optimizeWorld.stage.finished");
-			UnmodifiableIterator var31 = immutableMap2.values().iterator();
+			UnmodifiableIterator var32 = immutableMap2.values().iterator();
 
-			while (var31.hasNext()) {
-				VersionedChunkStorage versionedChunkStorage2 = (VersionedChunkStorage)var31.next();
+			while (var32.hasNext()) {
+				VersionedChunkStorage versionedChunkStorage2 = (VersionedChunkStorage)var32.next();
 
 				try {
 					versionedChunkStorage2.close();
-				} catch (IOException var22) {
-					LOGGER.error("Error upgrading chunk", var22);
+				} catch (IOException var23) {
+					LOGGER.error("Error upgrading chunk", var23);
 				}
 			}
 
 			this.persistentStateManager.save();
-			l = SystemUtil.getMeasuringTimeMs() - l;
+			l = Util.getMeasuringTimeMs() - l;
 			LOGGER.info("World optimizaton finished after {} ms", l);
 			this.isDone = true;
 		}
 	}
 
 	private List<ChunkPos> getChunkPositions(DimensionType dimensionType) {
-		File file = dimensionType.getFile(this.worldDirectory);
+		File file = dimensionType.getSaveDirectory(this.worldDirectory);
 		File file2 = new File(file, "region");
 		File[] files = file2.listFiles((filex, string) -> string.endsWith(".mca"));
 		if (files == null) {
@@ -203,11 +207,11 @@ public class WorldUpdater {
 					int i = Integer.parseInt(matcher.group(1)) << 5;
 					int j = Integer.parseInt(matcher.group(2)) << 5;
 
-					try (RegionFile regionFile = new RegionFile(file3)) {
+					try (RegionFile regionFile = new RegionFile(file3, file2)) {
 						for (int k = 0; k < 32; k++) {
 							for (int l = 0; l < 32; l++) {
 								ChunkPos chunkPos = new ChunkPos(k + i, l + j);
-								if (regionFile.isChunkPresent(chunkPos)) {
+								if (regionFile.isChunkValid(chunkPos)) {
 									list.add(chunkPos);
 								}
 							}

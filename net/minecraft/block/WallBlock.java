@@ -4,7 +4,7 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.BlockTags;
@@ -13,7 +13,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class WallBlock extends HorizontalConnectedBlock {
 	public static final BooleanProperty UP = Properties.UP;
@@ -23,7 +23,7 @@ public class WallBlock extends HorizontalConnectedBlock {
 	public WallBlock(Block.Settings settings) {
 		super(0.0F, 3.0F, 0.0F, 14.0F, 24.0F, settings);
 		this.setDefaultState(
-			this.stateFactory
+			this.stateManager
 				.getDefaultState()
 				.with(UP, Boolean.valueOf(true))
 				.with(NORTH, Boolean.valueOf(false))
@@ -56,29 +56,29 @@ public class WallBlock extends HorizontalConnectedBlock {
 	private boolean shouldConnectTo(BlockState blockState, boolean bl, Direction direction) {
 		Block block = blockState.getBlock();
 		boolean bl2 = block.matches(BlockTags.field_15504) || block instanceof FenceGateBlock && FenceGateBlock.canWallConnect(blockState, direction);
-		return !canConnect(block) && bl || bl2;
+		return !cannotConnect(block) && bl || bl2;
 	}
 
 	@Override
 	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		ViewableWorld viewableWorld = itemPlacementContext.getWorld();
+		WorldView worldView = itemPlacementContext.getWorld();
 		BlockPos blockPos = itemPlacementContext.getBlockPos();
 		FluidState fluidState = itemPlacementContext.getWorld().getFluidState(itemPlacementContext.getBlockPos());
 		BlockPos blockPos2 = blockPos.north();
 		BlockPos blockPos3 = blockPos.east();
 		BlockPos blockPos4 = blockPos.south();
 		BlockPos blockPos5 = blockPos.west();
-		BlockState blockState = viewableWorld.getBlockState(blockPos2);
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos3);
-		BlockState blockState3 = viewableWorld.getBlockState(blockPos4);
-		BlockState blockState4 = viewableWorld.getBlockState(blockPos5);
-		boolean bl = this.shouldConnectTo(blockState, blockState.isSideSolidFullSquare(viewableWorld, blockPos2, Direction.field_11035), Direction.field_11035);
-		boolean bl2 = this.shouldConnectTo(blockState2, blockState2.isSideSolidFullSquare(viewableWorld, blockPos3, Direction.field_11039), Direction.field_11039);
-		boolean bl3 = this.shouldConnectTo(blockState3, blockState3.isSideSolidFullSquare(viewableWorld, blockPos4, Direction.field_11043), Direction.field_11043);
-		boolean bl4 = this.shouldConnectTo(blockState4, blockState4.isSideSolidFullSquare(viewableWorld, blockPos5, Direction.field_11034), Direction.field_11034);
+		BlockState blockState = worldView.getBlockState(blockPos2);
+		BlockState blockState2 = worldView.getBlockState(blockPos3);
+		BlockState blockState3 = worldView.getBlockState(blockPos4);
+		BlockState blockState4 = worldView.getBlockState(blockPos5);
+		boolean bl = this.shouldConnectTo(blockState, blockState.isSideSolidFullSquare(worldView, blockPos2, Direction.field_11035), Direction.field_11035);
+		boolean bl2 = this.shouldConnectTo(blockState2, blockState2.isSideSolidFullSquare(worldView, blockPos3, Direction.field_11039), Direction.field_11039);
+		boolean bl3 = this.shouldConnectTo(blockState3, blockState3.isSideSolidFullSquare(worldView, blockPos4, Direction.field_11043), Direction.field_11043);
+		boolean bl4 = this.shouldConnectTo(blockState4, blockState4.isSideSolidFullSquare(worldView, blockPos5, Direction.field_11034), Direction.field_11034);
 		boolean bl5 = (!bl || bl2 || !bl3 || bl4) && (bl || !bl2 || bl3 || !bl4);
 		return this.getDefaultState()
-			.with(UP, Boolean.valueOf(bl5 || !viewableWorld.isAir(blockPos.up())))
+			.with(UP, Boolean.valueOf(bl5 || !worldView.isAir(blockPos.up())))
 			.with(NORTH, Boolean.valueOf(bl))
 			.with(EAST, Boolean.valueOf(bl2))
 			.with(SOUTH, Boolean.valueOf(bl3))
@@ -120,7 +120,7 @@ public class WallBlock extends HorizontalConnectedBlock {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(UP, NORTH, EAST, WEST, SOUTH, WATERLOGGED);
 	}
 }

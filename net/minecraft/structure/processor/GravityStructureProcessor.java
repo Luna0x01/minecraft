@@ -8,7 +8,7 @@ import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class GravityStructureProcessor extends StructureProcessor {
 	private final Heightmap.Type heightmap;
@@ -26,13 +26,13 @@ public class GravityStructureProcessor extends StructureProcessor {
 	@Nullable
 	@Override
 	public Structure.StructureBlockInfo process(
-		ViewableWorld viewableWorld,
+		WorldView worldView,
 		BlockPos blockPos,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,
 		StructurePlacementData structurePlacementData
 	) {
-		int i = viewableWorld.getTop(this.heightmap, structureBlockInfo2.pos.getX(), structureBlockInfo2.pos.getZ()) + this.offset;
+		int i = worldView.getTopY(this.heightmap, structureBlockInfo2.pos.getX(), structureBlockInfo2.pos.getZ()) + this.offset;
 		int j = structureBlockInfo.pos.getY();
 		return new Structure.StructureBlockInfo(
 			new BlockPos(structureBlockInfo2.pos.getX(), i + j, structureBlockInfo2.pos.getZ()), structureBlockInfo2.state, structureBlockInfo2.tag

@@ -5,9 +5,9 @@ import java.util.Comparator;
 import net.minecraft.util.math.MathHelper;
 
 public enum ChatVisibility {
-	FULL(0, "options.chat.visibility.full"),
-	SYSTEM(1, "options.chat.visibility.system"),
-	HIDDEN(2, "options.chat.visibility.hidden");
+	field_7538(0, "options.chat.visibility.full"),
+	field_7539(1, "options.chat.visibility.system"),
+	field_7536(2, "options.chat.visibility.hidden");
 
 	private static final ChatVisibility[] field_7534 = (ChatVisibility[])Arrays.stream(values())
 		.sorted(Comparator.comparingInt(ChatVisibility::getId))

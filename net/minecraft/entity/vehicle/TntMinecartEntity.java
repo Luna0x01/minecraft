@@ -44,7 +44,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		super.tick();
 		if (this.fuseTicks > 0) {
 			this.fuseTicks--;
-			this.world.addParticle(ParticleTypes.field_11251, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			this.world.addParticle(ParticleTypes.field_11251, this.getX(), this.getY() + 0.5, this.getZ(), 0.0, 0.0, 0.0);
 		} else if (this.fuseTicks == 0) {
 			this.explode(squaredHorizontalLength(this.getVelocity()));
 		}
@@ -93,19 +93,20 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 				e = 5.0;
 			}
 
-			this.world.createExplosion(this, this.x, this.y, this.z, (float)(4.0 + this.random.nextDouble() * 1.5 * e), Explosion.DestructionType.field_18686);
+			this.world
+				.createExplosion(this, this.getX(), this.getY(), this.getZ(), (float)(4.0 + this.random.nextDouble() * 1.5 * e), Explosion.DestructionType.field_18686);
 			this.remove();
 		}
 	}
 
 	@Override
-	public void handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float f, float g) {
 		if (f >= 3.0F) {
 			float h = f / 10.0F;
 			this.explode((double)(h * h));
 		}
 
-		super.handleFallDamage(f, g);
+		return super.handleFallDamage(f, g);
 	}
 
 	@Override
@@ -129,7 +130,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		if (!this.world.isClient) {
 			this.world.sendEntityStatus(this, (byte)10);
 			if (!this.isSilent()) {
-				this.world.playSound(null, this.x, this.y, this.z, SoundEvents.field_15079, SoundCategory.field_15245, 1.0F, 1.0F);
+				this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.field_15079, SoundCategory.field_15245, 1.0F, 1.0F);
 			}
 		}
 	}
@@ -161,7 +162,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	protected void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.containsKey("TNTFuse", 99)) {
+		if (compoundTag.contains("TNTFuse", 99)) {
 			this.fuseTicks = compoundTag.getInt("TNTFuse");
 		}
 	}

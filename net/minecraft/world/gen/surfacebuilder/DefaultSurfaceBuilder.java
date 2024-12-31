@@ -14,7 +14,7 @@ public class DefaultSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> 
 		super(function);
 	}
 
-	public void method_15219(
+	public void generate(
 		Random random,
 		Chunk chunk,
 		Biome biome,

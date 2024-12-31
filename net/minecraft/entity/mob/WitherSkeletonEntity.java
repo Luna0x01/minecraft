@@ -27,7 +27,7 @@ import net.minecraft.world.World;
 public class WitherSkeletonEntity extends AbstractSkeletonEntity {
 	public WitherSkeletonEntity(EntityType<? extends WitherSkeletonEntity> entityType, World world) {
 		super(entityType, world);
-		this.setPathNodeTypeWeight(PathNodeType.field_14, 8.0F);
+		this.setPathfindingPenalty(PathNodeType.field_14, 8.0F);
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class WitherSkeletonEntity extends AbstractSkeletonEntity {
 
 	@Override
 	protected void initEquipment(LocalDifficulty localDifficulty) {
-		this.setEquippedStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8528));
+		this.equipStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8528));
 	}
 
 	@Override
@@ -94,7 +94,7 @@ public class WitherSkeletonEntity extends AbstractSkeletonEntity {
 			return false;
 		} else {
 			if (entity instanceof LivingEntity) {
-				((LivingEntity)entity).addPotionEffect(new StatusEffectInstance(StatusEffects.field_5920, 200));
+				((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5920, 200));
 			}
 
 			return true;
@@ -109,7 +109,7 @@ public class WitherSkeletonEntity extends AbstractSkeletonEntity {
 	}
 
 	@Override
-	public boolean isPotionEffective(StatusEffectInstance statusEffectInstance) {
-		return statusEffectInstance.getEffectType() == StatusEffects.field_5920 ? false : super.isPotionEffective(statusEffectInstance);
+	public boolean canHaveStatusEffect(StatusEffectInstance statusEffectInstance) {
+		return statusEffectInstance.getEffectType() == StatusEffects.field_5920 ? false : super.canHaveStatusEffect(statusEffectInstance);
 	}
 }

@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import net.minecraft.SharedConstants;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -62,7 +62,7 @@ public class CrashReport {
 		}));
 		this.systemDetailsSection.add("CPUs", Runtime.getRuntime().availableProcessors());
 		this.systemDetailsSection.add("JVM Flags", (CrashCallable<String>)(() -> {
-			List<String> list = (List<String>)SystemUtil.getJVMFlags().collect(Collectors.toList());
+			List<String> list = (List<String>)Util.getJVMFlags().collect(Collectors.toList());
 			return String.format("%d total; %s", list.size(), list.stream().collect(Collectors.joining(" ")));
 		}));
 	}
@@ -197,7 +197,7 @@ public class CrashReport {
 	public CrashReportSection addElement(String string, int i) {
 		CrashReportSection crashReportSection = new CrashReportSection(this, string);
 		if (this.hasStackTrace) {
-			int j = crashReportSection.trimStackTrace(i);
+			int j = crashReportSection.initStackTrace(i);
 			StackTraceElement[] stackTraceElements = this.cause.getStackTrace();
 			StackTraceElement stackTraceElement = null;
 			StackTraceElement stackTraceElement2 = null;
@@ -216,7 +216,7 @@ public class CrashReport {
 			this.hasStackTrace = crashReportSection.method_584(stackTraceElement, stackTraceElement2);
 			if (j > 0 && !this.otherSections.isEmpty()) {
 				CrashReportSection crashReportSection2 = (CrashReportSection)this.otherSections.get(this.otherSections.size() - 1);
-				crashReportSection2.method_580(j);
+				crashReportSection2.trimStackTraceEnd(j);
 			} else if (stackTraceElements != null && stackTraceElements.length >= j && 0 <= k && k < stackTraceElements.length) {
 				this.stackTrace = new StackTraceElement[k];
 				System.arraycopy(stackTraceElements, 0, this.stackTrace, 0, this.stackTrace.length);
@@ -268,7 +268,7 @@ public class CrashReport {
 		};
 
 		try {
-			return strings[(int)(SystemUtil.getMeasuringTimeNano() % (long)strings.length)];
+			return strings[(int)(Util.getMeasuringTimeNano() % (long)strings.length)];
 		} catch (Throwable var2) {
 			return "Witty comment unavailable :(";
 		}
@@ -287,5 +287,9 @@ public class CrashReport {
 		}
 
 		return crashReport;
+	}
+
+	public static void method_24305() {
+		new CrashReport("Don't panic!", new Throwable()).asString();
 	}
 }

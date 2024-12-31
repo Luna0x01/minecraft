@@ -7,7 +7,8 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.tag.FluidTags;
@@ -16,8 +17,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class KelpBlock extends Block implements FluidFillable {
 	public static final IntProperty AGE = Properties.AGE_25;
@@ -25,7 +25,7 @@ public class KelpBlock extends Block implements FluidFillable {
 
 	protected KelpBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(AGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -45,36 +45,31 @@ public class KelpBlock extends Block implements FluidFillable {
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
 	public FluidState getFluidState(BlockState blockState) {
 		return Fluids.WATER.getStill(false);
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(world, blockPos)) {
-			world.breakBlock(blockPos, true);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
+			serverWorld.breakBlock(blockPos, true);
 		} else {
 			BlockPos blockPos2 = blockPos.up();
-			BlockState blockState2 = world.getBlockState(blockPos2);
+			BlockState blockState2 = serverWorld.getBlockState(blockPos2);
 			if (blockState2.getBlock() == Blocks.field_10382 && (Integer)blockState.get(AGE) < 25 && random.nextDouble() < 0.14) {
-				world.setBlockState(blockPos2, blockState.cycle(AGE));
+				serverWorld.setBlockState(blockPos2, blockState.cycle(AGE));
 			}
 		}
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		BlockPos blockPos2 = blockPos.down();
-		BlockState blockState2 = viewableWorld.getBlockState(blockPos2);
+		BlockState blockState2 = worldView.getBlockState(blockPos2);
 		Block block = blockState2.getBlock();
 		return block == Blocks.field_10092
 			? false
-			: block == this || block == Blocks.field_10463 || blockState2.isSideSolidFullSquare(viewableWorld, blockPos2, Direction.field_11036);
+			: block == this || block == Blocks.field_10463 || blockState2.isSideSolidFullSquare(worldView, blockPos2, Direction.field_11036);
 	}
 
 	@Override
@@ -98,7 +93,7 @@ public class KelpBlock extends Block implements FluidFillable {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(AGE);
 	}
 

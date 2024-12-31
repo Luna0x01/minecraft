@@ -1,8 +1,8 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.WitherArmorFeatureRenderer;
 import net.minecraft.client.render.entity.model.WitherEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.util.Identifier;
 
@@ -15,18 +15,22 @@ public class WitherEntityRenderer extends MobEntityRenderer<WitherEntity, Wither
 		this.addFeature(new WitherArmorFeatureRenderer(this));
 	}
 
-	protected Identifier method_4153(WitherEntity witherEntity) {
-		int i = witherEntity.getInvulTimer();
+	protected int getBlockLight(WitherEntity witherEntity, float f) {
+		return 15;
+	}
+
+	public Identifier getTexture(WitherEntity witherEntity) {
+		int i = witherEntity.getInvulnerableTimer();
 		return i > 0 && (i > 80 || i / 5 % 2 != 1) ? INVINCIBLE_SKIN : SKIN;
 	}
 
-	protected void method_4152(WitherEntity witherEntity, float f) {
+	protected void scale(WitherEntity witherEntity, MatrixStack matrixStack, float f) {
 		float g = 2.0F;
-		int i = witherEntity.getInvulTimer();
+		int i = witherEntity.getInvulnerableTimer();
 		if (i > 0) {
 			g -= ((float)i - f) / 220.0F * 0.5F;
 		}
 
-		GlStateManager.scalef(g, g, g);
+		matrixStack.scale(g, g, g);
 	}
 }

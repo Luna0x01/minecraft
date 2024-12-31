@@ -3,6 +3,7 @@ package net.minecraft.server.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
@@ -21,7 +22,8 @@ public class SeedCommand {
 							new LiteralText(String.valueOf(l))
 								.styled(
 									style -> style.setColor(Formatting.field_1060)
-											.setClickEvent(new ClickEvent(ClickEvent.Action.field_11745, String.valueOf(l)))
+											.setClickEvent(new ClickEvent(ClickEvent.Action.field_21462, String.valueOf(l)))
+											.setHoverEvent(new HoverEvent(HoverEvent.Action.field_11762, new TranslatableText("chat.copy.click")))
 											.setInsertion(String.valueOf(l))
 								)
 						);

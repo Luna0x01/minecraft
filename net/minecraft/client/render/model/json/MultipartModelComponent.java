@@ -15,7 +15,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.util.JsonHelper;
 
 public class MultipartModelComponent {
@@ -37,8 +37,8 @@ public class MultipartModelComponent {
 		return this.model;
 	}
 
-	public Predicate<BlockState> getPredicate(StateFactory<Block, BlockState> stateFactory) {
-		return this.selector.getPredicate(stateFactory);
+	public Predicate<BlockState> getPredicate(StateManager<Block, BlockState> stateManager) {
+		return this.selector.getPredicate(stateManager);
 	}
 
 	public boolean equals(Object object) {
@@ -50,7 +50,7 @@ public class MultipartModelComponent {
 	}
 
 	public static class Deserializer implements JsonDeserializer<MultipartModelComponent> {
-		public MultipartModelComponent method_3535(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public MultipartModelComponent deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			return new MultipartModelComponent(
 				this.deserializeSelectorOrDefault(jsonObject),

@@ -4,16 +4,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.class_4458;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
-import net.minecraft.entity.ai.tasks.GoToNearbyPositionTask;
 import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.village.PointOfInterestType;
 import net.minecraft.village.VillagerProfession;
+import net.minecraft.world.poi.PointOfInterestType;
 
 public class VillagerTaskListProvider {
 	public static ImmutableList<Pair<Integer, ? extends Task<? super VillagerEntity>>> createCoreTasks(VillagerProfession villagerProfession, float f) {
@@ -94,7 +92,9 @@ public class VillagerTaskListProvider {
 				5,
 				new RandomTask(
 					ImmutableMap.of(MemoryModuleType.field_18438, MemoryModuleState.field_18457),
-					ImmutableList.of(Pair.of(new WalkHomeTask(f), 1), Pair.of(new WanderIndoorsTask(f), 4), Pair.of(new class_4458(f, 4), 2), Pair.of(new WaitTask(20, 40), 2))
+					ImmutableList.of(
+						Pair.of(new WalkHomeTask(f), 1), Pair.of(new WanderIndoorsTask(f), 4), Pair.of(new GoToPointOfInterestTask(f, 4), 2), Pair.of(new WaitTask(20, 40), 2)
+					)
 				)
 			),
 			createBusyFollowTask(),
@@ -174,7 +174,7 @@ public class VillagerTaskListProvider {
 	public static ImmutableList<Pair<Integer, ? extends Task<? super VillagerEntity>>> createPanicTasks(VillagerProfession villagerProfession, float f) {
 		float g = f * 1.5F;
 		return ImmutableList.of(
-			Pair.of(0, new StopPanicingTask()),
+			Pair.of(0, new StopPanickingTask()),
 			Pair.of(1, new GoToNearbyEntityTask(MemoryModuleType.field_18453, g)),
 			Pair.of(1, new GoToNearbyEntityTask(MemoryModuleType.field_18452, g)),
 			Pair.of(3, new FindWalkTargetTask(g, 2, 2)),

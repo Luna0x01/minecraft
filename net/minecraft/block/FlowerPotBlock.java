@@ -8,6 +8,7 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -39,7 +40,7 @@ public class FlowerPotBlock extends Block {
 	}
 
 	@Override
-	public boolean activate(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		Item item = itemStack.getItem();
 		Block block = item instanceof BlockItem ? (Block)CONTENT_TO_POTTED.getOrDefault(((BlockItem)item).getBlock(), Blocks.field_10124) : Blocks.field_10124;
@@ -62,9 +63,11 @@ public class FlowerPotBlock extends Block {
 
 				world.setBlockState(blockPos, Blocks.field_10495.getDefaultState(), 3);
 			}
-		}
 
-		return true;
+			return ActionResult.field_5812;
+		} else {
+			return ActionResult.field_21466;
+		}
 	}
 
 	@Override
@@ -79,11 +82,6 @@ public class FlowerPotBlock extends Block {
 		return direction == Direction.field_11033 && !blockState.canPlaceAt(iWorld, blockPos)
 			? Blocks.field_10124.getDefaultState()
 			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
 	}
 
 	public Block getContent() {

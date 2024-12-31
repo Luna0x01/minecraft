@@ -8,7 +8,6 @@ import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.SpawnType;
-import net.minecraft.entity.WaterCreatureEntity;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
@@ -19,6 +18,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.WaterCreatureEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -114,7 +114,7 @@ public abstract class FishEntity extends WaterCreatureEntity {
 
 	@Override
 	public void travel(Vec3d vec3d) {
-		if (this.canMoveVoluntarily() && this.isInsideWater()) {
+		if (this.canMoveVoluntarily() && this.isTouchingWater()) {
 			this.updateVelocity(0.01F, vec3d);
 			this.move(MovementType.field_6308, this.getVelocity());
 			this.setVelocity(this.getVelocity().multiply(0.9));
@@ -128,7 +128,7 @@ public abstract class FishEntity extends WaterCreatureEntity {
 
 	@Override
 	public void tickMovement() {
-		if (!this.isInsideWater() && this.onGround && this.verticalCollision) {
+		if (!this.isTouchingWater() && this.onGround && this.verticalCollision) {
 			this.setVelocity(
 				this.getVelocity().add((double)((this.random.nextFloat() * 2.0F - 1.0F) * 0.05F), 0.4F, (double)((this.random.nextFloat() * 2.0F - 1.0F) * 0.05F))
 			);
@@ -149,7 +149,7 @@ public abstract class FishEntity extends WaterCreatureEntity {
 			ItemStack itemStack2 = this.getFishBucketItem();
 			this.copyDataToStack(itemStack2);
 			if (!this.world.isClient) {
-				Criterions.FILLED_BUCKET.handle((ServerPlayerEntity)playerEntity, itemStack2);
+				Criterions.FILLED_BUCKET.trigger((ServerPlayerEntity)playerEntity, itemStack2);
 			}
 
 			if (itemStack.isEmpty()) {
@@ -199,14 +199,14 @@ public abstract class FishEntity extends WaterCreatureEntity {
 			}
 
 			if (this.state == MoveControl.State.field_6378 && !this.fish.getNavigation().isIdle()) {
-				double d = this.targetX - this.fish.x;
-				double e = this.targetY - this.fish.y;
-				double f = this.targetZ - this.fish.z;
+				double d = this.targetX - this.fish.getX();
+				double e = this.targetY - this.fish.getY();
+				double f = this.targetZ - this.fish.getZ();
 				double g = (double)MathHelper.sqrt(d * d + e * e + f * f);
 				e /= g;
 				float h = (float)(MathHelper.atan2(f, d) * 180.0F / (float)Math.PI) - 90.0F;
 				this.fish.yaw = this.changeAngle(this.fish.yaw, h, 90.0F);
-				this.fish.field_6283 = this.fish.yaw;
+				this.fish.bodyYaw = this.fish.yaw;
 				float i = (float)(this.speed * this.fish.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue());
 				this.fish.setMovementSpeed(MathHelper.lerp(0.125F, this.fish.getMovementSpeed(), i));
 				this.fish.setVelocity(this.fish.getVelocity().add(0.0, (double)this.fish.getMovementSpeed() * e * 0.1, 0.0));

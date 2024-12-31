@@ -3,20 +3,21 @@ package net.minecraft.structure;
 import java.util.Random;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.loot.LootTables;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class BuriedTreasureGenerator {
 	public static class Piece extends StructurePiece {
 		public Piece(BlockPos blockPos) {
 			super(StructurePieceType.BURIED_TREASURE, 0);
-			this.boundingBox = new MutableIntBoundingBox(blockPos.getX(), blockPos.getY(), blockPos.getZ(), blockPos.getX(), blockPos.getY(), blockPos.getZ());
+			this.boundingBox = new BlockBox(blockPos.getX(), blockPos.getY(), blockPos.getZ(), blockPos.getX(), blockPos.getY(), blockPos.getZ());
 		}
 
 		public Piece(StructureManager structureManager, CompoundTag compoundTag) {
@@ -28,8 +29,8 @@ public class BuriedTreasureGenerator {
 		}
 
 		@Override
-		public boolean generate(IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox, ChunkPos chunkPos) {
-			int i = iWorld.getTop(Heightmap.Type.field_13195, this.boundingBox.minX, this.boundingBox.minZ);
+		public boolean generate(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+			int i = iWorld.getTopY(Heightmap.Type.field_13195, this.boundingBox.minX, this.boundingBox.minZ);
 			BlockPos.Mutable mutable = new BlockPos.Mutable(this.boundingBox.minX, i, this.boundingBox.minZ);
 
 			while (mutable.getY() > 0) {
@@ -56,8 +57,8 @@ public class BuriedTreasureGenerator {
 						}
 					}
 
-					this.boundingBox = new MutableIntBoundingBox(mutable.getX(), mutable.getY(), mutable.getZ(), mutable.getX(), mutable.getY(), mutable.getZ());
-					return this.addChest(iWorld, mutableIntBoundingBox, random, mutable, LootTables.field_251, null);
+					this.boundingBox = new BlockBox(mutable.getX(), mutable.getY(), mutable.getZ(), mutable.getX(), mutable.getY(), mutable.getZ());
+					return this.addChest(iWorld, blockBox, random, mutable, LootTables.field_251, null);
 				}
 
 				mutable.setOffset(0, -1, 0);

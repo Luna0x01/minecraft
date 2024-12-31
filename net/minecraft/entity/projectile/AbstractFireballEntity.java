@@ -9,7 +9,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.world.World;
 
 public abstract class AbstractFireballEntity extends ExplosiveProjectileEntity implements FlyingItemEntity {
@@ -29,7 +29,7 @@ public abstract class AbstractFireballEntity extends ExplosiveProjectileEntity i
 
 	public void setItem(ItemStack itemStack) {
 		if (itemStack.getItem() != Items.field_8814 || itemStack.hasTag()) {
-			this.getDataTracker().set(ITEM, SystemUtil.consume(itemStack.copy(), itemStackx -> itemStackx.setCount(1)));
+			this.getDataTracker().set(ITEM, Util.make(itemStack.copy(), itemStackx -> itemStackx.setCount(1)));
 		}
 	}
 

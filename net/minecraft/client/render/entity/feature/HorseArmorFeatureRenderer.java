@@ -1,7 +1,11 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.HorseEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.HorseEntity;
 import net.minecraft.item.DyeableHorseArmorItem;
 import net.minecraft.item.HorseArmorItem;
@@ -14,30 +18,31 @@ public class HorseArmorFeatureRenderer extends FeatureRenderer<HorseEntity, Hors
 		super(featureRendererContext);
 	}
 
-	public void method_18658(HorseEntity horseEntity, float f, float g, float h, float i, float j, float k, float l) {
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, HorseEntity horseEntity, float f, float g, float h, float j, float k, float l
+	) {
 		ItemStack itemStack = horseEntity.getArmorType();
 		if (itemStack.getItem() instanceof HorseArmorItem) {
 			HorseArmorItem horseArmorItem = (HorseArmorItem)itemStack.getItem();
-			this.getModel().copyStateTo(this.model);
-			this.model.method_17084(horseEntity, f, g, h);
-			this.bindTexture(horseArmorItem.getEntityTexture());
+			this.getContextModel().copyStateTo(this.model);
+			this.model.animateModel(horseEntity, f, g, h);
+			this.model.setAngles(horseEntity, f, g, j, k, l);
+			float n;
+			float o;
+			float p;
 			if (horseArmorItem instanceof DyeableHorseArmorItem) {
 				int m = ((DyeableHorseArmorItem)horseArmorItem).getColor(itemStack);
-				float n = (float)(m >> 16 & 0xFF) / 255.0F;
-				float o = (float)(m >> 8 & 0xFF) / 255.0F;
-				float p = (float)(m & 0xFF) / 255.0F;
-				GlStateManager.color4f(n, o, p, 1.0F);
-				this.model.method_17085(horseEntity, f, g, i, j, k, l);
-				return;
+				n = (float)(m >> 16 & 0xFF) / 255.0F;
+				o = (float)(m >> 8 & 0xFF) / 255.0F;
+				p = (float)(m & 0xFF) / 255.0F;
+			} else {
+				n = 1.0F;
+				o = 1.0F;
+				p = 1.0F;
 			}
 
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			this.model.method_17085(horseEntity, f, g, i, j, k, l);
+			VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getEntityCutoutNoCull(horseArmorItem.getEntityTexture()));
+			this.model.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, n, o, p, 1.0F);
 		}
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return false;
 	}
 }

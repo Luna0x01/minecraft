@@ -1,10 +1,12 @@
 package net.minecraft.client.render.entity.feature;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.render.entity.model.ModelWithArms;
 import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Arm;
@@ -14,47 +16,44 @@ public class HeldItemFeatureRenderer<T extends LivingEntity, M extends EntityMod
 		super(featureRendererContext);
 	}
 
-	public void method_17162(T livingEntity, float f, float g, float h, float i, float j, float k, float l) {
+	public void render(
+		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, T livingEntity, float f, float g, float h, float j, float k, float l
+	) {
 		boolean bl = livingEntity.getMainArm() == Arm.field_6183;
 		ItemStack itemStack = bl ? livingEntity.getOffHandStack() : livingEntity.getMainHandStack();
 		ItemStack itemStack2 = bl ? livingEntity.getMainHandStack() : livingEntity.getOffHandStack();
 		if (!itemStack.isEmpty() || !itemStack2.isEmpty()) {
-			GlStateManager.pushMatrix();
-			if (this.getModel().isChild) {
+			matrixStack.push();
+			if (this.getContextModel().child) {
 				float m = 0.5F;
-				GlStateManager.translatef(0.0F, 0.75F, 0.0F);
-				GlStateManager.scalef(0.5F, 0.5F, 0.5F);
+				matrixStack.translate(0.0, 0.75, 0.0);
+				matrixStack.scale(0.5F, 0.5F, 0.5F);
 			}
 
-			this.method_4192(livingEntity, itemStack2, ModelTransformation.Type.field_4320, Arm.field_6183);
-			this.method_4192(livingEntity, itemStack, ModelTransformation.Type.field_4323, Arm.field_6182);
-			GlStateManager.popMatrix();
+			this.renderItem(livingEntity, itemStack2, ModelTransformation.Mode.field_4320, Arm.field_6183, matrixStack, vertexConsumerProvider, i);
+			this.renderItem(livingEntity, itemStack, ModelTransformation.Mode.field_4323, Arm.field_6182, matrixStack, vertexConsumerProvider, i);
+			matrixStack.pop();
 		}
 	}
 
-	private void method_4192(LivingEntity livingEntity, ItemStack itemStack, ModelTransformation.Type type, Arm arm) {
+	private void renderItem(
+		LivingEntity livingEntity,
+		ItemStack itemStack,
+		ModelTransformation.Mode mode,
+		Arm arm,
+		MatrixStack matrixStack,
+		VertexConsumerProvider vertexConsumerProvider,
+		int i
+	) {
 		if (!itemStack.isEmpty()) {
-			GlStateManager.pushMatrix();
-			this.method_4193(arm);
-			if (livingEntity.isInSneakingPose()) {
-				GlStateManager.translatef(0.0F, 0.2F, 0.0F);
-			}
-
-			GlStateManager.rotatef(-90.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotatef(180.0F, 0.0F, 1.0F, 0.0F);
+			matrixStack.push();
+			this.getContextModel().setArmAngle(arm, matrixStack);
+			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-90.0F));
+			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
 			boolean bl = arm == Arm.field_6182;
-			GlStateManager.translatef((float)(bl ? -1 : 1) / 16.0F, 0.125F, -0.625F);
-			MinecraftClient.getInstance().getFirstPersonRenderer().renderItemFromSide(livingEntity, itemStack, type, bl);
-			GlStateManager.popMatrix();
+			matrixStack.translate((double)((float)(bl ? -1 : 1) / 16.0F), 0.125, -0.625);
+			MinecraftClient.getInstance().getHeldItemRenderer().renderItem(livingEntity, itemStack, mode, bl, matrixStack, vertexConsumerProvider, i);
+			matrixStack.pop();
 		}
-	}
-
-	protected void method_4193(Arm arm) {
-		this.getModel().setArmAngle(0.0625F, arm);
-	}
-
-	@Override
-	public boolean hasHurtOverlay() {
-		return false;
 	}
 }

@@ -3,13 +3,13 @@ package net.minecraft.block;
 import java.util.Random;
 import net.minecraft.block.sapling.SaplingGenerator;
 import net.minecraft.entity.EntityContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
 public class SaplingBlock extends PlantBlock implements Fertilizable {
@@ -20,7 +20,7 @@ public class SaplingBlock extends PlantBlock implements Fertilizable {
 	protected SaplingBlock(SaplingGenerator saplingGenerator, Block.Settings settings) {
 		super(settings);
 		this.generator = saplingGenerator;
-		this.setDefaultState(this.stateFactory.getDefaultState().with(STAGE, Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(STAGE, Integer.valueOf(0)));
 	}
 
 	@Override
@@ -29,18 +29,18 @@ public class SaplingBlock extends PlantBlock implements Fertilizable {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		super.onScheduledTick(blockState, world, blockPos, random);
-		if (world.getLightLevel(blockPos.up()) >= 9 && random.nextInt(7) == 0) {
-			this.generate(world, blockPos, blockState, random);
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		super.scheduledTick(blockState, serverWorld, blockPos, random);
+		if (serverWorld.getLightLevel(blockPos.up()) >= 9 && random.nextInt(7) == 0) {
+			this.generate(serverWorld, blockPos, blockState, random);
 		}
 	}
 
-	public void generate(IWorld iWorld, BlockPos blockPos, BlockState blockState, Random random) {
+	public void generate(ServerWorld serverWorld, BlockPos blockPos, BlockState blockState, Random random) {
 		if ((Integer)blockState.get(STAGE) == 0) {
-			iWorld.setBlockState(blockPos, blockState.cycle(STAGE), 4);
+			serverWorld.setBlockState(blockPos, blockState.cycle(STAGE), 4);
 		} else {
-			this.generator.generate(iWorld, blockPos, blockState, random);
+			this.generator.generate(serverWorld, serverWorld.getChunkManager().getChunkGenerator(), blockPos, blockState, random);
 		}
 	}
 
@@ -55,12 +55,12 @@ public class SaplingBlock extends PlantBlock implements Fertilizable {
 	}
 
 	@Override
-	public void grow(World world, Random random, BlockPos blockPos, BlockState blockState) {
-		this.generate(world, blockPos, blockState, random);
+	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
+		this.generate(serverWorld, blockPos, blockState, random);
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(STAGE);
 	}
 }

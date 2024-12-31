@@ -6,7 +6,8 @@ import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
@@ -16,8 +17,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class ScaffoldingBlock extends Block implements Waterloggable {
 	private static final VoxelShape NORMAL_OUTLINE_SHAPE;
@@ -31,12 +32,12 @@ public class ScaffoldingBlock extends Block implements Waterloggable {
 	protected ScaffoldingBlock(Block.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateFactory.getDefaultState().with(DISTANCE, Integer.valueOf(7)).with(WATERLOGGED, Boolean.valueOf(false)).with(BOTTOM, Boolean.valueOf(false))
+			this.stateManager.getDefaultState().with(DISTANCE, Integer.valueOf(7)).with(WATERLOGGED, Boolean.valueOf(false)).with(BOTTOM, Boolean.valueOf(false))
 		);
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(DISTANCE, WATERLOGGED, BOTTOM);
 	}
 
@@ -52,11 +53,6 @@ public class ScaffoldingBlock extends Block implements Waterloggable {
 	@Override
 	public VoxelShape getRayTraceShape(BlockState blockState, BlockView blockView, BlockPos blockPos) {
 		return VoxelShapes.fullCube();
-	}
-
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
 	}
 
 	@Override
@@ -98,32 +94,32 @@ public class ScaffoldingBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		int i = calculateDistance(world, blockPos);
-		BlockState blockState2 = blockState.with(DISTANCE, Integer.valueOf(i)).with(BOTTOM, Boolean.valueOf(this.shouldBeBottom(world, blockPos, i)));
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		int i = calculateDistance(serverWorld, blockPos);
+		BlockState blockState2 = blockState.with(DISTANCE, Integer.valueOf(i)).with(BOTTOM, Boolean.valueOf(this.shouldBeBottom(serverWorld, blockPos, i)));
 		if ((Integer)blockState2.get(DISTANCE) == 7) {
 			if ((Integer)blockState.get(DISTANCE) == 7) {
-				world.spawnEntity(
+				serverWorld.spawnEntity(
 					new FallingBlockEntity(
-						world, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, blockState2.with(WATERLOGGED, Boolean.valueOf(false))
+						serverWorld, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, blockState2.with(WATERLOGGED, Boolean.valueOf(false))
 					)
 				);
 			} else {
-				world.breakBlock(blockPos, true);
+				serverWorld.breakBlock(blockPos, true);
 			}
 		} else if (blockState != blockState2) {
-			world.setBlockState(blockPos, blockState2, 3);
+			serverWorld.setBlockState(blockPos, blockState2, 3);
 		}
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return calculateDistance(viewableWorld, blockPos) < 7;
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return calculateDistance(worldView, blockPos) < 7;
 	}
 
 	@Override
 	public VoxelShape getCollisionShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		if (entityContext.isAbove(VoxelShapes.fullCube(), blockPos, true) && !entityContext.isSneaking()) {
+		if (entityContext.isAbove(VoxelShapes.fullCube(), blockPos, true) && !entityContext.isDescending()) {
 			return NORMAL_OUTLINE_SHAPE;
 		} else {
 			return blockState.get(DISTANCE) != 0 && blockState.get(BOTTOM) && entityContext.isAbove(OUTLINE_SHAPE, blockPos, true)

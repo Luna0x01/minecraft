@@ -16,6 +16,7 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.item.map.MapState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Packet;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -61,7 +62,7 @@ public class FilledMapItem extends NetworkSyncedItem {
 
 	public static int getMapId(ItemStack itemStack) {
 		CompoundTag compoundTag = itemStack.getTag();
-		return compoundTag != null && compoundTag.containsKey("map", 99) ? compoundTag.getInt("map") : 0;
+		return compoundTag != null && compoundTag.contains("map", 99) ? compoundTag.getInt("map") : 0;
 	}
 
 	private static MapState createMapState(ItemStack itemStack, World world, int i, int j, int k, boolean bl, boolean bl2, DimensionType dimensionType) {
@@ -82,8 +83,8 @@ public class FilledMapItem extends NetworkSyncedItem {
 			int i = 1 << mapState.scale;
 			int j = mapState.xCenter;
 			int k = mapState.zCenter;
-			int l = MathHelper.floor(entity.x - (double)j) / i + 64;
-			int m = MathHelper.floor(entity.z - (double)k) / i + 64;
+			int l = MathHelper.floor(entity.getX() - (double)j) / i + 64;
+			int m = MathHelper.floor(entity.getZ() - (double)k) / i + 64;
 			int n = 128 / i;
 			if (world.dimension.isNether()) {
 				n /= 2;
@@ -212,84 +213,90 @@ public class FilledMapItem extends NetworkSyncedItem {
 		return biomes[j * i + k * i * 128 * i].getDepth() >= 0.0F;
 	}
 
-	public static void fillExplorationMap(World world, ItemStack itemStack) {
-		MapState mapState = getOrCreateMapState(itemStack, world);
+	public static void fillExplorationMap(ServerWorld serverWorld, ItemStack itemStack) {
+		MapState mapState = getOrCreateMapState(itemStack, serverWorld);
 		if (mapState != null) {
-			if (world.dimension.getType() == mapState.dimension) {
+			if (serverWorld.dimension.getType() == mapState.dimension) {
 				int i = 1 << mapState.scale;
 				int j = mapState.xCenter;
 				int k = mapState.zCenter;
-				Biome[] biomes = world.getChunkManager().getChunkGenerator().getBiomeSource().sampleBiomes((j / i - 64) * i, (k / i - 64) * i, 128 * i, 128 * i, false);
+				Biome[] biomes = new Biome[128 * i * 128 * i];
 
-				for (int l = 0; l < 128; l++) {
-					for (int m = 0; m < 128; m++) {
-						if (l > 0 && m > 0 && l < 127 && m < 127) {
-							Biome biome = biomes[l * i + m * i * 128 * i];
-							int n = 8;
-							if (hasPositiveDepth(biomes, i, l - 1, m - 1)) {
-								n--;
+				for (int l = 0; l < 128 * i; l++) {
+					for (int m = 0; m < 128 * i; m++) {
+						biomes[l * 128 * i + m] = serverWorld.getBiome(new BlockPos((j / i - 64) * i + m, 0, (k / i - 64) * i + l));
+					}
+				}
+
+				for (int n = 0; n < 128; n++) {
+					for (int o = 0; o < 128; o++) {
+						if (n > 0 && o > 0 && n < 127 && o < 127) {
+							Biome biome = biomes[n * i + o * i * 128 * i];
+							int p = 8;
+							if (hasPositiveDepth(biomes, i, n - 1, o - 1)) {
+								p--;
 							}
 
-							if (hasPositiveDepth(biomes, i, l - 1, m + 1)) {
-								n--;
+							if (hasPositiveDepth(biomes, i, n - 1, o + 1)) {
+								p--;
 							}
 
-							if (hasPositiveDepth(biomes, i, l - 1, m)) {
-								n--;
+							if (hasPositiveDepth(biomes, i, n - 1, o)) {
+								p--;
 							}
 
-							if (hasPositiveDepth(biomes, i, l + 1, m - 1)) {
-								n--;
+							if (hasPositiveDepth(biomes, i, n + 1, o - 1)) {
+								p--;
 							}
 
-							if (hasPositiveDepth(biomes, i, l + 1, m + 1)) {
-								n--;
+							if (hasPositiveDepth(biomes, i, n + 1, o + 1)) {
+								p--;
 							}
 
-							if (hasPositiveDepth(biomes, i, l + 1, m)) {
-								n--;
+							if (hasPositiveDepth(biomes, i, n + 1, o)) {
+								p--;
 							}
 
-							if (hasPositiveDepth(biomes, i, l, m - 1)) {
-								n--;
+							if (hasPositiveDepth(biomes, i, n, o - 1)) {
+								p--;
 							}
 
-							if (hasPositiveDepth(biomes, i, l, m + 1)) {
-								n--;
+							if (hasPositiveDepth(biomes, i, n, o + 1)) {
+								p--;
 							}
 
-							int o = 3;
+							int q = 3;
 							MaterialColor materialColor = MaterialColor.AIR;
 							if (biome.getDepth() < 0.0F) {
 								materialColor = MaterialColor.ORANGE;
-								if (n > 7 && m % 2 == 0) {
-									o = (l + (int)(MathHelper.sin((float)m + 0.0F) * 7.0F)) / 8 % 5;
-									if (o == 3) {
-										o = 1;
-									} else if (o == 4) {
-										o = 0;
+								if (p > 7 && o % 2 == 0) {
+									q = (n + (int)(MathHelper.sin((float)o + 0.0F) * 7.0F)) / 8 % 5;
+									if (q == 3) {
+										q = 1;
+									} else if (q == 4) {
+										q = 0;
 									}
-								} else if (n > 7) {
+								} else if (p > 7) {
 									materialColor = MaterialColor.AIR;
-								} else if (n > 5) {
-									o = 1;
-								} else if (n > 3) {
-									o = 0;
-								} else if (n > 1) {
-									o = 0;
+								} else if (p > 5) {
+									q = 1;
+								} else if (p > 3) {
+									q = 0;
+								} else if (p > 1) {
+									q = 0;
 								}
-							} else if (n > 0) {
+							} else if (p > 0) {
 								materialColor = MaterialColor.BROWN;
-								if (n > 3) {
-									o = 1;
+								if (p > 3) {
+									q = 1;
 								} else {
-									o = 3;
+									q = 3;
 								}
 							}
 
 							if (materialColor != MaterialColor.AIR) {
-								mapState.colors[l + m * 128] = (byte)(materialColor.id * 4 + o);
-								mapState.markDirty(l, m);
+								mapState.colors[n + o * 128] = (byte)(materialColor.id * 4 + q);
+								mapState.markDirty(n, o);
 							}
 						}
 					}
@@ -324,7 +331,7 @@ public class FilledMapItem extends NetworkSyncedItem {
 	@Override
 	public void onCraft(ItemStack itemStack, World world, PlayerEntity playerEntity) {
 		CompoundTag compoundTag = itemStack.getTag();
-		if (compoundTag != null && compoundTag.containsKey("map_scale_direction", 99)) {
+		if (compoundTag != null && compoundTag.contains("map_scale_direction", 99)) {
 			scale(itemStack, world, compoundTag.getInt("map_scale_direction"));
 			compoundTag.remove("map_scale_direction");
 		}
@@ -379,7 +386,7 @@ public class FilledMapItem extends NetworkSyncedItem {
 
 	public static int getMapColor(ItemStack itemStack) {
 		CompoundTag compoundTag = itemStack.getSubTag("display");
-		if (compoundTag != null && compoundTag.containsKey("MapColor", 99)) {
+		if (compoundTag != null && compoundTag.contains("MapColor", 99)) {
 			int i = compoundTag.getInt("MapColor");
 			return 0xFF000000 | i & 16777215;
 		} else {

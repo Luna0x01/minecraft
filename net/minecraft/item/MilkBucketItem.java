@@ -5,7 +5,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
@@ -20,7 +19,7 @@ public class MilkBucketItem extends Item {
 	public ItemStack finishUsing(ItemStack itemStack, World world, LivingEntity livingEntity) {
 		if (livingEntity instanceof ServerPlayerEntity) {
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)livingEntity;
-			Criterions.CONSUME_ITEM.handle(serverPlayerEntity, itemStack);
+			Criterions.CONSUME_ITEM.trigger(serverPlayerEntity, itemStack);
 			serverPlayerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
 		}
 
@@ -29,7 +28,7 @@ public class MilkBucketItem extends Item {
 		}
 
 		if (!world.isClient) {
-			livingEntity.clearPotionEffects();
+			livingEntity.clearStatusEffects();
 		}
 
 		return itemStack.isEmpty() ? new ItemStack(Items.field_8550) : itemStack;
@@ -48,6 +47,6 @@ public class MilkBucketItem extends Item {
 	@Override
 	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
 		playerEntity.setCurrentHand(hand);
-		return new TypedActionResult<>(ActionResult.field_5812, playerEntity.getStackInHand(hand));
+		return TypedActionResult.success(playerEntity.getStackInHand(hand));
 	}
 }

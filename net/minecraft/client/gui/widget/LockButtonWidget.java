@@ -1,6 +1,6 @@
 package net.minecraft.client.gui.widget;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.resource.language.I18n;
 
@@ -29,7 +29,7 @@ public class LockButtonWidget extends ButtonWidget {
 	@Override
 	public void renderButton(int i, int j, float f) {
 		MinecraftClient.getInstance().getTextureManager().bindTexture(ButtonWidget.WIDGETS_LOCATION);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		LockButtonWidget.IconLocation iconLocation;
 		if (!this.active) {
 			iconLocation = this.locked ? LockButtonWidget.IconLocation.field_2139 : LockButtonWidget.IconLocation.field_2140;

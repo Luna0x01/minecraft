@@ -7,7 +7,8 @@ import net.minecraft.entity.mob.RavagerEntity;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.state.StateFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -15,8 +16,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class CropBlock extends PlantBlock implements Fertilizable {
 	public static final IntProperty AGE = Properties.AGE_7;
@@ -33,7 +34,7 @@ public class CropBlock extends PlantBlock implements Fertilizable {
 
 	protected CropBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(this.getAgeProperty(), Integer.valueOf(0)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(this.getAgeProperty(), Integer.valueOf(0)));
 	}
 
 	@Override
@@ -67,14 +68,14 @@ public class CropBlock extends PlantBlock implements Fertilizable {
 	}
 
 	@Override
-	public void onScheduledTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		super.onScheduledTick(blockState, world, blockPos, random);
-		if (world.getLightLevel(blockPos, 0) >= 9) {
+	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
+		super.scheduledTick(blockState, serverWorld, blockPos, random);
+		if (serverWorld.getBaseLightLevel(blockPos, 0) >= 9) {
 			int i = this.getAge(blockState);
 			if (i < this.getMaxAge()) {
-				float f = getAvailableMoisture(this, world, blockPos);
+				float f = getAvailableMoisture(this, serverWorld, blockPos);
 				if (random.nextInt((int)(25.0F / f) + 1) == 0) {
-					world.setBlockState(blockPos, this.withAge(i + 1), 2);
+					serverWorld.setBlockState(blockPos, this.withAge(i + 1), 2);
 				}
 			}
 		}
@@ -139,14 +140,14 @@ public class CropBlock extends PlantBlock implements Fertilizable {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
-		return (viewableWorld.getLightLevel(blockPos, 0) >= 8 || viewableWorld.isSkyVisible(blockPos)) && super.canPlaceAt(blockState, viewableWorld, blockPos);
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
+		return (worldView.getBaseLightLevel(blockPos, 0) >= 8 || worldView.isSkyVisible(blockPos)) && super.canPlaceAt(blockState, worldView, blockPos);
 	}
 
 	@Override
 	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
 		if (entity instanceof RavagerEntity && world.getGameRules().getBoolean(GameRules.field_19388)) {
-			world.breakBlock(blockPos, true);
+			world.breakBlock(blockPos, true, entity);
 		}
 
 		super.onEntityCollision(blockState, world, blockPos, entity);
@@ -172,12 +173,12 @@ public class CropBlock extends PlantBlock implements Fertilizable {
 	}
 
 	@Override
-	public void grow(World world, Random random, BlockPos blockPos, BlockState blockState) {
-		this.applyGrowth(world, blockPos, blockState);
+	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
+		this.applyGrowth(serverWorld, blockPos, blockState);
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(AGE);
 	}
 }

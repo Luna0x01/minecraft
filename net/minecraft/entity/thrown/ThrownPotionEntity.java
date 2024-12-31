@@ -131,7 +131,7 @@ public class ThrownPotionEntity extends ThrownEntity implements FlyingItemEntity
 
 	private void applySplashPotion(List<StatusEffectInstance> list, @Nullable Entity entity) {
 		Box box = this.getBoundingBox().expand(4.0, 2.0, 4.0);
-		List<LivingEntity> list2 = this.world.getEntities(LivingEntity.class, box);
+		List<LivingEntity> list2 = this.world.getNonSpectatingEntities(LivingEntity.class, box);
 		if (!list2.isEmpty()) {
 			for (LivingEntity livingEntity : list2) {
 				if (livingEntity.isAffectedBySplashPotions()) {
@@ -149,7 +149,7 @@ public class ThrownPotionEntity extends ThrownEntity implements FlyingItemEntity
 							} else {
 								int i = (int)(e * (double)statusEffectInstance.getDuration() + 0.5);
 								if (i > 20) {
-									livingEntity.addPotionEffect(
+									livingEntity.addStatusEffect(
 										new StatusEffectInstance(
 											statusEffect, i, statusEffectInstance.getAmplifier(), statusEffectInstance.isAmbient(), statusEffectInstance.shouldShowParticles()
 										)
@@ -164,7 +164,7 @@ public class ThrownPotionEntity extends ThrownEntity implements FlyingItemEntity
 	}
 
 	private void applyLingeringPotion(ItemStack itemStack, Potion potion) {
-		AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.x, this.y, this.z);
+		AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.getX(), this.getY(), this.getZ());
 		areaEffectCloudEntity.setOwner(this.getOwner());
 		areaEffectCloudEntity.setRadius(3.0F);
 		areaEffectCloudEntity.setRadiusOnUse(-0.5F);
@@ -177,7 +177,7 @@ public class ThrownPotionEntity extends ThrownEntity implements FlyingItemEntity
 		}
 
 		CompoundTag compoundTag = itemStack.getTag();
-		if (compoundTag != null && compoundTag.containsKey("CustomPotionColor", 99)) {
+		if (compoundTag != null && compoundTag.contains("CustomPotionColor", 99)) {
 			areaEffectCloudEntity.setColor(compoundTag.getInt("CustomPotionColor"));
 		}
 
@@ -192,7 +192,7 @@ public class ThrownPotionEntity extends ThrownEntity implements FlyingItemEntity
 		BlockState blockState = this.world.getBlockState(blockPos);
 		Block block = blockState.getBlock();
 		if (block == Blocks.field_10036) {
-			this.world.method_8506(null, blockPos.offset(direction), direction.getOpposite());
+			this.world.extinguishFire(null, blockPos.offset(direction), direction.getOpposite());
 		} else if (block == Blocks.field_17350 && (Boolean)blockState.get(CampfireBlock.LIT)) {
 			this.world.playLevelEvent(null, 1009, blockPos, 0);
 			this.world.setBlockState(blockPos, blockState.with(CampfireBlock.LIT, Boolean.valueOf(false)));

@@ -1,17 +1,18 @@
 package net.minecraft.structure;
 
 import com.google.common.collect.Lists;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.structure.processor.StructureProcessor;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.MutableIntBoundingBox;
 
 public class StructurePlacementData {
 	private BlockMirror mirror = BlockMirror.field_11302;
@@ -21,12 +22,11 @@ public class StructurePlacementData {
 	@Nullable
 	private ChunkPos chunkPosition;
 	@Nullable
-	private MutableIntBoundingBox boundingBox;
+	private BlockBox boundingBox;
 	private boolean placeFluids = true;
 	@Nullable
 	private Random random;
 	@Nullable
-	private Integer field_15572;
 	private int field_15575;
 	private final List<StructureProcessor> processors = Lists.newArrayList();
 	private boolean field_16587;
@@ -41,7 +41,6 @@ public class StructurePlacementData {
 		structurePlacementData.boundingBox = this.boundingBox;
 		structurePlacementData.placeFluids = this.placeFluids;
 		structurePlacementData.random = this.random;
-		structurePlacementData.field_15572 = this.field_15572;
 		structurePlacementData.field_15575 = this.field_15575;
 		structurePlacementData.processors.addAll(this.processors);
 		structurePlacementData.field_16587 = this.field_16587;
@@ -73,8 +72,8 @@ public class StructurePlacementData {
 		return this;
 	}
 
-	public StructurePlacementData setBoundingBox(MutableIntBoundingBox mutableIntBoundingBox) {
-		this.boundingBox = mutableIntBoundingBox;
+	public StructurePlacementData setBoundingBox(BlockBox blockBox) {
+		this.boundingBox = blockBox;
 		return this;
 	}
 
@@ -119,7 +118,7 @@ public class StructurePlacementData {
 		if (this.random != null) {
 			return this.random;
 		} else {
-			return blockPos == null ? new Random(SystemUtil.getMeasuringTimeMs()) : new Random(MathHelper.hashCode(blockPos));
+			return blockPos == null ? new Random(Util.getMeasuringTimeMs()) : new Random(MathHelper.hashCode(blockPos));
 		}
 	}
 
@@ -128,7 +127,7 @@ public class StructurePlacementData {
 	}
 
 	@Nullable
-	public MutableIntBoundingBox method_15124() {
+	public BlockBox method_15124() {
 		if (this.boundingBox == null && this.chunkPosition != null) {
 			this.method_15132();
 		}
@@ -155,23 +154,18 @@ public class StructurePlacementData {
 	}
 
 	public List<Structure.StructureBlockInfo> method_15121(List<List<Structure.StructureBlockInfo>> list, @Nullable BlockPos blockPos) {
-		this.field_15572 = 8;
-		if (this.field_15572 != null && this.field_15572 >= 0 && this.field_15572 < list.size()) {
-			return (List<Structure.StructureBlockInfo>)list.get(this.field_15572);
-		} else {
-			this.field_15572 = this.getRandom(blockPos).nextInt(list.size());
-			return (List<Structure.StructureBlockInfo>)list.get(this.field_15572);
-		}
+		int i = list.size();
+		return i > 0 ? (List)list.get(this.getRandom(blockPos).nextInt(i)) : Collections.emptyList();
 	}
 
 	@Nullable
-	private MutableIntBoundingBox method_15117(@Nullable ChunkPos chunkPos) {
+	private BlockBox method_15117(@Nullable ChunkPos chunkPos) {
 		if (chunkPos == null) {
 			return this.boundingBox;
 		} else {
 			int i = chunkPos.x * 16;
 			int j = chunkPos.z * 16;
-			return new MutableIntBoundingBox(i, 0, j, i + 16 - 1, 255, j + 16 - 1);
+			return new BlockBox(i, 0, j, i + 16 - 1, 255, j + 16 - 1);
 		}
 	}
 }

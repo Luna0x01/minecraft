@@ -1,12 +1,13 @@
 package net.minecraft.client.render.debug;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
@@ -19,27 +20,21 @@ public class HeightmapDebugRenderer implements DebugRenderer.Renderer {
 	}
 
 	@Override
-	public void render(long l) {
-		Camera camera = this.client.gameRenderer.getCamera();
+	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
 		IWorld iWorld = this.client.world;
-		double d = camera.getPos().x;
-		double e = camera.getPos().y;
-		double f = camera.getPos().z;
-		GlStateManager.pushMatrix();
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(
-			GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
-		);
-		GlStateManager.disableTexture();
-		BlockPos blockPos = new BlockPos(camera.getPos().x, 0.0, camera.getPos().z);
+		RenderSystem.pushMatrix();
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.disableTexture();
+		BlockPos blockPos = new BlockPos(d, 0.0, f);
 		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBufferBuilder();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(5, VertexFormats.POSITION_COLOR);
 
 		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-40, 0, -40), blockPos.add(40, 0, 40))) {
-			int i = iWorld.getTop(Heightmap.Type.field_13194, blockPos2.getX(), blockPos2.getZ());
+			int i = iWorld.getTopY(Heightmap.Type.field_13194, blockPos2.getX(), blockPos2.getZ());
 			if (iWorld.getBlockState(blockPos2.add(0, i, 0).down()).isAir()) {
-				WorldRenderer.buildBox(
+				WorldRenderer.drawBox(
 					bufferBuilder,
 					(double)((float)blockPos2.getX() + 0.25F) - d,
 					(double)i - e,
@@ -53,7 +48,7 @@ public class HeightmapDebugRenderer implements DebugRenderer.Renderer {
 					0.5F
 				);
 			} else {
-				WorldRenderer.buildBox(
+				WorldRenderer.drawBox(
 					bufferBuilder,
 					(double)((float)blockPos2.getX() + 0.25F) - d,
 					(double)i - e,
@@ -70,7 +65,7 @@ public class HeightmapDebugRenderer implements DebugRenderer.Renderer {
 		}
 
 		tessellator.draw();
-		GlStateManager.enableTexture();
-		GlStateManager.popMatrix();
+		RenderSystem.enableTexture();
+		RenderSystem.popMatrix();
 	}
 }

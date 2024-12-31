@@ -73,7 +73,7 @@ public class PalettedContainer<T> implements PaletteResizeListener<T> {
 				this.palette = new BiMapPalette<>(this.idList, this.paletteSize, this, this.elementDeserializer, this.elementSerializer);
 			} else {
 				this.palette = this.fallbackPalette;
-				this.paletteSize = MathHelper.log2DeBrujin(this.idList.size());
+				this.paletteSize = MathHelper.log2DeBruijn(this.idList.size());
 			}
 
 			this.palette.getIndex(this.field_12935);
@@ -154,7 +154,7 @@ public class PalettedContainer<T> implements PaletteResizeListener<T> {
 
 	public void read(ListTag listTag, long[] ls) {
 		this.lock();
-		int i = Math.max(4, MathHelper.log2DeBrujin(listTag.size()));
+		int i = Math.max(4, MathHelper.log2DeBruijn(listTag.size()));
 		if (i != this.paletteSize) {
 			this.setPaletteSize(i);
 		}
@@ -187,21 +187,28 @@ public class PalettedContainer<T> implements PaletteResizeListener<T> {
 		BiMapPalette<T> biMapPalette = new BiMapPalette<>(
 			this.idList, this.paletteSize, this.noOpPaletteResizeHandler, this.elementDeserializer, this.elementSerializer
 		);
-		biMapPalette.getIndex(this.field_12935);
+		T object = this.field_12935;
+		int i = biMapPalette.getIndex(this.field_12935);
 		int[] is = new int[4096];
 
-		for (int i = 0; i < 4096; i++) {
-			is[i] = biMapPalette.getIndex(this.get(i));
+		for (int j = 0; j < 4096; j++) {
+			T object2 = this.get(j);
+			if (object2 != object) {
+				object = object2;
+				i = biMapPalette.getIndex(object2);
+			}
+
+			is[j] = i;
 		}
 
 		ListTag listTag = new ListTag();
 		biMapPalette.toTag(listTag);
 		compoundTag.put(string, listTag);
-		int j = Math.max(4, MathHelper.log2DeBrujin(listTag.size()));
-		PackedIntegerArray packedIntegerArray = new PackedIntegerArray(j, 4096);
+		int k = Math.max(4, MathHelper.log2DeBruijn(listTag.size()));
+		PackedIntegerArray packedIntegerArray = new PackedIntegerArray(k, 4096);
 
-		for (int k = 0; k < is.length; k++) {
-			packedIntegerArray.set(k, is[k]);
+		for (int l = 0; l < is.length; l++) {
+			packedIntegerArray.set(l, is[l]);
 		}
 
 		compoundTag.putLongArray(string2, packedIntegerArray.getStorage());
@@ -216,14 +223,14 @@ public class PalettedContainer<T> implements PaletteResizeListener<T> {
 		return this.palette.accepts(object);
 	}
 
-	public void method_21732(PalettedContainer.class_4464<T> arg) {
+	public void count(PalettedContainer.CountConsumer<T> countConsumer) {
 		Int2IntMap int2IntMap = new Int2IntOpenHashMap();
-		this.data.method_21739(i -> int2IntMap.put(i, int2IntMap.get(i) + 1));
-		int2IntMap.int2IntEntrySet().forEach(entry -> arg.accept(this.palette.getByIndex(entry.getIntKey()), entry.getIntValue()));
+		this.data.forEach(i -> int2IntMap.put(i, int2IntMap.get(i) + 1));
+		int2IntMap.int2IntEntrySet().forEach(entry -> countConsumer.accept(this.palette.getByIndex(entry.getIntKey()), entry.getIntValue()));
 	}
 
 	@FunctionalInterface
-	public interface class_4464<T> {
+	public interface CountConsumer<T> {
 		void accept(T object, int i);
 	}
 }

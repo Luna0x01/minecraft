@@ -29,8 +29,8 @@ public class ItemModels {
 
 	public Sprite getSprite(ItemStack itemStack) {
 		BakedModel bakedModel = this.getModel(itemStack);
-		return (bakedModel == this.modelManager.getMissingModel() || bakedModel.isBuiltin()) && itemStack.getItem() instanceof BlockItem
-			? this.modelManager.getBlockStateMaps().getSprite(((BlockItem)itemStack.getItem()).getBlock().getDefaultState())
+		return bakedModel == this.modelManager.getMissingModel() && itemStack.getItem() instanceof BlockItem
+			? this.modelManager.getBlockModels().getSprite(((BlockItem)itemStack.getItem()).getBlock().getDefaultState())
 			: bakedModel.getSprite();
 	}
 

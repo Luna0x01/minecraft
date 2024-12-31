@@ -1,9 +1,9 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import javax.annotation.Nullable;
 import net.minecraft.client.render.entity.feature.CatCollarFeatureRenderer;
 import net.minecraft.client.render.entity.model.CatEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
@@ -17,27 +17,26 @@ public class CatEntityRenderer extends MobEntityRenderer<CatEntity, CatEntityMod
 		this.addFeature(new CatCollarFeatureRenderer(this));
 	}
 
-	@Nullable
-	protected Identifier method_4078(CatEntity catEntity) {
+	public Identifier getTexture(CatEntity catEntity) {
 		return catEntity.getTexture();
 	}
 
-	protected void method_4079(CatEntity catEntity, float f) {
-		super.scale(catEntity, f);
-		GlStateManager.scalef(0.8F, 0.8F, 0.8F);
+	protected void scale(CatEntity catEntity, MatrixStack matrixStack, float f) {
+		super.scale(catEntity, matrixStack, f);
+		matrixStack.scale(0.8F, 0.8F, 0.8F);
 	}
 
-	protected void method_16045(CatEntity catEntity, float f, float g, float h) {
-		super.setupTransforms(catEntity, f, g, h);
+	protected void setupTransforms(CatEntity catEntity, MatrixStack matrixStack, float f, float g, float h) {
+		super.setupTransforms(catEntity, matrixStack, f, g, h);
 		float i = catEntity.getSleepAnimation(h);
 		if (i > 0.0F) {
-			GlStateManager.translatef(0.4F * i, 0.15F * i, 0.1F * i);
-			GlStateManager.rotatef(MathHelper.lerpAngleDegrees(i, 0.0F, 90.0F), 0.0F, 0.0F, 1.0F);
+			matrixStack.translate((double)(0.4F * i), (double)(0.15F * i), (double)(0.1F * i));
+			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(MathHelper.lerpAngleDegrees(i, 0.0F, 90.0F)));
 			BlockPos blockPos = new BlockPos(catEntity);
 
-			for (PlayerEntity playerEntity : catEntity.world.getEntities(PlayerEntity.class, new Box(blockPos).expand(2.0, 2.0, 2.0))) {
+			for (PlayerEntity playerEntity : catEntity.world.getNonSpectatingEntities(PlayerEntity.class, new Box(blockPos).expand(2.0, 2.0, 2.0))) {
 				if (playerEntity.isSleeping()) {
-					GlStateManager.translatef(0.15F * i, 0.0F, 0.0F);
+					matrixStack.translate((double)(0.15F * i), 0.0, 0.0);
 					break;
 				}
 			}

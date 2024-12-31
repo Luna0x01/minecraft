@@ -1,8 +1,8 @@
 package com.mojang.realmsclient.dto;
 
+import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -15,7 +15,7 @@ public class BackupList extends ValueObject {
 	public static BackupList parse(String string) {
 		JsonParser jsonParser = new JsonParser();
 		BackupList backupList = new BackupList();
-		backupList.backups = new ArrayList();
+		backupList.backups = Lists.newArrayList();
 
 		try {
 			JsonElement jsonElement = jsonParser.parse(string).getAsJsonObject().get("backups");

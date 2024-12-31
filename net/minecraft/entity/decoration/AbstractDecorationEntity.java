@@ -65,9 +65,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 			Direction direction = this.facing.rotateYCounterclockwise();
 			d += h * (double)direction.getOffsetX();
 			f += h * (double)direction.getOffsetZ();
-			this.x = d;
-			this.y = e;
-			this.z = f;
+			this.setPos(d, e, f);
 			double j = (double)this.getWidthPixels();
 			double k = (double)this.getHeightPixels();
 			double l = (double)this.getWidthPixels();
@@ -90,9 +88,6 @@ public abstract class AbstractDecorationEntity extends Entity {
 
 	@Override
 	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
 		if (this.field_7097++ == 100 && !this.world.isClient) {
 			this.field_7097 = 0;
 			if (!this.removed && !this.method_6888()) {
@@ -135,7 +130,12 @@ public abstract class AbstractDecorationEntity extends Entity {
 
 	@Override
 	public boolean handleAttack(Entity entity) {
-		return entity instanceof PlayerEntity ? this.damage(DamageSource.player((PlayerEntity)entity), 0.0F) : false;
+		if (entity instanceof PlayerEntity) {
+			PlayerEntity playerEntity = (PlayerEntity)entity;
+			return !this.world.canPlayerModifyAt(playerEntity, this.blockPos) ? true : this.damage(DamageSource.player(playerEntity), 0.0F);
+		} else {
+			return false;
+		}
 	}
 
 	@Override
@@ -201,9 +201,9 @@ public abstract class AbstractDecorationEntity extends Entity {
 	public ItemEntity dropStack(ItemStack itemStack, float f) {
 		ItemEntity itemEntity = new ItemEntity(
 			this.world,
-			this.x + (double)((float)this.facing.getOffsetX() * 0.15F),
-			this.y + (double)f,
-			this.z + (double)((float)this.facing.getOffsetZ() * 0.15F),
+			this.getX() + (double)((float)this.facing.getOffsetX() * 0.15F),
+			this.getY() + (double)f,
+			this.getZ() + (double)((float)this.facing.getOffsetZ() * 0.15F),
 			itemStack
 		);
 		itemEntity.setToDefaultPickupDelay();
@@ -217,7 +217,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public void setPosition(double d, double e, double f) {
+	public void updatePosition(double d, double e, double f) {
 		this.blockPos = new BlockPos(d, e, f);
 		this.method_6895();
 		this.velocityDirty = true;

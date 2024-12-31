@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.mojang.datafixers.Dynamic;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.datafixers.NbtOps;
+import net.minecraft.datafixer.NbtOps;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -12,11 +12,12 @@ import net.minecraft.structure.pool.EmptyPoolElement;
 import net.minecraft.structure.pool.StructurePoolElement;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DynamicDeserializer;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public abstract class PoolStructurePiece extends StructurePiece {
 	protected final StructurePoolElement poolElement;
@@ -33,7 +34,7 @@ public abstract class PoolStructurePiece extends StructurePiece {
 		BlockPos blockPos,
 		int i,
 		BlockRotation blockRotation,
-		MutableIntBoundingBox mutableIntBoundingBox
+		BlockBox blockBox
 	) {
 		super(structurePieceType, 0);
 		this.structureManager = structureManager;
@@ -41,7 +42,7 @@ public abstract class PoolStructurePiece extends StructurePiece {
 		this.pos = blockPos;
 		this.groundLevelDelta = i;
 		this.rotation = blockRotation;
-		this.boundingBox = mutableIntBoundingBox;
+		this.boundingBox = blockBox;
 	}
 
 	public PoolStructurePiece(StructureManager structureManager, CompoundTag compoundTag, StructurePieceType structurePieceType) {
@@ -50,7 +51,7 @@ public abstract class PoolStructurePiece extends StructurePiece {
 		this.pos = new BlockPos(compoundTag.getInt("PosX"), compoundTag.getInt("PosY"), compoundTag.getInt("PosZ"));
 		this.groundLevelDelta = compoundTag.getInt("ground_level_delta");
 		this.poolElement = DynamicDeserializer.deserialize(
-			new Dynamic(NbtOps.INSTANCE, compoundTag.getCompound("pool_element")), Registry.STRUCTURE_POOL_ELEMENT, "element_type", EmptyPoolElement.INSTANCE
+			new Dynamic(NbtOps.INSTANCE, compoundTag.getCompound("pool_element")), Registry.field_16793, "element_type", EmptyPoolElement.INSTANCE
 		);
 		this.rotation = BlockRotation.valueOf(compoundTag.getString("rotation"));
 		this.boundingBox = this.poolElement.getBoundingBox(structureManager, this.pos, this.rotation);
@@ -77,8 +78,8 @@ public abstract class PoolStructurePiece extends StructurePiece {
 	}
 
 	@Override
-	public boolean generate(IWorld iWorld, Random random, MutableIntBoundingBox mutableIntBoundingBox, ChunkPos chunkPos) {
-		return this.poolElement.generate(this.structureManager, iWorld, this.pos, this.rotation, mutableIntBoundingBox, random);
+	public boolean generate(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+		return this.poolElement.generate(this.structureManager, iWorld, chunkGenerator, this.pos, this.rotation, blockBox, random);
 	}
 
 	@Override

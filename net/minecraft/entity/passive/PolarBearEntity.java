@@ -5,7 +5,6 @@ import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
@@ -80,15 +79,15 @@ public class PolarBearEntity extends AnimalEntity {
 		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(30.0);
 		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(20.0);
 		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.25);
-		this.getAttributeContainer().register(EntityAttributes.ATTACK_DAMAGE);
+		this.getAttributes().register(EntityAttributes.ATTACK_DAMAGE);
 		this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).setBaseValue(6.0);
 	}
 
-	public static boolean method_20668(EntityType<PolarBearEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+	public static boolean canSpawn(EntityType<PolarBearEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
 		Biome biome = iWorld.getBiome(blockPos);
 		return biome != Biomes.field_9435 && biome != Biomes.field_9418
-			? method_20663(entityType, iWorld, spawnType, blockPos, random)
-			: iWorld.getLightLevel(blockPos, 0) > 8 && iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10295;
+			? isValidNaturalSpawn(entityType, iWorld, spawnType, blockPos, random)
+			: iWorld.getBaseLightLevel(blockPos, 0) > 8 && iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10295;
 	}
 
 	@Override
@@ -184,16 +183,15 @@ public class PolarBearEntity extends AnimalEntity {
 	}
 
 	@Override
-	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+	public net.minecraft.entity.EntityData initialize(
+		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
 	) {
-		if (entityData instanceof PolarBearEntity.PolarBearEntityData) {
-			this.setBreedingAge(-24000);
-		} else {
-			entityData = new PolarBearEntity.PolarBearEntityData();
+		if (entityData == null) {
+			entityData = new PassiveEntity.EntityData();
+			((PassiveEntity.EntityData)entityData).setBabyChance(1.0F);
 		}
 
-		return entityData;
+		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
 	}
 
 	class AttackGoal extends MeleeAttackGoal {
@@ -248,7 +246,7 @@ public class PolarBearEntity extends AnimalEntity {
 			} else {
 				if (super.canStart()) {
 					for (PolarBearEntity polarBearEntity : PolarBearEntity.this.world
-						.getEntities(PolarBearEntity.class, PolarBearEntity.this.getBoundingBox().expand(8.0, 4.0, 8.0))) {
+						.getNonSpectatingEntities(PolarBearEntity.class, PolarBearEntity.this.getBoundingBox().expand(8.0, 4.0, 8.0))) {
 						if (polarBearEntity.isBaby()) {
 							return true;
 						}
@@ -262,11 +260,6 @@ public class PolarBearEntity extends AnimalEntity {
 		@Override
 		protected double getFollowRange() {
 			return super.getFollowRange() * 0.5;
-		}
-	}
-
-	static class PolarBearEntityData implements EntityData {
-		private PolarBearEntityData() {
 		}
 	}
 

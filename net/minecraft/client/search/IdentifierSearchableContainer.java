@@ -33,8 +33,8 @@ public class IdentifierSearchableContainer<T> implements SearchableContainer<T> 
 			this.index(object);
 		}
 
-		this.byNamespace.reload();
-		this.byPath.reload();
+		this.byNamespace.sort();
+		this.byPath.sort();
 	}
 
 	@Override

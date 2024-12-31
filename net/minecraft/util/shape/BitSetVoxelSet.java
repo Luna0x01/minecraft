@@ -106,22 +106,15 @@ public final class BitSetVoxelSet extends VoxelSet {
 	}
 
 	static BitSetVoxelSet combine(
-		VoxelSet voxelSet,
-		VoxelSet voxelSet2,
-		DoubleListPair doubleListPair,
-		DoubleListPair doubleListPair2,
-		DoubleListPair doubleListPair3,
-		BooleanBiFunction booleanBiFunction
+		VoxelSet voxelSet, VoxelSet voxelSet2, PairList pairList, PairList pairList2, PairList pairList3, BooleanBiFunction booleanBiFunction
 	) {
-		BitSetVoxelSet bitSetVoxelSet = new BitSetVoxelSet(
-			doubleListPair.getMergedList().size() - 1, doubleListPair2.getMergedList().size() - 1, doubleListPair3.getMergedList().size() - 1
-		);
+		BitSetVoxelSet bitSetVoxelSet = new BitSetVoxelSet(pairList.getPairs().size() - 1, pairList2.getPairs().size() - 1, pairList3.getPairs().size() - 1);
 		int[] is = new int[]{Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE};
-		doubleListPair.forAllOverlappingSections((i, j, k) -> {
+		pairList.forEachPair((i, j, k) -> {
 			boolean[] bls = new boolean[]{false};
-			boolean bl = doubleListPair2.forAllOverlappingSections((l, m, n) -> {
+			boolean bl = pairList2.forEachPair((l, m, n) -> {
 				boolean[] bls2 = new boolean[]{false};
-				boolean blx = doubleListPair3.forAllOverlappingSections((o, p, q) -> {
+				boolean blx = pairList3.forEachPair((o, p, q) -> {
 					boolean blxx = booleanBiFunction.apply(voxelSet.inBoundsAndContains(i, l, o), voxelSet2.inBoundsAndContains(j, m, p));
 					if (blxx) {
 						bitSetVoxelSet.storage.set(bitSetVoxelSet.getIndex(k, n, q));

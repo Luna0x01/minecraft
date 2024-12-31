@@ -2,11 +2,14 @@ package net.minecraft.client.render.entity;
 
 import java.util.Random;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.EndermanBlockFeatureRenderer;
 import net.minecraft.client.render.entity.feature.EndermanEyesFeatureRenderer;
 import net.minecraft.client.render.entity.model.EndermanEntityModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 
 public class EndermanEntityRenderer extends MobEntityRenderer<EndermanEntity, EndermanEntityModel<EndermanEntity>> {
 	private static final Identifier SKIN = new Identifier("textures/entity/enderman/enderman.png");
@@ -18,21 +21,24 @@ public class EndermanEntityRenderer extends MobEntityRenderer<EndermanEntity, En
 		this.addFeature(new EndermanBlockFeatureRenderer(this));
 	}
 
-	public void method_3911(EndermanEntity endermanEntity, double d, double e, double f, float g, float h) {
+	public void render(EndermanEntity endermanEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
 		BlockState blockState = endermanEntity.getCarriedBlock();
 		EndermanEntityModel<EndermanEntity> endermanEntityModel = this.getModel();
 		endermanEntityModel.carryingBlock = blockState != null;
 		endermanEntityModel.angry = endermanEntity.isAngry();
-		if (endermanEntity.isAngry()) {
-			double i = 0.02;
-			d += this.random.nextGaussian() * 0.02;
-			f += this.random.nextGaussian() * 0.02;
-		}
-
-		super.method_4072(endermanEntity, d, e, f, g, h);
+		super.render(endermanEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
-	protected Identifier method_3912(EndermanEntity endermanEntity) {
+	public Vec3d getPositionOffset(EndermanEntity endermanEntity, float f) {
+		if (endermanEntity.isAngry()) {
+			double d = 0.02;
+			return new Vec3d(this.random.nextGaussian() * 0.02, 0.0, this.random.nextGaussian() * 0.02);
+		} else {
+			return super.getPositionOffset(endermanEntity, f);
+		}
+	}
+
+	public Identifier getTexture(EndermanEntity endermanEntity) {
 		return SKIN;
 	}
 }

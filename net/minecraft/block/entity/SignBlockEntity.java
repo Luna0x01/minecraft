@@ -21,10 +21,6 @@ import net.minecraft.util.math.Vec3d;
 
 public class SignBlockEntity extends BlockEntity {
 	public final Text[] text = new Text[]{new LiteralText(""), new LiteralText(""), new LiteralText(""), new LiteralText("")};
-	private boolean caretVisible;
-	private int currentRow = -1;
-	private int selectionStart = -1;
-	private int selectionEnd = -1;
 	private boolean editable = true;
 	private PlayerEntity editor;
 	private final String[] textBeingEdited = new String[4];
@@ -166,35 +162,5 @@ public class SignBlockEntity extends BlockEntity {
 		} else {
 			return false;
 		}
-	}
-
-	public void setSelectionState(int i, int j, int k, boolean bl) {
-		this.currentRow = i;
-		this.selectionStart = j;
-		this.selectionEnd = k;
-		this.caretVisible = bl;
-	}
-
-	public void resetSelectionState() {
-		this.currentRow = -1;
-		this.selectionStart = -1;
-		this.selectionEnd = -1;
-		this.caretVisible = false;
-	}
-
-	public boolean isCaretVisible() {
-		return this.caretVisible;
-	}
-
-	public int getCurrentRow() {
-		return this.currentRow;
-	}
-
-	public int getSelectionStart() {
-		return this.selectionStart;
-	}
-
-	public int getSelectionEnd() {
-		return this.selectionEnd;
 	}
 }

@@ -19,6 +19,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.predicate.NbtPredicate;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +34,7 @@ public abstract class NbtText extends BaseText implements ParsableText {
 	@Nullable
 	private static NbtPathArgumentType.NbtPath parsePath(String string) {
 		try {
-			return new NbtPathArgumentType().method_9362(new StringReader(string));
+			return new NbtPathArgumentType().parse(new StringReader(string));
 		} catch (CommandSyntaxException var2) {
 			return null;
 		}
@@ -102,7 +103,7 @@ public abstract class NbtText extends BaseText implements ParsableText {
 		@Nullable
 		private PosArgument parsePos(String string) {
 			try {
-				return BlockPosArgumentType.blockPos().method_9699(new StringReader(string));
+				return BlockPosArgumentType.blockPos().parse(new StringReader(string));
 			} catch (CommandSyntaxException var3) {
 				return null;
 			}
@@ -129,7 +130,7 @@ public abstract class NbtText extends BaseText implements ParsableText {
 			if (this.pos != null) {
 				ServerWorld serverWorld = serverCommandSource.getWorld();
 				BlockPos blockPos = this.pos.toAbsoluteBlockPos(serverCommandSource);
-				if (serverWorld.isHeightValidAndBlockLoaded(blockPos)) {
+				if (serverWorld.canSetBlock(blockPos)) {
 					BlockEntity blockEntity = serverWorld.getBlockEntity(blockPos);
 					if (blockEntity != null) {
 						return Stream.of(blockEntity.toTag(new CompoundTag()));
@@ -229,6 +230,52 @@ public abstract class NbtText extends BaseText implements ParsableText {
 				+ ", style="
 				+ this.getStyle()
 				+ '}';
+		}
+	}
+
+	public static class StorageNbtText extends NbtText {
+		private final Identifier id;
+
+		public StorageNbtText(String string, boolean bl, Identifier identifier) {
+			super(string, bl);
+			this.id = identifier;
+		}
+
+		public StorageNbtText(String string, @Nullable NbtPathArgumentType.NbtPath nbtPath, boolean bl, Identifier identifier) {
+			super(string, nbtPath, bl);
+			this.id = identifier;
+		}
+
+		public Identifier method_23728() {
+			return this.id;
+		}
+
+		@Override
+		public Text copy() {
+			return new NbtText.StorageNbtText(this.rawPath, this.path, this.interpret, this.id);
+		}
+
+		@Override
+		protected Stream<CompoundTag> toNbt(ServerCommandSource serverCommandSource) {
+			CompoundTag compoundTag = serverCommandSource.getMinecraftServer().getDataCommandStorage().get(this.id);
+			return Stream.of(compoundTag);
+		}
+
+		@Override
+		public boolean equals(Object object) {
+			if (this == object) {
+				return true;
+			} else if (!(object instanceof NbtText.StorageNbtText)) {
+				return false;
+			} else {
+				NbtText.StorageNbtText storageNbtText = (NbtText.StorageNbtText)object;
+				return Objects.equals(this.id, storageNbtText.id) && Objects.equals(this.rawPath, storageNbtText.rawPath) && super.equals(object);
+			}
+		}
+
+		@Override
+		public String toString() {
+			return "StorageNbtComponent{id='" + this.id + '\'' + "path='" + this.rawPath + '\'' + ", siblings=" + this.siblings + ", style=" + this.getStyle() + '}';
 		}
 	}
 }

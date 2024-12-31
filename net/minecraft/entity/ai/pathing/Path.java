@@ -5,7 +5,6 @@ import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
-import net.minecraft.class_4459;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
@@ -15,17 +14,17 @@ public class Path {
 	private final List<PathNode> nodes;
 	private PathNode[] field_57 = new PathNode[0];
 	private PathNode[] field_55 = new PathNode[0];
-	private Set<class_4459> field_20300;
+	private Set<TargetPathNode> field_20300;
 	private int currentNodeIndex;
-	private final BlockPos field_20301;
-	private final float field_20302;
-	private final boolean field_20303;
+	private final BlockPos target;
+	private final float manhattanDistanceFromTarget;
+	private final boolean reachesTarget;
 
 	public Path(List<PathNode> list, BlockPos blockPos, boolean bl) {
 		this.nodes = list;
-		this.field_20301 = blockPos;
-		this.field_20302 = list.isEmpty() ? Float.MAX_VALUE : ((PathNode)this.nodes.get(this.nodes.size() - 1)).method_21654(this.field_20301);
-		this.field_20303 = bl;
+		this.target = blockPos;
+		this.manhattanDistanceFromTarget = list.isEmpty() ? Float.MAX_VALUE : ((PathNode)this.nodes.get(this.nodes.size() - 1)).getManhattanDistance(this.target);
+		this.reachesTarget = bl;
 	}
 
 	public void next() {
@@ -106,15 +105,15 @@ public class Path {
 		}
 	}
 
-	public boolean method_21655() {
-		return this.field_20303;
+	public boolean reachesTarget() {
+		return this.reachesTarget;
 	}
 
-	public PathNode[] method_43() {
+	public PathNode[] method_22880() {
 		return this.field_57;
 	}
 
-	public PathNode[] method_37() {
+	public PathNode[] method_22881() {
 		return this.field_55;
 	}
 
@@ -122,10 +121,10 @@ public class Path {
 		boolean bl = packetByteBuf.readBoolean();
 		int i = packetByteBuf.readInt();
 		int j = packetByteBuf.readInt();
-		Set<class_4459> set = Sets.newHashSet();
+		Set<TargetPathNode> set = Sets.newHashSet();
 
 		for (int k = 0; k < j; k++) {
-			set.add(class_4459.method_21663(packetByteBuf));
+			set.add(TargetPathNode.fromBuffer(packetByteBuf));
 		}
 
 		BlockPos blockPos = new BlockPos(packetByteBuf.readInt(), packetByteBuf.readInt(), packetByteBuf.readInt());
@@ -160,11 +159,11 @@ public class Path {
 		return "Path(length=" + this.nodes.size() + ")";
 	}
 
-	public BlockPos method_48() {
-		return this.field_20301;
+	public BlockPos getTarget() {
+		return this.target;
 	}
 
-	public float method_21656() {
-		return this.field_20302;
+	public float getManhattanDistanceFromTarget() {
+		return this.manhattanDistanceFromTarget;
 	}
 }

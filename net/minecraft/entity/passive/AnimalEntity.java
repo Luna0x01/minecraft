@@ -16,8 +16,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class AnimalEntity extends PassiveEntity {
 	private int loveTicks;
@@ -49,16 +49,7 @@ public abstract class AnimalEntity extends PassiveEntity {
 				double d = this.random.nextGaussian() * 0.02;
 				double e = this.random.nextGaussian() * 0.02;
 				double f = this.random.nextGaussian() * 0.02;
-				this.world
-					.addParticle(
-						ParticleTypes.field_11201,
-						this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-						this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
-						this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-						d,
-						e,
-						f
-					);
+				this.world.addParticle(ParticleTypes.field_11201, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), d, e, f);
 			}
 		}
 	}
@@ -74,8 +65,8 @@ public abstract class AnimalEntity extends PassiveEntity {
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos blockPos, ViewableWorld viewableWorld) {
-		return viewableWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10219 ? 10.0F : viewableWorld.getBrightness(blockPos) - 0.5F;
+	public float getPathfindingFavor(BlockPos blockPos, WorldView worldView) {
+		return worldView.getBlockState(blockPos.down()).getBlock() == Blocks.field_10219 ? 10.0F : worldView.getBrightness(blockPos) - 0.5F;
 	}
 
 	@Override
@@ -96,11 +87,11 @@ public abstract class AnimalEntity extends PassiveEntity {
 	public void readCustomDataFromTag(CompoundTag compoundTag) {
 		super.readCustomDataFromTag(compoundTag);
 		this.loveTicks = compoundTag.getInt("InLove");
-		this.lovingPlayer = compoundTag.hasUuid("LoveCause") ? compoundTag.getUuid("LoveCause") : null;
+		this.lovingPlayer = compoundTag.containsUuid("LoveCause") ? compoundTag.getUuid("LoveCause") : null;
 	}
 
-	public static boolean method_20663(EntityType<? extends AnimalEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		return iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10219 && iWorld.getLightLevel(blockPos, 0) > 8;
+	public static boolean isValidNaturalSpawn(EntityType<? extends AnimalEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
+		return iWorld.getBlockState(blockPos.down()).getBlock() == Blocks.field_10219 && iWorld.getBaseLightLevel(blockPos, 0) > 8;
 	}
 
 	@Override
@@ -126,9 +117,10 @@ public abstract class AnimalEntity extends PassiveEntity {
 	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (this.isBreedingItem(itemStack)) {
-			if (this.getBreedingAge() == 0 && this.canEat()) {
+			if (!this.world.isClient && this.getBreedingAge() == 0 && this.canEat()) {
 				this.eat(playerEntity, itemStack);
 				this.lovePlayer(playerEntity);
+				playerEntity.swingHand(hand, true);
 				return true;
 			}
 
@@ -198,16 +190,7 @@ public abstract class AnimalEntity extends PassiveEntity {
 				double d = this.random.nextGaussian() * 0.02;
 				double e = this.random.nextGaussian() * 0.02;
 				double f = this.random.nextGaussian() * 0.02;
-				this.world
-					.addParticle(
-						ParticleTypes.field_11201,
-						this.x + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-						this.y + 0.5 + (double)(this.random.nextFloat() * this.getHeight()),
-						this.z + (double)(this.random.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(),
-						d,
-						e,
-						f
-					);
+				this.world.addParticle(ParticleTypes.field_11201, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), d, e, f);
 			}
 		} else {
 			super.handleStatus(b);

@@ -13,17 +13,20 @@ import net.minecraft.structure.StructureManager;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableIntBoundingBox;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
+import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.gen.ChunkRandom;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.carver.ConfiguredCarver;
@@ -46,31 +49,25 @@ public abstract class ChunkGenerator<C extends ChunkGeneratorConfig> {
 
 	public void populateBiomes(Chunk chunk) {
 		ChunkPos chunkPos = chunk.getPos();
-		int i = chunkPos.x;
-		int j = chunkPos.z;
-		Biome[] biomes = this.biomeSource.sampleBiomes(i * 16, j * 16, 16, 16);
-		chunk.setBiomeArray(biomes);
+		((ProtoChunk)chunk).method_22405(new BiomeArray(chunkPos, this.biomeSource));
 	}
 
-	protected Biome getDecorationBiome(Chunk chunk) {
-		return chunk.getBiome(BlockPos.ORIGIN);
+	protected Biome getDecorationBiome(BiomeAccess biomeAccess, BlockPos blockPos) {
+		return biomeAccess.getBiome(blockPos);
 	}
 
-	protected Biome getDecorationBiome(ChunkRegion chunkRegion, BlockPos blockPos) {
-		return this.biomeSource.getBiome(blockPos);
-	}
-
-	public void carve(Chunk chunk, GenerationStep.Carver carver) {
+	public void carve(BiomeAccess biomeAccess, Chunk chunk, GenerationStep.Carver carver) {
 		ChunkRandom chunkRandom = new ChunkRandom();
 		int i = 8;
 		ChunkPos chunkPos = chunk.getPos();
 		int j = chunkPos.x;
 		int k = chunkPos.z;
+		Biome biome = this.getDecorationBiome(biomeAccess, chunkPos.getCenterBlockPos());
 		BitSet bitSet = chunk.getCarvingMask(carver);
 
 		for (int l = j - 8; l <= j + 8; l++) {
 			for (int m = k - 8; m <= k + 8; m++) {
-				List<ConfiguredCarver<?>> list = this.getDecorationBiome(chunk).getCarversForStep(carver);
+				List<ConfiguredCarver<?>> list = biome.getCarversForStep(carver);
 				ListIterator<ConfiguredCarver<?>> listIterator = list.listIterator();
 
 				while (listIterator.hasNext()) {
@@ -78,7 +75,7 @@ public abstract class ChunkGenerator<C extends ChunkGeneratorConfig> {
 					ConfiguredCarver<?> configuredCarver = (ConfiguredCarver<?>)listIterator.next();
 					chunkRandom.setStructureSeed(this.seed + (long)n, l, m);
 					if (configuredCarver.shouldCarve(chunkRandom, l, m)) {
-						configuredCarver.carve(chunk, chunkRandom, this.getSeaLevel(), l, m, j, k, bitSet);
+						configuredCarver.carve(chunk, blockPos -> this.getDecorationBiome(biomeAccess, blockPos), chunkRandom, this.getSeaLevel(), l, m, j, k, bitSet);
 					}
 				}
 			}
@@ -97,7 +94,7 @@ public abstract class ChunkGenerator<C extends ChunkGeneratorConfig> {
 		int k = i * 16;
 		int l = j * 16;
 		BlockPos blockPos = new BlockPos(k, 0, l);
-		Biome biome = this.getDecorationBiome(chunkRegion, blockPos.add(8, 8, 8));
+		Biome biome = this.getDecorationBiome(chunkRegion.getBiomeAccess(), blockPos.add(8, 8, 8));
 		ChunkRandom chunkRandom = new ChunkRandom();
 		long m = chunkRandom.setSeed(chunkRegion.getSeed(), k, l);
 
@@ -106,13 +103,18 @@ public abstract class ChunkGenerator<C extends ChunkGeneratorConfig> {
 				biome.generateFeatureStep(feature, this, chunkRegion, m, chunkRandom, blockPos);
 			} catch (Exception var17) {
 				CrashReport crashReport = CrashReport.create(var17, "Biome decoration");
-				crashReport.addElement("Generation").add("CenterX", i).add("CenterZ", j).add("Step", feature).add("Seed", m).add("Biome", Registry.BIOME.getId(biome));
+				crashReport.addElement("Generation")
+					.add("CenterX", i)
+					.add("CenterZ", j)
+					.add("Step", feature)
+					.add("Seed", m)
+					.add("Biome", Registry.field_11153.getId(biome));
 				throw new CrashException(crashReport);
 			}
 		}
 	}
 
-	public abstract void buildSurface(Chunk chunk);
+	public abstract void buildSurface(ChunkRegion chunkRegion, Chunk chunk);
 
 	public void populateEntities(ChunkRegion chunkRegion) {
 	}
@@ -151,21 +153,23 @@ public abstract class ChunkGenerator<C extends ChunkGeneratorConfig> {
 		return this.world.getBiome(blockPos).getEntitySpawnList(entityCategory);
 	}
 
-	public void setStructureStarts(Chunk chunk, ChunkGenerator<?> chunkGenerator, StructureManager structureManager) {
+	public void setStructureStarts(BiomeAccess biomeAccess, Chunk chunk, ChunkGenerator<?> chunkGenerator, StructureManager structureManager) {
 		for (StructureFeature<?> structureFeature : Feature.STRUCTURES.values()) {
 			if (chunkGenerator.getBiomeSource().hasStructureFeature(structureFeature)) {
+				StructureStart structureStart = chunk.getStructureStart(structureFeature.getName());
+				int i = structureStart != null ? structureStart.method_23676() : 0;
 				ChunkRandom chunkRandom = new ChunkRandom();
 				ChunkPos chunkPos = chunk.getPos();
-				StructureStart structureStart = StructureStart.DEFAULT;
-				if (structureFeature.shouldStartAt(chunkGenerator, chunkRandom, chunkPos.x, chunkPos.z)) {
-					Biome biome = this.getBiomeSource().getBiome(new BlockPos(chunkPos.getStartX() + 9, 0, chunkPos.getStartZ() + 9));
-					StructureStart structureStart2 = structureFeature.getStructureStartFactory()
-						.create(structureFeature, chunkPos.x, chunkPos.z, biome, MutableIntBoundingBox.empty(), 0, chunkGenerator.getSeed());
-					structureStart2.initialize(this, structureManager, chunkPos.x, chunkPos.z, biome);
-					structureStart = structureStart2.hasChildren() ? structureStart2 : StructureStart.DEFAULT;
+				StructureStart structureStart2 = StructureStart.DEFAULT;
+				Biome biome = biomeAccess.getBiome(new BlockPos(chunkPos.getStartX() + 9, 0, chunkPos.getStartZ() + 9));
+				if (structureFeature.shouldStartAt(biomeAccess, chunkGenerator, chunkRandom, chunkPos.x, chunkPos.z, biome)) {
+					StructureStart structureStart3 = structureFeature.getStructureStartFactory()
+						.create(structureFeature, chunkPos.x, chunkPos.z, BlockBox.empty(), i, chunkGenerator.getSeed());
+					structureStart3.initialize(this, structureManager, chunkPos.x, chunkPos.z, biome);
+					structureStart2 = structureStart3.hasChildren() ? structureStart3 : StructureStart.DEFAULT;
 				}
 
-				chunk.setStructureStart(structureFeature.getName(), structureStart);
+				chunk.setStructureStart(structureFeature.getName(), structureStart2);
 			}
 		}
 	}

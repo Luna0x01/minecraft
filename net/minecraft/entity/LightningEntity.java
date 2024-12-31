@@ -28,7 +28,7 @@ public class LightningEntity extends Entity {
 	public LightningEntity(World world, double d, double e, double f, boolean bl) {
 		super(EntityType.field_6112, world);
 		this.ignoreCameraFrustum = true;
-		this.setPositionAndAngles(d, e, f, 0.0F, 0.0F);
+		this.refreshPositionAndAngles(d, e, f, 0.0F, 0.0F);
 		this.ambientTick = 2;
 		this.seed = this.random.nextLong();
 		this.remainingActions = this.random.nextInt(3) + 1;
@@ -52,8 +52,10 @@ public class LightningEntity extends Entity {
 	public void tick() {
 		super.tick();
 		if (this.ambientTick == 2) {
-			this.world.playSound(null, this.x, this.y, this.z, SoundEvents.field_14865, SoundCategory.field_15252, 10000.0F, 0.8F + this.random.nextFloat() * 0.2F);
-			this.world.playSound(null, this.x, this.y, this.z, SoundEvents.field_14956, SoundCategory.field_15252, 2.0F, 0.5F + this.random.nextFloat() * 0.2F);
+			this.world
+				.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.field_14865, SoundCategory.field_15252, 10000.0F, 0.8F + this.random.nextFloat() * 0.2F);
+			this.world
+				.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.field_14956, SoundCategory.field_15252, 2.0F, 0.5F + this.random.nextFloat() * 0.2F);
 		}
 
 		this.ambientTick--;
@@ -70,18 +72,20 @@ public class LightningEntity extends Entity {
 
 		if (this.ambientTick >= 0) {
 			if (this.world.isClient) {
-				this.world.setTicksSinceLightning(2);
+				this.world.setLightningTicksLeft(2);
 			} else if (!this.cosmetic) {
 				double d = 3.0;
 				List<Entity> list = this.world
-					.getEntities(this, new Box(this.x - 3.0, this.y - 3.0, this.z - 3.0, this.x + 3.0, this.y + 6.0 + 3.0, this.z + 3.0), Entity::isAlive);
+					.getEntities(
+						this, new Box(this.getX() - 3.0, this.getY() - 3.0, this.getZ() - 3.0, this.getX() + 3.0, this.getY() + 6.0 + 3.0, this.getZ() + 3.0), Entity::isAlive
+					);
 
 				for (Entity entity : list) {
 					entity.onStruckByLightning(this);
 				}
 
 				if (this.channeller != null) {
-					Criterions.CHANNELED_LIGHTNING.handle(this.channeller, list);
+					Criterions.CHANNELED_LIGHTNING.trigger(this.channeller, list);
 				}
 			}
 		}
@@ -105,7 +109,7 @@ public class LightningEntity extends Entity {
 	}
 
 	@Override
-	public boolean shouldRenderAtDistance(double d) {
+	public boolean shouldRender(double d) {
 		double e = 64.0 * getRenderDistanceMultiplier();
 		return d < e * e;
 	}

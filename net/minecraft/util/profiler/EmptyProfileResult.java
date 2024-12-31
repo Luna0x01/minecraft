@@ -16,7 +16,7 @@ public class EmptyProfileResult implements ProfileResult {
 	}
 
 	@Override
-	public boolean saveToFile(File file) {
+	public boolean save(File file) {
 		return false;
 	}
 
@@ -38,10 +38,5 @@ public class EmptyProfileResult implements ProfileResult {
 	@Override
 	public int getEndTick() {
 		return 0;
-	}
-
-	@Override
-	public String getTimingTreeString() {
-		return "";
 	}
 }

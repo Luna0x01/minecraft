@@ -1,6 +1,6 @@
 package net.minecraft.client.render.entity;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.mob.AbstractSkeletonEntity;
 import net.minecraft.util.Identifier;
 
@@ -12,11 +12,11 @@ public class WitherSkeletonEntityRenderer extends SkeletonEntityRenderer {
 	}
 
 	@Override
-	protected Identifier method_4119(AbstractSkeletonEntity abstractSkeletonEntity) {
+	public Identifier getTexture(AbstractSkeletonEntity abstractSkeletonEntity) {
 		return SKIN;
 	}
 
-	protected void method_4161(AbstractSkeletonEntity abstractSkeletonEntity, float f) {
-		GlStateManager.scalef(1.2F, 1.2F, 1.2F);
+	protected void scale(AbstractSkeletonEntity abstractSkeletonEntity, MatrixStack matrixStack, float f) {
+		matrixStack.scale(1.2F, 1.2F, 1.2F);
 	}
 }

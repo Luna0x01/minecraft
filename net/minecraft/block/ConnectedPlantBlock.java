@@ -6,7 +6,7 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.state.property.Property;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -21,7 +21,7 @@ public class ConnectedPlantBlock extends Block {
 	public static final BooleanProperty WEST = Properties.WEST;
 	public static final BooleanProperty UP = Properties.UP;
 	public static final BooleanProperty DOWN = Properties.DOWN;
-	public static final Map<Direction, BooleanProperty> FACING_PROPERTIES = SystemUtil.consume(Maps.newEnumMap(Direction.class), enumMap -> {
+	public static final Map<Direction, BooleanProperty> FACING_PROPERTIES = Util.make(Maps.newEnumMap(Direction.class), enumMap -> {
 		enumMap.put(Direction.field_11043, NORTH);
 		enumMap.put(Direction.field_11034, EAST);
 		enumMap.put(Direction.field_11035, SOUTH);

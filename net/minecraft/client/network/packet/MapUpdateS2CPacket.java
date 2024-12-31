@@ -100,7 +100,7 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 	}
 
-	public void method_11643(ClientPlayPacketListener clientPlayPacketListener) {
+	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onMapUpdate(this);
 	}
 

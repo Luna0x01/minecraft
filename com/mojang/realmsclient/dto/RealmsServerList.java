@@ -1,10 +1,10 @@
 package com.mojang.realmsclient.dto;
 
+import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -16,7 +16,7 @@ public class RealmsServerList extends ValueObject {
 
 	public static RealmsServerList parse(String string) {
 		RealmsServerList realmsServerList = new RealmsServerList();
-		realmsServerList.servers = new ArrayList();
+		realmsServerList.servers = Lists.newArrayList();
 
 		try {
 			JsonParser jsonParser = new JsonParser();

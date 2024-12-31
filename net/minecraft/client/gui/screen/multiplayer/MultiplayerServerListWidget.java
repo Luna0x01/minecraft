@@ -3,7 +3,7 @@ package net.minecraft.client.gui.screen.multiplayer;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -13,8 +13,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
-import net.minecraft.client.network.LanServerEntry;
-import net.minecraft.client.options.ServerEntry;
+import net.minecraft.client.network.LanServerInfo;
+import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.options.ServerList;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.texture.NativeImage;
@@ -23,8 +23,8 @@ import net.minecraft.client.util.NarratorManager;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
 import net.minecraft.util.UncaughtExceptionLogger;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
@@ -32,34 +32,40 @@ import org.apache.logging.log4j.Logger;
 
 public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<MultiplayerServerListWidget.Entry> {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final ThreadPoolExecutor field_19105 = new ScheduledThreadPoolExecutor(
+	private static final ThreadPoolExecutor SERVER_PINGER_THREAD_POOL = new ScheduledThreadPoolExecutor(
 		5, new ThreadFactoryBuilder().setNameFormat("Server Pinger #%d").setDaemon(true).setUncaughtExceptionHandler(new UncaughtExceptionLogger(LOGGER)).build()
 	);
-	private static final Identifier field_19106 = new Identifier("textures/misc/unknown_server.png");
-	private static final Identifier field_19107 = new Identifier("textures/gui/server_selection.png");
+	private static final Identifier UNKNOWN_SERVER_TEXTURE = new Identifier("textures/misc/unknown_server.png");
+	private static final Identifier SERVER_SELECTION_TEXTURE = new Identifier("textures/gui/server_selection.png");
 	private final MultiplayerScreen screen;
-	private final List<MultiplayerServerListWidget.ServerItem> serverItems = Lists.newArrayList();
+	private final List<MultiplayerServerListWidget.ServerEntry> servers = Lists.newArrayList();
 	private final MultiplayerServerListWidget.Entry scanningEntry = new MultiplayerServerListWidget.ScanningEntry();
-	private final List<MultiplayerServerListWidget.LanServerListEntry> serverEntries = Lists.newArrayList();
+	private final List<MultiplayerServerListWidget.LanServerEntry> lanServers = Lists.newArrayList();
 
 	public MultiplayerServerListWidget(MultiplayerScreen multiplayerScreen, MinecraftClient minecraftClient, int i, int j, int k, int l, int m) {
 		super(minecraftClient, i, j, k, l, m);
 		this.screen = multiplayerScreen;
 	}
 
-	private void method_20131() {
+	private void updateEntries() {
 		this.clearEntries();
-		this.serverItems.forEach(this::addEntry);
+		this.servers.forEach(this::addEntry);
 		this.addEntry(this.scanningEntry);
-		this.serverEntries.forEach(this::addEntry);
+		this.lanServers.forEach(this::addEntry);
 	}
 
-	public void method_20122(MultiplayerServerListWidget.Entry entry) {
+	public void setSelected(MultiplayerServerListWidget.Entry entry) {
 		super.setSelected(entry);
-		if (this.getSelected() instanceof MultiplayerServerListWidget.ServerItem) {
+		if (this.getSelected() instanceof MultiplayerServerListWidget.ServerEntry) {
 			NarratorManager.INSTANCE
-				.narrate(new TranslatableText("narrator.select", ((MultiplayerServerListWidget.ServerItem)this.getSelected()).server.name).getString());
+				.narrate(new TranslatableText("narrator.select", ((MultiplayerServerListWidget.ServerEntry)this.getSelected()).server.name).getString());
 		}
+	}
+
+	@Override
+	public boolean keyPressed(int i, int j, int k) {
+		MultiplayerServerListWidget.Entry entry = this.getSelected();
+		return entry != null && entry.keyPressed(i, j, k) || super.keyPressed(i, j, k);
 	}
 
 	@Override
@@ -67,37 +73,34 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 		int j = this.children().indexOf(this.getSelected());
 		int k = MathHelper.clamp(j + i, 0, this.getItemCount() - 1);
 		MultiplayerServerListWidget.Entry entry = (MultiplayerServerListWidget.Entry)this.children().get(k);
-		super.setSelected(entry);
 		if (entry instanceof MultiplayerServerListWidget.ScanningEntry) {
-			if (i <= 0 || k != this.getItemCount() - 1) {
-				if (i >= 0 || k != 0) {
-					this.moveSelection(i);
-				}
-			}
-		} else {
-			this.ensureVisible(entry);
-			this.screen.updateButtonActivationStates();
+			k = MathHelper.clamp(k + (i > 0 ? 1 : -1), 0, this.getItemCount() - 1);
+			entry = (MultiplayerServerListWidget.Entry)this.children().get(k);
 		}
+
+		super.setSelected(entry);
+		this.ensureVisible(entry);
+		this.screen.updateButtonActivationStates();
 	}
 
-	public void method_20125(ServerList serverList) {
-		this.serverItems.clear();
+	public void setServers(ServerList serverList) {
+		this.servers.clear();
 
 		for (int i = 0; i < serverList.size(); i++) {
-			this.serverItems.add(new MultiplayerServerListWidget.ServerItem(this.screen, serverList.get(i)));
+			this.servers.add(new MultiplayerServerListWidget.ServerEntry(this.screen, serverList.get(i)));
 		}
 
-		this.method_20131();
+		this.updateEntries();
 	}
 
-	public void method_20126(List<LanServerEntry> list) {
-		this.serverEntries.clear();
+	public void setLanServers(List<LanServerInfo> list) {
+		this.lanServers.clear();
 
-		for (LanServerEntry lanServerEntry : list) {
-			this.serverEntries.add(new MultiplayerServerListWidget.LanServerListEntry(this.screen, lanServerEntry));
+		for (LanServerInfo lanServerInfo : list) {
+			this.lanServers.add(new MultiplayerServerListWidget.LanServerEntry(this.screen, lanServerInfo));
 		}
 
-		this.method_20131();
+		this.updateEntries();
 	}
 
 	@Override
@@ -118,15 +121,15 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 	public abstract static class Entry extends AlwaysSelectedEntryListWidget.Entry<MultiplayerServerListWidget.Entry> {
 	}
 
-	public static class LanServerListEntry extends MultiplayerServerListWidget.Entry {
+	public static class LanServerEntry extends MultiplayerServerListWidget.Entry {
 		private final MultiplayerScreen screen;
 		protected final MinecraftClient client;
-		protected final LanServerEntry server;
+		protected final LanServerInfo server;
 		private long time;
 
-		protected LanServerListEntry(MultiplayerScreen multiplayerScreen, LanServerEntry lanServerEntry) {
+		protected LanServerEntry(MultiplayerScreen multiplayerScreen, LanServerInfo lanServerInfo) {
 			this.screen = multiplayerScreen;
-			this.server = lanServerEntry;
+			this.server = lanServerInfo;
 			this.client = MinecraftClient.getInstance();
 		}
 
@@ -143,16 +146,16 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 
 		@Override
 		public boolean mouseClicked(double d, double e, int i) {
-			this.screen.selectEntry(this);
-			if (SystemUtil.getMeasuringTimeMs() - this.time < 250L) {
+			this.screen.select(this);
+			if (Util.getMeasuringTimeMs() - this.time < 250L) {
 				this.screen.connect();
 			}
 
-			this.time = SystemUtil.getMeasuringTimeMs();
+			this.time = Util.getMeasuringTimeMs();
 			return false;
 		}
 
-		public LanServerEntry getLanServerEntry() {
+		public LanServerInfo getLanServerEntry() {
 			return this.server;
 		}
 	}
@@ -172,7 +175,7 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 					16777215
 				);
 			String string;
-			switch ((int)(SystemUtil.getMeasuringTimeMs() / 300L % 4L)) {
+			switch ((int)(Util.getMeasuringTimeMs() / 300L % 4L)) {
 				case 0:
 				default:
 					string = "O o o";
@@ -191,21 +194,21 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 		}
 	}
 
-	public class ServerItem extends MultiplayerServerListWidget.Entry {
+	public class ServerEntry extends MultiplayerServerListWidget.Entry {
 		private final MultiplayerScreen screen;
 		private final MinecraftClient client;
-		private final ServerEntry server;
-		private final Identifier iconLocation;
-		private String field_19122;
-		private NativeImageBackedTexture iconTexture;
+		private final ServerInfo server;
+		private final Identifier iconTextureId;
+		private String iconUri;
+		private NativeImageBackedTexture icon;
 		private long time;
 
-		protected ServerItem(MultiplayerScreen multiplayerScreen, ServerEntry serverEntry) {
+		protected ServerEntry(MultiplayerScreen multiplayerScreen, ServerInfo serverInfo) {
 			this.screen = multiplayerScreen;
-			this.server = serverEntry;
+			this.server = serverInfo;
 			this.client = MinecraftClient.getInstance();
-			this.iconLocation = new Identifier("servers/" + Hashing.sha1().hashUnencodedChars(serverEntry.address) + "/icon");
-			this.iconTexture = (NativeImageBackedTexture)this.client.getTextureManager().getTexture(this.iconLocation);
+			this.iconTextureId = new Identifier("servers/" + Hashing.sha1().hashUnencodedChars(serverInfo.address) + "/icon");
+			this.icon = (NativeImageBackedTexture)this.client.getTextureManager().getTexture(this.iconTextureId);
 		}
 
 		@Override
@@ -215,9 +218,9 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 				this.server.ping = -2L;
 				this.server.label = "";
 				this.server.playerCountLabel = "";
-				MultiplayerServerListWidget.field_19105.submit(() -> {
+				MultiplayerServerListWidget.SERVER_PINGER_THREAD_POOL.submit(() -> {
 					try {
-						this.screen.method_2538().method_3003(this.server);
+						this.screen.getServerListPinger().add(this.server);
 					} catch (UnknownHostException var2) {
 						this.server.ping = -1L;
 						this.server.label = Formatting.field_1079 + I18n.translate("multiplayer.status.cannot_resolve");
@@ -272,7 +275,7 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 				}
 			} else {
 				r = 1;
-				s = (int)(SystemUtil.getMeasuringTimeMs() / 100L + (long)(i * 2) & 7L);
+				s = (int)(Util.getMeasuringTimeMs() / 100L + (long)(i * 2) & 7L);
 				if (s > 4) {
 					s = 8 - s;
 				}
@@ -280,19 +283,19 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 				string3 = I18n.translate("multiplayer.status.pinging");
 			}
 
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			this.client.getTextureManager().bindTexture(DrawableHelper.GUI_ICONS_LOCATION);
 			DrawableHelper.blit(k + l - 15, j, (float)(r * 10), (float)(176 + s * 8), 10, 8, 256, 256);
-			if (this.server.getIcon() != null && !this.server.getIcon().equals(this.field_19122)) {
-				this.field_19122 = this.server.getIcon();
-				this.method_20137();
+			if (this.server.getIcon() != null && !this.server.getIcon().equals(this.iconUri)) {
+				this.iconUri = this.server.getIcon();
+				this.updateIcon();
 				this.screen.getServerList().saveFile();
 			}
 
-			if (this.iconTexture != null) {
-				this.method_20134(k, j, this.iconLocation);
+			if (this.icon != null) {
+				this.draw(k, j, this.iconTextureId);
 			} else {
-				this.method_20134(k, j, MultiplayerServerListWidget.field_19106);
+				this.draw(k, j, MultiplayerServerListWidget.UNKNOWN_SERVER_TEXTURE);
 			}
 
 			int aa = n - k;
@@ -304,9 +307,9 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 			}
 
 			if (this.client.options.touchscreen || bl) {
-				this.client.getTextureManager().bindTexture(MultiplayerServerListWidget.field_19107);
+				this.client.getTextureManager().bindTexture(MultiplayerServerListWidget.SERVER_SELECTION_TEXTURE);
 				DrawableHelper.fill(k, j, k + 32, j + 32, -1601138544);
-				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 				int ac = n - k;
 				int ad = o - j;
 				if (this.method_20136()) {
@@ -335,39 +338,39 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 			}
 		}
 
-		protected void method_20134(int i, int j, Identifier identifier) {
+		protected void draw(int i, int j, Identifier identifier) {
 			this.client.getTextureManager().bindTexture(identifier);
-			GlStateManager.enableBlend();
+			RenderSystem.enableBlend();
 			DrawableHelper.blit(i, j, 0.0F, 0.0F, 32, 32, 32, 32);
-			GlStateManager.disableBlend();
+			RenderSystem.disableBlend();
 		}
 
 		private boolean method_20136() {
 			return true;
 		}
 
-		private void method_20137() {
+		private void updateIcon() {
 			String string = this.server.getIcon();
 			if (string == null) {
-				this.client.getTextureManager().destroyTexture(this.iconLocation);
-				if (this.iconTexture != null && this.iconTexture.getImage() != null) {
-					this.iconTexture.getImage().close();
+				this.client.getTextureManager().destroyTexture(this.iconTextureId);
+				if (this.icon != null && this.icon.getImage() != null) {
+					this.icon.getImage().close();
 				}
 
-				this.iconTexture = null;
+				this.icon = null;
 			} else {
 				try {
 					NativeImage nativeImage = NativeImage.read(string);
 					Validate.validState(nativeImage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
 					Validate.validState(nativeImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
-					if (this.iconTexture == null) {
-						this.iconTexture = new NativeImageBackedTexture(nativeImage);
+					if (this.icon == null) {
+						this.icon = new NativeImageBackedTexture(nativeImage);
 					} else {
-						this.iconTexture.setImage(nativeImage);
-						this.iconTexture.upload();
+						this.icon.setImage(nativeImage);
+						this.icon.upload();
 					}
 
-					this.client.getTextureManager().registerTexture(this.iconLocation, this.iconTexture);
+					this.client.getTextureManager().registerTexture(this.iconTextureId, this.icon);
 				} catch (Throwable var3) {
 					MultiplayerServerListWidget.LOGGER.error("Invalid icon for server {} ({})", this.server.name, this.server.address, var3);
 					this.server.setIcon(null);
@@ -376,51 +379,60 @@ public class MultiplayerServerListWidget extends AlwaysSelectedEntryListWidget<M
 		}
 
 		@Override
+		public boolean keyPressed(int i, int j, int k) {
+			if (Screen.hasShiftDown()) {
+				MultiplayerServerListWidget multiplayerServerListWidget = this.screen.serverListWidget;
+				int l = multiplayerServerListWidget.children().indexOf(this);
+				if (i == 264 && l < this.screen.getServerList().size() - 1 || i == 265 && l > 0) {
+					this.swapEntries(l, i == 264 ? l + 1 : l - 1);
+					return true;
+				}
+			}
+
+			return super.keyPressed(i, j, k);
+		}
+
+		private void swapEntries(int i, int j) {
+			this.screen.getServerList().swapEntries(i, j);
+			this.screen.serverListWidget.setServers(this.screen.getServerList());
+			MultiplayerServerListWidget.Entry entry = (MultiplayerServerListWidget.Entry)this.screen.serverListWidget.children().get(j);
+			this.screen.serverListWidget.setSelected(entry);
+			MultiplayerServerListWidget.this.ensureVisible(entry);
+		}
+
+		@Override
 		public boolean mouseClicked(double d, double e, int i) {
 			double f = d - (double)MultiplayerServerListWidget.this.getRowLeft();
 			double g = e - (double)MultiplayerServerListWidget.this.getRowTop(MultiplayerServerListWidget.this.children().indexOf(this));
 			if (f <= 32.0) {
 				if (f < 32.0 && f > 16.0 && this.method_20136()) {
-					this.screen.selectEntry(this);
+					this.screen.select(this);
 					this.screen.connect();
 					return true;
 				}
 
 				int j = this.screen.serverListWidget.children().indexOf(this);
 				if (f < 16.0 && g < 16.0 && j > 0) {
-					int k = Screen.hasShiftDown() ? 0 : j - 1;
-					this.screen.getServerList().swapEntries(j, k);
-					if (this.screen.serverListWidget.getSelected() == this) {
-						this.screen.selectEntry(this);
-					}
-
-					this.screen.serverListWidget.method_20125(this.screen.getServerList());
+					this.swapEntries(j, j - 1);
 					return true;
 				}
 
 				if (f < 16.0 && g > 16.0 && j < this.screen.getServerList().size() - 1) {
-					ServerList serverList = this.screen.getServerList();
-					int l = Screen.hasShiftDown() ? serverList.size() - 1 : j + 1;
-					serverList.swapEntries(j, l);
-					if (this.screen.serverListWidget.getSelected() == this) {
-						this.screen.selectEntry(this);
-					}
-
-					this.screen.serverListWidget.method_20125(serverList);
+					this.swapEntries(j, j + 1);
 					return true;
 				}
 			}
 
-			this.screen.selectEntry(this);
-			if (SystemUtil.getMeasuringTimeMs() - this.time < 250L) {
+			this.screen.select(this);
+			if (Util.getMeasuringTimeMs() - this.time < 250L) {
 				this.screen.connect();
 			}
 
-			this.time = SystemUtil.getMeasuringTimeMs();
+			this.time = Util.getMeasuringTimeMs();
 			return false;
 		}
 
-		public ServerEntry getServer() {
+		public ServerInfo getServer() {
 			return this.server;
 		}
 	}

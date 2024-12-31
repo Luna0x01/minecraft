@@ -1,15 +1,8 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import net.minecraft.advancement.PlayerAdvancementTracker;
 import net.minecraft.entity.passive.AbstractTraderEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.predicate.entity.EntityPredicate;
@@ -17,67 +10,32 @@ import net.minecraft.predicate.item.ItemPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
-public class VillagerTradeCriterion implements Criterion<VillagerTradeCriterion.Conditions> {
+public class VillagerTradeCriterion extends AbstractCriterion<VillagerTradeCriterion.Conditions> {
 	private static final Identifier ID = new Identifier("villager_trade");
-	private final Map<PlayerAdvancementTracker, VillagerTradeCriterion.Handler> handlers = Maps.newHashMap();
 
 	@Override
 	public Identifier getId() {
 		return ID;
 	}
 
-	@Override
-	public void beginTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions> conditionsContainer
-	) {
-		VillagerTradeCriterion.Handler handler = (VillagerTradeCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler == null) {
-			handler = new VillagerTradeCriterion.Handler(playerAdvancementTracker);
-			this.handlers.put(playerAdvancementTracker, handler);
-		}
-
-		handler.addCondition(conditionsContainer);
-	}
-
-	@Override
-	public void endTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions> conditionsContainer
-	) {
-		VillagerTradeCriterion.Handler handler = (VillagerTradeCriterion.Handler)this.handlers.get(playerAdvancementTracker);
-		if (handler != null) {
-			handler.removeCondition(conditionsContainer);
-			if (handler.isEmpty()) {
-				this.handlers.remove(playerAdvancementTracker);
-			}
-		}
-	}
-
-	@Override
-	public void endTracking(PlayerAdvancementTracker playerAdvancementTracker) {
-		this.handlers.remove(playerAdvancementTracker);
-	}
-
-	public VillagerTradeCriterion.Conditions method_9148(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		EntityPredicate entityPredicate = EntityPredicate.deserialize(jsonObject.get("villager"));
-		ItemPredicate itemPredicate = ItemPredicate.deserialize(jsonObject.get("item"));
+	public VillagerTradeCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+		EntityPredicate entityPredicate = EntityPredicate.fromJson(jsonObject.get("villager"));
+		ItemPredicate itemPredicate = ItemPredicate.fromJson(jsonObject.get("item"));
 		return new VillagerTradeCriterion.Conditions(entityPredicate, itemPredicate);
 	}
 
 	public void handle(ServerPlayerEntity serverPlayerEntity, AbstractTraderEntity abstractTraderEntity, ItemStack itemStack) {
-		VillagerTradeCriterion.Handler handler = (VillagerTradeCriterion.Handler)this.handlers.get(serverPlayerEntity.getAdvancementManager());
-		if (handler != null) {
-			handler.handle(serverPlayerEntity, abstractTraderEntity, itemStack);
-		}
+		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(serverPlayerEntity, abstractTraderEntity, itemStack));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
-		private final EntityPredicate item;
-		private final ItemPredicate villager;
+		private final EntityPredicate villager;
+		private final ItemPredicate item;
 
 		public Conditions(EntityPredicate entityPredicate, ItemPredicate itemPredicate) {
 			super(VillagerTradeCriterion.ID);
-			this.item = entityPredicate;
-			this.villager = itemPredicate;
+			this.villager = entityPredicate;
+			this.item = itemPredicate;
 		}
 
 		public static VillagerTradeCriterion.Conditions any() {
@@ -85,56 +43,15 @@ public class VillagerTradeCriterion implements Criterion<VillagerTradeCriterion.
 		}
 
 		public boolean matches(ServerPlayerEntity serverPlayerEntity, AbstractTraderEntity abstractTraderEntity, ItemStack itemStack) {
-			return !this.item.test(serverPlayerEntity, abstractTraderEntity) ? false : this.villager.test(itemStack);
+			return !this.villager.test(serverPlayerEntity, abstractTraderEntity) ? false : this.item.test(itemStack);
 		}
 
 		@Override
 		public JsonElement toJson() {
 			JsonObject jsonObject = new JsonObject();
-			jsonObject.add("item", this.villager.serialize());
-			jsonObject.add("villager", this.item.serialize());
+			jsonObject.add("item", this.item.toJson());
+			jsonObject.add("villager", this.villager.serialize());
 			return jsonObject;
-		}
-	}
-
-	static class Handler {
-		private final PlayerAdvancementTracker manager;
-		private final Set<Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions>> conditions = Sets.newHashSet();
-
-		public Handler(PlayerAdvancementTracker playerAdvancementTracker) {
-			this.manager = playerAdvancementTracker;
-		}
-
-		public boolean isEmpty() {
-			return this.conditions.isEmpty();
-		}
-
-		public void addCondition(Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions> conditionsContainer) {
-			this.conditions.add(conditionsContainer);
-		}
-
-		public void removeCondition(Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions> conditionsContainer) {
-			this.conditions.remove(conditionsContainer);
-		}
-
-		public void handle(ServerPlayerEntity serverPlayerEntity, AbstractTraderEntity abstractTraderEntity, ItemStack itemStack) {
-			List<Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions>> list = null;
-
-			for (Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions> conditionsContainer : this.conditions) {
-				if (conditionsContainer.getConditions().matches(serverPlayerEntity, abstractTraderEntity, itemStack)) {
-					if (list == null) {
-						list = Lists.newArrayList();
-					}
-
-					list.add(conditionsContainer);
-				}
-			}
-
-			if (list != null) {
-				for (Criterion.ConditionsContainer<VillagerTradeCriterion.Conditions> conditionsContainer2 : list) {
-					conditionsContainer2.apply(this.manager);
-				}
-			}
 		}
 	}
 }

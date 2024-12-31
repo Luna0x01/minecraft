@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateFactory;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -13,7 +13,7 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ViewableWorld;
+import net.minecraft.world.WorldView;
 
 public class LanternBlock extends Block {
 	public static final BooleanProperty HANGING = Properties.HANGING;
@@ -26,7 +26,7 @@ public class LanternBlock extends Block {
 
 	public LanternBlock(Block.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateFactory.getDefaultState().with(HANGING, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(HANGING, Boolean.valueOf(false)));
 	}
 
 	@Nullable
@@ -50,19 +50,14 @@ public class LanternBlock extends Block {
 	}
 
 	@Override
-	protected void appendProperties(StateFactory.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(HANGING);
 	}
 
 	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.field_9174;
-	}
-
-	@Override
-	public boolean canPlaceAt(BlockState blockState, ViewableWorld viewableWorld, BlockPos blockPos) {
+	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
 		Direction direction = attachedDirection(blockState).getOpposite();
-		return Block.isSolidSmallSquare(viewableWorld, blockPos.offset(direction), direction.getOpposite());
+		return Block.sideCoversSmallSquare(worldView, blockPos.offset(direction), direction.getOpposite());
 	}
 
 	protected static Direction attachedDirection(BlockState blockState) {

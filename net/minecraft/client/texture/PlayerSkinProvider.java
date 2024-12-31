@@ -3,6 +3,7 @@ package net.minecraft.client.texture;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.mojang.authlib.GameProfile;
@@ -10,19 +11,17 @@ import com.mojang.authlib.minecraft.InsecureTextureException;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
+import com.mojang.blaze3d.systems.RenderSystem;
 import java.io.File;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 
 public class PlayerSkinProvider {
-	private static final ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(0, 2, 1L, TimeUnit.MINUTES, new LinkedBlockingQueue());
 	private final TextureManager textureManager;
 	private final File skinCacheDir;
 	private final MinecraftSessionService sessionService;
@@ -35,7 +34,7 @@ public class PlayerSkinProvider {
 		this.skinCache = CacheBuilder.newBuilder()
 			.expireAfterAccess(15L, TimeUnit.SECONDS)
 			.build(new CacheLoader<GameProfile, Map<Type, MinecraftProfileTexture>>() {
-				public Map<Type, MinecraftProfileTexture> method_4657(GameProfile gameProfile) throws Exception {
+				public Map<Type, MinecraftProfileTexture> load(GameProfile gameProfile) throws Exception {
 					try {
 						return MinecraftClient.getInstance().getSessionService().getTextures(gameProfile, false);
 					} catch (Throwable var3) {
@@ -53,33 +52,22 @@ public class PlayerSkinProvider {
 		MinecraftProfileTexture minecraftProfileTexture, Type type, @Nullable PlayerSkinProvider.SkinTextureAvailableCallback skinTextureAvailableCallback
 	) {
 		String string = Hashing.sha1().hashUnencodedChars(minecraftProfileTexture.getHash()).toString();
-		final Identifier identifier = new Identifier("skins/" + string);
-		Texture texture = this.textureManager.getTexture(identifier);
-		if (texture != null) {
+		Identifier identifier = new Identifier("skins/" + string);
+		AbstractTexture abstractTexture = this.textureManager.getTexture(identifier);
+		if (abstractTexture != null) {
 			if (skinTextureAvailableCallback != null) {
 				skinTextureAvailableCallback.onSkinTextureAvailable(type, identifier, minecraftProfileTexture);
 			}
 		} else {
 			File file = new File(this.skinCacheDir, string.length() > 2 ? string.substring(0, 2) : "xx");
 			File file2 = new File(file, string);
-			final ImageFilter imageFilter = type == Type.SKIN ? new SkinRemappingImageFilter() : null;
-			PlayerSkinTexture playerSkinTexture = new PlayerSkinTexture(file2, minecraftProfileTexture.getUrl(), DefaultSkinHelper.getTexture(), new ImageFilter() {
-				@Override
-				public NativeImage filterImage(NativeImage nativeImage) {
-					return imageFilter != null ? imageFilter.filterImage(nativeImage) : nativeImage;
-				}
-
-				@Override
-				public void method_3238() {
-					if (imageFilter != null) {
-						imageFilter.method_3238();
-					}
-
+			PlayerSkinTexture playerSkinTexture = new PlayerSkinTexture(
+				file2, minecraftProfileTexture.getUrl(), DefaultSkinHelper.getTexture(), type == Type.SKIN, () -> {
 					if (skinTextureAvailableCallback != null) {
 						skinTextureAvailableCallback.onSkinTextureAvailable(type, identifier, minecraftProfileTexture);
 					}
 				}
-			});
+			);
 			this.textureManager.registerTexture(identifier, playerSkinTexture);
 		}
 
@@ -87,7 +75,7 @@ public class PlayerSkinProvider {
 	}
 
 	public void loadSkin(GameProfile gameProfile, PlayerSkinProvider.SkinTextureAvailableCallback skinTextureAvailableCallback, boolean bl) {
-		EXECUTOR_SERVICE.submit(() -> {
+		Runnable runnable = () -> {
 			Map<Type, MinecraftProfileTexture> map = Maps.newHashMap();
 
 			try {
@@ -110,16 +98,13 @@ public class PlayerSkinProvider {
 				}
 			}
 
-			MinecraftClient.getInstance().execute(() -> {
-				if (map.containsKey(Type.SKIN)) {
-					this.loadSkin((MinecraftProfileTexture)map.get(Type.SKIN), Type.SKIN, skinTextureAvailableCallback);
-				}
-
-				if (map.containsKey(Type.CAPE)) {
-					this.loadSkin((MinecraftProfileTexture)map.get(Type.CAPE), Type.CAPE, skinTextureAvailableCallback);
-				}
-			});
-		});
+			MinecraftClient.getInstance().execute(() -> RenderSystem.recordRenderCall(() -> ImmutableList.of(Type.SKIN, Type.CAPE).forEach(type -> {
+						if (map.containsKey(type)) {
+							this.loadSkin((MinecraftProfileTexture)map.get(type), type, skinTextureAvailableCallback);
+						}
+					})));
+		};
+		Util.getServerWorkerExecutor().execute(runnable);
 	}
 
 	public Map<Type, MinecraftProfileTexture> getTextures(GameProfile gameProfile) {

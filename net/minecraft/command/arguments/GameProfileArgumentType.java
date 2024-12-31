@@ -34,14 +34,14 @@ public class GameProfileArgumentType implements ArgumentType<GameProfileArgument
 		return new GameProfileArgumentType();
 	}
 
-	public GameProfileArgumentType.GameProfileArgument method_9331(StringReader stringReader) throws CommandSyntaxException {
+	public GameProfileArgumentType.GameProfileArgument parse(StringReader stringReader) throws CommandSyntaxException {
 		if (stringReader.canRead() && stringReader.peek() == '@') {
 			EntitySelectorReader entitySelectorReader = new EntitySelectorReader(stringReader);
 			EntitySelector entitySelector = entitySelectorReader.read();
 			if (entitySelector.includesNonPlayers()) {
 				throw EntityArgumentType.PLAYER_SELECTOR_HAS_ENTITIES_EXCEPTION.create();
 			} else {
-				return new GameProfileArgumentType.class_2193(entitySelector);
+				return new GameProfileArgumentType.SelectorBacked(entitySelector);
 			}
 		} else {
 			int i = stringReader.getCursor();
@@ -90,16 +90,16 @@ public class GameProfileArgumentType implements ArgumentType<GameProfileArgument
 		Collection<GameProfile> getNames(ServerCommandSource serverCommandSource) throws CommandSyntaxException;
 	}
 
-	public static class class_2193 implements GameProfileArgumentType.GameProfileArgument {
-		private final EntitySelector field_9870;
+	public static class SelectorBacked implements GameProfileArgumentType.GameProfileArgument {
+		private final EntitySelector selector;
 
-		public class_2193(EntitySelector entitySelector) {
-			this.field_9870 = entitySelector;
+		public SelectorBacked(EntitySelector entitySelector) {
+			this.selector = entitySelector;
 		}
 
 		@Override
 		public Collection<GameProfile> getNames(ServerCommandSource serverCommandSource) throws CommandSyntaxException {
-			List<ServerPlayerEntity> list = this.field_9870.getPlayers(serverCommandSource);
+			List<ServerPlayerEntity> list = this.selector.getPlayers(serverCommandSource);
 			if (list.isEmpty()) {
 				throw EntityArgumentType.PLAYER_NOT_FOUND_EXCEPTION.create();
 			} else {

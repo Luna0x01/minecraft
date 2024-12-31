@@ -15,7 +15,6 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
@@ -50,18 +49,13 @@ public class TridentItem extends Item {
 	}
 
 	@Override
-	public boolean hasEnchantmentGlint(ItemStack itemStack) {
-		return false;
-	}
-
-	@Override
 	public void onStoppedUsing(ItemStack itemStack, World world, LivingEntity livingEntity, int i) {
 		if (livingEntity instanceof PlayerEntity) {
 			PlayerEntity playerEntity = (PlayerEntity)livingEntity;
 			int j = this.getMaxUseTime(itemStack) - i;
 			if (j >= 10) {
 				int k = EnchantmentHelper.getRiptide(itemStack);
-				if (k <= 0 || playerEntity.isInsideWaterOrRain()) {
+				if (k <= 0 || playerEntity.isTouchingWaterOrRain()) {
 					if (!world.isClient) {
 						itemStack.damage(1, playerEntity, playerEntityx -> playerEntityx.sendToolBreakStatus(livingEntity.getActiveHand()));
 						if (k == 0) {
@@ -92,7 +86,7 @@ public class TridentItem extends Item {
 						l *= o / n;
 						m *= o / n;
 						playerEntity.addVelocity((double)h, (double)l, (double)m);
-						playerEntity.method_6018(20);
+						playerEntity.setPushCooldown(20);
 						if (playerEntity.onGround) {
 							float p = 1.1999999F;
 							playerEntity.move(MovementType.field_6308, new Vec3d(0.0, 1.1999999F, 0.0));
@@ -117,13 +111,13 @@ public class TridentItem extends Item {
 	@Override
 	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
 		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (itemStack.getDamage() >= itemStack.getMaxDamage()) {
-			return new TypedActionResult<>(ActionResult.field_5814, itemStack);
-		} else if (EnchantmentHelper.getRiptide(itemStack) > 0 && !playerEntity.isInsideWaterOrRain()) {
-			return new TypedActionResult<>(ActionResult.field_5814, itemStack);
+		if (itemStack.getDamage() >= itemStack.getMaxDamage() - 1) {
+			return TypedActionResult.fail(itemStack);
+		} else if (EnchantmentHelper.getRiptide(itemStack) > 0 && !playerEntity.isTouchingWaterOrRain()) {
+			return TypedActionResult.fail(itemStack);
 		} else {
 			playerEntity.setCurrentHand(hand);
-			return new TypedActionResult<>(ActionResult.field_5812, itemStack);
+			return TypedActionResult.consume(itemStack);
 		}
 	}
 

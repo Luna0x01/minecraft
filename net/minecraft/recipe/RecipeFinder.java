@@ -26,15 +26,7 @@ public class RecipeFinder {
 	}
 
 	public void addItem(ItemStack itemStack) {
-		// $VF: Couldn't be decompiled
-		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
-		//
-		// Bytecode:
-		// 0: aload 0
-		// 1: aload 1
-		// 2: bipush 64
-		// 4: invokevirtual net/minecraft/recipe/RecipeFinder.method_20478 (Lnet/minecraft/item/ItemStack;I)V
-		// 7: return
+		this.method_20478(itemStack, 64);
 	}
 
 	public void method_20478(ItemStack itemStack, int i) {
@@ -46,7 +38,7 @@ public class RecipeFinder {
 	}
 
 	public static int getItemId(ItemStack itemStack) {
-		return Registry.ITEM.getRawId(itemStack.getItem());
+		return Registry.field_11142.getRawId(itemStack.getItem());
 	}
 
 	private boolean contains(int i) {

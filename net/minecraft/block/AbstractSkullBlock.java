@@ -13,11 +13,6 @@ public abstract class AbstractSkullBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasBlockEntityBreakingRender(BlockState blockState) {
-		return true;
-	}
-
-	@Override
 	public BlockEntity createBlockEntity(BlockView blockView) {
 		return new SkullBlockEntity();
 	}

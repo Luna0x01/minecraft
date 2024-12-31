@@ -12,7 +12,7 @@ import net.minecraft.util.math.Box;
 public class TrackIronGolemTargetGoal extends TrackTargetGoal {
 	private final IronGolemEntity golem;
 	private LivingEntity target;
-	private final TargetPredicate field_19340 = new TargetPredicate().setBaseMaxDistance(64.0);
+	private final TargetPredicate targetPredicate = new TargetPredicate().setBaseMaxDistance(64.0);
 
 	public TrackIronGolemTargetGoal(IronGolemEntity ironGolemEntity) {
 		super(ironGolemEntity, false, true);
@@ -23,8 +23,8 @@ public class TrackIronGolemTargetGoal extends TrackTargetGoal {
 	@Override
 	public boolean canStart() {
 		Box box = this.golem.getBoundingBox().expand(10.0, 8.0, 10.0);
-		List<LivingEntity> list = this.golem.world.getTargets(VillagerEntity.class, this.field_19340, this.golem, box);
-		List<PlayerEntity> list2 = this.golem.world.getPlayersInBox(this.field_19340, this.golem, box);
+		List<LivingEntity> list = this.golem.world.getTargets(VillagerEntity.class, this.targetPredicate, this.golem, box);
+		List<PlayerEntity> list2 = this.golem.world.getPlayers(this.targetPredicate, this.golem, box);
 
 		for (LivingEntity livingEntity : list) {
 			VillagerEntity villagerEntity = (VillagerEntity)livingEntity;
@@ -37,7 +37,7 @@ public class TrackIronGolemTargetGoal extends TrackTargetGoal {
 			}
 		}
 
-		return this.target != null;
+		return this.target == null ? false : !(this.target instanceof PlayerEntity) || !this.target.isSpectator() && !((PlayerEntity)this.target).isCreative();
 	}
 
 	@Override

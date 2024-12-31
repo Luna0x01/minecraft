@@ -28,7 +28,7 @@ public class Schedule {
 	private final Map<Activity, ScheduleRule> scheduleRules = Maps.newHashMap();
 
 	protected static ScheduleBuilder register(String string) {
-		Schedule schedule = Registry.register(Registry.SCHEDULE, string, new Schedule());
+		Schedule schedule = Registry.register(Registry.field_18795, string, new Schedule());
 		return new ScheduleBuilder(schedule);
 	}
 

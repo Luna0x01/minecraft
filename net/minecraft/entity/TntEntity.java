@@ -24,7 +24,7 @@ public class TntEntity extends Entity {
 
 	public TntEntity(World world, double d, double e, double f, @Nullable LivingEntity livingEntity) {
 		this(EntityType.field_6063, world);
-		this.setPosition(d, e, f);
+		this.updatePosition(d, e, f);
 		double g = world.random.nextDouble() * (float) (Math.PI * 2);
 		this.setVelocity(-Math.sin(g) * 0.02, 0.2F, -Math.cos(g) * 0.02);
 		this.setFuse(80);
@@ -51,9 +51,6 @@ public class TntEntity extends Entity {
 
 	@Override
 	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
 		if (!this.hasNoGravity()) {
 			this.setVelocity(this.getVelocity().add(0.0, -0.04, 0.0));
 		}
@@ -72,13 +69,15 @@ public class TntEntity extends Entity {
 			}
 		} else {
 			this.checkWaterState();
-			this.world.addParticle(ParticleTypes.field_11251, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			if (this.world.isClient) {
+				this.world.addParticle(ParticleTypes.field_11251, this.getX(), this.getY() + 0.5, this.getZ(), 0.0, 0.0, 0.0);
+			}
 		}
 	}
 
 	private void explode() {
 		float f = 4.0F;
-		this.world.createExplosion(this, this.x, this.y + (double)(this.getHeight() / 16.0F), this.z, 4.0F, Explosion.DestructionType.field_18686);
+		this.world.createExplosion(this, this.getX(), this.getBodyY(0.0625), this.getZ(), 4.0F, Explosion.DestructionType.field_18686);
 	}
 
 	@Override
