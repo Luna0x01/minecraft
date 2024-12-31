@@ -16,7 +16,6 @@ public class EnderDragonEntityRenderer extends MobEntityRenderer<EnderDragonEnti
 	public static final Identifier CRYSTAL_BEAM_TEXTURE = new Identifier("textures/entity/endercrystal/endercrystal_beam.png");
 	private static final Identifier EXPLOSION_TEXTURE = new Identifier("textures/entity/enderdragon/dragon_exploding.png");
 	private static final Identifier DRAGON_TEXTURE = new Identifier("textures/entity/enderdragon/dragon.png");
-	protected EnderDragonModel dragonModel = (EnderDragonModel)this.model;
 
 	public EnderDragonEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new EnderDragonModel(0.0F), 0.5F);

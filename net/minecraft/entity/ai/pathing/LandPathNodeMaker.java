@@ -88,9 +88,7 @@ public class LandPathNodeMaker extends class_2771 {
 
 	@Override
 	public PathNode method_11911(double d, double e, double f) {
-		return this.method_11912(
-			MathHelper.floor(d - (double)(this.field_13076.width / 2.0F)), MathHelper.floor(e), MathHelper.floor(f - (double)(this.field_13076.width / 2.0F))
-		);
+		return this.method_11912(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
 	}
 
 	@Override

@@ -103,10 +103,6 @@ public class ReplaceItemCommand extends AbstractCommand {
 				}
 			}
 
-			if (itemStack.getItem() == null) {
-				itemStack = null;
-			}
-
 			if (bl) {
 				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, 0);
 				BlockPos blockPos = getBlockPos(commandSource, args, 1, false);
@@ -128,7 +124,7 @@ public class ReplaceItemCommand extends AbstractCommand {
 				}
 
 				if (!entity.equip(k, itemStack)) {
-					throw new CommandException("commands.replaceitem.failed", string, l, itemStack == null ? "Air" : itemStack.toHoverableText());
+					throw new CommandException("commands.replaceitem.failed", string, l, itemStack.isEmpty() ? "Air" : itemStack.toHoverableText());
 				}
 
 				if (entity instanceof PlayerEntity) {
@@ -137,7 +133,7 @@ public class ReplaceItemCommand extends AbstractCommand {
 			}
 
 			commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, l);
-			run(commandSource, this, "commands.replaceitem.success", new Object[]{string, l, itemStack == null ? "Air" : itemStack.toHoverableText()});
+			run(commandSource, this, "commands.replaceitem.success", new Object[]{string, l, itemStack.isEmpty() ? "Air" : itemStack.toHoverableText()});
 		}
 	}
 

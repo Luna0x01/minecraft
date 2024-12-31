@@ -10,6 +10,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.SimpleRegistry;
 
@@ -40,18 +41,17 @@ public abstract class Enchantment {
 		this.wearableSlots = equipmentSlots;
 	}
 
-	@Nullable
-	public Iterable<ItemStack> method_11445(LivingEntity livingEntity) {
+	public List<ItemStack> method_13673(LivingEntity livingEntity) {
 		List<ItemStack> list = Lists.newArrayList();
 
 		for (EquipmentSlot equipmentSlot : this.wearableSlots) {
 			ItemStack itemStack = livingEntity.getStack(equipmentSlot);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				list.add(itemStack);
 			}
 		}
 
-		return list.size() > 0 ? list : null;
+		return list;
 	}
 
 	public Enchantment.Rarity getRarity() {
@@ -82,7 +82,11 @@ public abstract class Enchantment {
 		return 0.0F;
 	}
 
-	public boolean differs(Enchantment other) {
+	public final boolean isDifferent(Enchantment other) {
+		return this.differs(other) && other.differs(this);
+	}
+
+	protected boolean differs(Enchantment other) {
 		return this != other;
 	}
 
@@ -97,6 +101,10 @@ public abstract class Enchantment {
 
 	public String getTranslatedName(int level) {
 		String string = CommonI18n.translate(this.getTranslationKey());
+		if (this.isCursed()) {
+			string = Formatting.RED + string;
+		}
+
 		return level == 1 && this.getMaximumLevel() == 1 ? string : string + " " + CommonI18n.translate("enchantment.level." + level);
 	}
 
@@ -111,6 +119,10 @@ public abstract class Enchantment {
 	}
 
 	public boolean isTreasure() {
+		return false;
+	}
+
+	public boolean isCursed() {
 		return false;
 	}
 
@@ -136,12 +148,14 @@ public abstract class Enchantment {
 		REGISTRY.add(7, new Identifier("thorns"), new ThornsEnchantment(Enchantment.Rarity.VERY_RARE, equipmentSlots));
 		REGISTRY.add(8, new Identifier("depth_strider"), new DepthStriderEnchantment(Enchantment.Rarity.RARE, equipmentSlots));
 		REGISTRY.add(9, new Identifier("frost_walker"), new FrostWalkerEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.FEET));
+		REGISTRY.add(10, new Identifier("binding_curse"), new BindingCurseEnchantment(Enchantment.Rarity.VERY_RARE, equipmentSlots));
 		REGISTRY.add(16, new Identifier("sharpness"), new DamageEnchantment(Enchantment.Rarity.COMMON, 0, EquipmentSlot.MAINHAND));
 		REGISTRY.add(17, new Identifier("smite"), new DamageEnchantment(Enchantment.Rarity.UNCOMMON, 1, EquipmentSlot.MAINHAND));
 		REGISTRY.add(18, new Identifier("bane_of_arthropods"), new DamageEnchantment(Enchantment.Rarity.UNCOMMON, 2, EquipmentSlot.MAINHAND));
 		REGISTRY.add(19, new Identifier("knockback"), new KnockbackEnchantment(Enchantment.Rarity.UNCOMMON, EquipmentSlot.MAINHAND));
 		REGISTRY.add(20, new Identifier("fire_aspect"), new FireAspectEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.MAINHAND));
 		REGISTRY.add(21, new Identifier("looting"), new BetterLootEnchantment(Enchantment.Rarity.RARE, EnchantmentTarget.WEAPON, EquipmentSlot.MAINHAND));
+		REGISTRY.add(22, new Identifier("sweeping"), new SweepingEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.MAINHAND));
 		REGISTRY.add(32, new Identifier("efficiency"), new EfficiencyEnchantment(Enchantment.Rarity.COMMON, EquipmentSlot.MAINHAND));
 		REGISTRY.add(33, new Identifier("silk_touch"), new SilkTouchEnchantment(Enchantment.Rarity.VERY_RARE, EquipmentSlot.MAINHAND));
 		REGISTRY.add(34, new Identifier("unbreaking"), new UnbreakingEnchantment(Enchantment.Rarity.UNCOMMON, EquipmentSlot.MAINHAND));
@@ -153,6 +167,7 @@ public abstract class Enchantment {
 		REGISTRY.add(61, new Identifier("luck_of_the_sea"), new BetterLootEnchantment(Enchantment.Rarity.RARE, EnchantmentTarget.FISHING_ROD, EquipmentSlot.MAINHAND));
 		REGISTRY.add(62, new Identifier("lure"), new LureEnchantment(Enchantment.Rarity.RARE, EnchantmentTarget.FISHING_ROD, EquipmentSlot.MAINHAND));
 		REGISTRY.add(70, new Identifier("mending"), new MendingEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.values()));
+		REGISTRY.add(71, new Identifier("vanishing_curse"), new VanishingCurseEnchantment(Enchantment.Rarity.VERY_RARE, EquipmentSlot.values()));
 	}
 
 	public static enum Rarity {

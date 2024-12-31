@@ -29,8 +29,8 @@ public class ControlsOptionsScreen extends Screen {
 	@Override
 	public void init() {
 		this.keyBindingListWidget = new ControlsListWidget(this, this.client);
-		this.buttons.add(new ButtonWidget(200, this.width / 2 - 155, this.height - 29, 150, 20, I18n.translate("gui.done")));
-		this.resetButton = this.addButton(new ButtonWidget(201, this.width / 2 - 155 + 160, this.height - 29, 150, 20, I18n.translate("controls.resetAll")));
+		this.buttons.add(new ButtonWidget(200, this.width / 2 - 155 + 160, this.height - 29, 150, 20, I18n.translate("gui.done")));
+		this.resetButton = this.addButton(new ButtonWidget(201, this.width / 2 - 155, this.height - 29, 150, 20, I18n.translate("controls.resetAll")));
 		this.title = I18n.translate("controls.title");
 		int i = 0;
 

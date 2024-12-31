@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -10,6 +9,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -40,10 +40,10 @@ public class DirtBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(this, 1, DirtBlock.DirtType.DIRT.getId()));
-		stacks.add(new ItemStack(this, 1, DirtBlock.DirtType.COARSE_DIRT.getId()));
-		stacks.add(new ItemStack(this, 1, DirtBlock.DirtType.PODZOL.getId()));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(this, 1, DirtBlock.DirtType.DIRT.getId()));
+		defaultedList.add(new ItemStack(this, 1, DirtBlock.DirtType.COARSE_DIRT.getId()));
+		defaultedList.add(new ItemStack(this, 1, DirtBlock.DirtType.PODZOL.getId()));
 	}
 
 	@Override

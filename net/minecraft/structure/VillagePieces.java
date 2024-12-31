@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.class_3040;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -19,7 +19,7 @@ import net.minecraft.block.SandstoneBlock;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.block.TorchBlock;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
@@ -230,17 +230,18 @@ public class VillagePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			this.hPos = structureNbt.getInt("HPos");
-			this.villagers = structureNbt.getInt("VCount");
-			this.field_14871 = structureNbt.getByte("Type");
-			if (structureNbt.getBoolean("Desert")) {
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			this.hPos = nbtCompound.getInt("HPos");
+			this.villagers = nbtCompound.getInt("VCount");
+			this.field_14871 = nbtCompound.getByte("Type");
+			if (nbtCompound.getBoolean("Desert")) {
 				this.field_14871 = 1;
 			}
 
-			this.field_14872 = structureNbt.getBoolean("Zombie");
+			this.field_14872 = nbtCompound.getBoolean("Zombie");
 		}
 
+		@Nullable
 		protected StructurePiece fillNWOpening(VillagePieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
 			Direction direction = this.method_11854();
 			if (direction != null) {
@@ -296,6 +297,7 @@ public class VillagePieces {
 			}
 		}
 
+		@Nullable
 		protected StructurePiece fillSEOpening(VillagePieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
 			Direction direction = this.method_11854();
 			if (direction != null) {
@@ -385,17 +387,17 @@ public class VillagePieces {
 
 					this.villagers++;
 					if (this.field_14872) {
-						ZombieEntity zombieEntity = new ZombieEntity(world);
-						zombieEntity.refreshPositionAndAngles((double)k + 0.5, (double)l, (double)m + 0.5, 0.0F, 0.0F);
-						zombieEntity.initialize(world.getLocalDifficulty(new BlockPos(zombieEntity)), null);
-						zombieEntity.method_13550(class_3040.method_13556(this.method_111(j, 0)));
-						zombieEntity.setPersistent();
-						world.spawnEntity(zombieEntity);
+						ZombieVillagerEntity zombieVillagerEntity = new ZombieVillagerEntity(world);
+						zombieVillagerEntity.refreshPositionAndAngles((double)k + 0.5, (double)l, (double)m + 0.5, 0.0F, 0.0F);
+						zombieVillagerEntity.initialize(world.getLocalDifficulty(new BlockPos(zombieVillagerEntity)), null);
+						zombieVillagerEntity.method_13606(this.method_111(j, 0));
+						zombieVillagerEntity.setPersistent();
+						world.spawnEntity(zombieVillagerEntity);
 					} else {
 						VillagerEntity villagerEntity = new VillagerEntity(world);
 						villagerEntity.refreshPositionAndAngles((double)k + 0.5, (double)l, (double)m + 0.5, 0.0F, 0.0F);
-						villagerEntity.initialize(world.getLocalDifficulty(new BlockPos(villagerEntity)), null);
-						villagerEntity.setProfession(this.method_111(j, villagerEntity.profession()));
+						villagerEntity.setProfession(this.method_111(j, world.random.nextInt(6)));
+						villagerEntity.initialize(world.getLocalDifficulty(new BlockPos(villagerEntity)), null, false);
 						world.spawnEntity(villagerEntity);
 					}
 				}
@@ -534,9 +536,9 @@ public class VillagePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.hasChest = structureNbt.getBoolean("Chest");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.hasChest = nbtCompound.getBoolean("Chest");
 		}
 
 		@Override
@@ -892,10 +894,10 @@ public class VillagePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.cropA = Block.getById(structureNbt.getInt("CA"));
-			this.cropB = Block.getById(structureNbt.getInt("CB"));
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.cropA = Block.getById(nbtCompound.getInt("CA"));
+			this.cropB = Block.getById(nbtCompound.getInt("CB"));
 		}
 
 		private Block getCrop(Random random) {
@@ -1034,12 +1036,12 @@ public class VillagePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.cropA = Block.getById(structureNbt.getInt("CA"));
-			this.cropB = Block.getById(structureNbt.getInt("CB"));
-			this.cropC = Block.getById(structureNbt.getInt("CC"));
-			this.cropD = Block.getById(structureNbt.getInt("CD"));
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.cropA = Block.getById(nbtCompound.getInt("CA"));
+			this.cropB = Block.getById(nbtCompound.getInt("CB"));
+			this.cropC = Block.getById(nbtCompound.getInt("CC"));
+			this.cropD = Block.getById(nbtCompound.getInt("CD"));
 			if (!(this.cropA instanceof CropBlock)) {
 				this.cropA = Blocks.WHEAT;
 			}
@@ -1299,9 +1301,9 @@ public class VillagePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.terrace = structureNbt.getBoolean("Terrace");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.terrace = nbtCompound.getBoolean("Terrace");
 		}
 
 		public static VillagePieces.SingleHouse create(
@@ -1428,10 +1430,10 @@ public class VillagePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.tablePosition = structureNbt.getInt("T");
-			this.tall = structureNbt.getBoolean("C");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.tablePosition = nbtCompound.getInt("T");
+			this.tall = nbtCompound.getBoolean("C");
 		}
 
 		public static VillagePieces.SingleMultifunctionalHouse create(
@@ -1566,9 +1568,9 @@ public class VillagePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.length = structureNbt.getInt("Length");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.length = nbtCompound.getInt("Length");
 		}
 
 		@Override
@@ -1994,7 +1996,7 @@ public class VillagePieces {
 			for (int i = 0; i <= 5; i++) {
 				for (int j = 0; j <= 5; j++) {
 					if (j == 0 || j == 5 || i == 0 || i == 5) {
-						this.setBlockState(world, Blocks.COBBLESTONE.getDefaultState(), j, 11, i, boundingBox);
+						this.setBlockState(world, blockState, j, 11, i, boundingBox);
 						this.clearBlocksUpwards(world, j, 12, i, boundingBox);
 					}
 				}

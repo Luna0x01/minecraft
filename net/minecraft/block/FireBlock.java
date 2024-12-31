@@ -96,7 +96,7 @@ public class FireBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -284,9 +284,9 @@ public class FireBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!world.getBlockState(blockPos.down()).method_11739() && !this.isAdjacentFlammable(world, blockPos)) {
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!world.getBlockState(pos.down()).method_11739() && !this.isAdjacentFlammable(world, pos)) {
+			world.setAir(pos);
 		}
 	}
 

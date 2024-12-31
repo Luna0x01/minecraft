@@ -1,6 +1,7 @@
 package net.minecraft.potion;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.UnmodifiableIterator;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -9,20 +10,11 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.BiDefaultedRegistry;
 
 public class Potion {
-	private static final Identifier field_12335 = new Identifier("water");
+	private static final Identifier field_12335 = new Identifier("empty");
 	public static final BiDefaultedRegistry<Identifier, Potion> REGISTRY = new BiDefaultedRegistry<>(field_12335);
 	private static int field_12336;
 	private final String id;
 	private final ImmutableList<StatusEffectInstance> effects;
-
-	@Nullable
-	public static Potion byIndex(int index) {
-		return REGISTRY.getByRawId(index);
-	}
-
-	public static int getId(Potion potion) {
-		return REGISTRY.getRawId(potion);
-	}
 
 	@Nullable
 	public static Potion get(String id) {
@@ -93,7 +85,10 @@ public class Potion {
 
 	public boolean method_11415() {
 		if (!this.effects.isEmpty()) {
-			for (StatusEffectInstance statusEffectInstance : this.effects) {
+			UnmodifiableIterator var1 = this.effects.iterator();
+
+			while (var1.hasNext()) {
+				StatusEffectInstance statusEffectInstance = (StatusEffectInstance)var1.next();
 				if (statusEffectInstance.getStatusEffect().isInstant()) {
 					return true;
 				}

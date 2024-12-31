@@ -15,16 +15,15 @@ public class RedstoneItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		boolean bl = world.getBlockState(blockPos).getBlock().method_8638(world, blockPos);
-		BlockPos blockPos2 = bl ? blockPos : blockPos.offset(direction);
-		if (playerEntity.canModify(blockPos2, direction, itemStack)
-			&& world.canBlockBePlaced(world.getBlockState(blockPos2).getBlock(), blockPos2, false, direction, null, itemStack)
-			&& Blocks.REDSTONE_WIRE.canBePlacedAtPos(world, blockPos2)) {
-			itemStack.count--;
-			world.setBlockState(blockPos2, Blocks.REDSTONE_WIRE.getDefaultState());
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		boolean bl = world.getBlockState(pos).getBlock().method_8638(world, pos);
+		BlockPos blockPos = bl ? pos : pos.offset(direction);
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (player.canModify(blockPos, direction, itemStack)
+			&& world.method_8493(world.getBlockState(blockPos).getBlock(), blockPos, false, direction, null)
+			&& Blocks.REDSTONE_WIRE.canBePlacedAtPos(world, blockPos)) {
+			itemStack.decrement(1);
+			world.setBlockState(blockPos, Blocks.REDSTONE_WIRE.getDefaultState());
 			return ActionResult.SUCCESS;
 		} else {
 			return ActionResult.FAIL;

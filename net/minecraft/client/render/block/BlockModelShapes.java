@@ -100,6 +100,74 @@ public class BlockModelShapes {
 			if (block == Blocks.BARRIER) {
 				return this.bakedModelManager.getAtlas().getSprite("minecraft:items/barrier");
 			}
+
+			if (block == Blocks.STRUCTURE_VOID) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:items/structure_void");
+			}
+
+			if (block == Blocks.WHITE_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_white");
+			}
+
+			if (block == Blocks.ORANGE_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_orange");
+			}
+
+			if (block == Blocks.MAGENTA_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_magenta");
+			}
+
+			if (block == Blocks.LIGHT_BLUE_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_light_blue");
+			}
+
+			if (block == Blocks.YELLOW_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_yellow");
+			}
+
+			if (block == Blocks.LIME_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_lime");
+			}
+
+			if (block == Blocks.PINK_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_pink");
+			}
+
+			if (block == Blocks.GRAY_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_gray");
+			}
+
+			if (block == Blocks.SILVER_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_silver");
+			}
+
+			if (block == Blocks.CYAN_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_cyan");
+			}
+
+			if (block == Blocks.PURPLE_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_purple");
+			}
+
+			if (block == Blocks.BLUE_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_blue");
+			}
+
+			if (block == Blocks.BROWN_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_brown");
+			}
+
+			if (block == Blocks.GREEN_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_green");
+			}
+
+			if (block == Blocks.RED_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_red");
+			}
+
+			if (block == Blocks.BLACK_SHULKER_BOX) {
+				return this.bakedModelManager.getAtlas().getSprite("minecraft:blocks/shulker_top_black");
+			}
 		}
 
 		if (bakedModel == null) {
@@ -156,7 +224,24 @@ public class BlockModelShapes {
 			Blocks.WALL_SIGN,
 			Blocks.WALL_BANNER,
 			Blocks.STANDING_BANNER,
-			Blocks.END_GATEWAY
+			Blocks.END_GATEWAY,
+			Blocks.STRUCTURE_VOID,
+			Blocks.WHITE_SHULKER_BOX,
+			Blocks.ORANGE_SHULKER_BOX,
+			Blocks.MAGENTA_SHULKER_BOX,
+			Blocks.LIGHT_BLUE_SHULKER_BOX,
+			Blocks.YELLOW_SHULKER_BOX,
+			Blocks.LIME_SHULKER_BOX,
+			Blocks.PINK_SHULKER_BOX,
+			Blocks.GRAY_SHULKER_BOX,
+			Blocks.SILVER_SHULKER_BOX,
+			Blocks.CYAN_SHULKER_BOX,
+			Blocks.PURPLE_SHULKER_BOX,
+			Blocks.BLUE_SHULKER_BOX,
+			Blocks.BROWN_SHULKER_BOX,
+			Blocks.GREEN_SHULKER_BOX,
+			Blocks.RED_SHULKER_BOX,
+			Blocks.BLACK_SHULKER_BOX
 		);
 		this.putBlock(Blocks.STONE, new BlockStateMap.Builder().defaultProperty(StoneBlock.VARIANT).build());
 		this.putBlock(Blocks.PRISMARINE, new BlockStateMap.Builder().defaultProperty(PrismarineBlock.VARIANT).build());

@@ -55,6 +55,7 @@ public class LevelStorage implements LevelStorageAccess {
 	public void clearAll() {
 	}
 
+	@Nullable
 	@Override
 	public LevelProperties getLevelProperties(String name) {
 		File file = new File(this.file, name);

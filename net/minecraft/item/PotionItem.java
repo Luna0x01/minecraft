@@ -1,19 +1,20 @@
 package net.minecraft.item;
 
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
+import net.minecraft.potion.Potions;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class PotionItem extends Item {
@@ -22,17 +23,25 @@ public class PotionItem extends Item {
 		this.setItemGroup(ItemGroup.BREWING);
 	}
 
-	@Nullable
+	@Override
+	public ItemStack getDefaultStack() {
+		return PotionUtil.setPotion(super.getDefaultStack(), Potions.WATER);
+	}
+
 	@Override
 	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
 		PlayerEntity playerEntity = entity instanceof PlayerEntity ? (PlayerEntity)entity : null;
 		if (playerEntity == null || !playerEntity.abilities.creativeMode) {
-			stack.count--;
+			stack.decrement(1);
 		}
 
 		if (!world.isClient) {
 			for (StatusEffectInstance statusEffectInstance : PotionUtil.getPotionEffects(stack)) {
-				entity.addStatusEffect(new StatusEffectInstance(statusEffectInstance));
+				if (statusEffectInstance.getStatusEffect().isInstant()) {
+					statusEffectInstance.getStatusEffect().method_6088(playerEntity, playerEntity, entity, statusEffectInstance.getAmplifier(), 1.0);
+				} else {
+					entity.addStatusEffect(new StatusEffectInstance(statusEffectInstance));
+				}
 			}
 		}
 
@@ -41,7 +50,7 @@ public class PotionItem extends Item {
 		}
 
 		if (playerEntity == null || !playerEntity.abilities.creativeMode) {
-			if (stack.count <= 0) {
+			if (stack.isEmpty()) {
 				return new ItemStack(Items.GLASS_BOTTLE);
 			}
 
@@ -64,9 +73,9 @@ public class PotionItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		playerEntity.method_13050(hand);
-		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		player.method_13050(hand);
+		return new TypedActionResult<>(ActionResult.SUCCESS, player.getStackInHand(hand));
 	}
 
 	@Override
@@ -81,13 +90,15 @@ public class PotionItem extends Item {
 
 	@Override
 	public boolean hasEnchantmentGlint(ItemStack stack) {
-		return !PotionUtil.getPotionEffects(stack).isEmpty();
+		return super.hasEnchantmentGlint(stack) || !PotionUtil.getPotionEffects(stack).isEmpty();
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (Potion potion : Potion.REGISTRY) {
-			list.add(PotionUtil.setPotion(new ItemStack(item), potion));
+			if (potion != Potions.EMPTY) {
+				defaultedList.add(PotionUtil.setPotion(new ItemStack(item), potion));
+			}
 		}
 	}
 }

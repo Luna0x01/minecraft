@@ -15,17 +15,17 @@ import net.minecraft.world.World;
 public class DragonFireballEntity extends ExplosiveProjectileEntity {
 	public DragonFireballEntity(World world) {
 		super(world);
-		this.setBounds(0.3125F, 0.3125F);
+		this.setBounds(1.0F, 1.0F);
 	}
 
 	public DragonFireballEntity(World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, g, h, i);
-		this.setBounds(0.3125F, 0.3125F);
+		this.setBounds(1.0F, 1.0F);
 	}
 
 	public DragonFireballEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
 		super(world, livingEntity, d, e, f);
-		this.setBounds(0.3125F, 0.3125F);
+		this.setBounds(1.0F, 1.0F);
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
@@ -34,28 +34,30 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 
 	@Override
 	protected void onEntityHit(BlockHitResult hitResult) {
-		if (!this.world.isClient) {
-			List<LivingEntity> list = this.world.getEntitiesInBox(LivingEntity.class, this.getBoundingBox().expand(4.0, 2.0, 4.0));
-			AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.x, this.y, this.z);
-			areaEffectCloudEntity.method_12954(this.target);
-			areaEffectCloudEntity.setParticleType(ParticleType.DRAGON_BREATH);
-			areaEffectCloudEntity.setRadius(3.0F);
-			areaEffectCloudEntity.setDuration(2400);
-			areaEffectCloudEntity.method_12958((7.0F - areaEffectCloudEntity.getRadius()) / (float)areaEffectCloudEntity.getDuration());
-			areaEffectCloudEntity.addEffect(new StatusEffectInstance(StatusEffects.INSTANT_DAMAGE, 1, 1));
-			if (!list.isEmpty()) {
-				for (LivingEntity livingEntity : list) {
-					double d = this.squaredDistanceTo(livingEntity);
-					if (d < 16.0) {
-						areaEffectCloudEntity.updatePosition(livingEntity.x, livingEntity.y, livingEntity.z);
-						break;
+		if (hitResult.entity == null || !hitResult.entity.isPartOf(this.target)) {
+			if (!this.world.isClient) {
+				List<LivingEntity> list = this.world.getEntitiesInBox(LivingEntity.class, this.getBoundingBox().expand(4.0, 2.0, 4.0));
+				AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.x, this.y, this.z);
+				areaEffectCloudEntity.method_12954(this.target);
+				areaEffectCloudEntity.setParticleType(ParticleType.DRAGON_BREATH);
+				areaEffectCloudEntity.setRadius(3.0F);
+				areaEffectCloudEntity.setDuration(600);
+				areaEffectCloudEntity.method_12958((7.0F - areaEffectCloudEntity.getRadius()) / (float)areaEffectCloudEntity.getDuration());
+				areaEffectCloudEntity.addEffect(new StatusEffectInstance(StatusEffects.INSTANT_DAMAGE, 1, 1));
+				if (!list.isEmpty()) {
+					for (LivingEntity livingEntity : list) {
+						double d = this.squaredDistanceTo(livingEntity);
+						if (d < 16.0) {
+							areaEffectCloudEntity.updatePosition(livingEntity.x, livingEntity.y, livingEntity.z);
+							break;
+						}
 					}
 				}
-			}
 
-			this.world.syncGlobalEvent(2006, new BlockPos(this.x, this.y, this.z), 0);
-			this.world.spawnEntity(areaEffectCloudEntity);
-			this.remove();
+				this.world.syncGlobalEvent(2006, new BlockPos(this.x, this.y, this.z), 0);
+				this.world.spawnEntity(areaEffectCloudEntity);
+				this.remove();
+			}
 		}
 	}
 

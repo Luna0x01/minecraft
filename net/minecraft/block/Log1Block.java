@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import com.google.common.base.Predicate;
-import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -9,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.collection.DefaultedList;
 
 public class Log1Block extends LogBlock {
 	public static final EnumProperty<PlanksBlock.WoodType> VARIANT = EnumProperty.of(
@@ -48,11 +48,11 @@ public class Log1Block extends LogBlock {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item, 1, PlanksBlock.WoodType.OAK.getId()));
-		stacks.add(new ItemStack(item, 1, PlanksBlock.WoodType.SPRUCE.getId()));
-		stacks.add(new ItemStack(item, 1, PlanksBlock.WoodType.BIRCH.getId()));
-		stacks.add(new ItemStack(item, 1, PlanksBlock.WoodType.JUNGLE.getId()));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.OAK.getId()));
+		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.SPRUCE.getId()));
+		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.BIRCH.getId()));
+		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.JUNGLE.getId()));
 	}
 
 	@Override

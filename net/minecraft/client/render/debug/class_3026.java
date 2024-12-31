@@ -32,7 +32,7 @@ public class class_3026 implements DebugRenderer.DebugRenderable {
 		);
 		GlStateManager.disableTexture();
 		BlockPos blockPos = new BlockPos(playerEntity.x, 0.0, playerEntity.z);
-		Iterable<BlockPos> iterable = BlockPos.Mutable.iterate(blockPos.add(-40, 0, -40), blockPos.add(40, 0, 40));
+		Iterable<BlockPos> iterable = BlockPos.iterate(blockPos.add(-40, 0, -40), blockPos.add(40, 0, 40));
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(5, VertexFormats.POSITION_COLOR);

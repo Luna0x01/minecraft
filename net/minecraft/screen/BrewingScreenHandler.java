@@ -1,6 +1,5 @@
 package net.minecraft.screen;
 
-import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.effect.StatusEffectStrings;
 import net.minecraft.entity.player.PlayerEntity;
@@ -10,6 +9,7 @@ import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
 
@@ -73,57 +73,56 @@ public class BrewingScreenHandler extends ScreenHandler {
 		return this.inventory.canPlayerUseInv(player);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if ((invSlot < 0 || invSlot > 2) && invSlot != 3 && invSlot != 4) {
-				if (!this.ingredientSlot.hasStack() && this.ingredientSlot.canInsert(itemStack2)) {
+				if (this.ingredientSlot.canInsert(itemStack2)) {
 					if (!this.insertItem(itemStack2, 3, 4, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
-				} else if (BrewingScreenHandler.PotionSlot.matches(itemStack)) {
+				} else if (BrewingScreenHandler.PotionSlot.matches(itemStack) && itemStack.getCount() == 1) {
 					if (!this.insertItem(itemStack2, 0, 3, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (BrewingScreenHandler.class_2678.method_11350(itemStack)) {
 					if (!this.insertItem(itemStack2, 4, 5, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (invSlot >= 5 && invSlot < 32) {
 					if (!this.insertItem(itemStack2, 32, 41, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (invSlot >= 32 && invSlot < 41) {
 					if (!this.insertItem(itemStack2, 5, 32, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (!this.insertItem(itemStack2, 5, 41, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else {
 				if (!this.insertItem(itemStack2, 5, 41, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			slot.method_3298(player, itemStack2);
 		}
 
 		return itemStack;
@@ -135,8 +134,8 @@ public class BrewingScreenHandler extends ScreenHandler {
 		}
 
 		@Override
-		public boolean canInsert(@Nullable ItemStack stack) {
-			return stack != null && StatusEffectStrings.method_11417(stack);
+		public boolean canInsert(ItemStack stack) {
+			return StatusEffectStrings.method_11417(stack);
 		}
 
 		@Override
@@ -154,7 +153,7 @@ public class BrewingScreenHandler extends ScreenHandler {
 		}
 
 		@Override
-		public boolean canInsert(@Nullable ItemStack stack) {
+		public boolean canInsert(ItemStack stack) {
 			return matches(stack);
 		}
 
@@ -164,21 +163,19 @@ public class BrewingScreenHandler extends ScreenHandler {
 		}
 
 		@Override
-		public void onTakeItem(PlayerEntity player, ItemStack stack) {
-			if (PotionUtil.getPotion(stack) != Potions.WATER) {
+		public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
+			Potion potion = PotionUtil.getPotion(itemStack);
+			if (potion != Potions.WATER && potion != Potions.EMPTY) {
 				this.player.incrementStat(AchievementsAndCriterions.POTION);
 			}
 
-			super.onTakeItem(player, stack);
+			super.method_3298(playerEntity, itemStack);
+			return itemStack;
 		}
 
-		public static boolean matches(@Nullable ItemStack stack) {
-			if (stack == null) {
-				return false;
-			} else {
-				Item item = stack.getItem();
-				return item == Items.POTION || item == Items.GLASS_BOTTLE || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION;
-			}
+		public static boolean matches(ItemStack stack) {
+			Item item = stack.getItem();
+			return item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE;
 		}
 	}
 
@@ -188,12 +185,12 @@ public class BrewingScreenHandler extends ScreenHandler {
 		}
 
 		@Override
-		public boolean canInsert(@Nullable ItemStack stack) {
+		public boolean canInsert(ItemStack stack) {
 			return method_11350(stack);
 		}
 
-		public static boolean method_11350(@Nullable ItemStack itemStack) {
-			return itemStack != null && itemStack.getItem() == Items.BLAZE_POWDER;
+		public static boolean method_11350(ItemStack itemStack) {
+			return itemStack.getItem() == Items.BLAZE_POWDER;
 		}
 
 		@Override

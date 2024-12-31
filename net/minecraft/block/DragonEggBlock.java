@@ -1,13 +1,11 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -33,8 +31,8 @@ public class DragonEggBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
 	}
 
 	@Override
@@ -65,19 +63,8 @@ public class DragonEggBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		this.teleport(world, blockPos);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		this.teleport(world, pos);
 		return true;
 	}
 

@@ -61,8 +61,8 @@ public class NetherPortalBlock extends TransparentBlock {
 			}
 
 			if (i > 0 && !world.getBlockState(blockPos.up()).method_11734()) {
-				Entity entity = SpawnEggItem.method_4628(
-					world, EntityType.method_13022(ZombiePigmanEntity.class), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 1.1, (double)blockPos.getZ() + 0.5
+				Entity entity = SpawnEggItem.createEntity(
+					world, EntityType.getId(ZombiePigmanEntity.class), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 1.1, (double)blockPos.getZ() + 0.5
 				);
 				if (entity != null) {
 					entity.netherPortalCooldown = entity.getDefaultNetherPortalCooldown();
@@ -73,7 +73,7 @@ public class NetherPortalBlock extends TransparentBlock {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -107,17 +107,17 @@ public class NetherPortalBlock extends TransparentBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		Direction.Axis axis = blockState.get(AXIS);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		Direction.Axis axis = state.get(AXIS);
 		if (axis == Direction.Axis.X) {
-			NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(world, blockPos, Direction.Axis.X);
+			NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.X);
 			if (!areaHelper.isValid() || areaHelper.foundPortalBlocks < areaHelper.width * areaHelper.height) {
-				world.setBlockState(blockPos, Blocks.AIR.getDefaultState());
+				world.setBlockState(pos, Blocks.AIR.getDefaultState());
 			}
 		} else if (axis == Direction.Axis.Z) {
-			NetherPortalBlock.AreaHelper areaHelper2 = new NetherPortalBlock.AreaHelper(world, blockPos, Direction.Axis.Z);
+			NetherPortalBlock.AreaHelper areaHelper2 = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.Z);
 			if (!areaHelper2.isValid() || areaHelper2.foundPortalBlocks < areaHelper2.width * areaHelper2.height) {
-				world.setBlockState(blockPos, Blocks.AIR.getDefaultState());
+				world.setBlockState(pos, Blocks.AIR.getDefaultState());
 			}
 		}
 	}
@@ -208,10 +208,9 @@ public class NetherPortalBlock extends TransparentBlock {
 		}
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
@@ -274,9 +273,9 @@ public class NetherPortalBlock extends TransparentBlock {
 					1
 				);
 
-				for (int k = 0; k < areaHelper.getWidth(); k++) {
-					for (int l = 0; l < areaHelper.getHeight(); l++) {
-						CachedBlockPosition cachedBlockPosition = result.translate(k, l, 1);
+				for (int i = 0; i < areaHelper.getWidth(); i++) {
+					for (int j = 0; j < areaHelper.getHeight(); j++) {
+						CachedBlockPosition cachedBlockPosition = result.translate(i, j, 1);
 						if (cachedBlockPosition.getBlockState() != null && cachedBlockPosition.getBlockState().getMaterial() != Material.AIR) {
 							is[axisDirection.ordinal()]++;
 						}

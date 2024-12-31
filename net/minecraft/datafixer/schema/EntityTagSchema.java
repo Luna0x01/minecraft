@@ -18,7 +18,7 @@ public class EntityTagSchema implements Schema {
 			String string = tag.getString("id");
 			String string2;
 			if ("minecraft:armor_stand".equals(string)) {
-				string2 = "ArmorStand";
+				string2 = dataVersion < 515 ? "ArmorStand" : "minecraft:armor_stand";
 			} else {
 				if (!"minecraft:spawn_egg".equals(string)) {
 					return tag;

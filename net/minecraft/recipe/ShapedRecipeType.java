@@ -1,8 +1,8 @@
 package net.minecraft.recipe;
 
-import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ShapedRecipeType implements RecipeType {
@@ -16,27 +16,33 @@ public class ShapedRecipeType implements RecipeType {
 		this.width = i;
 		this.height = j;
 		this.ingredients = itemStacks;
+
+		for (int k = 0; k < this.ingredients.length; k++) {
+			if (this.ingredients[k] == null) {
+				this.ingredients[k] = ItemStack.EMPTY;
+			}
+		}
+
 		this.result = itemStack;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return this.result;
 	}
 
 	@Override
-	public ItemStack[] getRemainders(CraftingInventory inventory) {
-		ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null && itemStack.getItem().isFood()) {
-				itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack = craftingInventory.getInvStack(i);
+			if (itemStack.getItem().isFood()) {
+				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 			}
 		}
 
-		return itemStacks;
+		return defaultedList;
 	}
 
 	@Override
@@ -61,7 +67,7 @@ public class ShapedRecipeType implements RecipeType {
 			for (int j = 0; j < 3; j++) {
 				int k = i - width;
 				int l = j - height;
-				ItemStack itemStack = null;
+				ItemStack itemStack = ItemStack.EMPTY;
 				if (k >= 0 && l >= 0 && k < this.width && l < this.height) {
 					if (bl) {
 						itemStack = this.ingredients[this.width - k - 1 + l * this.width];
@@ -71,8 +77,8 @@ public class ShapedRecipeType implements RecipeType {
 				}
 
 				ItemStack itemStack2 = inventory.getStackAt(i, j);
-				if (itemStack2 != null || itemStack != null) {
-					if (itemStack2 == null && itemStack != null || itemStack2 != null && itemStack == null) {
+				if (!itemStack2.isEmpty() || !itemStack.isEmpty()) {
+					if (itemStack2.isEmpty() != itemStack.isEmpty()) {
 						return false;
 					}
 
@@ -90,14 +96,13 @@ public class ShapedRecipeType implements RecipeType {
 		return true;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		ItemStack itemStack = this.getOutput().copy();
 		if (this.copyIngredientsNbt) {
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack2 = inventory.getInvStack(i);
-				if (itemStack2 != null && itemStack2.hasNbt()) {
+				if (!itemStack2.isEmpty() && itemStack2.hasNbt()) {
 					itemStack.setNbt(itemStack2.getNbt().copy());
 				}
 			}

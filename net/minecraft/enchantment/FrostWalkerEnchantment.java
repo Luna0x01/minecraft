@@ -50,7 +50,7 @@ public class FrostWalkerEnchantment extends Enchantment {
 						BlockState blockState2 = world.getBlockState(mutable2);
 						if (blockState2.getMaterial() == Material.WATER
 							&& (Integer)blockState2.get(AbstractFluidBlock.LEVEL) == 0
-							&& world.canBlockBePlaced(Blocks.FROSTED_ICE, mutable2, false, Direction.DOWN, null, null)) {
+							&& world.method_8493(Blocks.FROSTED_ICE, mutable2, false, Direction.DOWN, null)) {
 							world.setBlockState(mutable2, Blocks.FROSTED_ICE.getDefaultState());
 							world.createAndScheduleBlockTick(mutable2.toImmutable(), Blocks.FROSTED_ICE, MathHelper.nextInt(livingEntity.getRandom(), 60, 120));
 						}

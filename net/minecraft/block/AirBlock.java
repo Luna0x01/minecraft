@@ -19,7 +19,7 @@ public class AirBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 

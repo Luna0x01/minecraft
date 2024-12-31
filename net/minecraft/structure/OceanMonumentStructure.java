@@ -12,6 +12,7 @@ import net.minecraft.entity.mob.GuardianEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockBox;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -78,6 +79,12 @@ public class OceanMonumentStructure extends StructureFeature {
 		}
 
 		return false;
+	}
+
+	@Override
+	public BlockPos method_9269(World world, BlockPos blockPos, boolean bl) {
+		this.world = world;
+		return method_13774(world, this, blockPos, this.spacing, this.separation, 10387313, true, 100, bl);
 	}
 
 	@Override

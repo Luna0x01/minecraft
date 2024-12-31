@@ -10,8 +10,10 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -162,7 +164,7 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		BlockState blockState = this.world.getBlockState(blockPos);
 		Block block = blockState.getBlock();
 		if (blockState.getMaterial() != Material.AIR) {
-			Box box = blockState.getCollisionBox(this.world, blockPos);
+			Box box = blockState.method_11726(this.world, blockPos);
 			if (box != Block.EMPTY_BOX && box.offset(blockPos).contains(new Vec3d(this.x, this.y, this.z))) {
 				this.inGround = true;
 			}
@@ -174,18 +176,18 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 
 		if (this.inGround) {
 			int i = block.getData(blockState);
-			if (block == this.block && i == this.blockData) {
-				this.life++;
-				if (this.life >= 1200) {
-					this.remove();
-				}
-			} else {
+			if ((block != this.block || i != this.blockData) && !this.world.method_11488(this.getBoundingBox().expand(0.05))) {
 				this.inGround = false;
 				this.velocityX = this.velocityX * (double)(this.random.nextFloat() * 0.2F);
 				this.velocityY = this.velocityY * (double)(this.random.nextFloat() * 0.2F);
 				this.velocityZ = this.velocityZ * (double)(this.random.nextFloat() * 0.2F);
 				this.life = 0;
 				this.field_4022 = 0;
+			} else {
+				this.life++;
+				if (this.life >= 1200) {
+					this.remove();
+				}
 			}
 
 			this.inGroundTime++;
@@ -206,7 +208,7 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 				blockHitResult = new BlockHitResult(entity);
 			}
 
-			if (blockHitResult != null && blockHitResult.entity != null && blockHitResult.entity instanceof PlayerEntity) {
+			if (blockHitResult != null && blockHitResult.entity instanceof PlayerEntity) {
 				PlayerEntity playerEntity = (PlayerEntity)blockHitResult.entity;
 				if (this.owner instanceof PlayerEntity && !((PlayerEntity)this.owner).shouldDamagePlayer(playerEntity)) {
 					blockHitResult = null;
@@ -382,6 +384,16 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		}
 	}
 
+	@Override
+	public void move(MovementType type, double movementX, double movementY, double movementZ) {
+		super.move(type, movementX, movementY, movementZ);
+		if (this.inGround) {
+			this.blockX = MathHelper.floor(this.x);
+			this.blockY = MathHelper.floor(this.y);
+			this.blockZ = MathHelper.floor(this.z);
+		}
+	}
+
 	protected void onHit(LivingEntity target) {
 	}
 
@@ -429,6 +441,7 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		nbt.putByte("inGround", (byte)(this.inGround ? 1 : 0));
 		nbt.putByte("pickup", (byte)this.pickupType.ordinal());
 		nbt.putDouble("damage", this.damage);
+		nbt.putBoolean("crit", this.isCritical());
 	}
 
 	@Override
@@ -455,6 +468,8 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 		} else if (nbt.contains("player", 99)) {
 			this.pickupType = nbt.getBoolean("player") ? AbstractArrowEntity.PickupPermission.ALLOWED : AbstractArrowEntity.PickupPermission.DISALLOWED;
 		}
+
+		this.setCritical(nbt.getBoolean("crit"));
 	}
 
 	@Override
@@ -467,7 +482,6 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 			}
 
 			if (bl) {
-				this.playSound(Sounds.ENTITY_ITEM_PICKUP, 0.2F, ((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
 				player.sendPickup(this, 1);
 				this.remove();
 			}
@@ -479,11 +493,6 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 	@Override
 	protected boolean canClimb() {
 		return false;
-	}
-
-	@Override
-	public int getLightmapCoordinates(float f) {
-		return 15728880;
 	}
 
 	public void setDamage(double damage) {
@@ -520,6 +529,23 @@ public abstract class AbstractArrowEntity extends Entity implements Projectile {
 	public boolean isCritical() {
 		byte b = this.dataTracker.get(PROJECTILE_FLAGS);
 		return (b & 1) != 0;
+	}
+
+	public void applyEnchantmentEffects(LivingEntity entity, float damageModifier) {
+		int i = EnchantmentHelper.getEquipmentLevel(Enchantments.POWER, entity);
+		int j = EnchantmentHelper.getEquipmentLevel(Enchantments.PUNCH, entity);
+		this.setDamage((double)(damageModifier * 2.0F) + this.random.nextGaussian() * 0.25 + (double)((float)this.world.getGlobalDifficulty().getId() * 0.11F));
+		if (i > 0) {
+			this.setDamage(this.getDamage() + (double)i * 0.5 + 0.5);
+		}
+
+		if (j > 0) {
+			this.setPunch(j);
+		}
+
+		if (EnchantmentHelper.getEquipmentLevel(Enchantments.FLAME, entity) > 0) {
+			this.setOnFireFor(100);
+		}
 	}
 
 	public static enum PickupPermission {

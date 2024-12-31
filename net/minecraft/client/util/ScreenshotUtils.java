@@ -76,21 +76,8 @@ public class ScreenshotUtils {
 
 		intBuffer.get(field_1035);
 		TextureUtil.flipXY(field_1035, i, j);
-		BufferedImage bufferedImage;
-		if (GLX.supportsFbo()) {
-			bufferedImage = new BufferedImage(framebuffer.viewportWidth, framebuffer.viewportHeight, 1);
-			int l = framebuffer.textureHeight - framebuffer.viewportHeight;
-
-			for (int m = l; m < framebuffer.textureHeight; m++) {
-				for (int n = 0; n < framebuffer.viewportWidth; n++) {
-					bufferedImage.setRGB(n, m - l, field_1035[m * framebuffer.textureWidth + n]);
-				}
-			}
-		} else {
-			bufferedImage = new BufferedImage(i, j, 1);
-			bufferedImage.setRGB(0, 0, i, j, field_1035, 0, i);
-		}
-
+		BufferedImage bufferedImage = new BufferedImage(i, j, 1);
+		bufferedImage.setRGB(0, 0, i, j, field_1035, 0, i);
 		return bufferedImage;
 	}
 

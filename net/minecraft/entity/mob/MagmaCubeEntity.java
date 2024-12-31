@@ -18,7 +18,7 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "LavaSlime");
+		MobEntity.registerDataFixes(dataFixer, MagmaCubeEntity.class);
 	}
 
 	@Override
@@ -40,9 +40,9 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	protected void setSize(int size) {
-		super.setSize(size);
-		this.initializeAttribute(EntityAttributes.GENERIC_ARMOR).setBaseValue((double)(size * 3));
+	protected void method_3089(int i, boolean bl) {
+		super.method_3089(i, bl);
+		this.initializeAttribute(EntityAttributes.GENERIC_ARMOR).setBaseValue((double)(i * 3));
 	}
 
 	@Override

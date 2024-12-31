@@ -1,7 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LivingEntity;
@@ -20,6 +18,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -62,7 +61,7 @@ public class AnvilBlock extends FallingBlock {
 			if (!world.isClient) {
 				field_12557.warn(String.format("Invalid damage property for anvil at %s. Found %d, must be in [0, 1, 2]", pos, id >> 2));
 				if (entity instanceof PlayerEntity) {
-					((PlayerEntity)entity).sendMessage(new TranslatableText("Invalid damage property. Please pick in [0, 1, 2]"));
+					entity.sendMessage(new TranslatableText("Invalid damage property. Please pick in [0, 1, 2]"));
 				}
 			}
 
@@ -71,20 +70,9 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (!world.isClient) {
-			playerEntity.openHandledScreen(new AnvilBlock.AnvilNameableHandler(world, blockPos));
+			player.openHandledScreen(new AnvilBlock.AnvilNameableHandler(world, pos));
 		}
 
 		return true;
@@ -102,10 +90,10 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item));
-		stacks.add(new ItemStack(item, 1, 1));
-		stacks.add(new ItemStack(item, 1, 2));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item));
+		defaultedList.add(new ItemStack(item, 1, 1));
+		defaultedList.add(new ItemStack(item, 1, 2));
 	}
 
 	@Override
@@ -116,6 +104,11 @@ public class AnvilBlock extends FallingBlock {
 	@Override
 	public void onDestroyedOnLanding(World world, BlockPos pos) {
 		world.syncGlobalEvent(1031, pos, 0);
+	}
+
+	@Override
+	public void method_13705(World world, BlockPos blockPos) {
+		world.syncGlobalEvent(1029, blockPos, 0);
 	}
 
 	@Override

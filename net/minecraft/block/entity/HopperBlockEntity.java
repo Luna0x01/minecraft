@@ -17,11 +17,11 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.HopperScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.HopperProvider;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -30,57 +30,39 @@ import net.minecraft.world.World;
 import net.minecraft.world.level.storage.LevelDataType;
 
 public class HopperBlockEntity extends class_2737 implements HopperProvider, Tickable {
-	private ItemStack[] items = new ItemStack[5];
-	private String customName;
+	private DefaultedList<ItemStack> field_15155 = DefaultedList.ofSize(5, ItemStack.EMPTY);
 	private int transferCooldown = -1;
+	private long field_15156;
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Hopper", "Items"));
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(HopperBlockEntity.class, "Items"));
 	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
-		this.items = new ItemStack[this.getInvSize()];
+		this.field_15155 = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
+		if (!this.method_11661(nbt)) {
+			class_2960.method_13927(nbt, this.field_15155);
+		}
+
 		if (nbt.contains("CustomName", 8)) {
-			this.customName = nbt.getString("CustomName");
+			this.name = nbt.getString("CustomName");
 		}
 
 		this.transferCooldown = nbt.getInt("TransferCooldown");
-		if (!this.method_11661(nbt)) {
-			NbtList nbtList = nbt.getList("Items", 10);
-
-			for (int i = 0; i < nbtList.size(); i++) {
-				NbtCompound nbtCompound = nbtList.getCompound(i);
-				int j = nbtCompound.getByte("Slot");
-				if (j >= 0 && j < this.items.length) {
-					this.items[j] = ItemStack.fromNbt(nbtCompound);
-				}
-			}
-		}
 	}
 
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		if (!this.method_11663(nbt)) {
-			NbtList nbtList = new NbtList();
-
-			for (int i = 0; i < this.items.length; i++) {
-				if (this.items[i] != null) {
-					NbtCompound nbtCompound = new NbtCompound();
-					nbtCompound.putByte("Slot", (byte)i);
-					this.items[i].toNbt(nbtCompound);
-					nbtList.add(nbtCompound);
-				}
-			}
-
-			nbt.put("Items", nbtList);
+			class_2960.method_13923(nbt, this.field_15155);
 		}
 
 		nbt.putInt("TransferCooldown", this.transferCooldown);
 		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.customName);
+			nbt.putString("CustomName", this.name);
 		}
 
 		return nbt;
@@ -88,51 +70,27 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 
 	@Override
 	public int getInvSize() {
-		return this.items.length;
+		return this.field_15155.size();
 	}
 
-	@Nullable
-	@Override
-	public ItemStack getInvStack(int slot) {
-		this.method_11662(null);
-		return this.items[slot];
-	}
-
-	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
 		this.method_11662(null);
-		return class_2960.method_12933(this.items, slot, amount);
-	}
-
-	@Nullable
-	@Override
-	public ItemStack removeInvStack(int slot) {
-		this.method_11662(null);
-		return class_2960.method_12932(this.items, slot);
+		return class_2960.method_13926(this.method_13730(), slot, amount);
 	}
 
 	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
+	public void setInvStack(int slot, ItemStack stack) {
 		this.method_11662(null);
-		this.items[slot] = stack;
-		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
-			stack.count = this.getInvMaxStackAmount();
+		this.method_13730().set(slot, stack);
+		if (stack.getCount() > this.getInvMaxStackAmount()) {
+			stack.setCount(this.getInvMaxStackAmount());
 		}
 	}
 
 	@Override
 	public String getTranslationKey() {
-		return this.hasCustomName() ? this.customName : "container.hopper";
-	}
-
-	@Override
-	public boolean hasCustomName() {
-		return this.customName != null && !this.customName.isEmpty();
-	}
-
-	public void setCustomName(String customName) {
-		this.customName = customName;
+		return this.hasCustomName() ? this.name : "container.hopper";
 	}
 
 	@Override
@@ -141,29 +99,10 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity player) {
-		return this.world.getBlockEntity(this.pos) != this
-			? false
-			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
-	}
-
-	@Override
-	public void onInvOpen(PlayerEntity player) {
-	}
-
-	@Override
-	public void onInvClose(PlayerEntity player) {
-	}
-
-	@Override
-	public boolean isValidInvStack(int slot, ItemStack stack) {
-		return true;
-	}
-
-	@Override
 	public void tick() {
 		if (this.world != null && !this.world.isClient) {
 			this.transferCooldown--;
+			this.field_15156 = this.world.getLastUpdateTime();
 			if (!this.needsCooldown()) {
 				this.setCooldown(0);
 				this.insertAndExtract();
@@ -171,7 +110,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		}
 	}
 
-	public boolean insertAndExtract() {
+	private boolean insertAndExtract() {
 		if (this.world != null && !this.world.isClient) {
 			if (!this.needsCooldown() && HopperBlock.isEnabled(this.getDataValue())) {
 				boolean bl = false;
@@ -197,8 +136,8 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 	}
 
 	private boolean isHopperEmpty() {
-		for (ItemStack itemStack : this.items) {
-			if (itemStack != null) {
+		for (ItemStack itemStack : this.field_15155) {
+			if (!itemStack.isEmpty()) {
 				return false;
 			}
 		}
@@ -206,9 +145,14 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return true;
 	}
 
+	@Override
+	public boolean isEmpty() {
+		return this.isHopperEmpty();
+	}
+
 	private boolean isFull() {
-		for (ItemStack itemStack : this.items) {
-			if (itemStack == null || itemStack.count != itemStack.getMaxCount()) {
+		for (ItemStack itemStack : this.field_15155) {
+			if (itemStack.isEmpty() || itemStack.getCount() != itemStack.getMaxCount()) {
 				return false;
 			}
 		}
@@ -226,10 +170,10 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 				return false;
 			} else {
 				for (int i = 0; i < this.getInvSize(); i++) {
-					if (this.getInvStack(i) != null) {
+					if (!this.getInvStack(i).isEmpty()) {
 						ItemStack itemStack = this.getInvStack(i).copy();
-						ItemStack itemStack2 = transfer(inventory, this.takeInvStack(i, 1), direction);
-						if (itemStack2 == null || itemStack2.count == 0) {
+						ItemStack itemStack2 = method_13727(this, inventory, this.takeInvStack(i, 1), direction);
+						if (itemStack2.isEmpty()) {
 							inventory.markDirty();
 							return true;
 						}
@@ -248,18 +192,18 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 			SidedInventory sidedInventory = (SidedInventory)inventory;
 			int[] is = sidedInventory.getAvailableSlots(dir);
 
-			for (int k : is) {
-				ItemStack itemStack = sidedInventory.getInvStack(k);
-				if (itemStack == null || itemStack.count != itemStack.getMaxCount()) {
+			for (int i : is) {
+				ItemStack itemStack = sidedInventory.getInvStack(i);
+				if (itemStack.isEmpty() || itemStack.getCount() != itemStack.getMaxCount()) {
 					return false;
 				}
 			}
 		} else {
-			int l = inventory.getInvSize();
+			int j = inventory.getInvSize();
 
-			for (int m = 0; m < l; m++) {
-				ItemStack itemStack2 = inventory.getInvStack(m);
-				if (itemStack2 == null || itemStack2.count != itemStack2.getMaxCount()) {
+			for (int k = 0; k < j; k++) {
+				ItemStack itemStack2 = inventory.getInvStack(k);
+				if (itemStack2.isEmpty() || itemStack2.getCount() != itemStack2.getMaxCount()) {
 					return false;
 				}
 			}
@@ -273,16 +217,16 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 			SidedInventory sidedInventory = (SidedInventory)inventory;
 			int[] is = sidedInventory.getAvailableSlots(dir);
 
-			for (int k : is) {
-				if (sidedInventory.getInvStack(k) != null) {
+			for (int i : is) {
+				if (!sidedInventory.getInvStack(i).isEmpty()) {
 					return false;
 				}
 			}
 		} else {
-			int l = inventory.getInvSize();
+			int j = inventory.getInvSize();
 
-			for (int m = 0; m < l; m++) {
-				if (inventory.getInvStack(m) != null) {
+			for (int k = 0; k < j; k++) {
+				if (!inventory.getInvStack(k).isEmpty()) {
 					return false;
 				}
 			}
@@ -303,23 +247,23 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 				SidedInventory sidedInventory = (SidedInventory)inventory;
 				int[] is = sidedInventory.getAvailableSlots(direction);
 
-				for (int k : is) {
-					if (extract(provider, inventory, k, direction)) {
+				for (int i : is) {
+					if (extract(provider, inventory, i, direction)) {
 						return true;
 					}
 				}
 			} else {
-				int l = inventory.getInvSize();
+				int j = inventory.getInvSize();
 
-				for (int m = 0; m < l; m++) {
-					if (extract(provider, inventory, m, direction)) {
+				for (int k = 0; k < j; k++) {
+					if (extract(provider, inventory, k, direction)) {
 						return true;
 					}
 				}
 			}
 		} else {
 			for (ItemEntity itemEntity : getInputItemEntities(provider.getEntityWorld(), provider.getX(), provider.getY(), provider.getZ())) {
-				if (extract(provider, itemEntity)) {
+				if (method_13728(null, provider, itemEntity)) {
 					return true;
 				}
 			}
@@ -330,10 +274,10 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 
 	private static boolean extract(HopperProvider provider, Inventory inventory, int slot, Direction dir) {
 		ItemStack itemStack = inventory.getInvStack(slot);
-		if (itemStack != null && canExtract(inventory, itemStack, slot, dir)) {
+		if (!itemStack.isEmpty() && canExtract(inventory, itemStack, slot, dir)) {
 			ItemStack itemStack2 = itemStack.copy();
-			ItemStack itemStack3 = transfer(provider, inventory.takeInvStack(slot, 1), null);
-			if (itemStack3 == null || itemStack3.count == 0) {
+			ItemStack itemStack3 = method_13727(inventory, provider, inventory.takeInvStack(slot, 1), null);
+			if (itemStack3.isEmpty()) {
 				inventory.markDirty();
 				return true;
 			}
@@ -344,45 +288,41 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return false;
 	}
 
-	public static boolean extract(Inventory inventory, ItemEntity itemEntity) {
+	public static boolean method_13728(Inventory inventory, Inventory inventory2, ItemEntity itemEntity) {
 		boolean bl = false;
 		if (itemEntity == null) {
 			return false;
 		} else {
 			ItemStack itemStack = itemEntity.getItemStack().copy();
-			ItemStack itemStack2 = transfer(inventory, itemStack, null);
-			if (itemStack2 != null && itemStack2.count != 0) {
-				itemEntity.setItemStack(itemStack2);
-			} else {
+			ItemStack itemStack2 = method_13727(inventory, inventory2, itemStack, null);
+			if (itemStack2.isEmpty()) {
 				bl = true;
 				itemEntity.remove();
+			} else {
+				itemEntity.setItemStack(itemStack2);
 			}
 
 			return bl;
 		}
 	}
 
-	public static ItemStack transfer(Inventory inventory, ItemStack stack, @Nullable Direction dir) {
-		if (inventory instanceof SidedInventory && dir != null) {
-			SidedInventory sidedInventory = (SidedInventory)inventory;
-			int[] is = sidedInventory.getAvailableSlots(dir);
+	public static ItemStack method_13727(Inventory inventory, Inventory inventory2, ItemStack itemStack, @Nullable Direction direction) {
+		if (inventory2 instanceof SidedInventory && direction != null) {
+			SidedInventory sidedInventory = (SidedInventory)inventory2;
+			int[] is = sidedInventory.getAvailableSlots(direction);
 
-			for (int i = 0; i < is.length && stack != null && stack.count > 0; i++) {
-				stack = transfer(inventory, stack, is[i], dir);
+			for (int i = 0; i < is.length && !itemStack.isEmpty(); i++) {
+				itemStack = method_13726(inventory, inventory2, itemStack, is[i], direction);
 			}
 		} else {
-			int j = inventory.getInvSize();
+			int j = inventory2.getInvSize();
 
-			for (int k = 0; k < j && stack != null && stack.count > 0; k++) {
-				stack = transfer(inventory, stack, k, dir);
+			for (int k = 0; k < j && !itemStack.isEmpty(); k++) {
+				itemStack = method_13726(inventory, inventory2, itemStack, k, direction);
 			}
 		}
 
-		if (stack != null && stack.count == 0) {
-			stack = null;
-		}
-
-		return stack;
+		return itemStack;
 	}
 
 	private static boolean canInsert(Inventory inventory, ItemStack stack, int slot, Direction side) {
@@ -395,37 +335,44 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return !(inv instanceof SidedInventory) || ((SidedInventory)inv).canExtractInvStack(slot, stack, facing);
 	}
 
-	private static ItemStack transfer(Inventory inventory, ItemStack stack, int slot, Direction dir) {
-		ItemStack itemStack = inventory.getInvStack(slot);
-		if (canInsert(inventory, stack, slot, dir)) {
+	private static ItemStack method_13726(Inventory inventory, Inventory inventory2, ItemStack itemStack, int i, Direction direction) {
+		ItemStack itemStack2 = inventory2.getInvStack(i);
+		if (canInsert(inventory2, itemStack, i, direction)) {
 			boolean bl = false;
-			if (itemStack == null) {
-				inventory.setInvStack(slot, stack);
-				stack = null;
+			boolean bl2 = inventory2.isEmpty();
+			if (itemStack2.isEmpty()) {
+				inventory2.setInvStack(i, itemStack);
+				itemStack = ItemStack.EMPTY;
 				bl = true;
-			} else if (canMergeItems(itemStack, stack)) {
-				int i = stack.getMaxCount() - itemStack.count;
-				int j = Math.min(stack.count, i);
-				stack.count -= j;
-				itemStack.count += j;
-				bl = j > 0;
+			} else if (canMergeItems(itemStack2, itemStack)) {
+				int j = itemStack.getMaxCount() - itemStack2.getCount();
+				int k = Math.min(itemStack.getCount(), j);
+				itemStack.decrement(k);
+				itemStack2.increment(k);
+				bl = k > 0;
 			}
 
 			if (bl) {
-				if (inventory instanceof HopperBlockEntity) {
-					HopperBlockEntity hopperBlockEntity = (HopperBlockEntity)inventory;
-					if (hopperBlockEntity.isReady()) {
-						hopperBlockEntity.setCooldown(8);
-					}
+				if (bl2 && inventory2 instanceof HopperBlockEntity) {
+					HopperBlockEntity hopperBlockEntity = (HopperBlockEntity)inventory2;
+					if (!hopperBlockEntity.isReady()) {
+						int l = 0;
+						if (inventory != null && inventory instanceof HopperBlockEntity) {
+							HopperBlockEntity hopperBlockEntity2 = (HopperBlockEntity)inventory;
+							if (hopperBlockEntity.field_15156 >= hopperBlockEntity2.field_15156) {
+								l = 1;
+							}
+						}
 
-					inventory.markDirty();
+						hopperBlockEntity.setCooldown(8 - l);
+					}
 				}
 
-				inventory.markDirty();
+				inventory2.markDirty();
 			}
 		}
 
-		return stack;
+		return itemStack;
 	}
 
 	private Inventory getOutputInventory() {
@@ -479,7 +426,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		} else if (first.getData() != second.getData()) {
 			return false;
 		} else {
-			return first.count > first.getMaxCount() ? false : ItemStack.equalsIgnoreDamage(first, second);
+			return first.getCount() > first.getMaxCount() ? false : ItemStack.equalsIgnoreDamage(first, second);
 		}
 	}
 
@@ -498,16 +445,16 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 		return (double)this.pos.getZ() + 0.5;
 	}
 
-	public void setCooldown(int cooldown) {
+	private void setCooldown(int cooldown) {
 		this.transferCooldown = cooldown;
 	}
 
-	public boolean needsCooldown() {
+	private boolean needsCooldown() {
 		return this.transferCooldown > 0;
 	}
 
-	public boolean isReady() {
-		return this.transferCooldown <= 1;
+	private boolean isReady() {
+		return this.transferCooldown > 8;
 	}
 
 	@Override
@@ -522,25 +469,7 @@ public class HopperBlockEntity extends class_2737 implements HopperProvider, Tic
 	}
 
 	@Override
-	public int getProperty(int key) {
-		return 0;
-	}
-
-	@Override
-	public void setProperty(int id, int value) {
-	}
-
-	@Override
-	public int getProperties() {
-		return 0;
-	}
-
-	@Override
-	public void clear() {
-		this.method_11662(null);
-
-		for (int i = 0; i < this.items.length; i++) {
-			this.items[i] = null;
-		}
+	protected DefaultedList<ItemStack> method_13730() {
+		return this.field_15155;
 	}
 }

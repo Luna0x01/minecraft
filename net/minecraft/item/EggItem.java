@@ -18,21 +18,20 @@ public class EggItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		if (!playerEntity.abilities.creativeMode) {
-			itemStack.count--;
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!player.abilities.creativeMode) {
+			itemStack.decrement(1);
 		}
 
-		world.playSound(
-			null, playerEntity.x, playerEntity.y, playerEntity.z, Sounds.ENTITY_EGG_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
-		);
+		world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_EGG_THROW, SoundCategory.PLAYERS, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
 		if (!world.isClient) {
-			EggEntity eggEntity = new EggEntity(world, playerEntity);
-			eggEntity.setProperties(playerEntity, playerEntity.pitch, playerEntity.yaw, 0.0F, 1.5F, 1.0F);
+			EggEntity eggEntity = new EggEntity(world, player);
+			eggEntity.setProperties(player, player.pitch, player.yaw, 0.0F, 1.5F, 1.0F);
 			world.spawnEntity(eggEntity);
 		}
 
-		playerEntity.incrementStat(Stats.used(this));
+		player.incrementStat(Stats.used(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 }

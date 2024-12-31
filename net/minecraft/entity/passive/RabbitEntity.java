@@ -1,6 +1,7 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -22,7 +23,6 @@ import net.minecraft.entity.ai.goal.MoveToTargetPosGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -77,7 +77,7 @@ public class RabbitEntity extends AnimalEntity {
 		this.goals.add(4, new RabbitEntity.FleeGoal(this, WolfEntity.class, 10.0F, 2.2, 2.2));
 		this.goals.add(4, new RabbitEntity.FleeGoal(this, HostileEntity.class, 4.0F, 2.2, 2.2));
 		this.goals.add(5, new RabbitEntity.EatCarrotCropGoal(this));
-		this.goals.add(6, new WanderAroundGoal(this, 0.6));
+		this.goals.add(6, new class_3133(this, 0.6));
 		this.goals.add(11, new LookAtEntityGoal(this, PlayerEntity.class, 10.0F));
 	}
 
@@ -87,7 +87,7 @@ public class RabbitEntity extends AnimalEntity {
 			PathMinHeap pathMinHeap = this.navigation.method_13113();
 			if (pathMinHeap != null && pathMinHeap.method_11937() < pathMinHeap.method_11936()) {
 				Vec3d vec3d = pathMinHeap.method_11928(this);
-				if (vec3d.y > this.y) {
+				if (vec3d.y > this.y + 0.5) {
 					return 0.5F;
 				}
 			}
@@ -241,7 +241,7 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Rabbit");
+		MobEntity.registerDataFixes(dataFixer, RabbitEntity.class);
 	}
 
 	@Override
@@ -323,8 +323,8 @@ public class RabbitEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean isBreedingItem(@Nullable ItemStack stack) {
-		return stack != null && this.method_11076(stack.getItem());
+	public boolean isBreedingItem(ItemStack stack) {
+		return this.method_11076(stack.getItem());
 	}
 
 	public int getRabbitType() {
@@ -411,11 +411,6 @@ public class RabbitEntity extends AnimalEntity {
 		}
 	}
 
-	@Override
-	public void onTrackedDataSet(TrackedData<?> data) {
-		super.onTrackedDataSet(data);
-	}
-
 	public static class Data implements EntityData {
 		public int type;
 
@@ -452,16 +447,6 @@ public class RabbitEntity extends AnimalEntity {
 		@Override
 		public boolean shouldContinue() {
 			return this.hasTarget && super.shouldContinue();
-		}
-
-		@Override
-		public void start() {
-			super.start();
-		}
-
-		@Override
-		public void stop() {
-			super.stop();
 		}
 
 		@Override

@@ -2,10 +2,8 @@ package net.minecraft.entity.mob;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.class_3040;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
@@ -63,11 +61,6 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	@Override
-	public void tick() {
-		super.tick();
-	}
-
-	@Override
 	protected void mobTick() {
 		EntityAttributeInstance entityAttributeInstance = this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED);
 		if (this.isAngry()) {
@@ -107,7 +100,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "PigZombie");
+		MobEntity.registerDataFixes(dataFixer, ZombiePigmanEntity.class);
 	}
 
 	@Override
@@ -185,7 +178,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		return false;
 	}
 
@@ -194,12 +187,9 @@ public class ZombiePigmanEntity extends ZombieEntity {
 		this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.GOLDEN_SWORD));
 	}
 
-	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		super.initialize(difficulty, data);
-		this.method_13550(class_3040.NORMAL);
-		return data;
+	protected ItemStack getSkull() {
+		return ItemStack.EMPTY;
 	}
 
 	static class AvoidZombiesGoal extends RevengeGoal {

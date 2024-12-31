@@ -2,6 +2,7 @@ package net.minecraft.item;
 
 import javax.annotation.Nullable;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
@@ -25,7 +26,13 @@ public class FishingRodItem extends Item {
 				if (entity == null) {
 					return 0.0F;
 				} else {
-					return entity.getMainHandStack() == stack && entity instanceof PlayerEntity && ((PlayerEntity)entity).fishHook != null ? 1.0F : 0.0F;
+					boolean bl = entity.getMainHandStack() == stack;
+					boolean bl2 = entity.getOffHandStack() == stack;
+					if (entity.getMainHandStack().getItem() instanceof FishingRodItem) {
+						bl2 = false;
+					}
+
+					return (bl || bl2) && entity instanceof PlayerEntity && ((PlayerEntity)entity).fishHook != null ? 1.0F : 0.0F;
 				}
 			}
 		});
@@ -42,29 +49,34 @@ public class FishingRodItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		if (playerEntity.fishHook != null) {
-			int i = playerEntity.fishHook.retract();
-			itemStack.damage(i, playerEntity);
-			playerEntity.swingHand(hand);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (player.fishHook != null) {
+			int i = player.fishHook.retract();
+			itemStack.damage(i, player);
+			player.swingHand(hand);
 		} else {
-			world.playSound(
-				null, playerEntity.x, playerEntity.y, playerEntity.z, Sounds.ENTITY_BOBBER_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
-			);
+			world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_BOBBER_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
 			if (!world.isClient) {
-				world.spawnEntity(new FishingBobberEntity(world, playerEntity));
+				FishingBobberEntity fishingBobberEntity = new FishingBobberEntity(world, player);
+				int j = EnchantmentHelper.getLure(itemStack);
+				if (j > 0) {
+					fishingBobberEntity.setLure(j);
+				}
+
+				int k = EnchantmentHelper.getLuckOfTheSea(itemStack);
+				if (k > 0) {
+					fishingBobberEntity.setLuckOfTheSea(k);
+				}
+
+				world.spawnEntity(fishingBobberEntity);
 			}
 
-			playerEntity.swingHand(hand);
-			playerEntity.incrementStat(Stats.used(this));
+			player.swingHand(hand);
+			player.incrementStat(Stats.used(this));
 		}
 
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
-	}
-
-	@Override
-	public boolean isEnchantable(ItemStack stack) {
-		return super.isEnchantable(stack);
 	}
 
 	@Override

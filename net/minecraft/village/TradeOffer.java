@@ -1,14 +1,13 @@
 package net.minecraft.village;
 
-import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 
 public class TradeOffer {
-	private ItemStack stack1;
-	private ItemStack stack2;
-	private ItemStack result;
+	private ItemStack stack1 = ItemStack.EMPTY;
+	private ItemStack stack2 = ItemStack.EMPTY;
+	private ItemStack result = ItemStack.EMPTY;
 	private int uses;
 	private int maxUses;
 	private boolean rewardingPlayerExperience;
@@ -17,11 +16,11 @@ public class TradeOffer {
 		this.readNbt(nbtCompound);
 	}
 
-	public TradeOffer(ItemStack itemStack, @Nullable ItemStack itemStack2, ItemStack itemStack3) {
+	public TradeOffer(ItemStack itemStack, ItemStack itemStack2, ItemStack itemStack3) {
 		this(itemStack, itemStack2, itemStack3, 0, 7);
 	}
 
-	public TradeOffer(ItemStack itemStack, @Nullable ItemStack itemStack2, ItemStack itemStack3, int i, int j) {
+	public TradeOffer(ItemStack itemStack, ItemStack itemStack2, ItemStack itemStack3, int i, int j) {
 		this.stack1 = itemStack;
 		this.stack2 = itemStack2;
 		this.result = itemStack3;
@@ -31,7 +30,7 @@ public class TradeOffer {
 	}
 
 	public TradeOffer(ItemStack itemStack, ItemStack itemStack2) {
-		this(itemStack, null, itemStack2);
+		this(itemStack, ItemStack.EMPTY, itemStack2);
 	}
 
 	public TradeOffer(ItemStack itemStack, Item item) {
@@ -47,7 +46,7 @@ public class TradeOffer {
 	}
 
 	public boolean hasSecondStack() {
-		return this.stack2 != null;
+		return !this.stack2.isEmpty();
 	}
 
 	public ItemStack getResult() {
@@ -84,11 +83,11 @@ public class TradeOffer {
 
 	public void readNbt(NbtCompound nbt) {
 		NbtCompound nbtCompound = nbt.getCompound("buy");
-		this.stack1 = ItemStack.fromNbt(nbtCompound);
+		this.stack1 = new ItemStack(nbtCompound);
 		NbtCompound nbtCompound2 = nbt.getCompound("sell");
-		this.result = ItemStack.fromNbt(nbtCompound2);
+		this.result = new ItemStack(nbtCompound2);
 		if (nbt.contains("buyB", 10)) {
-			this.stack2 = ItemStack.fromNbt(nbt.getCompound("buyB"));
+			this.stack2 = new ItemStack(nbt.getCompound("buyB"));
 		}
 
 		if (nbt.contains("uses", 99)) {
@@ -112,7 +111,7 @@ public class TradeOffer {
 		NbtCompound nbtCompound = new NbtCompound();
 		nbtCompound.put("buy", this.stack1.toNbt(new NbtCompound()));
 		nbtCompound.put("sell", this.result.toNbt(new NbtCompound()));
-		if (this.stack2 != null) {
+		if (!this.stack2.isEmpty()) {
 			nbtCompound.put("buyB", this.stack2.toNbt(new NbtCompound()));
 		}
 

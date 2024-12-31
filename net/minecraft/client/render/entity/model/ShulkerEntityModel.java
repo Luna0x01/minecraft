@@ -2,13 +2,12 @@ package net.minecraft.client.render.entity.model;
 
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ShulkerEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class ShulkerEntityModel extends EntityModel {
-	private final ModelPart field_13396;
-	private final ModelPart field_13397;
+	public final ModelPart field_13396;
+	public final ModelPart field_13397;
 	public ModelPart field_13395;
 
 	public ShulkerEntityModel() {
@@ -23,14 +22,6 @@ public class ShulkerEntityModel extends EntityModel {
 		this.field_13396.setPivot(0.0F, 24.0F, 0.0F);
 		this.field_13395.setTextureOffset(0, 52).addCuboid(-3.0F, 0.0F, -3.0F, 6, 6, 6);
 		this.field_13395.setPivot(0.0F, 12.0F, 0.0F);
-	}
-
-	public int method_12225() {
-		return 28;
-	}
-
-	@Override
-	public void animateModel(LivingEntity entity, float limbAngle, float limbDistance, float tickDelta) {
 	}
 
 	@Override

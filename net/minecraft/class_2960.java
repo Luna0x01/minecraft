@@ -1,31 +1,53 @@
 package net.minecraft;
 
-import javax.annotation.Nullable;
+import java.util.List;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.util.collection.DefaultedList;
 
 public class class_2960 {
-	@Nullable
-	public static ItemStack method_12933(ItemStack[] itemStacks, int i, int j) {
-		if (i >= 0 && i < itemStacks.length && itemStacks[i] != null && j > 0) {
-			ItemStack itemStack = itemStacks[i].split(j);
-			if (itemStacks[i].count == 0) {
-				itemStacks[i] = null;
-			}
-
-			return itemStack;
-		} else {
-			return null;
-		}
+	public static ItemStack method_13926(List<ItemStack> list, int i, int j) {
+		return i >= 0 && i < list.size() && !((ItemStack)list.get(i)).isEmpty() && j > 0 ? ((ItemStack)list.get(i)).split(j) : ItemStack.EMPTY;
 	}
 
-	@Nullable
-	public static ItemStack method_12932(ItemStack[] itemStacks, int i) {
-		if (i >= 0 && i < itemStacks.length) {
-			ItemStack itemStack = itemStacks[i];
-			itemStacks[i] = null;
-			return itemStack;
-		} else {
-			return null;
+	public static ItemStack method_13925(List<ItemStack> list, int i) {
+		return i >= 0 && i < list.size() ? (ItemStack)list.set(i, ItemStack.EMPTY) : ItemStack.EMPTY;
+	}
+
+	public static NbtCompound method_13923(NbtCompound nbtCompound, DefaultedList<ItemStack> defaultedList) {
+		return method_13924(nbtCompound, defaultedList, true);
+	}
+
+	public static NbtCompound method_13924(NbtCompound nbtCompound, DefaultedList<ItemStack> defaultedList, boolean bl) {
+		NbtList nbtList = new NbtList();
+
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack = defaultedList.get(i);
+			if (!itemStack.isEmpty()) {
+				NbtCompound nbtCompound2 = new NbtCompound();
+				nbtCompound2.putByte("Slot", (byte)i);
+				itemStack.toNbt(nbtCompound2);
+				nbtList.add(nbtCompound2);
+			}
+		}
+
+		if (!nbtList.isEmpty() || bl) {
+			nbtCompound.put("Items", nbtList);
+		}
+
+		return nbtCompound;
+	}
+
+	public static void method_13927(NbtCompound nbtCompound, DefaultedList<ItemStack> defaultedList) {
+		NbtList nbtList = nbtCompound.getList("Items", 10);
+
+		for (int i = 0; i < nbtList.size(); i++) {
+			NbtCompound nbtCompound2 = nbtList.getCompound(i);
+			int j = nbtCompound2.getByte("Slot") & 255;
+			if (j >= 0 && j < defaultedList.size()) {
+				defaultedList.set(j, new ItemStack(nbtCompound2));
+			}
 		}
 	}
 }

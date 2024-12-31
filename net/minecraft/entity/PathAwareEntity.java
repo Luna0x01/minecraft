@@ -1,14 +1,12 @@
 package net.minecraft.entity;
 
 import java.util.UUID;
-import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
-import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.pathing.LandType;
-import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public abstract class PathAwareEntity extends MobEntity {
@@ -17,13 +15,10 @@ public abstract class PathAwareEntity extends MobEntity {
 		.setSerialized(false);
 	private BlockPos positionTarget = BlockPos.ORIGIN;
 	private float positionTargetRange = -1.0F;
-	private final Goal goal;
-	private boolean field_6809;
 	private float field_14565 = LandType.WATER.getWeight();
 
 	public PathAwareEntity(World world) {
 		super(world);
-		this.goal = new GoToWalkTargetGoal(this, 1.0);
 	}
 
 	public float getPathfindingFavor(BlockPos pos) {
@@ -83,42 +78,28 @@ public abstract class PathAwareEntity extends MobEntity {
 				return;
 			}
 
-			if (!this.field_6809) {
-				this.goals.add(2, this.goal);
-				if (this.getNavigation() instanceof MobNavigation) {
-					this.field_14565 = this.method_13075(LandType.WATER);
-					this.method_13076(LandType.WATER, 0.0F);
-				}
-
-				this.field_6809 = true;
-			}
-
 			this.method_6175(f);
-			if (f > 4.0F) {
-				this.getNavigation().startMovingTo(entity, 1.0);
-			}
-
-			if (f > 6.0F) {
+			if (f > 10.0F) {
+				this.detachLeash(true, true);
+				this.goals.method_13098(1);
+			} else if (f > 6.0F) {
 				double d = (entity.x - this.x) / (double)f;
 				double e = (entity.y - this.y) / (double)f;
 				double g = (entity.z - this.z) / (double)f;
 				this.velocityX = this.velocityX + d * Math.abs(d) * 0.4;
 				this.velocityY = this.velocityY + e * Math.abs(e) * 0.4;
 				this.velocityZ = this.velocityZ + g * Math.abs(g) * 0.4;
+			} else {
+				this.goals.method_13099(1);
+				float h = 2.0F;
+				Vec3d vec3d = new Vec3d(entity.x - this.x, entity.y - this.y, entity.z - this.z).normalize().multiply((double)Math.max(f - 2.0F, 0.0F));
+				this.getNavigation().startMovingTo(this.x + vec3d.x, this.y + vec3d.y, this.z + vec3d.z, this.method_13951());
 			}
-
-			if (f > 10.0F) {
-				this.detachLeash(true, true);
-			}
-		} else if (!this.isLeashed() && this.field_6809) {
-			this.field_6809 = false;
-			this.goals.method_4497(this.goal);
-			if (this.getNavigation() instanceof MobNavigation) {
-				this.method_13076(LandType.WATER, this.field_14565);
-			}
-
-			this.method_6173();
 		}
+	}
+
+	protected double method_13951() {
+		return 1.0;
 	}
 
 	protected void method_6175(float f) {

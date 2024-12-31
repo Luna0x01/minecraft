@@ -35,63 +35,54 @@ public class BedBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			if (blockState.get(BED_TYPE) != BedBlock.BedBlockType.HEAD) {
-				blockPos = blockPos.offset(blockState.get(DIRECTION));
-				blockState = world.getBlockState(blockPos);
-				if (blockState.getBlock() != this) {
+			if (state.get(BED_TYPE) != BedBlock.BedBlockType.HEAD) {
+				pos = pos.offset(state.get(DIRECTION));
+				state = world.getBlockState(pos);
+				if (state.getBlock() != this) {
 					return true;
 				}
 			}
 
-			if (world.dimension.containsWorldSpawn() && world.getBiome(blockPos) != Biomes.NETHER) {
-				if ((Boolean)blockState.get(OCCUPIED)) {
-					PlayerEntity playerEntity2 = this.getPlayer(world, blockPos);
-					if (playerEntity2 != null) {
-						playerEntity.addMessage(new TranslatableText("tile.bed.occupied"));
+			if (world.dimension.containsWorldSpawn() && world.getBiome(pos) != Biomes.NETHER) {
+				if ((Boolean)state.get(OCCUPIED)) {
+					PlayerEntity playerEntity = this.getPlayer(world, pos);
+					if (playerEntity != null) {
+						player.sendMessage(new TranslatableText("tile.bed.occupied"), true);
 						return true;
 					}
 
-					blockState = blockState.with(OCCUPIED, false);
-					world.setBlockState(blockPos, blockState, 4);
+					state = state.with(OCCUPIED, false);
+					world.setBlockState(pos, state, 4);
 				}
 
-				PlayerEntity.SleepStatus sleepStatus = playerEntity.attemptSleep(blockPos);
+				PlayerEntity.SleepStatus sleepStatus = player.attemptSleep(pos);
 				if (sleepStatus == PlayerEntity.SleepStatus.OK) {
-					blockState = blockState.with(OCCUPIED, true);
-					world.setBlockState(blockPos, blockState, 4);
+					state = state.with(OCCUPIED, true);
+					world.setBlockState(pos, state, 4);
 					return true;
 				} else {
 					if (sleepStatus == PlayerEntity.SleepStatus.NOT_POSSIBLE_NOW) {
-						playerEntity.addMessage(new TranslatableText("tile.bed.noSleep"));
+						player.sendMessage(new TranslatableText("tile.bed.noSleep"), true);
 					} else if (sleepStatus == PlayerEntity.SleepStatus.NOT_SAFE) {
-						playerEntity.addMessage(new TranslatableText("tile.bed.notSafe"));
+						player.sendMessage(new TranslatableText("tile.bed.notSafe"), true);
+					} else if (sleepStatus == PlayerEntity.SleepStatus.TOO_FAR_AWAY) {
+						player.sendMessage(new TranslatableText("tile.bed.tooFarAway"), true);
 					}
 
 					return true;
 				}
 			} else {
-				world.setAir(blockPos);
-				BlockPos blockPos2 = blockPos.offset(((Direction)blockState.get(DIRECTION)).getOpposite());
-				if (world.getBlockState(blockPos2).getBlock() == this) {
-					world.setAir(blockPos2);
+				world.setAir(pos);
+				BlockPos blockPos = pos.offset(((Direction)state.get(DIRECTION)).getOpposite());
+				if (world.getBlockState(blockPos).getBlock() == this) {
+					world.setAir(blockPos);
 				}
 
-				world.createExplosion(null, (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, 5.0F, true, true);
+				world.createExplosion(null, (double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, 5.0F, true, true);
 				return true;
 			}
 		}
@@ -119,24 +110,23 @@ public class BedBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		Direction direction = blockState.get(DIRECTION);
-		if (blockState.get(BED_TYPE) == BedBlock.BedBlockType.HEAD) {
-			if (world.getBlockState(blockPos.offset(direction.getOpposite())).getBlock() != this) {
-				world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		Direction direction = state.get(DIRECTION);
+		if (state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD) {
+			if (world.getBlockState(pos.offset(direction.getOpposite())).getBlock() != this) {
+				world.setAir(pos);
 			}
-		} else if (world.getBlockState(blockPos.offset(direction)).getBlock() != this) {
-			world.setAir(blockPos);
+		} else if (world.getBlockState(pos.offset(direction)).getBlock() != this) {
+			world.setAir(pos);
 			if (!world.isClient) {
-				this.dropAsItem(world, blockPos, blockState, 0);
+				this.dropAsItem(world, pos, state, 0);
 			}
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD ? null : Items.BED;
+		return state.get(BED_TYPE) == BedBlock.BedBlockType.HEAD ? Items.AIR : Items.BED;
 	}
 
 	@Override

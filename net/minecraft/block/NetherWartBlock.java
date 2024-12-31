@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -73,10 +72,9 @@ public class NetherWartBlock extends PlantBlock {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
 	@Override

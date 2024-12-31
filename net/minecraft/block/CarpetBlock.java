@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -9,6 +8,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -52,8 +52,8 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		this.continueToExist(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		this.continueToExist(world, pos, state);
 	}
 
 	private boolean continueToExist(World world, BlockPos pos, BlockState state) {
@@ -85,9 +85,9 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (int i = 0; i < 16; i++) {
-			stacks.add(new ItemStack(item, 1, i));
+			defaultedList.add(new ItemStack(item, 1, i));
 		}
 	}
 

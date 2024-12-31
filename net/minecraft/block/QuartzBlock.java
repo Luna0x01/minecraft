@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.LivingEntity;
@@ -11,6 +10,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -59,10 +59,10 @@ public class QuartzBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item, 1, QuartzBlock.QuartzType.DEFAULT.getId()));
-		stacks.add(new ItemStack(item, 1, QuartzBlock.QuartzType.CHISELED.getId()));
-		stacks.add(new ItemStack(item, 1, QuartzBlock.QuartzType.LINES_X.getId()));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item, 1, QuartzBlock.QuartzType.DEFAULT.getId()));
+		defaultedList.add(new ItemStack(item, 1, QuartzBlock.QuartzType.CHISELED.getId()));
+		defaultedList.add(new ItemStack(item, 1, QuartzBlock.QuartzType.LINES_X.getId()));
 	}
 
 	@Override

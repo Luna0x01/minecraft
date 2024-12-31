@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 import java.util.Random;
 import java.util.Set;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
@@ -18,6 +17,7 @@ import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
@@ -282,8 +282,8 @@ public class ClientWorld extends World {
 		Random random = new Random();
 		ItemStack itemStack = this.client.player.getMainHandStack();
 		boolean bl = this.client.interactionManager.method_9667() == GameMode.CREATIVE
-			&& itemStack != null
-			&& Block.getBlockFromItem(itemStack.getItem()) == Blocks.BARRIER;
+			&& !itemStack.isEmpty()
+			&& itemStack.getItem() == Item.fromBlock(Blocks.BARRIER);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int j = 0; j < 667; j++) {

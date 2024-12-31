@@ -3,6 +3,7 @@ package net.minecraft.entity.passive;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.datafixer.DataFixerUpper;
@@ -16,8 +17,8 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
@@ -39,6 +40,7 @@ import net.minecraft.world.World;
 
 public class PigEntity extends AnimalEntity {
 	private static final TrackedData<Boolean> field_14615 = DataTracker.registerData(PigEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Integer> field_15485 = DataTracker.registerData(PigEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final Set<Item> field_14616 = Sets.newHashSet(new Item[]{Items.CARROT, Items.POTATO, Items.BEETROOT});
 	private boolean field_14617;
 	private int field_14613;
@@ -57,7 +59,7 @@ public class PigEntity extends AnimalEntity {
 		this.goals.add(4, new TemptGoal(this, 1.2, Items.CARROT_ON_A_STICK, false));
 		this.goals.add(4, new TemptGoal(this, 1.2, false, field_14616));
 		this.goals.add(5, new FollowParentGoal(this, 1.1));
-		this.goals.add(6, new WanderAroundGoal(this, 1.0));
+		this.goals.add(6, new class_3133(this, 1.0));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(8, new LookAroundGoal(this));
 	}
@@ -82,24 +84,30 @@ public class PigEntity extends AnimalEntity {
 			return false;
 		} else {
 			PlayerEntity playerEntity = (PlayerEntity)entity;
-			ItemStack itemStack = playerEntity.getMainHandStack();
-			if (itemStack != null && itemStack.getItem() == Items.CARROT_ON_A_STICK) {
-				return true;
-			} else {
-				itemStack = playerEntity.getOffHandStack();
-				return itemStack != null && itemStack.getItem() == Items.CARROT_ON_A_STICK;
-			}
+			return playerEntity.getMainHandStack().getItem() == Items.CARROT_ON_A_STICK || playerEntity.getOffHandStack().getItem() == Items.CARROT_ON_A_STICK;
 		}
+	}
+
+	@Override
+	public void onTrackedDataSet(TrackedData<?> data) {
+		if (field_15485.equals(data) && this.world.isClient) {
+			this.field_14617 = true;
+			this.field_14613 = 0;
+			this.field_14614 = this.dataTracker.get(field_15485);
+		}
+
+		super.onTrackedDataSet(data);
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_14615, false);
+		this.dataTracker.startTracking(field_15485, 0);
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Pig");
+		MobEntity.registerDataFixes(dataFixer, PigEntity.class);
 	}
 
 	@Override
@@ -135,10 +143,20 @@ public class PigEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (!super.method_13079(playerEntity, hand, itemStack)) {
-			if (this.isSaddled() && !this.world.isClient && !this.hasPassengers()) {
-				playerEntity.ride(this);
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		if (!super.interactMob(playerEntity, hand)) {
+			ItemStack itemStack = playerEntity.getStackInHand(hand);
+			if (itemStack.getItem() == Items.NAME_TAG) {
+				itemStack.method_6329(playerEntity, this, hand);
+				return true;
+			} else if (this.isSaddled() && !this.hasPassengers()) {
+				if (!this.world.isClient) {
+					playerEntity.ride(this);
+				}
+
+				return true;
+			} else if (itemStack.getItem() == Items.SADDLE) {
+				itemStack.method_6329(playerEntity, this, hand);
 				return true;
 			} else {
 				return false;
@@ -149,10 +167,12 @@ public class PigEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected void method_4472(boolean bl, int i) {
-		super.method_4472(bl, i);
-		if (this.isSaddled()) {
-			this.dropItem(Items.SADDLE, 1);
+	public void onKilled(DamageSource source) {
+		super.onKilled(source);
+		if (!this.world.isClient) {
+			if (this.isSaddled()) {
+				this.dropItem(Items.SADDLE, 1);
+			}
 		}
 	}
 
@@ -213,13 +233,13 @@ public class PigEntity extends AnimalEntity {
 			this.headYaw = this.yaw;
 			this.stepHeight = 1.0F;
 			this.flyingSpeed = this.getMovementSpeed() * 0.1F;
+			if (this.field_14617 && this.field_14613++ > this.field_14614) {
+				this.field_14617 = false;
+			}
+
 			if (this.method_13003()) {
 				float h = (float)this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue() * 0.225F;
 				if (this.field_14617) {
-					if (this.field_14613++ > this.field_14614) {
-						this.field_14617 = false;
-					}
-
 					h += h * 1.15F * MathHelper.sin((float)this.field_14613 / (float)this.field_14614 * (float) Math.PI);
 				}
 
@@ -255,6 +275,7 @@ public class PigEntity extends AnimalEntity {
 			this.field_14617 = true;
 			this.field_14613 = 0;
 			this.field_14614 = this.getRandom().nextInt(841) + 140;
+			this.getDataTracker().set(field_15485, this.field_14614);
 			return true;
 		}
 	}
@@ -264,7 +285,7 @@ public class PigEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean isBreedingItem(@Nullable ItemStack stack) {
-		return stack != null && field_14616.contains(stack.getItem());
+	public boolean isBreedingItem(ItemStack stack) {
+		return field_14616.contains(stack.getItem());
 	}
 }

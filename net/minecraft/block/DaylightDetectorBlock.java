@@ -1,8 +1,6 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.DaylightDetectorBlockEntity;
 import net.minecraft.block.material.Material;
@@ -14,6 +12,7 @@ import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.Hand;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -48,7 +47,7 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 	}
 
 	public void updateState(World world, BlockPos pos) {
-		if (!world.dimension.hasNoSkylight()) {
+		if (world.dimension.isOverworld()) {
 			BlockState blockState = world.getBlockState(pos);
 			int i = world.getLightAtPos(LightType.SKY, pos) - world.getAmbientDarkness();
 			float f = world.getSkyAngleRadians(1.0F);
@@ -70,38 +69,26 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if (playerEntity.canModifyWorld()) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if (player.canModifyWorld()) {
 			if (world.isClient) {
 				return true;
 			} else {
 				if (this.inverted) {
-					world.setBlockState(blockPos, Blocks.DAYLIGHT_DETECTOR.getDefaultState().with(POWER, blockState.get(POWER)), 4);
-					Blocks.DAYLIGHT_DETECTOR.updateState(world, blockPos);
+					world.setBlockState(pos, Blocks.DAYLIGHT_DETECTOR.getDefaultState().with(POWER, state.get(POWER)), 4);
+					Blocks.DAYLIGHT_DETECTOR.updateState(world, pos);
 				} else {
-					world.setBlockState(blockPos, Blocks.DAYLIGHT_DETECTOR_INVERTED.getDefaultState().with(POWER, blockState.get(POWER)), 4);
-					Blocks.DAYLIGHT_DETECTOR_INVERTED.updateState(world, blockPos);
+					world.setBlockState(pos, Blocks.DAYLIGHT_DETECTOR_INVERTED.getDefaultState().with(POWER, state.get(POWER)), 4);
+					Blocks.DAYLIGHT_DETECTOR_INVERTED.updateState(world, pos);
 				}
 
 				return true;
 			}
 		} else {
-			return super.method_421(world, blockPos, blockState, playerEntity, hand, itemStack, direction, f, g, h);
+			return super.use(world, pos, state, player, hand, direction, f, g, h);
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.DAYLIGHT_DETECTOR);
@@ -153,9 +140,9 @@ public class DaylightDetectorBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		if (!this.inverted) {
-			super.appendItemStacks(item, group, stacks);
+			super.method_13700(item, itemGroup, defaultedList);
 		}
 	}
 }

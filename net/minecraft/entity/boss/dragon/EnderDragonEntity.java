@@ -16,6 +16,7 @@ import net.minecraft.entity.EndCrystalEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.MultipartEntityProvider;
 import net.minecraft.entity.ai.class_2769;
 import net.minecraft.entity.ai.pathing.PathMinHeap;
@@ -30,10 +31,12 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.DragonRespawnAnimation;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
@@ -229,9 +232,9 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 						float w = 0.06F;
 						this.updateVelocity(0.0F, -1.0F, 0.06F * (u * v + (1.0F - v)));
 						if (this.field_3745) {
-							this.move(this.velocityX * 0.8F, this.velocityY * 0.8F, this.velocityZ * 0.8F);
+							this.move(MovementType.SELF, this.velocityX * 0.8F, this.velocityY * 0.8F, this.velocityZ * 0.8F);
 						} else {
-							this.move(this.velocityX, this.velocityY, this.velocityZ);
+							this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 						}
 
 						Vec3d vec3d4 = new Vec3d(this.velocityX, this.velocityY, this.velocityZ).normalize();
@@ -260,18 +263,24 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 				this.partWingRight.width = 4.0F;
 				this.partWingLeft.height = 3.0F;
 				this.partWingLeft.width = 4.0F;
-				float y = (float)(this.getSegmentProperties(5, 1.0F)[1] - this.getSegmentProperties(10, 1.0F)[1]) * 10.0F * (float) (Math.PI / 180.0);
-				float z = MathHelper.cos(y);
-				float aa = MathHelper.sin(y);
-				float ab = this.yaw * (float) (Math.PI / 180.0);
-				float ac = MathHelper.sin(ab);
-				float ad = MathHelper.cos(ab);
+				Vec3d[] vec3ds = new Vec3d[this.parts.length];
+
+				for (int y = 0; y < this.parts.length; y++) {
+					vec3ds[y] = new Vec3d(this.parts[y].x, this.parts[y].y, this.parts[y].z);
+				}
+
+				float z = (float)(this.getSegmentProperties(5, 1.0F)[1] - this.getSegmentProperties(10, 1.0F)[1]) * 10.0F * (float) (Math.PI / 180.0);
+				float aa = MathHelper.cos(z);
+				float ab = MathHelper.sin(z);
+				float ac = this.yaw * (float) (Math.PI / 180.0);
+				float ad = MathHelper.sin(ac);
+				float ae = MathHelper.cos(ac);
 				this.partBody.tick();
-				this.partBody.refreshPositionAndAngles(this.x + (double)(ac * 0.5F), this.y, this.z - (double)(ad * 0.5F), 0.0F, 0.0F);
+				this.partBody.refreshPositionAndAngles(this.x + (double)(ad * 0.5F), this.y, this.z - (double)(ae * 0.5F), 0.0F, 0.0F);
 				this.partWingRight.tick();
-				this.partWingRight.refreshPositionAndAngles(this.x + (double)(ad * 4.5F), this.y + 2.0, this.z + (double)(ac * 4.5F), 0.0F, 0.0F);
+				this.partWingRight.refreshPositionAndAngles(this.x + (double)(ae * 4.5F), this.y + 2.0, this.z + (double)(ad * 4.5F), 0.0F, 0.0F);
 				this.partWingLeft.tick();
-				this.partWingLeft.refreshPositionAndAngles(this.x - (double)(ad * 4.5F), this.y + 2.0, this.z - (double)(ac * 4.5F), 0.0F, 0.0F);
+				this.partWingLeft.refreshPositionAndAngles(this.x - (double)(ae * 4.5F), this.y + 2.0, this.z - (double)(ad * 4.5F), 0.0F, 0.0F);
 				if (!this.world.isClient && this.hurtTime == 0) {
 					this.launchLivingEntities(this.world.getEntitiesIn(this, this.partWingRight.getBoundingBox().expand(4.0, 2.0, 4.0).offset(0.0, -2.0, 0.0)));
 					this.launchLivingEntities(this.world.getEntitiesIn(this, this.partWingLeft.getBoundingBox().expand(4.0, 2.0, 4.0).offset(0.0, -2.0, 0.0)));
@@ -280,41 +289,41 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 				}
 
 				double[] ds = this.getSegmentProperties(5, 1.0F);
-				float ae = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0) - this.field_6782 * 0.01F);
-				float af = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0) - this.field_6782 * 0.01F);
+				float af = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0) - this.field_6782 * 0.01F);
+				float ag = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0) - this.field_6782 * 0.01F);
 				this.partHead.tick();
 				this.field_14670.tick();
-				float ag = this.method_13172(1.0F);
+				float ah = this.method_13172(1.0F);
 				this.partHead
-					.refreshPositionAndAngles(this.x + (double)(ae * 6.5F * z), this.y + (double)ag + (double)(aa * 6.5F), this.z - (double)(af * 6.5F * z), 0.0F, 0.0F);
+					.refreshPositionAndAngles(this.x + (double)(af * 6.5F * aa), this.y + (double)ah + (double)(ab * 6.5F), this.z - (double)(ag * 6.5F * aa), 0.0F, 0.0F);
 				this.field_14670
-					.refreshPositionAndAngles(this.x + (double)(ae * 5.5F * z), this.y + (double)ag + (double)(aa * 5.5F), this.z - (double)(af * 5.5F * z), 0.0F, 0.0F);
+					.refreshPositionAndAngles(this.x + (double)(af * 5.5F * aa), this.y + (double)ah + (double)(ab * 5.5F), this.z - (double)(ag * 5.5F * aa), 0.0F, 0.0F);
 
-				for (int ah = 0; ah < 3; ah++) {
+				for (int ai = 0; ai < 3; ai++) {
 					EnderDragonPart enderDragonPart = null;
-					if (ah == 0) {
+					if (ai == 0) {
 						enderDragonPart = this.partTail1;
 					}
 
-					if (ah == 1) {
+					if (ai == 1) {
 						enderDragonPart = this.partTail2;
 					}
 
-					if (ah == 2) {
+					if (ai == 2) {
 						enderDragonPart = this.partTail3;
 					}
 
-					double[] es = this.getSegmentProperties(12 + ah * 2, 1.0F);
-					float ai = this.yaw * (float) (Math.PI / 180.0) + this.wrapYawChange(es[0] - ds[0]) * (float) (Math.PI / 180.0);
-					float aj = MathHelper.sin(ai);
-					float ak = MathHelper.cos(ai);
-					float al = 1.5F;
-					float am = (float)(ah + 1) * 2.0F;
+					double[] es = this.getSegmentProperties(12 + ai * 2, 1.0F);
+					float aj = this.yaw * (float) (Math.PI / 180.0) + this.wrapYawChange(es[0] - ds[0]) * (float) (Math.PI / 180.0);
+					float ak = MathHelper.sin(aj);
+					float al = MathHelper.cos(aj);
+					float am = 1.5F;
+					float an = (float)(ai + 1) * 2.0F;
 					enderDragonPart.tick();
 					enderDragonPart.refreshPositionAndAngles(
-						this.x - (double)((ac * 1.5F + aj * am) * z),
-						this.y + (es[1] - ds[1]) - (double)((am + 1.5F) * aa) + 1.5,
-						this.z + (double)((ad * 1.5F + ak * am) * z),
+						this.x - (double)((ad * 1.5F + ak * an) * aa),
+						this.y + (es[1] - ds[1]) - (double)((an + 1.5F) * ab) + 1.5,
+						this.z + (double)((ae * 1.5F + al * an) * aa),
 						0.0F,
 						0.0F
 					);
@@ -328,6 +337,12 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 						this.field_14663.method_11806(this);
 					}
 				}
+
+				for (int ao = 0; ao < this.parts.length; ao++) {
+					this.parts[ao].prevX = vec3ds[ao].x;
+					this.parts[ao].prevY = vec3ds[ao].y;
+					this.parts[ao].prevZ = vec3ds[ao].z;
+				}
 			}
 		}
 	}
@@ -339,7 +354,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 		} else {
 			double[] ds = this.getSegmentProperties(5, 1.0F);
 			double[] es = this.getSegmentProperties(0, 1.0F);
-			d = ds[1] - es[0];
+			d = ds[1] - es[1];
 		}
 
 		return (float)d;
@@ -536,7 +551,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 			}
 		}
 
-		this.move(0.0, 0.1F, 0.0);
+		this.move(MovementType.SELF, 0.0, 0.1F, 0.0);
 		this.yaw += 20.0F;
 		this.bodyYaw = this.yaw;
 		if (this.field_3746 == 200 && !this.world.isClient) {
@@ -739,7 +754,7 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "EnderDragon");
+		MobEntity.registerDataFixes(dataFixer, EnderDragonEntity.class);
 	}
 
 	@Override
@@ -793,6 +808,12 @@ public class EnderDragonEntity extends MobEntity implements MultipartEntityProvi
 	@Override
 	protected float getSoundVolume() {
 		return 5.0F;
+	}
+
+	@Nullable
+	@Override
+	protected Identifier getLootTableId() {
+		return LootTables.ENDER_DRAGON_ENTITIE;
 	}
 
 	public float method_13165(int i, double[] ds, double[] es) {

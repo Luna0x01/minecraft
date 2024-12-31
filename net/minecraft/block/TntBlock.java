@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
@@ -39,10 +38,10 @@ public class TntBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (world.isReceivingRedstonePower(blockPos)) {
-			this.onBreakByPlayer(world, blockPos, blockState.with(EXPLODE, true));
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (world.isReceivingRedstonePower(pos)) {
+			this.onBreakByPlayer(world, pos, state.with(EXPLODE, true));
+			world.setAir(pos);
 		}
 	}
 
@@ -75,30 +74,20 @@ public class TntBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if (itemStack != null && (itemStack.getItem() == Items.FLINT_AND_STEEL || itemStack.getItem() == Items.FIRE_CHARGE)) {
-			this.method_11639(world, blockPos, blockState.with(EXPLODE, true), playerEntity);
-			world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 11);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!itemStack.isEmpty() && (itemStack.getItem() == Items.FLINT_AND_STEEL || itemStack.getItem() == Items.FIRE_CHARGE)) {
+			this.method_11639(world, pos, state.with(EXPLODE, true), player);
+			world.setBlockState(pos, Blocks.AIR.getDefaultState(), 11);
 			if (itemStack.getItem() == Items.FLINT_AND_STEEL) {
-				itemStack.damage(1, playerEntity);
-			} else if (!playerEntity.abilities.creativeMode) {
-				itemStack.count--;
+				itemStack.damage(1, player);
+			} else if (!player.abilities.creativeMode) {
+				itemStack.decrement(1);
 			}
 
 			return true;
 		} else {
-			return super.method_421(world, blockPos, blockState, playerEntity, hand, itemStack, direction, f, g, h);
+			return super.use(world, pos, state, player, hand, direction, f, g, h);
 		}
 	}
 

@@ -41,7 +41,7 @@ public class BlockDustParticle extends Particle {
 		if (block == Blocks.GRASS) {
 			return this;
 		} else {
-			this.method_12261(null);
+			this.method_12261(this.pos);
 			return this;
 		}
 	}

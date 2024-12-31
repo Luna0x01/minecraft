@@ -11,13 +11,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.screen.options.LanguageOptionsScreen;
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.gui.widget.LanguageButton;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.BufferBuilder;
@@ -27,6 +25,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.realms.RealmsBridge;
 import net.minecraft.resource.Resource;
+import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -40,8 +39,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.util.glu.Project;
 
-public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
-	private static final AtomicInteger THREAD_ID = new AtomicInteger(0);
+public class TitleScreen extends Screen {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Random RANDOM = new Random();
 	private final float minecraftRandomNumber;
@@ -49,10 +47,16 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 	private ButtonWidget resetDemoButton;
 	private int ticks;
 	private NativeImageBackedTexture backgroundTexture;
-	private final boolean enabled = true;
 	private final Object mutex = new Object();
+	public static final String MORE_INFO_MESSAGE = "Please click " + Formatting.UNDERLINE + "here" + Formatting.RESET + " for more information.";
+	private int oldGl2Width;
+	private int oldGl1Width;
+	private int oldGlLeft;
+	private int oldGlTop;
+	private int oldGlRight;
+	private int oldGlBottom;
 	private String oldGl1;
-	private String oldGl2;
+	private String oldGl2 = MORE_INFO_MESSAGE;
 	private String oldGlLink;
 	private static final Identifier SPLASHES = new Identifier("texts/splashes.txt");
 	private static final Identifier MINECRAFT_TITLE_TEXTURE = new Identifier("textures/gui/title/minecraft.png");
@@ -64,20 +68,12 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		new Identifier("textures/gui/title/background/panorama_4.png"),
 		new Identifier("textures/gui/title/background/panorama_5.png")
 	};
-	public static final String MORE_INFO_MESSAGE = "Please click " + Formatting.UNDERLINE + "here" + Formatting.RESET + " for more information.";
-	private int oldGl2Width;
-	private int oldGl1Width;
-	private int oldGlLeft;
-	private int oldGlTop;
-	private int oldGlRight;
-	private int oldGlBottom;
 	private Identifier backgroundTextureId;
 	private ButtonWidget realmsButton;
 	private boolean realmsNotificationsInitialized;
 	private Screen realmsNotificationScreen;
 
 	public TitleScreen() {
-		this.oldGl2 = MORE_INFO_MESSAGE;
 		this.splashText = "missingno";
 		Resource resource = null;
 
@@ -110,6 +106,13 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 			this.oldGl1 = I18n.translate("title.oldgl1");
 			this.oldGl2 = I18n.translate("title.oldgl2");
 			this.oldGlLink = "https://help.mojang.com/customer/portal/articles/325948?ref=game";
+		}
+
+		String string2 = System.getProperty("java.version");
+		if (string2 != null && (string2.startsWith("1.6") || string2.startsWith("1.7"))) {
+			this.oldGl1 = I18n.translate("title.oldjava1");
+			this.oldGl2 = I18n.translate("title.oldjava2");
+			this.oldGlLink = "https://help.mojang.com/customer/portal/articles/2636196?ref=game";
 		}
 	}
 
@@ -258,6 +261,8 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 			LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
 			levelStorageAccess.clearAll();
 			levelStorageAccess.deleteLevel("Demo_World");
+			this.client.setScreen(this);
+		} else if (id == 12) {
 			this.client.setScreen(this);
 		} else if (id == 13) {
 			if (confirmed) {
@@ -445,7 +450,7 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		GlStateManager.scale(f, f, f);
 		this.drawCenteredString(this.textRenderer, this.splashText, 0, -8, -256);
 		GlStateManager.popMatrix();
-		String string = "Minecraft 1.10.2";
+		String string = "Minecraft 1.11.2";
 		if (this.client.isDemo()) {
 			string = string + " Demo";
 		} else {
@@ -477,7 +482,12 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
 		synchronized (this.mutex) {
-			if (!this.oldGl1.isEmpty() && mouseX >= this.oldGlLeft && mouseX <= this.oldGlRight && mouseY >= this.oldGlTop && mouseY <= this.oldGlBottom) {
+			if (!this.oldGl1.isEmpty()
+				&& !ChatUtil.isEmpty(this.oldGlLink)
+				&& mouseX >= this.oldGlLeft
+				&& mouseX <= this.oldGlRight
+				&& mouseY >= this.oldGlTop
+				&& mouseY <= this.oldGlBottom) {
 				ConfirmChatLinkScreen confirmChatLinkScreen = new ConfirmChatLinkScreen(this, this.oldGlLink, 13, true);
 				confirmChatLinkScreen.disableWarning();
 				this.client.setScreen(confirmChatLinkScreen);

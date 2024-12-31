@@ -1,6 +1,5 @@
 package net.minecraft.item;
 
-import javax.annotation.Nullable;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -34,10 +33,8 @@ public class FoodItem extends Item {
 		this(i, 0.6F, bl);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
-		stack.count--;
 		if (entity instanceof PlayerEntity) {
 			PlayerEntity playerEntity = (PlayerEntity)entity;
 			playerEntity.getHungerManager().incrementStat(this, stack);
@@ -48,6 +45,7 @@ public class FoodItem extends Item {
 			playerEntity.incrementStat(Stats.used(this));
 		}
 
+		stack.decrement(1);
 		return stack;
 	}
 
@@ -68,9 +66,10 @@ public class FoodItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		if (playerEntity.canConsume(this.alwaysEdible)) {
-			playerEntity.method_13050(hand);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (player.canConsume(this.alwaysEdible)) {
+			player.method_13050(hand);
 			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 		} else {
 			return new TypedActionResult<>(ActionResult.FAIL, itemStack);

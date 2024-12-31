@@ -14,6 +14,7 @@ import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
@@ -35,7 +36,7 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 
 	@Override
 	public Text getPrompt() {
-		return new LiteralText("Select a team to teleport to");
+		return new TranslatableText("spectatorMenu.team_teleport.prompt");
 	}
 
 	@Override
@@ -45,7 +46,7 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 
 	@Override
 	public Text getName() {
-		return new LiteralText("Teleport to team member");
+		return new TranslatableText("spectatorMenu.team_teleport");
 	}
 
 	@Override

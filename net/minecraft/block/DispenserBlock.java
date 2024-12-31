@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
@@ -78,28 +77,17 @@ public class DispenserBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof DispenserBlockEntity) {
-				playerEntity.openInventory((DispenserBlockEntity)blockEntity);
+				player.openInventory((DispenserBlockEntity)blockEntity);
 				if (blockEntity instanceof DropperBlockEntity) {
-					playerEntity.incrementStat(Stats.INTERACTIONS_WITH_DROPPER);
+					player.incrementStat(Stats.INTERACTIONS_WITH_DROPPER);
 				} else {
-					playerEntity.incrementStat(Stats.INTERACTIONS_WITH_DISPENSER);
+					player.incrementStat(Stats.INTERACTIONS_WITH_DISPENSER);
 				}
 			}
 
@@ -118,26 +106,25 @@ public class DispenserBlock extends BlockWithEntity {
 				ItemStack itemStack = dispenserBlockEntity.getInvStack(i);
 				DispenserBehavior dispenserBehavior = this.getBehaviorForItem(itemStack);
 				if (dispenserBehavior != DispenserBehavior.INSTANCE) {
-					ItemStack itemStack2 = dispenserBehavior.dispense(blockPointerImpl, itemStack);
-					dispenserBlockEntity.setInvStack(i, itemStack2.count <= 0 ? null : itemStack2);
+					dispenserBlockEntity.setInvStack(i, dispenserBehavior.dispense(blockPointerImpl, itemStack));
 				}
 			}
 		}
 	}
 
-	protected DispenserBehavior getBehaviorForItem(@Nullable ItemStack stack) {
-		return SPECIAL_ITEMS.get(stack == null ? null : stack.getItem());
+	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
+		return SPECIAL_ITEMS.get(stack.getItem());
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		boolean bl = world.isReceivingRedstonePower(blockPos) || world.isReceivingRedstonePower(blockPos.up());
-		boolean bl2 = (Boolean)blockState.get(TRIGGERED);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		boolean bl = world.isReceivingRedstonePower(pos) || world.isReceivingRedstonePower(pos.up());
+		boolean bl2 = (Boolean)state.get(TRIGGERED);
 		if (bl && !bl2) {
-			world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
-			world.setBlockState(blockPos, blockState.with(TRIGGERED, true), 4);
+			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+			world.setBlockState(pos, state.with(TRIGGERED, true), 4);
 		} else if (!bl && bl2) {
-			world.setBlockState(blockPos, blockState.with(TRIGGERED, false), 4);
+			world.setBlockState(pos, state.with(TRIGGERED, false), 4);
 		}
 	}
 
@@ -155,16 +142,16 @@ public class DispenserBlock extends BlockWithEntity {
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, PistonBlock.method_9000(pos, entity)).with(TRIGGERED, false);
+		return this.getDefaultState().with(FACING, Direction.getLookingDirection(pos, entity)).with(TRIGGERED, false);
 	}
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		world.setBlockState(pos, state.with(FACING, PistonBlock.method_9000(pos, placer)), 2);
+		world.setBlockState(pos, state.with(FACING, Direction.getLookingDirection(pos, placer)), 2);
 		if (itemStack.hasCustomName()) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof DispenserBlockEntity) {
-				((DispenserBlockEntity)blockEntity).setCustomName(itemStack.getCustomName());
+				((DispenserBlockEntity)blockEntity).setName(itemStack.getCustomName());
 			}
 		}
 	}

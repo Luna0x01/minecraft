@@ -20,15 +20,14 @@ public class SeedItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		if (direction == Direction.UP
-			&& playerEntity.canModify(blockPos.offset(direction), direction, itemStack)
-			&& world.getBlockState(blockPos).getBlock() == this.soil
-			&& world.isAir(blockPos.up())) {
-			world.setBlockState(blockPos.up(), this.crop.getDefaultState());
-			itemStack.count--;
+			&& player.canModify(pos.offset(direction), direction, itemStack)
+			&& world.getBlockState(pos).getBlock() == this.soil
+			&& world.isAir(pos.up())) {
+			world.setBlockState(pos.up(), this.crop.getDefaultState());
+			itemStack.decrement(1);
 			return ActionResult.SUCCESS;
 		} else {
 			return ActionResult.FAIL;

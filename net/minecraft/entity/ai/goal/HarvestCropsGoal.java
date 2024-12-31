@@ -44,16 +44,6 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 	}
 
 	@Override
-	public void start() {
-		super.start();
-	}
-
-	@Override
-	public void stop() {
-		super.stop();
-	}
-
-	@Override
 	public void tick() {
 		super.tick();
 		this.entity
@@ -78,7 +68,7 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 				for (int i = 0; i < simpleInventory.getInvSize(); i++) {
 					ItemStack itemStack = simpleInventory.getInvStack(i);
 					boolean bl = false;
-					if (itemStack != null) {
+					if (!itemStack.isEmpty()) {
 						if (itemStack.getItem() == Items.WHEAT_SEEDS) {
 							world.setBlockState(blockPos, Blocks.WHEAT.getDefaultState(), 3);
 							bl = true;
@@ -95,9 +85,9 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 					}
 
 					if (bl) {
-						itemStack.count--;
-						if (itemStack.count <= 0) {
-							simpleInventory.setInvStack(i, null);
+						itemStack.decrement(1);
+						if (itemStack.isEmpty()) {
+							simpleInventory.setInvStack(i, ItemStack.EMPTY);
 						}
 						break;
 					}

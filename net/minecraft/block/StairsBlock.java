@@ -9,7 +9,6 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
@@ -67,8 +66,10 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
-		state = this.getBlockState(state, world, pos);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+		if (!isActualState) {
+			state = this.getBlockState(state, world, pos);
+		}
 
 		for (Box box : method_11634(state)) {
 			appendCollisionBoxes(pos, entityBox, boxes, box);
@@ -210,7 +211,7 @@ public class StairsBlock extends Block {
 
 	@Override
 	public void onCreation(World world, BlockPos pos, BlockState state) {
-		this.state.method_11707(world, pos, Blocks.AIR);
+		this.state.neighbourUpdate(world, pos, Blocks.AIR, pos);
 		this.block.onCreation(world, pos, this.state);
 	}
 
@@ -230,19 +231,8 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		return this.block.method_421(world, blockPos, this.state, playerEntity, hand, itemStack, Direction.DOWN, 0.0F, 0.0F, 0.0F);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		return this.block.use(world, pos, this.state, player, hand, Direction.DOWN, 0.0F, 0.0F, 0.0F);
 	}
 
 	@Override

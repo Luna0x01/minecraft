@@ -23,6 +23,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 	private static final TrackedData<Integer> COLOR = DataTracker.registerData(ArrowEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private Potion potion = Potions.EMPTY;
 	private final Set<StatusEffectInstance> effects = Sets.newHashSet();
+	private boolean colorSet;
 
 	public ArrowEntity(World world) {
 		super(world);
@@ -38,7 +39,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 
 	public void initFromStack(ItemStack stack) {
 		if (stack.getItem() == Items.TIPPED_ARROW) {
-			this.potion = PotionUtil.getPotion(stack.getNbt());
+			this.potion = PotionUtil.getPotion(stack);
 			Collection<StatusEffectInstance> collection = PotionUtil.getCustomPotionEffects(stack);
 			if (!collection.isEmpty()) {
 				for (StatusEffectInstance statusEffectInstance : collection) {
@@ -46,12 +47,27 @@ public class ArrowEntity extends AbstractArrowEntity {
 				}
 			}
 
-			this.dataTracker.set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(this.potion, collection)));
+			int i = getCustomPotionColor(stack);
+			if (i == -1) {
+				this.initColor();
+			} else {
+				this.setColor(i);
+			}
 		} else if (stack.getItem() == Items.ARROW) {
 			this.potion = Potions.EMPTY;
 			this.effects.clear();
-			this.dataTracker.set(COLOR, 0);
+			this.dataTracker.set(COLOR, -1);
 		}
+	}
+
+	public static int getCustomPotionColor(ItemStack stack) {
+		NbtCompound nbtCompound = stack.getNbt();
+		return nbtCompound != null && nbtCompound.contains("CustomPotionColor", 99) ? nbtCompound.getInt("CustomPotionColor") : -1;
+	}
+
+	private void initColor() {
+		this.colorSet = false;
+		this.dataTracker.set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(this.potion, this.effects)));
 	}
 
 	public void addEffect(StatusEffectInstance effect) {
@@ -62,7 +78,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(COLOR, 0);
+		this.dataTracker.startTracking(COLOR, -1);
 	}
 
 	@Override
@@ -80,13 +96,13 @@ public class ArrowEntity extends AbstractArrowEntity {
 			this.world.sendEntityStatus(this, (byte)0);
 			this.potion = Potions.EMPTY;
 			this.effects.clear();
-			this.dataTracker.set(COLOR, 0);
+			this.dataTracker.set(COLOR, -1);
 		}
 	}
 
 	private void spawnParticles(int amount) {
 		int i = this.getColor();
-		if (i != 0 && amount > 0) {
+		if (i != -1 && amount > 0) {
 			double d = (double)(i >> 16 & 0xFF) / 255.0;
 			double e = (double)(i >> 8 & 0xFF) / 255.0;
 			double f = (double)(i >> 0 & 0xFF) / 255.0;
@@ -110,6 +126,11 @@ public class ArrowEntity extends AbstractArrowEntity {
 		return this.dataTracker.get(COLOR);
 	}
 
+	private void setColor(int color) {
+		this.colorSet = true;
+		this.dataTracker.set(COLOR, color);
+	}
+
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
 		AbstractArrowEntity.registerDataFixes(dataFixer, "TippedArrow");
 	}
@@ -119,6 +140,10 @@ public class ArrowEntity extends AbstractArrowEntity {
 		super.writeCustomDataToNbt(nbt);
 		if (this.potion != Potions.EMPTY && this.potion != null) {
 			nbt.putString("Potion", Potion.REGISTRY.getIdentifier(this.potion).toString());
+		}
+
+		if (this.colorSet) {
+			nbt.putInt("Color", this.getColor());
 		}
 
 		if (!this.effects.isEmpty()) {
@@ -143,8 +168,10 @@ public class ArrowEntity extends AbstractArrowEntity {
 			this.addEffect(statusEffectInstance);
 		}
 
-		if (this.potion != Potions.EMPTY || !this.effects.isEmpty()) {
-			this.dataTracker.set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(this.potion, this.effects)));
+		if (nbt.contains("Color", 99)) {
+			this.setColor(nbt.getInt("Color"));
+		} else {
+			this.initColor();
 		}
 	}
 
@@ -156,7 +183,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 			target.addStatusEffect(
 				new StatusEffectInstance(
 					statusEffectInstance.getStatusEffect(),
-					statusEffectInstance.getDuration() / 8,
+					Math.max(statusEffectInstance.getDuration() / 8, 1),
 					statusEffectInstance.getAmplifier(),
 					statusEffectInstance.isAmbient(),
 					statusEffectInstance.shouldShowParticles()
@@ -179,6 +206,16 @@ public class ArrowEntity extends AbstractArrowEntity {
 			ItemStack itemStack = new ItemStack(Items.TIPPED_ARROW);
 			PotionUtil.setPotion(itemStack, this.potion);
 			PotionUtil.setCustomPotionEffects(itemStack, this.effects);
+			if (this.colorSet) {
+				NbtCompound nbtCompound = itemStack.getNbt();
+				if (nbtCompound == null) {
+					nbtCompound = new NbtCompound();
+					itemStack.setNbt(nbtCompound);
+				}
+
+				nbtCompound.putInt("CustomPotionColor", this.getColor());
+			}
+
 			return itemStack;
 		}
 	}
@@ -187,7 +224,7 @@ public class ArrowEntity extends AbstractArrowEntity {
 	public void handleStatus(byte status) {
 		if (status == 0) {
 			int i = this.getColor();
-			if (i > 0) {
+			if (i != -1) {
 				double d = (double)(i >> 16 & 0xFF) / 255.0;
 				double e = (double)(i >> 8 & 0xFF) / 255.0;
 				double f = (double)(i >> 0 & 0xFF) / 255.0;

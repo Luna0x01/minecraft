@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 import net.minecraft.util.collection.ObjectIdIterable;
 import net.minecraft.util.math.MathHelper;
 
-public class class_2929<K> implements ObjectIdIterable<K>, Iterable<K> {
+public class class_2929<K> implements ObjectIdIterable<K> {
 	private static final Object EMPTY = null;
 	private K[] field_14373;
 	private int[] field_14374;
@@ -23,7 +23,7 @@ public class class_2929<K> implements ObjectIdIterable<K>, Iterable<K> {
 		this.field_14375 = (K[])(new Object[i]);
 	}
 
-	public int getId(K value) {
+	public int getId(@Nullable K value) {
 		return this.method_12863(this.method_12861(value, this.hash(value)));
 	}
 
@@ -88,11 +88,11 @@ public class class_2929<K> implements ObjectIdIterable<K>, Iterable<K> {
 		}
 	}
 
-	private int hash(K value) {
+	private int hash(@Nullable K value) {
 		return (MathHelper.idealHash(System.identityHashCode(value)) & 2147483647) % this.field_14373.length;
 	}
 
-	private int method_12861(K value, int i) {
+	private int method_12861(@Nullable K value, int i) {
 		for (int j = i; j < this.field_14373.length; j++) {
 			if (this.field_14373[j] == value) {
 				return j;

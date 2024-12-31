@@ -4,7 +4,6 @@ import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -74,7 +73,7 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		if ((Boolean)state.get(OPEN)) {
 			return EMPTY_BOX;
 		} else {
@@ -99,52 +98,37 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(DIRECTION, entity.getHorizontalDirection()).with(OPEN, false).with(POWERED, false).with(IN_WALL, false);
+		boolean bl = world.isReceivingRedstonePower(pos);
+		return this.getDefaultState().with(DIRECTION, entity.getHorizontalDirection()).with(OPEN, bl).with(POWERED, bl).with(IN_WALL, false);
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if ((Boolean)blockState.get(OPEN)) {
-			blockState = blockState.with(OPEN, false);
-			world.setBlockState(blockPos, blockState, 10);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if ((Boolean)state.get(OPEN)) {
+			state = state.with(OPEN, false);
+			world.setBlockState(pos, state, 10);
 		} else {
-			Direction direction2 = Direction.fromRotation((double)playerEntity.yaw);
-			if (blockState.get(DIRECTION) == direction2.getOpposite()) {
-				blockState = blockState.with(DIRECTION, direction2);
+			Direction direction2 = Direction.fromRotation((double)player.yaw);
+			if (state.get(DIRECTION) == direction2.getOpposite()) {
+				state = state.with(DIRECTION, direction2);
 			}
 
-			blockState = blockState.with(OPEN, true);
-			world.setBlockState(blockPos, blockState, 10);
+			state = state.with(OPEN, true);
+			world.setBlockState(pos, state, 10);
 		}
 
-		world.syncWorldEvent(playerEntity, blockState.get(OPEN) ? 1008 : 1014, blockPos, 0);
+		world.syncWorldEvent(player, state.get(OPEN) ? 1008 : 1014, pos, 0);
 		return true;
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
-			boolean bl = world.isReceivingRedstonePower(blockPos);
-			if (bl || block.getDefaultState().emitsRedstonePower()) {
-				if (bl && !(Boolean)blockState.get(OPEN) && !(Boolean)blockState.get(POWERED)) {
-					world.setBlockState(blockPos, blockState.with(OPEN, true).with(POWERED, true), 2);
-					world.syncWorldEvent(null, 1008, blockPos, 0);
-				} else if (!bl && (Boolean)blockState.get(OPEN) && (Boolean)blockState.get(POWERED)) {
-					world.setBlockState(blockPos, blockState.with(OPEN, false).with(POWERED, false), 2);
-					world.syncWorldEvent(null, 1014, blockPos, 0);
-				} else if (bl != (Boolean)blockState.get(POWERED)) {
-					world.setBlockState(blockPos, blockState.with(POWERED, bl), 2);
+			boolean bl = world.isReceivingRedstonePower(pos);
+			if ((Boolean)state.get(POWERED) != bl) {
+				world.setBlockState(pos, state.with(POWERED, bl).with(OPEN, bl), 2);
+				if ((Boolean)state.get(OPEN) != bl) {
+					world.syncWorldEvent(null, bl ? 1008 : 1014, pos, 0);
 				}
 			}
 		}

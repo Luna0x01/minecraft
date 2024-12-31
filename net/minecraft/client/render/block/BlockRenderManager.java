@@ -1,6 +1,5 @@
 package net.minecraft.client.render.block;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.BlockColors;
@@ -96,15 +95,6 @@ public class BlockRenderManager implements ResourceReloadListener {
 					this.field_10858.render(state.getBlock(), light);
 				case LIQUID:
 			}
-		}
-	}
-
-	public boolean method_12345(Block block) {
-		if (block == null) {
-			return false;
-		} else {
-			BlockRenderType blockRenderType = block.getDefaultState().getRenderType();
-			return blockRenderType == BlockRenderType.MODEL ? false : blockRenderType == BlockRenderType.ENTITYBLOCK_ANIMATED;
 		}
 	}
 

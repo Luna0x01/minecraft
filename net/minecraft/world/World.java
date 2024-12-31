@@ -15,6 +15,7 @@ import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ObserverBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
@@ -24,7 +25,6 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.predicate.EntityPredicate;
-import net.minecraft.item.ItemStack;
 import net.minecraft.loot.class_2787;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
@@ -248,6 +248,10 @@ public abstract class World implements BlockView {
 		return this.chunkProvider.getOrGenerateChunks(chunkX, chunkZ);
 	}
 
+	public boolean method_13690(int i, int j) {
+		return this.isChunkLoaded(i, j, false) ? true : this.chunkProvider.isChunkGenerated(i, j);
+	}
+
 	public boolean setBlockState(BlockPos pos, BlockState state, int flags) {
 		if (this.method_11475(pos)) {
 			return false;
@@ -271,10 +275,12 @@ public abstract class World implements BlockView {
 				}
 
 				if (!this.isClient && (flags & 1) != 0) {
-					this.updateNeighbors(pos, blockState.getBlock());
+					this.method_8531(pos, blockState.getBlock(), true);
 					if (state.method_11736()) {
 						this.updateHorizontalAdjacent(pos, block);
 					}
+				} else if (!this.isClient && (flags & 16) == 0) {
+					this.method_13693(pos, block);
 				}
 
 				return true;
@@ -311,9 +317,9 @@ public abstract class World implements BlockView {
 		}
 	}
 
-	public void updateNeighbors(BlockPos pos, Block block) {
+	public void method_8531(BlockPos pos, Block block, boolean bl) {
 		if (this.levelProperties.getGeneratorType() != LevelGeneratorType.DEBUG) {
-			this.updateNeighborsAlways(pos, block);
+			this.method_13692(pos, block, bl);
 		}
 	}
 
@@ -324,7 +330,7 @@ public abstract class World implements BlockView {
 			minY = i;
 		}
 
-		if (!this.dimension.hasNoSkylight()) {
+		if (this.dimension.isOverworld()) {
 			for (int j = minY; j <= maxY; j++) {
 				this.calculateLightAtPos(LightType.SKY, new BlockPos(x, j, z));
 			}
@@ -343,61 +349,98 @@ public abstract class World implements BlockView {
 		}
 	}
 
-	public void updateNeighborsAlways(BlockPos pos, Block block) {
-		this.neighbourUpdate(pos.west(), block);
-		this.neighbourUpdate(pos.east(), block);
-		this.neighbourUpdate(pos.down(), block);
-		this.neighbourUpdate(pos.up(), block);
-		this.neighbourUpdate(pos.north(), block);
-		this.neighbourUpdate(pos.south(), block);
+	public void method_13693(BlockPos pos, Block block) {
+		this.method_13691(pos.west(), block, pos);
+		this.method_13691(pos.east(), block, pos);
+		this.method_13691(pos.down(), block, pos);
+		this.method_13691(pos.up(), block, pos);
+		this.method_13691(pos.north(), block, pos);
+		this.method_13691(pos.south(), block, pos);
+	}
+
+	public void method_13692(BlockPos pos, Block block, boolean bl) {
+		this.updateNeighbor(pos.west(), block, pos);
+		this.updateNeighbor(pos.east(), block, pos);
+		this.updateNeighbor(pos.down(), block, pos);
+		this.updateNeighbor(pos.up(), block, pos);
+		this.updateNeighbor(pos.north(), block, pos);
+		this.updateNeighbor(pos.south(), block, pos);
+		if (bl) {
+			this.method_13693(pos, block);
+		}
 	}
 
 	public void updateNeighborsExcept(BlockPos pos, Block sourceBlock, Direction dir) {
 		if (dir != Direction.WEST) {
-			this.neighbourUpdate(pos.west(), sourceBlock);
+			this.updateNeighbor(pos.west(), sourceBlock, pos);
 		}
 
 		if (dir != Direction.EAST) {
-			this.neighbourUpdate(pos.east(), sourceBlock);
+			this.updateNeighbor(pos.east(), sourceBlock, pos);
 		}
 
 		if (dir != Direction.DOWN) {
-			this.neighbourUpdate(pos.down(), sourceBlock);
+			this.updateNeighbor(pos.down(), sourceBlock, pos);
 		}
 
 		if (dir != Direction.UP) {
-			this.neighbourUpdate(pos.up(), sourceBlock);
+			this.updateNeighbor(pos.up(), sourceBlock, pos);
 		}
 
 		if (dir != Direction.NORTH) {
-			this.neighbourUpdate(pos.north(), sourceBlock);
+			this.updateNeighbor(pos.north(), sourceBlock, pos);
 		}
 
 		if (dir != Direction.SOUTH) {
-			this.neighbourUpdate(pos.south(), sourceBlock);
+			this.updateNeighbor(pos.south(), sourceBlock, pos);
 		}
 	}
 
-	public void neighbourUpdate(BlockPos pos, Block block) {
+	public void updateNeighbor(BlockPos pos, Block sourceBlock, BlockPos sourcePos) {
 		if (!this.isClient) {
 			BlockState blockState = this.getBlockState(pos);
 
 			try {
-				blockState.method_11707(this, pos, block);
-			} catch (Throwable var7) {
-				CrashReport crashReport = CrashReport.create(var7, "Exception while updating neighbours");
+				blockState.neighbourUpdate(this, pos, sourceBlock, sourcePos);
+			} catch (Throwable var8) {
+				CrashReport crashReport = CrashReport.create(var8, "Exception while updating neighbours");
 				CrashReportSection crashReportSection = crashReport.addElement("Block being updated");
 				crashReportSection.add("Source block type", new CrashCallable<String>() {
 					public String call() throws Exception {
 						try {
-							return String.format("ID #%d (%s // %s)", Block.getIdByBlock(block), block.getTranslationKey(), block.getClass().getCanonicalName());
+							return String.format("ID #%d (%s // %s)", Block.getIdByBlock(sourceBlock), sourceBlock.getTranslationKey(), sourceBlock.getClass().getCanonicalName());
 						} catch (Throwable var2) {
-							return "ID #" + Block.getIdByBlock(block);
+							return "ID #" + Block.getIdByBlock(sourceBlock);
 						}
 					}
 				});
 				CrashReportSection.addBlockInfo(crashReportSection, pos, blockState);
 				throw new CrashException(crashReport);
+			}
+		}
+	}
+
+	public void method_13691(BlockPos pos, Block block, BlockPos sourcePos) {
+		if (!this.isClient) {
+			BlockState blockState = this.getBlockState(pos);
+			if (blockState.getBlock() == Blocks.OBSERVER) {
+				try {
+					((ObserverBlock)blockState.getBlock()).method_13711(blockState, this, pos, block, sourcePos);
+				} catch (Throwable var8) {
+					CrashReport crashReport = CrashReport.create(var8, "Exception while updating neighbours");
+					CrashReportSection crashReportSection = crashReport.addElement("Block being updated");
+					crashReportSection.add("Source block type", new CrashCallable<String>() {
+						public String call() throws Exception {
+							try {
+								return String.format("ID #%d (%s // %s)", Block.getIdByBlock(block), block.getTranslationKey(), block.getClass().getCanonicalName());
+							} catch (Throwable var2) {
+								return "ID #" + Block.getIdByBlock(block);
+							}
+						}
+					});
+					CrashReportSection.addBlockInfo(crashReportSection, pos, blockState);
+					throw new CrashException(crashReport);
+				}
 			}
 		}
 	}
@@ -518,7 +561,7 @@ public abstract class World implements BlockView {
 	}
 
 	public int getLuminance(LightType lightType, BlockPos pos) {
-		if (this.dimension.hasNoSkylight() && lightType == LightType.SKY) {
+		if (!this.dimension.isOverworld() && lightType == LightType.SKY) {
 			return 0;
 		} else {
 			if (pos.getY() < 0) {
@@ -643,7 +686,7 @@ public abstract class World implements BlockView {
 			BlockPos blockPos = new BlockPos(l, m, n);
 			BlockState blockState = this.getBlockState(blockPos);
 			Block block = blockState.getBlock();
-			if ((!bl2 || blockState.getCollisionBox(this, blockPos) != Block.EMPTY_BOX) && block.canCollide(blockState, bl)) {
+			if ((!bl2 || blockState.method_11726(this, blockPos) != Block.EMPTY_BOX) && block.canCollide(blockState, bl)) {
 				BlockHitResult blockHitResult = blockState.method_11711(this, blockPos, start, end);
 				if (blockHitResult != null) {
 					return blockHitResult;
@@ -740,7 +783,7 @@ public abstract class World implements BlockView {
 				blockPos = new BlockPos(l, m, n);
 				BlockState blockState2 = this.getBlockState(blockPos);
 				Block block2 = blockState2.getBlock();
-				if (!bl2 || blockState2.getMaterial() == Material.PORTAL || blockState2.getCollisionBox(this, blockPos) != Block.EMPTY_BOX) {
+				if (!bl2 || blockState2.getMaterial() == Material.PORTAL || blockState2.method_11726(this, blockPos) != Block.EMPTY_BOX) {
 					if (block2.canCollide(blockState2, bl)) {
 						BlockHitResult blockHitResult3 = blockState2.method_11711(this, blockPos, start, end);
 						if (blockHitResult3 != null) {
@@ -781,8 +824,14 @@ public abstract class World implements BlockView {
 		this.addParticle(type.getId(), type.getAlwaysShow(), d, e, f, g, h, i, is);
 	}
 
+	public void method_13687(int i, double d, double e, double f, double g, double h, double j, int... is) {
+		for (int k = 0; k < this.eventListeners.size(); k++) {
+			((WorldEventListener)this.eventListeners.get(k)).method_13696(i, false, true, d, e, f, g, h, j, is);
+		}
+	}
+
 	public void addParticle(ParticleType type, boolean bl, double d, double e, double f, double g, double h, double i, int... is) {
-		this.addParticle(type.getId(), type.getAlwaysShow() | bl, d, e, f, g, h, i, is);
+		this.addParticle(type.getId(), type.getAlwaysShow() || bl, d, e, f, g, h, i, is);
 	}
 
 	private void addParticle(int id, boolean bl, double d, double e, double f, double g, double h, double i, int... is) {
@@ -875,8 +924,7 @@ public abstract class World implements BlockView {
 		this.eventListeners.remove(listener);
 	}
 
-	public List<Box> doesBoxCollide(@Nullable Entity entity, Box box) {
-		List<Box> list = Lists.newArrayList();
+	private boolean method_13689(@Nullable Entity entity, Box box, boolean bl, @Nullable List<Box> list) {
 		int i = MathHelper.floor(box.minX) - 1;
 		int j = MathHelper.ceil(box.maxX) + 1;
 		int k = MathHelper.floor(box.minY) - 1;
@@ -884,44 +932,59 @@ public abstract class World implements BlockView {
 		int m = MathHelper.floor(box.minZ) - 1;
 		int n = MathHelper.ceil(box.maxZ) + 1;
 		WorldBorder worldBorder = this.getWorldBorder();
-		boolean bl = entity != null && entity.isOutsideWorldBorder();
-		boolean bl2 = entity != null && this.isInsideWorld(worldBorder, entity);
+		boolean bl2 = entity != null && entity.isOutsideWorldBorder();
+		boolean bl3 = entity != null && this.method_13694(entity);
 		BlockState blockState = Blocks.STONE.getDefaultState();
 		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-		for (int o = i; o < j; o++) {
-			for (int p = m; p < n; p++) {
-				int q = (o != i && o != j - 1 ? 0 : 1) + (p != m && p != n - 1 ? 0 : 1);
-				if (q != 2 && this.blockExists(pooled.setPosition(o, 64, p))) {
-					for (int r = k; r < l; r++) {
-						if (q <= 0 || r != k && r != l - 1) {
-							pooled.setPosition(o, r, p);
-							if (entity != null) {
-								if (bl && bl2) {
-									entity.setOutsideWorldBorder(false);
-								} else if (!bl && !bl2) {
-									entity.setOutsideWorldBorder(true);
+		try {
+			for (int o = i; o < j; o++) {
+				for (int p = m; p < n; p++) {
+					boolean bl4 = o == i || o == j - 1;
+					boolean bl5 = p == m || p == n - 1;
+					if ((!bl4 || !bl5) && this.blockExists(pooled.setPosition(o, 64, p))) {
+						for (int q = k; q < l; q++) {
+							if (!bl4 && !bl5 || q != l - 1) {
+								if (bl) {
+									if (o < -30000000 || o >= 30000000 || p < -30000000 || p >= 30000000) {
+										return true;
+									}
+								} else if (entity != null && bl2 == bl3) {
+									entity.setOutsideWorldBorder(!bl3);
+								}
+
+								pooled.setPosition(o, q, p);
+								BlockState blockState3;
+								if (!bl && !worldBorder.contains(pooled) && bl3) {
+									blockState3 = blockState;
+								} else {
+									blockState3 = this.getBlockState(pooled);
+								}
+
+								blockState3.appendCollisionBoxes(this, pooled, box, list, entity, false);
+								if (bl && !list.isEmpty()) {
+									return true;
 								}
 							}
-
-							BlockState blockState2 = blockState;
-							if (worldBorder.contains(pooled) || !bl2) {
-								blockState2 = this.getBlockState(pooled);
-							}
-
-							blockState2.addCollisionBoxesToList(this, pooled, box, list, entity);
 						}
 					}
 				}
 			}
+		} finally {
+			pooled.method_12576();
 		}
 
-		pooled.method_12576();
+		return !list.isEmpty();
+	}
+
+	public List<Box> doesBoxCollide(@Nullable Entity entity, Box box) {
+		List<Box> list = Lists.newArrayList();
+		this.method_13689(entity, box, false, list);
 		if (entity != null) {
 			List<Entity> list2 = this.getEntitiesIn(entity, box.expand(0.25));
 
-			for (int s = 0; s < list2.size(); s++) {
-				Entity entity2 = (Entity)list2.get(s);
+			for (int i = 0; i < list2.size(); i++) {
+				Entity entity2 = (Entity)list2.get(i);
 				if (!entity.isConnectedThroughVehicle(entity2)) {
 					Box box2 = entity2.getBox();
 					if (box2 != null && box2.intersects(box)) {
@@ -939,11 +1002,11 @@ public abstract class World implements BlockView {
 		return list;
 	}
 
-	public boolean isInsideWorld(WorldBorder border, Entity entity) {
-		double d = border.getBoundWest();
-		double e = border.getBoundNorth();
-		double f = border.getBoundEast();
-		double g = border.getBoundSouth();
+	public boolean method_13694(Entity entity) {
+		double d = this.border.getBoundWest();
+		double e = this.border.getBoundNorth();
+		double f = this.border.getBoundEast();
+		double g = this.border.getBoundSouth();
 		if (entity.isOutsideWorldBorder()) {
 			d++;
 			e++;
@@ -959,78 +1022,8 @@ public abstract class World implements BlockView {
 		return entity.x > d && entity.x < f && entity.z > e && entity.z < g;
 	}
 
-	public List<Box> method_3608(Box box) {
-		List<Box> list = Lists.newArrayList();
-		int i = MathHelper.floor(box.minX) - 1;
-		int j = MathHelper.ceil(box.maxX) + 1;
-		int k = MathHelper.floor(box.minY) - 1;
-		int l = MathHelper.ceil(box.maxY) + 1;
-		int m = MathHelper.floor(box.minZ) - 1;
-		int n = MathHelper.ceil(box.maxZ) + 1;
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
-
-		for (int o = i; o < j; o++) {
-			for (int p = m; p < n; p++) {
-				int q = (o != i && o != j - 1 ? 0 : 1) + (p != m && p != n - 1 ? 0 : 1);
-				if (q != 2 && this.blockExists(pooled.setPosition(o, 64, p))) {
-					for (int r = k; r < l; r++) {
-						if (q <= 0 || r != k && r != l - 1) {
-							pooled.setPosition(o, r, p);
-							BlockState blockState2;
-							if (o >= -30000000 && o < 30000000 && p >= -30000000 && p < 30000000) {
-								blockState2 = this.getBlockState(pooled);
-							} else {
-								blockState2 = Blocks.BEDROCK.getDefaultState();
-							}
-
-							blockState2.addCollisionBoxesToList(this, pooled, box, list, null);
-						}
-					}
-				}
-			}
-		}
-
-		pooled.method_12576();
-		return list;
-	}
-
 	public boolean method_11488(Box box) {
-		List<Box> list = Lists.newArrayList();
-		int i = MathHelper.floor(box.minX) - 1;
-		int j = MathHelper.ceil(box.maxX) + 1;
-		int k = MathHelper.floor(box.minY) - 1;
-		int l = MathHelper.ceil(box.maxY) + 1;
-		int m = MathHelper.floor(box.minZ) - 1;
-		int n = MathHelper.ceil(box.maxZ) + 1;
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
-
-		try {
-			for (int o = i; o < j; o++) {
-				for (int p = m; p < n; p++) {
-					int q = (o != i && o != j - 1 ? 0 : 1) + (p != m && p != n - 1 ? 0 : 1);
-					if (q != 2 && this.blockExists(pooled.setPosition(o, 64, p))) {
-						for (int r = k; r < l; r++) {
-							if (q <= 0 || r != k && r != l - 1) {
-								pooled.setPosition(o, r, p);
-								if (o < -30000000 || o >= 30000000 || p < -30000000 || p >= 30000000) {
-									return true;
-								}
-
-								BlockState blockState = this.getBlockState(pooled);
-								blockState.addCollisionBoxesToList(this, pooled, box, list, null);
-								if (!list.isEmpty()) {
-									return true;
-								}
-							}
-						}
-					}
-				}
-			}
-
-			return false;
-		} finally {
-			pooled.method_12576();
-		}
+		return this.method_13689(null, box, true, Lists.newArrayList());
 	}
 
 	public int method_3597(float f) {
@@ -1610,39 +1603,6 @@ public abstract class World implements BlockView {
 		return false;
 	}
 
-	public boolean containsBlockWithMaterial(Box box, Material material) {
-		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.ceil(box.maxX);
-		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.ceil(box.maxY);
-		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.ceil(box.maxZ);
-		BlockPos.Pooled pooled = BlockPos.Pooled.get();
-
-		for (int o = i; o < j; o++) {
-			for (int p = k; p < l; p++) {
-				for (int q = m; q < n; q++) {
-					BlockState blockState = this.getBlockState(pooled.setPosition(o, p, q));
-					if (blockState.getMaterial() == material) {
-						int r = (Integer)blockState.get(AbstractFluidBlock.LEVEL);
-						double d = (double)(p + 1);
-						if (r < 8) {
-							d = (double)(p + 1) - (double)r / 8.0;
-						}
-
-						if (d >= box.minY) {
-							pooled.method_12576();
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		pooled.method_12576();
-		return false;
-	}
-
 	public Explosion createExplosion(@Nullable Entity entity, double x, double y, double z, float power, boolean destructive) {
 		return this.createExplosion(entity, x, y, z, power, false, destructive);
 	}
@@ -1756,8 +1716,8 @@ public abstract class World implements BlockView {
 
 					this.pendingBlockEntities.add(blockEntity);
 				} else {
-					this.addBlockEntity(blockEntity);
 					this.getChunk(pos).method_9136(pos, blockEntity);
+					this.addBlockEntity(blockEntity);
 				}
 			}
 		}
@@ -1784,7 +1744,7 @@ public abstract class World implements BlockView {
 	}
 
 	public boolean method_11492(BlockPos blockPos) {
-		Box box = this.getBlockState(blockPos).getCollisionBox(this, blockPos);
+		Box box = this.getBlockState(blockPos).method_11726(this, blockPos);
 		return box != Block.EMPTY_BOX && box.getAverage() >= 1.0;
 	}
 
@@ -1828,26 +1788,43 @@ public abstract class World implements BlockView {
 	}
 
 	protected void tickWeather() {
-		if (!this.dimension.hasNoSkylight()) {
+		if (this.dimension.isOverworld()) {
 			if (!this.isClient) {
-				int i = this.levelProperties.getClearWeatherTime();
-				if (i > 0) {
-					this.levelProperties.setClearWeatherTime(--i);
-					this.levelProperties.setThunderTime(this.levelProperties.isThundering() ? 1 : 2);
-					this.levelProperties.setRainTime(this.levelProperties.isRaining() ? 1 : 2);
-				}
-
-				int j = this.levelProperties.getThunderTime();
-				if (j <= 0) {
-					if (this.levelProperties.isThundering()) {
-						this.levelProperties.setThunderTime(this.random.nextInt(12000) + 3600);
-					} else {
-						this.levelProperties.setThunderTime(this.random.nextInt(168000) + 12000);
+				boolean bl = this.getGameRules().getBoolean("doWeatherCycle");
+				if (bl) {
+					int i = this.levelProperties.getClearWeatherTime();
+					if (i > 0) {
+						this.levelProperties.setClearWeatherTime(--i);
+						this.levelProperties.setThunderTime(this.levelProperties.isThundering() ? 1 : 2);
+						this.levelProperties.setRainTime(this.levelProperties.isRaining() ? 1 : 2);
 					}
-				} else {
-					this.levelProperties.setThunderTime(--j);
+
+					int j = this.levelProperties.getThunderTime();
 					if (j <= 0) {
-						this.levelProperties.setThundering(!this.levelProperties.isThundering());
+						if (this.levelProperties.isThundering()) {
+							this.levelProperties.setThunderTime(this.random.nextInt(12000) + 3600);
+						} else {
+							this.levelProperties.setThunderTime(this.random.nextInt(168000) + 12000);
+						}
+					} else {
+						this.levelProperties.setThunderTime(--j);
+						if (j <= 0) {
+							this.levelProperties.setThundering(!this.levelProperties.isThundering());
+						}
+					}
+
+					int k = this.levelProperties.getRainTime();
+					if (k <= 0) {
+						if (this.levelProperties.isRaining()) {
+							this.levelProperties.setRainTime(this.random.nextInt(12000) + 12000);
+						} else {
+							this.levelProperties.setRainTime(this.random.nextInt(168000) + 12000);
+						}
+					} else {
+						this.levelProperties.setRainTime(--k);
+						if (k <= 0) {
+							this.levelProperties.setRaining(!this.levelProperties.isRaining());
+						}
 					}
 				}
 
@@ -1859,20 +1836,6 @@ public abstract class World implements BlockView {
 				}
 
 				this.thunderGradient = MathHelper.clamp(this.thunderGradient, 0.0F, 1.0F);
-				int k = this.levelProperties.getRainTime();
-				if (k <= 0) {
-					if (this.levelProperties.isRaining()) {
-						this.levelProperties.setRainTime(this.random.nextInt(12000) + 12000);
-					} else {
-						this.levelProperties.setRainTime(this.random.nextInt(168000) + 12000);
-					}
-				} else {
-					this.levelProperties.setRainTime(--k);
-					if (k <= 0) {
-						this.levelProperties.setRaining(!this.levelProperties.isRaining());
-					}
-				}
-
 				this.rainGradientPrev = this.rainGradient;
 				if (this.levelProperties.isRaining()) {
 					this.rainGradient = (float)((double)this.rainGradient + 0.01);
@@ -1909,7 +1872,7 @@ public abstract class World implements BlockView {
 	public boolean canWaterFreezeAt(BlockPos pos, boolean noChange) {
 		Biome biome = this.getBiome(pos);
 		float f = biome.getTemperature(pos);
-		if (f > 0.15F) {
+		if (f >= 0.15F) {
 			return false;
 		} else {
 			if (pos.getY() >= 0 && pos.getY() < 256 && this.getLightAtPos(LightType.BLOCK, pos) < 10) {
@@ -1938,7 +1901,7 @@ public abstract class World implements BlockView {
 	public boolean method_8552(BlockPos pos, boolean bl) {
 		Biome biome = this.getBiome(pos);
 		float f = biome.getTemperature(pos);
-		if (f > 0.15F) {
+		if (f >= 0.15F) {
 			return false;
 		} else if (!bl) {
 			return true;
@@ -1956,7 +1919,7 @@ public abstract class World implements BlockView {
 
 	public boolean method_8568(BlockPos pos) {
 		boolean bl = false;
-		if (!this.dimension.hasNoSkylight()) {
+		if (this.dimension.isOverworld()) {
 			bl |= this.calculateLightAtPos(LightType.SKY, pos);
 		}
 
@@ -1987,9 +1950,9 @@ public abstract class World implements BlockView {
 
 				for (Direction direction : Direction.values()) {
 					pooled.set(pos).move(direction);
-					int m = this.getLightAtPos(type, pooled) - j;
-					if (m > i) {
-						i = m;
+					int k = this.getLightAtPos(type, pooled) - j;
+					if (k > i) {
+						i = k;
 					}
 
 					if (i >= 14) {
@@ -2038,14 +2001,14 @@ public abstract class World implements BlockView {
 								BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 								for (Direction direction : Direction.values()) {
-									int aa = q + direction.getOffsetX();
-									int ab = r + direction.getOffsetY();
-									int ac = s + direction.getOffsetZ();
-									pooled.setPosition(aa, ab, ac);
-									int ad = Math.max(1, this.getBlockState(pooled).getOpacity());
+									int y = q + direction.getOffsetX();
+									int z = r + direction.getOffsetY();
+									int aa = s + direction.getOffsetZ();
+									pooled.setPosition(y, z, aa);
+									int ab = Math.max(1, this.getBlockState(pooled).getOpacity());
 									u = this.getLightAtPos(lightType, pooled);
-									if (u == t - ad && j < this.updateLightBlocks.length) {
-										this.updateLightBlocks[j++] = aa - m + 32 | ab - n + 32 << 6 | ac - o + 32 << 12 | t - ad << 18;
+									if (u == t - ab && j < this.updateLightBlocks.length) {
+										this.updateLightBlocks[j++] = y - m + 32 | z - n + 32 << 6 | aa - o + 32 << 12 | t - ab << 18;
 									}
 								}
 
@@ -2062,43 +2025,43 @@ public abstract class World implements BlockView {
 			this.profiler.push("checkedPosition < toCheckCount");
 
 			while (i < j) {
-				int ae = this.updateLightBlocks[i++];
-				int af = (ae & 63) - 32 + m;
-				int ag = (ae >> 6 & 63) - 32 + n;
-				int ah = (ae >> 12 & 63) - 32 + o;
-				BlockPos blockPos2 = new BlockPos(af, ag, ah);
-				int ai = this.getLightAtPos(lightType, blockPos2);
-				int aj = this.getLightAtPos(blockPos2, lightType);
-				if (aj != ai) {
-					this.method_8491(lightType, blockPos2, aj);
-					if (aj > ai) {
-						int ak = Math.abs(af - m);
-						int al = Math.abs(ag - n);
-						int am = Math.abs(ah - o);
+				int ac = this.updateLightBlocks[i++];
+				int ad = (ac & 63) - 32 + m;
+				int ae = (ac >> 6 & 63) - 32 + n;
+				int af = (ac >> 12 & 63) - 32 + o;
+				BlockPos blockPos2 = new BlockPos(ad, ae, af);
+				int ag = this.getLightAtPos(lightType, blockPos2);
+				int ah = this.getLightAtPos(blockPos2, lightType);
+				if (ah != ag) {
+					this.method_8491(lightType, blockPos2, ah);
+					if (ah > ag) {
+						int ai = Math.abs(ad - m);
+						int aj = Math.abs(ae - n);
+						int ak = Math.abs(af - o);
 						boolean bl = j < this.updateLightBlocks.length - 6;
-						if (ak + al + am < 17 && bl) {
-							if (this.getLightAtPos(lightType, blockPos2.west()) < aj) {
-								this.updateLightBlocks[j++] = af - 1 - m + 32 + (ag - n + 32 << 6) + (ah - o + 32 << 12);
+						if (ai + aj + ak < 17 && bl) {
+							if (this.getLightAtPos(lightType, blockPos2.west()) < ah) {
+								this.updateLightBlocks[j++] = ad - 1 - m + 32 + (ae - n + 32 << 6) + (af - o + 32 << 12);
 							}
 
-							if (this.getLightAtPos(lightType, blockPos2.east()) < aj) {
-								this.updateLightBlocks[j++] = af + 1 - m + 32 + (ag - n + 32 << 6) + (ah - o + 32 << 12);
+							if (this.getLightAtPos(lightType, blockPos2.east()) < ah) {
+								this.updateLightBlocks[j++] = ad + 1 - m + 32 + (ae - n + 32 << 6) + (af - o + 32 << 12);
 							}
 
-							if (this.getLightAtPos(lightType, blockPos2.down()) < aj) {
-								this.updateLightBlocks[j++] = af - m + 32 + (ag - 1 - n + 32 << 6) + (ah - o + 32 << 12);
+							if (this.getLightAtPos(lightType, blockPos2.down()) < ah) {
+								this.updateLightBlocks[j++] = ad - m + 32 + (ae - 1 - n + 32 << 6) + (af - o + 32 << 12);
 							}
 
-							if (this.getLightAtPos(lightType, blockPos2.up()) < aj) {
-								this.updateLightBlocks[j++] = af - m + 32 + (ag + 1 - n + 32 << 6) + (ah - o + 32 << 12);
+							if (this.getLightAtPos(lightType, blockPos2.up()) < ah) {
+								this.updateLightBlocks[j++] = ad - m + 32 + (ae + 1 - n + 32 << 6) + (af - o + 32 << 12);
 							}
 
-							if (this.getLightAtPos(lightType, blockPos2.north()) < aj) {
-								this.updateLightBlocks[j++] = af - m + 32 + (ag - n + 32 << 6) + (ah - 1 - o + 32 << 12);
+							if (this.getLightAtPos(lightType, blockPos2.north()) < ah) {
+								this.updateLightBlocks[j++] = ad - m + 32 + (ae - n + 32 << 6) + (af - 1 - o + 32 << 12);
 							}
 
-							if (this.getLightAtPos(lightType, blockPos2.south()) < aj) {
-								this.updateLightBlocks[j++] = af - m + 32 + (ag - n + 32 << 6) + (ah + 1 - o + 32 << 12);
+							if (this.getLightAtPos(lightType, blockPos2.south()) < ah) {
+								this.updateLightBlocks[j++] = ad - m + 32 + (ae - n + 32 << 6) + (af + 1 - o + 32 << 12);
 							}
 						}
 					}
@@ -2251,15 +2214,15 @@ public abstract class World implements BlockView {
 		this.unloadedEntities.addAll(entities);
 	}
 
-	public boolean canBlockBePlaced(Block block, BlockPos pos, boolean bl, Direction direction, @Nullable Entity entity, @Nullable ItemStack item) {
+	public boolean method_8493(Block block, BlockPos pos, boolean bl, Direction direction, @Nullable Entity entity) {
 		BlockState blockState = this.getBlockState(pos);
-		Box box = bl ? null : block.getDefaultState().getCollisionBox(this, pos);
+		Box box = bl ? null : block.getDefaultState().method_11726(this, pos);
 		if (box != Block.EMPTY_BOX && !this.hasEntityIn(box.offset(pos), entity)) {
 			return false;
 		} else {
 			return blockState.getMaterial() == Material.DECORATION && block == Blocks.ANVIL
 				? true
-				: blockState.getMaterial().isReplaceable() && block.canBeReplaced(this, pos, direction, item);
+				: blockState.getMaterial().isReplaceable() && block.canBePlacedAdjacent(this, pos, direction);
 		}
 	}
 
@@ -2339,13 +2302,13 @@ public abstract class World implements BlockView {
 		int i = 0;
 
 		for (Direction direction : Direction.values()) {
-			int l = this.getEmittedRedstonePower(pos.offset(direction), direction);
-			if (l >= 15) {
+			int j = this.getEmittedRedstonePower(pos.offset(direction), direction);
+			if (j >= 15) {
 				return 15;
 			}
 
-			if (l > i) {
-				i = l;
+			if (j > i) {
+				i = j;
 			}
 		}
 
@@ -2364,12 +2327,18 @@ public abstract class World implements BlockView {
 
 	@Nullable
 	public PlayerEntity method_11478(double d, double e, double f, double g, boolean bl) {
+		Predicate<Entity> predicate = bl ? EntityPredicate.EXCEPT_CREATIVE_OR_SPECTATOR : EntityPredicate.EXCEPT_SPECTATOR;
+		return this.method_13686(d, e, f, g, predicate);
+	}
+
+	@Nullable
+	public PlayerEntity method_13686(double d, double e, double f, double g, Predicate<Entity> predicate) {
 		double h = -1.0;
 		PlayerEntity playerEntity = null;
 
 		for (int i = 0; i < this.playerEntities.size(); i++) {
 			PlayerEntity playerEntity2 = (PlayerEntity)this.playerEntities.get(i);
-			if ((EntityPredicate.EXCEPT_CREATIVE_OR_SPECTATOR.apply(playerEntity2) || !bl) && (EntityPredicate.EXCEPT_SPECTATOR.apply(playerEntity2) || bl)) {
+			if (predicate.apply(playerEntity2)) {
 				double j = playerEntity2.squaredDistanceTo(d, e, f);
 				if ((g < 0.0 || j < g * g) && (h == -1.0 || j < h)) {
 					h = j;
@@ -2720,12 +2689,12 @@ public abstract class World implements BlockView {
 			if (this.blockExists(blockPos)) {
 				BlockState blockState = this.getBlockState(blockPos);
 				if (Blocks.UNPOWERED_COMPARATOR.method_11603(blockState)) {
-					blockState.method_11707(this, blockPos, block);
+					blockState.neighbourUpdate(this, blockPos, block, pos);
 				} else if (blockState.method_11734()) {
 					blockPos = blockPos.offset(direction);
 					blockState = this.getBlockState(blockPos);
 					if (Blocks.UNPOWERED_COMPARATOR.method_11603(blockState)) {
-						blockState.method_11707(this, blockPos, block);
+						blockState.neighbourUpdate(this, blockPos, block, pos);
 					}
 				}
 			}
@@ -2785,5 +2754,10 @@ public abstract class World implements BlockView {
 
 	public class_2787 method_11487() {
 		return this.field_12435;
+	}
+
+	@Nullable
+	public BlockPos method_13688(String string, BlockPos blockPos, boolean bl) {
+		return null;
 	}
 }

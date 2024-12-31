@@ -20,24 +20,16 @@ import net.minecraft.world.World;
 public class CocoaBlock extends HorizontalFacingBlock implements Growable {
 	public static final IntProperty AGE = IntProperty.of("age", 0, 2);
 	protected static final Box[] field_12632 = new Box[]{
-		new Box(0.6875, 0.4375, 0.375, 0.9375, 0.75, 0.625),
-		new Box(0.5625, 0.3125, 0.3125, 0.9375, 0.75, 0.6875),
-		new Box(0.5625, 0.3125, 0.3125, 0.9375, 0.75, 0.6875)
+		new Box(0.6875, 0.4375, 0.375, 0.9375, 0.75, 0.625), new Box(0.5625, 0.3125, 0.3125, 0.9375, 0.75, 0.6875), new Box(0.4375, 0.1875, 0.25, 0.9375, 0.75, 0.75)
 	};
 	protected static final Box[] field_12633 = new Box[]{
-		new Box(0.0625, 0.4375, 0.375, 0.3125, 0.75, 0.625),
-		new Box(0.0625, 0.3125, 0.3125, 0.4375, 0.75, 0.6875),
-		new Box(0.0625, 0.3125, 0.3125, 0.4375, 0.75, 0.6875)
+		new Box(0.0625, 0.4375, 0.375, 0.3125, 0.75, 0.625), new Box(0.0625, 0.3125, 0.3125, 0.4375, 0.75, 0.6875), new Box(0.0625, 0.1875, 0.25, 0.5625, 0.75, 0.75)
 	};
 	protected static final Box[] field_12634 = new Box[]{
-		new Box(0.375, 0.4375, 0.0625, 0.625, 0.75, 0.3125),
-		new Box(0.3125, 0.3125, 0.0625, 0.6875, 0.75, 0.4375),
-		new Box(0.3125, 0.3125, 0.0625, 0.6875, 0.75, 0.4375)
+		new Box(0.375, 0.4375, 0.0625, 0.625, 0.75, 0.3125), new Box(0.3125, 0.3125, 0.0625, 0.6875, 0.75, 0.4375), new Box(0.25, 0.1875, 0.0625, 0.75, 0.75, 0.5625)
 	};
 	protected static final Box[] field_12635 = new Box[]{
-		new Box(0.375, 0.4375, 0.6875, 0.625, 0.75, 0.9375),
-		new Box(0.3125, 0.3125, 0.5625, 0.6875, 0.75, 0.9375),
-		new Box(0.3125, 0.3125, 0.5625, 0.6875, 0.75, 0.9375)
+		new Box(0.375, 0.4375, 0.6875, 0.625, 0.75, 0.9375), new Box(0.3125, 0.3125, 0.5625, 0.6875, 0.75, 0.9375), new Box(0.25, 0.1875, 0.4375, 0.75, 0.75, 0.9375)
 	};
 
 	public CocoaBlock() {
@@ -116,9 +108,9 @@ public class CocoaBlock extends HorizontalFacingBlock implements Growable {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.isOnJungleWood(world, blockPos, blockState)) {
-			this.replaceAndDrop(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.isOnJungleWood(world, pos, state)) {
+			this.replaceAndDrop(world, pos, state);
 		}
 	}
 

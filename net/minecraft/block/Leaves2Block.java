@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import com.google.common.base.Predicate;
-import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -12,6 +11,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -46,9 +46,9 @@ public class Leaves2Block extends LeavesBlock {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item, 1, 0));
-		stacks.add(new ItemStack(item, 1, 1));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item, 1, 0));
+		defaultedList.add(new ItemStack(item, 1, 1));
 	}
 
 	@Override
@@ -87,8 +87,8 @@ public class Leaves2Block extends LeavesBlock {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
-		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (!world.isClient && stack.getItem() == Items.SHEARS) {
 			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Item.fromBlock(this), 1, ((PlanksBlock.WoodType)state.get(VARIANT)).getId() - 4));
 		} else {

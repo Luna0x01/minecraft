@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.sound.SoundCategory;
@@ -92,7 +93,9 @@ public class FireworksSparkParticle {
 		private NbtList explosions;
 		boolean flicker;
 
-		public FireworkParticle(World world, double d, double e, double f, double g, double h, double i, ParticleManager particleManager, NbtCompound nbtCompound) {
+		public FireworkParticle(
+			World world, double d, double e, double f, double g, double h, double i, ParticleManager particleManager, @Nullable NbtCompound nbtCompound
+		) {
 			super(world, d, e, f, 0.0, 0.0, 0.0);
 			this.velocityX = g;
 			this.velocityY = h;

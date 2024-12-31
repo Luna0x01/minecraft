@@ -6,6 +6,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.Locale;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.BufferBuilder;
@@ -229,7 +230,7 @@ public class GLX {
 		}
 
 		shadersSupported = advanced && shaders;
-		String string = GL11.glGetString(7936).toLowerCase();
+		String string = GL11.glGetString(7936).toLowerCase(Locale.ROOT);
 		nvidia = string.contains("nvidia");
 		vboShadersSupported = !contextCapabilities.OpenGL15 && contextCapabilities.GL_ARB_vertex_buffer_object;
 		vboSupported = contextCapabilities.OpenGL15 || vboShadersSupported;

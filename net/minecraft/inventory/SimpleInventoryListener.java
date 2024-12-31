@@ -1,5 +1,5 @@
 package net.minecraft.inventory;
 
 public interface SimpleInventoryListener {
-	void onChanged(SimpleInventory inventory);
+	void method_13928(Inventory inventory);
 }

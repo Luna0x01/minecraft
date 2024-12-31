@@ -31,10 +31,10 @@ public class ProjectileDamageSource extends EntityDamageSource {
 	@Override
 	public Text getDeathMessage(LivingEntity entity) {
 		Text text = this.attacker == null ? this.source.getName() : this.attacker.getName();
-		ItemStack itemStack = this.attacker instanceof LivingEntity ? ((LivingEntity)this.attacker).getMainHandStack() : null;
+		ItemStack itemStack = this.attacker instanceof LivingEntity ? ((LivingEntity)this.attacker).getMainHandStack() : ItemStack.EMPTY;
 		String string = "death.attack." + this.name;
 		String string2 = string + ".item";
-		return itemStack != null && itemStack.hasCustomName() && CommonI18n.hasTranslation(string2)
+		return !itemStack.isEmpty() && itemStack.hasCustomName() && CommonI18n.hasTranslation(string2)
 			? new TranslatableText(string2, entity.getName(), text, itemStack.toHoverableText())
 			: new TranslatableText(string, entity.getName(), text);
 	}

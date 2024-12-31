@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Map.Entry;
-import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.LivingEntity;
@@ -29,8 +28,8 @@ public class EnchantmentHelper {
 	private static final EnchantmentHelper.OnDamagedWith ON_DAMAGE_CONSUMER = new EnchantmentHelper.OnDamagedWith();
 	private static final EnchantmentHelper.OnAttackedWith ON_ATTACK_CONSUMER = new EnchantmentHelper.OnAttackedWith();
 
-	public static int getLevel(Enchantment enchantment, @Nullable ItemStack stack) {
-		if (stack == null) {
+	public static int getLevel(Enchantment enchantment, ItemStack stack) {
+		if (stack.isEmpty()) {
 			return 0;
 		} else {
 			NbtList nbtList = stack.getEnchantments();
@@ -91,7 +90,7 @@ public class EnchantmentHelper {
 	}
 
 	private static void forEachEnchantment(EnchantmentHelper.Consumer consumer, ItemStack stack) {
-		if (stack != null) {
+		if (!stack.isEmpty()) {
 			NbtList nbtList = stack.getEnchantments();
 			if (nbtList != null) {
 				for (int i = 0; i < nbtList.size(); i++) {
@@ -125,6 +124,11 @@ public class EnchantmentHelper {
 		return DAMAGE_CONSUMER.damage;
 	}
 
+	public static float getSweepingMultiplier(LivingEntity entity) {
+		int i = getEquipmentLevel(Enchantments.SWEEPING, entity);
+		return i > 0 ? SweepingEnchantment.getMultiplier(i) : 0.0F;
+	}
+
 	public static void onUserDamaged(LivingEntity user, Entity attacker) {
 		ON_DAMAGE_CONSUMER.attackedEntity = attacker;
 		ON_DAMAGE_CONSUMER.livingEntity = user;
@@ -150,7 +154,7 @@ public class EnchantmentHelper {
 	}
 
 	public static int getEquipmentLevel(Enchantment enchantment, LivingEntity entity) {
-		Iterable<ItemStack> iterable = enchantment.method_11445(entity);
+		Iterable<ItemStack> iterable = enchantment.method_13673(entity);
 		if (iterable == null) {
 			return 0;
 		} else {
@@ -187,12 +191,12 @@ public class EnchantmentHelper {
 		return getEquipmentLevel(Enchantments.EFFICIENCY, entity);
 	}
 
-	public static int getLuckOfTheSea(LivingEntity entity) {
-		return getEquipmentLevel(Enchantments.LUCK_OF_THE_SEA, entity);
+	public static int getLuckOfTheSea(ItemStack stack) {
+		return getLevel(Enchantments.LUCK_OF_THE_SEA, stack);
 	}
 
-	public static int getLure(LivingEntity entity) {
-		return getEquipmentLevel(Enchantments.LURE, entity);
+	public static int getLure(ItemStack stack) {
+		return getLevel(Enchantments.LURE, stack);
 	}
 
 	public static int getLooting(LivingEntity stack) {
@@ -207,21 +211,28 @@ public class EnchantmentHelper {
 		return getEquipmentLevel(Enchantments.FROST_WALKER, entity) > 0;
 	}
 
-	@Nullable
-	public static ItemStack chooseEquipmentWith(Enchantment enchantment, LivingEntity entity) {
-		Iterable<ItemStack> iterable = enchantment.method_11445(entity);
-		if (iterable == null) {
-			return null;
-		} else {
-			List<ItemStack> list = Lists.newArrayList();
+	public static boolean hasBindingCurse(ItemStack stack) {
+		return getLevel(Enchantments.BINDING_CURSE, stack) > 0;
+	}
 
-			for (ItemStack itemStack : iterable) {
-				if (itemStack != null && getLevel(enchantment, itemStack) > 0) {
-					list.add(itemStack);
+	public static boolean hasVanishingCurse(ItemStack stack) {
+		return getLevel(Enchantments.VANISHING_CURSE, stack) > 0;
+	}
+
+	public static ItemStack chooseEquipmentWith(Enchantment enchantment, LivingEntity entity) {
+		List<ItemStack> list = enchantment.method_13673(entity);
+		if (list.isEmpty()) {
+			return ItemStack.EMPTY;
+		} else {
+			List<ItemStack> list2 = Lists.newArrayList();
+
+			for (ItemStack itemStack : list) {
+				if (!itemStack.isEmpty() && getLevel(enchantment, itemStack) > 0) {
+					list2.add(itemStack);
 				}
 			}
 
-			return list.isEmpty() ? null : (ItemStack)list.get(entity.getRandom().nextInt(list.size()));
+			return list2.isEmpty() ? ItemStack.EMPTY : (ItemStack)list2.get(entity.getRandom().nextInt(list2.size()));
 		}
 	}
 
@@ -245,10 +256,10 @@ public class EnchantmentHelper {
 	}
 
 	public static ItemStack enchant(Random random, ItemStack stack, int level, boolean treasureAllowed) {
-		boolean bl = stack.getItem() == Items.BOOK;
 		List<EnchantmentLevelEntry> list = generateEnchantments(random, stack, level, treasureAllowed);
+		boolean bl = stack.getItem() == Items.BOOK;
 		if (bl) {
-			stack.setItem(Items.ENCHANTED_BOOK);
+			stack = new ItemStack(Items.ENCHANTED_BOOK);
 		}
 
 		for (EnchantmentLevelEntry enchantmentLevelEntry : list) {
@@ -295,7 +306,7 @@ public class EnchantmentHelper {
 		Iterator<EnchantmentLevelEntry> iterator = possibleEntries.iterator();
 
 		while (iterator.hasNext()) {
-			if (!pickedEntry.enchantment.differs(((EnchantmentLevelEntry)iterator.next()).enchantment)) {
+			if (!pickedEntry.enchantment.isDifferent(((EnchantmentLevelEntry)iterator.next()).enchantment)) {
 				iterator.remove();
 			}
 		}

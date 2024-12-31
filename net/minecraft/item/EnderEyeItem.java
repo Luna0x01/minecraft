@@ -26,38 +26,37 @@ public class EnderEyeItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockState blockState = world.getBlockState(blockPos);
-		if (!playerEntity.canModify(blockPos.offset(direction), direction, itemStack)
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		BlockState blockState = world.getBlockState(pos);
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!player.canModify(pos.offset(direction), direction, itemStack)
 			|| blockState.getBlock() != Blocks.END_PORTAL_FRAME
 			|| (Boolean)blockState.get(EndPortalFrameBlock.EYE)) {
 			return ActionResult.FAIL;
 		} else if (world.isClient) {
 			return ActionResult.SUCCESS;
 		} else {
-			world.setBlockState(blockPos, blockState.with(EndPortalFrameBlock.EYE, true), 2);
-			world.updateHorizontalAdjacent(blockPos, Blocks.END_PORTAL_FRAME);
-			itemStack.count--;
+			world.setBlockState(pos, blockState.with(EndPortalFrameBlock.EYE, true), 2);
+			world.updateHorizontalAdjacent(pos, Blocks.END_PORTAL_FRAME);
+			itemStack.decrement(1);
 
 			for (int i = 0; i < 16; i++) {
-				double d = (double)((float)blockPos.getX() + (5.0F + RANDOM.nextFloat() * 6.0F) / 16.0F);
-				double e = (double)((float)blockPos.getY() + 0.8125F);
-				double j = (double)((float)blockPos.getZ() + (5.0F + RANDOM.nextFloat() * 6.0F) / 16.0F);
-				double k = 0.0;
-				double l = 0.0;
-				double m = 0.0;
-				world.addParticle(ParticleType.SMOKE, d, e, j, 0.0, 0.0, 0.0);
+				double d = (double)((float)pos.getX() + (5.0F + RANDOM.nextFloat() * 6.0F) / 16.0F);
+				double e = (double)((float)pos.getY() + 0.8125F);
+				double f = (double)((float)pos.getZ() + (5.0F + RANDOM.nextFloat() * 6.0F) / 16.0F);
+				double g = 0.0;
+				double h = 0.0;
+				double j = 0.0;
+				world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
 			}
 
-			BlockPattern.Result result = EndPortalFrameBlock.method_11610().searchAround(world, blockPos);
+			BlockPattern.Result result = EndPortalFrameBlock.method_11610().searchAround(world, pos);
 			if (result != null) {
-				BlockPos blockPos2 = result.getFrontTopLeft().add(-3, 0, -3);
+				BlockPos blockPos = result.getFrontTopLeft().add(-3, 0, -3);
 
-				for (int n = 0; n < 3; n++) {
-					for (int o = 0; o < 3; o++) {
-						world.setBlockState(blockPos2.add(n, 0, o), Blocks.END_PORTAL.getDefaultState(), 2);
+				for (int k = 0; k < 3; k++) {
+					for (int l = 0; l < 3; l++) {
+						world.setBlockState(blockPos.add(k, 0, l), Blocks.END_PORTAL.getDefaultState(), 2);
 					}
 				}
 			}
@@ -67,40 +66,33 @@ public class EnderEyeItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		BlockHitResult blockHitResult = this.onHit(world, playerEntity, false);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		BlockHitResult blockHitResult = this.onHit(world, player, false);
 		if (blockHitResult != null
 			&& blockHitResult.type == BlockHitResult.Type.BLOCK
 			&& world.getBlockState(blockHitResult.getBlockPos()).getBlock() == Blocks.END_PORTAL_FRAME) {
 			return new TypedActionResult<>(ActionResult.PASS, itemStack);
 		} else {
+			player.method_13050(hand);
 			if (!world.isClient) {
-				BlockPos blockPos = ((ServerWorld)world).getChunkProvider().method_12773(world, "Stronghold", new BlockPos(playerEntity));
+				BlockPos blockPos = ((ServerWorld)world).getChunkProvider().method_12773(world, "Stronghold", new BlockPos(player), false);
 				if (blockPos != null) {
-					EyeOfEnderEntity eyeOfEnderEntity = new EyeOfEnderEntity(world, playerEntity.x, playerEntity.y + (double)(playerEntity.height / 2.0F), playerEntity.z);
+					EyeOfEnderEntity eyeOfEnderEntity = new EyeOfEnderEntity(world, player.x, player.y + (double)(player.height / 2.0F), player.z);
 					eyeOfEnderEntity.initTargetPos(blockPos);
 					world.spawnEntity(eyeOfEnderEntity);
-					world.playSound(
-						null,
-						playerEntity.x,
-						playerEntity.y,
-						playerEntity.z,
-						Sounds.ENTITY_ENDEREYE_LAUNCH,
-						SoundCategory.NEUTRAL,
-						0.5F,
-						0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
-					);
-					world.syncWorldEvent(null, 1003, new BlockPos(playerEntity), 0);
-					if (!playerEntity.abilities.creativeMode) {
-						itemStack.count--;
+					world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_ENDEREYE_LAUNCH, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
+					world.syncWorldEvent(null, 1003, new BlockPos(player), 0);
+					if (!player.abilities.creativeMode) {
+						itemStack.decrement(1);
 					}
 
-					playerEntity.incrementStat(Stats.used(this));
+					player.incrementStat(Stats.used(this));
 					return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 				}
 			}
 
-			return new TypedActionResult<>(ActionResult.FAIL, itemStack);
+			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 		}
 	}
 }

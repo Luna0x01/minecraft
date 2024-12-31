@@ -15,7 +15,7 @@ public class MoveControl {
 	protected double speed;
 	protected float field_14568;
 	protected float field_14569;
-	protected MoveControl.MoveStatus state = MoveControl.MoveStatus.WAIT;
+	public MoveControl.MoveStatus state = MoveControl.MoveStatus.WAIT;
 
 	public MoveControl(MobEntity mobEntity) {
 		this.entity = mobEntity;
@@ -106,6 +106,12 @@ public class MoveControl {
 			this.entity.setMovementSpeed((float)(this.speed * this.entity.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue()));
 			if (o > (double)this.entity.stepHeight && d * d + e * e < (double)Math.max(1.0F, this.entity.width)) {
 				this.entity.getJumpControl().setActive();
+				this.state = MoveControl.MoveStatus.JUMPING;
+			}
+		} else if (this.state == MoveControl.MoveStatus.JUMPING) {
+			this.entity.setMovementSpeed((float)(this.speed * this.entity.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue()));
+			if (this.entity.onGround) {
+				this.state = MoveControl.MoveStatus.WAIT;
 			}
 		} else {
 			this.entity.setForwardSpeed(0.0F);
@@ -147,6 +153,7 @@ public class MoveControl {
 	public static enum MoveStatus {
 		WAIT,
 		MOVE_TO,
-		STRAFE;
+		STRAFE,
+		JUMPING;
 	}
 }

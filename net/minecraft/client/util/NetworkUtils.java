@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
+import net.minecraft.util.CommonI18n;
 import net.minecraft.util.ProgressListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -115,8 +116,8 @@ public class NetworkUtils {
 				InputStream inputStream = null;
 				OutputStream outputStream = null;
 				if (progressListener != null) {
-					progressListener.setTitleAndTask("Downloading Resource Pack");
-					progressListener.setTask("Making Request...");
+					progressListener.setTitleAndTask(CommonI18n.translate("resourcepack.downloading"));
+					progressListener.setTask(CommonI18n.translate("resourcepack.requesting"));
 				}
 
 				try {
@@ -138,7 +139,7 @@ public class NetworkUtils {
 					g = (float)httpURLConnection.getContentLength();
 					int i = httpURLConnection.getContentLength();
 					if (progressListener != null) {
-						progressListener.setTask(String.format("Downloading file (%.2f MB)...", g / 1000.0F / 1000.0F));
+						progressListener.setTask(CommonI18n.translate("resourcepack.progress", String.format("%.2f", g / 1000.0F / 1000.0F)));
 					}
 
 					if (resourcePackFile.exists()) {

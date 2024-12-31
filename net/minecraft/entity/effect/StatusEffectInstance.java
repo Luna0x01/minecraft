@@ -172,7 +172,7 @@ public class StatusEffectInstance implements Comparable<StatusEffectInstance> {
 				bl2 = nbt.getBoolean("ShowParticles");
 			}
 
-			return new StatusEffectInstance(statusEffect, k, j, bl, bl2);
+			return new StatusEffectInstance(statusEffect, k, j < 0 ? 0 : j, bl, bl2);
 		}
 	}
 

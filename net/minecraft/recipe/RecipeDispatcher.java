@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PlanksBlock;
@@ -19,6 +18,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class RecipeDispatcher {
@@ -46,6 +46,7 @@ public class RecipeDispatcher {
 		this.recipes.add(new TippedArrowRecipeType());
 		new BannerRecipeDispatcher().registerRecipes(this);
 		new ShieldRecipeDispatcher().method_11444(this);
+		new ShulkerBoxRecipeDispatcher().method_13672(this);
 		this.registerShapedRecipe(new ItemStack(Items.PAPER, 3), "###", '#', Items.SUGARCANE);
 		this.registerShapelessRecipe(new ItemStack(Items.BOOK, 1), Items.PAPER, Items.PAPER, Items.PAPER, Items.LEATHER);
 		this.registerShapelessRecipe(new ItemStack(Items.WRITABLE_BOOK, 1), Items.BOOK, new ItemStack(Items.DYE, 1, DyeColor.BLACK.getSwappedId()), Items.FEATHER);
@@ -280,6 +281,7 @@ public class RecipeDispatcher {
 		this.registerShapedRecipe(new ItemStack(Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE, 1), "##", '#', Items.GOLD_INGOT);
 		this.registerShapedRecipe(new ItemStack(Blocks.DISPENSER, 1), "###", "#X#", "#R#", '#', Blocks.COBBLESTONE, 'X', Items.BOW, 'R', Items.REDSTONE);
 		this.registerShapedRecipe(new ItemStack(Blocks.DROPPER, 1), "###", "# #", "#R#", '#', Blocks.COBBLESTONE, 'R', Items.REDSTONE);
+		this.registerShapedRecipe(new ItemStack(Blocks.OBSERVER, 1), "###", "RRQ", "###", '#', Blocks.COBBLESTONE, 'R', Items.REDSTONE, 'Q', Items.QUARTZ);
 		this.registerShapedRecipe(
 			new ItemStack(Blocks.PISTON, 1), "TTT", "#X#", "#R#", '#', Blocks.COBBLESTONE, 'X', Items.IRON_INGOT, 'R', Items.REDSTONE, 'T', Blocks.PLANKS
 		);
@@ -339,7 +341,7 @@ public class RecipeDispatcher {
 		Map<Character, ItemStack> map;
 		for (map = Maps.newHashMap(); i < args.length; i += 2) {
 			Character character = (Character)args[i];
-			ItemStack itemStack = null;
+			ItemStack itemStack = ItemStack.EMPTY;
 			if (args[i + 1] instanceof Item) {
 				itemStack = new ItemStack((Item)args[i + 1]);
 			} else if (args[i + 1] instanceof Block) {
@@ -353,12 +355,12 @@ public class RecipeDispatcher {
 
 		ItemStack[] itemStacks = new ItemStack[j * k];
 
-		for (int n = 0; n < j * k; n++) {
-			char c = string.charAt(n);
+		for (int l = 0; l < j * k; l++) {
+			char c = string.charAt(l);
 			if (map.containsKey(c)) {
-				itemStacks[n] = ((ItemStack)map.get(c)).copy();
+				itemStacks[l] = ((ItemStack)map.get(c)).copy();
 			} else {
-				itemStacks[n] = null;
+				itemStacks[l] = ItemStack.EMPTY;
 			}
 		}
 
@@ -391,7 +393,6 @@ public class RecipeDispatcher {
 		this.recipes.add(recipe);
 	}
 
-	@Nullable
 	public ItemStack matches(CraftingInventory inventory, World world) {
 		for (RecipeType recipeType : this.recipes) {
 			if (recipeType.matches(inventory, world)) {
@@ -399,23 +400,23 @@ public class RecipeDispatcher {
 			}
 		}
 
-		return null;
+		return ItemStack.EMPTY;
 	}
 
-	public ItemStack[] getRemainders(CraftingInventory inventory, World world) {
+	public DefaultedList<ItemStack> method_13671(CraftingInventory craftingInventory, World world) {
 		for (RecipeType recipeType : this.recipes) {
-			if (recipeType.matches(inventory, world)) {
-				return recipeType.getRemainders(inventory);
+			if (recipeType.matches(craftingInventory, world)) {
+				return recipeType.method_13670(craftingInventory);
 			}
 		}
 
-		ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			itemStacks[i] = inventory.getInvStack(i);
+		for (int i = 0; i < defaultedList.size(); i++) {
+			defaultedList.set(i, craftingInventory.getInvStack(i));
 		}
 
-		return itemStacks;
+		return defaultedList;
 	}
 
 	public List<RecipeType> getAllRecipes() {

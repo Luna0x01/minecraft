@@ -21,44 +21,43 @@ public class BedItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
 		if (world.isClient) {
 			return ActionResult.SUCCESS;
 		} else if (direction != Direction.UP) {
 			return ActionResult.FAIL;
 		} else {
-			BlockState blockState = world.getBlockState(blockPos);
+			BlockState blockState = world.getBlockState(pos);
 			Block block = blockState.getBlock();
-			boolean bl = block.method_8638(world, blockPos);
+			boolean bl = block.method_8638(world, pos);
 			if (!bl) {
-				blockPos = blockPos.up();
+				pos = pos.up();
 			}
 
-			int i = MathHelper.floor((double)(playerEntity.yaw * 4.0F / 360.0F) + 0.5) & 3;
+			int i = MathHelper.floor((double)(player.yaw * 4.0F / 360.0F) + 0.5) & 3;
 			Direction direction2 = Direction.fromHorizontal(i);
-			BlockPos blockPos2 = blockPos.offset(direction2);
-			if (playerEntity.canModify(blockPos, direction, itemStack) && playerEntity.canModify(blockPos2, direction, itemStack)) {
-				boolean bl2 = world.getBlockState(blockPos2).getBlock().method_8638(world, blockPos2);
-				boolean bl3 = bl || world.isAir(blockPos);
-				boolean bl4 = bl2 || world.isAir(blockPos2);
-				if (bl3 && bl4 && world.getBlockState(blockPos.down()).method_11739() && world.getBlockState(blockPos2.down()).method_11739()) {
-					BlockState blockState2 = Blocks.BED
+			BlockPos blockPos = pos.offset(direction2);
+			ItemStack itemStack = player.getStackInHand(hand);
+			if (player.canModify(pos, direction, itemStack) && player.canModify(blockPos, direction, itemStack)) {
+				BlockState blockState2 = world.getBlockState(blockPos);
+				boolean bl2 = blockState2.getBlock().method_8638(world, blockPos);
+				boolean bl3 = bl || world.isAir(pos);
+				boolean bl4 = bl2 || world.isAir(blockPos);
+				if (bl3 && bl4 && world.getBlockState(pos.down()).method_11739() && world.getBlockState(blockPos.down()).method_11739()) {
+					BlockState blockState3 = Blocks.BED
 						.getDefaultState()
 						.with(BedBlock.OCCUPIED, false)
 						.with(BedBlock.DIRECTION, direction2)
 						.with(BedBlock.BED_TYPE, BedBlock.BedBlockType.FOOT);
-					if (world.setBlockState(blockPos, blockState2, 11)) {
-						BlockState blockState3 = blockState2.with(BedBlock.BED_TYPE, BedBlock.BedBlockType.HEAD);
-						world.setBlockState(blockPos2, blockState3, 11);
-					}
-
-					BlockSoundGroup blockSoundGroup = blockState2.getBlock().getSoundGroup();
+					world.setBlockState(pos, blockState3, 10);
+					world.setBlockState(blockPos, blockState3.with(BedBlock.BED_TYPE, BedBlock.BedBlockType.HEAD), 10);
+					world.method_8531(pos, block, false);
+					world.method_8531(blockPos, blockState2.getBlock(), false);
+					BlockSoundGroup blockSoundGroup = blockState3.getBlock().getSoundGroup();
 					world.method_11486(
-						null, blockPos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
+						null, pos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 					);
-					itemStack.count--;
+					itemStack.decrement(1);
 					return ActionResult.SUCCESS;
 				} else {
 					return ActionResult.FAIL;

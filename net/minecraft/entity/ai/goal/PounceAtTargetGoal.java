@@ -40,8 +40,11 @@ public class PounceAtTargetGoal extends Goal {
 		double d = this.attacker.x - this.mob.x;
 		double e = this.attacker.z - this.mob.z;
 		float f = MathHelper.sqrt(d * d + e * e);
-		this.mob.velocityX = this.mob.velocityX + d / (double)f * 0.5 * 0.8F + this.mob.velocityX * 0.2F;
-		this.mob.velocityZ = this.mob.velocityZ + e / (double)f * 0.5 * 0.8F + this.mob.velocityZ * 0.2F;
+		if ((double)f >= 1.0E-4) {
+			this.mob.velocityX = this.mob.velocityX + d / (double)f * 0.5 * 0.8F + this.mob.velocityX * 0.2F;
+			this.mob.velocityZ = this.mob.velocityZ + e / (double)f * 0.5 * 0.8F + this.mob.velocityZ * 0.2F;
+		}
+
 		this.mob.velocityY = (double)this.speed;
 	}
 }

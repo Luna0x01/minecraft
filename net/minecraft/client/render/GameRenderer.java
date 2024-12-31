@@ -27,6 +27,7 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.item.HeldItemRenderer;
+import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.SpriteAtlasTexture;
@@ -61,7 +62,6 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -125,6 +125,10 @@ public class GameRenderer implements ResourceReloadListener {
 	private double zoom = 1.0;
 	private double zoomX;
 	private double zoomY;
+	private ItemStack field_15274;
+	private int field_15275;
+	private float field_15276;
+	private float field_15277;
 	private ShaderEffect shader;
 	private static final Identifier[] SHADERS_LOCATIONS = new Identifier[]{
 		new Identifier("shaders/post/notch.json"),
@@ -195,7 +199,7 @@ public class GameRenderer implements ResourceReloadListener {
 		this.shadersEnabled = !this.shadersEnabled;
 	}
 
-	public void onCameraEntitySet(Entity entity) {
+	public void onCameraEntitySet(@Nullable Entity entity) {
 		if (GLX.shadersSupported) {
 			if (this.shader != null) {
 				this.shader.disable();
@@ -286,6 +290,13 @@ public class GameRenderer implements ResourceReloadListener {
 		} else if (this.skyDarkness > 0.0F) {
 			this.skyDarkness -= 0.0125F;
 		}
+
+		if (this.field_15275 > 0) {
+			this.field_15275--;
+			if (this.field_15275 == 0) {
+				this.field_15274 = null;
+			}
+		}
 	}
 
 	public ShaderEffect getShader() {
@@ -329,7 +340,7 @@ public class GameRenderer implements ResourceReloadListener {
 					e = this.client.result.pos.distanceTo(vec3d);
 				}
 
-				Vec3d vec3d2 = entity.getRotationVector(tickDelta);
+				Vec3d vec3d2 = entity.getRotationVector(1.0F);
 				Vec3d vec3d3 = vec3d.add(vec3d2.x * d, vec3d2.y * d, vec3d2.z * d);
 				this.targetedEntity = null;
 				Vec3d vec3d4 = null;
@@ -895,6 +906,8 @@ public class GameRenderer implements ResourceReloadListener {
 				this.client.profiler.swap("gui");
 				if (!this.client.options.hudHidden || this.client.currentScreen != null) {
 					GlStateManager.alphaFunc(516, 0.1F);
+					this.setupHudMatrixMode();
+					this.method_13845(l, m, tickDelta);
 					this.client.inGameHud.render(tickDelta);
 				}
 
@@ -992,7 +1005,7 @@ public class GameRenderer implements ResourceReloadListener {
 					if (this.client.interactionManager.method_9667() == GameMode.SPECTATOR) {
 						bl = block.hasBlockEntity() && this.client.world.getBlockEntity(blockPos) instanceof Inventory;
 					} else {
-						bl = itemStack != null && (itemStack.canDestroy(block) || itemStack.canPlaceOn(block));
+						bl = !itemStack.isEmpty() && (itemStack.canDestroy(block) || itemStack.canPlaceOn(block));
 					}
 				}
 			}
@@ -1067,7 +1080,7 @@ public class GameRenderer implements ResourceReloadListener {
 		this.renderFog(0, tickDelta);
 		GlStateManager.shadeModel(7425);
 		if (entity.y + (double)entity.getEyeHeight() < 128.0) {
-			this.renderClouds(worldRenderer, tickDelta, anaglyphFilter);
+			this.method_9777(worldRenderer, tickDelta, anaglyphFilter, d, e, f);
 		}
 
 		this.client.profiler.swap("prepareterrain");
@@ -1162,7 +1175,7 @@ public class GameRenderer implements ResourceReloadListener {
 		GlStateManager.disableFog();
 		if (entity.y + (double)entity.getEyeHeight() >= 128.0) {
 			this.client.profiler.swap("aboveClouds");
-			this.renderClouds(worldRenderer, tickDelta, anaglyphFilter);
+			this.method_9777(worldRenderer, tickDelta, anaglyphFilter, d, e, f);
 		}
 
 		this.client.profiler.swap("hand");
@@ -1172,23 +1185,21 @@ public class GameRenderer implements ResourceReloadListener {
 		}
 	}
 
-	private void renderClouds(WorldRenderer worldRenderer, float tickDelta, int anaglyphFilter) {
+	private void method_9777(WorldRenderer worldRenderer, float f, int i, double d, double e, double g) {
 		if (this.client.options.getCloudMode() != 0) {
 			this.client.profiler.swap("clouds");
 			GlStateManager.matrixMode(5889);
 			GlStateManager.loadIdentity();
-			Project.gluPerspective(this.getFov(tickDelta, true), (float)this.client.width / (float)this.client.height, 0.05F, this.viewDistance * 4.0F);
+			Project.gluPerspective(this.getFov(f, true), (float)this.client.width / (float)this.client.height, 0.05F, this.viewDistance * 4.0F);
 			GlStateManager.matrixMode(5888);
 			GlStateManager.pushMatrix();
-			this.renderFog(0, tickDelta);
-			worldRenderer.renderClouds(tickDelta, anaglyphFilter);
+			this.renderFog(0, f);
+			worldRenderer.method_13849(f, i, d, e, g);
 			GlStateManager.disableFog();
 			GlStateManager.popMatrix();
 			GlStateManager.matrixMode(5889);
 			GlStateManager.loadIdentity();
-			Project.gluPerspective(
-				this.getFov(tickDelta, true), (float)this.client.width / (float)this.client.height, 0.05F, this.viewDistance * MathHelper.SQUARE_ROOT_OF_TWO
-			);
+			Project.gluPerspective(this.getFov(f, true), (float)this.client.width / (float)this.client.height, 0.05F, this.viewDistance * MathHelper.SQUARE_ROOT_OF_TWO);
 			GlStateManager.matrixMode(5888);
 		}
 	}
@@ -1228,7 +1239,7 @@ public class GameRenderer implements ResourceReloadListener {
 				 {
 					double h = this.random.nextDouble();
 					double m = this.random.nextDouble();
-					Box box = blockState.getCollisionBox((BlockView)world, blockPos3);
+					Box box = blockState.getCollisionBox(world, blockPos3);
 					if (blockState.getMaterial() == Material.LAVA || blockState.getBlock() == Blocks.MAGMA) {
 						this.client
 							.world
@@ -1588,7 +1599,7 @@ public class GameRenderer implements ResourceReloadListener {
 
 	private void renderFog(int i, float tickDelta) {
 		Entity entity = this.client.getCameraEntity();
-		GlStateManager.method_12298(2918, this.updateFogColorBuffer(this.fogRed, this.fogGreen, this.fogBlue, 1.0F));
+		this.method_13847(false);
 		GlStateManager.method_12272(0.0F, -1.0F, 0.0F);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		BlockState blockState = Camera.method_9371(this.client.world, entity, tickDelta);
@@ -1654,11 +1665,24 @@ public class GameRenderer implements ResourceReloadListener {
 		GlStateManager.colorMaterial(1028, 4608);
 	}
 
+	public void method_13847(boolean bl) {
+		if (bl) {
+			GlStateManager.method_12298(2918, this.updateFogColorBuffer(0.0F, 0.0F, 0.0F, 1.0F));
+		} else {
+			GlStateManager.method_12298(2918, this.updateFogColorBuffer(this.fogRed, this.fogGreen, this.fogBlue, 1.0F));
+		}
+	}
+
 	private FloatBuffer updateFogColorBuffer(float red, float green, float blue, float alpha) {
 		this.fogColorBuffer.clear();
 		this.fogColorBuffer.put(red).put(green).put(blue).put(alpha);
 		this.fogColorBuffer.flip();
 		return this.fogColorBuffer;
+	}
+
+	public void method_13848() {
+		this.field_15274 = null;
+		this.mapRenderer.clearStateTextures();
 	}
 
 	public MapRenderer getMapRenderer() {
@@ -1704,5 +1728,45 @@ public class GameRenderer implements ResourceReloadListener {
 		GlStateManager.disableBlend();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.popMatrix();
+	}
+
+	public void method_13846(ItemStack itemStack) {
+		this.field_15274 = itemStack;
+		this.field_15275 = 40;
+		this.field_15276 = this.random.nextFloat() * 2.0F - 1.0F;
+		this.field_15277 = this.random.nextFloat() * 2.0F - 1.0F;
+	}
+
+	private void method_13845(int i, int j, float f) {
+		if (this.field_15274 != null && this.field_15275 > 0) {
+			int k = 40 - this.field_15275;
+			float g = ((float)k + f) / 40.0F;
+			float h = g * g;
+			float l = g * h;
+			float m = 10.25F * l * h + -24.95F * h * h + 25.5F * l + -13.8F * h + 4.0F * g;
+			float n = m * (float) Math.PI;
+			float o = this.field_15276 * (float)(i / 4);
+			float p = this.field_15277 * (float)(j / 4);
+			GlStateManager.enableAlphaTest();
+			GlStateManager.pushMatrix();
+			GlStateManager.pushLightingAttributes();
+			GlStateManager.enableDepthTest();
+			GlStateManager.disableCull();
+			DiffuseLighting.enableNormally();
+			GlStateManager.translate(
+				(float)(i / 2) + o * MathHelper.abs(MathHelper.sin(n * 2.0F)), (float)(j / 2) + p * MathHelper.abs(MathHelper.sin(n * 2.0F)), -50.0F
+			);
+			float q = 50.0F + 175.0F * MathHelper.sin(n);
+			GlStateManager.scale(q, -q, q);
+			GlStateManager.rotate(900.0F * MathHelper.abs(MathHelper.sin(n)), 0.0F, 1.0F, 0.0F);
+			GlStateManager.rotate(6.0F * MathHelper.cos(g * 8.0F), 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotate(6.0F * MathHelper.cos(g * 8.0F), 0.0F, 0.0F, 1.0F);
+			this.client.getItemRenderer().method_12458(this.field_15274, ModelTransformation.Mode.FIXED);
+			GlStateManager.popAttributes();
+			GlStateManager.popMatrix();
+			DiffuseLighting.disable();
+			GlStateManager.enableCull();
+			GlStateManager.disableDepthTest();
+		}
 	}
 }

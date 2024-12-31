@@ -1,6 +1,7 @@
 package net.minecraft.network.packet.c2s.play;
 
 import java.io.IOException;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ServerPlayPacketListener;
@@ -68,6 +69,7 @@ public class PlayerInteractEntityC2SPacket implements Packet<ServerPlayPacketLis
 		serverPlayPacketListener.onPlayerInteractEntity(this);
 	}
 
+	@Nullable
 	public Entity getEntity(World world) {
 		return world.getEntityById(this.entityId);
 	}

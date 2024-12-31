@@ -2,6 +2,7 @@ package net.minecraft.client.gui.hud;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.UnmodifiableIterator;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
@@ -95,7 +96,7 @@ public class DebugHud extends DrawableHelper {
 		if (this.client.hasReducedDebugInfo()) {
 			return Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.10.2 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
+					"Minecraft 1.11.2 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
 					this.client.fpsDebugString,
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
@@ -125,7 +126,7 @@ public class DebugHud extends DrawableHelper {
 
 			List<String> list = Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.10.2 ("
+					"Minecraft 1.11.2 ("
 						+ this.client.getGameVersion()
 						+ "/"
 						+ ClientBrandRetriever.getClientModName()
@@ -232,8 +233,10 @@ public class DebugHud extends DrawableHelper {
 
 				list.add("");
 				list.add(String.valueOf(Block.REGISTRY.getIdentifier(blockState.getBlock())));
+				UnmodifiableIterator var12 = blockState.getPropertyMap().entrySet().iterator();
 
-				for (Entry<Property<?>, Comparable<?>> entry : blockState.getPropertyMap().entrySet()) {
+				while (var12.hasNext()) {
+					Entry<Property<?>, Comparable<?>> entry = (Entry<Property<?>, Comparable<?>>)var12.next();
 					Property<T> property = (Property<T>)entry.getKey();
 					T comparable = (T)entry.getValue();
 					String string = property.name(comparable);

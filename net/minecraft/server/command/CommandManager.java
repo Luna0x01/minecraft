@@ -75,6 +75,7 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 		this.registerCommand(new TitleCommand());
 		this.registerCommand(new EntityDataCommand());
 		this.registerCommand(new StopSoundCommand());
+		this.registerCommand(new LocateCommand());
 		if (minecraftServer.isDedicated()) {
 			this.registerCommand(new OpCommand());
 			this.registerCommand(new DeOpCommand());

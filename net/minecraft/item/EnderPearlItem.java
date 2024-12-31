@@ -18,22 +18,21 @@ public class EnderPearlItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		if (!playerEntity.abilities.creativeMode) {
-			itemStack.count--;
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!player.abilities.creativeMode) {
+			itemStack.decrement(1);
 		}
 
-		world.playSound(
-			null, playerEntity.x, playerEntity.y, playerEntity.z, Sounds.ENTITY_ENDERPEARL_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
-		);
-		playerEntity.getItemCooldownManager().method_11384(this, 20);
+		world.playSound(null, player.x, player.y, player.z, Sounds.ENTITY_ENDERPEARL_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
+		player.getItemCooldownManager().method_11384(this, 20);
 		if (!world.isClient) {
-			EnderPearlEntity enderPearlEntity = new EnderPearlEntity(world, playerEntity);
-			enderPearlEntity.setProperties(playerEntity, playerEntity.pitch, playerEntity.yaw, 0.0F, 1.5F, 1.0F);
+			EnderPearlEntity enderPearlEntity = new EnderPearlEntity(world, player);
+			enderPearlEntity.setProperties(player, player.pitch, player.yaw, 0.0F, 1.5F, 1.0F);
 			world.spawnEntity(enderPearlEntity);
 		}
 
-		playerEntity.incrementStat(Stats.used(this));
+		player.incrementStat(Stats.used(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 }

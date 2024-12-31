@@ -1,7 +1,5 @@
 package net.minecraft.client.gui.hud;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Iterator;
@@ -20,8 +18,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ChatHud extends DrawableHelper {
-	private static final Splitter field_13307 = Splitter.on('\n');
-	private static final Joiner field_13308 = Joiner.on("\\n");
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MinecraftClient client;
 	private final List<String> messageHistory = Lists.newArrayList();
@@ -103,10 +99,12 @@ public class ChatHud extends DrawableHelper {
 		}
 	}
 
-	public void clear() {
+	public void clear(boolean clearHistory) {
 		this.visibleMessages.clear();
 		this.messages.clear();
-		this.messageHistory.clear();
+		if (clearHistory) {
+			this.messageHistory.clear();
+		}
 	}
 
 	public void addMessage(Text message) {
@@ -115,7 +113,7 @@ public class ChatHud extends DrawableHelper {
 
 	public void addMessage(Text message, int messageId) {
 		this.addMessage(message, messageId, this.client.inGameHud.getTicks(), false);
-		LOGGER.info("[CHAT] {}", new Object[]{field_13308.join(field_13307.split(message.asUnformattedString()))});
+		LOGGER.info("[CHAT] {}", new Object[]{message.asUnformattedString().replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n")});
 	}
 
 	private void addMessage(Text message, int messageId, int timestamp, boolean ignoreLimit) {

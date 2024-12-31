@@ -22,7 +22,7 @@ public class DataFixerUpper implements DataFixer {
 
 	public NbtCompound update(DataFixType fixType, NbtCompound tag) {
 		int i = tag.contains("DataVersion", 99) ? tag.getInt("DataVersion") : -1;
-		return i >= 512 ? tag : this.update(fixType, tag, i);
+		return i >= 922 ? tag : this.update(fixType, tag, i);
 	}
 
 	@Override

@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import net.minecraft.block.entity.BannerBlockEntity;
+import net.minecraft.block.BannerPattern;
 import net.minecraft.client.texture.ColorMaskTexture;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
@@ -42,7 +42,7 @@ public class class_2871 {
 		}
 
 		@Nullable
-		public Identifier method_12344(String string, List<BannerBlockEntity.BannerPattern> list, List<DyeColor> list2) {
+		public Identifier method_12344(String string, List<BannerPattern> list, List<DyeColor> list2) {
 			if (string.isEmpty()) {
 				return null;
 			} else {
@@ -55,7 +55,7 @@ public class class_2871 {
 
 					List<String> list3 = Lists.newArrayList();
 
-					for (BannerBlockEntity.BannerPattern bannerPattern : list) {
+					for (BannerPattern bannerPattern : list) {
 						list3.add(this.field_13546 + bannerPattern.getName() + ".png");
 					}
 

@@ -1,7 +1,6 @@
 package net.minecraft.block.entity;
 
 import java.util.Arrays;
-import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BrewingStandBlock;
@@ -15,11 +14,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.BrewingScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.level.storage.LevelDataType;
@@ -28,7 +27,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	private static final int[] inputs = new int[]{3};
 	private static final int[] field_12841 = new int[]{0, 1, 2, 3};
 	private static final int[] outputs = new int[]{0, 1, 2, 4};
-	private ItemStack[] stacks = new ItemStack[5];
+	private DefaultedList<ItemStack> field_15151 = DefaultedList.ofSize(5, ItemStack.EMPTY);
 	private int brewTime;
 	private boolean[] slotsEmptyLastTick;
 	private Item itemBrewing;
@@ -51,23 +50,32 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 
 	@Override
 	public int getInvSize() {
-		return this.stacks.length;
+		return this.field_15151.size();
+	}
+
+	@Override
+	public boolean isEmpty() {
+		for (ItemStack itemStack : this.field_15151) {
+			if (!itemStack.isEmpty()) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	@Override
 	public void tick() {
-		if (this.field_12842 <= 0 && this.stacks[4] != null && this.stacks[4].getItem() == Items.BLAZE_POWDER) {
+		ItemStack itemStack = this.field_15151.get(4);
+		if (this.field_12842 <= 0 && itemStack.getItem() == Items.BLAZE_POWDER) {
 			this.field_12842 = 20;
-			this.stacks[4].count--;
-			if (this.stacks[4].count <= 0) {
-				this.stacks[4] = null;
-			}
-
+			itemStack.decrement(1);
 			this.markDirty();
 		}
 
 		boolean bl = this.canBrew();
 		boolean bl2 = this.brewTime > 0;
+		ItemStack itemStack2 = this.field_15151.get(3);
 		if (bl2) {
 			this.brewTime--;
 			boolean bl3 = this.brewTime == 0;
@@ -77,14 +85,14 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 			} else if (!bl) {
 				this.brewTime = 0;
 				this.markDirty();
-			} else if (this.itemBrewing != this.stacks[3].getItem()) {
+			} else if (this.itemBrewing != itemStack2.getItem()) {
 				this.brewTime = 0;
 				this.markDirty();
 			}
 		} else if (bl && this.field_12842 > 0) {
 			this.field_12842--;
 			this.brewTime = 400;
-			this.itemBrewing = this.stacks[3].getItem();
+			this.itemBrewing = itemStack2.getItem();
 			this.markDirty();
 		}
 
@@ -110,7 +118,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		boolean[] bls = new boolean[3];
 
 		for (int i = 0; i < 3; i++) {
-			if (this.stacks[i] != null) {
+			if (!this.field_15151.get(i).isEmpty()) {
 				bls[i] = true;
 			}
 		}
@@ -119,69 +127,54 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	}
 
 	private boolean canBrew() {
-		if (this.stacks[3] != null && this.stacks[3].count > 0) {
-			ItemStack itemStack = this.stacks[3];
-			if (!StatusEffectStrings.method_11417(itemStack)) {
-				return false;
-			} else {
-				for (int i = 0; i < 3; i++) {
-					ItemStack itemStack2 = this.stacks[i];
-					if (itemStack2 != null && StatusEffectStrings.method_11418(itemStack2, itemStack)) {
-						return true;
-					}
-				}
-
-				return false;
-			}
+		ItemStack itemStack = this.field_15151.get(3);
+		if (itemStack.isEmpty()) {
+			return false;
+		} else if (!StatusEffectStrings.method_11417(itemStack)) {
+			return false;
 		} else {
+			for (int i = 0; i < 3; i++) {
+				ItemStack itemStack2 = this.field_15151.get(i);
+				if (!itemStack2.isEmpty() && StatusEffectStrings.method_11418(itemStack2, itemStack)) {
+					return true;
+				}
+			}
+
 			return false;
 		}
 	}
 
 	private void brew() {
-		ItemStack itemStack = this.stacks[3];
+		ItemStack itemStack = this.field_15151.get(3);
 
 		for (int i = 0; i < 3; i++) {
-			this.stacks[i] = StatusEffectStrings.method_11427(itemStack, this.stacks[i]);
+			this.field_15151.set(i, StatusEffectStrings.method_11427(itemStack, this.field_15151.get(i)));
 		}
 
-		itemStack.count--;
+		itemStack.decrement(1);
 		BlockPos blockPos = this.getPos();
 		if (itemStack.getItem().isFood()) {
 			ItemStack itemStack2 = new ItemStack(itemStack.getItem().getRecipeRemainder());
-			if (itemStack.count <= 0) {
+			if (itemStack.isEmpty()) {
 				itemStack = itemStack2;
 			} else {
 				ItemScatterer.spawnItemStack(this.world, (double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), itemStack2);
 			}
 		}
 
-		if (itemStack.count <= 0) {
-			itemStack = null;
-		}
-
-		this.stacks[3] = itemStack;
+		this.field_15151.set(3, itemStack);
 		this.world.syncGlobalEvent(1035, blockPos, 0);
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Cauldron", "Items"));
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(BrewingStandBlockEntity.class, "Items"));
 	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
-		NbtList nbtList = nbt.getList("Items", 10);
-		this.stacks = new ItemStack[this.getInvSize()];
-
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			int j = nbtCompound.getByte("Slot");
-			if (j >= 0 && j < this.stacks.length) {
-				this.stacks[j] = ItemStack.fromNbt(nbtCompound);
-			}
-		}
-
+		this.field_15151 = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
+		class_2960.method_13927(nbt, this.field_15151);
 		this.brewTime = nbt.getShort("BrewTime");
 		if (nbt.contains("CustomName", 8)) {
 			this.customName = nbt.getString("CustomName");
@@ -194,18 +187,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		nbt.putShort("BrewTime", (short)this.brewTime);
-		NbtList nbtList = new NbtList();
-
-		for (int i = 0; i < this.stacks.length; i++) {
-			if (this.stacks[i] != null) {
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putByte("Slot", (byte)i);
-				this.stacks[i].toNbt(nbtCompound);
-				nbtList.add(nbtCompound);
-			}
-		}
-
-		nbt.put("Items", nbtList);
+		class_2960.method_13923(nbt, this.field_15151);
 		if (this.hasCustomName()) {
 			nbt.putString("CustomName", this.customName);
 		}
@@ -214,28 +196,25 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		return nbt;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
-		return slot >= 0 && slot < this.stacks.length ? this.stacks[slot] : null;
+		return slot >= 0 && slot < this.field_15151.size() ? this.field_15151.get(slot) : ItemStack.EMPTY;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		return class_2960.method_12933(this.stacks, slot, amount);
+		return class_2960.method_13926(this.field_15151, slot, amount);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		return class_2960.method_12932(this.stacks, slot);
+		return class_2960.method_13925(this.field_15151, slot);
 	}
 
 	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
-		if (slot >= 0 && slot < this.stacks.length) {
-			this.stacks[slot] = stack;
+	public void setInvStack(int slot, ItemStack stack) {
+		if (slot >= 0 && slot < this.field_15151.size()) {
+			this.field_15151.set(slot, stack);
 		}
 	}
 
@@ -267,7 +246,8 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 			Item item = stack.getItem();
 			return slot == 4
 				? item == Items.BLAZE_POWDER
-				: item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE;
+				: (item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE)
+					&& this.getInvStack(slot) == ItemStack.EMPTY;
 		}
 	}
 
@@ -330,6 +310,6 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 
 	@Override
 	public void clear() {
-		Arrays.fill(this.stacks, null);
+		this.field_15151.clear();
 	}
 }

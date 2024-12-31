@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import net.minecraft.advancement.Achievement;
 import net.minecraft.client.MinecraftClient;
@@ -26,7 +27,6 @@ import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -195,39 +195,34 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 		if (text != null && text.getStyle().getHoverEvent() != null) {
 			HoverEvent hoverEvent = text.getStyle().getHoverEvent();
 			if (hoverEvent.getAction() == HoverEvent.Action.SHOW_ITEM) {
-				ItemStack itemStack = null;
+				ItemStack itemStack = ItemStack.EMPTY;
 
 				try {
 					NbtElement nbtElement = StringNbtReader.parse(hoverEvent.getValue().asUnformattedString());
 					if (nbtElement instanceof NbtCompound) {
-						itemStack = ItemStack.fromNbt((NbtCompound)nbtElement);
+						itemStack = new ItemStack((NbtCompound)nbtElement);
 					}
 				} catch (NbtException var11) {
 				}
 
-				if (itemStack != null) {
-					this.renderTooltip(itemStack, x, y);
-				} else {
+				if (itemStack.isEmpty()) {
 					this.renderTooltip(Formatting.RED + "Invalid Item!", x, y);
+				} else {
+					this.renderTooltip(itemStack, x, y);
 				}
 			} else if (hoverEvent.getAction() == HoverEvent.Action.SHOW_ENTITY) {
 				if (this.client.options.advancedItemTooltips) {
 					try {
-						NbtElement nbtElement2 = StringNbtReader.parse(hoverEvent.getValue().asUnformattedString());
-						if (nbtElement2 instanceof NbtCompound) {
-							List<String> list = Lists.newArrayList();
-							NbtCompound nbtCompound = (NbtCompound)nbtElement2;
-							list.add(nbtCompound.getString("name"));
-							if (nbtCompound.contains("type", 8)) {
-								String string = nbtCompound.getString("type");
-								list.add("Type: " + string + " (" + EntityType.getIdByName(string) + ")");
-							}
-
-							list.add(nbtCompound.getString("id"));
-							this.renderTooltip(list, x, y);
-						} else {
-							this.renderTooltip(Formatting.RED + "Invalid Entity!", x, y);
+						NbtCompound nbtCompound = StringNbtReader.parse(hoverEvent.getValue().asUnformattedString());
+						List<String> list = Lists.newArrayList();
+						list.add(nbtCompound.getString("name"));
+						if (nbtCompound.contains("type", 8)) {
+							String string = nbtCompound.getString("type");
+							list.add("Type: " + string);
 						}
+
+						list.add(nbtCompound.getString("id"));
+						this.renderTooltip(list, x, y);
 					} catch (NbtException var10) {
 						this.renderTooltip(Formatting.RED + "Invalid Entity!", x, y);
 					}
@@ -281,8 +276,8 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 							throw new URISyntaxException(clickEvent.getValue(), "Missing protocol");
 						}
 
-						if (!ALLOWED_PROTOCOLS.contains(string.toLowerCase())) {
-							throw new URISyntaxException(clickEvent.getValue(), "Unsupported protocol: " + string.toLowerCase());
+						if (!ALLOWED_PROTOCOLS.contains(string.toLowerCase(Locale.ROOT))) {
+							throw new URISyntaxException(clickEvent.getValue(), "Unsupported protocol: " + string.toLowerCase(Locale.ROOT));
 						}
 
 						if (this.client.options.chatLinkPrompt) {

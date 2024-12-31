@@ -1,13 +1,16 @@
 package net.minecraft.block;
 
+import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.PistonBlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
@@ -32,6 +35,7 @@ public class PistonExtensionBlock extends BlockWithEntity {
 		this.setStrength(-1.0F);
 	}
 
+	@Nullable
 	@Override
 	public BlockEntity createBlockEntity(World world, int id) {
 		return null;
@@ -81,30 +85,18 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if (!world.isClient && world.getBlockEntity(blockPos) == null) {
-			world.setAir(blockPos);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if (!world.isClient && world.getBlockEntity(pos) == null) {
+			world.setAir(pos);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
 	@Override
@@ -118,23 +110,32 @@ public class PistonExtensionBlock extends BlockWithEntity {
 		}
 	}
 
+	@Nullable
 	@Override
 	public BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
 		return null;
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
-			world.getBlockEntity(blockPos);
+			world.getBlockEntity(pos);
 		}
 	}
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
+		PistonBlockEntity pistonBlockEntity = this.getPistonEntity(view, pos);
+		return pistonBlockEntity == null ? null : pistonBlockEntity.method_11701(view, pos);
+	}
+
+	@Override
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
 		PistonBlockEntity pistonBlockEntity = this.getPistonEntity(world, pos);
-		return pistonBlockEntity == null ? null : pistonBlockEntity.method_11701(world, pos);
+		if (pistonBlockEntity != null) {
+			pistonBlockEntity.method_13749(world, pos, entityBox, boxes, entity);
+		}
 	}
 
 	@Override
@@ -149,10 +150,9 @@ public class PistonExtensionBlock extends BlockWithEntity {
 		return blockEntity instanceof PistonBlockEntity ? (PistonBlockEntity)blockEntity : null;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override

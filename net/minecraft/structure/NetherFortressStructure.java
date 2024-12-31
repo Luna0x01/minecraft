@@ -3,10 +3,12 @@ package net.minecraft.structure;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.entity.WhitherSkeletonEntity;
 import net.minecraft.entity.mob.BlazeEntity;
 import net.minecraft.entity.mob.MagmaCubeEntity;
 import net.minecraft.entity.mob.SkeletonEntity;
 import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorConfig;
@@ -17,7 +19,8 @@ public class NetherFortressStructure extends StructureFeature {
 	public NetherFortressStructure() {
 		this.monsterSpawns.add(new Biome.SpawnEntry(BlazeEntity.class, 10, 2, 3));
 		this.monsterSpawns.add(new Biome.SpawnEntry(ZombiePigmanEntity.class, 5, 4, 4));
-		this.monsterSpawns.add(new Biome.SpawnEntry(SkeletonEntity.class, 10, 4, 4));
+		this.monsterSpawns.add(new Biome.SpawnEntry(WhitherSkeletonEntity.class, 8, 5, 5));
+		this.monsterSpawns.add(new Biome.SpawnEntry(SkeletonEntity.class, 2, 5, 5));
 		this.monsterSpawns.add(new Biome.SpawnEntry(MagmaCubeEntity.class, 3, 4, 4));
 	}
 
@@ -46,6 +49,32 @@ public class NetherFortressStructure extends StructureFeature {
 	@Override
 	protected GeneratorConfig getGeneratorConfig(int chunkX, int chunkZ) {
 		return new NetherFortressStructure.FortressGeneratorConfig(this.world, this.random, chunkX, chunkZ);
+	}
+
+	@Override
+	public BlockPos method_9269(World world, BlockPos blockPos, boolean bl) {
+		int i = 1000;
+		int j = blockPos.getX() >> 4;
+		int k = blockPos.getZ() >> 4;
+
+		for (int l = 0; l <= 1000; l++) {
+			for (int m = -l; m <= l; m++) {
+				boolean bl2 = m == -l || m == l;
+
+				for (int n = -l; n <= l; n++) {
+					boolean bl3 = n == -l || n == l;
+					if (bl2 || bl3) {
+						int o = j + m;
+						int p = k + n;
+						if (this.shouldStartAt(o, p) && (!bl || !world.method_13690(o, p))) {
+							return new BlockPos((o << 4) + 8, 64, (p << 4) + 8);
+						}
+					}
+				}
+			}
+		}
+
+		return null;
 	}
 
 	public static class FortressGeneratorConfig extends GeneratorConfig {

@@ -57,10 +57,10 @@ public abstract class StructurePiece {
 		int i = nbt.getInt("O");
 		this.method_11853(i == -1 ? null : Direction.fromHorizontal(i));
 		this.chainLength = nbt.getInt("GD");
-		this.deserialize(nbt);
+		this.method_5530(nbt, world.getSaveHandler().method_11956());
 	}
 
-	protected abstract void deserialize(NbtCompound structureNbt);
+	protected abstract void method_5530(NbtCompound nbtCompound, class_2763 arg);
 
 	public void fillOpenings(StructurePiece start, List<StructurePiece> pieces, Random random) {
 	}
@@ -83,10 +83,6 @@ public abstract class StructurePiece {
 		}
 
 		return null;
-	}
-
-	public BlockPos getCenterBlockPos() {
-		return new BlockPos(this.boundingBox.getCenter());
 	}
 
 	protected boolean isTouchingLiquid(World world, BlockBox box) {
@@ -354,9 +350,16 @@ public abstract class StructurePiece {
 
 	protected boolean method_11852(World world, BlockBox blockBox, Random random, int i, int j, int k, Identifier identifier) {
 		BlockPos blockPos = new BlockPos(this.applyXTransform(i, k), this.applyYTransform(j), this.applyZTransform(i, k));
+		return this.method_13775(world, blockBox, random, blockPos, identifier, null);
+	}
+
+	protected boolean method_13775(World world, BlockBox blockBox, Random random, BlockPos blockPos, Identifier identifier, @Nullable BlockState blockState) {
 		if (blockBox.contains(blockPos) && world.getBlockState(blockPos).getBlock() != Blocks.CHEST) {
-			BlockState blockState = Blocks.CHEST.getDefaultState();
-			world.setBlockState(blockPos, Blocks.CHEST.changeFacing(world, blockPos, blockState), 2);
+			if (blockState == null) {
+				blockState = Blocks.CHEST.changeFacing(world, blockPos, Blocks.CHEST.getDefaultState());
+			}
+
+			world.setBlockState(blockPos, blockState, 2);
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof ChestBlockEntity) {
 				((ChestBlockEntity)blockEntity).method_11660(identifier, random.nextLong());

@@ -1,6 +1,5 @@
 package net.minecraft.inventory.slot;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.FurnaceBlockEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -12,7 +11,7 @@ public class FurnaceFuelSlot extends Slot {
 	}
 
 	@Override
-	public boolean canInsert(@Nullable ItemStack stack) {
+	public boolean canInsert(ItemStack stack) {
 		return FurnaceBlockEntity.isFuel(stack) || isBucket(stack);
 	}
 
@@ -22,6 +21,6 @@ public class FurnaceFuelSlot extends Slot {
 	}
 
 	public static boolean isBucket(ItemStack stack) {
-		return stack != null && stack.getItem() != null && stack.getItem() == Items.BUCKET;
+		return stack.getItem() == Items.BUCKET;
 	}
 }

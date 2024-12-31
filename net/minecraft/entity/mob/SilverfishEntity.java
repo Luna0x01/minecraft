@@ -35,7 +35,7 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Silverfish");
+		MobEntity.registerDataFixes(dataFixer, SilverfishEntity.class);
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class SilverfishEntity extends HostileEntity {
 
 	@Override
 	public double getHeightOffset() {
-		return 0.2;
+		return 0.1;
 	}
 
 	@Override
@@ -118,6 +118,12 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	@Override
+	public void setYaw(float yaw) {
+		this.yaw = yaw;
+		super.setYaw(yaw);
+	}
+
+	@Override
 	public float getPathfindingFavor(BlockPos pos) {
 		return this.world.getBlockState(pos.down()).getBlock() == Blocks.STONE ? 10.0F : super.getPathfindingFavor(pos);
 	}
@@ -169,9 +175,9 @@ public class SilverfishEntity extends HostileEntity {
 				Random random = this.silverfish.getRandom();
 				BlockPos blockPos = new BlockPos(this.silverfish);
 
-				for (int i = 0; i <= 5 && i >= -5; i = i <= 0 ? 1 - i : 0 - i) {
-					for (int j = 0; j <= 10 && j >= -10; j = j <= 0 ? 1 - j : 0 - j) {
-						for (int k = 0; k <= 10 && k >= -10; k = k <= 0 ? 1 - k : 0 - k) {
+				for (int i = 0; i <= 5 && i >= -5; i = (i <= 0 ? 1 : 0) - i) {
+					for (int j = 0; j <= 10 && j >= -10; j = (j <= 0 ? 1 : 0) - j) {
+						for (int k = 0; k <= 10 && k >= -10; k = (k <= 0 ? 1 : 0) - k) {
 							BlockPos blockPos2 = blockPos.add(j, i, k);
 							BlockState blockState = world.getBlockState(blockPos2);
 							if (blockState.getBlock() == Blocks.MONSTER_EGG) {
@@ -193,30 +199,26 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	static class WanderAndInfestGoal extends WanderAroundGoal {
-		private final SilverfishEntity silverfish;
 		private Direction direction;
 		private boolean canInfest;
 
 		public WanderAndInfestGoal(SilverfishEntity silverfishEntity) {
 			super(silverfishEntity, 1.0, 10);
-			this.silverfish = silverfishEntity;
 			this.setCategoryBits(1);
 		}
 
 		@Override
 		public boolean canStart() {
-			if (!this.silverfish.world.getGameRules().getBoolean("mobGriefing")) {
+			if (this.mob.getTarget() != null) {
 				return false;
-			} else if (this.silverfish.getTarget() != null) {
-				return false;
-			} else if (!this.silverfish.getNavigation().isIdle()) {
+			} else if (!this.mob.getNavigation().isIdle()) {
 				return false;
 			} else {
-				Random random = this.silverfish.getRandom();
-				if (random.nextInt(10) == 0) {
+				Random random = this.mob.getRandom();
+				if (this.mob.world.getGameRules().getBoolean("mobGriefing") && random.nextInt(10) == 0) {
 					this.direction = Direction.random(random);
-					BlockPos blockPos = new BlockPos(this.silverfish.x, this.silverfish.y + 0.5, this.silverfish.z).offset(this.direction);
-					BlockState blockState = this.silverfish.world.getBlockState(blockPos);
+					BlockPos blockPos = new BlockPos(this.mob.x, this.mob.y + 0.5, this.mob.z).offset(this.direction);
+					BlockState blockState = this.mob.world.getBlockState(blockPos);
 					if (InfestedBlock.isInfestable(blockState)) {
 						this.canInfest = true;
 						return true;
@@ -238,13 +240,13 @@ public class SilverfishEntity extends HostileEntity {
 			if (!this.canInfest) {
 				super.start();
 			} else {
-				World world = this.silverfish.world;
-				BlockPos blockPos = new BlockPos(this.silverfish.x, this.silverfish.y + 0.5, this.silverfish.z).offset(this.direction);
+				World world = this.mob.world;
+				BlockPos blockPos = new BlockPos(this.mob.x, this.mob.y + 0.5, this.mob.z).offset(this.direction);
 				BlockState blockState = world.getBlockState(blockPos);
 				if (InfestedBlock.isInfestable(blockState)) {
 					world.setBlockState(blockPos, Blocks.MONSTER_EGG.getDefaultState().with(InfestedBlock.VARIANT, InfestedBlock.Variants.getByBlockState(blockState)), 3);
-					this.silverfish.playSpawnEffects();
-					this.silverfish.remove();
+					this.mob.playSpawnEffects();
+					this.mob.remove();
 				}
 			}
 		}

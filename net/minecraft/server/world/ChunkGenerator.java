@@ -18,7 +18,7 @@ public interface ChunkGenerator {
 	List<Biome.SpawnEntry> getSpawnEntries(EntityCategory category, BlockPos pos);
 
 	@Nullable
-	BlockPos method_3866(World world, String string, BlockPos blockPos);
+	BlockPos method_3866(World world, String string, BlockPos pos, boolean bl);
 
 	void method_4702(Chunk chunk, int x, int z);
 }

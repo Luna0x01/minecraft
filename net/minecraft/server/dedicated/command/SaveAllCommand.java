@@ -1,11 +1,15 @@
 package net.minecraft.server.dedicated.command;
 
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.level.storage.WorldSaveException;
 
 public class SaveAllCommand extends AbstractCommand {
@@ -58,5 +62,10 @@ public class SaveAllCommand extends AbstractCommand {
 		}
 
 		run(commandSource, this, "commands.save.success", new Object[0]);
+	}
+
+	@Override
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, new String[]{"flush"}) : Collections.emptyList();
 	}
 }

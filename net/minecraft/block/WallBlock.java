@@ -3,6 +3,7 @@ package net.minecraft.block;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.Entity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -11,6 +12,7 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -76,7 +78,7 @@ public class WallBlock extends Block {
 		this.setStrength(block.hardness);
 		this.setResistance(block.blastResistance / 3.0F);
 		this.setBlockSoundGroup(block.blockSoundGroup);
-		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+		this.setItemGroup(ItemGroup.DECORATIONS);
 	}
 
 	@Override
@@ -85,10 +87,19 @@ public class WallBlock extends Block {
 		return field_12831[method_11643(state)];
 	}
 
+	@Override
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+		if (!isActualState) {
+			state = this.getBlockState(state, world, pos);
+		}
+
+		appendCollisionBoxes(pos, entityBox, boxes, field_12830[method_11643(state)]);
+	}
+
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
-		state = this.getBlockState(state, world, pos);
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
+		state = this.getBlockState(state, view, pos);
 		return field_12830[method_11643(state)];
 	}
 
@@ -146,9 +157,9 @@ public class WallBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (WallBlock.WallType wallType : WallBlock.WallType.values()) {
-			stacks.add(new ItemStack(item, 1, wallType.getId()));
+			defaultedList.add(new ItemStack(item, 1, wallType.getId()));
 		}
 	}
 

@@ -35,7 +35,7 @@ public class CrashReport {
 	private void fillSystemDetails() {
 		this.systemDetailsSection.add("Minecraft Version", new CrashCallable<String>() {
 			public String call() {
-				return "1.10.2";
+				return "1.11.2";
 			}
 		});
 		this.systemDetailsSection.add("Operating System", new CrashCallable<String>() {

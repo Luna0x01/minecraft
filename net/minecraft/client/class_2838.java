@@ -7,8 +7,8 @@ import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.client.color.world.GrassColors;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ArmorItem;
-import net.minecraft.item.BannerItem;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.FireworkChargeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -30,12 +30,6 @@ public class class_2838 {
 				return i > 0 ? -1 : ((ArmorItem)itemStack.getItem()).getColor(itemStack);
 			}
 		}, Items.LEATHER_HELMET, Items.LEATHER_CHESTPLATE, Items.LEATHER_LEGGINGS, Items.LEATHER_BOOTS);
-		lv.method_12162(new class_2837() {
-			@Override
-			public int method_12159(ItemStack itemStack, int i) {
-				return i > 0 ? -1 : BannerItem.getDyeColor(itemStack).getMaterialColor().color;
-			}
-		}, Items.BANNER, Items.SHIELD);
 		lv.method_12163(
 			new class_2837() {
 				@Override
@@ -66,10 +60,10 @@ public class class_2838 {
 							int k = 0;
 							int l = 0;
 
-							for (int o : is) {
-								j += (o & 0xFF0000) >> 16;
-								k += (o & 0xFF00) >> 8;
-								l += (o & 0xFF) >> 0;
+							for (int m : is) {
+								j += (m & 0xFF0000) >> 16;
+								k += (m & 0xFF00) >> 8;
+								l += (m & 0xFF) >> 0;
 							}
 
 							j /= is.length;
@@ -84,17 +78,17 @@ public class class_2838 {
 		lv.method_12162(new class_2837() {
 			@Override
 			public int method_12159(ItemStack itemStack, int i) {
-				return i > 0 ? -1 : PotionUtil.getColor(PotionUtil.getPotionEffects(itemStack));
+				return i > 0 ? -1 : PotionUtil.getColor(itemStack);
 			}
 		}, Items.POTION, Items.SPLASH_POTION, Items.LINGERING_POTION);
 		lv.method_12162(new class_2837() {
 			@Override
 			public int method_12159(ItemStack itemStack, int i) {
-				EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)EntityType.SPAWN_EGGS.get(SpawnEggItem.method_11407(itemStack));
+				EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)EntityType.SPAWN_EGGS.get(SpawnEggItem.getEntityIdentifierFromStack(itemStack));
 				if (spawnEggData == null) {
 					return -1;
 				} else {
-					return i == 0 ? spawnEggData.foreGroundColor : spawnEggData.backGroundColor;
+					return i == 0 ? spawnEggData.color0 : spawnEggData.color1;
 				}
 			}
 		}, Items.SPAWN_EGG);
@@ -108,9 +102,15 @@ public class class_2838 {
 		lv.method_12162(new class_2837() {
 			@Override
 			public int method_12159(ItemStack itemStack, int i) {
-				return i == 0 ? PotionUtil.getColor(PotionUtil.getPotionEffects(itemStack)) : -1;
+				return i == 0 ? PotionUtil.getColor(itemStack) : -1;
 			}
 		}, Items.TIPPED_ARROW);
+		lv.method_12162(new class_2837() {
+			@Override
+			public int method_12159(ItemStack itemStack, int i) {
+				return i == 0 ? -1 : FilledMapItem.method_13665(itemStack);
+			}
+		}, Items.FILLED_MAP);
 		return lv;
 	}
 

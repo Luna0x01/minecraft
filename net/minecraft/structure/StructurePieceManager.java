@@ -88,6 +88,7 @@ public class StructurePieceManager {
 		register(TempleStructure.TempleGeneratorConfig.class, "Temple");
 		register(OceanMonumentStructure.OceanMonumentGeneratorConfig.class, "Monument");
 		register(EndCityStructure.EndCityGeneratorConfig.class, "EndCity");
+		register(MansionStructure.MansionGeneratorConfig.class, "Mansion");
 		MineshaftPieces.registerPieces();
 		VillagePieces.registerPieces();
 		NetherFortressPieces.registerPieces();
@@ -95,5 +96,6 @@ public class StructurePieceManager {
 		TemplePieces.registerPieces();
 		OceanMonumentPieces.registerPieces();
 		class_2759.registerPieces();
+		class_3072.registerPieces();
 	}
 }

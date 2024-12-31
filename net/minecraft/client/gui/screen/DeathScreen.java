@@ -3,13 +3,12 @@ package net.minecraft.client.gui.screen;
 import com.mojang.blaze3d.platform.GlStateManager;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Texts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-public class DeathScreen extends Screen implements IdentifiableBooleanConsumer {
+public class DeathScreen extends Screen {
 	private int ticksSinceDeath;
 	private final Text message;
 

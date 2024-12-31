@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
@@ -32,25 +31,14 @@ public class BeaconBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BeaconBlockEntity) {
-				playerEntity.openInventory((BeaconBlockEntity)blockEntity);
-				playerEntity.incrementStat(Stats.INTERACTIONS_WITH_BEACON);
+				player.openInventory((BeaconBlockEntity)blockEntity);
+				player.incrementStat(Stats.INTERACTIONS_WITH_BEACON);
 			}
 
 			return true;
@@ -84,11 +72,11 @@ public class BeaconBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof BeaconBlockEntity) {
 			((BeaconBlockEntity)blockEntity).tickBeacon();
-			world.addBlockAction(blockPos, this, 1, 0);
+			world.addBlockAction(pos, this, 1, 0);
 		}
 	}
 

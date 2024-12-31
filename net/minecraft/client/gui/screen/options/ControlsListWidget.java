@@ -33,9 +33,9 @@ public class ControlsListWidget extends EntryListWidget {
 				this.entries[i++] = new ControlsListWidget.CategoryEntry(string2);
 			}
 
-			int l = minecraftClient.textRenderer.getStringWidth(I18n.translate(keyBinding.getTranslationKey()));
-			if (l > this.maxKeyNameLength) {
-				this.maxKeyNameLength = l;
+			int j = minecraftClient.textRenderer.getStringWidth(I18n.translate(keyBinding.getTranslationKey()));
+			if (j > this.maxKeyNameLength) {
+				this.maxKeyNameLength = j;
 			}
 
 			this.entries[i++] = new ControlsListWidget.KeyBindingEntry(keyBinding);

@@ -22,34 +22,28 @@ public class WoodenDoorItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
 		if (direction != Direction.UP) {
 			return ActionResult.FAIL;
 		} else {
-			BlockState blockState = world.getBlockState(blockPos);
+			BlockState blockState = world.getBlockState(pos);
 			Block block = blockState.getBlock();
-			if (!block.method_8638(world, blockPos)) {
-				blockPos = blockPos.offset(direction);
+			if (!block.method_8638(world, pos)) {
+				pos = pos.offset(direction);
 			}
 
-			if (playerEntity.canModify(blockPos, direction, itemStack) && this.doorBlock.canBePlacedAtPos(world, blockPos)) {
-				Direction direction2 = Direction.fromRotation((double)playerEntity.yaw);
+			ItemStack itemStack = player.getStackInHand(hand);
+			if (player.canModify(pos, direction, itemStack) && this.doorBlock.canBePlacedAtPos(world, pos)) {
+				Direction direction2 = Direction.fromRotation((double)player.yaw);
 				int i = direction2.getOffsetX();
 				int j = direction2.getOffsetZ();
-				boolean bl = i < 0 && h < 0.5F || i > 0 && h > 0.5F || j < 0 && f > 0.5F || j > 0 && f < 0.5F;
-				method_11273(world, blockPos, direction2, this.doorBlock, bl);
+				boolean bl = i < 0 && z < 0.5F || i > 0 && z > 0.5F || j < 0 && x > 0.5F || j > 0 && x < 0.5F;
+				method_11273(world, pos, direction2, this.doorBlock, bl);
 				BlockSoundGroup blockSoundGroup = this.doorBlock.getSoundGroup();
 				world.method_11486(
-					playerEntity,
-					blockPos,
-					blockSoundGroup.method_4194(),
-					SoundCategory.BLOCKS,
-					(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
-					blockSoundGroup.getPitch() * 0.8F
+					player, pos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 				);
-				itemStack.count--;
+				itemStack.decrement(1);
 				return ActionResult.SUCCESS;
 			} else {
 				return ActionResult.FAIL;
@@ -81,7 +75,7 @@ public class WoodenDoorItem extends Item {
 			.with(DoorBlock.OPEN, bl4);
 		world.setBlockState(blockPos, blockState.with(DoorBlock.HALF, DoorBlock.HalfType.LOWER), 2);
 		world.setBlockState(blockPos4, blockState.with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), 2);
-		world.updateNeighborsAlways(blockPos, block);
-		world.updateNeighborsAlways(blockPos4, block);
+		world.method_13692(blockPos, block, false);
+		world.method_13692(blockPos4, block, false);
 	}
 }

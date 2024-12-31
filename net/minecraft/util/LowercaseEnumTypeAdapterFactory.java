@@ -11,8 +11,10 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 public class LowercaseEnumTypeAdapterFactory implements TypeAdapterFactory {
+	@Nullable
 	public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
 		Class<T> class_ = typeToken.getRawType();
 		if (!class_.isEnum()) {
@@ -33,6 +35,7 @@ public class LowercaseEnumTypeAdapterFactory implements TypeAdapterFactory {
 					}
 				}
 
+				@Nullable
 				public T read(JsonReader jsonReader) throws IOException {
 					if (jsonReader.peek() == JsonToken.NULL) {
 						jsonReader.nextNull();
@@ -46,6 +49,6 @@ public class LowercaseEnumTypeAdapterFactory implements TypeAdapterFactory {
 	}
 
 	private String getKey(Object o) {
-		return o instanceof Enum ? ((Enum)o).name().toLowerCase(Locale.US) : o.toString().toLowerCase(Locale.US);
+		return o instanceof Enum ? ((Enum)o).name().toLowerCase(Locale.ROOT) : o.toString().toLowerCase(Locale.ROOT);
 	}
 }

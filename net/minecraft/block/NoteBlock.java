@@ -2,14 +2,12 @@ package net.minecraft.block;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.NoteBlockBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
@@ -30,14 +28,14 @@ public class NoteBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		boolean bl = world.isReceivingRedstonePower(blockPos);
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		boolean bl = world.isReceivingRedstonePower(pos);
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof NoteBlockBlockEntity) {
 			NoteBlockBlockEntity noteBlockBlockEntity = (NoteBlockBlockEntity)blockEntity;
 			if (noteBlockBlockEntity.powered != bl) {
 				if (bl) {
-					noteBlockBlockEntity.playNote(world, blockPos);
+					noteBlockBlockEntity.playNote(world, pos);
 				}
 
 				noteBlockBlockEntity.powered = bl;
@@ -46,27 +44,16 @@ public class NoteBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof NoteBlockBlockEntity) {
 				NoteBlockBlockEntity noteBlockBlockEntity = (NoteBlockBlockEntity)blockEntity;
 				noteBlockBlockEntity.increaseNote();
-				noteBlockBlockEntity.playNote(world, blockPos);
-				playerEntity.incrementStat(Stats.NOTEBLOCK_TUNED);
+				noteBlockBlockEntity.playNote(world, pos);
+				player.incrementStat(Stats.NOTEBLOCK_TUNED);
 			}
 
 			return true;

@@ -27,6 +27,7 @@ public abstract class Dimension {
 	protected SingletonBiomeSource field_4787;
 	protected boolean waterVaporizes;
 	protected boolean hasNoSkylight;
+	protected boolean isOverworld;
 	protected final float[] lightLevelToBrightness = new float[16];
 	private final float[] backgroundColor = new float[4];
 
@@ -48,6 +49,7 @@ public abstract class Dimension {
 	}
 
 	protected void init() {
+		this.isOverworld = true;
 		LevelGeneratorType levelGeneratorType = this.world.getLevelProperties().getGeneratorType();
 		if (levelGeneratorType == LevelGeneratorType.FLAT) {
 			FlatWorldHelper flatWorldHelper = FlatWorldHelper.getHelper(this.world.getLevelProperties().getGeneratorOptions());
@@ -142,6 +144,7 @@ public abstract class Dimension {
 		return true;
 	}
 
+	@Nullable
 	public BlockPos getForcedSpawnPoint() {
 		return null;
 	}
@@ -164,6 +167,10 @@ public abstract class Dimension {
 
 	public boolean doesWaterVaporize() {
 		return this.waterVaporizes;
+	}
+
+	public boolean isOverworld() {
+		return this.isOverworld;
 	}
 
 	public boolean hasNoSkylight() {

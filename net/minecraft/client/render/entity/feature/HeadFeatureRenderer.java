@@ -9,7 +9,7 @@ import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
@@ -17,8 +17,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.ChatUtil;
 import net.minecraft.util.math.Direction;
+import org.apache.commons.lang3.StringUtils;
 
 public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 	private final ModelPart modelPart;
@@ -30,7 +30,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 	@Override
 	public void render(LivingEntity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale) {
 		ItemStack itemStack = entity.getStack(EquipmentSlot.HEAD);
-		if (itemStack != null && itemStack.getItem() != null) {
+		if (!itemStack.isEmpty()) {
 			Item item = itemStack.getItem();
 			MinecraftClient minecraftClient = MinecraftClient.getInstance();
 			GlStateManager.pushMatrix();
@@ -38,7 +38,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 				GlStateManager.translate(0.0F, 0.2F, 0.0F);
 			}
 
-			boolean bl = entity instanceof VillagerEntity || entity instanceof ZombieEntity && ((ZombieEntity)entity).isVillager();
+			boolean bl = entity instanceof VillagerEntity || entity instanceof ZombieVillagerEntity;
 			if (entity.isBaby() && !(entity instanceof VillagerEntity)) {
 				float f = 2.0F;
 				float g = 1.4F;
@@ -63,7 +63,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 						gameProfile = NbtHelper.toGameProfile(nbtCompound.getCompound("SkullOwner"));
 					} else if (nbtCompound.contains("SkullOwner", 8)) {
 						String string = nbtCompound.getString("SkullOwner");
-						if (!ChatUtil.isEmpty(string)) {
+						if (!StringUtils.isBlank(string)) {
 							gameProfile = SkullBlockEntity.loadProperties(new GameProfile(null, string));
 							nbtCompound.put("SkullOwner", NbtHelper.fromGameProfile(new NbtCompound(), gameProfile));
 						}

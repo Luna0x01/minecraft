@@ -35,7 +35,7 @@ public class KickCommand extends AbstractCommand {
 			String string = "Kicked by an operator.";
 			boolean bl = false;
 			if (serverPlayerEntity == null) {
-				throw new PlayerNotFoundException();
+				throw new PlayerNotFoundException("commands.generic.player.notFound", args[0]);
 			} else {
 				if (args.length >= 2) {
 					string = method_4635(commandSource, args, 1).asUnformattedString();

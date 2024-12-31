@@ -42,11 +42,10 @@ public class ScoreText extends BaseText {
 			if (scoreboard.playerHasObjective(this.name, scoreboardObjective)) {
 				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(this.name, scoreboardObjective);
 				this.setScore(String.format("%d", scoreboardPlayerScore.getScore()));
-				return;
+			} else {
+				this.score = "";
 			}
 		}
-
-		this.score = "";
 	}
 
 	public ScoreText copy() {

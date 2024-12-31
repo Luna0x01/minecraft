@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
@@ -16,6 +15,7 @@ import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -102,19 +102,18 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		if (state.get(HALF) == DoublePlantBlock.HalfType.UPPER) {
-			return null;
+			return Items.AIR;
 		} else {
 			DoublePlantBlock.DoublePlantType doublePlantType = state.get(VARIANT);
 			if (doublePlantType == DoublePlantBlock.DoublePlantType.FERN) {
-				return null;
+				return Items.AIR;
 			} else if (doublePlantType == DoublePlantBlock.DoublePlantType.GRASS) {
-				return random.nextInt(8) == 0 ? Items.WHEAT_SEEDS : null;
+				return random.nextInt(8) == 0 ? Items.WHEAT_SEEDS : Items.AIR;
 			} else {
-				return Item.fromBlock(this);
+				return super.getDropItem(state, random, id);
 			}
 		}
 	}
@@ -137,12 +136,8 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
-		if (world.isClient
-			|| stack == null
-			|| stack.getItem() != Items.SHEARS
-			|| state.get(HALF) != DoublePlantBlock.HalfType.LOWER
-			|| !this.onBreak(world, pos, state, player)) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (world.isClient || stack.getItem() != Items.SHEARS || state.get(HALF) != DoublePlantBlock.HalfType.LOWER || !this.onBreak(world, pos, state, player)) {
 			super.method_8651(world, player, pos, state, blockEntity, stack);
 		}
 	}
@@ -160,7 +155,7 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 						world.removeBlock(pos.down(), true);
 					} else if (world.isClient) {
 						world.setAir(pos.down());
-					} else if (player.getMainHandStack() != null && player.getMainHandStack().getItem() == Items.SHEARS) {
+					} else if (!player.getMainHandStack().isEmpty() && player.getMainHandStack().getItem() == Items.SHEARS) {
 						this.onBreak(world, pos, blockState, player);
 						world.setAir(pos.down());
 					} else {
@@ -188,9 +183,9 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (DoublePlantBlock.DoublePlantType doublePlantType : DoublePlantBlock.DoublePlantType.values()) {
-			stacks.add(new ItemStack(item, 1, doublePlantType.getId()));
+			defaultedList.add(new ItemStack(item, 1, doublePlantType.getId()));
 		}
 	}
 

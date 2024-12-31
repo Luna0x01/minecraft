@@ -1,28 +1,28 @@
 package net.minecraft.entity.ai.goal;
 
+import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class HorseBondWithPlayerGoal extends Goal {
-	private final HorseBaseEntity horse;
+	private final AbstractHorseEntity field_15482;
 	private final double speed;
 	private double targetX;
 	private double targetY;
 	private double targetZ;
 
-	public HorseBondWithPlayerGoal(HorseBaseEntity horseBaseEntity, double d) {
-		this.horse = horseBaseEntity;
+	public HorseBondWithPlayerGoal(AbstractHorseEntity abstractHorseEntity, double d) {
+		this.field_15482 = abstractHorseEntity;
 		this.speed = d;
 		this.setCategoryBits(1);
 	}
 
 	@Override
 	public boolean canStart() {
-		if (!this.horse.isTame() && this.horse.hasPassengers()) {
-			Vec3d vec3d = RandomVectorGenerator.method_2799(this.horse, 5, 4);
+		if (!this.field_15482.method_13990() && this.field_15482.hasPassengers()) {
+			Vec3d vec3d = RandomVectorGenerator.method_2799(this.field_15482, 5, 4);
 			if (vec3d == null) {
 				return false;
 			} else {
@@ -38,37 +38,36 @@ public class HorseBondWithPlayerGoal extends Goal {
 
 	@Override
 	public void start() {
-		this.horse.getNavigation().startMovingTo(this.targetX, this.targetY, this.targetZ, this.speed);
+		this.field_15482.getNavigation().startMovingTo(this.targetX, this.targetY, this.targetZ, this.speed);
 	}
 
 	@Override
 	public boolean shouldContinue() {
-		return !this.horse.getNavigation().isIdle() && this.horse.hasPassengers();
+		return !this.field_15482.getNavigation().isIdle() && this.field_15482.hasPassengers();
 	}
 
 	@Override
 	public void tick() {
-		if (this.horse.getRandom().nextInt(50) == 0) {
-			Entity entity = (Entity)this.horse.getPassengerList().get(0);
+		if (this.field_15482.getRandom().nextInt(50) == 0) {
+			Entity entity = (Entity)this.field_15482.getPassengerList().get(0);
 			if (entity == null) {
 				return;
 			}
 
 			if (entity instanceof PlayerEntity) {
-				int i = this.horse.getTemper();
-				int j = this.horse.getMaxTemper();
-				if (j > 0 && this.horse.getRandom().nextInt(j) < i) {
-					this.horse.bondWithPlayer((PlayerEntity)entity);
-					this.horse.world.sendEntityStatus(this.horse, (byte)7);
+				int i = this.field_15482.method_13997();
+				int j = this.field_15482.method_13976();
+				if (j > 0 && this.field_15482.getRandom().nextInt(j) < i) {
+					this.field_15482.method_14004((PlayerEntity)entity);
 					return;
 				}
 
-				this.horse.addTemper(5);
+				this.field_15482.method_14006(5);
 			}
 
-			this.horse.removeAllPassengers();
-			this.horse.playAngrySound();
-			this.horse.world.sendEntityStatus(this.horse, (byte)6);
+			this.field_15482.removeAllPassengers();
+			this.field_15482.method_13979();
+			this.field_15482.world.sendEntityStatus(this.field_15482, (byte)6);
 		}
 	}
 }

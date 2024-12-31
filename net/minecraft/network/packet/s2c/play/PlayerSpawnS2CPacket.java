@@ -65,10 +65,6 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Nullable
 	public List<DataTracker.DataEntry<?>> getDataTrackerEntries() {
-		if (this.dataTrackerEntries == null) {
-			this.dataTrackerEntries = this.tracker.getEntries();
-		}
-
 		return this.dataTrackerEntries;
 	}
 

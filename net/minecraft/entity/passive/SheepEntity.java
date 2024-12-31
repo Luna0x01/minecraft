@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.datafixer.DataFixerUpper;
@@ -17,7 +18,6 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -74,7 +74,7 @@ public class SheepEntity extends AnimalEntity {
 		this.goals.add(3, new TemptGoal(this, 1.1, Items.WHEAT, false));
 		this.goals.add(4, new FollowParentGoal(this, 1.1));
 		this.goals.add(5, this.eatGrassGoal);
-		this.goals.add(6, new WanderAroundGoal(this, 1.0));
+		this.goals.add(6, new class_3133(this, 1.0));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(8, new LookAroundGoal(this));
 	}
@@ -180,8 +180,9 @@ public class SheepEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (itemStack != null && itemStack.getItem() == Items.SHEARS && !this.isSheared() && !this.isBaby()) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (itemStack.getItem() == Items.SHEARS && !this.isSheared() && !this.isBaby()) {
 			if (!this.world.isClient) {
 				this.setSheared(true);
 				int i = 1 + this.random.nextInt(3);
@@ -198,11 +199,11 @@ public class SheepEntity extends AnimalEntity {
 			this.playSound(Sounds.ENTITY_SHEEP_SHEAR, 1.0F, 1.0F);
 		}
 
-		return super.method_13079(playerEntity, hand, itemStack);
+		return super.interactMob(playerEntity, hand);
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Sheep");
+		MobEntity.registerDataFixes(dataFixer, SheepEntity.class);
 	}
 
 	@Override
@@ -306,7 +307,7 @@ public class SheepEntity extends AnimalEntity {
 		this.field_5369.getInvStack(1).setDamage(j);
 		ItemStack itemStack = RecipeDispatcher.getInstance().matches(this.field_5369, ((SheepEntity)animalEntity).world);
 		int k;
-		if (itemStack != null && itemStack.getItem() == Items.DYE) {
+		if (itemStack.getItem() == Items.DYE) {
 			k = itemStack.getData();
 		} else {
 			k = this.world.random.nextBoolean() ? i : j;

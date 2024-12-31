@@ -6,8 +6,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PrintStreamLogger extends PrintStream {
-	private static final Logger LOGGER = LogManager.getLogger();
-	private final String name;
+	protected static final Logger LOGGER = LogManager.getLogger();
+	protected final String name;
 
 	public PrintStreamLogger(String string, OutputStream outputStream) {
 		super(outputStream);
@@ -22,9 +22,7 @@ public class PrintStreamLogger extends PrintStream {
 		this.log(String.valueOf(message));
 	}
 
-	private void log(String message) {
-		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-		StackTraceElement stackTraceElement = stackTraceElements[Math.min(3, stackTraceElements.length)];
-		LOGGER.info("[{}]@.({}:{}): {}", new Object[]{this.name, stackTraceElement.getFileName(), stackTraceElement.getLineNumber(), message});
+	protected void log(String message) {
+		LOGGER.info("[{}]: {}", new Object[]{this.name, message});
 	}
 }

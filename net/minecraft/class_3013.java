@@ -40,7 +40,7 @@ public class class_3013 extends Feature {
 
 	@Override
 	public boolean generate(World world, Random random, BlockPos blockPos) {
-		Random random2 = world.getChunk(blockPos.getX(), blockPos.getZ()).getRandom(987234911L);
+		Random random2 = world.getChunk(blockPos).getRandom(987234911L);
 		MinecraftServer minecraftServer = world.getServer();
 		BlockRotation[] blockRotations = BlockRotation.values();
 		BlockRotation blockRotation = blockRotations[random2.nextInt(blockRotations.length)];
@@ -65,9 +65,9 @@ public class class_3013 extends Feature {
 		int o = Math.max(l - 15 - random2.nextInt(10), 10);
 		BlockPos blockPos3 = structure.method_13393(blockPos.add(j, o, k), BlockMirror.NONE, blockRotation);
 		structurePlacementData.method_13385(0.9F);
-		structure.method_13391(world, blockPos3, structurePlacementData, 4);
+		structure.method_13391(world, blockPos3, structurePlacementData, 20);
 		structurePlacementData.method_13385(0.1F);
-		structure2.method_13391(world, blockPos3, structurePlacementData, 4);
+		structure2.method_13391(world, blockPos3, structurePlacementData, 20);
 		return true;
 	}
 }

@@ -7,6 +7,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -51,8 +52,11 @@ public class PaneBlock extends Block {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
-		state = this.getBlockState(state, world, pos);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+		if (!isActualState) {
+			state = this.getBlockState(state, world, pos);
+		}
+
 		appendCollisionBoxes(pos, entityBox, boxes, field_12801[0]);
 		if ((Boolean)state.get(NORTH)) {
 			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.NORTH)]);
@@ -110,10 +114,9 @@ public class PaneBlock extends Block {
 			.with(EAST, this.canConnectToGlass(view.getBlockState(pos.east()).getBlock()));
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return !this.canDrop ? null : super.getDropItem(state, random, id);
+		return !this.canDrop ? Items.AIR : super.getDropItem(state, random, id);
 	}
 
 	@Override

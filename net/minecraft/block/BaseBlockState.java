@@ -40,6 +40,8 @@ public interface BaseBlockState {
 
 	boolean method_11730();
 
+	boolean method_13762();
+
 	BlockRenderType getRenderType();
 
 	int method_11712(BlockView view, BlockPos pos);
@@ -75,13 +77,17 @@ public interface BaseBlockState {
 	boolean isFullBoundsCubeForCulling();
 
 	@Nullable
-	Box getCollisionBox(World world, BlockPos pos);
+	Box method_11726(BlockView view, BlockPos pos);
 
-	void addCollisionBoxesToList(World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity);
+	void appendCollisionBoxes(World world, BlockPos pos, Box box, List<Box> boxes, @Nullable Entity entity, boolean isActualState);
 
 	Box getCollisionBox(BlockView view, BlockPos pos);
 
 	BlockHitResult method_11711(World world, BlockPos pos, Vec3d vec3d, Vec3d vec3d2);
 
 	boolean method_11739();
+
+	Vec3d method_13761(BlockView view, BlockPos pos);
+
+	boolean method_13763();
 }

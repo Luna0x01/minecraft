@@ -1,25 +1,35 @@
 package net.minecraft.inventory;
 
-import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.collection.DefaultedList;
 
 public class CraftingResultInventory implements Inventory {
-	private final ItemStack[] stacks = new ItemStack[1];
+	private final DefaultedList<ItemStack> field_15105 = DefaultedList.ofSize(1, ItemStack.EMPTY);
 
 	@Override
 	public int getInvSize() {
 		return 1;
 	}
 
-	@Nullable
+	@Override
+	public boolean isEmpty() {
+		for (ItemStack itemStack : this.field_15105) {
+			if (!itemStack.isEmpty()) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	@Override
 	public ItemStack getInvStack(int slot) {
-		return this.stacks[0];
+		return this.field_15105.get(0);
 	}
 
 	@Override
@@ -37,21 +47,19 @@ public class CraftingResultInventory implements Inventory {
 		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
 	}
 
-	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		return class_2960.method_12932(this.stacks, 0);
+		return class_2960.method_13925(this.field_15105, 0);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		return class_2960.method_12932(this.stacks, 0);
+		return class_2960.method_13925(this.field_15105, 0);
 	}
 
 	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
-		this.stacks[0] = stack;
+	public void setInvStack(int slot, ItemStack stack) {
+		this.field_15105.set(0, stack);
 	}
 
 	@Override
@@ -97,8 +105,6 @@ public class CraftingResultInventory implements Inventory {
 
 	@Override
 	public void clear() {
-		for (int i = 0; i < this.stacks.length; i++) {
-			this.stacks[i] = null;
-		}
+		this.field_15105.clear();
 	}
 }

@@ -8,6 +8,7 @@ import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.hud.SpectatorHud;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public class SpectatorMenu {
 	private static final SpectatorMenuCommand CLOSE_COMMAND = new SpectatorMenu.CloseSpectatorMenuCommand();
@@ -118,12 +119,12 @@ public class SpectatorMenu {
 
 		@Override
 		public void use(SpectatorMenu menu) {
-			menu.page += this.direction;
+			menu.page = menu.page + this.direction;
 		}
 
 		@Override
 		public Text getName() {
-			return this.direction < 0 ? new LiteralText("Previous Page") : new LiteralText("Next Page");
+			return this.direction < 0 ? new TranslatableText("spectatorMenu.previous_page") : new TranslatableText("spectatorMenu.next_page");
 		}
 
 		@Override
@@ -153,7 +154,7 @@ public class SpectatorMenu {
 
 		@Override
 		public Text getName() {
-			return new LiteralText("Close menu");
+			return new TranslatableText("spectatorMenu.close");
 		}
 
 		@Override

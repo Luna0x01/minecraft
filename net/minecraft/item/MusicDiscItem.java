@@ -33,16 +33,15 @@ public class MusicDiscItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockState blockState = world.getBlockState(blockPos);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		BlockState blockState = world.getBlockState(pos);
 		if (blockState.getBlock() == Blocks.JUKEBOX && !(Boolean)blockState.get(JukeboxBlock.HAS_RECORD)) {
 			if (!world.isClient) {
-				((JukeboxBlock)Blocks.JUKEBOX).setRecord(world, blockPos, blockState, itemStack);
-				world.syncWorldEvent(null, 1010, blockPos, Item.getRawId(this));
-				itemStack.count--;
-				playerEntity.incrementStat(Stats.RECORD_PLAYED);
+				ItemStack itemStack = player.getStackInHand(hand);
+				((JukeboxBlock)Blocks.JUKEBOX).setRecord(world, pos, blockState, itemStack);
+				world.syncWorldEvent(null, 1010, pos, Item.getRawId(this));
+				itemStack.decrement(1);
+				player.incrementStat(Stats.RECORD_PLAYED);
 			}
 
 			return ActionResult.SUCCESS;

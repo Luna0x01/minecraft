@@ -1,9 +1,9 @@
 package net.minecraft.screen;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 
@@ -49,7 +49,7 @@ public class BeaconScreenHandler extends ScreenHandler {
 		super.close(player);
 		if (player != null && !player.world.isClient) {
 			ItemStack itemStack = this.paymentSlot.takeStack(this.paymentSlot.getMaxStackAmount());
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				player.dropItem(itemStack, false);
 			}
 		}
@@ -60,47 +60,46 @@ public class BeaconScreenHandler extends ScreenHandler {
 		return this.paymentInventory.canPlayerUseInv(player);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (invSlot == 0) {
 				if (!this.insertItem(itemStack2, 1, 37, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
-			} else if (!this.paymentSlot.hasStack() && this.paymentSlot.canInsert(itemStack2) && itemStack2.count == 1) {
+			} else if (!this.paymentSlot.hasStack() && this.paymentSlot.canInsert(itemStack2) && itemStack2.getCount() == 1) {
 				if (!this.insertItem(itemStack2, 0, 1, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (invSlot >= 1 && invSlot < 28) {
 				if (!this.insertItem(itemStack2, 28, 37, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (invSlot >= 28 && invSlot < 37) {
 				if (!this.insertItem(itemStack2, 1, 28, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (!this.insertItem(itemStack2, 1, 37, false)) {
-				return null;
+				return ItemStack.EMPTY;
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			slot.method_3298(player, itemStack2);
 		}
 
 		return itemStack;
@@ -112,10 +111,9 @@ public class BeaconScreenHandler extends ScreenHandler {
 		}
 
 		@Override
-		public boolean canInsert(@Nullable ItemStack stack) {
-			return stack == null
-				? false
-				: stack.getItem() == Items.EMERALD || stack.getItem() == Items.DIAMOND || stack.getItem() == Items.GOLD_INGOT || stack.getItem() == Items.IRON_INGOT;
+		public boolean canInsert(ItemStack stack) {
+			Item item = stack.getItem();
+			return item == Items.EMERALD || item == Items.DIAMOND || item == Items.GOLD_INGOT || item == Items.IRON_INGOT;
 		}
 
 		@Override

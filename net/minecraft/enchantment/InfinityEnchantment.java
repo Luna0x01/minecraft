@@ -22,4 +22,9 @@ public class InfinityEnchantment extends Enchantment {
 	public int getMaximumLevel() {
 		return 1;
 	}
+
+	@Override
+	public boolean differs(Enchantment other) {
+		return other instanceof MendingEnchantment ? false : super.differs(other);
+	}
 }

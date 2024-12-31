@@ -41,12 +41,12 @@ public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEn
 
 			bufferBuilder.begin(7, VertexFormats.BLOCK);
 			bufferBuilder.offset(
-				(double)((float)d - (float)blockPos.getX() + pistonBlockEntity.getRenderOffsetX(g)),
-				(double)((float)e - (float)blockPos.getY() + pistonBlockEntity.getRenderOffsetY(g)),
-				(double)((float)f - (float)blockPos.getZ() + pistonBlockEntity.getRenderOffsetZ(g))
+				d - (double)blockPos.getX() + (double)pistonBlockEntity.getRenderOffsetX(g),
+				e - (double)blockPos.getY() + (double)pistonBlockEntity.getRenderOffsetY(g),
+				f - (double)blockPos.getZ() + (double)pistonBlockEntity.getRenderOffsetZ(g)
 			);
 			World world = this.getWorld();
-			if (block == Blocks.PISTON_HEAD && pistonBlockEntity.getAmountExtended(g) < 0.5F) {
+			if (block == Blocks.PISTON_HEAD && pistonBlockEntity.getAmountExtended(g) <= 0.25F) {
 				blockState = blockState.with(PistonHeadBlock.SHORT, true);
 				this.method_12411(blockPos, blockState, bufferBuilder, world, true);
 			} else if (pistonBlockEntity.isSource() && !pistonBlockEntity.isExtending()) {
@@ -59,7 +59,7 @@ public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEn
 					.with(PistonHeadBlock.FACING, blockState.get(PistonBlock.FACING));
 				blockState2 = blockState2.with(PistonHeadBlock.SHORT, pistonBlockEntity.getAmountExtended(g) >= 0.5F);
 				this.method_12411(blockPos, blockState2, bufferBuilder, world, true);
-				bufferBuilder.offset((double)((float)d - (float)blockPos.getX()), (double)((float)e - (float)blockPos.getY()), (double)((float)f - (float)blockPos.getZ()));
+				bufferBuilder.offset(d - (double)blockPos.getX(), e - (double)blockPos.getY(), f - (double)blockPos.getZ());
 				blockState = blockState.with(PistonBlock.EXTENDED, true);
 				this.method_12411(blockPos, blockState, bufferBuilder, world, true);
 			} else {

@@ -1,17 +1,18 @@
 package net.minecraft.entity.ai.goal;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class WanderAroundGoal extends Goal {
-	private final PathAwareEntity mob;
-	private double targetX;
-	private double targetY;
-	private double targetZ;
-	private final double speed;
-	private int chance;
-	private boolean ignoringChance;
+	protected final PathAwareEntity mob;
+	protected double targetX;
+	protected double targetY;
+	protected double targetZ;
+	protected final double speed;
+	protected int chance;
+	protected boolean ignoringChance;
 
 	public WanderAroundGoal(PathAwareEntity pathAwareEntity, double d) {
 		this(pathAwareEntity, d, 120);
@@ -36,7 +37,7 @@ public class WanderAroundGoal extends Goal {
 			}
 		}
 
-		Vec3d vec3d = RandomVectorGenerator.method_2799(this.mob, 10, 7);
+		Vec3d vec3d = this.method_13954();
 		if (vec3d == null) {
 			return false;
 		} else {
@@ -46,6 +47,11 @@ public class WanderAroundGoal extends Goal {
 			this.ignoringChance = false;
 			return true;
 		}
+	}
+
+	@Nullable
+	protected Vec3d method_13954() {
+		return RandomVectorGenerator.method_2799(this.mob, 10, 7);
 	}
 
 	@Override

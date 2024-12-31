@@ -44,7 +44,7 @@ public class ArmorItem extends Item {
 		@Override
 		protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 			ItemStack itemStack = ArmorItem.method_11353(pointer, stack);
-			return itemStack != null ? itemStack : super.dispenseSilently(pointer, stack);
+			return itemStack.isEmpty() ? super.dispenseSilently(pointer, stack) : itemStack;
 		}
 	};
 	public final EquipmentSlot field_12275;
@@ -58,18 +58,16 @@ public class ArmorItem extends Item {
 		List<LivingEntity> list = blockPointer.getWorld()
 			.getEntitiesInBox(LivingEntity.class, new Box(blockPos), Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, new EntityPredicate.Armored(itemStack)));
 		if (list.isEmpty()) {
-			return null;
+			return ItemStack.EMPTY;
 		} else {
 			LivingEntity livingEntity = (LivingEntity)list.get(0);
 			EquipmentSlot equipmentSlot = MobEntity.method_13083(itemStack);
-			ItemStack itemStack2 = itemStack.copy();
-			itemStack2.count = 1;
+			ItemStack itemStack2 = itemStack.split(1);
 			livingEntity.equipStack(equipmentSlot, itemStack2);
 			if (livingEntity instanceof MobEntity) {
 				((MobEntity)livingEntity).method_13077(equipmentSlot, 2.0F);
 			}
 
-			itemStack.count--;
 			return itemStack;
 		}
 	}
@@ -161,12 +159,13 @@ public class ArmorItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		EquipmentSlot equipmentSlot = MobEntity.method_13083(itemStack);
-		ItemStack itemStack2 = playerEntity.getStack(equipmentSlot);
-		if (itemStack2 == null) {
-			playerEntity.equipStack(equipmentSlot, itemStack.copy());
-			itemStack.count = 0;
+		ItemStack itemStack2 = player.getStack(equipmentSlot);
+		if (itemStack2.isEmpty()) {
+			player.equipStack(equipmentSlot, itemStack.copy());
+			itemStack.setCount(0);
 			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 		} else {
 			return new TypedActionResult<>(ActionResult.FAIL, itemStack);

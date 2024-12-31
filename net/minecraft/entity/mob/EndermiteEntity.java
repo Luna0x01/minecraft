@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
@@ -11,7 +12,6 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.loot.LootTables;
@@ -36,7 +36,7 @@ public class EndermiteEntity extends HostileEntity {
 	protected void initGoals() {
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new MeleeAttackGoal(this, 1.0, false));
-		this.goals.add(3, new WanderAroundGoal(this, 1.0));
+		this.goals.add(3, new class_3133(this, 1.0));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(8, new LookAroundGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, true));
@@ -88,7 +88,7 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Endermite");
+		MobEntity.registerDataFixes(dataFixer, EndermiteEntity.class);
 	}
 
 	@Override
@@ -112,8 +112,14 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
+	public void setYaw(float yaw) {
+		this.yaw = yaw;
+		super.setYaw(yaw);
+	}
+
+	@Override
 	public double getHeightOffset() {
-		return 0.3;
+		return 0.1;
 	}
 
 	public boolean isPlayerSpawned() {

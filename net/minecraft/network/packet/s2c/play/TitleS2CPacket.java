@@ -1,6 +1,7 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -36,7 +37,7 @@ public class TitleS2CPacket implements Packet<ClientPlayPacketListener> {
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.action = buf.readEnumConstant(TitleS2CPacket.Action.class);
-		if (this.action == TitleS2CPacket.Action.TITLE || this.action == TitleS2CPacket.Action.SUBTITLE) {
+		if (this.action == TitleS2CPacket.Action.TITLE || this.action == TitleS2CPacket.Action.SUBTITLE || this.action == TitleS2CPacket.Action.ACTIONBAR) {
 			this.title = buf.readText();
 		}
 
@@ -50,7 +51,7 @@ public class TitleS2CPacket implements Packet<ClientPlayPacketListener> {
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeEnumConstant(this.action);
-		if (this.action == TitleS2CPacket.Action.TITLE || this.action == TitleS2CPacket.Action.SUBTITLE) {
+		if (this.action == TitleS2CPacket.Action.TITLE || this.action == TitleS2CPacket.Action.SUBTITLE || this.action == TitleS2CPacket.Action.ACTIONBAR) {
 			buf.writeText(this.title);
 		}
 
@@ -88,6 +89,7 @@ public class TitleS2CPacket implements Packet<ClientPlayPacketListener> {
 	public static enum Action {
 		TITLE,
 		SUBTITLE,
+		ACTIONBAR,
 		TIMES,
 		CLEAR,
 		RESET;
@@ -107,7 +109,7 @@ public class TitleS2CPacket implements Packet<ClientPlayPacketListener> {
 			int i = 0;
 
 			for (TitleS2CPacket.Action action : values()) {
-				strings[i++] = action.name().toLowerCase();
+				strings[i++] = action.name().toLowerCase(Locale.ROOT);
 			}
 
 			return strings;

@@ -7,12 +7,11 @@ import net.minecraft.client.class_2847;
 import net.minecraft.client.class_2848;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.resource.language.I18n;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SelectWorldScreen extends Screen implements IdentifiableBooleanConsumer {
+public class SelectWorldScreen extends Screen {
 	private static final Logger LOGGER = LogManager.getLogger();
 	protected Screen parent;
 	protected String title = "Select world";

@@ -7,6 +7,7 @@ import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.item.LeadItem;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
@@ -56,8 +57,11 @@ public class FenceBlock extends Block {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
-		state = state.getBlockState(world, pos);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+		if (!isActualState) {
+			state = state.getBlockState(world, pos);
+		}
+
 		appendCollisionBoxes(pos, entityBox, boxes, field_12668);
 		if ((Boolean)state.get(NORTH)) {
 			appendCollisionBoxes(pos, entityBox, boxes, field_12665);
@@ -136,19 +140,13 @@ public class FenceBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		return world.isClient ? true : LeadItem.useLead(playerEntity, world, blockPos);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if (!world.isClient) {
+			return LeadItem.useLead(player, world, pos);
+		} else {
+			ItemStack itemStack = player.getStackInHand(hand);
+			return itemStack.getItem() == Items.LEAD || itemStack.isEmpty();
+		}
 	}
 
 	@Override

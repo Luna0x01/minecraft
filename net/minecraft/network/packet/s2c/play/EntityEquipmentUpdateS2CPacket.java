@@ -1,7 +1,6 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
-import javax.annotation.Nullable;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
@@ -11,15 +10,15 @@ import net.minecraft.util.PacketByteBuf;
 public class EntityEquipmentUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
 	private EquipmentSlot slot;
-	private ItemStack stack;
+	private ItemStack stack = ItemStack.EMPTY;
 
 	public EntityEquipmentUpdateS2CPacket() {
 	}
 
-	public EntityEquipmentUpdateS2CPacket(int i, EquipmentSlot equipmentSlot, @Nullable ItemStack itemStack) {
+	public EntityEquipmentUpdateS2CPacket(int i, EquipmentSlot equipmentSlot, ItemStack itemStack) {
 		this.id = i;
 		this.slot = equipmentSlot;
-		this.stack = itemStack == null ? null : itemStack.copy();
+		this.stack = itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
 	}
 
 	@Override

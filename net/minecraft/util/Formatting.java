@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -33,7 +34,7 @@ public enum Formatting {
 	RESET("RESET", 'r', -1);
 
 	private static final Map<String, Formatting> BY_NAME = Maps.newHashMap();
-	private static final Pattern FORMATTING_CODE_PATTERN = Pattern.compile("(?i)" + String.valueOf('§') + "[0-9A-FK-OR]");
+	private static final Pattern FORMATTING_CODE_PATTERN = Pattern.compile("(?i)§[0-9A-FK-OR]");
 	private final String name;
 	private final char code;
 	private final boolean modifier;
@@ -41,7 +42,7 @@ public enum Formatting {
 	private final int colorIndex;
 
 	private static String sanitize(String name) {
-		return name.toLowerCase().replaceAll("[^a-z]", "");
+		return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
 	}
 
 	private Formatting(String string2, char c, int j) {
@@ -73,7 +74,7 @@ public enum Formatting {
 	}
 
 	public String getName() {
-		return this.name().toLowerCase();
+		return this.name().toLowerCase(Locale.ROOT);
 	}
 
 	public String toString() {

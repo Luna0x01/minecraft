@@ -33,14 +33,14 @@ public abstract class BanEntry<T> extends ServerConfigEntry<T> {
 		this.creationDate = date;
 		this.source = jsonObject.has("source") ? jsonObject.get("source").getAsString() : "(Unknown)";
 
-		Date date2;
+		Date date3;
 		try {
-			date2 = jsonObject.has("expires") ? DATE_FORMAT.parse(jsonObject.get("expires").getAsString()) : null;
+			date3 = jsonObject.has("expires") ? DATE_FORMAT.parse(jsonObject.get("expires").getAsString()) : null;
 		} catch (ParseException var6) {
-			date2 = null;
+			date3 = null;
 		}
 
-		this.expiryDate = date2;
+		this.expiryDate = date3;
 		this.reason = jsonObject.has("reason") ? jsonObject.get("reason").getAsString() : "Banned by an operator.";
 	}
 

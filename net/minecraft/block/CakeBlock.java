@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
@@ -42,11 +41,6 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
-		return blockState.getCollisionBox(world, blockPos);
-	}
-
-	@Override
 	public boolean method_11562(BlockState state) {
 		return false;
 	}
@@ -57,32 +51,29 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		this.onCakeConsuming(world, blockPos, blockState, playerEntity);
-		return true;
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if (!world.isClient) {
+			return this.method_8698(world, pos, state, player);
+		} else {
+			ItemStack itemStack = player.getStackInHand(hand);
+			return this.method_8698(world, pos, state, player) || itemStack.isEmpty();
+		}
 	}
 
-	private void onCakeConsuming(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		if (player.canConsume(false)) {
-			player.incrementStat(Stats.CAKE_SLICES_EATEN);
-			player.getHungerManager().add(2, 0.1F);
-			int i = (Integer)state.get(BITES);
+	private boolean method_8698(World world, BlockPos blockPos, BlockState blockState, PlayerEntity playerEntity) {
+		if (!playerEntity.canConsume(false)) {
+			return false;
+		} else {
+			playerEntity.incrementStat(Stats.CAKE_SLICES_EATEN);
+			playerEntity.getHungerManager().add(2, 0.1F);
+			int i = (Integer)blockState.get(BITES);
 			if (i < 6) {
-				world.setBlockState(pos, state.with(BITES, i + 1), 3);
+				world.setBlockState(blockPos, blockState.with(BITES, i + 1), 3);
 			} else {
-				world.setAir(pos);
+				world.setAir(blockPos);
 			}
+
+			return true;
 		}
 	}
 
@@ -92,9 +83,9 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.isOnSolidBlock(world, blockPos)) {
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.isOnSolidBlock(world, pos)) {
+			world.setAir(pos);
 		}
 	}
 
@@ -107,10 +98,9 @@ public class CakeBlock extends Block {
 		return 0;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
 	@Override

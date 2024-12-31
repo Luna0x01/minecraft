@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractFluidBlock;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.FenceBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.entity.SpawnerBlockEntityBehavior;
@@ -22,9 +22,12 @@ import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -37,7 +40,7 @@ public class SpawnEggItem extends Item {
 	@Override
 	public String getDisplayName(ItemStack stack) {
 		String string = ("" + CommonI18n.translate(this.getTranslationKey() + ".name")).trim();
-		String string2 = method_11407(stack);
+		String string2 = EntityType.getEntityName(getEntityIdentifierFromStack(stack));
 		if (string2 != null) {
 			string = string + " " + CommonI18n.translate("entity." + string2 + ".name");
 		}
@@ -46,49 +49,63 @@ public class SpawnEggItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		if (world.isClient) {
 			return ActionResult.SUCCESS;
-		} else if (!playerEntity.canModify(blockPos.offset(direction), direction, itemStack)) {
+		} else if (!player.canModify(pos.offset(direction), direction, itemStack)) {
 			return ActionResult.FAIL;
 		} else {
-			BlockState blockState = world.getBlockState(blockPos);
-			if (blockState.getBlock() == Blocks.SPAWNER) {
-				BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockState blockState = world.getBlockState(pos);
+			Block block = blockState.getBlock();
+			if (block == Blocks.SPAWNER) {
+				BlockEntity blockEntity = world.getBlockEntity(pos);
 				if (blockEntity instanceof MobSpawnerBlockEntity) {
 					SpawnerBlockEntityBehavior spawnerBlockEntityBehavior = ((MobSpawnerBlockEntity)blockEntity).getLogic();
-					spawnerBlockEntityBehavior.setEntityId(method_11407(itemStack));
+					spawnerBlockEntityBehavior.setSpawnedEntity(getEntityIdentifierFromStack(itemStack));
 					blockEntity.markDirty();
-					world.method_11481(blockPos, blockState, blockState, 3);
-					if (!playerEntity.abilities.creativeMode) {
-						itemStack.count--;
+					world.method_11481(pos, blockState, blockState, 3);
+					if (!player.abilities.creativeMode) {
+						itemStack.decrement(1);
 					}
 
 					return ActionResult.SUCCESS;
 				}
 			}
 
-			blockPos = blockPos.offset(direction);
-			double d = 0.0;
-			if (direction == Direction.UP && blockState instanceof FenceBlock) {
-				d = 0.5;
-			}
-
-			Entity entity = method_4628(world, method_11407(itemStack), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + d, (double)blockPos.getZ() + 0.5);
+			BlockPos blockPos = pos.offset(direction);
+			double d = this.method_13666(world, blockPos);
+			Entity entity = createEntity(
+				world, getEntityIdentifierFromStack(itemStack), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + d, (double)blockPos.getZ() + 0.5
+			);
 			if (entity != null) {
 				if (entity instanceof LivingEntity && itemStack.hasCustomName()) {
 					entity.setCustomName(itemStack.getCustomName());
 				}
 
-				method_11406(world, playerEntity, itemStack, entity);
-				if (!playerEntity.abilities.creativeMode) {
-					itemStack.count--;
+				method_11406(world, player, itemStack, entity);
+				if (!player.abilities.creativeMode) {
+					itemStack.decrement(1);
 				}
 			}
 
 			return ActionResult.SUCCESS;
+		}
+	}
+
+	protected double method_13666(World world, BlockPos blockPos) {
+		Box box = new Box(blockPos).stretch(0.0, -1.0, 0.0);
+		List<Box> list = world.doesBoxCollide(null, box);
+		if (list.isEmpty()) {
+			return 0.0;
+		} else {
+			double d = box.minY;
+
+			for (Box box2 : list) {
+				d = Math.max(box2.maxY, d);
+			}
+
+			return d - (double)blockPos.getY();
 		}
 	}
 
@@ -111,17 +128,20 @@ public class SpawnEggItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		if (world.isClient) {
 			return new TypedActionResult<>(ActionResult.PASS, itemStack);
 		} else {
-			BlockHitResult blockHitResult = this.onHit(world, playerEntity, true);
+			BlockHitResult blockHitResult = this.onHit(world, player, true);
 			if (blockHitResult != null && blockHitResult.type == BlockHitResult.Type.BLOCK) {
 				BlockPos blockPos = blockHitResult.getBlockPos();
 				if (!(world.getBlockState(blockPos).getBlock() instanceof AbstractFluidBlock)) {
 					return new TypedActionResult<>(ActionResult.PASS, itemStack);
-				} else if (world.canPlayerModifyAt(playerEntity, blockPos) && playerEntity.canModify(blockPos, blockHitResult.direction, itemStack)) {
-					Entity entity = method_4628(world, method_11407(itemStack), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5);
+				} else if (world.canPlayerModifyAt(player, blockPos) && player.canModify(blockPos, blockHitResult.direction, itemStack)) {
+					Entity entity = createEntity(
+						world, getEntityIdentifierFromStack(itemStack), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5
+					);
 					if (entity == null) {
 						return new TypedActionResult<>(ActionResult.PASS, itemStack);
 					} else {
@@ -129,12 +149,12 @@ public class SpawnEggItem extends Item {
 							entity.setCustomName(itemStack.getCustomName());
 						}
 
-						method_11406(world, playerEntity, itemStack, entity);
-						if (!playerEntity.abilities.creativeMode) {
-							itemStack.count--;
+						method_11406(world, player, itemStack, entity);
+						if (!player.abilities.creativeMode) {
+							itemStack.decrement(1);
 						}
 
-						playerEntity.incrementStat(Stats.used(this));
+						player.incrementStat(Stats.used(this));
 						return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 					}
 				} else {
@@ -147,15 +167,15 @@ public class SpawnEggItem extends Item {
 	}
 
 	@Nullable
-	public static Entity method_4628(World world, @Nullable String string, double d, double e, double f) {
-		if (string != null && EntityType.SPAWN_EGGS.containsKey(string)) {
+	public static Entity createEntity(World world, @Nullable Identifier entityId, double x, double y, double z) {
+		if (entityId != null && EntityType.SPAWN_EGGS.containsKey(entityId)) {
 			Entity entity = null;
 
 			for (int i = 0; i < 1; i++) {
-				entity = EntityType.method_13023(string, world);
-				if (entity instanceof LivingEntity) {
+				entity = EntityType.createInstanceFromId(entityId, world);
+				if (entity instanceof MobEntity) {
 					MobEntity mobEntity = (MobEntity)entity;
-					entity.refreshPositionAndAngles(d, e, f, MathHelper.wrapDegrees(world.random.nextFloat() * 360.0F), 0.0F);
+					entity.refreshPositionAndAngles(x, y, z, MathHelper.wrapDegrees(world.random.nextFloat() * 360.0F), 0.0F);
 					mobEntity.headYaw = mobEntity.yaw;
 					mobEntity.bodyYaw = mobEntity.yaw;
 					mobEntity.initialize(world.getLocalDifficulty(new BlockPos(mobEntity)), null);
@@ -171,32 +191,42 @@ public class SpawnEggItem extends Item {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (EntityType.SpawnEggData spawnEggData : EntityType.SPAWN_EGGS.values()) {
 			ItemStack itemStack = new ItemStack(item, 1);
-			method_11405(itemStack, spawnEggData.name);
-			list.add(itemStack);
+			setEggEntity(itemStack, spawnEggData.identifier);
+			defaultedList.add(itemStack);
 		}
 	}
 
-	public static void method_11405(ItemStack itemStack, String string) {
-		NbtCompound nbtCompound = itemStack.hasNbt() ? itemStack.getNbt() : new NbtCompound();
+	public static void setEggEntity(ItemStack stack, Identifier entityId) {
+		NbtCompound nbtCompound = stack.hasNbt() ? stack.getNbt() : new NbtCompound();
 		NbtCompound nbtCompound2 = new NbtCompound();
-		nbtCompound2.putString("id", string);
+		nbtCompound2.putString("id", entityId.toString());
 		nbtCompound.put("EntityTag", nbtCompound2);
-		itemStack.setNbt(nbtCompound);
+		stack.setNbt(nbtCompound);
 	}
 
 	@Nullable
-	public static String method_11407(ItemStack itemStack) {
-		NbtCompound nbtCompound = itemStack.getNbt();
+	public static Identifier getEntityIdentifierFromStack(ItemStack stack) {
+		NbtCompound nbtCompound = stack.getNbt();
 		if (nbtCompound == null) {
 			return null;
 		} else if (!nbtCompound.contains("EntityTag", 10)) {
 			return null;
 		} else {
 			NbtCompound nbtCompound2 = nbtCompound.getCompound("EntityTag");
-			return !nbtCompound2.contains("id", 8) ? null : nbtCompound2.getString("id");
+			if (!nbtCompound2.contains("id", 8)) {
+				return null;
+			} else {
+				String string = nbtCompound2.getString("id");
+				Identifier identifier = new Identifier(string);
+				if (!string.contains(":")) {
+					nbtCompound2.putString("id", identifier.toString());
+				}
+
+				return identifier;
+			}
 		}
 	}
 }

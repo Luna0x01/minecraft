@@ -1,7 +1,6 @@
 package net.minecraft.village;
 
 import javax.annotation.Nullable;
-import net.minecraft.class_3040;
 import net.minecraft.entity.MobSpawnerHelper;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
@@ -121,7 +120,6 @@ public class ZombieSiegeManager {
 			try {
 				zombieEntity = new ZombieEntity(this.world);
 				zombieEntity.initialize(this.world.getLocalDifficulty(new BlockPos(zombieEntity)), null);
-				zombieEntity.method_13550(class_3040.NORMAL);
 			} catch (Exception var4) {
 				var4.printStackTrace();
 				return false;

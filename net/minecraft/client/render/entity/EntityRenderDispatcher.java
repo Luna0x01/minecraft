@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
 import javax.annotation.Nullable;
+import net.minecraft.class_3099;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -18,34 +19,33 @@ import net.minecraft.client.render.CameraView;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.render.entity.model.AbstractZombieModel;
-import net.minecraft.client.render.entity.model.ChickenEntityModel;
-import net.minecraft.client.render.entity.model.CowEntityModel;
-import net.minecraft.client.render.entity.model.HorseBaseEntityModel;
-import net.minecraft.client.render.entity.model.OcelotEntityModel;
-import net.minecraft.client.render.entity.model.PigEntityModel;
-import net.minecraft.client.render.entity.model.PolarBearEntityModel;
-import net.minecraft.client.render.entity.model.RabbitEntityModel;
-import net.minecraft.client.render.entity.model.SheepEntityModel;
-import net.minecraft.client.render.entity.model.ShulkerEntityModel;
-import net.minecraft.client.render.entity.model.SlimeEntityModel;
-import net.minecraft.client.render.entity.model.SquidEntityModel;
-import net.minecraft.client.render.entity.model.WolfEntityModel;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.entity.AreaEffectCloudEntity;
+import net.minecraft.entity.DonkeyEntity;
+import net.minecraft.entity.ElderGuardianEntity;
 import net.minecraft.entity.EndCrystalEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EvocationIllagerEntity;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.FireworkRocketEntity;
+import net.minecraft.entity.HuskEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.LlamaEntity;
+import net.minecraft.entity.MuleEntity;
 import net.minecraft.entity.PolarBearEntity;
 import net.minecraft.entity.ShulkerBulletEntity;
 import net.minecraft.entity.ShulkerEntity;
+import net.minecraft.entity.SkeletonHorseEntity;
+import net.minecraft.entity.StrayEntity;
 import net.minecraft.entity.TntEntity;
+import net.minecraft.entity.VexEntity;
+import net.minecraft.entity.VindicationIllagerEntity;
+import net.minecraft.entity.WhitherSkeletonEntity;
+import net.minecraft.entity.ZombieHorseEntity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -57,6 +57,7 @@ import net.minecraft.entity.mob.CaveSpiderEntity;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.EndermiteEntity;
+import net.minecraft.entity.mob.EvokerFangsEntity;
 import net.minecraft.entity.mob.GhastEntity;
 import net.minecraft.entity.mob.GiantEntity;
 import net.minecraft.entity.mob.GuardianEntity;
@@ -68,6 +69,7 @@ import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.mob.WitchEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.CowEntity;
@@ -86,6 +88,7 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.DragonFireballEntity;
 import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
+import net.minecraft.entity.projectile.LlamaSpitEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
 import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
@@ -135,35 +138,43 @@ public class EntityRenderDispatcher {
 		this.textureManager = textureManager;
 		this.renderers.put(CaveSpiderEntity.class, new CaveSpiderEntityRenderer(this));
 		this.renderers.put(SpiderEntity.class, new SpiderEntityRenderer(this));
-		this.renderers.put(PigEntity.class, new PigEntityRenderer(this, new PigEntityModel(), 0.7F));
-		this.renderers.put(SheepEntity.class, new SheepEntityRenderer(this, new SheepEntityModel(), 0.7F));
-		this.renderers.put(CowEntity.class, new CowEntityRenderer(this, new CowEntityModel(), 0.7F));
-		this.renderers.put(MooshroomEntity.class, new MooshroomEntityRenderer(this, new CowEntityModel(), 0.7F));
-		this.renderers.put(WolfEntity.class, new WolfEntityRenderer(this, new WolfEntityModel(), 0.5F));
-		this.renderers.put(ChickenEntity.class, new ChickenEntityRenderer(this, new ChickenEntityModel(), 0.3F));
-		this.renderers.put(OcelotEntity.class, new CatEntityRenderer(this, new OcelotEntityModel(), 0.4F));
-		this.renderers.put(RabbitEntity.class, new RabbitEntityRenderer(this, new RabbitEntityModel(), 0.3F));
+		this.renderers.put(PigEntity.class, new PigEntityRenderer(this));
+		this.renderers.put(SheepEntity.class, new SheepEntityRenderer(this));
+		this.renderers.put(CowEntity.class, new CowEntityRenderer(this));
+		this.renderers.put(MooshroomEntity.class, new MooshroomEntityRenderer(this));
+		this.renderers.put(WolfEntity.class, new WolfEntityRenderer(this));
+		this.renderers.put(ChickenEntity.class, new ChickenEntityRenderer(this));
+		this.renderers.put(OcelotEntity.class, new CatEntityRenderer(this));
+		this.renderers.put(RabbitEntity.class, new RabbitEntityRenderer(this));
 		this.renderers.put(SilverfishEntity.class, new SilverfishEntityRenderer(this));
 		this.renderers.put(EndermiteEntity.class, new EndermiteEntityRenderer(this));
 		this.renderers.put(CreeperEntity.class, new CreeperEntityRenderer(this));
 		this.renderers.put(EndermanEntity.class, new EndermanEntityRenderer(this));
 		this.renderers.put(SnowGolemEntity.class, new SnowGolemEntityRenderer(this));
 		this.renderers.put(SkeletonEntity.class, new SkeletonEntityRenderer(this));
+		this.renderers.put(WhitherSkeletonEntity.class, new WhitherSkeletonEntityRenderer(this));
+		this.renderers.put(StrayEntity.class, new StrayEntityRenderer(this));
 		this.renderers.put(WitchEntity.class, new WitchEntityRenderer(this));
 		this.renderers.put(BlazeEntity.class, new BlazeEntityRenderer(this));
 		this.renderers.put(ZombiePigmanEntity.class, new ZombiePigmanEntityRenderer(this));
 		this.renderers.put(ZombieEntity.class, new ZombieBaseEntityRenderer(this));
-		this.renderers.put(SlimeEntity.class, new SlimeEntityRenderer(this, new SlimeEntityModel(16), 0.25F));
+		this.renderers.put(ZombieVillagerEntity.class, new ZombieVillagerEntityRenderer(this));
+		this.renderers.put(HuskEntity.class, new HuskEntityRenderer(this));
+		this.renderers.put(SlimeEntity.class, new SlimeEntityRenderer(this));
 		this.renderers.put(MagmaCubeEntity.class, new MagmaCubeEntityRenderer(this));
-		this.renderers.put(GiantEntity.class, new GiantEntityRenderer(this, new AbstractZombieModel(), 0.5F, 6.0F));
+		this.renderers.put(GiantEntity.class, new GiantEntityRenderer(this, 6.0F));
 		this.renderers.put(GhastEntity.class, new GhastEntityRenderer(this));
-		this.renderers.put(SquidEntity.class, new SquidEntityRenderer(this, new SquidEntityModel(), 0.7F));
+		this.renderers.put(SquidEntity.class, new SquidEntityRenderer(this));
 		this.renderers.put(VillagerEntity.class, new VillagerEntityRenderer(this));
 		this.renderers.put(IronGolemEntity.class, new IronGolemEntityRenderer(this));
 		this.renderers.put(BatEntity.class, new BatEntityRenderer(this));
 		this.renderers.put(GuardianEntity.class, new GuardianEntityRenderer(this));
-		this.renderers.put(ShulkerEntity.class, new ShulkerEntityRenderer(this, new ShulkerEntityModel()));
-		this.renderers.put(PolarBearEntity.class, new PolarBearEntityRenderer(this, new PolarBearEntityModel(), 0.7F));
+		this.renderers.put(ElderGuardianEntity.class, new ElderGuardianEntityRenderer(this));
+		this.renderers.put(ShulkerEntity.class, new ShulkerEntityRenderer(this));
+		this.renderers.put(PolarBearEntity.class, new PolarBearEntityRenderer(this));
+		this.renderers.put(EvocationIllagerEntity.class, new EvocationIllagerEntityRenderer(this));
+		this.renderers.put(VindicationIllagerEntity.class, new VindicationIllagerEntityRenderer(this));
+		this.renderers.put(VexEntity.class, new VexEntityRenderer(this));
 		this.renderers.put(EnderDragonEntity.class, new EnderDragonEntityRenderer(this));
 		this.renderers.put(EndCrystalEntity.class, new EnderCrystalEntityRenderer(this));
 		this.renderers.put(WitherEntity.class, new WitherEntityRenderer(this));
@@ -190,13 +201,20 @@ public class EntityRenderDispatcher {
 		this.renderers.put(TntEntity.class, new TntEntityRenderer(this));
 		this.renderers.put(FallingBlockEntity.class, new FallingBlockEntityRenderer(this));
 		this.renderers.put(ArmorStandEntity.class, new ArmorStandEntityRenderer(this));
+		this.renderers.put(EvokerFangsEntity.class, new EvokerFangsEntityRenderer(this));
 		this.renderers.put(TntMinecartEntity.class, new TntMinecartEntityRenderer(this));
 		this.renderers.put(SpawnerMinecartEntity.class, new SpawnerMinecartEntityRenderer(this));
 		this.renderers.put(AbstractMinecartEntity.class, new MinecartEntityRenderer(this));
 		this.renderers.put(BoatEntity.class, new BoatEntityRenderer(this));
 		this.renderers.put(FishingBobberEntity.class, new FishingBobberEntityRenderer(this));
 		this.renderers.put(AreaEffectCloudEntity.class, new EntityEntityRenderer(this));
-		this.renderers.put(HorseBaseEntity.class, new HorseBaseEntityRenderer(this, new HorseBaseEntityModel(), 0.75F));
+		this.renderers.put(HorseBaseEntity.class, new HorseBaseEntityRenderer(this));
+		this.renderers.put(SkeletonHorseEntity.class, new class_3099(this));
+		this.renderers.put(ZombieHorseEntity.class, new class_3099(this));
+		this.renderers.put(MuleEntity.class, new class_3099(this, 0.92F));
+		this.renderers.put(DonkeyEntity.class, new class_3099(this, 0.87F));
+		this.renderers.put(LlamaEntity.class, new LlamaEntityRenderer(this));
+		this.renderers.put(LlamaSpitEntity.class, new LlamaSpitEntityRenderer(this));
 		this.renderers.put(LightningBoltEntity.class, new LightningEntityRenderer(this));
 		this.playerRenderer = new PlayerEntityRenderer(this);
 		this.modelRenderers.put("default", this.playerRenderer);
@@ -398,8 +416,30 @@ public class EntityRenderDispatcher {
 			1.0F,
 			1.0F
 		);
+		Entity[] entitys = entity.getParts();
+		if (entitys != null) {
+			for (Entity entity2 : entitys) {
+				double j = (entity2.x - entity2.prevX) * (double)h;
+				double k = (entity2.y - entity2.prevY) * (double)h;
+				double l = (entity2.z - entity2.prevZ) * (double)h;
+				Box box2 = entity2.getBoundingBox();
+				WorldRenderer.method_13429(
+					box2.minX - this.CAMERA_X + j,
+					box2.minY - this.CAMERA_Y + k,
+					box2.minZ - this.CAMERA_Z + l,
+					box2.maxX - this.CAMERA_X + j,
+					box2.maxY - this.CAMERA_Y + k,
+					box2.maxZ - this.CAMERA_Z + l,
+					0.25F,
+					1.0F,
+					0.0F,
+					1.0F
+				);
+			}
+		}
+
 		if (entity instanceof LivingEntity) {
-			float j = 0.01F;
+			float m = 0.01F;
 			WorldRenderer.method_13429(
 				d - (double)i,
 				e + (double)entity.getEyeHeight() - 0.01F,

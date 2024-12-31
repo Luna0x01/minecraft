@@ -2,27 +2,27 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ArmorDyeRecipeType implements RecipeType {
 	@Override
 	public boolean matches(CraftingInventory inventory, World world) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		List<ItemStack> list = Lists.newArrayList();
 
 		for (int i = 0; i < inventory.getInvSize(); i++) {
 			ItemStack itemStack2 = inventory.getInvStack(i);
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				if (itemStack2.getItem() instanceof ArmorItem) {
 					ArmorItem armorItem = (ArmorItem)itemStack2.getItem();
-					if (armorItem.getMaterial() != ArmorItem.Material.LEATHER || itemStack != null) {
+					if (armorItem.getMaterial() != ArmorItem.Material.LEATHER || !itemStack.isEmpty()) {
 						return false;
 					}
 
@@ -37,13 +37,12 @@ public class ArmorDyeRecipeType implements RecipeType {
 			}
 		}
 
-		return itemStack != null && !list.isEmpty();
+		return !itemStack.isEmpty() && !list.isEmpty();
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		int[] is = new int[3];
 		int i = 0;
 		int j = 0;
@@ -51,15 +50,15 @@ public class ArmorDyeRecipeType implements RecipeType {
 
 		for (int k = 0; k < inventory.getInvSize(); k++) {
 			ItemStack itemStack2 = inventory.getInvStack(k);
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				if (itemStack2.getItem() instanceof ArmorItem) {
 					armorItem = (ArmorItem)itemStack2.getItem();
-					if (armorItem.getMaterial() != ArmorItem.Material.LEATHER || itemStack != null) {
-						return null;
+					if (armorItem.getMaterial() != ArmorItem.Material.LEATHER || !itemStack.isEmpty()) {
+						return ItemStack.EMPTY;
 					}
 
 					itemStack = itemStack2.copy();
-					itemStack.count = 1;
+					itemStack.setCount(1);
 					if (armorItem.hasColor(itemStack2)) {
 						int l = armorItem.getColor(itemStack);
 						float f = (float)(l >> 16 & 0xFF) / 255.0F;
@@ -73,7 +72,7 @@ public class ArmorDyeRecipeType implements RecipeType {
 					}
 				} else {
 					if (itemStack2.getItem() != Items.DYE) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 
 					float[] fs = SheepEntity.getDyedColor(DyeColor.getById(itemStack2.getData()));
@@ -90,7 +89,7 @@ public class ArmorDyeRecipeType implements RecipeType {
 		}
 
 		if (armorItem == null) {
-			return null;
+			return ItemStack.EMPTY;
 		} else {
 			int p = is[0] / j;
 			int q = is[1] / j;
@@ -112,23 +111,22 @@ public class ArmorDyeRecipeType implements RecipeType {
 		return 10;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getOutput() {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemStack[] getRemainders(CraftingInventory inventory) {
-		ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null && itemStack.getItem().isFood()) {
-				itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack = craftingInventory.getInvStack(i);
+			if (itemStack.getItem().isFood()) {
+				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 			}
 		}
 
-		return itemStacks;
+		return defaultedList;
 	}
 }

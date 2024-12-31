@@ -35,7 +35,7 @@ public class EnchantingScreen extends HandledScreen {
 	public float pageRotationSpeed;
 	public float nextPageTurningSpeed;
 	public float pageTurningSpeed;
-	ItemStack stack;
+	private ItemStack stack = ItemStack.EMPTY;
 	private final Nameable nameable;
 
 	public EnchantingScreen(PlayerInventory playerInventory, World world, Nameable nameable) {

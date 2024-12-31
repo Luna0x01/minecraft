@@ -4,8 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.TallPlantBlock;
 import net.minecraft.client.gui.DrawableHelper;
@@ -117,15 +117,11 @@ public class SuperflatPresetScreen extends Screen {
 		return this.listWidget.selectedEntryIndex > -1 && this.listWidget.selectedEntryIndex < PRESETS.size() || this.customPresetField.getText().length() > 1;
 	}
 
-	private static void addRedstonePreset(String name, Item icon, Biome iconDamage, FlatWorldLayer... layers) {
-		addOverworldPreset(name, icon, 0, iconDamage, null, layers);
-	}
-
-	private static void addPreset(String name, Item icon, Biome biome, @Nullable List<String> structures, FlatWorldLayer... layers) {
+	private static void addPreset(String name, Item icon, Biome biome, List<String> structures, FlatWorldLayer... layers) {
 		addOverworldPreset(name, icon, 0, biome, structures, layers);
 	}
 
-	private static void addOverworldPreset(String name, Item icon, int iconDamage, Biome biome, @Nullable List<String> structures, FlatWorldLayer... layers) {
+	private static void addOverworldPreset(String name, Item icon, int iconDamage, Biome biome, List<String> structures, FlatWorldLayer... layers) {
 		FlatWorldHelper flatWorldHelper = new FlatWorldHelper();
 
 		for (int i = layers.length - 1; i >= 0; i--) {
@@ -134,10 +130,9 @@ public class SuperflatPresetScreen extends Screen {
 
 		flatWorldHelper.setBiomeId(Biome.getBiomeIndex(biome));
 		flatWorldHelper.updateLayerLevel();
-		if (structures != null) {
-			for (String string : structures) {
-				flatWorldHelper.getStructures().put(string, Maps.newHashMap());
-			}
+
+		for (String string : structures) {
+			flatWorldHelper.getStructures().put(string, Maps.newHashMap());
 		}
 
 		PRESETS.add(new SuperflatPresetScreen.PresetEntry(icon, iconDamage, name, flatWorldHelper.toString()));
@@ -145,7 +140,7 @@ public class SuperflatPresetScreen extends Screen {
 
 	static {
 		addPreset(
-			"Classic Flat",
+			I18n.translate("createWorld.customize.preset.classic_flat"),
 			Item.fromBlock(Blocks.GRASS),
 			Biomes.PLAINS,
 			Arrays.asList("village"),
@@ -154,7 +149,7 @@ public class SuperflatPresetScreen extends Screen {
 			new FlatWorldLayer(1, Blocks.BEDROCK)
 		);
 		addPreset(
-			"Tunnelers' Dream",
+			I18n.translate("createWorld.customize.preset.tunnelers_dream"),
 			Item.fromBlock(Blocks.STONE),
 			Biomes.EXTREME_HILLS,
 			Arrays.asList("biome_1", "dungeon", "decoration", "stronghold", "mineshaft"),
@@ -164,7 +159,7 @@ public class SuperflatPresetScreen extends Screen {
 			new FlatWorldLayer(1, Blocks.BEDROCK)
 		);
 		addPreset(
-			"Water World",
+			I18n.translate("createWorld.customize.preset.water_world"),
 			Items.WATER_BUCKET,
 			Biomes.DEEP_OCEAN,
 			Arrays.asList("biome_1", "oceanmonument"),
@@ -175,7 +170,7 @@ public class SuperflatPresetScreen extends Screen {
 			new FlatWorldLayer(1, Blocks.BEDROCK)
 		);
 		addOverworldPreset(
-			"Overworld",
+			I18n.translate("createWorld.customize.preset.overworld"),
 			Item.fromBlock(Blocks.TALLGRASS),
 			TallPlantBlock.GrassType.GRASS.getId(),
 			Biomes.PLAINS,
@@ -186,7 +181,7 @@ public class SuperflatPresetScreen extends Screen {
 			new FlatWorldLayer(1, Blocks.BEDROCK)
 		);
 		addPreset(
-			"Snowy Kingdom",
+			I18n.translate("createWorld.customize.preset.snowy_kingdom"),
 			Item.fromBlock(Blocks.SNOW_LAYER),
 			Biomes.ICE_FLATS,
 			Arrays.asList("village", "biome_1"),
@@ -197,7 +192,7 @@ public class SuperflatPresetScreen extends Screen {
 			new FlatWorldLayer(1, Blocks.BEDROCK)
 		);
 		addPreset(
-			"Bottomless Pit",
+			I18n.translate("createWorld.customize.preset.bottomless_pit"),
 			Items.FEATHER,
 			Biomes.PLAINS,
 			Arrays.asList("village", "biome_1"),
@@ -206,7 +201,7 @@ public class SuperflatPresetScreen extends Screen {
 			new FlatWorldLayer(2, Blocks.COBBLESTONE)
 		);
 		addPreset(
-			"Desert",
+			I18n.translate("createWorld.customize.preset.desert"),
 			Item.fromBlock(Blocks.SAND),
 			Biomes.DESERT,
 			Arrays.asList("village", "biome_1", "decoration", "stronghold", "mineshaft", "dungeon"),
@@ -215,15 +210,22 @@ public class SuperflatPresetScreen extends Screen {
 			new FlatWorldLayer(3, Blocks.STONE),
 			new FlatWorldLayer(1, Blocks.BEDROCK)
 		);
-		addRedstonePreset(
-			"Redstone Ready",
+		addPreset(
+			I18n.translate("createWorld.customize.preset.redstone_ready"),
 			Items.REDSTONE,
 			Biomes.DESERT,
+			Collections.emptyList(),
 			new FlatWorldLayer(52, Blocks.SANDSTONE),
 			new FlatWorldLayer(3, Blocks.STONE),
 			new FlatWorldLayer(1, Blocks.BEDROCK)
 		);
-		addPreset("The Void", Item.fromBlock(Blocks.BARRIER), Biomes.VOID, Arrays.asList("decoration"), new FlatWorldLayer(1, Blocks.AIR));
+		addPreset(
+			I18n.translate("createWorld.customize.preset.the_void"),
+			Item.fromBlock(Blocks.BARRIER),
+			Biomes.VOID,
+			Arrays.asList("decoration"),
+			new FlatWorldLayer(1, Blocks.AIR)
+		);
 	}
 
 	static class PresetEntry {
@@ -251,7 +253,7 @@ public class SuperflatPresetScreen extends Screen {
 			this.renderIconBackground(x + 1, y + 1);
 			GlStateManager.enableRescaleNormal();
 			DiffuseLighting.enable();
-			SuperflatPresetScreen.this.itemRenderer.method_12455(new ItemStack(item, 1, damage), x + 2, y + 2);
+			SuperflatPresetScreen.this.itemRenderer.method_12455(new ItemStack(item, 1, item.isUnbreakable() ? damage : 0), x + 2, y + 2);
 			DiffuseLighting.disable();
 			GlStateManager.disableRescaleNormal();
 		}

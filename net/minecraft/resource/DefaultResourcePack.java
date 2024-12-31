@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.client.resource.AssetsIndex;
@@ -44,8 +45,16 @@ public class DefaultResourcePack implements ResourcePack {
 		return file != null && file.isFile() ? new FileInputStream(file) : null;
 	}
 
+	@Nullable
 	private InputStream openClassLoader(Identifier id) {
-		return DefaultResourcePack.class.getResourceAsStream("/assets/" + id.getNamespace() + "/" + id.getPath());
+		String string = "/assets/" + id.getNamespace() + "/" + id.getPath();
+
+		try {
+			URL uRL = DefaultResourcePack.class.getResource(string);
+			return uRL != null && DirectoryResourcePack.method_13885(new File(uRL.getFile()), string) ? DefaultResourcePack.class.getResourceAsStream(string) : null;
+		} catch (IOException var4) {
+			return DefaultResourcePack.class.getResourceAsStream(string);
+		}
 	}
 
 	@Override
@@ -58,6 +67,7 @@ public class DefaultResourcePack implements ResourcePack {
 		return NAMESPACES;
 	}
 
+	@Nullable
 	@Override
 	public <T extends ResourceMetadataProvider> T parseMetadata(MetadataSerializer serializer, String key) throws IOException {
 		try {

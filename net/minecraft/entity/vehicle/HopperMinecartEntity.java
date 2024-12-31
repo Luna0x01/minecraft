@@ -1,7 +1,6 @@
 package net.minecraft.entity.vehicle;
 
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.HopperBlockEntity;
@@ -12,7 +11,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.HopperScreenHandler;
 import net.minecraft.screen.ScreenHandler;
@@ -55,9 +53,9 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 	}
 
 	@Override
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+	public boolean interact(PlayerEntity player, Hand hand) {
 		if (!this.world.isClient) {
-			playerEntity.openInventory(this);
+			player.openInventory(this);
 		}
 
 		return true;
@@ -126,7 +124,7 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 		} else {
 			List<ItemEntity> list = this.world.getEntitiesInBox(ItemEntity.class, this.getBoundingBox().expand(0.25, 0.0, 0.25), EntityPredicate.VALID_ENTITY);
 			if (!list.isEmpty()) {
-				HopperBlockEntity.extract(this, (ItemEntity)list.get(0));
+				HopperBlockEntity.method_13728(null, this, (ItemEntity)list.get(0));
 			}
 
 			return false;
@@ -142,7 +140,7 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		StorageMinecartEntity.method_13305(dataFixer, "MinecartHopper");
+		StorageMinecartEntity.registerDataFixes(dataFixer, HopperMinecartEntity.class);
 	}
 
 	@Override

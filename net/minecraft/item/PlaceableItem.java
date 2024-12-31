@@ -21,40 +21,32 @@ public class PlaceableItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockState blockState = world.getBlockState(blockPos);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		BlockState blockState = world.getBlockState(pos);
 		Block block = blockState.getBlock();
 		if (block == Blocks.SNOW_LAYER && (Integer)blockState.get(SnowLayerBlock.LAYERS) < 1) {
 			direction = Direction.UP;
-		} else if (!block.method_8638(world, blockPos)) {
-			blockPos = blockPos.offset(direction);
+		} else if (!block.method_8638(world, pos)) {
+			pos = pos.offset(direction);
 		}
 
-		if (playerEntity.canModify(blockPos, direction, itemStack)
-			&& itemStack.count != 0
-			&& world.canBlockBePlaced(this.block, blockPos, false, direction, null, itemStack)) {
-			BlockState blockState2 = this.block.getStateFromData(world, blockPos, direction, f, g, h, 0, playerEntity);
-			if (!world.setBlockState(blockPos, blockState2, 11)) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!itemStack.isEmpty() && player.canModify(pos, direction, itemStack) && world.method_8493(this.block, pos, false, direction, null)) {
+			BlockState blockState2 = this.block.getStateFromData(world, pos, direction, x, y, z, 0, player);
+			if (!world.setBlockState(pos, blockState2, 11)) {
 				return ActionResult.FAIL;
 			} else {
-				blockState2 = world.getBlockState(blockPos);
+				blockState2 = world.getBlockState(pos);
 				if (blockState2.getBlock() == this.block) {
-					BlockItem.setBlockEntityNbt(world, playerEntity, blockPos, itemStack);
-					blockState2.getBlock().onPlaced(world, blockPos, blockState2, playerEntity, itemStack);
+					BlockItem.setBlockEntityNbt(world, player, pos, itemStack);
+					blockState2.getBlock().onPlaced(world, pos, blockState2, player, itemStack);
 				}
 
 				BlockSoundGroup blockSoundGroup = this.block.getSoundGroup();
 				world.method_11486(
-					playerEntity,
-					blockPos,
-					blockSoundGroup.method_4194(),
-					SoundCategory.BLOCKS,
-					(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
-					blockSoundGroup.getPitch() * 0.8F
+					player, pos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 				);
-				itemStack.count--;
+				itemStack.decrement(1);
 				return ActionResult.SUCCESS;
 			}
 		} else {

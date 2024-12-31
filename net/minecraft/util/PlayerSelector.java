@@ -2,12 +2,14 @@ package net.minecraft.util;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
+import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -37,24 +40,55 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 
 public class PlayerSelector {
-	private static final Pattern field_4946 = Pattern.compile("^@([pare])(?:\\[([\\w=,!-]*)\\])?$");
-	private static final Pattern field_4947 = Pattern.compile("\\G([-!]?[\\w-]*)(?:$|,)");
-	private static final Pattern field_4948 = Pattern.compile("\\G(\\w+)=([-!]?[\\w-]*)(?:$|,)");
-	private static final Set<String> positionsPattern = Sets.newHashSet(new String[]{"x", "y", "z", "dx", "dy", "dz", "rm", "r"});
+	private static final Pattern field_4946 = Pattern.compile("^@([pare])(?:\\[([^ ]*)\\])?$");
+	private static final Splitter field_15390 = Splitter.on(',').omitEmptyStrings();
+	private static final Splitter field_15391 = Splitter.on('=').limit(2);
+	private static final Set<String> field_15392 = Sets.newHashSet();
+	private static final String R = method_13916("r");
+	private static final String RM = method_13916("rm");
+	private static final String L = method_13916("l");
+	private static final String LM = method_13916("lm");
+	private static final String X = method_13916("x");
+	private static final String Y = method_13916("y");
+	private static final String Z = method_13916("z");
+	private static final String DX = method_13916("dx");
+	private static final String DY = method_13916("dy");
+	private static final String DZ = method_13916("dz");
+	private static final String RX = method_13916("rx");
+	private static final String RXM = method_13916("rxm");
+	private static final String RY = method_13916("ry");
+	private static final String RYM = method_13916("rym");
+	private static final String C = method_13916("c");
+	private static final String M = method_13916("m");
+	private static final String TEAM = method_13916("team");
+	private static final String NAME = method_13916("name");
+	private static final String TYPE = method_13916("type");
+	private static final String TAG = method_13916("tag");
+	private static final Predicate<String> field_15413 = new Predicate<String>() {
+		public boolean apply(@Nullable String string) {
+			return string != null && (PlayerSelector.field_15392.contains(string) || string.length() > "score_".length() && string.startsWith("score_"));
+		}
+	};
+	private static final Set<String> positionsPattern = Sets.newHashSet(new String[]{X, Y, Z, DX, DY, DZ, RM, R});
+
+	private static String method_13916(String string) {
+		field_15392.add(string);
+		return string;
+	}
 
 	@Nullable
-	public static ServerPlayerEntity selectPlayer(CommandSource sender, String string) {
+	public static ServerPlayerEntity selectPlayer(CommandSource sender, String string) throws CommandException {
 		return selectEntity(sender, string, ServerPlayerEntity.class);
 	}
 
 	@Nullable
-	public static <T extends Entity> T selectEntity(CommandSource source, String string, Class<? extends T> entityClass) {
+	public static <T extends Entity> T selectEntity(CommandSource source, String string, Class<? extends T> entityClass) throws CommandException {
 		List<T> list = method_10866(source, string, entityClass);
 		return (T)(list.size() == 1 ? list.get(0) : null);
 	}
 
 	@Nullable
-	public static Text method_6362(CommandSource source, String string) {
+	public static Text method_6362(CommandSource source, String string) throws CommandException {
 		List<Entity> list = method_10866(source, string, Entity.class);
 		if (list.isEmpty()) {
 			return null;
@@ -69,7 +103,7 @@ public class PlayerSelector {
 		}
 	}
 
-	public static <T extends Entity> List<T> method_10866(CommandSource source, String string, Class<? extends T> class_) {
+	public static <T extends Entity> List<T> method_10866(CommandSource source, String string, Class<? extends T> class_) throws CommandException {
 		Matcher matcher = field_4946.matcher(string);
 		if (matcher.matches() && source.canUseCommand(1, "@")) {
 			Map<String, String> map = method_4098(matcher.group(2));
@@ -117,51 +151,45 @@ public class PlayerSelector {
 	}
 
 	private static <T extends Entity> boolean method_10867(CommandSource commandSource, Map<String, String> map) {
-		String string = method_10865(map, "type");
-		string = string != null && string.startsWith("!") ? string.substring(1) : string;
-		if (string != null && !EntityType.isEntityRegistered(string)) {
-			TranslatableText translatableText = new TranslatableText("commands.generic.entity.invalidType", string);
-			translatableText.getStyle().setFormatting(Formatting.RED);
-			commandSource.sendMessage(translatableText);
-			return false;
-		} else {
+		String string = method_10865(map, TYPE);
+		if (string == null) {
 			return true;
+		} else {
+			Identifier identifier = new Identifier(string.startsWith("!") ? string.substring(1) : string);
+			if (EntityType.isValid(identifier)) {
+				return true;
+			} else {
+				TranslatableText translatableText = new TranslatableText("commands.generic.entity.invalidType", identifier);
+				translatableText.getStyle().setFormatting(Formatting.RED);
+				commandSource.sendMessage(translatableText);
+				return false;
+			}
 		}
 	}
 
 	private static List<Predicate<Entity>> method_10859(Map<String, String> map, String string) {
-		List<Predicate<Entity>> list = Lists.newArrayList();
-		final String string2 = method_10865(map, "type");
-		final boolean bl = string2 != null && string2.startsWith("!");
-		if (bl) {
-			string2 = string2.substring(1);
-		}
-
-		boolean bl2 = !string.equals("e");
-		boolean bl3 = string.equals("r") && string2 != null;
-		if ((string2 == null || !string.equals("e")) && !bl3) {
-			if (bl2) {
-				list.add(new Predicate<Entity>() {
-					public boolean apply(@Nullable Entity entity) {
-						return entity instanceof PlayerEntity;
-					}
-				});
-			}
-		} else {
-			list.add(new Predicate<Entity>() {
+		String string2 = method_10865(map, TYPE);
+		if (string2 == null || !string.equals("e") && !string.equals("r")) {
+			return !string.equals("e") ? Collections.singletonList(new Predicate<Entity>() {
 				public boolean apply(@Nullable Entity entity) {
-					return EntityType.equals(entity, string2) != bl;
+					return entity instanceof PlayerEntity;
+				}
+			}) : Collections.emptyList();
+		} else {
+			final boolean bl = string2.startsWith("!");
+			final Identifier identifier = new Identifier(bl ? string2.substring(1) : string2);
+			return Collections.singletonList(new Predicate<Entity>() {
+				public boolean apply(@Nullable Entity entity) {
+					return EntityType.method_13943(entity, identifier) != bl;
 				}
 			});
 		}
-
-		return list;
 	}
 
 	private static List<Predicate<Entity>> method_10863(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		final int i = method_10860(map, "lm", -1);
-		final int j = method_10860(map, "l", -1);
+		final int i = method_10860(map, LM, -1);
+		final int j = method_10860(map, L, -1);
 		if (i > -1 || j > -1) {
 			list.add(new Predicate<Entity>() {
 				public boolean apply(@Nullable Entity entity) {
@@ -180,7 +208,7 @@ public class PlayerSelector {
 
 	private static List<Predicate<Entity>> method_10868(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		String string = method_10865(map, "m");
+		String string = method_10865(map, M);
 		if (string == null) {
 			return list;
 		} else {
@@ -197,7 +225,7 @@ public class PlayerSelector {
 				gameMode = GameMode.method_11495(string, GameMode.NOT_SET);
 			}
 
-			final GameMode gameMode2 = gameMode;
+			final GameMode gameMode3 = gameMode;
 			list.add(new Predicate<Entity>() {
 				public boolean apply(@Nullable Entity entity) {
 					if (!(entity instanceof ServerPlayerEntity)) {
@@ -205,7 +233,7 @@ public class PlayerSelector {
 					} else {
 						ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
 						GameMode gameMode = serverPlayerEntity.interactionManager.getGameMode();
-						return bl ? gameMode != gameMode2 : gameMode == gameMode2;
+						return bl ? gameMode != gameMode3 : gameMode == gameMode3;
 					}
 				}
 			});
@@ -215,7 +243,7 @@ public class PlayerSelector {
 
 	private static List<Predicate<Entity>> method_10869(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		final String string = method_10865(map, "team");
+		final String string = method_10865(map, TEAM);
 		final boolean bl = string != null && string.startsWith("!");
 		if (bl) {
 			string = string.substring(1);
@@ -285,7 +313,7 @@ public class PlayerSelector {
 
 	private static List<Predicate<Entity>> method_10871(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		final String string = method_10865(map, "name");
+		final String string = method_10865(map, NAME);
 		final boolean bl = string != null && string.startsWith("!");
 		if (bl) {
 			string = string.substring(1);
@@ -304,7 +332,7 @@ public class PlayerSelector {
 
 	private static List<Predicate<Entity>> method_12892(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		String string = method_10865(map, "tag");
+		String string = method_10865(map, TAG);
 		final boolean bl = string != null && string.startsWith("!");
 		if (bl) {
 			string = string.substring(1);
@@ -327,8 +355,8 @@ public class PlayerSelector {
 	}
 
 	private static List<Predicate<Entity>> method_12888(Map<String, String> map, Vec3d vec3d) {
-		double d = (double)method_10860(map, "rm", -1);
-		double e = (double)method_10860(map, "r", -1);
+		double d = (double)method_10860(map, RM, -1);
+		double e = (double)method_10860(map, R, -1);
 		final boolean bl = d < -0.5;
 		final boolean bl2 = e < -0.5;
 		if (bl && bl2) {
@@ -353,9 +381,9 @@ public class PlayerSelector {
 
 	private static List<Predicate<Entity>> method_10872(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		if (map.containsKey("rym") || map.containsKey("ry")) {
-			final int i = MathHelper.wrapDegrees(method_10860(map, "rym", 0));
-			final int j = MathHelper.wrapDegrees(method_10860(map, "ry", 359));
+		if (map.containsKey(RYM) || map.containsKey(RY)) {
+			final int i = MathHelper.wrapDegrees(method_10860(map, RYM, 0));
+			final int j = MathHelper.wrapDegrees(method_10860(map, RY, 359));
 			list.add(new Predicate<Entity>() {
 				public boolean apply(@Nullable Entity entity) {
 					if (entity == null) {
@@ -368,9 +396,9 @@ public class PlayerSelector {
 			});
 		}
 
-		if (map.containsKey("rxm") || map.containsKey("rx")) {
-			final int k = MathHelper.wrapDegrees(method_10860(map, "rxm", 0));
-			final int l = MathHelper.wrapDegrees(method_10860(map, "rx", 359));
+		if (map.containsKey(RXM) || map.containsKey(RX)) {
+			final int k = MathHelper.wrapDegrees(method_10860(map, RXM, 0));
+			final int l = MathHelper.wrapDegrees(method_10860(map, RX, 359));
 			list.add(new Predicate<Entity>() {
 				public boolean apply(@Nullable Entity entity) {
 					if (entity == null) {
@@ -390,22 +418,19 @@ public class PlayerSelector {
 		Map<String, String> map, Class<? extends T> class_, List<Predicate<Entity>> list, String string, World world, BlockPos blockPos
 	) {
 		List<T> list2 = Lists.newArrayList();
-		String string2 = method_10865(map, "type");
+		String string2 = method_10865(map, TYPE);
 		string2 = string2 != null && string2.startsWith("!") ? string2.substring(1) : string2;
 		boolean bl = !string.equals("e");
 		boolean bl2 = string.equals("r") && string2 != null;
-		int i = method_10860(map, "dx", 0);
-		int j = method_10860(map, "dy", 0);
-		int k = method_10860(map, "dz", 0);
-		int l = method_10860(map, "r", -1);
+		int i = method_10860(map, DX, 0);
+		int j = method_10860(map, DY, 0);
+		int k = method_10860(map, DZ, 0);
+		int l = method_10860(map, R, -1);
 		Predicate<Entity> predicate = Predicates.and(list);
 		Predicate<Entity> predicate2 = Predicates.and(EntityPredicate.VALID_ENTITY, predicate);
-		int m = world.playerEntities.size();
-		int n = world.loadedEntities.size();
-		boolean bl3 = m < n / 16;
-		if (map.containsKey("dx") || map.containsKey("dy") || map.containsKey("dz")) {
+		if (map.containsKey(DX) || map.containsKey(DY) || map.containsKey(DZ)) {
 			final Box box = method_10855(blockPos, i, j, k);
-			if (bl && bl3 && !bl2) {
+			if (bl && !bl2) {
 				Predicate<Entity> predicate3 = new Predicate<Entity>() {
 					public boolean apply(@Nullable Entity entity) {
 						return entity != null && box.intersects(entity.getBoundingBox());
@@ -424,7 +449,7 @@ public class PlayerSelector {
 				(double)(blockPos.getY() + l + 1),
 				(double)(blockPos.getZ() + l + 1)
 			);
-			if (bl && bl3 && !bl2) {
+			if (bl && !bl2) {
 				list2.addAll(world.method_8536(class_, predicate2));
 			} else {
 				list2.addAll(world.getEntitiesInBox(class_, box2, predicate2));
@@ -443,7 +468,7 @@ public class PlayerSelector {
 	private static <T extends Entity> List<T> method_10856(
 		List<T> list, Map<String, String> map, CommandSource commandSource, Class<? extends T> class_, String string, Vec3d vec3d
 	) {
-		int i = method_10860(map, "c", !string.equals("a") && !string.equals("e") ? 1 : 0);
+		int i = method_10860(map, C, !string.equals("a") && !string.equals("e") ? 1 : 0);
 		if (string.equals("p") || string.equals("a") || string.equals("e")) {
 			Collections.sort(list, new Comparator<Entity>() {
 				public int compare(Entity entity, Entity entity2) {
@@ -484,11 +509,11 @@ public class PlayerSelector {
 	}
 
 	private static BlockPos method_10864(Map<String, String> map, BlockPos blockPos) {
-		return new BlockPos(method_10860(map, "x", blockPos.getX()), method_10860(map, "y", blockPos.getY()), method_10860(map, "z", blockPos.getZ()));
+		return new BlockPos(method_10860(map, X, blockPos.getX()), method_10860(map, Y, blockPos.getY()), method_10860(map, Z, blockPos.getZ()));
 	}
 
 	private static Vec3d method_12890(Map<String, String> map, Vec3d vec3d) {
-		return new Vec3d(method_12889(map, "x", vec3d.x, true), method_12889(map, "y", vec3d.y, false), method_12889(map, "z", vec3d.z, true));
+		return new Vec3d(method_12889(map, X, vec3d.x, true), method_12889(map, Y, vec3d.y, false), method_12889(map, Z, vec3d.z, true));
 	}
 
 	private static double method_12889(Map<String, String> map, String string, double d, boolean bl) {
@@ -526,7 +551,7 @@ public class PlayerSelector {
 		return map2;
 	}
 
-	public static boolean method_4088(String string) {
+	public static boolean method_4088(String string) throws CommandException {
 		Matcher matcher = field_4946.matcher(string);
 		if (!matcher.matches()) {
 			return false;
@@ -534,7 +559,7 @@ public class PlayerSelector {
 			Map<String, String> map = method_4098(matcher.group(2));
 			String string2 = matcher.group(1);
 			int i = !"a".equals(string2) && !"e".equals(string2) ? 1 : 0;
-			return method_10860(map, "c", i) != 1;
+			return method_10860(map, C, i) != 1;
 		}
 	}
 
@@ -542,41 +567,19 @@ public class PlayerSelector {
 		return field_4946.matcher(args).matches();
 	}
 
-	private static Map<String, String> method_4098(@Nullable String string) {
+	private static Map<String, String> method_4098(@Nullable String string) throws CommandException {
 		Map<String, String> map = Maps.newHashMap();
 		if (string == null) {
 			return map;
 		} else {
-			int i = 0;
-			int j = -1;
-
-			for (Matcher matcher = field_4947.matcher(string); matcher.find(); j = matcher.end()) {
-				String string2 = null;
-				switch (i++) {
-					case 0:
-						string2 = "x";
-						break;
-					case 1:
-						string2 = "y";
-						break;
-					case 2:
-						string2 = "z";
-						break;
-					case 3:
-						string2 = "r";
+			for (String string2 : field_15390.split(string)) {
+				Iterator<String> iterator = field_15391.split(string2).iterator();
+				String string3 = (String)iterator.next();
+				if (!field_15413.apply(string3)) {
+					throw new CommandException("commands.generic.selector_argument", string2);
 				}
 
-				if (string2 != null && !matcher.group(1).isEmpty()) {
-					map.put(string2, matcher.group(1));
-				}
-			}
-
-			if (j < string.length()) {
-				Matcher matcher2 = field_4948.matcher(j == -1 ? string : string.substring(j));
-
-				while (matcher2.find()) {
-					map.put(matcher2.group(1), matcher2.group(2));
-				}
+				map.put(string3, iterator.hasNext() ? (String)iterator.next() : "");
 			}
 
 			return map;

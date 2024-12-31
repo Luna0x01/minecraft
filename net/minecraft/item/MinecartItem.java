@@ -61,7 +61,7 @@ public class MinecartItem extends Item {
 			}
 
 			world.spawnEntity(abstractMinecartEntity);
-			stack.split(1);
+			stack.decrement(1);
 			return stack;
 		}
 
@@ -80,13 +80,12 @@ public class MinecartItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockState blockState = world.getBlockState(blockPos);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		BlockState blockState = world.getBlockState(pos);
 		if (!AbstractRailBlock.isRail(blockState)) {
 			return ActionResult.FAIL;
 		} else {
+			ItemStack itemStack = player.getStackInHand(hand);
 			if (!world.isClient) {
 				AbstractRailBlock.RailShapeType railShapeType = blockState.getBlock() instanceof AbstractRailBlock
 					? blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty())
@@ -97,7 +96,7 @@ public class MinecartItem extends Item {
 				}
 
 				AbstractMinecartEntity abstractMinecartEntity = AbstractMinecartEntity.createMinecart(
-					world, (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.0625 + d, (double)blockPos.getZ() + 0.5, this.minecartType
+					world, (double)pos.getX() + 0.5, (double)pos.getY() + 0.0625 + d, (double)pos.getZ() + 0.5, this.minecartType
 				);
 				if (itemStack.hasCustomName()) {
 					abstractMinecartEntity.setCustomName(itemStack.getCustomName());
@@ -106,7 +105,7 @@ public class MinecartItem extends Item {
 				world.spawnEntity(abstractMinecartEntity);
 			}
 
-			itemStack.count--;
+			itemStack.decrement(1);
 			return ActionResult.SUCCESS;
 		}
 	}

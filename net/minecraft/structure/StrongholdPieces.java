@@ -17,6 +17,8 @@ import net.minecraft.block.StoneSlabBlock;
 import net.minecraft.block.TorchBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.SilverfishEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockBox;
@@ -213,8 +215,8 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			this.entryDoor = StrongholdPieces.AbstractPiece.EntranceType.valueOf(structureNbt.getString("EntryDoor"));
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			this.entryDoor = StrongholdPieces.AbstractPiece.EntranceType.valueOf(nbtCompound.getString("EntryDoor"));
 		}
 
 		protected void generateEntrance(World world, Random rand, BlockBox box, StrongholdPieces.AbstractPiece.EntranceType type, int x, int y, int z) {
@@ -275,6 +277,7 @@ public class StrongholdPieces {
 			}
 		}
 
+		@Nullable
 		protected StructurePiece fillForwardOpening(
 			StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int leftRightOffset, int heightOffset
 		) {
@@ -331,6 +334,7 @@ public class StrongholdPieces {
 			return null;
 		}
 
+		@Nullable
 		protected StructurePiece fillNWOpening(StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
 			Direction direction = this.method_11854();
 			if (direction != null) {
@@ -385,6 +389,7 @@ public class StrongholdPieces {
 			return null;
 		}
 
+		@Nullable
 		protected StructurePiece fillSEOpening(StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
 			Direction direction = this.method_11854();
 			if (direction != null) {
@@ -471,9 +476,9 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.chestGenerated = structureNbt.getBoolean("Chest");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.chestGenerated = nbtCompound.getBoolean("Chest");
 		}
 
 		@Override
@@ -535,9 +540,9 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.spawnerPlaced = structureNbt.getBoolean("Mob");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.spawnerPlaced = nbtCompound.getBoolean("Mob");
 		}
 
 		@Override
@@ -635,7 +640,7 @@ public class StrongholdPieces {
 					world.setBlockState(blockPos, Blocks.SPAWNER.getDefaultState(), 2);
 					BlockEntity blockEntity = world.getBlockEntity(blockPos);
 					if (blockEntity instanceof MobSpawnerBlockEntity) {
-						((MobSpawnerBlockEntity)blockEntity).getLogic().setEntityId("Silverfish");
+						((MobSpawnerBlockEntity)blockEntity).getLogic().setSpawnedEntity(EntityType.getId(SilverfishEntity.class));
 					}
 				}
 			}
@@ -674,12 +679,12 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.lowerLeftExists = structureNbt.getBoolean("leftLow");
-			this.upperLeftExists = structureNbt.getBoolean("leftHigh");
-			this.lowerRightExists = structureNbt.getBoolean("rightLow");
-			this.upperRightExists = structureNbt.getBoolean("rightHigh");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.lowerLeftExists = nbtCompound.getBoolean("leftLow");
+			this.upperLeftExists = nbtCompound.getBoolean("leftHigh");
+			this.lowerRightExists = nbtCompound.getBoolean("rightLow");
+			this.upperRightExists = nbtCompound.getBoolean("rightHigh");
 		}
 
 		@Override
@@ -780,9 +785,9 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.length = structureNbt.getInt("Steps");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.length = nbtCompound.getInt("Steps");
 		}
 
 		public static BlockBox create(List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation) {
@@ -928,9 +933,9 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.tall = structureNbt.getBoolean("Tall");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.tall = nbtCompound.getBoolean("Tall");
 		}
 
 		public static StrongholdPieces.Library create(List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation, int chainLength) {
@@ -1178,9 +1183,9 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.isStructureStart = structureNbt.getBoolean("Source");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.isStructureStart = nbtCompound.getBoolean("Source");
 		}
 
 		@Override
@@ -1250,9 +1255,9 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.roomType = structureNbt.getInt("Type");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.roomType = nbtCompound.getInt("Type");
 		}
 
 		@Override
@@ -1375,11 +1380,6 @@ public class StrongholdPieces {
 		public StartPiece(int i, Random random, int j, int k) {
 			super(0, random, j, k);
 		}
-
-		@Override
-		public BlockPos getCenterBlockPos() {
-			return this.portalRoom != null ? this.portalRoom.getCenterBlockPos() : super.getCenterBlockPos();
-		}
 	}
 
 	public static class StraightCorridor extends StrongholdPieces.AbstractPiece {
@@ -1406,10 +1406,10 @@ public class StrongholdPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.leftExitExists = structureNbt.getBoolean("Left");
-			this.rightExitExists = structureNbt.getBoolean("Right");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.leftExitExists = nbtCompound.getBoolean("Left");
+			this.rightExitExists = nbtCompound.getBoolean("Right");
 		}
 
 		@Override

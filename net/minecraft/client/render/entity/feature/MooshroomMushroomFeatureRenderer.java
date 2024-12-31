@@ -5,7 +5,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.entity.MooshroomEntityRenderer;
-import net.minecraft.client.render.entity.model.QuadruPedEntityModel;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.passive.MooshroomEntity;
 
@@ -38,7 +37,7 @@ public class MooshroomMushroomFeatureRenderer implements FeatureRenderer<Mooshro
 			GlStateManager.popMatrix();
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			((QuadruPedEntityModel)this.mooshroomRenderer.getModel()).head.preRender(0.0625F);
+			this.mooshroomRenderer.getModel().head.preRender(0.0625F);
 			GlStateManager.scale(1.0F, -1.0F, 1.0F);
 			GlStateManager.translate(0.0F, 0.7F, -0.2F);
 			GlStateManager.rotate(12.0F, 0.0F, 1.0F, 0.0F);

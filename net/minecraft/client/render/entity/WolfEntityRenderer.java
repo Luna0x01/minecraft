@@ -2,7 +2,7 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.WolfCollarFeatureRenderer;
-import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.WolfEntityModel;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.util.Identifier;
 
@@ -11,8 +11,8 @@ public class WolfEntityRenderer extends MobEntityRenderer<WolfEntity> {
 	private static final Identifier WOLF_TAME = new Identifier("textures/entity/wolf/wolf_tame.png");
 	private static final Identifier WOLF_ANGRY = new Identifier("textures/entity/wolf/wolf_angry.png");
 
-	public WolfEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f) {
-		super(entityRenderDispatcher, entityModel, f);
+	public WolfEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
+		super(entityRenderDispatcher, new WolfEntityModel(), 0.5F);
 		this.addFeature(new WolfCollarFeatureRenderer(this));
 	}
 

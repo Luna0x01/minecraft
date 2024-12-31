@@ -9,6 +9,7 @@ import net.minecraft.block.FallingBlock;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.MobSpawnerHelper;
 import net.minecraft.server.world.ChunkGenerator;
+import net.minecraft.structure.MansionStructure;
 import net.minecraft.structure.MineshaftStructure;
 import net.minecraft.structure.OceanMonumentStructure;
 import net.minecraft.structure.StrongholdStructure;
@@ -55,6 +56,7 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 	private final TempleStructure witchHut = new TempleStructure();
 	private final Carver ravineCarver = new RavineCarver();
 	private final OceanMonumentStructure oceanMonument = new OceanMonumentStructure();
+	private final MansionStructure mansions = new MansionStructure(this);
 	private Biome[] biomes;
 	double[] field_7511;
 	double[] field_7512;
@@ -195,6 +197,10 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 
 			if (this.properties.useMonuments) {
 				this.oceanMonument.method_4004(this.world, x, z, chunkBlockStateStorage);
+			}
+
+			if (this.properties.useMansions) {
+				this.mansions.method_4004(this.world, x, z, chunkBlockStateStorage);
 			}
 		}
 
@@ -358,6 +364,10 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 			if (this.properties.useMonuments) {
 				this.oceanMonument.populate(this.world, this.random, chunkPos);
 			}
+
+			if (this.properties.useMansions) {
+				this.mansions.populate(this.world, this.random, chunkPos);
+			}
 		}
 
 		if (biome != Biomes.DESERT
@@ -438,8 +448,22 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 
 	@Nullable
 	@Override
-	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
-		return "Stronghold".equals(string) && this.strongholdGenerator != null ? this.strongholdGenerator.method_9269(world, blockPos) : null;
+	public BlockPos method_3866(World world, String string, BlockPos pos, boolean bl) {
+		if (!this.hasStructures) {
+			return null;
+		} else if ("Stronghold".equals(string) && this.strongholdGenerator != null) {
+			return this.strongholdGenerator.method_9269(world, pos, bl);
+		} else if ("Mansion".equals(string) && this.mansions != null) {
+			return this.mansions.method_9269(world, pos, bl);
+		} else if ("Monument".equals(string) && this.oceanMonument != null) {
+			return this.oceanMonument.method_9269(world, pos, bl);
+		} else if ("Village".equals(string) && this.village != null) {
+			return this.village.method_9269(world, pos, bl);
+		} else if ("Mineshaft".equals(string) && this.mineshaft != null) {
+			return this.mineshaft.method_9269(world, pos, bl);
+		} else {
+			return "Temple".equals(string) && this.witchHut != null ? this.witchHut.method_9269(world, pos, bl) : null;
+		}
 	}
 
 	@Override
@@ -463,6 +487,10 @@ public class SurfaceChunkGenerator implements ChunkGenerator {
 
 			if (this.properties.useMonuments) {
 				this.oceanMonument.method_4004(this.world, x, z, null);
+			}
+
+			if (this.properties.useMansions) {
+				this.mansions.method_4004(this.world, x, z, null);
 			}
 		}
 	}

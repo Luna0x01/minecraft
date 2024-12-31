@@ -2,6 +2,7 @@ package net.minecraft.world.level.storage;
 
 import java.io.File;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.ClientException;
 import net.minecraft.util.ProgressListener;
 import net.minecraft.world.SaveHandler;
@@ -16,6 +17,7 @@ public interface LevelStorageAccess {
 
 	void clearAll();
 
+	@Nullable
 	LevelProperties getLevelProperties(String name);
 
 	boolean isLevelNameValid(String name);

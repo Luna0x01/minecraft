@@ -1,6 +1,6 @@
 package net.minecraft.world.chunk;
 
-import com.google.common.collect.Lists;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -31,7 +31,7 @@ public class FlatChunkGenerator implements ChunkGenerator {
 	private final Random random;
 	private final BlockState[] field_10123 = new BlockState[256];
 	private final FlatWorldHelper field_4940;
-	private final List<StructureFeature> field_4941 = Lists.newArrayList();
+	private final Map<String, StructureFeature> field_15187 = new HashMap();
 	private final boolean field_4942;
 	private final boolean field_4943;
 	private LakesFeature field_4944;
@@ -49,23 +49,23 @@ public class FlatChunkGenerator implements ChunkGenerator {
 					map2.put("size", "1");
 				}
 
-				this.field_4941.add(new VillageStructure(map2));
+				this.field_15187.put("Village", new VillageStructure(map2));
 			}
 
 			if (map.containsKey("biome_1")) {
-				this.field_4941.add(new TempleStructure((Map<String, String>)map.get("biome_1")));
+				this.field_15187.put("Temple", new TempleStructure((Map<String, String>)map.get("biome_1")));
 			}
 
 			if (map.containsKey("mineshaft")) {
-				this.field_4941.add(new MineshaftStructure((Map<String, String>)map.get("mineshaft")));
+				this.field_15187.put("Mineshaft", new MineshaftStructure((Map<String, String>)map.get("mineshaft")));
 			}
 
 			if (map.containsKey("stronghold")) {
-				this.field_4941.add(new StrongholdStructure((Map<String, String>)map.get("stronghold")));
+				this.field_15187.put("Stronghold", new StrongholdStructure((Map<String, String>)map.get("stronghold")));
 			}
 
 			if (map.containsKey("oceanmonument")) {
-				this.field_4941.add(new OceanMonumentStructure((Map<String, String>)map.get("oceanmonument")));
+				this.field_15187.put("Monument", new OceanMonumentStructure((Map<String, String>)map.get("oceanmonument")));
 			}
 		}
 
@@ -118,7 +118,7 @@ public class FlatChunkGenerator implements ChunkGenerator {
 			}
 		}
 
-		for (Carver carver : this.field_4941) {
+		for (Carver carver : this.field_15187.values()) {
 			carver.method_4004(this.world, x, z, chunkBlockStateStorage);
 		}
 
@@ -147,7 +147,7 @@ public class FlatChunkGenerator implements ChunkGenerator {
 		this.random.setSeed((long)x * l + (long)z * m ^ this.world.getSeed());
 		ChunkPos chunkPos = new ChunkPos(x, z);
 
-		for (StructureFeature structureFeature : this.field_4941) {
+		for (StructureFeature structureFeature : this.field_15187.values()) {
 			boolean bl2 = structureFeature.populate(this.world, this.random, chunkPos);
 			if (structureFeature instanceof VillageStructure) {
 				bl |= bl2;
@@ -189,21 +189,14 @@ public class FlatChunkGenerator implements ChunkGenerator {
 
 	@Nullable
 	@Override
-	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
-		if ("Stronghold".equals(string)) {
-			for (StructureFeature structureFeature : this.field_4941) {
-				if (structureFeature instanceof StrongholdStructure) {
-					return structureFeature.method_9269(world, blockPos);
-				}
-			}
-		}
-
-		return null;
+	public BlockPos method_3866(World world, String string, BlockPos pos, boolean bl) {
+		StructureFeature structureFeature = (StructureFeature)this.field_15187.get(string);
+		return structureFeature != null ? structureFeature.method_9269(world, pos, bl) : null;
 	}
 
 	@Override
 	public void method_4702(Chunk chunk, int x, int z) {
-		for (StructureFeature structureFeature : this.field_4941) {
+		for (StructureFeature structureFeature : this.field_15187.values()) {
 			structureFeature.method_4004(this.world, x, z, null);
 		}
 	}

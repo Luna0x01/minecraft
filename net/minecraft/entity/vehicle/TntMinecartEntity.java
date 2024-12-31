@@ -28,7 +28,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractMinecartEntity.method_13302(dataFixer, "MinecartTNT");
+		AbstractMinecartEntity.registerDataFixes(dataFixer, TntMinecartEntity.class);
 	}
 
 	@Override

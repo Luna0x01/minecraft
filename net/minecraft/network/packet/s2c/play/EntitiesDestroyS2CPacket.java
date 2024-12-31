@@ -28,8 +28,8 @@ public class EntitiesDestroyS2CPacket implements Packet<ClientPlayPacketListener
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.entityIds.length);
 
-		for (int k : this.entityIds) {
-			buf.writeVarInt(k);
+		for (int i : this.entityIds) {
+			buf.writeVarInt(i);
 		}
 	}
 

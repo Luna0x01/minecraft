@@ -42,7 +42,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 		this.worldName = string;
 		if (bl) {
 			this.playerDataDir.mkdirs();
-			this.field_13097 = new class_2763(new File(this.worldDir, "structures").toString());
+			this.field_13097 = new class_2763(new File(this.worldDir, "structures").toString(), dataFixerUpper);
 		} else {
 			this.field_13097 = null;
 		}
@@ -94,6 +94,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 		throw new RuntimeException("Old Chunk Storage is no longer supported.");
 	}
 
+	@Nullable
 	@Override
 	public LevelProperties getLevelProperties() {
 		File file = new File(this.worldDir, "level.dat");
@@ -159,6 +160,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 		}
 	}
 
+	@Nullable
 	@Override
 	public NbtCompound getPlayerData(PlayerEntity player) {
 		NbtCompound nbtCompound = null;

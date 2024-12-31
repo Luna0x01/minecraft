@@ -14,6 +14,7 @@ import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.mob.EvokerFangsEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
@@ -21,6 +22,7 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.DragonFireballEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
+import net.minecraft.entity.projectile.LlamaSpitEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
 import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
@@ -128,7 +130,7 @@ public class TrackedEntityInstance {
 		if (this.trackedEntity instanceof ItemFrameEntity && this.field_2871 % 10 == 0) {
 			ItemFrameEntity itemFrameEntity = (ItemFrameEntity)this.trackedEntity;
 			ItemStack itemStack = itemFrameEntity.getHeldItemStack();
-			if (itemStack != null && itemStack.getItem() instanceof FilledMapItem) {
+			if (itemStack.getItem() instanceof FilledMapItem) {
 				MapState mapState = Items.FILLED_MAP.getMapState(itemStack, this.trackedEntity.world);
 
 				for (PlayerEntity playerEntity : players) {
@@ -205,7 +207,7 @@ public class TrackedEntityInstance {
 					bl4 = true;
 				}
 
-				if (bl4) {
+				if (bl4 && this.field_2871 > 0) {
 					double d = this.trackedEntity.velocityX - this.velocityX;
 					double e = this.trackedEntity.velocityY - this.velocityY;
 					double f = this.trackedEntity.velocityZ - this.velocityZ;
@@ -338,7 +340,7 @@ public class TrackedEntityInstance {
 					if (this.trackedEntity instanceof LivingEntity) {
 						for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
 							ItemStack itemStack = ((LivingEntity)this.trackedEntity).getStack(equipmentSlot);
-							if (itemStack != null) {
+							if (!itemStack.isEmpty()) {
 								player.networkHandler.sendPacket(new EntityEquipmentUpdateS2CPacket(this.trackedEntity.getEntityId(), equipmentSlot, itemStack));
 							}
 						}
@@ -357,6 +359,14 @@ public class TrackedEntityInstance {
 						for (StatusEffectInstance statusEffectInstance : livingEntity.getStatusEffectInstances()) {
 							player.networkHandler.sendPacket(new EntityStatusEffectS2CPacket(this.trackedEntity.getEntityId(), statusEffectInstance));
 						}
+					}
+
+					if (!this.trackedEntity.getPassengerList().isEmpty()) {
+						player.networkHandler.sendPacket(new SetPassengersS2CPacket(this.trackedEntity));
+					}
+
+					if (this.trackedEntity.hasMount()) {
+						player.networkHandler.sendPacket(new SetPassengersS2CPacket(this.trackedEntity.getVehicle()));
 					}
 
 					this.trackedEntity.onStartedTrackingBy(player);
@@ -392,29 +402,35 @@ public class TrackedEntityInstance {
 			LOGGER.warn("Fetching addPacket for removed entity");
 		}
 
-		if (this.trackedEntity instanceof ItemEntity) {
-			return new EntitySpawnS2CPacket(this.trackedEntity, 2, 1);
-		} else if (this.trackedEntity instanceof ServerPlayerEntity) {
+		if (this.trackedEntity instanceof ServerPlayerEntity) {
 			return new PlayerSpawnS2CPacket((PlayerEntity)this.trackedEntity);
+		} else if (this.trackedEntity instanceof EntityCategoryProvider) {
+			this.headRotationYaw = MathHelper.floor(this.trackedEntity.getHeadRotation() * 256.0F / 360.0F);
+			return new MobSpawnS2CPacket((LivingEntity)this.trackedEntity);
+		} else if (this.trackedEntity instanceof PaintingEntity) {
+			return new PaintingSpawnS2CPacket((PaintingEntity)this.trackedEntity);
+		} else if (this.trackedEntity instanceof ItemEntity) {
+			return new EntitySpawnS2CPacket(this.trackedEntity, 2, 1);
 		} else if (this.trackedEntity instanceof AbstractMinecartEntity) {
 			AbstractMinecartEntity abstractMinecartEntity = (AbstractMinecartEntity)this.trackedEntity;
 			return new EntitySpawnS2CPacket(this.trackedEntity, 10, abstractMinecartEntity.getMinecartType().getId());
 		} else if (this.trackedEntity instanceof BoatEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 1);
-		} else if (this.trackedEntity instanceof EntityCategoryProvider) {
-			this.headRotationYaw = MathHelper.floor(this.trackedEntity.getHeadRotation() * 256.0F / 360.0F);
-			return new MobSpawnS2CPacket((LivingEntity)this.trackedEntity);
+		} else if (this.trackedEntity instanceof ExperienceOrbEntity) {
+			return new ExperienceOrbSpawnS2CPacket((ExperienceOrbEntity)this.trackedEntity);
 		} else if (this.trackedEntity instanceof FishingBobberEntity) {
-			Entity entity = ((FishingBobberEntity)this.trackedEntity).thrower;
-			return new EntitySpawnS2CPacket(this.trackedEntity, 90, entity != null ? entity.getEntityId() : this.trackedEntity.getEntityId());
+			Entity entity = ((FishingBobberEntity)this.trackedEntity).getThrower();
+			return new EntitySpawnS2CPacket(this.trackedEntity, 90, entity == null ? this.trackedEntity.getEntityId() : entity.getEntityId());
 		} else if (this.trackedEntity instanceof SpectralArrowEntity) {
 			Entity entity2 = ((SpectralArrowEntity)this.trackedEntity).owner;
-			return new EntitySpawnS2CPacket(this.trackedEntity, 91, 1 + (entity2 != null ? entity2.getEntityId() : this.trackedEntity.getEntityId()));
+			return new EntitySpawnS2CPacket(this.trackedEntity, 91, 1 + (entity2 == null ? this.trackedEntity.getEntityId() : entity2.getEntityId()));
 		} else if (this.trackedEntity instanceof ArrowEntity) {
 			Entity entity3 = ((AbstractArrowEntity)this.trackedEntity).owner;
-			return new EntitySpawnS2CPacket(this.trackedEntity, 60, 1 + (entity3 != null ? entity3.getEntityId() : this.trackedEntity.getEntityId()));
+			return new EntitySpawnS2CPacket(this.trackedEntity, 60, 1 + (entity3 == null ? this.trackedEntity.getEntityId() : entity3.getEntityId()));
 		} else if (this.trackedEntity instanceof SnowballEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 61);
+		} else if (this.trackedEntity instanceof LlamaSpitEntity) {
+			return new EntitySpawnS2CPacket(this.trackedEntity, 68);
 		} else if (this.trackedEntity instanceof PotionEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 73);
 		} else if (this.trackedEntity instanceof ExperienceBottleEntity) {
@@ -455,6 +471,8 @@ public class TrackedEntityInstance {
 			return entitySpawnS2CPacket2;
 		} else if (this.trackedEntity instanceof EggEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 62);
+		} else if (this.trackedEntity instanceof EvokerFangsEntity) {
+			return new EntitySpawnS2CPacket(this.trackedEntity, 79);
 		} else if (this.trackedEntity instanceof TntEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 50);
 		} else if (this.trackedEntity instanceof EndCrystalEntity) {
@@ -464,16 +482,12 @@ public class TrackedEntityInstance {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 70, Block.getByBlockState(fallingBlockEntity.getBlockState()));
 		} else if (this.trackedEntity instanceof ArmorStandEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 78);
-		} else if (this.trackedEntity instanceof PaintingEntity) {
-			return new PaintingSpawnS2CPacket((PaintingEntity)this.trackedEntity);
 		} else if (this.trackedEntity instanceof ItemFrameEntity) {
 			ItemFrameEntity itemFrameEntity = (ItemFrameEntity)this.trackedEntity;
 			return new EntitySpawnS2CPacket(this.trackedEntity, 71, itemFrameEntity.direction.getHorizontal(), itemFrameEntity.getTilePos());
 		} else if (this.trackedEntity instanceof LeashKnotEntity) {
 			LeashKnotEntity leashKnotEntity = (LeashKnotEntity)this.trackedEntity;
 			return new EntitySpawnS2CPacket(this.trackedEntity, 77, 0, leashKnotEntity.getTilePos());
-		} else if (this.trackedEntity instanceof ExperienceOrbEntity) {
-			return new ExperienceOrbSpawnS2CPacket((ExperienceOrbEntity)this.trackedEntity);
 		} else if (this.trackedEntity instanceof AreaEffectCloudEntity) {
 			return new EntitySpawnS2CPacket(this.trackedEntity, 3);
 		} else {

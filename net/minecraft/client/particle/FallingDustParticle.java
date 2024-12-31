@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -63,6 +64,7 @@ public class FallingDustParticle extends Particle {
 	}
 
 	public static class Factory implements ParticleFactory {
+		@Nullable
 		@Override
 		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
 			BlockState blockState = Block.getStateFromRawId(arr[0]);

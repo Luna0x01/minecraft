@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.CreativeInventoryListener;
@@ -29,6 +30,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemAction;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -62,43 +64,42 @@ public class CreativeInventoryScreen extends InventoryScreen {
 	}
 
 	@Override
-	protected void method_1131(Slot slot, int i, int j, ItemAction itemAction) {
+	protected void method_1131(@Nullable Slot slot, int i, int j, ItemAction itemAction) {
 		this.scrolling = true;
 		boolean bl = itemAction == ItemAction.QUICK_MOVE;
 		itemAction = i == -999 && itemAction == ItemAction.PICKUP ? ItemAction.THROW : itemAction;
 		if (slot == null && selectedTab != ItemGroup.INVENTORY.getIndex() && itemAction != ItemAction.QUICK_CRAFT) {
 			PlayerInventory playerInventory2 = this.client.player.inventory;
-			if (playerInventory2.getCursorStack() != null) {
+			if (!playerInventory2.getCursorStack().isEmpty()) {
 				if (j == 0) {
 					this.client.player.dropItem(playerInventory2.getCursorStack(), true);
 					this.client.interactionManager.dropCreativeStack(playerInventory2.getCursorStack());
-					playerInventory2.setCursorStack(null);
+					playerInventory2.setCursorStack(ItemStack.EMPTY);
 				}
 
 				if (j == 1) {
-					ItemStack itemStack8 = playerInventory2.getCursorStack().split(1);
-					this.client.player.dropItem(itemStack8, true);
-					this.client.interactionManager.dropCreativeStack(itemStack8);
-					if (playerInventory2.getCursorStack().count == 0) {
-						playerInventory2.setCursorStack(null);
-					}
+					ItemStack itemStack11 = playerInventory2.getCursorStack().split(1);
+					this.client.player.dropItem(itemStack11, true);
+					this.client.interactionManager.dropCreativeStack(itemStack11);
 				}
 			}
 		} else if (slot == this.deleteItemSlot && bl) {
-			for (int k = 0; k < this.client.player.playerScreenHandler.getStacks().size(); k++) {
-				this.client.interactionManager.clickCreativeStack(null, k);
+			for (int k = 0; k < this.client.player.playerScreenHandler.method_13641().size(); k++) {
+				this.client.interactionManager.clickCreativeStack(ItemStack.EMPTY, k);
 			}
 		} else if (selectedTab == ItemGroup.INVENTORY.getIndex()) {
 			if (slot == this.deleteItemSlot) {
-				this.client.player.inventory.setCursorStack(null);
+				this.client.player.inventory.setCursorStack(ItemStack.EMPTY);
 			} else if (itemAction == ItemAction.THROW && slot != null && slot.hasStack()) {
 				ItemStack itemStack = slot.takeStack(j == 0 ? 1 : slot.getStack().getMaxCount());
+				ItemStack itemStack2 = slot.getStack();
 				this.client.player.dropItem(itemStack, true);
 				this.client.interactionManager.dropCreativeStack(itemStack);
-			} else if (itemAction == ItemAction.THROW && this.client.player.inventory.getCursorStack() != null) {
+				this.client.interactionManager.clickCreativeStack(itemStack2, ((CreativeInventoryScreen.CreativeInventorySlot)slot).slot.id);
+			} else if (itemAction == ItemAction.THROW && !this.client.player.inventory.getCursorStack().isEmpty()) {
 				this.client.player.dropItem(this.client.player.inventory.getCursorStack(), true);
 				this.client.interactionManager.dropCreativeStack(this.client.player.inventory.getCursorStack());
-				this.client.player.inventory.setCursorStack(null);
+				this.client.player.inventory.setCursorStack(ItemStack.EMPTY);
 			} else {
 				this.client
 					.player
@@ -108,13 +109,13 @@ public class CreativeInventoryScreen extends InventoryScreen {
 			}
 		} else if (itemAction != ItemAction.QUICK_CRAFT && slot.inventory == inventory) {
 			PlayerInventory playerInventory = this.client.player.inventory;
-			ItemStack itemStack2 = playerInventory.getCursorStack();
-			ItemStack itemStack3 = slot.getStack();
+			ItemStack itemStack3 = playerInventory.getCursorStack();
+			ItemStack itemStack4 = slot.getStack();
 			if (itemAction == ItemAction.SWAP) {
-				if (itemStack3 != null && j >= 0 && j < 9) {
-					ItemStack itemStack4 = itemStack3.copy();
-					itemStack4.count = itemStack4.getMaxCount();
-					this.client.player.inventory.setInvStack(j, itemStack4);
+				if (!itemStack4.isEmpty() && j >= 0 && j < 9) {
+					ItemStack itemStack5 = itemStack4.copy();
+					itemStack5.setCount(itemStack5.getMaxCount());
+					this.client.player.inventory.setInvStack(j, itemStack5);
 					this.client.player.playerScreenHandler.sendContentUpdates();
 				}
 
@@ -122,56 +123,66 @@ public class CreativeInventoryScreen extends InventoryScreen {
 			}
 
 			if (itemAction == ItemAction.CLONE) {
-				if (playerInventory.getCursorStack() == null && slot.hasStack()) {
-					ItemStack itemStack5 = slot.getStack().copy();
-					itemStack5.count = itemStack5.getMaxCount();
-					playerInventory.setCursorStack(itemStack5);
+				if (playerInventory.getCursorStack().isEmpty() && slot.hasStack()) {
+					ItemStack itemStack6 = slot.getStack().copy();
+					itemStack6.setCount(itemStack6.getMaxCount());
+					playerInventory.setCursorStack(itemStack6);
 				}
 
 				return;
 			}
 
 			if (itemAction == ItemAction.THROW) {
-				if (itemStack3 != null) {
-					ItemStack itemStack6 = itemStack3.copy();
-					itemStack6.count = j == 0 ? 1 : itemStack6.getMaxCount();
-					this.client.player.dropItem(itemStack6, true);
-					this.client.interactionManager.dropCreativeStack(itemStack6);
+				if (!itemStack4.isEmpty()) {
+					ItemStack itemStack7 = itemStack4.copy();
+					itemStack7.setCount(j == 0 ? 1 : itemStack7.getMaxCount());
+					this.client.player.dropItem(itemStack7, true);
+					this.client.interactionManager.dropCreativeStack(itemStack7);
 				}
 
 				return;
 			}
 
-			if (itemStack2 != null && itemStack3 != null && itemStack2.equalsIgnoreNbt(itemStack3) && ItemStack.equalsIgnoreDamage(itemStack2, itemStack3)) {
+			if (!itemStack3.isEmpty() && !itemStack4.isEmpty() && itemStack3.equalsIgnoreNbt(itemStack4) && ItemStack.equalsIgnoreDamage(itemStack3, itemStack4)) {
 				if (j == 0) {
 					if (bl) {
-						itemStack2.count = itemStack2.getMaxCount();
-					} else if (itemStack2.count < itemStack2.getMaxCount()) {
-						itemStack2.count++;
+						itemStack3.setCount(itemStack3.getMaxCount());
+					} else if (itemStack3.getCount() < itemStack3.getMaxCount()) {
+						itemStack3.increment(1);
 					}
-				} else if (itemStack2.count <= 1) {
-					playerInventory.setCursorStack(null);
+				} else if (itemStack3.getCount() == 1) {
+					playerInventory.setCursorStack(ItemStack.EMPTY);
 				} else {
-					itemStack2.count--;
+					itemStack3.decrement(1);
 				}
-			} else if (itemStack3 != null && itemStack2 == null) {
-				playerInventory.setCursorStack(ItemStack.copyOf(itemStack3));
-				itemStack2 = playerInventory.getCursorStack();
+			} else if (!itemStack4.isEmpty() && itemStack3.isEmpty()) {
+				playerInventory.setCursorStack(itemStack4.copy());
+				itemStack3 = playerInventory.getCursorStack();
 				if (bl) {
-					itemStack2.count = itemStack2.getMaxCount();
+					itemStack3.setCount(itemStack3.getMaxCount());
 				}
 			} else {
-				playerInventory.setCursorStack(null);
+				playerInventory.setCursorStack(ItemStack.EMPTY);
 			}
-		} else {
+		} else if (this.screenHandler != null) {
+			ItemStack itemStack8 = slot == null ? ItemStack.EMPTY : this.screenHandler.getSlot(slot.id).getStack();
 			this.screenHandler.method_3252(slot == null ? i : slot.id, j, itemAction, this.client.player);
 			if (ScreenHandler.unpackButtonId(j) == 2) {
 				for (int l = 0; l < 9; l++) {
 					this.client.interactionManager.clickCreativeStack(this.screenHandler.getSlot(45 + l).getStack(), 36 + l);
 				}
 			} else if (slot != null) {
-				ItemStack itemStack7 = this.screenHandler.getSlot(slot.id).getStack();
-				this.client.interactionManager.clickCreativeStack(itemStack7, slot.id - this.screenHandler.slots.size() + 9 + 36);
+				ItemStack itemStack9 = this.screenHandler.getSlot(slot.id).getStack();
+				this.client.interactionManager.clickCreativeStack(itemStack9, slot.id - this.screenHandler.slots.size() + 9 + 36);
+				int m = 45 + j;
+				if (itemAction == ItemAction.SWAP) {
+					this.client.interactionManager.clickCreativeStack(itemStack8, m - this.screenHandler.slots.size() + 9 + 36);
+				} else if (itemAction == ItemAction.THROW && itemStack8 != ItemStack.EMPTY) {
+					ItemStack itemStack10 = itemStack8.copy();
+					itemStack10.setCount(j == 0 ? 1 : itemStack10.getMaxCount());
+					this.client.player.dropItem(itemStack10, true);
+					this.client.interactionManager.dropCreativeStack(itemStack10);
+				}
 			}
 		}
 	}
@@ -242,36 +253,36 @@ public class CreativeInventoryScreen extends InventoryScreen {
 
 	private void search() {
 		CreativeInventoryScreen.CreativeScreenHandler creativeScreenHandler = (CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler;
-		creativeScreenHandler.itemList.clear();
+		creativeScreenHandler.field_15251.clear();
 
 		for (Item item : Item.REGISTRY) {
 			if (item != null && item.getItemGroup() != null) {
-				item.appendItemStacks(item, null, creativeScreenHandler.itemList);
+				item.method_13648(item, null, creativeScreenHandler.field_15251);
 			}
 		}
 
 		for (Enchantment enchantment : Enchantment.REGISTRY) {
 			if (enchantment != null && enchantment.target != null) {
-				Items.ENCHANTED_BOOK.getEnchantments(enchantment, creativeScreenHandler.itemList);
+				Items.ENCHANTED_BOOK.getEnchantments(enchantment, creativeScreenHandler.field_15251);
 			}
 		}
 
-		Iterator<ItemStack> iterator3 = creativeScreenHandler.itemList.iterator();
-		String string = this.searchField.getText().toLowerCase();
+		Iterator<ItemStack> iterator = creativeScreenHandler.field_15251.iterator();
+		String string = this.searchField.getText().toLowerCase(Locale.ROOT);
 
-		while (iterator3.hasNext()) {
-			ItemStack itemStack = (ItemStack)iterator3.next();
+		while (iterator.hasNext()) {
+			ItemStack itemStack = (ItemStack)iterator.next();
 			boolean bl = false;
 
 			for (String string2 : itemStack.getTooltip(this.client.player, this.client.options.advancedItemTooltips)) {
-				if (Formatting.strip(string2).toLowerCase().contains(string)) {
+				if (Formatting.strip(string2).toLowerCase(Locale.ROOT).contains(string)) {
 					bl = true;
 					break;
 				}
 			}
 
 			if (!bl) {
-				iterator3.remove();
+				iterator.remove();
 			}
 		}
 
@@ -332,8 +343,8 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		selectedTab = group.getIndex();
 		CreativeInventoryScreen.CreativeScreenHandler creativeScreenHandler = (CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler;
 		this.cursorDragSlots.clear();
-		creativeScreenHandler.itemList.clear();
-		group.showItems(creativeScreenHandler.itemList);
+		creativeScreenHandler.field_15251.clear();
+		group.method_13646(creativeScreenHandler.field_15251);
 		if (group == ItemGroup.INVENTORY) {
 			ScreenHandler screenHandler = this.client.player.playerScreenHandler;
 			if (this.slots == null) {
@@ -400,7 +411,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		super.handleMouse();
 		int i = Mouse.getEventDWheel();
 		if (i != 0 && this.hasScrollbar()) {
-			int j = (((CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler).itemList.size() + 9 - 1) / 9 - 5;
+			int j = (((CreativeInventoryScreen.CreativeScreenHandler)this.screenHandler).field_15251.size() + 9 - 1) / 9 - 5;
 			if (i > 0) {
 				i = 1;
 			}
@@ -480,11 +491,11 @@ public class CreativeInventoryScreen extends InventoryScreen {
 				list.add(1, "" + Formatting.BOLD + Formatting.BLUE + I18n.translate(itemGroup.getTranslationKey()));
 			}
 
-			for (int k = 0; k < list.size(); k++) {
-				if (k == 0) {
-					list.set(k, stack.getRarity().formatting + (String)list.get(k));
+			for (int i = 0; i < list.size(); i++) {
+				if (i == 0) {
+					list.set(i, stack.getRarity().formatting + (String)list.get(i));
 				} else {
-					list.set(k, Formatting.GRAY + (String)list.get(k));
+					list.set(i, Formatting.GRAY + (String)list.get(i));
 				}
 			}
 
@@ -511,12 +522,12 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		this.drawTexture(this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight);
 		this.searchField.render();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		int k = this.x + 175;
-		int l = this.y + 18;
-		int m = l + 112;
+		int i = this.x + 175;
+		int j = this.y + 18;
+		int k = j + 112;
 		this.client.getTextureManager().bindTexture(ITEM_GROUPS);
 		if (itemGroup.hasScrollbar()) {
-			this.drawTexture(k, l + (int)((float)(m - l - 17) * this.scrollPosition), 232 + (this.hasScrollbar() ? 0 : 12), 0, 12, 15);
+			this.drawTexture(i, j + (int)((float)(k - j - 17) * this.scrollPosition), 232 + (this.hasScrollbar() ? 0 : 12), 0, 12, 15);
 		}
 
 		this.renderTabIcon(itemGroup);
@@ -634,12 +645,13 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		}
 
 		@Override
-		public void onTakeItem(PlayerEntity player, ItemStack stack) {
-			this.slot.onTakeItem(player, stack);
+		public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
+			this.slot.method_3298(playerEntity, itemStack);
+			return itemStack;
 		}
 
 		@Override
-		public boolean canInsert(@Nullable ItemStack stack) {
+		public boolean canInsert(ItemStack stack) {
 			return this.slot.canInsert(stack);
 		}
 
@@ -654,7 +666,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		}
 
 		@Override
-		public void setStack(@Nullable ItemStack stack) {
+		public void setStack(ItemStack stack) {
 			this.slot.setStack(stack);
 		}
 
@@ -698,15 +710,10 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		public boolean canTakeItems(PlayerEntity playerEntity) {
 			return this.slot.canTakeItems(playerEntity);
 		}
-
-		@Override
-		public void onStackChanged(ItemStack originalItem, ItemStack newItem) {
-			super.onStackChanged(originalItem, newItem);
-		}
 	}
 
 	static class CreativeScreenHandler extends ScreenHandler {
-		public List<ItemStack> itemList = Lists.newArrayList();
+		public DefaultedList<ItemStack> field_15251 = DefaultedList.of();
 
 		public CreativeScreenHandler(PlayerEntity playerEntity) {
 			PlayerInventory playerInventory = playerEntity.inventory;
@@ -730,7 +737,7 @@ public class CreativeInventoryScreen extends InventoryScreen {
 		}
 
 		public void scrollItems(float position) {
-			int i = (this.itemList.size() + 9 - 1) / 9 - 5;
+			int i = (this.field_15251.size() + 9 - 1) / 9 - 5;
 			int j = (int)((double)(position * (float)i) + 0.5);
 			if (j < 0) {
 				j = 0;
@@ -739,34 +746,33 @@ public class CreativeInventoryScreen extends InventoryScreen {
 			for (int k = 0; k < 5; k++) {
 				for (int l = 0; l < 9; l++) {
 					int m = l + (k + j) * 9;
-					if (m >= 0 && m < this.itemList.size()) {
-						CreativeInventoryScreen.inventory.setInvStack(l + k * 9, (ItemStack)this.itemList.get(m));
+					if (m >= 0 && m < this.field_15251.size()) {
+						CreativeInventoryScreen.inventory.setInvStack(l + k * 9, this.field_15251.get(m));
 					} else {
-						CreativeInventoryScreen.inventory.setInvStack(l + k * 9, null);
+						CreativeInventoryScreen.inventory.setInvStack(l + k * 9, ItemStack.EMPTY);
 					}
 				}
 			}
 		}
 
 		public boolean isFull() {
-			return this.itemList.size() > 45;
+			return this.field_15251.size() > 45;
 		}
 
 		@Override
 		protected void onSlotClick(int slotId, int clickData, boolean bl, PlayerEntity player) {
 		}
 
-		@Nullable
 		@Override
 		public ItemStack transferSlot(PlayerEntity player, int invSlot) {
 			if (invSlot >= this.slots.size() - 9 && invSlot < this.slots.size()) {
 				Slot slot = (Slot)this.slots.get(invSlot);
 				if (slot != null && slot.hasStack()) {
-					slot.setStack(null);
+					slot.setStack(ItemStack.EMPTY);
 				}
 			}
 
-			return null;
+			return ItemStack.EMPTY;
 		}
 
 		@Override

@@ -35,6 +35,7 @@ public class VillagerEntityRenderer extends MobEntityRenderer<VillagerEntity> {
 				return BLACKSMITH;
 			case 4:
 				return BUTCHER;
+			case 5:
 			default:
 				return UNEMPLOYED;
 		}

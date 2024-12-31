@@ -57,8 +57,8 @@ public class class_2780 {
 				return;
 			}
 
-			if (itemStack == null) {
-				inventory.setInvStack((Integer)list2.remove(list2.size() - 1), null);
+			if (itemStack.isEmpty()) {
+				inventory.setInvStack((Integer)list2.remove(list2.size() - 1), ItemStack.EMPTY);
 			} else {
 				inventory.setInvStack((Integer)list2.remove(list2.size() - 1), itemStack);
 			}
@@ -71,9 +71,9 @@ public class class_2780 {
 
 		while (iterator.hasNext()) {
 			ItemStack itemStack = (ItemStack)iterator.next();
-			if (itemStack.count <= 0) {
+			if (itemStack.isEmpty()) {
 				iterator.remove();
-			} else if (itemStack.count > 1) {
+			} else if (itemStack.getCount() > 1) {
 				list2.add(itemStack);
 				iterator.remove();
 			}
@@ -83,17 +83,15 @@ public class class_2780 {
 
 		while (i > 0 && list2.size() > 0) {
 			ItemStack itemStack2 = (ItemStack)list2.remove(MathHelper.nextInt(random, 0, list2.size() - 1));
-			int j = MathHelper.nextInt(random, 1, itemStack2.count / 2);
-			itemStack2.count -= j;
-			ItemStack itemStack3 = itemStack2.copy();
-			itemStack3.count = j;
-			if (itemStack2.count > 1 && random.nextBoolean()) {
+			int j = MathHelper.nextInt(random, 1, itemStack2.getCount() / 2);
+			ItemStack itemStack3 = itemStack2.split(j);
+			if (itemStack2.getCount() > 1 && random.nextBoolean()) {
 				list2.add(itemStack2);
 			} else {
 				list.add(itemStack2);
 			}
 
-			if (itemStack3.count > 1 && random.nextBoolean()) {
+			if (itemStack3.getCount() > 1 && random.nextBoolean()) {
 				list2.add(itemStack3);
 			} else {
 				list.add(itemStack3);
@@ -108,7 +106,7 @@ public class class_2780 {
 		List<Integer> list = Lists.newArrayList();
 
 		for (int i = 0; i < inventory.getInvSize(); i++) {
-			if (inventory.getInvStack(i) == null) {
+			if (inventory.getInvStack(i).isEmpty()) {
 				list.add(i);
 			}
 		}

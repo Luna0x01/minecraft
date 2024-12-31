@@ -67,8 +67,8 @@ public class PacketByteBuf extends ByteBuf {
 	public PacketByteBuf writeIntArray(int[] intArray) {
 		this.writeVarInt(intArray.length);
 
-		for (int k : intArray) {
-			this.writeVarInt(k);
+		for (int i : intArray) {
+			this.writeVarInt(i);
 		}
 
 		return this;
@@ -242,12 +242,12 @@ public class PacketByteBuf extends ByteBuf {
 		}
 	}
 
-	public PacketByteBuf writeItemStack(@Nullable ItemStack stack) {
-		if (stack == null) {
+	public PacketByteBuf writeItemStack(ItemStack stack) {
+		if (stack.isEmpty()) {
 			this.writeShort(-1);
 		} else {
 			this.writeShort(Item.getRawId(stack.getItem()));
-			this.writeByte(stack.count);
+			this.writeByte(stack.getCount());
 			this.writeShort(stack.getData());
 			NbtCompound nbtCompound = null;
 			if (stack.getItem().isDamageable() || stack.getItem().shouldSyncNbtToClient()) {
@@ -260,18 +260,17 @@ public class PacketByteBuf extends ByteBuf {
 		return this;
 	}
 
-	@Nullable
 	public ItemStack readItemStack() {
-		ItemStack itemStack = null;
 		int i = this.readShort();
-		if (i >= 0) {
+		if (i < 0) {
+			return ItemStack.EMPTY;
+		} else {
 			int j = this.readByte();
 			int k = this.readShort();
-			itemStack = new ItemStack(Item.byRawId(i), j, k);
+			ItemStack itemStack = new ItemStack(Item.byRawId(i), j, k);
 			itemStack.setNbt(this.readNbtCompound());
+			return itemStack;
 		}
-
-		return itemStack;
 	}
 
 	public String readString(int maxLength) {
@@ -293,7 +292,7 @@ public class PacketByteBuf extends ByteBuf {
 	public PacketByteBuf writeString(String string) {
 		byte[] bs = string.getBytes(Charsets.UTF_8);
 		if (bs.length > 32767) {
-			throw new EncoderException("String too big (was " + string.length() + " bytes encoded, max " + 32767 + ")");
+			throw new EncoderException("String too big (was " + bs.length + " bytes encoded, max " + 32767 + ")");
 		} else {
 			this.writeVarInt(bs.length);
 			this.writeBytes(bs);

@@ -1,7 +1,10 @@
 package net.minecraft.entity.mob;
 
+import java.util.Collection;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.ai.goal.CreeperIgniteGoal;
@@ -12,12 +15,12 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -52,7 +55,7 @@ public class CreeperEntity extends HostileEntity {
 		this.goals.add(2, new CreeperIgniteGoal(this));
 		this.goals.add(3, new FleeEntityGoal(this, OcelotEntity.class, 6.0F, 1.0, 1.2));
 		this.goals.add(4, new MeleeAttackGoal(this, 1.0, false));
-		this.goals.add(5, new WanderAroundGoal(this, 0.8));
+		this.goals.add(5, new class_3133(this, 0.8));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(6, new LookAroundGoal(this));
 		this.attackGoals.add(1, new FollowTargetGoal(this, PlayerEntity.class, true));
@@ -88,7 +91,7 @@ public class CreeperEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Creeper");
+		MobEntity.registerDataFixes(dataFixer, CreeperEntity.class);
 	}
 
 	@Override
@@ -210,8 +213,9 @@ public class CreeperEntity extends HostileEntity {
 	}
 
 	@Override
-	protected boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (itemStack != null && itemStack.getItem() == Items.FLINT_AND_STEEL) {
+	protected boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (itemStack.getItem() == Items.FLINT_AND_STEEL) {
 			this.world
 				.playSound(playerEntity, this.x, this.y, this.z, Sounds.ITEM_FLINTANDSTEEL_USE, this.getSoundCategory(), 1.0F, this.random.nextFloat() * 0.4F + 0.8F);
 			playerEntity.swingHand(hand);
@@ -222,7 +226,7 @@ public class CreeperEntity extends HostileEntity {
 			}
 		}
 
-		return super.method_13079(playerEntity, hand, itemStack);
+		return super.interactMob(playerEntity, hand);
 	}
 
 	private void explode() {
@@ -232,6 +236,25 @@ public class CreeperEntity extends HostileEntity {
 			this.dead = true;
 			this.world.createExplosion(this, this.x, this.y, this.z, (float)this.explosionRadius * f, bl);
 			this.remove();
+			this.method_14062();
+		}
+	}
+
+	private void method_14062() {
+		Collection<StatusEffectInstance> collection = this.getStatusEffectInstances();
+		if (!collection.isEmpty()) {
+			AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.x, this.y, this.z);
+			areaEffectCloudEntity.setRadius(2.5F);
+			areaEffectCloudEntity.method_12956(-0.5F);
+			areaEffectCloudEntity.method_12959(10);
+			areaEffectCloudEntity.setDuration(areaEffectCloudEntity.getDuration() / 2);
+			areaEffectCloudEntity.method_12958(-areaEffectCloudEntity.getRadius() / (float)areaEffectCloudEntity.getDuration());
+
+			for (StatusEffectInstance statusEffectInstance : collection) {
+				areaEffectCloudEntity.addEffect(new StatusEffectInstance(statusEffectInstance));
+			}
+
+			this.world.spawnEntity(areaEffectCloudEntity);
 		}
 	}
 

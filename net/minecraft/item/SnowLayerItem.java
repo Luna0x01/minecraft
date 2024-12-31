@@ -17,45 +17,38 @@ public class SnowLayerItem extends BlockItem {
 	public SnowLayerItem(Block block) {
 		super(block);
 		this.setMaxDamage(0);
-		this.setUnbreakable(true);
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		if (itemStack.count != 0 && playerEntity.canModify(blockPos, direction, itemStack)) {
-			BlockState blockState = world.getBlockState(blockPos);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!itemStack.isEmpty() && player.canModify(pos, direction, itemStack)) {
+			BlockState blockState = world.getBlockState(pos);
 			Block block = blockState.getBlock();
-			BlockPos blockPos2 = blockPos;
-			if ((direction != Direction.UP || block != this.block) && !block.method_8638(world, blockPos)) {
-				blockPos2 = blockPos.offset(direction);
-				blockState = world.getBlockState(blockPos2);
+			BlockPos blockPos = pos;
+			if ((direction != Direction.UP || block != this.block) && !block.method_8638(world, pos)) {
+				blockPos = pos.offset(direction);
+				blockState = world.getBlockState(blockPos);
 				block = blockState.getBlock();
 			}
 
 			if (block == this.block) {
 				int i = (Integer)blockState.get(SnowLayerBlock.LAYERS);
-				if (i <= 7) {
+				if (i < 8) {
 					BlockState blockState2 = blockState.with(SnowLayerBlock.LAYERS, i + 1);
-					Box box = blockState2.getCollisionBox(world, blockPos2);
-					if (box != Block.EMPTY_BOX && world.hasEntityIn(box.offset(blockPos2)) && world.setBlockState(blockPos2, blockState2, 10)) {
+					Box box = blockState2.method_11726(world, blockPos);
+					if (box != Block.EMPTY_BOX && world.hasEntityIn(box.offset(blockPos)) && world.setBlockState(blockPos, blockState2, 10)) {
 						BlockSoundGroup blockSoundGroup = this.block.getSoundGroup();
 						world.method_11486(
-							playerEntity,
-							blockPos2,
-							blockSoundGroup.method_4194(),
-							SoundCategory.BLOCKS,
-							(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
-							blockSoundGroup.getPitch() * 0.8F
+							player, blockPos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 						);
-						itemStack.count--;
+						itemStack.decrement(1);
 						return ActionResult.SUCCESS;
 					}
 				}
 			}
 
-			return super.method_3355(itemStack, playerEntity, world, blockPos2, hand, direction, f, g, h);
+			return super.use(player, world, pos, hand, direction, x, y, z);
 		} else {
 			return ActionResult.FAIL;
 		}

@@ -77,7 +77,7 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 
 	@Override
 	public boolean method_2537(PlayerEntity playerEntity) {
-		return this.isTamed() && this.isOwner(playerEntity);
+		return !this.isLeashed();
 	}
 
 	protected void showEmoteParticle(boolean positive) {

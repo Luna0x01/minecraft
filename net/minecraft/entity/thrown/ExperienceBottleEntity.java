@@ -3,6 +3,8 @@ package net.minecraft.entity.thrown;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.potion.PotionUtil;
+import net.minecraft.potion.Potions;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -32,7 +34,7 @@ public class ExperienceBottleEntity extends ThrowableEntity {
 	@Override
 	protected void onCollision(BlockHitResult result) {
 		if (!this.world.isClient) {
-			this.world.syncGlobalEvent(2002, new BlockPos(this), 0);
+			this.world.syncGlobalEvent(2002, new BlockPos(this), PotionUtil.getColor(Potions.WATER));
 			int i = 3 + this.world.random.nextInt(5) + this.world.random.nextInt(5);
 
 			while (i > 0) {

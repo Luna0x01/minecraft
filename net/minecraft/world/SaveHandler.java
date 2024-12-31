@@ -1,6 +1,7 @@
 package net.minecraft.world;
 
 import java.io.File;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.structure.class_2763;
 import net.minecraft.world.chunk.ChunkStorage;
@@ -9,6 +10,7 @@ import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.WorldSaveException;
 
 public interface SaveHandler {
+	@Nullable
 	LevelProperties getLevelProperties();
 
 	void readSessionLock() throws WorldSaveException;

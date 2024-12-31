@@ -190,7 +190,7 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Bat");
+		MobEntity.registerDataFixes(dataFixer, BatEntity.class);
 	}
 
 	@Override

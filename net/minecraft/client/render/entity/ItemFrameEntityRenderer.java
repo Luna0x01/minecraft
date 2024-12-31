@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.block.BlockRenderManager;
@@ -15,7 +16,6 @@ import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.SkullItem;
 import net.minecraft.item.map.MapState;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -44,7 +44,7 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 		BlockRenderManager blockRenderManager = this.field_8000.getBlockRenderManager();
 		BakedModelManager bakedModelManager = blockRenderManager.getModels().getBakedModelManager();
 		BakedModel bakedModel;
-		if (itemFrameEntity.getHeldItemStack() != null && itemFrameEntity.getHeldItemStack().getItem() == Items.FILLED_MAP) {
+		if (!itemFrameEntity.getHeldItemStack().isEmpty() && itemFrameEntity.getHeldItemStack().getItem() == Items.FILLED_MAP) {
 			bakedModel = bakedModelManager.getByIdentifier(this.field_11112);
 		} else {
 			bakedModel = bakedModelManager.getByIdentifier(this.field_11111);
@@ -75,16 +75,17 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 		);
 	}
 
+	@Nullable
 	protected Identifier getTexture(ItemFrameEntity itemFrameEntity) {
 		return null;
 	}
 
 	private void method_4334(ItemFrameEntity itemFrameEntity) {
 		ItemStack itemStack = itemFrameEntity.getHeldItemStack();
-		if (itemStack != null) {
+		if (!itemStack.isEmpty()) {
 			ItemEntity itemEntity = new ItemEntity(itemFrameEntity.world, 0.0, 0.0, 0.0, itemStack);
 			Item item = itemEntity.getItemStack().getItem();
-			itemEntity.getItemStack().count = 1;
+			itemEntity.getItemStack().setCount(1);
 			itemEntity.hoverHeight = 0.0F;
 			GlStateManager.pushMatrix();
 			GlStateManager.disableLighting();
@@ -107,10 +108,6 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 				}
 			} else {
 				GlStateManager.scale(0.5F, 0.5F, 0.5F);
-				if (!this.field_11113.hasDepth(itemEntity.getItemStack()) || item instanceof SkullItem) {
-					GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-				}
-
 				GlStateManager.pushLightingAttributes();
 				DiffuseLighting.enableNormally();
 				this.field_11113.method_12458(itemEntity.getItemStack(), ModelTransformation.Mode.FIXED);
@@ -125,7 +122,7 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 
 	protected void method_10208(ItemFrameEntity itemFrameEntity, double d, double e, double f) {
 		if (MinecraftClient.isHudEnabled()
-			&& itemFrameEntity.getHeldItemStack() != null
+			&& !itemFrameEntity.getHeldItemStack().isEmpty()
 			&& itemFrameEntity.getHeldItemStack().hasCustomName()
 			&& this.dispatcher.field_7998 == itemFrameEntity) {
 			double g = itemFrameEntity.squaredDistanceTo(this.dispatcher.field_11098);

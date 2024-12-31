@@ -370,6 +370,9 @@ public class DragonRespawnAnimation {
 		if (dragon.getUuid().equals(this.dragonUUID)) {
 			this.field_12936.setHealth(dragon.getHealth() / dragon.getMaxHealth());
 			this.field_12940 = 0;
+			if (dragon.hasCustomName()) {
+				this.field_12936.setTitle(dragon.getName());
+			}
 		}
 	}
 

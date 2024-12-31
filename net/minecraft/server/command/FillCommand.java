@@ -46,9 +46,11 @@ public class FillCommand extends AbstractCommand {
 			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
 			BlockPos blockPos2 = getBlockPos(commandSource, args, 3, false);
 			Block block = AbstractCommand.getBlock(commandSource, args[6]);
-			int i = 0;
+			BlockState blockState;
 			if (args.length >= 8) {
-				i = parseClampedInt(args[7], 0, 15);
+				blockState = method_13901(block, args[7]);
+			} else {
+				blockState = block.getDefaultState();
 			}
 
 			BlockPos blockPos3 = new BlockPos(
@@ -57,15 +59,15 @@ public class FillCommand extends AbstractCommand {
 			BlockPos blockPos4 = new BlockPos(
 				Math.max(blockPos.getX(), blockPos2.getX()), Math.max(blockPos.getY(), blockPos2.getY()), Math.max(blockPos.getZ(), blockPos2.getZ())
 			);
-			int j = (blockPos4.getX() - blockPos3.getX() + 1) * (blockPos4.getY() - blockPos3.getY() + 1) * (blockPos4.getZ() - blockPos3.getZ() + 1);
-			if (j > 32768) {
-				throw new CommandException("commands.fill.tooManyBlocks", j, 32768);
+			int i = (blockPos4.getX() - blockPos3.getX() + 1) * (blockPos4.getY() - blockPos3.getY() + 1) * (blockPos4.getZ() - blockPos3.getZ() + 1);
+			if (i > 32768) {
+				throw new CommandException("commands.fill.tooManyBlocks", i, 32768);
 			} else if (blockPos3.getY() >= 0 && blockPos4.getY() < 256) {
 				World world = commandSource.getWorld();
 
-				for (int k = blockPos3.getZ(); k <= blockPos4.getZ(); k += 16) {
-					for (int l = blockPos3.getX(); l <= blockPos4.getX(); l += 16) {
-						if (!world.blockExists(new BlockPos(l, blockPos4.getY() - blockPos3.getY(), k))) {
+				for (int j = blockPos3.getZ(); j <= blockPos4.getZ(); j += 16) {
+					for (int k = blockPos3.getX(); k <= blockPos4.getX(); k += 16) {
+						if (!world.blockExists(new BlockPos(k, blockPos4.getY() - blockPos3.getY(), j))) {
 							throw new CommandException("commands.fill.outOfWorld");
 						}
 					}
@@ -79,18 +81,18 @@ public class FillCommand extends AbstractCommand {
 					try {
 						nbtCompound = StringNbtReader.parse(string);
 						bl = true;
-					} catch (NbtException var22) {
-						throw new CommandException("commands.fill.tagError", var22.getMessage());
+					} catch (NbtException var21) {
+						throw new CommandException("commands.fill.tagError", var21.getMessage());
 					}
 				}
 
 				List<BlockPos> list = Lists.newArrayList();
-				j = 0;
+				i = 0;
 
-				for (int m = blockPos3.getZ(); m <= blockPos4.getZ(); m++) {
-					for (int n = blockPos3.getY(); n <= blockPos4.getY(); n++) {
-						for (int o = blockPos3.getX(); o <= blockPos4.getX(); o++) {
-							BlockPos blockPos5 = new BlockPos(o, n, m);
+				for (int l = blockPos3.getZ(); l <= blockPos4.getZ(); l++) {
+					for (int m = blockPos3.getY(); m <= blockPos4.getY(); m++) {
+						for (int n = blockPos3.getX(); n <= blockPos4.getX(); n++) {
+							BlockPos blockPos5 = new BlockPos(n, m, l);
 							if (args.length >= 9) {
 								if (!"outline".equals(args[8]) && !"hollow".equals(args[8])) {
 									if ("destroy".equals(args[8])) {
@@ -99,28 +101,22 @@ public class FillCommand extends AbstractCommand {
 										if (!world.isAir(blockPos5)) {
 											continue;
 										}
-									} else if ("replace".equals(args[8]) && !block.hasBlockEntity()) {
-										if (args.length > 9) {
-											Block block2 = AbstractCommand.getBlock(commandSource, args[9]);
-											if (world.getBlockState(blockPos5).getBlock() != block2) {
-												continue;
-											}
-										}
-
-										if (args.length > 10) {
-											int p = AbstractCommand.parseInt(args[10]);
-											BlockState blockState = world.getBlockState(blockPos5);
-											if (blockState.getBlock().getData(blockState) != p) {
-												continue;
-											}
+									} else if ("replace".equals(args[8]) && !block.hasBlockEntity() && args.length > 9) {
+										Block block2 = AbstractCommand.getBlock(commandSource, args[9]);
+										if (world.getBlockState(blockPos5).getBlock() != block2
+											|| args.length > 10
+												&& !"-1".equals(args[10])
+												&& !"*".equals(args[10])
+												&& !AbstractCommand.method_13904(block2, args[10]).apply(world.getBlockState(blockPos5))) {
+											continue;
 										}
 									}
-								} else if (o != blockPos3.getX()
-									&& o != blockPos4.getX()
-									&& n != blockPos3.getY()
-									&& n != blockPos4.getY()
-									&& m != blockPos3.getZ()
-									&& m != blockPos4.getZ()) {
+								} else if (n != blockPos3.getX()
+									&& n != blockPos4.getX()
+									&& m != blockPos3.getY()
+									&& m != blockPos4.getY()
+									&& l != blockPos3.getZ()
+									&& l != blockPos4.getZ()) {
 									if ("hollow".equals(args[8])) {
 										world.setBlockState(blockPos5, Blocks.AIR.getDefaultState(), 2);
 										list.add(blockPos5);
@@ -138,10 +134,9 @@ public class FillCommand extends AbstractCommand {
 								world.setBlockState(blockPos5, Blocks.BARRIER.getDefaultState(), block == Blocks.BARRIER ? 2 : 4);
 							}
 
-							BlockState blockState2 = block.stateFromData(i);
-							if (world.setBlockState(blockPos5, blockState2, 2)) {
+							if (world.setBlockState(blockPos5, blockState, 2)) {
 								list.add(blockPos5);
-								j++;
+								i++;
 								if (bl) {
 									BlockEntity blockEntity2 = world.getBlockEntity(blockPos5);
 									if (blockEntity2 != null) {
@@ -158,14 +153,14 @@ public class FillCommand extends AbstractCommand {
 
 				for (BlockPos blockPos6 : list) {
 					Block block3 = world.getBlockState(blockPos6).getBlock();
-					world.updateNeighbors(blockPos6, block3);
+					world.method_8531(blockPos6, block3, false);
 				}
 
-				if (j <= 0) {
+				if (i <= 0) {
 					throw new CommandException("commands.fill.failed");
 				} else {
-					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, j);
-					run(commandSource, this, "commands.fill.success", new Object[]{j});
+					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, i);
+					run(commandSource, this, "commands.fill.success", new Object[]{i});
 				}
 			} else {
 				throw new CommandException("commands.fill.outOfWorld");

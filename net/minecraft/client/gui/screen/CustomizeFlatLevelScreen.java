@@ -133,7 +133,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 		private void renderEntry(int x, int y, ItemStack iconItem) {
 			this.renderIconBackground(x + 1, y + 1);
 			GlStateManager.enableRescaleNormal();
-			if (iconItem != null && iconItem.getItem() != null) {
+			if (!iconItem.isEmpty()) {
 				DiffuseLighting.enable();
 				CustomizeFlatLevelScreen.this.itemRenderer.method_12455(iconItem, x + 2, y + 2);
 				DiffuseLighting.disable();
@@ -199,21 +199,16 @@ public class CustomizeFlatLevelScreen extends Screen {
 			BlockState blockState = flatWorldLayer.getBlockState();
 			Block block = blockState.getBlock();
 			Item item = Item.fromBlock(block);
-			ItemStack itemStack = block != Blocks.AIR && item != null ? new ItemStack(item, 1, block.getData(blockState)) : null;
-			String string = itemStack == null ? I18n.translate("createWorld.customize.flat.air") : item.getDisplayName(itemStack);
-			if (item == null) {
+			if (item == Items.AIR) {
 				if (block == Blocks.WATER || block == Blocks.FLOWING_WATER) {
 					item = Items.WATER_BUCKET;
 				} else if (block == Blocks.LAVA || block == Blocks.FLOWING_LAVA) {
 					item = Items.LAVA_BUCKET;
 				}
-
-				if (item != null) {
-					itemStack = new ItemStack(item, 1, block.getData(blockState));
-					string = block.getTranslatedName();
-				}
 			}
 
+			ItemStack itemStack = new ItemStack(item, 1, item.isUnbreakable() ? block.getData(blockState) : 0);
+			String string = item.getDisplayName(itemStack);
 			this.renderEntry(x, y, itemStack);
 			CustomizeFlatLevelScreen.this.textRenderer.draw(string, x + 18 + 5, y + 3, 16777215);
 			String string2;

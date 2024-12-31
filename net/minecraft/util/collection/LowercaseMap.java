@@ -2,6 +2,7 @@ package net.minecraft.util.collection;
 
 import com.google.common.collect.Maps;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -18,7 +19,7 @@ public class LowercaseMap<V> implements Map<String, V> {
 	}
 
 	public boolean containsKey(Object object) {
-		return this.delegate.containsKey(object.toString().toLowerCase());
+		return this.delegate.containsKey(object.toString().toLowerCase(Locale.ROOT));
 	}
 
 	public boolean containsValue(Object object) {
@@ -26,15 +27,15 @@ public class LowercaseMap<V> implements Map<String, V> {
 	}
 
 	public V get(Object object) {
-		return (V)this.delegate.get(object.toString().toLowerCase());
+		return (V)this.delegate.get(object.toString().toLowerCase(Locale.ROOT));
 	}
 
 	public V put(String string, V object) {
-		return (V)this.delegate.put(string.toLowerCase(), object);
+		return (V)this.delegate.put(string.toLowerCase(Locale.ROOT), object);
 	}
 
 	public V remove(Object object) {
-		return (V)this.delegate.remove(object.toString().toLowerCase());
+		return (V)this.delegate.remove(object.toString().toLowerCase(Locale.ROOT));
 	}
 
 	public void putAll(Map<? extends String, ? extends V> map) {

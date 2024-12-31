@@ -41,7 +41,7 @@ public class TitleCommand extends AbstractCommand {
 			throw new IncorrectUsageException("commands.title.usage");
 		} else {
 			if (args.length < 3) {
-				if ("title".equals(args[1]) || "subtitle".equals(args[1])) {
+				if ("title".equals(args[1]) || "subtitle".equals(args[1]) || "actionbar".equals(args[1])) {
 					throw new IncorrectUsageException("commands.title.usage.title");
 				}
 

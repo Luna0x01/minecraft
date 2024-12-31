@@ -16,6 +16,7 @@ import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -58,7 +59,7 @@ public class SummonCommand extends AbstractCommand {
 			World world = commandSource.getWorld();
 			if (!world.blockExists(blockPos)) {
 				throw new CommandException("commands.summon.outOfWorld");
-			} else if ("LightningBolt".equals(string)) {
+			} else if (EntityType.LIGHTNING_BOLT.equals(new Identifier(string))) {
 				world.addEntity(new LightningBoltEntity(world, d, e, f, false));
 				run(commandSource, this, "commands.summon.success", new Object[0]);
 			} else {
@@ -94,7 +95,7 @@ public class SummonCommand extends AbstractCommand {
 	@Override
 	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
 		if (strings.length == 1) {
-			return method_10708(strings, EntityType.getEntityNames());
+			return method_10708(strings, EntityType.getIdentifiers());
 		} else {
 			return strings.length > 1 && strings.length <= 4 ? method_10707(strings, 1, pos) : Collections.emptyList();
 		}

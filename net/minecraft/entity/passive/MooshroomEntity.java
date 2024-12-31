@@ -23,20 +23,22 @@ public class MooshroomEntity extends CowEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "MushroomCow");
+		MobEntity.registerDataFixes(dataFixer, MooshroomEntity.class);
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (itemStack != null && itemStack.getItem() == Items.BOWL && this.age() >= 0 && !playerEntity.abilities.creativeMode) {
-			if (--itemStack.count == 0) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (itemStack.getItem() == Items.BOWL && this.age() >= 0 && !playerEntity.abilities.creativeMode) {
+			itemStack.decrement(1);
+			if (itemStack.isEmpty()) {
 				playerEntity.equipStack(hand, new ItemStack(Items.MUSHROOM_STEW));
 			} else if (!playerEntity.inventory.insertStack(new ItemStack(Items.MUSHROOM_STEW))) {
 				playerEntity.dropItem(new ItemStack(Items.MUSHROOM_STEW), false);
 			}
 
 			return true;
-		} else if (itemStack != null && itemStack.getItem() == Items.SHEARS && this.age() >= 0) {
+		} else if (itemStack.getItem() == Items.SHEARS && this.age() >= 0) {
 			this.remove();
 			this.world.addParticle(ParticleType.LARGE_EXPLOSION, this.x, this.y + (double)(this.height / 2.0F), this.z, 0.0, 0.0, 0.0);
 			if (!this.world.isClient) {
@@ -60,7 +62,7 @@ public class MooshroomEntity extends CowEntity {
 
 			return true;
 		} else {
-			return super.method_13079(playerEntity, hand, itemStack);
+			return super.interactMob(playerEntity, hand);
 		}
 	}
 

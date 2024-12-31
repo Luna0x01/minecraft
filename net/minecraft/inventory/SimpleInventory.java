@@ -2,18 +2,18 @@ package net.minecraft.inventory;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.collection.DefaultedList;
 
 public class SimpleInventory implements Inventory {
 	private String name;
 	private final int size;
-	private final ItemStack[] inventory;
+	private final DefaultedList<ItemStack> content;
 	private List<SimpleInventoryListener> listeners;
 	private boolean hasCustomName;
 
@@ -21,7 +21,7 @@ public class SimpleInventory implements Inventory {
 		this.name = string;
 		this.hasCustomName = bl;
 		this.size = i;
-		this.inventory = new ItemStack[i];
+		this.content = DefaultedList.ofSize(i, ItemStack.EMPTY);
 	}
 
 	public SimpleInventory(Text text, int i) {
@@ -40,73 +40,69 @@ public class SimpleInventory implements Inventory {
 		this.listeners.remove(listener);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
-		return slot >= 0 && slot < this.inventory.length ? this.inventory[slot] : null;
+		return slot >= 0 && slot < this.content.size() ? this.content.get(slot) : ItemStack.EMPTY;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		ItemStack itemStack = class_2960.method_12933(this.inventory, slot, amount);
-		if (itemStack != null) {
+		ItemStack itemStack = class_2960.method_13926(this.content, slot, amount);
+		if (!itemStack.isEmpty()) {
 			this.markDirty();
 		}
 
 		return itemStack;
 	}
 
-	@Nullable
 	public ItemStack fillInventoryWith(ItemStack stack) {
 		ItemStack itemStack = stack.copy();
 
 		for (int i = 0; i < this.size; i++) {
 			ItemStack itemStack2 = this.getInvStack(i);
-			if (itemStack2 == null) {
+			if (itemStack2.isEmpty()) {
 				this.setInvStack(i, itemStack);
 				this.markDirty();
-				return null;
+				return ItemStack.EMPTY;
 			}
 
 			if (ItemStack.equalsIgnoreNbt(itemStack2, itemStack)) {
 				int j = Math.min(this.getInvMaxStackAmount(), itemStack2.getMaxCount());
-				int k = Math.min(itemStack.count, j - itemStack2.count);
+				int k = Math.min(itemStack.getCount(), j - itemStack2.getCount());
 				if (k > 0) {
-					itemStack2.count += k;
-					itemStack.count -= k;
-					if (itemStack.count <= 0) {
+					itemStack2.increment(k);
+					itemStack.decrement(k);
+					if (itemStack.isEmpty()) {
 						this.markDirty();
-						return null;
+						return ItemStack.EMPTY;
 					}
 				}
 			}
 		}
 
-		if (itemStack.count != stack.count) {
+		if (itemStack.getCount() != stack.getCount()) {
 			this.markDirty();
 		}
 
 		return itemStack;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.inventory[slot] != null) {
-			ItemStack itemStack = this.inventory[slot];
-			this.inventory[slot] = null;
-			return itemStack;
+		ItemStack itemStack = this.content.get(slot);
+		if (itemStack.isEmpty()) {
+			return ItemStack.EMPTY;
 		} else {
-			return null;
+			this.content.set(slot, ItemStack.EMPTY);
+			return itemStack;
 		}
 	}
 
 	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
-		this.inventory[slot] = stack;
-		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
-			stack.count = this.getInvMaxStackAmount();
+	public void setInvStack(int slot, ItemStack stack) {
+		this.content.set(slot, stack);
+		if (!stack.isEmpty() && stack.getCount() > this.getInvMaxStackAmount()) {
+			stack.setCount(this.getInvMaxStackAmount());
 		}
 
 		this.markDirty();
@@ -115,6 +111,17 @@ public class SimpleInventory implements Inventory {
 	@Override
 	public int getInvSize() {
 		return this.size;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		for (ItemStack itemStack : this.content) {
+			if (!itemStack.isEmpty()) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	@Override
@@ -146,7 +153,7 @@ public class SimpleInventory implements Inventory {
 	public void markDirty() {
 		if (this.listeners != null) {
 			for (int i = 0; i < this.listeners.size(); i++) {
-				((SimpleInventoryListener)this.listeners.get(i)).onChanged(this);
+				((SimpleInventoryListener)this.listeners.get(i)).method_13928(this);
 			}
 		}
 	}
@@ -185,8 +192,6 @@ public class SimpleInventory implements Inventory {
 
 	@Override
 	public void clear() {
-		for (int i = 0; i < this.inventory.length; i++) {
-			this.inventory[i] = null;
-		}
+		this.content.clear();
 	}
 }

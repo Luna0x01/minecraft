@@ -2,7 +2,7 @@ package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
 import java.util.Collection;
-import net.minecraft.item.map.MapIcon;
+import net.minecraft.class_3082;
 import net.minecraft.item.map.MapState;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -12,7 +12,7 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
 	private byte scale;
 	private boolean field_13774;
-	private MapIcon[] icons;
+	private class_3082[] field_11618;
 	private int startX;
 	private int startZ;
 	private int width;
@@ -22,11 +22,11 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	public MapUpdateS2CPacket() {
 	}
 
-	public MapUpdateS2CPacket(int i, byte b, boolean bl, Collection<MapIcon> collection, byte[] bs, int j, int k, int l, int m) {
+	public MapUpdateS2CPacket(int i, byte b, boolean bl, Collection<class_3082> collection, byte[] bs, int j, int k, int l, int m) {
 		this.id = i;
 		this.scale = b;
 		this.field_13774 = bl;
-		this.icons = (MapIcon[])collection.toArray(new MapIcon[collection.size()]);
+		this.field_11618 = (class_3082[])collection.toArray(new class_3082[collection.size()]);
 		this.startX = j;
 		this.startZ = k;
 		this.width = l;
@@ -45,11 +45,11 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.id = buf.readVarInt();
 		this.scale = buf.readByte();
 		this.field_13774 = buf.readBoolean();
-		this.icons = new MapIcon[buf.readVarInt()];
+		this.field_11618 = new class_3082[buf.readVarInt()];
 
-		for (int i = 0; i < this.icons.length; i++) {
+		for (int i = 0; i < this.field_11618.length; i++) {
 			short s = (short)buf.readByte();
-			this.icons[i] = new MapIcon((byte)(s >> 4 & 15), buf.readByte(), buf.readByte(), (byte)(s & 15));
+			this.field_11618[i] = new class_3082(class_3082.class_3083.method_13826((byte)(s >> 4 & 15)), buf.readByte(), buf.readByte(), (byte)(s & 15));
 		}
 
 		this.width = buf.readUnsignedByte();
@@ -66,12 +66,12 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeVarInt(this.id);
 		buf.writeByte(this.scale);
 		buf.writeBoolean(this.field_13774);
-		buf.writeVarInt(this.icons.length);
+		buf.writeVarInt(this.field_11618.length);
 
-		for (MapIcon mapIcon : this.icons) {
-			buf.writeByte((mapIcon.getTypeId() & 15) << 4 | mapIcon.getRotation() & 15);
-			buf.writeByte(mapIcon.getX());
-			buf.writeByte(mapIcon.getY());
+		for (class_3082 lv : this.field_11618) {
+			buf.writeByte((lv.method_13819() & 15) << 4 | lv.method_13823() & 15);
+			buf.writeByte(lv.method_13821());
+			buf.writeByte(lv.method_13822());
 		}
 
 		buf.writeByte(this.width);
@@ -96,9 +96,9 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 		state.trackingPosition = this.field_13774;
 		state.icons.clear();
 
-		for (int i = 0; i < this.icons.length; i++) {
-			MapIcon mapIcon = this.icons[i];
-			state.icons.put("icon-" + i, mapIcon);
+		for (int i = 0; i < this.field_11618.length; i++) {
+			class_3082 lv = this.field_11618[i];
+			state.icons.put("icon-" + i, lv);
 		}
 
 		for (int j = 0; j < this.width; j++) {

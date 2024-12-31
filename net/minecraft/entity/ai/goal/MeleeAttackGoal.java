@@ -38,7 +38,9 @@ public class MeleeAttackGoal extends Goal {
 			return false;
 		} else {
 			this.field_14581 = this.mob.getNavigation().method_13109(livingEntity);
-			return this.field_14581 != null;
+			return this.field_14581 != null
+				? true
+				: this.getSquaredMaxAttackDistance(livingEntity) >= this.mob.squaredDistanceTo(livingEntity.x, livingEntity.getBoundingBox().minY, livingEntity.z);
 		}
 	}
 

@@ -43,17 +43,17 @@ public class LanguageManager implements ResourceReloadListener {
 					}
 				}
 			} catch (RuntimeException var7) {
-				LOGGER.warn("Unable to parse metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var7});
+				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var7});
 			} catch (IOException var8) {
-				LOGGER.warn("Unable to parse metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var8});
+				LOGGER.warn("Unable to parse language metadata section of resourcepack: {}", new Object[]{resourcePack.getName(), var8});
 			}
 		}
 	}
 
 	@Override
 	public void reload(ResourceManager resourceManager) {
-		List<String> list = Lists.newArrayList(new String[]{"en_US"});
-		if (!"en_US".equals(this.currentLanguageCode)) {
+		List<String> list = Lists.newArrayList(new String[]{"en_us"});
+		if (!"en_us".equals(this.currentLanguageCode)) {
 			list.add(this.currentLanguageCode);
 		}
 
@@ -74,7 +74,7 @@ public class LanguageManager implements ResourceReloadListener {
 	}
 
 	public LanguageDefinition getLanguage() {
-		String string = this.languageDefs.containsKey(this.currentLanguageCode) ? this.currentLanguageCode : "en_US";
+		String string = this.languageDefs.containsKey(this.currentLanguageCode) ? this.currentLanguageCode : "en_us";
 		return (LanguageDefinition)this.languageDefs.get(string);
 	}
 

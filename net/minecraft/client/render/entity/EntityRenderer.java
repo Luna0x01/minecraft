@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -20,7 +21,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public abstract class EntityRenderer<T extends Entity> {
@@ -80,6 +80,7 @@ public abstract class EntityRenderer<T extends Entity> {
 		this.renderLabelIfPresent(entity, string, d, e, f, 64);
 	}
 
+	@Nullable
 	protected abstract Identifier getTexture(T entity);
 
 	protected boolean bindTexture(T entity) {
@@ -205,7 +206,7 @@ public abstract class EntityRenderer<T extends Entity> {
 					l = 1.0;
 				}
 
-				Box box = blockState.getCollisionBox((BlockView)this.getWorld(), blockPos);
+				Box box = blockState.getCollisionBox(this.getWorld(), blockPos);
 				double m = (double)blockPos.getX() + box.minX + i;
 				double n = (double)blockPos.getX() + box.maxX + i;
 				double o = (double)blockPos.getY() + box.minY + j + 0.015625;

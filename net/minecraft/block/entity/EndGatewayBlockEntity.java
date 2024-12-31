@@ -23,7 +23,7 @@ import net.minecraft.world.gen.feature.class_2754;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class EndGatewayBlockEntity extends BlockEntity implements Tickable {
+public class EndGatewayBlockEntity extends EndPortalBlockEntity implements Tickable {
 	private static final Logger GATEWAY_LOGGER = LogManager.getLogger();
 	private long age;
 	private int cooldown;
@@ -73,6 +73,10 @@ public class EndGatewayBlockEntity extends BlockEntity implements Tickable {
 			if (!list.isEmpty()) {
 				this.teleport((Entity)list.get(0));
 			}
+
+			if (this.age % 2400L == 0L) {
+				this.method_11696();
+			}
 		}
 
 		if (bl != this.method_11692() || bl2 != this.hasCooldown()) {
@@ -88,12 +92,12 @@ public class EndGatewayBlockEntity extends BlockEntity implements Tickable {
 		return this.cooldown > 0;
 	}
 
-	public float method_11694() {
-		return MathHelper.clamp((float)this.age / 200.0F, 0.0F, 1.0F);
+	public float method_13746(float f) {
+		return MathHelper.clamp(((float)this.age + f) / 200.0F, 0.0F, 1.0F);
 	}
 
-	public float method_11695() {
-		return 1.0F - MathHelper.clamp((float)this.cooldown / 20.0F, 0.0F, 1.0F);
+	public float method_13747(float f) {
+		return 1.0F - MathHelper.clamp(((float)this.cooldown - f) / 40.0F, 0.0F, 1.0F);
 	}
 
 	@Nullable
@@ -109,7 +113,7 @@ public class EndGatewayBlockEntity extends BlockEntity implements Tickable {
 
 	public void method_11696() {
 		if (!this.world.isClient) {
-			this.cooldown = 20;
+			this.cooldown = 40;
 			this.world.addBlockAction(this.getPos(), this.getBlock(), 1, 0);
 			this.markDirty();
 		}
@@ -118,7 +122,7 @@ public class EndGatewayBlockEntity extends BlockEntity implements Tickable {
 	@Override
 	public boolean onBlockAction(int code, int data) {
 		if (code == 1) {
-			this.cooldown = 20;
+			this.cooldown = 40;
 			return true;
 		} else {
 			return super.onBlockAction(code, data);
@@ -238,6 +242,7 @@ public class EndGatewayBlockEntity extends BlockEntity implements Tickable {
 		}
 	}
 
+	@Override
 	public boolean method_11689(Direction direction) {
 		return this.getBlock().getDefaultState().method_11724(this.world, this.getPos(), direction);
 	}
@@ -250,5 +255,10 @@ public class EndGatewayBlockEntity extends BlockEntity implements Tickable {
 		}
 
 		return i;
+	}
+
+	public void setExitPortal(BlockPos exitPortal) {
+		this.exactTeleport = true;
+		this.exitPortal = exitPortal;
 	}
 }

@@ -28,8 +28,7 @@ public class BowItem extends Item {
 				if (entity == null) {
 					return 0.0F;
 				} else {
-					ItemStack itemStack = entity.method_13064();
-					return itemStack != null && itemStack.getItem() == Items.BOW ? (float)(stack.getMaxUseTime() - entity.method_13065()) / 20.0F : 0.0F;
+					return entity.method_13064().getItem() != Items.BOW ? 0.0F : (float)(stack.getMaxUseTime() - entity.method_13065()) / 20.0F;
 				}
 			}
 		});
@@ -54,12 +53,12 @@ public class BowItem extends Item {
 				}
 			}
 
-			return null;
+			return ItemStack.EMPTY;
 		}
 	}
 
-	protected boolean method_11364(@Nullable ItemStack itemStack) {
-		return itemStack != null && itemStack.getItem() instanceof ArrowItem;
+	protected boolean method_11364(ItemStack itemStack) {
+		return itemStack.getItem() instanceof ArrowItem;
 	}
 
 	@Override
@@ -68,8 +67,8 @@ public class BowItem extends Item {
 			PlayerEntity playerEntity = (PlayerEntity)entity;
 			boolean bl = playerEntity.abilities.creativeMode || EnchantmentHelper.getLevel(Enchantments.INFINITY, stack) > 0;
 			ItemStack itemStack = this.method_11362(playerEntity);
-			if (itemStack != null || bl) {
-				if (itemStack == null) {
+			if (!itemStack.isEmpty() || bl) {
+				if (itemStack.isEmpty()) {
 					itemStack = new ItemStack(Items.ARROW);
 				}
 
@@ -100,7 +99,7 @@ public class BowItem extends Item {
 						}
 
 						stack.damage(1, playerEntity);
-						if (bl2) {
+						if (bl2 || playerEntity.abilities.creativeMode && (itemStack.getItem() == Items.SPECTRAL_ARROW || itemStack.getItem() == Items.TIPPED_ARROW)) {
 							abstractArrowEntity.pickupType = AbstractArrowEntity.PickupPermission.CREATIVE_ONLY;
 						}
 
@@ -113,13 +112,13 @@ public class BowItem extends Item {
 						playerEntity.y,
 						playerEntity.z,
 						Sounds.ENTITY_ARROW_SHOOT,
-						SoundCategory.NEUTRAL,
+						SoundCategory.PLAYERS,
 						1.0F,
 						1.0F / (RANDOM.nextFloat() * 0.4F + 1.2F) + f * 0.5F
 					);
-					if (!bl2) {
-						itemStack.count--;
-						if (itemStack.count == 0) {
+					if (!bl2 && !playerEntity.abilities.creativeMode) {
+						itemStack.decrement(1);
+						if (itemStack.isEmpty()) {
 							playerEntity.inventory.method_13257(itemStack);
 						}
 					}
@@ -151,13 +150,14 @@ public class BowItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		boolean bl = this.method_11362(playerEntity) != null;
-		if (playerEntity.abilities.creativeMode || bl) {
-			playerEntity.method_13050(hand);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		boolean bl = !this.method_11362(player).isEmpty();
+		if (player.abilities.creativeMode || bl) {
+			player.method_13050(hand);
 			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 		} else {
-			return !bl ? new TypedActionResult<>(ActionResult.FAIL, itemStack) : new TypedActionResult<>(ActionResult.PASS, itemStack);
+			return bl ? new TypedActionResult<>(ActionResult.PASS, itemStack) : new TypedActionResult<>(ActionResult.FAIL, itemStack);
 		}
 	}
 

@@ -6,12 +6,12 @@ import net.minecraft.world.level.storage.LevelDataType;
 
 public class DropperBlockEntity extends DispenserBlockEntity {
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Dropper", "Items"));
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(DropperBlockEntity.class, "Items"));
 	}
 
 	@Override
 	public String getTranslationKey() {
-		return this.hasCustomName() ? this.customName : "container.dropper";
+		return this.hasCustomName() ? this.name : "container.dropper";
 	}
 
 	@Override

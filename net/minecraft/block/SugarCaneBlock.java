@@ -75,8 +75,8 @@ public class SugarCaneBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		this.placeSugarCaneBlock(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		this.placeSugarCaneBlock(world, pos, state);
 	}
 
 	protected final boolean placeSugarCaneBlock(World world, BlockPos blockPos, BlockState blockState) {
@@ -95,11 +95,10 @@ public class SugarCaneBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.SUGARCANE;

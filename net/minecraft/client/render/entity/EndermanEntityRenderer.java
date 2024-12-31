@@ -10,20 +10,23 @@ import net.minecraft.util.Identifier;
 
 public class EndermanEntityRenderer extends MobEntityRenderer<EndermanEntity> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/enderman/enderman.png");
-	private final EndermanEntityModel endermanModel;
 	private final Random random = new Random();
 
 	public EndermanEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new EndermanEntityModel(0.0F), 0.5F);
-		this.endermanModel = (EndermanEntityModel)super.model;
 		this.addFeature(new EndermanEyesFeatureRenderer(this));
 		this.addFeature(new EndermanHeldBlockFeatureRenderer(this));
 	}
 
+	public EndermanEntityModel getModel() {
+		return (EndermanEntityModel)super.getModel();
+	}
+
 	public void render(EndermanEntity endermanEntity, double d, double e, double f, float g, float h) {
 		BlockState blockState = endermanEntity.getCarriedBlock();
-		this.endermanModel.carryingBlock = blockState != null;
-		this.endermanModel.angry = endermanEntity.isAngry();
+		EndermanEntityModel endermanEntityModel = this.getModel();
+		endermanEntityModel.carryingBlock = blockState != null;
+		endermanEntityModel.angry = endermanEntity.isAngry();
 		if (endermanEntity.isAngry()) {
 			double i = 0.02;
 			d += this.random.nextGaussian() * 0.02;

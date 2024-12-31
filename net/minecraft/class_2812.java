@@ -20,12 +20,12 @@ public class class_2812 extends class_2795 {
 	@Override
 	public ItemStack method_12029(ItemStack itemStack, Random random, class_2782 arg) {
 		ItemStack itemStack2 = SmeltingRecipeRegistry.getInstance().getResult(itemStack);
-		if (itemStack2 == null) {
+		if (itemStack2.isEmpty()) {
 			field_13238.warn("Couldn't smelt {} because there is no smelting recipe", new Object[]{itemStack});
 			return itemStack;
 		} else {
 			ItemStack itemStack3 = itemStack2.copy();
-			itemStack3.count = itemStack.count;
+			itemStack3.setCount(itemStack.getCount());
 			return itemStack3;
 		}
 	}

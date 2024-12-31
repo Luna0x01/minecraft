@@ -54,7 +54,7 @@ public class TripwireHookBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -100,13 +100,13 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (block != this) {
-			if (this.canBePlacedAtPos(world, blockPos, blockState)) {
-				Direction direction = blockState.get(FACING);
-				if (!world.getBlockState(blockPos.offset(direction.getOpposite())).method_11734()) {
-					this.dropAsItem(world, blockPos, blockState, 0);
-					world.setAir(blockPos);
+			if (this.canBePlacedAtPos(world, pos, state)) {
+				Direction direction = state.get(FACING);
+				if (!world.getBlockState(pos.offset(direction.getOpposite())).method_11734()) {
+					this.dropAsItem(world, pos, state, 0);
+					world.setAir(pos);
 				}
 			}
 		}
@@ -204,8 +204,8 @@ public class TripwireHookBlock extends Block {
 	}
 
 	private void updateNeighborsOnAxis(World world, BlockPos pos, Direction dir) {
-		world.updateNeighborsAlways(pos, this);
-		world.updateNeighborsAlways(pos.offset(dir.getOpposite()), this);
+		world.method_13692(pos, this, false);
+		world.method_13692(pos.offset(dir.getOpposite()), this, false);
 	}
 
 	private boolean canBePlacedAtPos(World world, BlockPos pos, BlockState state) {
@@ -227,8 +227,8 @@ public class TripwireHookBlock extends Block {
 		}
 
 		if (bl2) {
-			world.updateNeighborsAlways(pos, this);
-			world.updateNeighborsAlways(pos.offset(((Direction)state.get(FACING)).getOpposite()), this);
+			world.method_13692(pos, this, false);
+			world.method_13692(pos.offset(((Direction)state.get(FACING)).getOpposite()), this, false);
 		}
 
 		super.onBreaking(world, pos, state);

@@ -15,7 +15,7 @@ public class GiantEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Giant");
+		MobEntity.registerDataFixes(dataFixer, GiantEntity.class);
 	}
 
 	@Override

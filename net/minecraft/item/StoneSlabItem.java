@@ -37,12 +37,11 @@ public class StoneSlabItem extends BlockItem {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		if (itemStack.count != 0 && playerEntity.canModify(blockPos.offset(direction), direction, itemStack)) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!itemStack.isEmpty() && player.canModify(pos.offset(direction), direction, itemStack)) {
 			Comparable<?> comparable = this.singleSlab.method_11615(itemStack);
-			BlockState blockState = world.getBlockState(blockPos);
+			BlockState blockState = world.getBlockState(pos);
 			if (blockState.getBlock() == this.singleSlab) {
 				Property<?> property = this.singleSlab.getSlabProperty();
 				Comparable<?> comparable2 = blockState.get((Property<Comparable<?>>)property);
@@ -50,27 +49,22 @@ public class StoneSlabItem extends BlockItem {
 				if ((direction == Direction.UP && slabType == SlabBlock.SlabType.BOTTOM || direction == Direction.DOWN && slabType == SlabBlock.SlabType.TOP)
 					&& comparable2 == comparable) {
 					BlockState blockState2 = this.method_11403(property, comparable2);
-					Box box = blockState2.getCollisionBox(world, blockPos);
-					if (box != Block.EMPTY_BOX && world.hasEntityIn(box.offset(blockPos)) && world.setBlockState(blockPos, blockState2, 11)) {
+					Box box = blockState2.method_11726(world, pos);
+					if (box != Block.EMPTY_BOX && world.hasEntityIn(box.offset(pos)) && world.setBlockState(pos, blockState2, 11)) {
 						BlockSoundGroup blockSoundGroup = this.doubleSlab.getSoundGroup();
 						world.method_11486(
-							playerEntity,
-							blockPos,
-							blockSoundGroup.method_4194(),
-							SoundCategory.BLOCKS,
-							(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
-							blockSoundGroup.getPitch() * 0.8F
+							player, pos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 						);
-						itemStack.count--;
+						itemStack.decrement(1);
 					}
 
 					return ActionResult.SUCCESS;
 				}
 			}
 
-			return this.method_11404(playerEntity, itemStack, world, blockPos.offset(direction), comparable)
+			return this.method_11404(player, itemStack, world, pos.offset(direction), comparable)
 				? ActionResult.SUCCESS
-				: super.method_3355(itemStack, playerEntity, world, blockPos, hand, direction, f, g, h);
+				: super.use(player, world, pos, hand, direction, x, y, z);
 		} else {
 			return ActionResult.FAIL;
 		}
@@ -99,7 +93,7 @@ public class StoneSlabItem extends BlockItem {
 			Comparable<?> comparable = blockState.get((Property<Comparable<?>>)this.singleSlab.getSlabProperty());
 			if (comparable == object) {
 				BlockState blockState2 = this.method_11403(this.singleSlab.getSlabProperty(), comparable);
-				Box box = blockState2.getCollisionBox(world, blockPos);
+				Box box = blockState2.method_11726(world, blockPos);
 				if (box != Block.EMPTY_BOX && world.hasEntityIn(box.offset(blockPos)) && world.setBlockState(blockPos, blockState2, 11)) {
 					BlockSoundGroup blockSoundGroup = this.doubleSlab.getSoundGroup();
 					world.method_11486(
@@ -110,7 +104,7 @@ public class StoneSlabItem extends BlockItem {
 						(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
 						blockSoundGroup.getPitch() * 0.8F
 					);
-					itemStack.count--;
+					itemStack.decrement(1);
 				}
 
 				return true;

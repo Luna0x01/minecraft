@@ -36,7 +36,7 @@ public class EditWorldScreen extends Screen {
 		buttonWidget.active = this.client.getCurrentSave().method_11957(this.levelName, "icon.png").isFile();
 		LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
 		LevelProperties levelProperties = levelStorageAccess.getLevelProperties(this.levelName);
-		String string = levelProperties.getLevelName();
+		String string = levelProperties == null ? "" : levelProperties.getLevelName();
 		this.searchField = new TextFieldWidget(2, this.textRenderer, this.width / 2 - 100, 60, 200, 20);
 		this.searchField.setFocused(true);
 		this.searchField.setText(string);

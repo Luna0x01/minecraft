@@ -151,11 +151,11 @@ public class ChunkRenderThread implements Runnable {
 						ChunkRenderThread.this.method_10140(chunkBuilder);
 						chunkBuilder.getLock().lock();
 
-						label44: {
+						label43: {
 							try {
 								if (chunkBuilder.getRenderStatus() == ChunkBuilder.RenderStatus.UPLOADING) {
 									chunkBuilder.setRenderStatus(ChunkBuilder.RenderStatus.DONE);
-									break label44;
+									break label43;
 								}
 
 								if (!chunkBuilder.method_10121()) {

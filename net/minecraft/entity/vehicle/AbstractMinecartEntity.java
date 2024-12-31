@@ -12,6 +12,7 @@ import net.minecraft.block.PoweredRailBlock;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -165,8 +166,8 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.remove();
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
 			ItemStack itemStack = new ItemStack(Items.MINECART, 1);
-			if (this.getTranslationKey() != null) {
-				itemStack.setCustomName(this.getTranslationKey());
+			if (this.hasCustomName()) {
+				itemStack.setCustomName(this.getCustomName());
 			}
 
 			this.dropItem(itemStack, 0.0F);
@@ -183,11 +184,6 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	@Override
 	public boolean collides() {
 		return !this.removed;
-	}
-
-	@Override
-	public void remove() {
-		super.remove();
 	}
 
 	@Override
@@ -351,7 +347,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			this.velocityZ *= 0.5;
 		}
 
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 		if (!this.onGround) {
 			this.velocityX *= 0.95F;
 			this.velocityY *= 0.95F;
@@ -468,7 +464,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		double z = this.getMaxOffRailSpeed();
 		x = MathHelper.clamp(x, -z, z);
 		y = MathHelper.clamp(y, -z, z);
-		this.move(x, 0.0, y);
+		this.move(MovementType.SELF, x, 0.0, y);
 		if (is[0][1] != 0 && MathHelper.floor(this.x) - pos.getX() == is[0][0] && MathHelper.floor(this.z) - pos.getZ() == is[0][2]) {
 			this.updatePosition(this.x, this.y + (double)is[0][1], this.z);
 		} else if (is[1][1] != 0 && MathHelper.floor(this.x) - pos.getX() == is[1][0] && MathHelper.floor(this.z) - pos.getZ() == is[1][2]) {
@@ -540,6 +536,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.setBoundingBox(new Box(x - (double)f, y, z - (double)f, x + (double)f, y + (double)g, z + (double)f));
 	}
 
+	@Nullable
 	public Vec3d snapPositionToRailWithOffset(double x, double y, double z, double offset) {
 		int i = MathHelper.floor(x);
 		int j = MathHelper.floor(y);
@@ -576,6 +573,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		}
 	}
 
+	@Nullable
 	public Vec3d snapPositionToRail(double x, double y, double z) {
 		int i = MathHelper.floor(x);
 		int j = MathHelper.floor(y);
@@ -631,7 +629,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		return this.hasCustomBlock() ? box.expand((double)Math.abs(this.getBlockOffset()) / 16.0) : box;
 	}
 
-	public static void method_13302(DataFixerUpper dataFixerUpper, String string) {
+	public static void registerDataFixes(DataFixerUpper dataFixer, Class<?> class_) {
 	}
 
 	@Override

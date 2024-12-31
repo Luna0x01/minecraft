@@ -2,6 +2,7 @@ package net.minecraft.entity.mob;
 
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.EntityData;
@@ -13,7 +14,6 @@ import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.PounceAtTargetGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -43,7 +43,7 @@ public class SpiderEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Spider");
+		MobEntity.registerDataFixes(dataFixer, SpiderEntity.class);
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class SpiderEntity extends HostileEntity {
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(3, new PounceAtTargetGoal(this, 0.4F));
 		this.goals.add(4, new SpiderEntity.AttackGoal(this));
-		this.goals.add(5, new WanderAroundGoal(this, 0.8));
+		this.goals.add(5, new class_3133(this, 0.8));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(6, new LookAroundGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, false));

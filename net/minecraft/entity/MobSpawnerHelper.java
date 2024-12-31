@@ -8,6 +8,7 @@ import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.ChunkPlayerManager;
@@ -60,38 +61,38 @@ public final class MobSpawnerHelper {
 
 			for (EntityCategory entityCategory : EntityCategory.values()) {
 				if ((!entityCategory.isHostile() || spawnMonsters) && (entityCategory.isHostile() || spawnAnimals) && (!entityCategory.isBreedable() || bl)) {
-					int r = world.getPersistentEntityCount(entityCategory.getCategoryClass());
-					int s = entityCategory.getSpawnCap() * i / field_9221;
-					if (r <= s) {
+					int p = world.getPersistentEntityCount(entityCategory.getCategoryClass());
+					int q = entityCategory.getSpawnCap() * i / field_9221;
+					if (p <= q) {
 						BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 						label134:
 						for (ChunkPos chunkPos2 : this.field_9222) {
 							BlockPos blockPos2 = findSpawnLocation(world, chunkPos2.x, chunkPos2.z);
-							int t = blockPos2.getX();
-							int u = blockPos2.getY();
-							int v = blockPos2.getZ();
+							int r = blockPos2.getX();
+							int s = blockPos2.getY();
+							int t = blockPos2.getZ();
 							BlockState blockState = world.getBlockState(blockPos2);
 							if (!blockState.method_11734()) {
-								int w = 0;
+								int u = 0;
 
-								for (int x = 0; x < 3; x++) {
+								for (int v = 0; v < 3; v++) {
+									int w = r;
+									int x = s;
 									int y = t;
-									int z = u;
-									int aa = v;
-									int ab = 6;
+									int z = 6;
 									Biome.SpawnEntry spawnEntry = null;
 									EntityData entityData = null;
-									int ac = MathHelper.ceil(Math.random() * 4.0);
+									int aa = MathHelper.ceil(Math.random() * 4.0);
 
-									for (int ad = 0; ad < ac; ad++) {
+									for (int ab = 0; ab < aa; ab++) {
+										w += world.random.nextInt(6) - world.random.nextInt(6);
+										x += world.random.nextInt(1) - world.random.nextInt(1);
 										y += world.random.nextInt(6) - world.random.nextInt(6);
-										z += world.random.nextInt(1) - world.random.nextInt(1);
-										aa += world.random.nextInt(6) - world.random.nextInt(6);
-										mutable.setPosition(y, z, aa);
-										float f = (float)y + 0.5F;
-										float g = (float)aa + 0.5F;
-										if (!world.isPlayerInRange((double)f, (double)z, (double)g, 24.0) && !(blockPos.squaredDistanceTo((double)f, (double)z, (double)g) < 576.0)) {
+										mutable.setPosition(w, x, y);
+										float f = (float)w + 0.5F;
+										float g = (float)y + 0.5F;
+										if (!world.isPlayerInRange((double)f, (double)x, (double)g, 24.0) && !(blockPos.squaredDistanceTo((double)f, (double)x, (double)g) < 576.0)) {
 											if (spawnEntry == null) {
 												spawnEntry = world.method_10754(entityCategory, mutable);
 												if (spawnEntry == null) {
@@ -108,22 +109,22 @@ public final class MobSpawnerHelper {
 													return o;
 												}
 
-												mobEntity.refreshPositionAndAngles((double)f, (double)z, (double)g, world.random.nextFloat() * 360.0F, 0.0F);
+												mobEntity.refreshPositionAndAngles((double)f, (double)x, (double)g, world.random.nextFloat() * 360.0F, 0.0F);
 												if (mobEntity.canSpawn() && mobEntity.hasNoSpawnCollisions()) {
 													entityData = mobEntity.initialize(world.getLocalDifficulty(new BlockPos(mobEntity)), entityData);
 													if (mobEntity.hasNoSpawnCollisions()) {
-														w++;
+														u++;
 														world.spawnEntity(mobEntity);
 													} else {
 														mobEntity.remove();
 													}
 
-													if (w >= mobEntity.getLimitPerChunk()) {
+													if (u >= mobEntity.getLimitPerChunk()) {
 														continue label134;
 													}
 												}
 
-												o += w;
+												o += u;
 											}
 										}
 									}
@@ -163,7 +164,9 @@ public final class MobSpawnerHelper {
 		} else {
 			BlockState blockState = world.getBlockState(pos);
 			if (location == MobEntity.Location.IN_WATER) {
-				return blockState.getMaterial().isFluid() && world.getBlockState(pos.down()).getMaterial().isFluid() && !world.getBlockState(pos.up()).method_11734();
+				return blockState.getMaterial() == Material.WATER
+					&& world.getBlockState(pos.down()).getMaterial() == Material.WATER
+					&& !world.getBlockState(pos.up()).method_11734();
 			} else {
 				BlockPos blockPos = pos.down();
 				if (!world.getBlockState(blockPos).method_11739()) {

@@ -7,7 +7,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
@@ -39,10 +38,10 @@ public class class_2892 implements DebugRenderer.DebugRenderable {
 		GlStateManager.disableTexture();
 		GlStateManager.method_12304(6.0F);
 
-		for (BlockPos blockPos2 : BlockPos.Pooled.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
+		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
 			BlockState blockState = world.getBlockState(blockPos2);
 			if (blockState.getBlock() == Blocks.WATER || blockState.getBlock() == Blocks.FLOWING_WATER) {
-				double d = (double)BoatEntity.method_11330(blockState, world, blockPos2);
+				double d = (double)AbstractFluidBlock.method_13710(blockState, world, blockPos2);
 				WorldRenderer.method_13433(
 					new Box(
 							(double)((float)blockPos2.getX() + 0.01F),
@@ -61,7 +60,7 @@ public class class_2892 implements DebugRenderer.DebugRenderable {
 			}
 		}
 
-		for (BlockPos blockPos3 : BlockPos.Pooled.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
+		for (BlockPos blockPos3 : BlockPos.iterate(blockPos.add(-10, -10, -10), blockPos.add(10, 10, 10))) {
 			BlockState blockState2 = world.getBlockState(blockPos3);
 			if (blockState2.getBlock() == Blocks.WATER || blockState2.getBlock() == Blocks.FLOWING_WATER) {
 				Integer integer = blockState2.get(AbstractFluidBlock.LEVEL);

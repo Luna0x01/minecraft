@@ -26,6 +26,8 @@ public class GameRuleManager {
 		this.addGameRule("spectatorsGenerateChunks", "true", GameRuleManager.VariableType.BOOLEAN);
 		this.addGameRule("spawnRadius", "10", GameRuleManager.VariableType.NUMERICAL);
 		this.addGameRule("disableElytraMovementCheck", "false", GameRuleManager.VariableType.BOOLEAN);
+		this.addGameRule("maxEntityCramming", "24", GameRuleManager.VariableType.NUMERICAL);
+		this.addGameRule("doWeatherCycle", "true", GameRuleManager.VariableType.BOOLEAN);
 	}
 
 	public void addGameRule(String name, String defaultValue, GameRuleManager.VariableType variableType) {

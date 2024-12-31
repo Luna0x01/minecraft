@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -69,7 +70,7 @@ public class ZipResourcePack extends AbstractFileResourcePack implements Closeab
 				List<String> list = Lists.newArrayList(TYPE_NAMESPACE_SPLITTER.split(string));
 				if (list.size() > 1) {
 					String string2 = (String)list.get(1);
-					if (string2.equals(string2.toLowerCase())) {
+					if (string2.equals(string2.toLowerCase(Locale.ROOT))) {
 						set.add(string2);
 					} else {
 						this.warnNonLowercaseNamespace(string2);

@@ -1,6 +1,5 @@
 package net.minecraft.item;
 
-import javax.annotation.Nullable;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -13,7 +12,6 @@ public class ChorusFruitItem extends FoodItem {
 		super(i, f, false);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
 		ItemStack itemStack = super.method_3367(stack, world, entity);

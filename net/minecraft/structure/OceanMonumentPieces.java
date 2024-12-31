@@ -8,7 +8,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PrismarineBlock;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.mob.GuardianEntity;
+import net.minecraft.entity.ElderGuardianEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
@@ -95,7 +95,7 @@ public class OceanMonumentPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
 		}
 
 		protected void setAirAndWater(World world, BlockBox box, int x, int y, int z, int width, int height, int depth, boolean bl) {
@@ -154,12 +154,11 @@ public class OceanMonumentPieces {
 			int j = this.applyYTransform(y);
 			int k = this.applyZTransform(x, z);
 			if (box.contains(new BlockPos(i, j, k))) {
-				GuardianEntity guardianEntity = new GuardianEntity(world);
-				guardianEntity.setElder(true);
-				guardianEntity.heal(guardianEntity.getMaxHealth());
-				guardianEntity.refreshPositionAndAngles((double)i + 0.5, (double)j, (double)k + 0.5, 0.0F, 0.0F);
-				guardianEntity.initialize(world.getLocalDifficulty(new BlockPos(guardianEntity)), null);
-				world.spawnEntity(guardianEntity);
+				ElderGuardianEntity elderGuardianEntity = new ElderGuardianEntity(world);
+				elderGuardianEntity.heal(elderGuardianEntity.getMaxHealth());
+				elderGuardianEntity.refreshPositionAndAngles((double)i + 0.5, (double)j, (double)k + 0.5, 0.0F, 0.0F);
+				elderGuardianEntity.initialize(world.getLocalDifficulty(new BlockPos(elderGuardianEntity)), null);
+				world.spawnEntity(elderGuardianEntity);
 				return true;
 			} else {
 				return false;
@@ -977,16 +976,16 @@ public class OceanMonumentPieces {
 						int x = getIndex(u, w, v);
 						if (pieceSettings[x] != null) {
 							for (Direction direction : Direction.values()) {
-								int aa = u + direction.getOffsetX();
-								int ab = w + direction.getOffsetY();
-								int ac = v + direction.getOffsetZ();
-								if (aa >= 0 && aa < 5 && ac >= 0 && ac < 5 && ab >= 0 && ab < 3) {
-									int ad = getIndex(aa, ab, ac);
-									if (pieceSettings[ad] != null) {
-										if (ac == v) {
-											pieceSettings[x].setNeighbor(direction, pieceSettings[ad]);
+								int y = u + direction.getOffsetX();
+								int z = w + direction.getOffsetY();
+								int aa = v + direction.getOffsetZ();
+								if (y >= 0 && y < 5 && aa >= 0 && aa < 5 && z >= 0 && z < 3) {
+									int ab = getIndex(y, z, aa);
+									if (pieceSettings[ab] != null) {
+										if (aa == v) {
+											pieceSettings[x].setNeighbor(direction, pieceSettings[ab]);
 										} else {
-											pieceSettings[x].setNeighbor(direction.getOpposite(), pieceSettings[ad]);
+											pieceSettings[x].setNeighbor(direction.getOpposite(), pieceSettings[ab]);
 										}
 									}
 								}
@@ -1026,24 +1025,24 @@ public class OceanMonumentPieces {
 
 			pieceSetting.checkNeighborStates();
 			Collections.shuffle(list, random);
-			int ag = 1;
+			int ac = 1;
 
 			for (OceanMonumentPieces.PieceSetting pieceSetting5 : list) {
-				int ah = 0;
-				int ai = 0;
+				int ad = 0;
+				int ae = 0;
 
-				while (ah < 2 && ai < 5) {
-					ai++;
-					int aj = random.nextInt(6);
-					if (pieceSetting5.neighborPresences[aj]) {
-						int ak = Direction.getById(aj).getOpposite().getId();
-						pieceSetting5.neighborPresences[aj] = false;
-						pieceSetting5.neighbors[aj].neighborPresences[ak] = false;
-						if (pieceSetting5.method_9260(ag++) && pieceSetting5.neighbors[aj].method_9260(ag++)) {
-							ah++;
+				while (ad < 2 && ae < 5) {
+					ae++;
+					int af = random.nextInt(6);
+					if (pieceSetting5.neighborPresences[af]) {
+						int ag = Direction.getById(af).getOpposite().getId();
+						pieceSetting5.neighborPresences[af] = false;
+						pieceSetting5.neighbors[af].neighborPresences[ag] = false;
+						if (pieceSetting5.method_9260(ac++) && pieceSetting5.neighbors[af].method_9260(ac++)) {
+							ad++;
 						} else {
-							pieceSetting5.neighborPresences[aj] = true;
-							pieceSetting5.neighbors[aj].neighborPresences[ak] = true;
+							pieceSetting5.neighborPresences[af] = true;
+							pieceSetting5.neighbors[af].neighborPresences[ag] = true;
 						}
 					}
 				}

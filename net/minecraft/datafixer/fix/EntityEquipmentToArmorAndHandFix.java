@@ -14,7 +14,7 @@ public class EntityEquipmentToArmorAndHandFix implements DataFix {
 	@Override
 	public NbtCompound fixData(NbtCompound tag) {
 		NbtList nbtList = tag.getList("Equipment", 10);
-		if (nbtList.size() > 0 && !tag.contains("HandItems", 10)) {
+		if (!nbtList.isEmpty() && !tag.contains("HandItems", 10)) {
 			NbtList nbtList2 = new NbtList();
 			nbtList2.add(nbtList.get(0));
 			nbtList2.add(new NbtCompound());

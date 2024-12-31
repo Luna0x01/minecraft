@@ -77,6 +77,12 @@ public class TempleStructure extends StructureFeature {
 	}
 
 	@Override
+	public BlockPos method_9269(World world, BlockPos blockPos, boolean bl) {
+		this.world = world;
+		return method_13774(world, this, blockPos, this.distance, 8, 14357617, false, 100, bl);
+	}
+
+	@Override
 	protected GeneratorConfig getGeneratorConfig(int chunkX, int chunkZ) {
 		return new TempleStructure.TempleGeneratorConfig(this.world, this.random, chunkX, chunkZ);
 	}

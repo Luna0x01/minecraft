@@ -76,7 +76,23 @@ public class ModelLoader {
 			new Identifier("items/empty_armor_slot_chestplate"),
 			new Identifier("items/empty_armor_slot_leggings"),
 			new Identifier("items/empty_armor_slot_boots"),
-			new Identifier("items/empty_armor_slot_shield")
+			new Identifier("items/empty_armor_slot_shield"),
+			new Identifier("blocks/shulker_top_white"),
+			new Identifier("blocks/shulker_top_orange"),
+			new Identifier("blocks/shulker_top_magenta"),
+			new Identifier("blocks/shulker_top_light_blue"),
+			new Identifier("blocks/shulker_top_yellow"),
+			new Identifier("blocks/shulker_top_lime"),
+			new Identifier("blocks/shulker_top_pink"),
+			new Identifier("blocks/shulker_top_gray"),
+			new Identifier("blocks/shulker_top_silver"),
+			new Identifier("blocks/shulker_top_cyan"),
+			new Identifier("blocks/shulker_top_purple"),
+			new Identifier("blocks/shulker_top_blue"),
+			new Identifier("blocks/shulker_top_brown"),
+			new Identifier("blocks/shulker_top_green"),
+			new Identifier("blocks/shulker_top_red"),
+			new Identifier("blocks/shulker_top_black")
 		}
 	);
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -131,7 +147,13 @@ public class ModelLoader {
 					if (modelVariantMap.method_12357()) {
 						Collection<ModelIdentifier> collection = Sets.newHashSet(map.values());
 						modelVariantMap.method_12359().method_12387(block.getStateManager());
-						this.field_13660.put(modelVariantMap, Lists.newArrayList(Iterables.filter(collection, new Predicate<ModelIdentifier>() {
+						Collection<ModelIdentifier> collection2 = (Collection<ModelIdentifier>)this.field_13660.get(modelVariantMap);
+						if (collection2 == null) {
+							collection2 = Lists.newArrayList();
+							this.field_13660.put(modelVariantMap, collection2);
+						}
+
+						collection2.addAll(Lists.newArrayList(Iterables.filter(collection, new Predicate<ModelIdentifier>() {
 							public boolean apply(@Nullable ModelIdentifier modelIdentifier) {
 								return identifier.equals(modelIdentifier);
 							}
@@ -160,17 +182,27 @@ public class ModelLoader {
 	private void method_10393() {
 		this.variants
 			.put(MISSING_ID, new class_2877(Lists.newArrayList(new Variant[]{new Variant(new Identifier(MISSING_ID.getPath()), ModelRotation.X0_Y0, false, 1)})));
-		Identifier identifier = new Identifier("item_frame");
-		ModelVariantMap modelVariantMap = this.method_12508(identifier);
-		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "normal"));
-		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "map"));
+		this.method_13891();
 		this.method_12512();
 		this.method_12513();
 		this.method_12514();
 	}
 
+	private void method_13891() {
+		Identifier identifier = new Identifier("item_frame");
+		ModelVariantMap modelVariantMap = this.method_12508(identifier);
+		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "normal"));
+		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "map"));
+	}
+
 	private void method_10387(ModelVariantMap modelVariantMap, ModelIdentifier modelIdentifier) {
-		this.variants.put(modelIdentifier, modelVariantMap.method_10030(modelIdentifier.getVariant()));
+		try {
+			this.variants.put(modelIdentifier, modelVariantMap.method_10030(modelIdentifier.getVariant()));
+		} catch (RuntimeException var4) {
+			if (!modelVariantMap.method_12357()) {
+				LOGGER.warn("Unable to load variant: {} from {}", new Object[]{modelIdentifier.getVariant(), modelIdentifier});
+			}
+		}
 	}
 
 	private ModelVariantMap method_12508(Identifier identifier) {
@@ -550,10 +582,12 @@ public class ModelLoader {
 			.put(Items.SKULL, Lists.newArrayList(new String[]{"skull_skeleton", "skull_wither", "skull_zombie", "skull_char", "skull_creeper", "skull_dragon"}));
 		this.modelVariantNames.put(Items.SPLASH_POTION, Lists.newArrayList(new String[]{"bottle_splash"}));
 		this.modelVariantNames.put(Items.LINGERING_POTION, Lists.newArrayList(new String[]{"bottle_lingering"}));
+		this.modelVariantNames.put(Item.fromBlock(Blocks.AIR), Collections.emptyList());
 		this.modelVariantNames.put(Item.fromBlock(Blocks.OAK_FENCE_GATE), Lists.newArrayList(new String[]{"oak_fence_gate"}));
 		this.modelVariantNames.put(Item.fromBlock(Blocks.OAK_FENCE), Lists.newArrayList(new String[]{"oak_fence"}));
 		this.modelVariantNames.put(Items.OAK_DOOR, Lists.newArrayList(new String[]{"oak_door"}));
 		this.modelVariantNames.put(Items.BOAT, Lists.newArrayList(new String[]{"oak_boat"}));
+		this.modelVariantNames.put(Items.TOTEM_OF_UNDYING, Lists.newArrayList(new String[]{"totem"}));
 	}
 
 	private List<String> method_10392(Item item) {

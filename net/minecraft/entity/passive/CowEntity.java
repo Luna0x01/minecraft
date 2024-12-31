@@ -1,6 +1,7 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.ai.goal.BreedGoal;
@@ -10,7 +11,6 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -31,7 +31,7 @@ public class CowEntity extends AnimalEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Cow");
+		MobEntity.registerDataFixes(dataFixer, CowEntity.class);
 	}
 
 	@Override
@@ -41,7 +41,7 @@ public class CowEntity extends AnimalEntity {
 		this.goals.add(2, new BreedGoal(this, 1.0));
 		this.goals.add(3, new TemptGoal(this, 1.25, Items.WHEAT, false));
 		this.goals.add(4, new FollowParentGoal(this, 1.25));
-		this.goals.add(5, new WanderAroundGoal(this, 1.0));
+		this.goals.add(5, new class_3133(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(7, new LookAroundGoal(this));
 	}
@@ -85,10 +85,12 @@ public class CowEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (itemStack != null && itemStack.getItem() == Items.BUCKET && !playerEntity.abilities.creativeMode && !this.isBaby()) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (itemStack.getItem() == Items.BUCKET && !playerEntity.abilities.creativeMode && !this.isBaby()) {
 			playerEntity.playSound(Sounds.ENTITY_COW_MILK, 1.0F, 1.0F);
-			if (--itemStack.count == 0) {
+			itemStack.decrement(1);
+			if (itemStack.isEmpty()) {
 				playerEntity.equipStack(hand, new ItemStack(Items.MILK_BUCKET));
 			} else if (!playerEntity.inventory.insertStack(new ItemStack(Items.MILK_BUCKET))) {
 				playerEntity.dropItem(new ItemStack(Items.MILK_BUCKET), false);
@@ -96,7 +98,7 @@ public class CowEntity extends AnimalEntity {
 
 			return true;
 		} else {
-			return super.method_13079(playerEntity, hand, itemStack);
+			return super.interactMob(playerEntity, hand);
 		}
 	}
 

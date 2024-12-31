@@ -1,12 +1,12 @@
 package net.minecraft.item;
 
 import com.google.common.collect.Maps;
-import java.util.List;
 import java.util.Map;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class FishItem extends FoodItem {
@@ -42,10 +42,10 @@ public class FishItem extends FoodItem {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (FishItem.FishType fishType : FishItem.FishType.values()) {
 			if (!this.cooked || fishType.canBeCooked()) {
-				list.add(new ItemStack(this, 1, fishType.getId()));
+				defaultedList.add(new ItemStack(this, 1, fishType.getId()));
 			}
 		}
 	}
@@ -69,7 +69,7 @@ public class FishItem extends FoodItem {
 		private final float uncookedSaturation;
 		private final int cookedHungerPoints;
 		private final float cookedSaturation;
-		private boolean canBeCooked;
+		private final boolean canBeCooked;
 
 		private FishType(int j, String string2, int k, float f, int l, float g) {
 			this.id = j;

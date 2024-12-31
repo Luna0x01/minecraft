@@ -136,7 +136,7 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Ghast");
+		MobEntity.registerDataFixes(dataFixer, GhastEntity.class);
 	}
 
 	@Override

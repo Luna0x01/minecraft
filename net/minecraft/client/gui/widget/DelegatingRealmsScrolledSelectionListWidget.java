@@ -37,15 +37,15 @@ public class DelegatingRealmsScrolledSelectionListWidget extends ListWidget {
 	}
 
 	public int getWidth() {
-		return super.width;
+		return this.width;
 	}
 
 	public int getLastMouseY() {
-		return super.lastMouseY;
+		return this.lastMouseY;
 	}
 
 	public int getLastMouseX() {
-		return super.lastMouseX;
+		return this.lastMouseX;
 	}
 
 	@Override

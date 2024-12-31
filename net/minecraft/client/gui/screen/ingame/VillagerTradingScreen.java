@@ -137,7 +137,7 @@ public class VillagerTradingScreen extends HandledScreen {
 			this.itemRenderer.zOffset = 100.0F;
 			this.itemRenderer.method_12461(itemStack, i + 36, j + 24);
 			this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack, i + 36, j + 24);
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				this.itemRenderer.method_12461(itemStack2, i + 62, j + 24);
 				this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack2, i + 62, j + 24);
 			}
@@ -146,11 +146,11 @@ public class VillagerTradingScreen extends HandledScreen {
 			this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack3, i + 120, j + 24);
 			this.itemRenderer.zOffset = 0.0F;
 			GlStateManager.disableLighting();
-			if (this.isPointWithinBounds(36, 24, 16, 16, mouseX, mouseY) && itemStack != null) {
+			if (this.isPointWithinBounds(36, 24, 16, 16, mouseX, mouseY) && !itemStack.isEmpty()) {
 				this.renderTooltip(itemStack, mouseX, mouseY);
-			} else if (itemStack2 != null && this.isPointWithinBounds(62, 24, 16, 16, mouseX, mouseY) && itemStack2 != null) {
+			} else if (!itemStack2.isEmpty() && this.isPointWithinBounds(62, 24, 16, 16, mouseX, mouseY) && !itemStack2.isEmpty()) {
 				this.renderTooltip(itemStack2, mouseX, mouseY);
-			} else if (itemStack3 != null && this.isPointWithinBounds(120, 24, 16, 16, mouseX, mouseY) && itemStack3 != null) {
+			} else if (!itemStack3.isEmpty() && this.isPointWithinBounds(120, 24, 16, 16, mouseX, mouseY) && !itemStack3.isEmpty()) {
 				this.renderTooltip(itemStack3, mouseX, mouseY);
 			} else if (tradeOffer.isDisabled() && (this.isPointWithinBounds(83, 21, 28, 21, mouseX, mouseY) || this.isPointWithinBounds(83, 51, 28, 21, mouseX, mouseY))
 				)

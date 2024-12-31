@@ -19,14 +19,14 @@ public class EnderChestInventory extends SimpleInventory {
 
 	public void readNbtList(NbtList nbtList) {
 		for (int i = 0; i < this.getInvSize(); i++) {
-			this.setInvStack(i, null);
+			this.setInvStack(i, ItemStack.EMPTY);
 		}
 
 		for (int j = 0; j < nbtList.size(); j++) {
 			NbtCompound nbtCompound = nbtList.getCompound(j);
 			int k = nbtCompound.getByte("Slot") & 255;
 			if (k >= 0 && k < this.getInvSize()) {
-				this.setInvStack(k, ItemStack.fromNbt(nbtCompound));
+				this.setInvStack(k, new ItemStack(nbtCompound));
 			}
 		}
 	}
@@ -36,7 +36,7 @@ public class EnderChestInventory extends SimpleInventory {
 
 		for (int i = 0; i < this.getInvSize(); i++) {
 			ItemStack itemStack = this.getInvStack(i);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				NbtCompound nbtCompound = new NbtCompound();
 				nbtCompound.putByte("Slot", (byte)i);
 				itemStack.toNbt(nbtCompound);

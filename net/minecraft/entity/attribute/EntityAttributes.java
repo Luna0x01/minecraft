@@ -69,10 +69,10 @@ public class EntityAttributes {
 		for (int i = 0; i < nbt.size(); i++) {
 			NbtCompound nbtCompound = nbt.getCompound(i);
 			EntityAttributeInstance entityAttributeInstance = container.get(nbtCompound.getString("Name"));
-			if (entityAttributeInstance != null) {
-				fromNbt(entityAttributeInstance, nbtCompound);
-			} else {
+			if (entityAttributeInstance == null) {
 				LOGGER.warn("Ignoring unknown attribute '{}'", new Object[]{nbtCompound.getString("Name")});
+			} else {
+				fromNbt(entityAttributeInstance, nbtCompound);
 			}
 		}
 	}

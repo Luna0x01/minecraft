@@ -2,6 +2,7 @@ package net.minecraft.entity.passive;
 
 import com.google.common.base.Predicate;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
@@ -19,7 +20,6 @@ import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.MoveThroughVillageGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.TrackIronGolemTargetGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -42,6 +42,7 @@ import net.minecraft.world.World;
 public class IronGolemEntity extends GolemEntity {
 	protected static final TrackedData<Byte> field_14623 = DataTracker.registerData(IronGolemEntity.class, TrackedDataHandlerRegistry.BYTE);
 	private int field_3724;
+	@Nullable
 	Village village;
 	private int attackTicksLeft;
 	private int lookingAtVillagerTicksLeft;
@@ -58,7 +59,7 @@ public class IronGolemEntity extends GolemEntity {
 		this.goals.add(3, new MoveThroughVillageGoal(this, 0.6, true));
 		this.goals.add(4, new GoToWalkTargetGoal(this, 1.0));
 		this.goals.add(5, new IronGolemLookGoal(this));
-		this.goals.add(6, new WanderAroundGoal(this, 0.6));
+		this.goals.add(6, new class_3133(this, 0.6));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(8, new LookAroundGoal(this));
 		this.attackGoals.add(1, new TrackIronGolemTargetGoal(this));
@@ -156,7 +157,7 @@ public class IronGolemEntity extends GolemEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "VillagerGolem");
+		MobEntity.registerDataFixes(dataFixer, IronGolemEntity.class);
 	}
 
 	@Override
@@ -192,6 +193,8 @@ public class IronGolemEntity extends GolemEntity {
 			this.playSound(Sounds.ENTITY_IRONGOLEM_ATTACK, 1.0F, 1.0F);
 		} else if (status == 11) {
 			this.lookingAtVillagerTicksLeft = 400;
+		} else if (status == 34) {
+			this.lookingAtVillagerTicksLeft = 0;
 		} else {
 			super.handleStatus(status);
 		}
@@ -206,8 +209,13 @@ public class IronGolemEntity extends GolemEntity {
 	}
 
 	public void setLookingAtVillager(boolean lookingAtVillager) {
-		this.lookingAtVillagerTicksLeft = lookingAtVillager ? 400 : 0;
-		this.world.sendEntityStatus(this, (byte)11);
+		if (lookingAtVillager) {
+			this.lookingAtVillagerTicksLeft = 400;
+			this.world.sendEntityStatus(this, (byte)11);
+		} else {
+			this.lookingAtVillagerTicksLeft = 0;
+			this.world.sendEntityStatus(this, (byte)34);
+		}
 	}
 
 	@Override

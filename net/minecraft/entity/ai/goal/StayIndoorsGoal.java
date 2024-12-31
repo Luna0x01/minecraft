@@ -22,7 +22,7 @@ public class StayIndoorsGoal extends Goal {
 	public boolean canStart() {
 		BlockPos blockPos = new BlockPos(this.entity);
 		if ((!this.entity.world.isDay() || this.entity.world.isRaining() && !this.entity.world.getBiome(blockPos).method_3830())
-			&& !this.entity.world.dimension.hasNoSkylight()) {
+			&& this.entity.world.dimension.isOverworld()) {
 			if (this.entity.getRandom().nextInt(50) != 0) {
 				return false;
 			} else if (this.x != -1 && this.entity.squaredDistanceTo((double)this.x, this.entity.y, (double)this.y) < 4.0) {

@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
@@ -14,6 +13,7 @@ import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.BlockView;
@@ -43,10 +43,9 @@ public class TallPlantBlock extends PlantBlock implements Growable {
 		return true;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return random.nextInt(8) == 0 ? Items.WHEAT_SEEDS : null;
+		return random.nextInt(8) == 0 ? Items.WHEAT_SEEDS : Items.AIR;
 	}
 
 	@Override
@@ -55,8 +54,8 @@ public class TallPlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
-		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (!world.isClient && stack.getItem() == Items.SHEARS) {
 			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Blocks.TALLGRASS, 1, ((TallPlantBlock.GrassType)state.get(TYPE)).getId()));
 		} else {
@@ -70,9 +69,9 @@ public class TallPlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (int i = 1; i < 3; i++) {
-			stacks.add(new ItemStack(item, 1, i));
+			defaultedList.add(new ItemStack(item, 1, i));
 		}
 	}
 

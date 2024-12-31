@@ -1,22 +1,22 @@
 package net.minecraft.recipe;
 
-import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class MapCloningRecipeType implements RecipeType {
 	@Override
 	public boolean matches(CraftingInventory inventory, World world) {
 		int i = 0;
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 
 		for (int j = 0; j < inventory.getInvSize(); j++) {
 			ItemStack itemStack2 = inventory.getInvStack(j);
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				if (itemStack2.getItem() == Items.FILLED_MAP) {
-					if (itemStack != null) {
+					if (!itemStack.isEmpty()) {
 						return false;
 					}
 
@@ -31,27 +31,26 @@ public class MapCloningRecipeType implements RecipeType {
 			}
 		}
 
-		return itemStack != null && i > 0;
+		return !itemStack.isEmpty() && i > 0;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		int i = 0;
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 
 		for (int j = 0; j < inventory.getInvSize(); j++) {
 			ItemStack itemStack2 = inventory.getInvStack(j);
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				if (itemStack2.getItem() == Items.FILLED_MAP) {
-					if (itemStack != null) {
-						return null;
+					if (!itemStack.isEmpty()) {
+						return ItemStack.EMPTY;
 					}
 
 					itemStack = itemStack2;
 				} else {
 					if (itemStack2.getItem() != Items.MAP) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 
 					i++;
@@ -59,15 +58,19 @@ public class MapCloningRecipeType implements RecipeType {
 			}
 		}
 
-		if (itemStack != null && i >= 1) {
+		if (!itemStack.isEmpty() && i >= 1) {
 			ItemStack itemStack3 = new ItemStack(Items.FILLED_MAP, i + 1, itemStack.getData());
 			if (itemStack.hasCustomName()) {
 				itemStack3.setCustomName(itemStack.getCustomName());
 			}
 
+			if (itemStack.hasNbt()) {
+				itemStack3.setNbt(itemStack.getNbt());
+			}
+
 			return itemStack3;
 		} else {
-			return null;
+			return ItemStack.EMPTY;
 		}
 	}
 
@@ -76,23 +79,22 @@ public class MapCloningRecipeType implements RecipeType {
 		return 9;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getOutput() {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemStack[] getRemainders(CraftingInventory inventory) {
-		ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null && itemStack.getItem().isFood()) {
-				itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack = craftingInventory.getInvStack(i);
+			if (itemStack.getItem().isFood()) {
+				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 			}
 		}
 
-		return itemStacks;
+		return defaultedList;
 	}
 }

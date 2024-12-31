@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.util.Identifier;
@@ -13,6 +14,7 @@ import org.lwjgl.util.vector.Vector3f;
 public class ItemModelGenerator {
 	public static final List<String> LAYERS = Lists.newArrayList(new String[]{"layer0", "layer1", "layer2", "layer3", "layer4"});
 
+	@Nullable
 	public BlockModel method_10065(SpriteAtlasTexture atlas, BlockModel model) {
 		Map<String, String> map = Maps.newHashMap();
 		List<ModelElement> list = Lists.newArrayList();

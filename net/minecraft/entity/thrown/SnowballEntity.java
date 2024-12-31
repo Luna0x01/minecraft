@@ -26,6 +26,15 @@ public class SnowballEntity extends ThrowableEntity {
 	}
 
 	@Override
+	public void handleStatus(byte status) {
+		if (status == 3) {
+			for (int i = 0; i < 8; i++) {
+				this.world.addParticle(ParticleType.SNOWBALL, this.x, this.y, this.z, 0.0, 0.0, 0.0);
+			}
+		}
+	}
+
+	@Override
 	protected void onCollision(BlockHitResult result) {
 		if (result.entity != null) {
 			int i = 0;
@@ -36,11 +45,8 @@ public class SnowballEntity extends ThrowableEntity {
 			result.entity.damage(DamageSource.thrownProjectile(this, this.getOwner()), (float)i);
 		}
 
-		for (int j = 0; j < 8; j++) {
-			this.world.addParticle(ParticleType.SNOWBALL, this.x, this.y, this.z, 0.0, 0.0, 0.0);
-		}
-
 		if (!this.world.isClient) {
+			this.world.sendEntityStatus(this, (byte)3);
 			this.remove();
 		}
 	}

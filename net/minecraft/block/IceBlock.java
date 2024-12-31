@@ -30,14 +30,11 @@ public class IceBlock extends TransparentBlock {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
 		player.incrementStat(Stats.mined(this));
-		player.addExhaustion(0.025F);
+		player.addExhaustion(0.005F);
 		if (this.requiresSilkTouch() && EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, stack) > 0) {
-			ItemStack itemStack = this.createStackFromBlock(state);
-			if (itemStack != null) {
-				onBlockBreak(world, pos, itemStack);
-			}
+			onBlockBreak(world, pos, this.createStackFromBlock(state));
 		} else {
 			if (world.dimension.doesWaterVaporize()) {
 				world.setAir(pos);
@@ -71,7 +68,7 @@ public class IceBlock extends TransparentBlock {
 		} else {
 			this.dropAsItem(world, blockPos, world.getBlockState(blockPos), 0);
 			world.setBlockState(blockPos, Blocks.WATER.getDefaultState());
-			world.neighbourUpdate(blockPos, Blocks.WATER);
+			world.updateNeighbor(blockPos, Blocks.WATER, blockPos);
 		}
 	}
 

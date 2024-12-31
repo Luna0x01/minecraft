@@ -20,19 +20,18 @@ public class FlintAndSteelItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		blockPos = blockPos.offset(direction);
-		if (!playerEntity.canModify(blockPos, direction, itemStack)) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		pos = pos.offset(direction);
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!player.canModify(pos, direction, itemStack)) {
 			return ActionResult.FAIL;
 		} else {
-			if (world.getBlockState(blockPos).getMaterial() == Material.AIR) {
-				world.method_11486(playerEntity, blockPos, Sounds.ITEM_FLINTANDSTEEL_USE, SoundCategory.BLOCKS, 1.0F, RANDOM.nextFloat() * 0.4F + 0.8F);
-				world.setBlockState(blockPos, Blocks.FIRE.getDefaultState(), 11);
+			if (world.getBlockState(pos).getMaterial() == Material.AIR) {
+				world.method_11486(player, pos, Sounds.ITEM_FLINTANDSTEEL_USE, SoundCategory.BLOCKS, 1.0F, RANDOM.nextFloat() * 0.4F + 0.8F);
+				world.setBlockState(pos, Blocks.FIRE.getDefaultState(), 11);
 			}
 
-			itemStack.damage(1, playerEntity);
+			itemStack.damage(1, player);
 			return ActionResult.SUCCESS;
 		}
 	}

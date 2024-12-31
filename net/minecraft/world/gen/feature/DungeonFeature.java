@@ -6,7 +6,12 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.SkeletonEntity;
+import net.minecraft.entity.mob.SpiderEntity;
+import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.loot.LootTables;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -15,7 +20,9 @@ import org.apache.logging.log4j.Logger;
 
 public class DungeonFeature extends Feature {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final String[] spawnableMobs = new String[]{"Skeleton", "Zombie", "Zombie", "Spider"};
+	private static final Identifier[] field_15190 = new Identifier[]{
+		EntityType.getId(SkeletonEntity.class), EntityType.getId(ZombieEntity.class), EntityType.getId(ZombieEntity.class), EntityType.getId(SpiderEntity.class)
+	};
 
 	@Override
 	public boolean generate(World world, Random random, BlockPos blockPos) {
@@ -103,7 +110,7 @@ public class DungeonFeature extends Feature {
 			world.setBlockState(blockPos, Blocks.SPAWNER.getDefaultState(), 2);
 			BlockEntity blockEntity2 = world.getBlockEntity(blockPos);
 			if (blockEntity2 instanceof MobSpawnerBlockEntity) {
-				((MobSpawnerBlockEntity)blockEntity2).getLogic().setEntityId(this.getRandomSpawnerMob(random));
+				((MobSpawnerBlockEntity)blockEntity2).getLogic().setSpawnedEntity(this.method_4031(random));
 			} else {
 				LOGGER.error("Failed to fetch mob spawner entity at ({}, {}, {})", new Object[]{blockPos.getX(), blockPos.getY(), blockPos.getZ()});
 			}
@@ -114,7 +121,7 @@ public class DungeonFeature extends Feature {
 		}
 	}
 
-	private String getRandomSpawnerMob(Random random) {
-		return spawnableMobs[random.nextInt(spawnableMobs.length)];
+	private Identifier method_4031(Random random) {
+		return field_15190[random.nextInt(field_15190.length)];
 	}
 }

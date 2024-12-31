@@ -1,6 +1,5 @@
 package net.minecraft.inventory.slot;
 
-import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -20,23 +19,24 @@ public class FurnaceOutputSlot extends Slot {
 	}
 
 	@Override
-	public boolean canInsert(@Nullable ItemStack stack) {
+	public boolean canInsert(ItemStack stack) {
 		return false;
 	}
 
 	@Override
 	public ItemStack takeStack(int amount) {
 		if (this.hasStack()) {
-			this.amount = this.amount + Math.min(amount, this.getStack().count);
+			this.amount = this.amount + Math.min(amount, this.getStack().getCount());
 		}
 
 		return super.takeStack(amount);
 	}
 
 	@Override
-	public void onTakeItem(PlayerEntity player, ItemStack stack) {
-		this.onCrafted(stack);
-		super.onTakeItem(player, stack);
+	public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
+		this.onCrafted(itemStack);
+		super.method_3298(playerEntity, itemStack);
+		return itemStack;
 	}
 
 	@Override

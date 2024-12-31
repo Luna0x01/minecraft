@@ -16,4 +16,6 @@ public interface ChunkStorage {
 	void method_3950();
 
 	void save();
+
+	boolean chunkExists(int x, int z);
 }

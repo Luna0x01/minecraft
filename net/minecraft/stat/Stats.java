@@ -14,6 +14,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.recipe.RecipeDispatcher;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.SmeltingRecipeRegistry;
@@ -64,8 +65,6 @@ public class Stats {
 	public static final Stat ANIMALS_BRED = new SimpleStat("stat.animalsBred", new TranslatableText("stat.animalsBred")).addStat();
 	public static final Stat PLAYERS_KILLED = new SimpleStat("stat.playerKills", new TranslatableText("stat.playerKills")).addStat();
 	public static final Stat field_14357 = new SimpleStat("stat.fishCaught", new TranslatableText("stat.fishCaught")).addStat();
-	public static final Stat field_14358 = new SimpleStat("stat.junkFished", new TranslatableText("stat.junkFished")).addStat();
-	public static final Stat field_14359 = new SimpleStat("stat.treasureFished", new TranslatableText("stat.treasureFished")).addStat();
 	public static final Stat TALKED_TO_VILLAGER = new SimpleStat("stat.talkedToVillager", new TranslatableText("stat.talkedToVillager")).addStat();
 	public static final Stat TRADED_WITH_VILLAGER = new SimpleStat("stat.tradedWithVillager", new TranslatableText("stat.tradedWithVillager")).addStat();
 	public static final Stat CAKE_SLICES_EATEN = new SimpleStat("stat.cakeSlicesEaten", new TranslatableText("stat.cakeSlicesEaten")).addStat();
@@ -91,6 +90,7 @@ public class Stats {
 		.addStat();
 	public static final Stat CHEST_OPENED = new SimpleStat("stat.chestOpened", new TranslatableText("stat.chestOpened")).addStat();
 	public static final Stat SLEEP_IN_BED = new SimpleStat("stat.sleepInBed", new TranslatableText("stat.sleepInBed")).addStat();
+	public static final Stat OPEN_SHULKER_BOX = new SimpleStat("stat.shulkerBoxOpened", new TranslatableText("stat.shulkerBoxOpened")).addStat();
 	private static final Stat[] MINED = new Stat[4096];
 	private static final Stat[] CRAFTED = new Stat[32000];
 	private static final Stat[] USED = new Stat[32000];
@@ -135,20 +135,20 @@ public class Stats {
 		loadCraftingStats();
 		method_12851();
 		AchievementsAndCriterions.load();
-		EntityType.load();
 	}
 
 	private static void loadCraftingStats() {
 		Set<Item> set = Sets.newHashSet();
 
 		for (RecipeType recipeType : RecipeDispatcher.getInstance().getAllRecipes()) {
-			if (recipeType.getOutput() != null) {
+			ItemStack itemStack = recipeType.getOutput();
+			if (!itemStack.isEmpty()) {
 				set.add(recipeType.getOutput().getItem());
 			}
 		}
 
-		for (ItemStack itemStack : SmeltingRecipeRegistry.getInstance().getRecipeMap().values()) {
-			set.add(itemStack.getItem());
+		for (ItemStack itemStack2 : SmeltingRecipeRegistry.getInstance().getRecipeMap().values()) {
+			set.add(itemStack2.getItem());
 		}
 
 		for (Item item : set) {
@@ -167,7 +167,7 @@ public class Stats {
 	private static void loadBlockStats() {
 		for (Block block : Block.REGISTRY) {
 			Item item = Item.fromBlock(block);
-			if (item != null) {
+			if (item != Items.AIR) {
 				int i = Block.getIdByBlock(block);
 				String string = method_10801(item);
 				if (string != null && block.hasStats()) {
@@ -262,21 +262,20 @@ public class Stats {
 	}
 
 	public static Stat createKillEntityStat(EntityType.SpawnEggData spawnEggData) {
-		return spawnEggData.name == null
+		String string = EntityType.getEntityName(spawnEggData.identifier);
+		return string == null
 			? null
-			: new Stat("stat.killEntity." + spawnEggData.name, new TranslatableText("stat.entityKill", new TranslatableText("entity." + spawnEggData.name + ".name")))
-				.addStat();
+			: new Stat("stat.killEntity." + string, new TranslatableText("stat.entityKill", new TranslatableText("entity." + string + ".name"))).addStat();
 	}
 
 	public static Stat createKilledByEntityStat(EntityType.SpawnEggData spawnEggData) {
-		return spawnEggData.name == null
+		String string = EntityType.getEntityName(spawnEggData.identifier);
+		return string == null
 			? null
-			: new Stat(
-					"stat.entityKilledBy." + spawnEggData.name, new TranslatableText("stat.entityKilledBy", new TranslatableText("entity." + spawnEggData.name + ".name"))
-				)
-				.addStat();
+			: new Stat("stat.entityKilledBy." + string, new TranslatableText("stat.entityKilledBy", new TranslatableText("entity." + string + ".name"))).addStat();
 	}
 
+	@Nullable
 	public static Stat getAStat(String id) {
 		return (Stat)ID_TO_STAT.get(id);
 	}

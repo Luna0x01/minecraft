@@ -44,7 +44,7 @@ public class StructureBlockEntity extends BlockEntity {
 	private boolean field_14839;
 	private boolean field_14840 = true;
 	private float field_14841 = 1.0F;
-	private long field_14842 = 0L;
+	private long field_14842;
 
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
 import javax.annotation.Nullable;
+import net.minecraft.class_3096;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
@@ -15,11 +16,13 @@ import net.minecraft.block.entity.EndPortalBlockEntity;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.entity.PistonBlockEntity;
+import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.block.entity.StructureBlockEntity;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.DiffuseLighting;
+import net.minecraft.client.render.entity.model.ShulkerEntityModel;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.crash.CrashException;
@@ -59,6 +62,7 @@ public class BlockEntityRenderDispatcher {
 		this.renderers.put(SkullBlockEntity.class, new SkullBlockEntityRenderer());
 		this.renderers.put(BannerBlockEntity.class, new BannerBlockEntityRenderer());
 		this.renderers.put(StructureBlockEntity.class, new StructureBlockEntityRenderer());
+		this.renderers.put(ShulkerBoxBlockEntity.class, new class_3096(new ShulkerEntityModel()));
 
 		for (BlockEntityRenderer<?> blockEntityRenderer : this.renderers.values()) {
 			blockEntityRenderer.setDispatcher(this);

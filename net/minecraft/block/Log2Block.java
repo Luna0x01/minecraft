@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import com.google.common.base.Predicate;
-import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -9,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.collection.DefaultedList;
 
 public class Log2Block extends LogBlock {
 	public static final EnumProperty<PlanksBlock.WoodType> VARIANT = EnumProperty.of(
@@ -44,9 +44,9 @@ public class Log2Block extends LogBlock {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item, 1, PlanksBlock.WoodType.ACACIA.getId() - 4));
-		stacks.add(new ItemStack(item, 1, PlanksBlock.WoodType.DARK_OAK.getId() - 4));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.ACACIA.getId() - 4));
+		defaultedList.add(new ItemStack(item, 1, PlanksBlock.WoodType.DARK_OAK.getId() - 4));
 	}
 
 	@Override

@@ -1,13 +1,13 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -21,10 +21,9 @@ public class MobSpawnerBlock extends BlockWithEntity {
 		return new MobSpawnerBlockEntity();
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
 	@Override
@@ -54,9 +53,8 @@ public class MobSpawnerBlock extends BlockWithEntity {
 		return RenderLayer.CUTOUT;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 }

@@ -33,7 +33,7 @@ public class ClockItem extends Item {
 					}
 
 					d = this.method_11366(world, d);
-					return MathHelper.floorMod((float)d, 1.0F);
+					return (float)d;
 				}
 			}
 
@@ -41,13 +41,10 @@ public class ClockItem extends Item {
 				if (world.getLastUpdateTime() != this.field_12288) {
 					this.field_12288 = world.getLastUpdateTime();
 					double e = d - this.field_12286;
-					if (e < -0.5) {
-						e++;
-					}
-
+					e = MathHelper.floorMod(e + 0.5, 1.0) - 0.5;
 					this.field_12287 += e * 0.1;
 					this.field_12287 *= 0.9;
-					this.field_12286 = this.field_12286 + this.field_12287;
+					this.field_12286 = MathHelper.floorMod(this.field_12286 + this.field_12287, 1.0);
 				}
 
 				return this.field_12286;

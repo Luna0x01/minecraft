@@ -1,6 +1,5 @@
 package net.minecraft.screen;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.FurnaceBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -80,51 +79,50 @@ public class FurnaceScreenHandler extends ScreenHandler {
 		return this.inventory.canPlayerUseInv(player);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (invSlot == 2) {
 				if (!this.insertItem(itemStack2, 3, 39, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
 			} else if (invSlot != 1 && invSlot != 0) {
-				if (SmeltingRecipeRegistry.getInstance().getResult(itemStack2) != null) {
+				if (!SmeltingRecipeRegistry.getInstance().getResult(itemStack2).isEmpty()) {
 					if (!this.insertItem(itemStack2, 0, 1, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (FurnaceBlockEntity.isFuel(itemStack2)) {
 					if (!this.insertItem(itemStack2, 1, 2, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (invSlot >= 3 && invSlot < 30) {
 					if (!this.insertItem(itemStack2, 30, 39, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (invSlot >= 30 && invSlot < 39 && !this.insertItem(itemStack2, 3, 30, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (!this.insertItem(itemStack2, 3, 39, false)) {
-				return null;
+				return ItemStack.EMPTY;
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			slot.method_3298(player, itemStack2);
 		}
 
 		return itemStack;

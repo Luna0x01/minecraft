@@ -2,7 +2,6 @@ package net.minecraft.entity.ai.goal;
 
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.screen.ScreenHandler;
 
 public class StopFollowingCustomerGoal extends Goal {
 	private final VillagerEntity villager;
@@ -27,7 +26,7 @@ public class StopFollowingCustomerGoal extends Goal {
 			if (playerEntity == null) {
 				return false;
 			} else {
-				return this.villager.squaredDistanceTo(playerEntity) > 16.0 ? false : playerEntity.openScreenHandler instanceof ScreenHandler;
+				return this.villager.squaredDistanceTo(playerEntity) > 16.0 ? false : playerEntity.openScreenHandler != null;
 			}
 		}
 	}

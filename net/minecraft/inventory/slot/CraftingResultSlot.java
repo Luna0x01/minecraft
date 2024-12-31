@@ -1,6 +1,5 @@
 package net.minecraft.inventory.slot;
 
-import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
@@ -13,6 +12,7 @@ import net.minecraft.item.Items;
 import net.minecraft.item.PickaxeItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.recipe.RecipeDispatcher;
+import net.minecraft.util.collection.DefaultedList;
 
 public class CraftingResultSlot extends Slot {
 	private final CraftingInventory craftingInv;
@@ -26,14 +26,14 @@ public class CraftingResultSlot extends Slot {
 	}
 
 	@Override
-	public boolean canInsert(@Nullable ItemStack stack) {
+	public boolean canInsert(ItemStack stack) {
 		return false;
 	}
 
 	@Override
 	public ItemStack takeStack(int amount) {
 		if (this.hasStack()) {
-			this.amount = this.amount + Math.min(amount, this.getStack().count);
+			this.amount = this.amount + Math.min(amount, this.getStack().getCount());
 		}
 
 		return super.takeStack(amount);
@@ -43,6 +43,11 @@ public class CraftingResultSlot extends Slot {
 	protected void onCrafted(ItemStack stack, int amount) {
 		this.amount += amount;
 		this.onCrafted(stack);
+	}
+
+	@Override
+	protected void method_13644(int i) {
+		this.amount += i;
 	}
 
 	@Override
@@ -94,28 +99,30 @@ public class CraftingResultSlot extends Slot {
 	}
 
 	@Override
-	public void onTakeItem(PlayerEntity player, ItemStack stack) {
-		this.onCrafted(stack);
-		ItemStack[] itemStacks = RecipeDispatcher.getInstance().getRemainders(this.craftingInv, player.world);
+	public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
+		this.onCrafted(itemStack);
+		DefaultedList<ItemStack> defaultedList = RecipeDispatcher.getInstance().method_13671(this.craftingInv, playerEntity.world);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			ItemStack itemStack = this.craftingInv.getInvStack(i);
-			ItemStack itemStack2 = itemStacks[i];
-			if (itemStack != null) {
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack2 = this.craftingInv.getInvStack(i);
+			ItemStack itemStack3 = defaultedList.get(i);
+			if (!itemStack2.isEmpty()) {
 				this.craftingInv.takeInvStack(i, 1);
-				itemStack = this.craftingInv.getInvStack(i);
+				itemStack2 = this.craftingInv.getInvStack(i);
 			}
 
-			if (itemStack2 != null) {
-				if (itemStack == null) {
-					this.craftingInv.setInvStack(i, itemStack2);
-				} else if (ItemStack.equalsIgnoreNbt(itemStack, itemStack2) && ItemStack.equalsIgnoreDamage(itemStack, itemStack2)) {
-					itemStack2.count = itemStack2.count + itemStack.count;
-					this.craftingInv.setInvStack(i, itemStack2);
-				} else if (!this.player.inventory.insertStack(itemStack2)) {
-					this.player.dropItem(itemStack2, false);
+			if (!itemStack3.isEmpty()) {
+				if (itemStack2.isEmpty()) {
+					this.craftingInv.setInvStack(i, itemStack3);
+				} else if (ItemStack.equalsIgnoreNbt(itemStack2, itemStack3) && ItemStack.equalsIgnoreDamage(itemStack2, itemStack3)) {
+					itemStack3.increment(itemStack2.getCount());
+					this.craftingInv.setInvStack(i, itemStack3);
+				} else if (!this.player.inventory.insertStack(itemStack3)) {
+					this.player.dropItem(itemStack3, false);
 				}
 			}
 		}
+
+		return itemStack;
 	}
 }

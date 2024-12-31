@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSyntaxException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
@@ -23,20 +24,17 @@ import org.apache.logging.log4j.Logger;
 
 public class class_2791 extends class_2795 {
 	private static final Logger LOGGER = LogManager.getLogger();
-	@Nullable
 	private final List<Enchantment> field_13215;
 
 	public class_2791(class_2816[] args, @Nullable List<Enchantment> list) {
 		super(args);
-		this.field_13215 = list;
+		this.field_13215 = list == null ? Collections.emptyList() : list;
 	}
 
 	@Override
 	public ItemStack method_12029(ItemStack itemStack, Random random, class_2782 arg) {
-		Enchantment enchantment3;
-		if (this.field_13215 != null && !this.field_13215.isEmpty()) {
-			enchantment3 = (Enchantment)this.field_13215.get(random.nextInt(this.field_13215.size()));
-		} else {
+		Enchantment enchantment2;
+		if (this.field_13215.isEmpty()) {
 			List<Enchantment> list = Lists.newArrayList();
 
 			for (Enchantment enchantment : Enchantment.REGISTRY) {
@@ -50,15 +48,17 @@ public class class_2791 extends class_2795 {
 				return itemStack;
 			}
 
-			enchantment3 = (Enchantment)list.get(random.nextInt(list.size()));
+			enchantment2 = (Enchantment)list.get(random.nextInt(list.size()));
+		} else {
+			enchantment2 = (Enchantment)this.field_13215.get(random.nextInt(this.field_13215.size()));
 		}
 
-		int i = MathHelper.nextInt(random, enchantment3.getMinimumLevel(), enchantment3.getMaximumLevel());
+		int i = MathHelper.nextInt(random, enchantment2.getMinimumLevel(), enchantment2.getMaximumLevel());
 		if (itemStack.getItem() == Items.BOOK) {
-			itemStack.setItem(Items.ENCHANTED_BOOK);
-			Items.ENCHANTED_BOOK.addEnchantment(itemStack, new EnchantmentLevelEntry(enchantment3, i));
+			itemStack = new ItemStack(Items.ENCHANTED_BOOK);
+			Items.ENCHANTED_BOOK.addEnchantment(itemStack, new EnchantmentLevelEntry(enchantment2, i));
 		} else {
-			itemStack.addEnchantment(enchantment3, i);
+			itemStack.addEnchantment(enchantment2, i);
 		}
 
 		return itemStack;
@@ -70,7 +70,7 @@ public class class_2791 extends class_2795 {
 		}
 
 		public void method_12031(JsonObject jsonObject, class_2791 arg, JsonSerializationContext jsonSerializationContext) {
-			if (arg.field_13215 != null && !arg.field_13215.isEmpty()) {
+			if (!arg.field_13215.isEmpty()) {
 				JsonArray jsonArray = new JsonArray();
 
 				for (Enchantment enchantment : arg.field_13215) {
@@ -87,10 +87,8 @@ public class class_2791 extends class_2795 {
 		}
 
 		public class_2791 method_12033(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, class_2816[] args) {
-			List<Enchantment> list = null;
+			List<Enchantment> list = Lists.newArrayList();
 			if (jsonObject.has("enchantments")) {
-				list = Lists.newArrayList();
-
 				for (JsonElement jsonElement : JsonHelper.getArray(jsonObject, "enchantments")) {
 					String string = JsonHelper.asString(jsonElement, "enchantment");
 					Enchantment enchantment = Enchantment.REGISTRY.get(new Identifier(string));

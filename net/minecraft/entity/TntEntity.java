@@ -1,5 +1,6 @@
 package net.minecraft.entity;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -9,6 +10,7 @@ import net.minecraft.world.World;
 
 public class TntEntity extends Entity {
 	private static final TrackedData<Integer> FUSE = DataTracker.registerData(TntEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	@Nullable
 	private LivingEntity igniter;
 	private int fuseTimer = 80;
 
@@ -56,7 +58,7 @@ public class TntEntity extends Entity {
 			this.velocityY -= 0.04F;
 		}
 
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX *= 0.98F;
 		this.velocityY *= 0.98F;
 		this.velocityZ *= 0.98F;
@@ -93,6 +95,7 @@ public class TntEntity extends Entity {
 		this.setFuse(nbt.getShort("Fuse"));
 	}
 
+	@Nullable
 	public LivingEntity getIgniter() {
 		return this.igniter;
 	}

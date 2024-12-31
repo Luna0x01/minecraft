@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.mob.SilverfishEntity;
@@ -10,6 +9,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -69,9 +69,9 @@ public class InfestedBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (InfestedBlock.Variants variants : InfestedBlock.Variants.values()) {
-			stacks.add(new ItemStack(item, 1, variants.getId()));
+			defaultedList.add(new ItemStack(item, 1, variants.getId()));
 		}
 	}
 

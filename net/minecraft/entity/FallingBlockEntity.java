@@ -102,7 +102,7 @@ public class FallingBlockEntity extends Entity {
 				this.velocityY -= 0.04F;
 			}
 
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			this.velocityX *= 0.98F;
 			this.velocityY *= 0.98F;
 			this.velocityZ *= 0.98F;
@@ -121,7 +121,7 @@ public class FallingBlockEntity extends Entity {
 					if (blockState.getBlock() != Blocks.PISTON_EXTENSION) {
 						this.remove();
 						if (!this.destroyedOnLanding) {
-							if (this.world.canBlockBePlaced(block, blockPos2, true, Direction.UP, null, null)
+							if (this.world.method_8493(block, blockPos2, true, Direction.UP, null)
 								&& !FallingBlock.canFallThough(this.world.getBlockState(blockPos2.down()))
 								&& this.world.setBlockState(blockPos2, this.block, 3)) {
 								if (block instanceof FallingBlock) {
@@ -147,6 +147,8 @@ public class FallingBlockEntity extends Entity {
 							} else if (this.dropping && this.world.getGameRules().getBoolean("doEntityDrops")) {
 								this.dropItem(new ItemStack(block, 1, block.getMeta(this.block)), 0.0F);
 							}
+						} else if (block instanceof FallingBlock) {
+							((FallingBlock)block).method_13705(this.world, blockPos2);
 						}
 					}
 				} else if (this.timeFalling > 100 && !this.world.isClient && (blockPos2.getY() < 1 || blockPos2.getY() > 256) || this.timeFalling > 600) {

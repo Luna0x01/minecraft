@@ -1,54 +1,36 @@
 package net.minecraft.block.entity;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.datafixer.schema.ItemListSchema;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.Generic3x3ScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.level.storage.LevelDataType;
 
-public class DispenserBlockEntity extends class_2737 implements Inventory {
+public class DispenserBlockEntity extends class_2737 {
 	private static final Random RANDOM = new Random();
-	private ItemStack[] items = new ItemStack[9];
-	protected String customName;
+	private DefaultedList<ItemStack> field_15153 = DefaultedList.ofSize(9, ItemStack.EMPTY);
 
 	@Override
 	public int getInvSize() {
 		return 9;
 	}
 
-	@Nullable
 	@Override
-	public ItemStack getInvStack(int slot) {
-		this.method_11662(null);
-		return this.items[slot];
-	}
-
-	@Nullable
-	@Override
-	public ItemStack takeInvStack(int slot, int amount) {
-		this.method_11662(null);
-		ItemStack itemStack = class_2960.method_12933(this.items, slot, amount);
-		if (itemStack != null) {
-			this.markDirty();
+	public boolean isEmpty() {
+		for (ItemStack itemStack : this.field_15153) {
+			if (!itemStack.isEmpty()) {
+				return false;
+			}
 		}
 
-		return itemStack;
-	}
-
-	@Nullable
-	@Override
-	public ItemStack removeInvStack(int slot) {
-		this.method_11662(null);
-		return class_2960.method_12932(this.items, slot);
+		return true;
 	}
 
 	public int chooseNonEmptySlot() {
@@ -56,8 +38,8 @@ public class DispenserBlockEntity extends class_2737 implements Inventory {
 		int i = -1;
 		int j = 1;
 
-		for (int k = 0; k < this.items.length; k++) {
-			if (this.items[k] != null && RANDOM.nextInt(j++) == 0) {
+		for (int k = 0; k < this.field_15153.size(); k++) {
+			if (!this.field_15153.get(k).isEmpty() && RANDOM.nextInt(j++) == 0) {
 				i = k;
 			}
 		}
@@ -65,20 +47,9 @@ public class DispenserBlockEntity extends class_2737 implements Inventory {
 		return i;
 	}
 
-	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
-		this.method_11662(null);
-		this.items[slot] = stack;
-		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
-			stack.count = this.getInvMaxStackAmount();
-		}
-
-		this.markDirty();
-	}
-
 	public int addToFirstFreeSlot(ItemStack stack) {
-		for (int i = 0; i < this.items.length; i++) {
-			if (this.items[i] == null || this.items[i].getItem() == null) {
+		for (int i = 0; i < this.field_15153.size(); i++) {
+			if (this.field_15153.get(i).isEmpty()) {
 				this.setInvStack(i, stack);
 				return i;
 			}
@@ -89,40 +60,23 @@ public class DispenserBlockEntity extends class_2737 implements Inventory {
 
 	@Override
 	public String getTranslationKey() {
-		return this.hasCustomName() ? this.customName : "container.dispenser";
-	}
-
-	public void setCustomName(String customName) {
-		this.customName = customName;
-	}
-
-	@Override
-	public boolean hasCustomName() {
-		return this.customName != null;
+		return this.hasCustomName() ? this.name : "container.dispenser";
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Trap", "Items"));
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(DispenserBlockEntity.class, "Items"));
 	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
+		this.field_15153 = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
 		if (!this.method_11661(nbt)) {
-			NbtList nbtList = nbt.getList("Items", 10);
-			this.items = new ItemStack[this.getInvSize()];
-
-			for (int i = 0; i < nbtList.size(); i++) {
-				NbtCompound nbtCompound = nbtList.getCompound(i);
-				int j = nbtCompound.getByte("Slot") & 255;
-				if (j >= 0 && j < this.items.length) {
-					this.items[j] = ItemStack.fromNbt(nbtCompound);
-				}
-			}
+			class_2960.method_13927(nbt, this.field_15153);
 		}
 
 		if (nbt.contains("CustomName", 8)) {
-			this.customName = nbt.getString("CustomName");
+			this.name = nbt.getString("CustomName");
 		}
 	}
 
@@ -130,22 +84,11 @@ public class DispenserBlockEntity extends class_2737 implements Inventory {
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		if (!this.method_11663(nbt)) {
-			NbtList nbtList = new NbtList();
-
-			for (int i = 0; i < this.items.length; i++) {
-				if (this.items[i] != null) {
-					NbtCompound nbtCompound = new NbtCompound();
-					nbtCompound.putByte("Slot", (byte)i);
-					this.items[i].toNbt(nbtCompound);
-					nbtList.add(nbtCompound);
-				}
-			}
-
-			nbt.put("Items", nbtList);
+			class_2960.method_13923(nbt, this.field_15153);
 		}
 
 		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.customName);
+			nbt.putString("CustomName", this.name);
 		}
 
 		return nbt;
@@ -154,26 +97,6 @@ public class DispenserBlockEntity extends class_2737 implements Inventory {
 	@Override
 	public int getInvMaxStackAmount() {
 		return 64;
-	}
-
-	@Override
-	public boolean canPlayerUseInv(PlayerEntity player) {
-		return this.world.getBlockEntity(this.pos) != this
-			? false
-			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
-	}
-
-	@Override
-	public void onInvOpen(PlayerEntity player) {
-	}
-
-	@Override
-	public void onInvClose(PlayerEntity player) {
-	}
-
-	@Override
-	public boolean isValidInvStack(int slot, ItemStack stack) {
-		return true;
 	}
 
 	@Override
@@ -188,25 +111,7 @@ public class DispenserBlockEntity extends class_2737 implements Inventory {
 	}
 
 	@Override
-	public int getProperty(int key) {
-		return 0;
-	}
-
-	@Override
-	public void setProperty(int id, int value) {
-	}
-
-	@Override
-	public int getProperties() {
-		return 0;
-	}
-
-	@Override
-	public void clear() {
-		this.method_11662(null);
-
-		for (int i = 0; i < this.items.length; i++) {
-			this.items[i] = null;
-		}
+	protected DefaultedList<ItemStack> method_13730() {
+		return this.field_15153;
 	}
 }

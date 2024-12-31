@@ -69,11 +69,6 @@ public class MesaBiome extends Biome {
 	}
 
 	@Override
-	public void decorate(World world, Random random, BlockPos pos) {
-		super.decorate(world, random, pos);
-	}
-
-	@Override
 	public void method_6420(World world, Random random, ChunkBlockStateStorage chunkStorage, int i, int j, double d) {
 		if (this.layerBlocks == null || this.seed != world.getSeed()) {
 			this.initLayerBlocks(world.getSeed());
@@ -122,7 +117,7 @@ public class MesaBiome extends Biome {
 
 			if (t <= random.nextInt(5)) {
 				chunkStorage.set(o, t, n, bedrockBlockState);
-			} else if (s < 15) {
+			} else if (s < 15 || this.field_7249) {
 				BlockState blockState3 = chunkStorage.get(o, t, n);
 				if (blockState3.getMaterial() == Material.AIR) {
 					r = -1;

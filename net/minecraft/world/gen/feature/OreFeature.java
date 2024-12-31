@@ -4,7 +4,7 @@ import com.google.common.base.Predicate;
 import java.util.Random;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.predicate.block.BlockPredicate;
+import net.minecraft.block.StoneBlock;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -15,7 +15,7 @@ public class OreFeature extends Feature {
 	private final Predicate<BlockState> baseBlockState;
 
 	public OreFeature(BlockState blockState, int i) {
-		this(blockState, i, BlockPredicate.create(Blocks.STONE));
+		this(blockState, i, new OreFeature.class_3069());
 	}
 
 	public OreFeature(BlockState blockState, int i, Predicate<BlockState> predicate) {
@@ -71,5 +71,19 @@ public class OreFeature extends Feature {
 		}
 
 		return true;
+	}
+
+	static class class_3069 implements Predicate<BlockState> {
+		private class_3069() {
+		}
+
+		public boolean apply(BlockState blockState) {
+			if (blockState != null && blockState.getBlock() == Blocks.STONE) {
+				StoneBlock.StoneType stoneType = blockState.get(StoneBlock.VARIANT);
+				return stoneType.method_13719();
+			} else {
+				return false;
+			}
+		}
 	}
 }

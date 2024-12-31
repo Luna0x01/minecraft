@@ -140,10 +140,6 @@ public class BlockBox {
 		return this.maxZ - this.minZ + 1;
 	}
 
-	public Vec3i getCenter() {
-		return new BlockPos(this.minX + (this.maxX - this.minX + 1) / 2, this.minY + (this.maxY - this.minY + 1) / 2, this.minZ + (this.maxZ - this.minZ + 1) / 2);
-	}
-
 	public String toString() {
 		return Objects.toStringHelper(this)
 			.add("x0", this.minX)

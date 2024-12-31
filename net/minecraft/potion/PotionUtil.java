@@ -62,8 +62,17 @@ public class PotionUtil {
 		}
 	}
 
+	public static int getColor(ItemStack stack) {
+		NbtCompound nbtCompound = stack.getNbt();
+		if (nbtCompound != null && nbtCompound.contains("CustomPotionColor", 99)) {
+			return nbtCompound.getInt("CustomPotionColor");
+		} else {
+			return getPotion(stack) == Potions.EMPTY ? 16253176 : getColor(getPotionEffects(stack));
+		}
+	}
+
 	public static int getColor(Potion potion) {
-		return getColor(potion.getEffects());
+		return potion == Potions.EMPTY ? 16253176 : getColor(potion.getEffects());
 	}
 
 	public static int getColor(Collection<StatusEffectInstance> effects) {
@@ -103,15 +112,23 @@ public class PotionUtil {
 	}
 
 	public static Potion getPotion(@Nullable NbtCompound nbt) {
-		return nbt == null ? Potions.WATER : Potion.get(nbt.getString("Potion"));
+		return nbt == null ? Potions.EMPTY : Potion.get(nbt.getString("Potion"));
 	}
 
 	public static ItemStack setPotion(ItemStack stack, Potion potion) {
 		Identifier identifier = Potion.REGISTRY.getIdentifier(potion);
-		if (identifier != null) {
-			NbtCompound nbtCompound = stack.hasNbt() ? stack.getNbt() : new NbtCompound();
-			nbtCompound.putString("Potion", identifier.toString());
-			stack.setNbt(nbtCompound);
+		if (potion == Potions.EMPTY) {
+			if (stack.hasNbt()) {
+				NbtCompound nbtCompound = stack.getNbt();
+				nbtCompound.remove("Potion");
+				if (nbtCompound.isEmpty()) {
+					stack.setNbt(null);
+				}
+			}
+		} else {
+			NbtCompound nbtCompound2 = stack.hasNbt() ? stack.getNbt() : new NbtCompound();
+			nbtCompound2.putString("Potion", identifier.toString());
+			stack.setNbt(nbtCompound2);
 		}
 
 		return stack;

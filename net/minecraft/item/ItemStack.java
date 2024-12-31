@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.datafixer.schema.BlockEntitySchema;
 import net.minecraft.datafixer.schema.EntityTagSchema;
@@ -46,11 +47,13 @@ import net.minecraft.world.World;
 import net.minecraft.world.level.storage.LevelDataType;
 
 public final class ItemStack {
+	public static final ItemStack EMPTY = new ItemStack((Item)null);
 	public static final DecimalFormat MODIFIER_FORMAT = new DecimalFormat("#.##");
-	public int count;
-	public int pickupTick;
-	private Item item;
+	private int count;
+	private int pickupTick;
+	private final Item item;
 	private NbtCompound nbt;
+	private boolean empty;
 	private int damage;
 	private ItemFrameEntity itemFrame;
 	private Block lastDestroyedBlock;
@@ -80,20 +83,41 @@ public final class ItemStack {
 
 	public ItemStack(Item item, int i, int j) {
 		this.item = item;
-		this.count = i;
 		this.damage = j;
+		this.count = i;
 		if (this.damage < 0) {
 			this.damage = 0;
 		}
+
+		this.updateStackStatus();
 	}
 
-	public static ItemStack fromNbt(NbtCompound nbt) {
-		ItemStack itemStack = new ItemStack();
-		itemStack.writeNbt(nbt);
-		return itemStack.getItem() != null ? itemStack : null;
+	private void updateStackStatus() {
+		this.empty = this.isEmpty();
 	}
 
-	private ItemStack() {
+	public ItemStack(NbtCompound nbtCompound) {
+		this.item = Item.getFromId(nbtCompound.getString("id"));
+		this.count = nbtCompound.getByte("Count");
+		this.damage = Math.max(0, nbtCompound.getShort("Damage"));
+		if (nbtCompound.contains("tag", 10)) {
+			this.nbt = nbtCompound.getCompound("tag");
+			if (this.item != null) {
+				this.item.postProcessNbt(nbtCompound);
+			}
+		}
+
+		this.updateStackStatus();
+	}
+
+	public boolean isEmpty() {
+		if (this == EMPTY) {
+			return true;
+		} else if (this.item == null || this.item == Item.fromBlock(Blocks.AIR)) {
+			return true;
+		} else {
+			return this.count <= 0 ? true : this.damage < -32768 || this.damage > 65535;
+		}
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
@@ -102,22 +126,19 @@ public final class ItemStack {
 	}
 
 	public ItemStack split(int amount) {
-		amount = Math.min(amount, this.count);
-		ItemStack itemStack = new ItemStack(this.item, amount, this.damage);
-		if (this.nbt != null) {
-			itemStack.nbt = this.nbt.copy();
-		}
-
-		this.count -= amount;
+		int i = Math.min(amount, this.count);
+		ItemStack itemStack = this.copy();
+		itemStack.setCount(i);
+		this.decrement(i);
 		return itemStack;
 	}
 
 	public Item getItem() {
-		return this.item;
+		return this.empty ? Item.fromBlock(Blocks.AIR) : this.item;
 	}
 
 	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
-		ActionResult actionResult = this.getItem().method_3355(this, player, world, pos, hand, direction, x, y, z);
+		ActionResult actionResult = this.getItem().use(player, world, pos, hand, direction, x, y, z);
 		if (actionResult == ActionResult.SUCCESS) {
 			player.incrementStat(Stats.used(this.item));
 		}
@@ -130,10 +151,9 @@ public final class ItemStack {
 	}
 
 	public TypedActionResult<ItemStack> method_11390(World world, PlayerEntity player, Hand hand) {
-		return this.getItem().method_11373(this, world, player, hand);
+		return this.getItem().method_13649(world, player, hand);
 	}
 
-	@Nullable
 	public ItemStack method_11388(World world, LivingEntity entity) {
 		return this.getItem().method_3367(this, world, entity);
 	}
@@ -150,22 +170,6 @@ public final class ItemStack {
 		return nbt;
 	}
 
-	public void writeNbt(NbtCompound nbt) {
-		this.item = Item.getFromId(nbt.getString("id"));
-		this.count = nbt.getByte("Count");
-		this.damage = nbt.getShort("Damage");
-		if (this.damage < 0) {
-			this.damage = 0;
-		}
-
-		if (nbt.contains("tag", 10)) {
-			this.nbt = nbt.getCompound("tag");
-			if (this.item != null) {
-				this.item.postProcessNbt(this.nbt);
-			}
-		}
-	}
-
 	public int getMaxCount() {
 		return this.getItem().getMaxCount();
 	}
@@ -175,7 +179,7 @@ public final class ItemStack {
 	}
 
 	public boolean isDamageable() {
-		if (this.item == null) {
+		if (this.empty) {
 			return false;
 		} else {
 			return this.item.getMaxDamage() <= 0 ? false : !this.hasNbt() || !this.getNbt().getBoolean("Unbreakable");
@@ -183,7 +187,7 @@ public final class ItemStack {
 	}
 
 	public boolean isUnbreakable() {
-		return this.item.isUnbreakable();
+		return this.getItem().isUnbreakable();
 	}
 
 	public boolean isDamaged() {
@@ -206,7 +210,7 @@ public final class ItemStack {
 	}
 
 	public int getMaxDamage() {
-		return this.item == null ? 0 : this.item.getMaxDamage();
+		return this.getItem().getMaxDamage();
 	}
 
 	public boolean damage(int amount, Random random) {
@@ -239,14 +243,10 @@ public final class ItemStack {
 			if (this.isDamageable()) {
 				if (this.damage(amount, entity.getRandom())) {
 					entity.method_6111(this);
-					this.count--;
+					this.decrement(1);
 					if (entity instanceof PlayerEntity) {
 						PlayerEntity playerEntity = (PlayerEntity)entity;
 						playerEntity.incrementStat(Stats.broke(this.item));
-					}
-
-					if (this.count < 0) {
-						this.count = 0;
 					}
 
 					this.damage = 0;
@@ -263,18 +263,18 @@ public final class ItemStack {
 	}
 
 	public void method_11306(World world, BlockState blockState, BlockPos blockPos, PlayerEntity playerEntity) {
-		boolean bl = this.item.method_3356(this, world, blockState, blockPos, playerEntity);
+		boolean bl = this.getItem().method_3356(this, world, blockState, blockPos, playerEntity);
 		if (bl) {
 			playerEntity.incrementStat(Stats.used(this.item));
 		}
 	}
 
 	public boolean method_11396(BlockState state) {
-		return this.item.method_3346(state);
+		return this.getItem().method_3346(state);
 	}
 
 	public boolean method_6329(PlayerEntity player, LivingEntity entity, Hand hand) {
-		return this.item.method_3353(this, player, entity, hand);
+		return this.getItem().method_3353(this, player, entity, hand);
 	}
 
 	public ItemStack copy() {
@@ -286,28 +286,28 @@ public final class ItemStack {
 		return itemStack;
 	}
 
-	public static boolean equalsIgnoreDamage(@Nullable ItemStack left, @Nullable ItemStack right) {
-		if (left == null && right == null) {
+	public static boolean equalsIgnoreDamage(ItemStack left, ItemStack right) {
+		if (left.isEmpty() && right.isEmpty()) {
 			return true;
-		} else if (left == null || right == null) {
+		} else if (left.isEmpty() || right.isEmpty()) {
 			return false;
 		} else {
 			return left.nbt == null && right.nbt != null ? false : left.nbt == null || left.nbt.equals(right.nbt);
 		}
 	}
 
-	public static boolean equalsAll(@Nullable ItemStack left, @Nullable ItemStack right) {
-		if (left == null && right == null) {
+	public static boolean equalsAll(ItemStack left, ItemStack right) {
+		if (left.isEmpty() && right.isEmpty()) {
 			return true;
 		} else {
-			return left != null && right != null ? left.equalsAll(right) : false;
+			return !left.isEmpty() && !right.isEmpty() ? left.equalsAll(right) : false;
 		}
 	}
 
 	private boolean equalsAll(ItemStack stack) {
 		if (this.count != stack.count) {
 			return false;
-		} else if (this.item != stack.item) {
+		} else if (this.getItem() != stack.getItem()) {
 			return false;
 		} else if (this.damage != stack.damage) {
 			return false;
@@ -316,40 +316,36 @@ public final class ItemStack {
 		}
 	}
 
-	public static boolean equalsIgnoreNbt(@Nullable ItemStack left, @Nullable ItemStack right) {
+	public static boolean equalsIgnoreNbt(ItemStack left, ItemStack right) {
 		if (left == right) {
 			return true;
 		} else {
-			return left != null && right != null ? left.equalsIgnoreNbt(right) : false;
+			return !left.isEmpty() && !right.isEmpty() ? left.equalsIgnoreNbt(right) : false;
 		}
 	}
 
-	public static boolean equals(@Nullable ItemStack stack0, @Nullable ItemStack stack1) {
+	public static boolean equals(ItemStack stack0, ItemStack stack1) {
 		if (stack0 == stack1) {
 			return true;
 		} else {
-			return stack0 != null && stack1 != null ? stack0.equals(stack1) : false;
+			return !stack0.isEmpty() && !stack1.isEmpty() ? stack0.equals(stack1) : false;
 		}
 	}
 
-	public boolean equalsIgnoreNbt(@Nullable ItemStack stack) {
-		return stack != null && this.item == stack.item && this.damage == stack.damage;
+	public boolean equalsIgnoreNbt(ItemStack stack) {
+		return !stack.isEmpty() && this.item == stack.item && this.damage == stack.damage;
 	}
 
-	public boolean equals(@Nullable ItemStack other) {
-		return !this.isDamageable() ? this.equalsIgnoreNbt(other) : other != null && this.item == other.item;
+	public boolean equals(ItemStack other) {
+		return !this.isDamageable() ? this.equalsIgnoreNbt(other) : !other.isEmpty() && this.item == other.item;
 	}
 
 	public String getTranslationKey() {
-		return this.item.getTranslationKey(this);
-	}
-
-	public static ItemStack copyOf(ItemStack stack) {
-		return stack == null ? null : stack.copy();
+		return this.getItem().getTranslationKey(this);
 	}
 
 	public String toString() {
-		return this.count + "x" + this.item.getTranslationKey() + "@" + this.damage;
+		return this.count + "x" + this.getItem().getTranslationKey() + "@" + this.damage;
 	}
 
 	public void inventoryTick(World world, Entity entity, int slot, boolean selected) {
@@ -364,7 +360,7 @@ public final class ItemStack {
 
 	public void onCraft(World world, PlayerEntity player, int amount) {
 		player.incrementStat(Stats.crafted(this.item), amount);
-		this.item.onCraft(this, world, player);
+		this.getItem().onCraft(this, world, player);
 	}
 
 	public int getMaxUseTime() {
@@ -380,7 +376,7 @@ public final class ItemStack {
 	}
 
 	public boolean hasNbt() {
-		return this.nbt != null;
+		return !this.empty && this.nbt != null;
 	}
 
 	@Nullable
@@ -388,72 +384,78 @@ public final class ItemStack {
 		return this.nbt;
 	}
 
-	public NbtCompound getSubNbt(String name, boolean createIfNull) {
-		if (this.nbt != null && this.nbt.contains(name, 10)) {
-			return this.nbt.getCompound(name);
-		} else if (createIfNull) {
-			NbtCompound nbtCompound = new NbtCompound();
-			this.putSubNbt(name, nbtCompound);
-			return nbtCompound;
+	public NbtCompound getOrCreateNbtCompound(String key) {
+		if (this.nbt != null && this.nbt.contains(key, 10)) {
+			return this.nbt.getCompound(key);
 		} else {
-			return null;
+			NbtCompound nbtCompound = new NbtCompound();
+			this.putSubNbt(key, nbtCompound);
+			return nbtCompound;
 		}
 	}
 
+	@Nullable
+	public NbtCompound getNbtCompound(String key) {
+		return this.nbt != null && this.nbt.contains(key, 10) ? this.nbt.getCompound(key) : null;
+	}
+
+	public void method_13659(String string) {
+		if (this.nbt != null && this.nbt.contains(string, 10)) {
+			this.nbt.remove(string);
+		}
+	}
+
+	@Nullable
 	public NbtList getEnchantments() {
 		return this.nbt == null ? null : this.nbt.getList("ench", 10);
 	}
 
-	public void setNbt(NbtCompound nbt) {
+	public void setNbt(@Nullable NbtCompound nbt) {
 		this.nbt = nbt;
 	}
 
 	public String getCustomName() {
-		String string = this.getItem().getDisplayName(this);
-		if (this.nbt != null && this.nbt.contains("display", 10)) {
-			NbtCompound nbtCompound = this.nbt.getCompound("display");
+		NbtCompound nbtCompound = this.getNbtCompound("display");
+		if (nbtCompound != null) {
 			if (nbtCompound.contains("Name", 8)) {
-				string = nbtCompound.getString("Name");
+				return nbtCompound.getString("Name");
+			}
+
+			if (nbtCompound.contains("LocName", 8)) {
+				return CommonI18n.translate(nbtCompound.getString("LocName"));
 			}
 		}
 
-		return string;
+		return this.getItem().getDisplayName(this);
+	}
+
+	public ItemStack method_13661(String string) {
+		this.getOrCreateNbtCompound("display").putString("LocName", string);
+		return this;
 	}
 
 	public ItemStack setCustomName(String name) {
-		if (this.nbt == null) {
-			this.nbt = new NbtCompound();
-		}
-
-		if (!this.nbt.contains("display", 10)) {
-			this.nbt.put("display", new NbtCompound());
-		}
-
-		this.nbt.getCompound("display").putString("Name", name);
+		this.getOrCreateNbtCompound("display").putString("Name", name);
 		return this;
 	}
 
 	public void removeCustomName() {
-		if (this.nbt != null) {
-			if (this.nbt.contains("display", 10)) {
-				NbtCompound nbtCompound = this.nbt.getCompound("display");
-				nbtCompound.remove("Name");
-				if (nbtCompound.isEmpty()) {
-					this.nbt.remove("display");
-					if (this.nbt.isEmpty()) {
-						this.setNbt(null);
-					}
-				}
+		NbtCompound nbtCompound = this.getNbtCompound("display");
+		if (nbtCompound != null) {
+			nbtCompound.remove("Name");
+			if (nbtCompound.isEmpty()) {
+				this.method_13659("display");
 			}
+		}
+
+		if (this.nbt != null && this.nbt.isEmpty()) {
+			this.nbt = null;
 		}
 	}
 
 	public boolean hasCustomName() {
-		if (this.nbt == null) {
-			return false;
-		} else {
-			return !this.nbt.contains("display", 10) ? false : this.nbt.getCompound("display").contains("Name", 8);
-		}
+		NbtCompound nbtCompound = this.getNbtCompound("display");
+		return nbtCompound != null && nbtCompound.contains("Name", 8);
 	}
 
 	public List<String> getTooltip(PlayerEntity player, boolean advanced) {
@@ -488,13 +490,13 @@ public final class ItemStack {
 		}
 
 		if ((j & 32) == 0) {
-			this.item.appendTooltip(this, player, list, advanced);
+			this.getItem().appendTooltip(this, player, list, advanced);
 		}
 
 		if (this.hasNbt()) {
 			if ((j & 1) == 0) {
 				NbtList nbtList = this.getEnchantments();
-				if (nbtList != null) {
+				if (nbtList != null && !nbtList.isEmpty()) {
 					for (int k = 0; k < nbtList.size(); k++) {
 						int l = nbtList.getCompound(k).getShort("id");
 						int m = nbtList.getCompound(k).getShort("lvl");
@@ -509,7 +511,7 @@ public final class ItemStack {
 				NbtCompound nbtCompound = this.nbt.getCompound("display");
 				if (nbtCompound.contains("color", 3)) {
 					if (advanced) {
-						list.add("Color: #" + String.format("%06X", nbtCompound.getInt("color")));
+						list.add(CommonI18n.translate("item.color", String.format("#%06X", nbtCompound.getInt("color"))));
 					} else {
 						list.add(Formatting.ITALIC + CommonI18n.translate("item.dyed"));
 					}
@@ -597,8 +599,8 @@ public final class ItemStack {
 				list.add("");
 				list.add(Formatting.GRAY + CommonI18n.translate("item.canBreak"));
 
-				for (int q = 0; q < nbtList3.size(); q++) {
-					Block block = Block.get(nbtList3.getString(q));
+				for (int o = 0; o < nbtList3.size(); o++) {
+					Block block = Block.get(nbtList3.getString(o));
 					if (block != null) {
 						list.add(Formatting.DARK_GRAY + block.getTranslatedName());
 					} else {
@@ -614,8 +616,8 @@ public final class ItemStack {
 				list.add("");
 				list.add(Formatting.GRAY + CommonI18n.translate("item.canPlace"));
 
-				for (int r = 0; r < nbtList4.size(); r++) {
-					Block block2 = Block.get(nbtList4.getString(r));
+				for (int p = 0; p < nbtList4.size(); p++) {
+					Block block2 = Block.get(nbtList4.getString(p));
 					if (block2 != null) {
 						list.add(Formatting.DARK_GRAY + block2.getTranslatedName());
 					} else {
@@ -627,12 +629,12 @@ public final class ItemStack {
 
 		if (advanced) {
 			if (this.isDamaged()) {
-				list.add("Durability: " + (this.getMaxDamage() - this.getDamage()) + " / " + this.getMaxDamage());
+				list.add(CommonI18n.translate("item.durability", this.getMaxDamage() - this.getDamage(), this.getMaxDamage()));
 			}
 
 			list.add(Formatting.DARK_GRAY + Item.REGISTRY.getIdentifier(this.item).toString());
 			if (this.hasNbt()) {
-				list.add(Formatting.DARK_GRAY + "NBT: " + this.getNbt().getKeys().size() + " tag(s)");
+				list.add(Formatting.DARK_GRAY + CommonI18n.translate("item.nbt_tags", this.getNbt().getKeys().size()));
 			}
 		}
 
@@ -668,7 +670,7 @@ public final class ItemStack {
 	}
 
 	public boolean hasEnchantments() {
-		return this.nbt != null && this.nbt.contains("ench", 9);
+		return this.nbt != null && this.nbt.contains("ench", 9) ? !this.nbt.getList("ench", 10).isEmpty() : false;
 	}
 
 	public void putSubNbt(String key, NbtElement nbt) {
@@ -693,7 +695,7 @@ public final class ItemStack {
 
 	@Nullable
 	public ItemFrameEntity getItemFrame() {
-		return this.itemFrame;
+		return this.empty ? null : this.itemFrame;
 	}
 
 	public int getRepairCost() {
@@ -731,7 +733,7 @@ public final class ItemStack {
 		return multimap;
 	}
 
-	public void setAttribute(String attributeName, AttributeModifier modifier, EquipmentSlot slot) {
+	public void setAttribute(String attributeName, AttributeModifier modifier, @Nullable EquipmentSlot slot) {
 		if (this.nbt == null) {
 			this.nbt = new NbtCompound();
 		}
@@ -750,11 +752,6 @@ public final class ItemStack {
 		nbtList.add(nbtCompound);
 	}
 
-	@Deprecated
-	public void setItem(Item item) {
-		this.item = item;
-	}
-
 	public Text toHoverableText() {
 		LiteralText literalText = new LiteralText(this.getCustomName());
 		if (this.hasCustomName()) {
@@ -762,7 +759,7 @@ public final class ItemStack {
 		}
 
 		Text text = new LiteralText("[").append(literalText).append("]");
-		if (this.item != null) {
+		if (!this.empty) {
 			NbtCompound nbtCompound = this.toNbt(new NbtCompound());
 			text.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new LiteralText(nbtCompound.toString())));
 			text.getStyle().setFormatting(this.getRarity().formatting);
@@ -813,5 +810,30 @@ public final class ItemStack {
 			this.lastPlaceOnResult = false;
 			return false;
 		}
+	}
+
+	public int getPickupTick() {
+		return this.pickupTick;
+	}
+
+	public void setPickupTick(int tick) {
+		this.pickupTick = tick;
+	}
+
+	public int getCount() {
+		return this.empty ? 0 : this.count;
+	}
+
+	public void setCount(int count) {
+		this.count = count;
+		this.updateStackStatus();
+	}
+
+	public void increment(int amount) {
+		this.setCount(this.count + amount);
+	}
+
+	public void decrement(int amount) {
+		this.increment(-amount);
 	}
 }

@@ -50,15 +50,14 @@ public class DeadBushBlock extends PlantBlock {
 		return rand.nextInt(3);
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.STICK;
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
-		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (!world.isClient && stack.getItem() == Items.SHEARS) {
 			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Blocks.DEADBUSH, 1, 0));
 		} else {

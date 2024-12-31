@@ -31,9 +31,9 @@ public class class_2799 extends class_2795 {
 			}
 
 			float f = (float)i * this.field_13223.method_12018(random);
-			itemStack.count = itemStack.count + Math.round(f);
-			if (this.field_14891 != 0 && itemStack.count > this.field_14891) {
-				itemStack.count = this.field_14891;
+			itemStack.increment(Math.round(f));
+			if (this.field_14891 != 0 && itemStack.getCount() > this.field_14891) {
+				itemStack.setCount(this.field_14891);
 			}
 		}
 

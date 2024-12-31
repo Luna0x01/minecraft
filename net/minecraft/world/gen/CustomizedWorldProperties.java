@@ -41,6 +41,7 @@ public class CustomizedWorldProperties {
 	public final boolean useMineshafts;
 	public final boolean useTemples;
 	public final boolean useMonuments;
+	public final boolean useMansions;
 	public final boolean useRavines;
 	public final boolean useWaterLakes;
 	public final int waterLakeChance;
@@ -121,6 +122,7 @@ public class CustomizedWorldProperties {
 		this.useMineshafts = builder.useMineshafts;
 		this.useTemples = builder.useTemples;
 		this.useMonuments = builder.useMonuments;
+		this.useMansions = builder.useMansions;
 		this.useRavines = builder.useRavines;
 		this.useWaterLakes = builder.useWaterLakes;
 		this.waterLakeChance = builder.waterLakeChance;
@@ -204,6 +206,7 @@ public class CustomizedWorldProperties {
 		public boolean useMineshafts = true;
 		public boolean useTemples = true;
 		public boolean useMonuments = true;
+		public boolean useMansions = true;
 		public boolean useRavines = true;
 		public boolean useWaterLakes = true;
 		public int waterLakeChance = 4;
@@ -304,6 +307,7 @@ public class CustomizedWorldProperties {
 			this.useMineshafts = true;
 			this.useTemples = true;
 			this.useMonuments = true;
+			this.useMansions = true;
 			this.useRavines = true;
 			this.useWaterLakes = true;
 			this.waterLakeChance = 4;
@@ -514,6 +518,8 @@ public class CustomizedWorldProperties {
 					return false;
 				} else if (this.useMonuments != builder.useMonuments) {
 					return false;
+				} else if (this.useMansions != builder.useMansions) {
+					return false;
 				} else if (this.useVillages != builder.useVillages) {
 					return false;
 				} else {
@@ -550,6 +556,7 @@ public class CustomizedWorldProperties {
 			i = 31 * i + (this.useMineshafts ? 1 : 0);
 			i = 31 * i + (this.useTemples ? 1 : 0);
 			i = 31 * i + (this.useMonuments ? 1 : 0);
+			i = 31 * i + (this.useMansions ? 1 : 0);
 			i = 31 * i + (this.useRavines ? 1 : 0);
 			i = 31 * i + (this.useWaterLakes ? 1 : 0);
 			i = 31 * i + this.waterLakeChance;
@@ -641,6 +648,7 @@ public class CustomizedWorldProperties {
 				builder.useMineshafts = JsonHelper.getBoolean(jsonObject, "useMineShafts", builder.useMineshafts);
 				builder.useTemples = JsonHelper.getBoolean(jsonObject, "useTemples", builder.useTemples);
 				builder.useMonuments = JsonHelper.getBoolean(jsonObject, "useMonuments", builder.useMonuments);
+				builder.useMansions = JsonHelper.getBoolean(jsonObject, "useMansions", builder.useMansions);
 				builder.useRavines = JsonHelper.getBoolean(jsonObject, "useRavines", builder.useRavines);
 				builder.useWaterLakes = JsonHelper.getBoolean(jsonObject, "useWaterLakes", builder.useWaterLakes);
 				builder.waterLakeChance = JsonHelper.getInt(jsonObject, "waterLakeChance", builder.waterLakeChance);
@@ -735,6 +743,7 @@ public class CustomizedWorldProperties {
 			jsonObject.addProperty("useMineShafts", builder.useMineshafts);
 			jsonObject.addProperty("useTemples", builder.useTemples);
 			jsonObject.addProperty("useMonuments", builder.useMonuments);
+			jsonObject.addProperty("useMansions", builder.useMansions);
 			jsonObject.addProperty("useRavines", builder.useRavines);
 			jsonObject.addProperty("useWaterLakes", builder.useWaterLakes);
 			jsonObject.addProperty("waterLakeChance", builder.waterLakeChance);

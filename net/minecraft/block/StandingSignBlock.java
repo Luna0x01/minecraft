@@ -15,13 +15,13 @@ public class StandingSignBlock extends AbstractSignBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!world.getBlockState(blockPos.down()).getMaterial().isSolid()) {
-			this.dropAsItem(world, blockPos, blockState, 0);
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!world.getBlockState(pos.down()).getMaterial().isSolid()) {
+			this.dropAsItem(world, pos, state, 0);
+			world.setAir(pos);
 		}
 
-		super.method_8641(blockState, world, blockPos, block);
+		super.neighborUpdate(state, world, pos, block, neighborPos);
 	}
 
 	@Override

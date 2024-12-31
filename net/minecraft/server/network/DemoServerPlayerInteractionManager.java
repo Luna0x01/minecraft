@@ -1,6 +1,5 @@
 package net.minecraft.server.network;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
@@ -94,7 +93,7 @@ public class DemoServerPlayerInteractionManager extends ServerPlayerInteractionM
 
 	@Override
 	public ActionResult method_12792(
-		PlayerEntity playerEntity, World world, @Nullable ItemStack itemStack, Hand hand, BlockPos blockPos, Direction direction, float f, float g, float h
+		PlayerEntity playerEntity, World world, ItemStack itemStack, Hand hand, BlockPos blockPos, Direction direction, float f, float g, float h
 	) {
 		if (this.demoEnded) {
 			this.sendDemoReminder();

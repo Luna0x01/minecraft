@@ -10,6 +10,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.FireBlock;
 import net.minecraft.block.PumpkinBlock;
+import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.SkullBlock;
 import net.minecraft.block.TntBlock;
 import net.minecraft.block.dispenser.DispenserBehavior;
@@ -17,11 +18,13 @@ import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.dispenser.ProjectileDispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.DispenserBlockEntity;
+import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.FireworkRocketEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.TntEntity;
@@ -172,15 +175,15 @@ public class Bootstrap {
 			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 				double d = pointer.getX() + (double)direction.getOffsetX();
-				double e = (double)((float)pointer.getBlockPos().getY() + 0.2F);
+				double e = (double)((float)(pointer.getBlockPos().getY() + direction.getOffsetY()) + 0.2F);
 				double f = pointer.getZ() + (double)direction.getOffsetZ();
-				Entity entity = SpawnEggItem.method_4628(pointer.getWorld(), SpawnEggItem.method_11407(stack), d, e, f);
+				Entity entity = SpawnEggItem.createEntity(pointer.getWorld(), SpawnEggItem.getEntityIdentifierFromStack(stack), d, e, f);
 				if (entity instanceof LivingEntity && stack.hasCustomName()) {
 					entity.setCustomName(stack.getCustomName());
 				}
 
 				SpawnEggItem.method_11406(pointer.getWorld(), null, stack, entity);
-				stack.split(1);
+				stack.decrement(1);
 				return stack;
 			}
 		});
@@ -193,7 +196,7 @@ public class Bootstrap {
 				double f = pointer.getZ() + (double)direction.getOffsetZ();
 				FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(pointer.getWorld(), d, e, f, stack);
 				pointer.getWorld().spawnEntity(fireworkRocketEntity);
-				stack.split(1);
+				stack.decrement(1);
 				return stack;
 			}
 
@@ -216,7 +219,7 @@ public class Bootstrap {
 				double h = random.nextGaussian() * 0.05 + (double)direction.getOffsetY();
 				double i = random.nextGaussian() * 0.05 + (double)direction.getOffsetZ();
 				world.spawnEntity(new SmallFireballEntity(world, d, e, f, g, h, i));
-				stack.split(1);
+				stack.decrement(1);
 				return stack;
 			}
 
@@ -238,13 +241,7 @@ public class Bootstrap {
 			public ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				BucketItem bucketItem = (BucketItem)stack.getItem();
 				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
-				if (bucketItem.method_11365(null, pointer.getWorld(), blockPos)) {
-					stack.setItem(Items.BUCKET);
-					stack.count = 1;
-					return stack;
-				} else {
-					return this.field_11739.dispense(pointer, stack);
-				}
+				return bucketItem.method_11365(null, pointer.getWorld(), blockPos) ? new ItemStack(Items.BUCKET) : this.field_11739.dispense(pointer, stack);
 			}
 		};
 		DispenserBlock.SPECIAL_ITEMS.put(Items.LAVA_BUCKET, dispenserBehavior);
@@ -271,52 +268,43 @@ public class Bootstrap {
 				}
 
 				world.setAir(blockPos);
-				if (--stack.count == 0) {
-					stack.setItem(item);
-					stack.count = 1;
-				} else if (pointer.<DispenserBlockEntity>getBlockEntity().addToFirstFreeSlot(new ItemStack(item)) < 0) {
-					this.field_13839.dispense(pointer, new ItemStack(item));
-				}
+				stack.decrement(1);
+				if (stack.isEmpty()) {
+					return new ItemStack(item);
+				} else {
+					if (pointer.<DispenserBlockEntity>getBlockEntity().addToFirstFreeSlot(new ItemStack(item)) < 0) {
+						this.field_13839.dispense(pointer, new ItemStack(item));
+					}
 
-				return stack;
+					return stack;
+				}
 			}
 		});
-		DispenserBlock.SPECIAL_ITEMS.put(Items.FLINT_AND_STEEL, new ItemDispenserBehavior() {
-			private boolean field_13840 = true;
-
+		DispenserBlock.SPECIAL_ITEMS.put(Items.FLINT_AND_STEEL, new Bootstrap.class_3115() {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
+				this.field_15356 = true;
 				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				if (world.isAir(blockPos)) {
 					world.setBlockState(blockPos, Blocks.FIRE.getDefaultState());
 					if (stack.damage(1, world.random)) {
-						stack.count = 0;
+						stack.setCount(0);
 					}
 				} else if (world.getBlockState(blockPos).getBlock() == Blocks.TNT) {
 					Blocks.TNT.onBreakByPlayer(world, blockPos, Blocks.TNT.getDefaultState().with(TntBlock.EXPLODE, true));
 					world.setAir(blockPos);
 				} else {
-					this.field_13840 = false;
+					this.field_15356 = false;
 				}
 
 				return stack;
 			}
-
-			@Override
-			protected void playSound(BlockPointer pointer) {
-				if (this.field_13840) {
-					pointer.getWorld().syncGlobalEvent(1000, pointer.getBlockPos(), 0);
-				} else {
-					pointer.getWorld().syncGlobalEvent(1001, pointer.getBlockPos(), 0);
-				}
-			}
 		});
-		DispenserBlock.SPECIAL_ITEMS.put(Items.DYE, new ItemDispenserBehavior() {
-			private boolean field_13841 = true;
-
+		DispenserBlock.SPECIAL_ITEMS.put(Items.DYE, new Bootstrap.class_3115() {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
+				this.field_15356 = true;
 				if (DyeColor.WHITE == DyeColor.getById(stack.getData())) {
 					World world = pointer.getWorld();
 					BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
@@ -325,21 +313,12 @@ public class Bootstrap {
 							world.syncGlobalEvent(2005, blockPos, 0);
 						}
 					} else {
-						this.field_13841 = false;
+						this.field_15356 = false;
 					}
 
 					return stack;
 				} else {
 					return super.dispenseSilently(pointer, stack);
-				}
-			}
-
-			@Override
-			protected void playSound(BlockPointer pointer) {
-				if (this.field_13841) {
-					pointer.getWorld().syncGlobalEvent(1000, pointer.getBlockPos(), 0);
-				} else {
-					pointer.getWorld().syncGlobalEvent(1001, pointer.getBlockPos(), 0);
 				}
 			}
 		});
@@ -351,19 +330,18 @@ public class Bootstrap {
 				TntEntity tntEntity = new TntEntity(world, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, null);
 				world.spawnEntity(tntEntity);
 				world.playSound(null, tntEntity.x, tntEntity.y, tntEntity.z, Sounds.ENTITY_TNT_PRIMED, SoundCategory.BLOCKS, 1.0F, 1.0F);
-				stack.count--;
+				stack.decrement(1);
 				return stack;
 			}
 		});
-		DispenserBlock.SPECIAL_ITEMS.put(Items.SKULL, new ItemDispenserBehavior() {
-			private boolean field_13842 = true;
-
+		DispenserBlock.SPECIAL_ITEMS.put(Items.SKULL, new Bootstrap.class_3115() {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
 				Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
 				BlockPos blockPos = pointer.getBlockPos().offset(direction);
 				SkullBlock skullBlock = Blocks.SKULL;
+				this.field_15356 = true;
 				if (world.isAir(blockPos) && skullBlock.canDispense(world, blockPos, stack)) {
 					if (!world.isClient) {
 						world.setBlockState(blockPos, skullBlock.getDefaultState().with(SkullBlock.FACING, Direction.UP), 3);
@@ -392,66 +370,48 @@ public class Bootstrap {
 							Blocks.SKULL.trySpawnEntity(world, blockPos, (SkullBlockEntity)blockEntity);
 						}
 
-						stack.count--;
+						stack.decrement(1);
 					}
-				} else if (ArmorItem.method_11353(pointer, stack) == null) {
-					this.field_13842 = false;
+				} else if (ArmorItem.method_11353(pointer, stack).isEmpty()) {
+					this.field_15356 = false;
 				}
 
 				return stack;
 			}
-
-			@Override
-			protected void playSound(BlockPointer pointer) {
-				if (this.field_13842) {
-					pointer.getWorld().syncGlobalEvent(1000, pointer.getBlockPos(), 0);
-				} else {
-					pointer.getWorld().syncGlobalEvent(1001, pointer.getBlockPos(), 0);
-				}
-			}
 		});
-		DispenserBlock.SPECIAL_ITEMS.put(Item.fromBlock(Blocks.PUMPKIN), new ItemDispenserBehavior() {
-			private boolean field_13835 = true;
-
+		DispenserBlock.SPECIAL_ITEMS.put(Item.fromBlock(Blocks.PUMPKIN), new Bootstrap.class_3115() {
 			@Override
 			protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
 				World world = pointer.getWorld();
 				BlockPos blockPos = pointer.getBlockPos().offset(pointer.getBlockState().get(DispenserBlock.FACING));
 				PumpkinBlock pumpkinBlock = (PumpkinBlock)Blocks.PUMPKIN;
+				this.field_15356 = true;
 				if (world.isAir(blockPos) && pumpkinBlock.canDispense(world, blockPos)) {
 					if (!world.isClient) {
 						world.setBlockState(blockPos, pumpkinBlock.getDefaultState(), 3);
 					}
 
-					stack.count--;
+					stack.decrement(1);
 				} else {
 					ItemStack itemStack = ArmorItem.method_11353(pointer, stack);
-					if (itemStack == null) {
-						this.field_13835 = false;
+					if (itemStack.isEmpty()) {
+						this.field_15356 = false;
 					}
 				}
 
 				return stack;
 			}
-
-			@Override
-			protected void playSound(BlockPointer pointer) {
-				if (this.field_13835) {
-					pointer.getWorld().syncGlobalEvent(1000, pointer.getBlockPos(), 0);
-				} else {
-					pointer.getWorld().syncGlobalEvent(1001, pointer.getBlockPos(), 0);
-				}
-			}
 		});
+
+		for (DyeColor dyeColor : DyeColor.values()) {
+			DispenserBlock.SPECIAL_ITEMS.put(Item.fromBlock(ShulkerBoxBlock.of(dyeColor)), new Bootstrap.class_3116());
+		}
 	}
 
 	public static void initialize() {
 		if (!initialized) {
 			initialized = true;
-			if (LOGGER.isDebugEnabled()) {
-				setOutputStreams();
-			}
-
+			setOutputStreams();
 			Sound.register();
 			Block.setup();
 			FireBlock.registerDefaultFlammables();
@@ -460,6 +420,7 @@ public class Bootstrap {
 			Item.setup();
 			Potion.register();
 			StatusEffectStrings.method_11416();
+			EntityType.load();
 			Stats.setup();
 			Biome.register();
 			setupDispenserBehavior();
@@ -467,8 +428,13 @@ public class Bootstrap {
 	}
 
 	private static void setOutputStreams() {
-		System.setErr(new PrintStreamLogger("STDERR", System.err));
-		System.setOut(new PrintStreamLogger("STDOUT", SYSOUT));
+		if (LOGGER.isDebugEnabled()) {
+			System.setErr(new class_3117("STDERR", System.err));
+			System.setOut(new class_3117("STDOUT", SYSOUT));
+		} else {
+			System.setErr(new PrintStreamLogger("STDERR", System.err));
+			System.setOut(new PrintStreamLogger("STDOUT", SYSOUT));
+		}
 	}
 
 	public static void println(String str) {
@@ -505,15 +471,56 @@ public class Bootstrap {
 
 			BoatEntity boatEntity = new BoatEntity(world, d, e + g, f);
 			boatEntity.setBoatType(this.field_13844);
-			boatEntity.yaw = direction.getOpposite().method_12578();
+			boatEntity.yaw = direction.method_12578();
 			world.spawnEntity(boatEntity);
-			stack.split(1);
+			stack.decrement(1);
 			return stack;
 		}
 
 		@Override
 		protected void playSound(BlockPointer pointer) {
 			pointer.getWorld().syncGlobalEvent(1000, pointer.getBlockPos(), 0);
+		}
+	}
+
+	public abstract static class class_3115 extends ItemDispenserBehavior {
+		protected boolean field_15356 = true;
+
+		@Override
+		protected void playSound(BlockPointer pointer) {
+			pointer.getWorld().syncGlobalEvent(this.field_15356 ? 1000 : 1001, pointer.getBlockPos(), 0);
+		}
+	}
+
+	static class class_3116 extends Bootstrap.class_3115 {
+		private class_3116() {
+		}
+
+		@Override
+		protected ItemStack dispenseSilently(BlockPointer pointer, ItemStack stack) {
+			Block block = Block.getBlockFromItem(stack.getItem());
+			World world = pointer.getWorld();
+			Direction direction = pointer.getBlockState().get(DispenserBlock.FACING);
+			BlockPos blockPos = pointer.getBlockPos().offset(direction);
+			this.field_15356 = world.method_8493(block, blockPos, false, Direction.DOWN, null);
+			if (this.field_15356) {
+				Direction direction2 = world.isAir(blockPos.down()) ? direction : Direction.UP;
+				BlockState blockState = block.getDefaultState().with(ShulkerBoxBlock.FACING, direction2);
+				world.setBlockState(blockPos, blockState);
+				BlockEntity blockEntity = world.getBlockEntity(blockPos);
+				ItemStack itemStack = stack.split(1);
+				if (itemStack.hasNbt()) {
+					((ShulkerBoxBlockEntity)blockEntity).method_13740(itemStack.getNbt().getCompound("BlockEntityTag"));
+				}
+
+				if (itemStack.hasCustomName()) {
+					((ShulkerBoxBlockEntity)blockEntity).setName(itemStack.getCustomName());
+				}
+
+				world.updateHorizontalAdjacent(blockPos, blockState.getBlock());
+			}
+
+			return stack;
 		}
 	}
 }

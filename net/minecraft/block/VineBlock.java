@@ -44,7 +44,7 @@ public class VineBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -145,10 +145,10 @@ public class VineBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!world.isClient && !this.recheckGrowth(world, blockPos, blockState)) {
-			this.dropAsItem(world, blockPos, blockState, 0);
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!world.isClient && !this.recheckGrowth(world, pos, state)) {
+			this.dropAsItem(world, pos, state, 0);
+			world.setAir(pos);
 		}
 	}
 
@@ -258,10 +258,9 @@ public class VineBlock extends Block {
 		return dir.getAxis().isHorizontal() ? blockState.with(getByDirection(dir.getOpposite()), true) : blockState;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
 	@Override
@@ -270,8 +269,8 @@ public class VineBlock extends Block {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
-		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (!world.isClient && stack.getItem() == Items.SHEARS) {
 			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Blocks.VINE, 1, 0));
 		} else {

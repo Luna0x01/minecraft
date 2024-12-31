@@ -71,15 +71,15 @@ public class DamageTracker {
 					text3 = new TranslatableText("death.fell.accident." + this.getFallDeathSuffix(damageRecord), this.entity.getName());
 				} else if (text2 != null && (text == null || !text2.equals(text))) {
 					Entity entity2 = damageRecord.getDamageSource().getAttacker();
-					ItemStack itemStack = entity2 instanceof LivingEntity ? ((LivingEntity)entity2).getMainHandStack() : null;
-					if (itemStack != null && itemStack.hasCustomName()) {
+					ItemStack itemStack = entity2 instanceof LivingEntity ? ((LivingEntity)entity2).getMainHandStack() : ItemStack.EMPTY;
+					if (!itemStack.isEmpty() && itemStack.hasCustomName()) {
 						text3 = new TranslatableText("death.fell.assist.item", this.entity.getName(), text2, itemStack.toHoverableText());
 					} else {
 						text3 = new TranslatableText("death.fell.assist", this.entity.getName(), text2);
 					}
 				} else if (text != null) {
-					ItemStack itemStack2 = entity instanceof LivingEntity ? ((LivingEntity)entity).getMainHandStack() : null;
-					if (itemStack2 != null && itemStack2.hasCustomName()) {
+					ItemStack itemStack2 = entity instanceof LivingEntity ? ((LivingEntity)entity).getMainHandStack() : ItemStack.EMPTY;
+					if (!itemStack2.isEmpty() && itemStack2.hasCustomName()) {
 						text3 = new TranslatableText("death.fell.finish.item", this.entity.getName(), text, itemStack2.toHoverableText());
 					} else {
 						text3 = new TranslatableText("death.fell.finish", this.entity.getName(), text);

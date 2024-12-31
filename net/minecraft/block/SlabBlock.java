@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.property.EnumProperty;
@@ -19,7 +20,11 @@ public abstract class SlabBlock extends Block {
 	protected static final Box field_12684 = new Box(0.0, 0.5, 0.0, 1.0, 1.0, 1.0);
 
 	public SlabBlock(Material material) {
-		super(material);
+		this(material, material.getColor());
+	}
+
+	public SlabBlock(Material material, MaterialColor materialColor) {
+		super(material, materialColor);
 		this.fullBlock = this.isDoubleSlab();
 		this.setOpacity(255);
 	}

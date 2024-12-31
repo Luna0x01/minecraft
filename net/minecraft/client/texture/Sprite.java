@@ -249,12 +249,12 @@ public class Sprite {
 						public String call() throws Exception {
 							StringBuilder stringBuilder = new StringBuilder();
 
-							for (int[] js : is) {
+							for (int[] is : is) {
 								if (stringBuilder.length() > 0) {
 									stringBuilder.append(", ");
 								}
 
-								stringBuilder.append(js == null ? "null" : js.length);
+								stringBuilder.append(is == null ? "null" : is.length);
 							}
 
 							return stringBuilder.toString();

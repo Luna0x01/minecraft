@@ -1,20 +1,26 @@
 package net.minecraft.nbt;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class NbtCompound extends NbtElement {
+	private static final Logger LOGGER = LogManager.getLogger();
 	private final Map<String, NbtElement> data = Maps.newHashMap();
 
 	@Override
@@ -281,13 +287,19 @@ public class NbtCompound extends NbtElement {
 	@Override
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder("{");
+		Collection<String> collection = this.data.keySet();
+		if (LOGGER.isDebugEnabled()) {
+			List<String> list = Lists.newArrayList(this.data.keySet());
+			Collections.sort(list);
+			collection = list;
+		}
 
-		for (Entry<String, NbtElement> entry : this.data.entrySet()) {
+		for (String string : collection) {
 			if (stringBuilder.length() != 1) {
 				stringBuilder.append(',');
 			}
 
-			stringBuilder.append((String)entry.getKey()).append(':').append(entry.getValue());
+			stringBuilder.append(string).append(':').append(this.data.get(string));
 		}
 
 		return stringBuilder.append('}').toString();

@@ -38,7 +38,7 @@ public class SimpleRegistry<K, V> extends MutableRegistry<K, V> implements Objec
 		return super.containsKey(key);
 	}
 
-	public int getRawId(V value) {
+	public int getRawId(@Nullable V value) {
 		return this.field_13718.getId(value);
 	}
 

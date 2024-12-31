@@ -61,7 +61,7 @@ public class Chunk {
 	private int minimumHeightmap;
 	private long inhabitedTime;
 	private int field_4743 = 4096;
-	private ConcurrentLinkedQueue<BlockPos> blocks = Queues.newConcurrentLinkedQueue();
+	private final ConcurrentLinkedQueue<BlockPos> blocks = Queues.newConcurrentLinkedQueue();
 	public boolean unloaded;
 
 	public Chunk(World world, int i, int j) {
@@ -82,7 +82,7 @@ public class Chunk {
 	public Chunk(World world, ChunkBlockStateStorage chunkBlockStateStorage, int i, int j) {
 		this(world, i, j);
 		int k = 256;
-		boolean bl = !world.dimension.hasNoSkylight();
+		boolean bl = world.dimension.isOverworld();
 
 		for (int l = 0; l < 16; l++) {
 			for (int m = 0; m < 16; m++) {
@@ -175,7 +175,7 @@ public class Chunk {
 					}
 				}
 
-				if (!this.world.dimension.hasNoSkylight()) {
+				if (this.world.dimension.isOverworld()) {
 					int m = 15;
 					int n = i + 16 - 1;
 
@@ -281,7 +281,7 @@ public class Chunk {
 			this.heightmap[z << 4 | x] = j;
 			int k = this.chunkX * 16 + x;
 			int l = this.chunkZ * 16 + z;
-			if (!this.world.dimension.hasNoSkylight()) {
+			if (this.world.dimension.isOverworld()) {
 				if (j < i) {
 					for (int m = j; m < i; m++) {
 						ChunkSection chunkSection = this.chunkSections[m >> 4];
@@ -332,7 +332,7 @@ public class Chunk {
 				this.minimumHeightmap = q;
 			}
 
-			if (!this.world.dimension.hasNoSkylight()) {
+			if (this.world.dimension.isOverworld()) {
 				for (Direction direction : Direction.DirectionType.HORIZONTAL) {
 					this.calculateSkyLightForRegion(k + direction.getOffsetX(), l + direction.getOffsetZ(), r, s);
 				}
@@ -415,7 +415,7 @@ public class Chunk {
 					return null;
 				}
 
-				chunkSection = new ChunkSection(j >> 4 << 4, !this.world.dimension.hasNoSkylight());
+				chunkSection = new ChunkSection(j >> 4 << 4, this.world.dimension.isOverworld());
 				this.chunkSections[j >> 4] = chunkSection;
 				bl = j >= m;
 			}
@@ -487,7 +487,7 @@ public class Chunk {
 		if (chunkSection == EMPTY) {
 			return this.hasDirectSunlight(pos) ? lightType.defaultValue : 0;
 		} else if (lightType == LightType.SKY) {
-			return this.world.dimension.hasNoSkylight() ? 0 : chunkSection.getSkyLight(i, j & 15, k);
+			return !this.world.dimension.isOverworld() ? 0 : chunkSection.getSkyLight(i, j & 15, k);
 		} else {
 			return lightType == LightType.BLOCK ? chunkSection.getBlockLight(i, j & 15, k) : lightType.defaultValue;
 		}
@@ -499,14 +499,14 @@ public class Chunk {
 		int k = pos.getZ() & 15;
 		ChunkSection chunkSection = this.chunkSections[j >> 4];
 		if (chunkSection == EMPTY) {
-			chunkSection = new ChunkSection(j >> 4 << 4, !this.world.dimension.hasNoSkylight());
+			chunkSection = new ChunkSection(j >> 4 << 4, this.world.dimension.isOverworld());
 			this.chunkSections[j >> 4] = chunkSection;
 			this.calculateSkyLight();
 		}
 
 		this.modified = true;
 		if (lightType == LightType.SKY) {
-			if (!this.world.dimension.hasNoSkylight()) {
+			if (this.world.dimension.isOverworld()) {
 				chunkSection.setSkyLight(i, j & 15, k, lightLevel);
 			}
 		} else if (lightType == LightType.BLOCK) {
@@ -520,9 +520,9 @@ public class Chunk {
 		int k = pos.getZ() & 15;
 		ChunkSection chunkSection = this.chunkSections[j >> 4];
 		if (chunkSection == EMPTY) {
-			return !this.world.dimension.hasNoSkylight() && darkness < LightType.SKY.defaultValue ? LightType.SKY.defaultValue - darkness : 0;
+			return this.world.dimension.isOverworld() && darkness < LightType.SKY.defaultValue ? LightType.SKY.defaultValue - darkness : 0;
 		} else {
-			int l = this.world.dimension.hasNoSkylight() ? 0 : chunkSection.getSkyLight(i, j & 15, k);
+			int l = !this.world.dimension.isOverworld() ? 0 : chunkSection.getSkyLight(i, j & 15, k);
 			l -= darkness;
 			int m = chunkSection.getBlockLight(i, j & 15, k);
 			if (m > l) {
@@ -538,7 +538,7 @@ public class Chunk {
 		int i = MathHelper.floor(entity.x / 16.0);
 		int j = MathHelper.floor(entity.z / 16.0);
 		if (i != this.chunkX || j != this.chunkZ) {
-			LOGGER.warn("Wrong location! ({}, {}) should be ({}, {}), {}", new Object[]{i, j, this.chunkX, this.chunkZ, entity, entity});
+			LOGGER.warn("Wrong location! ({}, {}) should be ({}, {}), {}", new Object[]{i, j, this.chunkX, this.chunkZ, entity});
 			entity.remove();
 		}
 
@@ -794,7 +794,7 @@ public class Chunk {
 	}
 
 	public void populateBlockEntities(boolean runningBehind) {
-		if (this.isSkyLightOutdated && !this.world.dimension.hasNoSkylight() && !runningBehind) {
+		if (this.isSkyLightOutdated && this.world.dimension.isOverworld() && !runningBehind) {
 			this.recheckSkyLightGaps(this.world.isClient);
 		}
 
@@ -853,7 +853,7 @@ public class Chunk {
 	}
 
 	public void method_3895(PacketByteBuf packet, int i, boolean bl) {
-		boolean bl2 = !this.world.dimension.hasNoSkylight();
+		boolean bl2 = this.world.dimension.isOverworld();
 
 		for (int j = 0; j < this.chunkSections.length; j++) {
 			ChunkSection chunkSection = this.chunkSections[j];
@@ -960,7 +960,7 @@ public class Chunk {
 		this.terrainPopulated = true;
 		this.lightPopulated = true;
 		BlockPos blockPos = new BlockPos(this.chunkX << 4, 0, this.chunkZ << 4);
-		if (!this.world.dimension.hasNoSkylight()) {
+		if (this.world.dimension.isOverworld()) {
 			if (this.world.isRegionLoaded(blockPos.add(-1, 0, -1), blockPos.add(16, this.world.getSeaLevel(), 16))) {
 				label44:
 				for (int i = 0; i < 16; i++) {

@@ -11,20 +11,26 @@ public class DebugRenderer {
 	public final DebugRenderer.DebugRenderable field_14969;
 	public final DebugRenderer.DebugRenderable chunkBorders;
 	public final DebugRenderer.DebugRenderable field_14971;
+	public final DebugRenderer.DebugRenderable field_15286;
+	public final DebugRenderer.DebugRenderable blockUpdates;
 	private boolean renderChunkBorders;
 	private boolean field_14973;
 	private boolean field_14974;
 	private boolean field_14975;
+	private boolean field_15288;
+	private boolean renderBlockUpdates;
 
 	public DebugRenderer(MinecraftClient minecraftClient) {
 		this.field_14968 = new class_2891(minecraftClient);
 		this.field_14969 = new class_2892(minecraftClient);
 		this.chunkBorders = new ChunkBorderDebugRenderer(minecraftClient);
 		this.field_14971 = new class_3026(minecraftClient);
+		this.field_15286 = new class_3097(minecraftClient);
+		this.blockUpdates = new BlockUpdateDebugRenderer(minecraftClient);
 	}
 
 	public boolean isEnabled() {
-		return this.renderChunkBorders || this.field_14973 || this.field_14974;
+		return this.renderChunkBorders || this.field_14973 || this.field_14974 || this.field_14975 || this.field_15288 || this.renderBlockUpdates;
 	}
 
 	public boolean toggleChunkBorders() {
@@ -48,6 +54,18 @@ public class DebugRenderer {
 		if (this.field_14975) {
 			this.field_14971.render(tickDelta, limitTime);
 		}
+
+		if (this.field_15288) {
+			this.field_15286.render(tickDelta, limitTime);
+		}
+
+		if (this.renderBlockUpdates) {
+			this.blockUpdates.render(tickDelta, limitTime);
+		}
+	}
+
+	public static void method_13856(String text, int i, int j, int k, float f, int l) {
+		method_13450(text, (double)i + 0.5, (double)j + 0.5, (double)k + 0.5, f, l);
 	}
 
 	public static void method_13450(String text, double d, double e, double f, float g, int i) {

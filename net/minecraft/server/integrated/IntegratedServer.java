@@ -127,7 +127,7 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	protected boolean setupServer() throws IOException {
-		LOGGER.info("Starting integrated minecraft server version 1.10.2");
+		LOGGER.info("Starting integrated minecraft server version 1.11.2");
 		this.setOnlineMode(true);
 		this.setSpawnAnimals(true);
 		this.setSpawnNpcs(true);
@@ -330,7 +330,9 @@ public class IntegratedServer extends MinecraftServer {
 		Futures.getUnchecked(this.submit(new Runnable() {
 			public void run() {
 				for (ServerPlayerEntity serverPlayerEntity : Lists.newArrayList(IntegratedServer.this.getPlayerManager().getPlayers())) {
-					IntegratedServer.this.getPlayerManager().method_12830(serverPlayerEntity);
+					if (!serverPlayerEntity.getUuid().equals(IntegratedServer.this.client.player.getUuid())) {
+						IntegratedServer.this.getPlayerManager().method_12830(serverPlayerEntity);
+					}
 				}
 			}
 		}));

@@ -1,7 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.OcelotEntityModel;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.util.Identifier;
 
@@ -11,8 +11,8 @@ public class CatEntityRenderer extends MobEntityRenderer<OcelotEntity> {
 	private static final Identifier RED_CAT = new Identifier("textures/entity/cat/red.png");
 	private static final Identifier SIAMESE_CAT = new Identifier("textures/entity/cat/siamese.png");
 
-	public CatEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f) {
-		super(entityRenderDispatcher, entityModel, f);
+	public CatEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
+		super(entityRenderDispatcher, new OcelotEntityModel(), 0.4F);
 	}
 
 	protected Identifier getTexture(OcelotEntity ocelotEntity) {

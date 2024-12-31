@@ -16,7 +16,6 @@ import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.client.color.world.FoliageColors;
 import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.util.collection.IdList;
 import net.minecraft.util.math.BlockPos;
@@ -32,11 +31,11 @@ public class BlockColors {
 				@Override
 				public int method_12155(BlockState blockState, @Nullable BlockView blockView, @Nullable BlockPos blockPos, int i) {
 					DoublePlantBlock.DoublePlantType doublePlantType = blockState.get(DoublePlantBlock.VARIANT);
-					return blockView == null
-							|| blockPos == null
-							|| doublePlantType != DoublePlantBlock.DoublePlantType.GRASS && doublePlantType != DoublePlantBlock.DoublePlantType.FERN
-						? -1
-						: BiomeColors.getGrassColor(blockView, blockPos);
+					return blockView != null
+							&& blockPos != null
+							&& (doublePlantType == DoublePlantBlock.DoublePlantType.GRASS || doublePlantType == DoublePlantBlock.DoublePlantType.FERN)
+						? BiomeColors.getGrassColor(blockView, blockState.get(DoublePlantBlock.HALF) == DoublePlantBlock.HalfType.UPPER ? blockPos.down() : blockPos)
+						: -1;
 				}
 			},
 			Blocks.DOUBLE_PLANT
@@ -48,13 +47,11 @@ public class BlockColors {
 					BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
 					if (blockEntity instanceof FlowerPotBlockEntity) {
 						Item item = ((FlowerPotBlockEntity)blockEntity).getItem();
-						if (item instanceof BlockItem) {
-							BlockState blockState2 = Block.getBlockFromItem(item).getDefaultState();
-							return blockColors.method_12157(blockState2, blockView, blockPos, i);
-						}
+						BlockState blockState2 = Block.getBlockFromItem(item).getDefaultState();
+						return blockColors.method_12157(blockState2, blockView, blockPos, i);
+					} else {
+						return -1;
 					}
-
-					return -1;
 				} else {
 					return -1;
 				}

@@ -55,6 +55,11 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
+	public boolean method_13704(BlockState state) {
+		return true;
+	}
+
+	@Override
 	public BlockRenderType getRenderType(BlockState state) {
 		return BlockRenderType.ENTITYBLOCK_ANIMATED;
 	}
@@ -127,7 +132,7 @@ public class ChestBlock extends BlockWithEntity {
 		if (itemStack.hasCustomName()) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof ChestBlockEntity) {
-				((ChestBlockEntity)blockEntity).setTranslationKeyName(itemStack.getCustomName());
+				((ChestBlockEntity)blockEntity).setName(itemStack.getCustomName());
 			}
 		}
 	}
@@ -295,9 +300,9 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		super.method_8641(blockState, world, blockPos, block);
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		super.neighborUpdate(state, world, pos, block, neighborPos);
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof ChestBlockEntity) {
 			blockEntity.resetBlock();
 		}
@@ -315,28 +320,17 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			LockableScreenHandlerFactory lockableScreenHandlerFactory = this.method_11583(world, blockPos);
+			LockableScreenHandlerFactory lockableScreenHandlerFactory = this.method_11583(world, pos);
 			if (lockableScreenHandlerFactory != null) {
-				playerEntity.openInventory(lockableScreenHandlerFactory);
+				player.openInventory(lockableScreenHandlerFactory);
 				if (this.field_12621 == ChestBlock.Type.BASIC) {
-					playerEntity.incrementStat(Stats.CHEST_OPENED);
+					player.incrementStat(Stats.CHEST_OPENED);
 				} else if (this.field_12621 == ChestBlock.Type.TRAP) {
-					playerEntity.incrementStat(Stats.TRAPPED_CHEST_TRIGGERED);
+					player.incrementStat(Stats.TRAPPED_CHEST_TRIGGERED);
 				}
 			}
 

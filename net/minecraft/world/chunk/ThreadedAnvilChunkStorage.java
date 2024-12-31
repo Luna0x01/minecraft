@@ -62,6 +62,14 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		return this.validateChunk(world, x, z, nbtCompound);
 	}
 
+	@Override
+	public boolean chunkExists(int x, int z) {
+		ChunkPos chunkPos = new ChunkPos(x, z);
+		NbtCompound nbtCompound = (NbtCompound)this.chunksToSave.get(chunkPos);
+		return nbtCompound != null ? true : RegionIo.chunkExists(this.saveLocation, x, z);
+	}
+
+	@Nullable
 	protected Chunk validateChunk(World world, int chunkX, int chunkZ, NbtCompound nbt) {
 		if (!nbt.contains("Level", 10)) {
 			LOGGER.error("Chunk file at {},{} is missing level data, skipping", new Object[]{chunkX, chunkZ});
@@ -96,7 +104,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 			NbtCompound nbtCompound = new NbtCompound();
 			NbtCompound nbtCompound2 = new NbtCompound();
 			nbtCompound.put("Level", nbtCompound2);
-			nbtCompound.putInt("DataVersion", 512);
+			nbtCompound.putInt("DataVersion", 922);
 			this.putChunk(chunk, world, nbtCompound2);
 			this.registerChunkChecker(chunk.getChunkPos(), nbtCompound);
 		} catch (Exception var5) {
@@ -208,7 +216,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		nbt.putLong("InhabitedTime", chunk.getInhabitedTime());
 		ChunkSection[] chunkSections = chunk.getBlockStorage();
 		NbtList nbtList = new NbtList();
-		boolean bl = !world.dimension.hasNoSkylight();
+		boolean bl = world.dimension.isOverworld();
 
 		for (ChunkSection chunkSection : chunkSections) {
 			if (chunkSection != Chunk.EMPTY) {
@@ -239,8 +247,8 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		chunk.setHasEntities(false);
 		NbtList nbtList2 = new NbtList();
 
-		for (int k = 0; k < chunk.getEntities().length; k++) {
-			for (Entity entity : chunk.getEntities()[k]) {
+		for (int i = 0; i < chunk.getEntities().length; i++) {
+			for (Entity entity : chunk.getEntities()[i]) {
 				NbtCompound nbtCompound2 = new NbtCompound();
 				if (entity.saveToNbt(nbtCompound2)) {
 					chunk.setHasEntities(true);
@@ -290,7 +298,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		NbtList nbtList = nbt.getList("Sections", 10);
 		int k = 16;
 		ChunkSection[] chunkSections = new ChunkSection[16];
-		boolean bl = !world.dimension.hasNoSkylight();
+		boolean bl = world.dimension.isOverworld();
 
 		for (int l = 0; l < nbtList.size(); l++) {
 			NbtCompound nbtCompound = nbtList.getCompound(l);
@@ -315,41 +323,38 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		}
 
 		NbtList nbtList2 = nbt.getList("Entities", 10);
-		if (nbtList2 != null) {
-			for (int n = 0; n < nbtList2.size(); n++) {
-				NbtCompound nbtCompound2 = nbtList2.getCompound(n);
-				method_11783(nbtCompound2, world, chunk);
-				chunk.setHasEntities(true);
-			}
+
+		for (int n = 0; n < nbtList2.size(); n++) {
+			NbtCompound nbtCompound2 = nbtList2.getCompound(n);
+			method_11783(nbtCompound2, world, chunk);
+			chunk.setHasEntities(true);
 		}
 
 		NbtList nbtList3 = nbt.getList("TileEntities", 10);
-		if (nbtList3 != null) {
-			for (int o = 0; o < nbtList3.size(); o++) {
-				NbtCompound nbtCompound3 = nbtList3.getCompound(o);
-				BlockEntity blockEntity = BlockEntity.create(world, nbtCompound3);
-				if (blockEntity != null) {
-					chunk.addBlockEntity(blockEntity);
-				}
+
+		for (int o = 0; o < nbtList3.size(); o++) {
+			NbtCompound nbtCompound3 = nbtList3.getCompound(o);
+			BlockEntity blockEntity = BlockEntity.create(world, nbtCompound3);
+			if (blockEntity != null) {
+				chunk.addBlockEntity(blockEntity);
 			}
 		}
 
 		if (nbt.contains("TileTicks", 9)) {
 			NbtList nbtList4 = nbt.getList("TileTicks", 10);
-			if (nbtList4 != null) {
-				for (int p = 0; p < nbtList4.size(); p++) {
-					NbtCompound nbtCompound4 = nbtList4.getCompound(p);
-					Block block;
-					if (nbtCompound4.contains("i", 8)) {
-						block = Block.get(nbtCompound4.getString("i"));
-					} else {
-						block = Block.getById(nbtCompound4.getInt("i"));
-					}
 
-					world.scheduleTick(
-						new BlockPos(nbtCompound4.getInt("x"), nbtCompound4.getInt("y"), nbtCompound4.getInt("z")), block, nbtCompound4.getInt("t"), nbtCompound4.getInt("p")
-					);
+			for (int p = 0; p < nbtList4.size(); p++) {
+				NbtCompound nbtCompound4 = nbtList4.getCompound(p);
+				Block block;
+				if (nbtCompound4.contains("i", 8)) {
+					block = Block.get(nbtCompound4.getString("i"));
+				} else {
+					block = Block.getById(nbtCompound4.getInt("i"));
 				}
+
+				world.scheduleTick(
+					new BlockPos(nbtCompound4.getInt("x"), nbtCompound4.getInt("y"), nbtCompound4.getInt("z")), block, nbtCompound4.getInt("t"), nbtCompound4.getInt("p")
+				);
 			}
 		}
 

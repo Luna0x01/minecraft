@@ -22,7 +22,7 @@ public class CapeFeatureRenderer implements FeatureRenderer<AbstractClientPlayer
 			&& abstractClientPlayerEntity.isPartVisible(PlayerModelPart.CAPE)
 			&& abstractClientPlayerEntity.getSkinId() != null) {
 			ItemStack itemStack = abstractClientPlayerEntity.getStack(EquipmentSlot.CHEST);
-			if (itemStack == null || itemStack.getItem() != Items.ELYTRA) {
+			if (itemStack.getItem() != Items.ELYTRA) {
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				this.playerRenderer.bindTexture(abstractClientPlayerEntity.getSkinId());
 				GlStateManager.pushMatrix();

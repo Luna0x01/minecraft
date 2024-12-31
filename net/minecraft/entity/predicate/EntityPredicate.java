@@ -5,7 +5,6 @@ import com.google.common.base.Predicates;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ShulkerEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -37,11 +36,6 @@ public final class EntityPredicate {
 	public static final Predicate<Entity> EXCEPT_SPECTATOR = new Predicate<Entity>() {
 		public boolean apply(@Nullable Entity entity) {
 			return !(entity instanceof PlayerEntity) || !((PlayerEntity)entity).isSpectator();
-		}
-	};
-	public static final Predicate<Entity> field_14516 = new Predicate<Entity>() {
-		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof ShulkerEntity && entity.isAlive();
 		}
 	};
 
@@ -84,6 +78,21 @@ public final class EntityPredicate {
 			);
 	}
 
+	public static Predicate<Entity> method_13945(Entity entity) {
+		return new Predicate<Entity>() {
+			public boolean apply(@Nullable Entity entity) {
+				while (entity.hasMount()) {
+					entity = entity.getVehicle();
+					if (entity == entity) {
+						return false;
+					}
+				}
+
+				return true;
+			}
+		};
+	}
+
 	public static class Armored implements Predicate<Entity> {
 		private final ItemStack stack;
 
@@ -98,7 +107,7 @@ public final class EntityPredicate {
 				return false;
 			} else {
 				LivingEntity livingEntity = (LivingEntity)entity;
-				if (livingEntity.getStack(MobEntity.method_13083(this.stack)) != null) {
+				if (!livingEntity.getStack(MobEntity.method_13083(this.stack)).isEmpty()) {
 					return false;
 				} else if (livingEntity instanceof MobEntity) {
 					return ((MobEntity)livingEntity).canPickUpLoot();

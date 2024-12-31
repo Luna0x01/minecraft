@@ -5,7 +5,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class RainSplashParticle extends Particle {
@@ -54,7 +53,7 @@ public class RainSplashParticle extends Particle {
 			if (blockState.getBlock() instanceof AbstractFluidBlock) {
 				d = (double)(1.0F - AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL)));
 			} else {
-				d = blockState.getCollisionBox((BlockView)this.field_13424, blockPos).maxY;
+				d = blockState.getCollisionBox(this.field_13424, blockPos).maxY;
 			}
 
 			double f = (double)MathHelper.floor(this.field_13429) + d;

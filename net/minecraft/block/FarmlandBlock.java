@@ -1,13 +1,11 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
@@ -49,7 +47,7 @@ public class FarmlandBlock extends Block {
 			if (i > 0) {
 				world.setBlockState(pos, state.with(MOISTURE, i - 1), 2);
 			} else if (!this.hasCrop(world, pos)) {
-				world.setBlockState(pos, Blocks.DIRT.getDefaultState());
+				this.method_13706(world, pos);
 			}
 		} else if (i < 7) {
 			world.setBlockState(pos, state.with(MOISTURE, 7), 2);
@@ -63,10 +61,20 @@ public class FarmlandBlock extends Block {
 			&& entity instanceof LivingEntity
 			&& (entity instanceof PlayerEntity || world.getGameRules().getBoolean("mobGriefing"))
 			&& entity.width * entity.width * entity.height > 0.512F) {
-			world.setBlockState(pos, Blocks.DIRT.getDefaultState());
+			this.method_13706(world, pos);
 		}
 
 		super.onLandedUpon(world, pos, entity, distance);
+	}
+
+	private void method_13706(World world, BlockPos blockPos) {
+		BlockState blockState = Blocks.DIRT.getDefaultState();
+		world.setBlockState(blockPos, blockState);
+		Box box = blockState.method_11726(world, blockPos).offset(blockPos);
+
+		for (Entity entity : world.getEntitiesIn(null, box)) {
+			entity.updatePosition(entity.x, box.maxY, entity.z);
+		}
 	}
 
 	private boolean hasCrop(World world, BlockPos pos) {
@@ -85,10 +93,18 @@ public class FarmlandBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		super.method_8641(blockState, world, blockPos, block);
-		if (world.getBlockState(blockPos.up()).getMaterial().isSolid()) {
-			world.setBlockState(blockPos, Blocks.DIRT.getDefaultState());
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		super.neighborUpdate(state, world, pos, block, neighborPos);
+		if (world.getBlockState(pos.up()).getMaterial().isSolid()) {
+			this.method_13706(world, pos);
+		}
+	}
+
+	@Override
+	public void onCreation(World world, BlockPos pos, BlockState state) {
+		super.onCreation(world, pos, state);
+		if (world.getBlockState(pos.up()).getMaterial().isSolid()) {
+			this.method_13706(world, pos);
 		}
 	}
 
@@ -109,15 +125,9 @@ public class FarmlandBlock extends Block {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Blocks.DIRT.getDropItem(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT), random, id);
-	}
-
-	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Blocks.DIRT);
 	}
 
 	@Override

@@ -31,7 +31,7 @@ public class EscapeSunlightGoal extends Goal {
 			return false;
 		} else if (!this.world.hasDirectSunlight(new BlockPos(this.mob.x, this.mob.getBoundingBox().minY, this.mob.z))) {
 			return false;
-		} else if (this.mob.getStack(EquipmentSlot.HEAD) != null) {
+		} else if (!this.mob.getStack(EquipmentSlot.HEAD).isEmpty()) {
 			return false;
 		} else {
 			Vec3d vec3d = this.locateShadedPos();

@@ -42,39 +42,39 @@ public class StructureBlockEntityRenderer extends BlockEntityRenderer<StructureB
 							o = (double)blockPos2.getZ() + 0.02;
 					}
 
-					double p;
-					double q;
-					double r;
-					double s;
+					double af;
+					double ag;
+					double ah;
+					double ai;
 					switch (structureBlockEntity.method_13352()) {
 						case CLOCKWISE_90:
-							p = d + (o < 0.0 ? j - 0.01 : j + 1.0 + 0.01);
-							q = f + (n < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
-							r = p - o;
-							s = q + n;
+							af = d + (o < 0.0 ? j - 0.01 : j + 1.0 + 0.01);
+							ag = f + (n < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
+							ah = af - o;
+							ai = ag + n;
 							break;
 						case CLOCKWISE_180:
-							p = d + (n < 0.0 ? j - 0.01 : j + 1.0 + 0.01);
-							q = f + (o < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
-							r = p - n;
-							s = q - o;
+							af = d + (n < 0.0 ? j - 0.01 : j + 1.0 + 0.01);
+							ag = f + (o < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
+							ah = af - n;
+							ai = ag - o;
 							break;
 						case COUNTERCLOCKWISE_90:
-							p = d + (o < 0.0 ? j + 1.0 + 0.01 : j - 0.01);
-							q = f + (n < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
-							r = p + o;
-							s = q - n;
+							af = d + (o < 0.0 ? j + 1.0 + 0.01 : j - 0.01);
+							ag = f + (n < 0.0 ? k - 0.01 : k + 1.0 + 0.01);
+							ah = af + o;
+							ai = ag - n;
 							break;
 						default:
-							p = d + (n < 0.0 ? j + 1.0 + 0.01 : j - 0.01);
-							q = f + (o < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
-							r = p + n;
-							s = q + o;
+							af = d + (n < 0.0 ? j + 1.0 + 0.01 : j - 0.01);
+							ag = f + (o < 0.0 ? k + 1.0 + 0.01 : k - 0.01);
+							ah = af + n;
+							ai = ag + o;
 					}
 
-					int t = 255;
-					int u = 223;
-					int v = 127;
+					int aj = 255;
+					int ak = 223;
+					int al = 127;
 					Tessellator tessellator = Tessellator.getInstance();
 					BufferBuilder bufferBuilder = tessellator.getBuffer();
 					GlStateManager.disableFog();
@@ -86,7 +86,7 @@ public class StructureBlockEntityRenderer extends BlockEntityRenderer<StructureB
 					);
 					this.method_13445(true);
 					if (structureBlockEntity.method_13354() == StructureBlockEntity.class_2739.SAVE || structureBlockEntity.method_13336()) {
-						this.method_13447(tessellator, bufferBuilder, p, l, q, r, m, s, 255, 223, 127);
+						this.method_13447(tessellator, bufferBuilder, af, l, ag, ah, m, ai, 255, 223, 127);
 					}
 
 					if (structureBlockEntity.method_13354() == StructureBlockEntity.class_2739.SAVE && structureBlockEntity.method_13335()) {
@@ -115,7 +115,7 @@ public class StructureBlockEntityRenderer extends BlockEntityRenderer<StructureB
 		BlockPos blockPos2 = structureBlockEntity.getPos();
 		BlockPos blockPos3 = blockPos2.add(blockPos);
 
-		for (BlockPos blockPos4 : BlockPos.Mutable.iterate(blockPos3, blockPos3.add(structureBlockEntity.method_13350()).add(-1, -1, -1))) {
+		for (BlockPos blockPos4 : BlockPos.iterate(blockPos3, blockPos3.add(structureBlockEntity.method_13350()).add(-1, -1, -1))) {
 			BlockState blockState = world.getBlockState(blockPos4);
 			boolean bl2 = blockState == Blocks.AIR.getDefaultState();
 			boolean bl3 = blockState == Blocks.STRUCTURE_VOID.getDefaultState();

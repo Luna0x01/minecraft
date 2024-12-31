@@ -3,6 +3,7 @@ package net.minecraft.world.biome;
 import java.util.Random;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.InfestedBlock;
+import net.minecraft.entity.LlamaEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkBlockStateStorage;
@@ -22,6 +23,7 @@ public class ExtremeHillsBiome extends Biome {
 			this.biomeDecorator.treesPerChunk = 3;
 		}
 
+		this.passiveEntries.add(new Biome.SpawnEntry(LlamaEntity.class, 5, 4, 6));
 		this.field_12529 = type;
 	}
 

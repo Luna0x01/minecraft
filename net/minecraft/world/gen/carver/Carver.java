@@ -26,6 +26,15 @@ public class Carver {
 		}
 	}
 
+	public static void method_13769(long l, Random random, int i, int j) {
+		random.setSeed(l);
+		long m = random.nextLong();
+		long n = random.nextLong();
+		long o = (long)i * m;
+		long p = (long)j * n;
+		random.setSeed(o ^ p ^ l);
+	}
+
 	protected void carve(World world, int chunkX, int chunkZ, int mainChunkX, int mainChunkZ, ChunkBlockStateStorage chunkStorage) {
 	}
 }

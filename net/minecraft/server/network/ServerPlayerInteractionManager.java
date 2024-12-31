@@ -1,6 +1,5 @@
 package net.minecraft.server.network;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
@@ -127,7 +126,7 @@ public class ServerPlayerInteractionManager {
 
 				if (!this.player.canModifyWorld()) {
 					ItemStack itemStack = this.player.getMainHandStack();
-					if (itemStack == null) {
+					if (itemStack.isEmpty()) {
 						return;
 					}
 
@@ -194,7 +193,7 @@ public class ServerPlayerInteractionManager {
 	}
 
 	public boolean method_10766(BlockPos pos) {
-		if (this.gameMode.isCreative() && this.player.getMainHandStack() != null && this.player.getMainHandStack().getItem() instanceof SwordItem) {
+		if (this.gameMode.isCreative() && !this.player.getMainHandStack().isEmpty() && this.player.getMainHandStack().getItem() instanceof SwordItem) {
 			return false;
 		} else {
 			BlockState blockState = this.world.getBlockState(pos);
@@ -211,7 +210,7 @@ public class ServerPlayerInteractionManager {
 
 					if (!this.player.canModifyWorld()) {
 						ItemStack itemStack = this.player.getMainHandStack();
-						if (itemStack == null) {
+						if (itemStack.isEmpty()) {
 							return false;
 						}
 
@@ -227,13 +226,10 @@ public class ServerPlayerInteractionManager {
 					this.player.networkHandler.sendPacket(new BlockUpdateS2CPacket(this.world, pos));
 				} else {
 					ItemStack itemStack2 = this.player.getMainHandStack();
-					ItemStack itemStack3 = itemStack2 == null ? null : itemStack2.copy();
+					ItemStack itemStack3 = itemStack2.isEmpty() ? ItemStack.EMPTY : itemStack2.copy();
 					boolean bl2 = this.player.method_13265(blockState);
-					if (itemStack2 != null) {
+					if (!itemStack2.isEmpty()) {
 						itemStack2.method_11306(this.world, blockState, pos, this.player);
-						if (itemStack2.count == 0) {
-							this.player.equipStack(Hand.MAIN_HAND, null);
-						}
 					}
 
 					if (bl && bl2) {
@@ -252,23 +248,25 @@ public class ServerPlayerInteractionManager {
 		} else if (player.getItemCooldownManager().method_11382(item.getItem())) {
 			return ActionResult.PASS;
 		} else {
-			int i = item.count;
+			int i = item.getCount();
 			int j = item.getData();
 			TypedActionResult<ItemStack> typedActionResult = item.method_11390(world, player, hand);
 			ItemStack itemStack = typedActionResult.getObject();
-			if (itemStack == item && itemStack.count == i && itemStack.getMaxUseTime() <= 0 && itemStack.getData() == j) {
+			if (itemStack == item && itemStack.getCount() == i && itemStack.getMaxUseTime() <= 0 && itemStack.getData() == j) {
+				return typedActionResult.getActionResult();
+			} else if (typedActionResult.getActionResult() == ActionResult.FAIL && itemStack.getMaxUseTime() > 0 && !player.method_13061()) {
 				return typedActionResult.getActionResult();
 			} else {
 				player.equipStack(hand, itemStack);
 				if (this.isCreative()) {
-					itemStack.count = i;
+					itemStack.setCount(i);
 					if (itemStack.isDamageable()) {
 						itemStack.setDamage(j);
 					}
 				}
 
-				if (itemStack.count == 0) {
-					player.equipStack(hand, null);
+				if (itemStack.isEmpty()) {
+					player.equipStack(hand, ItemStack.EMPTY);
 				}
 
 				if (!player.method_13061()) {
@@ -281,7 +279,7 @@ public class ServerPlayerInteractionManager {
 	}
 
 	public ActionResult method_12792(
-		PlayerEntity playerEntity, World world, @Nullable ItemStack itemStack, Hand hand, BlockPos blockPos, Direction direction, float f, float g, float h
+		PlayerEntity playerEntity, World world, ItemStack itemStack, Hand hand, BlockPos blockPos, Direction direction, float f, float g, float h
 	) {
 		if (this.gameMode == GameMode.SPECTATOR) {
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
@@ -303,14 +301,14 @@ public class ServerPlayerInteractionManager {
 
 			return ActionResult.PASS;
 		} else {
-			if (!playerEntity.isSneaking() || playerEntity.getMainHandStack() == null && playerEntity.getOffHandStack() == null) {
+			if (!playerEntity.isSneaking() || playerEntity.getMainHandStack().isEmpty() && playerEntity.getOffHandStack().isEmpty()) {
 				BlockState blockState = world.getBlockState(blockPos);
-				if (blockState.getBlock().method_421(world, blockPos, blockState, playerEntity, hand, itemStack, direction, f, g, h)) {
+				if (blockState.getBlock().use(world, blockPos, blockState, playerEntity, hand, direction, f, g, h)) {
 					return ActionResult.SUCCESS;
 				}
 			}
 
-			if (itemStack == null) {
+			if (itemStack.isEmpty()) {
 				return ActionResult.PASS;
 			} else if (playerEntity.getItemCooldownManager().method_11382(itemStack.getItem())) {
 				return ActionResult.PASS;
@@ -324,10 +322,10 @@ public class ServerPlayerInteractionManager {
 
 				if (this.isCreative()) {
 					int i = itemStack.getData();
-					int j = itemStack.count;
+					int j = itemStack.getCount();
 					ActionResult actionResult = itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);
 					itemStack.setDamage(i);
-					itemStack.count = j;
+					itemStack.setCount(j);
 					return actionResult;
 				} else {
 					return itemStack.use(playerEntity, world, blockPos, hand, direction, f, g, h);

@@ -6,6 +6,7 @@ import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.util.collection.LowercaseMap;
 
 public abstract class AbstractEntityAttributeContainer {
@@ -17,6 +18,7 @@ public abstract class AbstractEntityAttributeContainer {
 		return (EntityAttributeInstance)this.instancesByKey.get(attribute);
 	}
 
+	@Nullable
 	public EntityAttributeInstance get(String name) {
 		return (EntityAttributeInstance)this.instancesById.get(name);
 	}

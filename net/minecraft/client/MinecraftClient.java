@@ -24,11 +24,11 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.text.DecimalFormat;
-import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -148,6 +148,7 @@ import net.minecraft.stat.StatFormatter;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -206,7 +207,6 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	private TextureManager textureManager;
 	private static MinecraftClient instance;
 	private final DataFixerUpper field_13277;
-	@Nullable
 	public ClientPlayerInteractionManager interactionManager;
 	private boolean fullscreen;
 	private final boolean glErrors = true;
@@ -326,6 +326,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		}
 
 		ImageIO.setUseCache(false);
+		Locale.setDefault(Locale.ROOT);
 		Bootstrap.initialize();
 		this.field_13277 = DataFixerFactory.createDataFixer();
 	}
@@ -502,7 +503,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 	private void setPixelFormat() throws LWJGLException {
 		Display.setResizable(true);
-		Display.setTitle("Minecraft 1.10.2");
+		Display.setTitle("Minecraft 1.11.2");
 
 		try {
 			Display.create(new PixelFormat().withDepthBits(24));
@@ -657,8 +658,8 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		int[] is = bufferedImage.getRGB(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), null, 0, bufferedImage.getWidth());
 		ByteBuffer byteBuffer = ByteBuffer.allocate(4 * is.length);
 
-		for (int k : is) {
-			byteBuffer.putInt(k << 8 | k >> 24 & 0xFF);
+		for (int i : is) {
+			byteBuffer.putInt(i << 8 | i >> 24 & 0xFF);
 		}
 
 		byteBuffer.flip();
@@ -787,7 +788,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 		if (screen instanceof TitleScreen || screen instanceof MultiplayerScreen) {
 			this.options.debugEnabled = false;
-			this.inGameHud.getChatHud().clear();
+			this.inGameHud.getChatHud().clear(true);
 		}
 
 		this.currentScreen = screen;
@@ -1007,7 +1008,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 	private void handleProfilerKeyPress(int digit) {
 		List<Profiler.Section> list = this.profiler.getData(this.openProfilerSection);
-		if (list != null && !list.isEmpty()) {
+		if (!list.isEmpty()) {
 			Profiler.Section section = (Profiler.Section)list.remove(0);
 			if (digit == 0) {
 				if (!section.name.isEmpty()) {
@@ -1217,35 +1218,32 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		if (!this.interactionManager.isBreakingBlock()) {
 			this.blockPlaceDelay = 4;
 			if (!this.player.method_12266()) {
+				if (this.result == null) {
+					LOGGER.warn("Null returned as 'hitResult', this shouldn't happen!");
+				}
+
 				for (Hand hand : Hand.values()) {
 					ItemStack itemStack = this.player.getStackInHand(hand);
-					if (this.result == null) {
-						LOGGER.warn("Null returned as 'hitResult', this shouldn't happen!");
-					} else {
+					if (this.result != null) {
 						switch (this.result.type) {
 							case ENTITY:
-								if (this.interactionManager.method_12236(this.player, this.result.entity, this.result, this.player.getStackInHand(hand), hand) == ActionResult.SUCCESS) {
+								if (this.interactionManager.method_12236(this.player, this.result.entity, this.result, hand) == ActionResult.SUCCESS) {
 									return;
 								}
 
-								if (this.interactionManager.method_12235(this.player, this.result.entity, this.player.getStackInHand(hand), hand) == ActionResult.SUCCESS) {
+								if (this.interactionManager.method_12235(this.player, this.result.entity, hand) == ActionResult.SUCCESS) {
 									return;
 								}
 								break;
 							case BLOCK:
 								BlockPos blockPos = this.result.getBlockPos();
 								if (this.world.getBlockState(blockPos).getMaterial() != Material.AIR) {
-									int k = itemStack != null ? itemStack.count : 0;
-									ActionResult actionResult = this.interactionManager
-										.method_12232(this.player, this.world, itemStack, blockPos, this.result.direction, this.result.pos, hand);
+									int i = itemStack.getCount();
+									ActionResult actionResult = this.interactionManager.method_13842(this.player, this.world, blockPos, this.result.direction, this.result.pos, hand);
 									if (actionResult == ActionResult.SUCCESS) {
 										this.player.swingHand(hand);
-										if (itemStack != null) {
-											if (itemStack.count == 0) {
-												this.player.equipStack(hand, null);
-											} else if (itemStack.count != k || this.interactionManager.hasCreativeInventory()) {
-												this.gameRenderer.firstPersonRenderer.method_12330(hand);
-											}
+										if (!itemStack.isEmpty() && (itemStack.getCount() != i || this.interactionManager.hasCreativeInventory())) {
+											this.gameRenderer.firstPersonRenderer.method_12330(hand);
 										}
 
 										return;
@@ -1254,8 +1252,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 						}
 					}
 
-					ItemStack itemStack2 = this.player.getStackInHand(hand);
-					if (itemStack2 != null && this.interactionManager.method_12234(this.player, this.world, itemStack2, hand) == ActionResult.SUCCESS) {
+					if (!itemStack.isEmpty() && this.interactionManager.method_12234(this.player, this.world, hand) == ActionResult.SUCCESS) {
 						this.gameRenderer.firstPersonRenderer.method_12330(hand);
 						return;
 					}
@@ -1557,35 +1554,35 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 	private boolean method_12146(int key) {
 		if (key == 30) {
 			this.worldRenderer.reload();
-			this.addDebugMessage("Reloading all chunks");
+			this.addDebugMessage("debug.reload_chunks.message");
 			return true;
 		} else if (key == 48) {
 			boolean bl = !this.entityRenderDispatcher.getRenderHitboxes();
 			this.entityRenderDispatcher.setRenderHitboxes(bl);
-			this.addDebugMessage("Hitboxes: {0}", bl ? "shown" : "hidden");
+			this.addDebugMessage(bl ? "debug.show_hitboxes.on" : "debug.show_hitboxes.off");
 			return true;
 		} else if (key == 32) {
 			if (this.inGameHud != null) {
-				this.inGameHud.getChatHud().clear();
+				this.inGameHud.getChatHud().clear(false);
 			}
 
 			return true;
 		} else if (key == 33) {
 			this.options.getBooleanValue(GameOptions.Option.RENDER_DISTANCE, Screen.hasShiftDown() ? -1 : 1);
-			this.addDebugMessage("RenderDistance: {0}", this.options.viewDistance);
+			this.addDebugMessage("debug.cycle_renderdistance.message", this.options.viewDistance);
 			return true;
 		} else if (key == 34) {
 			boolean bl2 = this.debugRenderer.toggleChunkBorders();
-			this.addDebugMessage("Chunk borders: {0}", bl2 ? "shown" : "hidden");
+			this.addDebugMessage(bl2 ? "debug.chunk_boundaries.on" : "debug.chunk_boundaries.off");
 			return true;
 		} else if (key == 35) {
 			this.options.advancedItemTooltips = !this.options.advancedItemTooltips;
-			this.addDebugMessage("Advanced tooltips: {0}", this.options.advancedItemTooltips ? "shown" : "hidden");
+			this.addDebugMessage(this.options.advancedItemTooltips ? "debug.advanced_tooltips.on" : "debug.advanced_tooltips.off");
 			this.options.save();
 			return true;
 		} else if (key == 49) {
 			if (!this.player.canUseCommand(2, "")) {
-				this.addDebugMessage("Unable to switch gamemode, no permission");
+				this.addDebugMessage("debug.creative_spectator.error");
 			} else if (this.player.isCreative()) {
 				this.player.sendChatMessage("/gamemode spectator");
 			} else if (this.player.isSpectator()) {
@@ -1596,25 +1593,25 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		} else if (key == 25) {
 			this.options.pauseOnLostFocus = !this.options.pauseOnLostFocus;
 			this.options.save();
-			this.addDebugMessage("PauseOnLostFocus: {0}", this.options.pauseOnLostFocus ? "enabled" : "disabled");
+			this.addDebugMessage(this.options.pauseOnLostFocus ? "debug.pause_focus.on" : "debug.pause_focus.off");
 			return true;
 		} else if (key == 16) {
-			this.addDebugMessage("Keybindings:");
+			this.addDebugMessage("debug.help.message");
 			ChatHud chatHud = this.inGameHud.getChatHud();
-			chatHud.addMessage(new LiteralText("F3 + A = Reload chunks"));
-			chatHud.addMessage(new LiteralText("F3 + B = Show hitboxes"));
-			chatHud.addMessage(new LiteralText("F3 + D = Clear chat"));
-			chatHud.addMessage(new LiteralText("F3 + F = Cycle renderdistance (Shift to inverse)"));
-			chatHud.addMessage(new LiteralText("F3 + G = Show chunk boundaries"));
-			chatHud.addMessage(new LiteralText("F3 + H = Advanced tooltips"));
-			chatHud.addMessage(new LiteralText("F3 + N = Cycle creative <-> spectator"));
-			chatHud.addMessage(new LiteralText("F3 + P = Pause on lost focus"));
-			chatHud.addMessage(new LiteralText("F3 + Q = Show this list"));
-			chatHud.addMessage(new LiteralText("F3 + T = Reload resourcepacks"));
+			chatHud.addMessage(new TranslatableText("debug.reload_chunks.help"));
+			chatHud.addMessage(new TranslatableText("debug.show_hitboxes.help"));
+			chatHud.addMessage(new TranslatableText("debug.clear_chat.help"));
+			chatHud.addMessage(new TranslatableText("debug.cycle_renderdistance.help"));
+			chatHud.addMessage(new TranslatableText("debug.chunk_boundaries.help"));
+			chatHud.addMessage(new TranslatableText("debug.advanced_tooltips.help"));
+			chatHud.addMessage(new TranslatableText("debug.creative_spectator.help"));
+			chatHud.addMessage(new TranslatableText("debug.pause_focus.help"));
+			chatHud.addMessage(new TranslatableText("debug.help.help"));
+			chatHud.addMessage(new TranslatableText("debug.reload_resourcepacks.help"));
 			return true;
 		} else if (key == 20) {
+			this.addDebugMessage("debug.reload_resourcepacks.message");
 			this.reloadResources();
-			this.addDebugMessage("Reloaded resourcepacks");
 			return true;
 		} else {
 			return false;
@@ -1763,7 +1760,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 			.addMessage(
 				new LiteralText("")
 					.append(new LiteralText("[Debug]: ").setStyle(new Style().setFormatting(Formatting.YELLOW).setBold(true)))
-					.append(MessageFormat.format(key, args))
+					.append(new TranslatableText(key, args))
 			);
 	}
 
@@ -1822,12 +1819,12 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		SocketAddress socketAddress = this.server.getNetworkIo().bindLocal();
 		ClientConnection clientConnection = ClientConnection.connectLocal(socketAddress);
 		clientConnection.setPacketListener(new ClientLoginNetworkHandler(clientConnection, this, null));
-		clientConnection.send(new HandshakeC2SPacket(210, socketAddress.toString(), 0, NetworkState.LOGIN));
+		clientConnection.send(new HandshakeC2SPacket(316, socketAddress.toString(), 0, NetworkState.LOGIN));
 		clientConnection.send(new LoginHelloC2SPacket(this.getSession().getProfile()));
 		this.clientConnection = clientConnection;
 	}
 
-	public void connect(ClientWorld world) {
+	public void connect(@Nullable ClientWorld world) {
 		this.connect(world, "");
 	}
 
@@ -1844,7 +1841,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 
 			this.server = null;
 			this.notification.reset();
-			this.gameRenderer.getMapRenderer().clearStateTextures();
+			this.gameRenderer.method_13848();
 			this.interactionManager = null;
 		}
 
@@ -1968,7 +1965,7 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 				}
 
 				itemStack = block.getItemStack(this.world, blockPos, blockState);
-				if (itemStack == null) {
+				if (itemStack.isEmpty()) {
 					return;
 				}
 
@@ -1987,10 +1984,10 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 				} else if (this.result.entity instanceof ItemFrameEntity) {
 					ItemFrameEntity itemFrameEntity = (ItemFrameEntity)this.result.entity;
 					ItemStack itemStack4 = itemFrameEntity.getHeldItemStack();
-					if (itemStack4 == null) {
+					if (itemStack4.isEmpty()) {
 						itemStack = new ItemStack(Items.ITEM_FRAME);
 					} else {
-						itemStack = ItemStack.copyOf(itemStack4);
+						itemStack = itemStack4.copy();
 					}
 				} else if (this.result.entity instanceof AbstractMinecartEntity) {
 					AbstractMinecartEntity abstractMinecartEntity = (AbstractMinecartEntity)this.result.entity;
@@ -2023,25 +2020,25 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 				} else if (this.result.entity instanceof EndCrystalEntity) {
 					itemStack = new ItemStack(Items.END_CRYSTAL);
 				} else {
-					String string = EntityType.getEntityName(this.result.entity);
-					if (!EntityType.SPAWN_EGGS.containsKey(string)) {
+					Identifier identifier = EntityType.getId(this.result.entity);
+					if (identifier == null || !EntityType.SPAWN_EGGS.containsKey(identifier)) {
 						return;
 					}
 
 					itemStack = new ItemStack(Items.SPAWN_EGG);
-					SpawnEggItem.method_11405(itemStack, string);
+					SpawnEggItem.setEggEntity(itemStack, identifier);
 				}
 			}
 
-			if (itemStack.getItem() == null) {
-				String string2 = "";
+			if (itemStack.isEmpty()) {
+				String string = "";
 				if (this.result.type == BlockHitResult.Type.BLOCK) {
-					string2 = Block.REGISTRY.getIdentifier(this.world.getBlockState(this.result.getBlockPos()).getBlock()).toString();
+					string = Block.REGISTRY.getIdentifier(this.world.getBlockState(this.result.getBlockPos()).getBlock()).toString();
 				} else if (this.result.type == BlockHitResult.Type.ENTITY) {
-					string2 = EntityType.getEntityName(this.result.entity);
+					string = EntityType.getId(this.result.entity).toString();
 				}
 
-				LOGGER.warn("Picking on: [{}] {} gave null item", new Object[]{this.result.type, string2});
+				LOGGER.warn("Picking on: [{}] {} gave null item", new Object[]{this.result.type, string});
 			} else {
 				PlayerInventory playerInventory = this.player.inventory;
 				if (blockEntity != null) {
@@ -2189,10 +2186,11 @@ public class MinecraftClient implements ThreadExecutor, Snoopable {
 		snooper.addGameInfo("display_type", this.fullscreen ? "fullscreen" : "windowed");
 		snooper.addGameInfo("run_time", (MinecraftServer.getTimeMillis() - snooper.getStartTime()) / 60L * 1000L);
 		snooper.addGameInfo("current_action", this.getCurrentAction());
-		snooper.addGameInfo("language", this.options.language == null ? "en_US" : this.options.language);
+		snooper.addGameInfo("language", this.options.language == null ? "en_us" : this.options.language);
 		String string = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big";
 		snooper.addGameInfo("endianness", string);
 		snooper.addGameInfo("subtitles", this.options.field_13292);
+		snooper.addGameInfo("touch", this.options.touchscreen ? "touch" : "mouse");
 		snooper.addGameInfo("resource_packs", this.loader.getSelectedResourcePacks().size());
 		int i = 0;
 

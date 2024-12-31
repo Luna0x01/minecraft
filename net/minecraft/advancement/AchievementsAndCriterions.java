@@ -5,6 +5,8 @@ import java.util.List;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.PotionUtil;
+import net.minecraft.potion.Potions;
 import net.minecraft.util.JsonSet;
 
 public class AchievementsAndCriterions {
@@ -42,7 +44,10 @@ public class AchievementsAndCriterions {
 	public static final Achievement PORTAL = new Achievement("achievement.portal", "portal", -1, 7, Blocks.OBSIDIAN, DIAMONDS).addStat();
 	public static final Achievement GHAST = new Achievement("achievement.ghast", "ghast", -4, 8, Items.GHAST_TEAR, PORTAL).challenge().addStat();
 	public static final Achievement BLAZE_ROD = new Achievement("achievement.blazeRod", "blazeRod", 0, 9, Items.BLAZE_ROD, PORTAL).addStat();
-	public static final Achievement POTION = new Achievement("achievement.potion", "potion", 2, 8, Items.POTION, BLAZE_ROD).addStat();
+	public static final Achievement POTION = new Achievement(
+			"achievement.potion", "potion", 2, 8, PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.REGENERATION), BLAZE_ROD
+		)
+		.addStat();
 	public static final Achievement THE_END = new Achievement("achievement.theEnd", "theEnd", 3, 10, Items.EYE_OF_ENDER, BLAZE_ROD).challenge().addStat();
 	public static final Achievement THE_END_2 = new Achievement("achievement.theEnd2", "theEnd2", 4, 13, Blocks.DRAGON_EGG, THE_END).challenge().addStat();
 	public static final Achievement ENCHANTMENTS = new Achievement("achievement.enchantments", "enchantments", -4, 4, Blocks.ENCHANTING_TABLE, DIAMONDS).addStat();

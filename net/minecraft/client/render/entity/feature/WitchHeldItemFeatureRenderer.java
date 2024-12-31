@@ -2,12 +2,11 @@ package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.WitchEntityRenderer;
-import net.minecraft.client.render.entity.model.WitchEntityModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.entity.mob.WitchEntity;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -21,7 +20,7 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 
 	public void render(WitchEntity witchEntity, float f, float g, float h, float i, float j, float k, float l) {
 		ItemStack itemStack = witchEntity.getMainHandStack();
-		if (itemStack != null) {
+		if (!itemStack.isEmpty()) {
 			GlStateManager.color(1.0F, 1.0F, 1.0F);
 			GlStateManager.pushMatrix();
 			if (this.witchRenderer.getModel().child) {
@@ -31,11 +30,11 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			}
 
-			((WitchEntityModel)this.witchRenderer.getModel()).field_5132.preRender(0.0625F);
+			this.witchRenderer.getModel().field_5132.preRender(0.0625F);
 			GlStateManager.translate(-0.0625F, 0.53125F, 0.21875F);
 			Item item = itemStack.getItem();
 			MinecraftClient minecraftClient = MinecraftClient.getInstance();
-			if (item instanceof BlockItem && minecraftClient.getBlockRenderManager().method_12345(Block.getBlockFromItem(item))) {
+			if (Block.getBlockFromItem(item).getDefaultState().getRenderType() == BlockRenderType.ENTITYBLOCK_ANIMATED) {
 				GlStateManager.translate(0.0F, 0.0625F, -0.25F);
 				GlStateManager.rotate(30.0F, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(-5.0F, 0.0F, 1.0F, 0.0F);

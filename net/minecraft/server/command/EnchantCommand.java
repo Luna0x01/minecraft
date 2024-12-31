@@ -48,11 +48,11 @@ public class EnchantCommand extends AbstractCommand {
 			}
 
 			if (enchantment == null) {
-				throw new InvalidNumberException("commands.enchant.notFound", Enchantment.getId(enchantment));
+				throw new InvalidNumberException("commands.enchant.notFound", args[1]);
 			} else {
 				int i = 1;
 				ItemStack itemStack = livingEntity.getMainHandStack();
-				if (itemStack == null) {
+				if (itemStack.isEmpty()) {
 					throw new CommandException("commands.enchant.noItem");
 				} else if (!enchantment.isAcceptableItem(itemStack)) {
 					throw new CommandException("commands.enchant.cantEnchant");
@@ -67,10 +67,10 @@ public class EnchantCommand extends AbstractCommand {
 							for (int j = 0; j < nbtList.size(); j++) {
 								int k = nbtList.getCompound(j).getShort("id");
 								if (Enchantment.byIndex(k) != null) {
-									Enchantment enchantment2 = Enchantment.byIndex(k);
-									if (!enchantment.differs(enchantment2)) {
+									Enchantment enchantment3 = Enchantment.byIndex(k);
+									if (!enchantment.isDifferent(enchantment3)) {
 										throw new CommandException(
-											"commands.enchant.cantCombine", enchantment.getTranslatedName(i), enchantment2.getTranslatedName(nbtList.getCompound(j).getShort("lvl"))
+											"commands.enchant.cantCombine", enchantment.getTranslatedName(i), enchantment3.getTranslatedName(nbtList.getCompound(j).getShort("lvl"))
 										);
 									}
 								}

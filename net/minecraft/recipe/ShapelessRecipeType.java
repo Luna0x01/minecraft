@@ -2,9 +2,9 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ShapelessRecipeType implements RecipeType {
@@ -16,24 +16,23 @@ public class ShapelessRecipeType implements RecipeType {
 		this.stacks = list;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return this.result;
 	}
 
 	@Override
-	public ItemStack[] getRemainders(CraftingInventory inventory) {
-		ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null && itemStack.getItem().isFood()) {
-				itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack = craftingInventory.getInvStack(i);
+			if (itemStack.getItem().isFood()) {
+				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 			}
 		}
 
-		return itemStacks;
+		return defaultedList;
 	}
 
 	@Override
@@ -43,7 +42,7 @@ public class ShapelessRecipeType implements RecipeType {
 		for (int i = 0; i < inventory.getHeight(); i++) {
 			for (int j = 0; j < inventory.getWidth(); j++) {
 				ItemStack itemStack = inventory.getStackAt(j, i);
-				if (itemStack != null) {
+				if (!itemStack.isEmpty()) {
 					boolean bl = false;
 
 					for (ItemStack itemStack2 : list) {
@@ -64,7 +63,6 @@ public class ShapelessRecipeType implements RecipeType {
 		return list.isEmpty();
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		return this.result.copy();

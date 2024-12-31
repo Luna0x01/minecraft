@@ -70,11 +70,11 @@ public class TemplePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			this.width = structureNbt.getInt("Width");
-			this.height = structureNbt.getInt("Height");
-			this.depth = structureNbt.getInt("Depth");
-			this.hPos = structureNbt.getInt("HPos");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			this.width = nbtCompound.getInt("Width");
+			this.height = nbtCompound.getInt("Height");
+			this.depth = nbtCompound.getInt("Depth");
+			this.hPos = nbtCompound.getInt("HPos");
 		}
 
 		protected boolean adjustToAverageHeight(World world, BlockBox boundingBox, int deltaY) {
@@ -126,12 +126,12 @@ public class TemplePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.chestsPlaced[0] = structureNbt.getBoolean("hasPlacedChest0");
-			this.chestsPlaced[1] = structureNbt.getBoolean("hasPlacedChest1");
-			this.chestsPlaced[2] = structureNbt.getBoolean("hasPlacedChest2");
-			this.chestsPlaced[3] = structureNbt.getBoolean("hasPlacedChest3");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.chestsPlaced[0] = nbtCompound.getBoolean("hasPlacedChest0");
+			this.chestsPlaced[1] = nbtCompound.getBoolean("hasPlacedChest1");
+			this.chestsPlaced[2] = nbtCompound.getBoolean("hasPlacedChest2");
+			this.chestsPlaced[3] = nbtCompound.getBoolean("hasPlacedChest3");
 		}
 
 		@Override
@@ -491,12 +491,12 @@ public class TemplePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.mainChest = structureNbt.getBoolean("placedMainChest");
-			this.hiddenChest = structureNbt.getBoolean("placedHiddenChest");
-			this.placedTrap1 = structureNbt.getBoolean("placedTrap1");
-			this.placedTrap2 = structureNbt.getBoolean("placedTrap2");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.mainChest = nbtCompound.getBoolean("placedMainChest");
+			this.hiddenChest = nbtCompound.getBoolean("placedHiddenChest");
+			this.placedTrap1 = nbtCompound.getBoolean("placedTrap1");
+			this.placedTrap2 = nbtCompound.getBoolean("placedTrap2");
 		}
 
 		@Override
@@ -729,9 +729,9 @@ public class TemplePieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.witch = structureNbt.getBoolean("Witch");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.witch = nbtCompound.getBoolean("Witch");
 		}
 
 		@Override
@@ -868,6 +868,7 @@ public class TemplePieces {
 					if (boundingBox.contains(new BlockPos(k, l, m))) {
 						this.witch = true;
 						WitchEntity witchEntity = new WitchEntity(world);
+						witchEntity.setPersistent();
 						witchEntity.refreshPositionAndAngles((double)k + 0.5, (double)l, (double)m + 0.5, 0.0F, 0.0F);
 						witchEntity.initialize(world.getLocalDifficulty(new BlockPos(k, l, m)), null);
 						world.spawnEntity(witchEntity);

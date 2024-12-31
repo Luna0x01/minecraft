@@ -15,9 +15,7 @@ import net.minecraft.util.math.Vec3d;
 
 public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 	private static final Identifier GUARDIAN_TEX = new Identifier("textures/entity/guardian.png");
-	private static final Identifier ELDER_GUARDIAN_TEX = new Identifier("textures/entity/guardian_elder.png");
 	private static final Identifier GUARDIAN_BEAM = new Identifier("textures/entity/guardian_beam.png");
-	int field_11104 = ((GuardianEntityModel)this.model).method_9635();
 
 	public GuardianEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new GuardianEntityModel(), 0.5F);
@@ -50,11 +48,6 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 	}
 
 	public void render(GuardianEntity guardianEntity, double d, double e, double f, float g, float h) {
-		if (this.field_11104 != ((GuardianEntityModel)this.model).method_9635()) {
-			this.model = new GuardianEntityModel();
-			this.field_11104 = ((GuardianEntityModel)this.model).method_9635();
-		}
-
 		super.render(guardianEntity, d, e, f, g, h);
 		LivingEntity livingEntity = guardianEntity.getBeamTarget();
 		if (livingEntity != null) {
@@ -138,13 +131,7 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 		}
 	}
 
-	protected void scale(GuardianEntity guardianEntity, float f) {
-		if (guardianEntity.isElder()) {
-			GlStateManager.scale(2.35F, 2.35F, 2.35F);
-		}
-	}
-
 	protected Identifier getTexture(GuardianEntity guardianEntity) {
-		return guardianEntity.isElder() ? ELDER_GUARDIAN_TEX : GUARDIAN_TEX;
+		return GUARDIAN_TEX;
 	}
 }

@@ -2,6 +2,7 @@ package net.minecraft.client.gl;
 
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.Locale;
 import net.minecraft.util.JsonHelper;
 
 public class GlBlendState {
@@ -153,7 +154,7 @@ public class GlBlendState {
 	}
 
 	private static int getFuncFromString(String string) {
-		String string2 = string.trim().toLowerCase();
+		String string2 = string.trim().toLowerCase(Locale.ROOT);
 		if ("add".equals(string2)) {
 			return 32774;
 		} else if ("subtract".equals(string2)) {
@@ -170,7 +171,7 @@ public class GlBlendState {
 	}
 
 	private static int getComponentFromString(String string) {
-		String string2 = string.trim().toLowerCase();
+		String string2 = string.trim().toLowerCase(Locale.ROOT);
 		string2 = string2.replaceAll("_", "");
 		string2 = string2.replaceAll("one", "1");
 		string2 = string2.replaceAll("zero", "0");

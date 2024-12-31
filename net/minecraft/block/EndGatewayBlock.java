@@ -34,7 +34,7 @@ public class EndGatewayBlock extends BlockWithEntity {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -80,10 +80,9 @@ public class EndGatewayBlock extends BlockWithEntity {
 		}
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override

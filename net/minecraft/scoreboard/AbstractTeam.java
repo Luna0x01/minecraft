@@ -43,6 +43,7 @@ public abstract class AbstractTeam {
 			return (String[])field_13270.keySet().toArray(new String[field_13270.size()]);
 		}
 
+		@Nullable
 		public static AbstractTeam.CollisionRule method_12132(String string) {
 			return (AbstractTeam.CollisionRule)field_13270.get(string);
 		}
@@ -73,6 +74,7 @@ public abstract class AbstractTeam {
 			return (String[])RULES.keySet().toArray(new String[RULES.size()]);
 		}
 
+		@Nullable
 		public static AbstractTeam.VisibilityRule getRuleByName(String name) {
 			return (AbstractTeam.VisibilityRule)RULES.get(name);
 		}

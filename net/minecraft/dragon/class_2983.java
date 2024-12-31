@@ -123,7 +123,7 @@ public class class_2983 extends class_2979 {
 
 	@Override
 	public void method_13181(EndCrystalEntity endCrystalEntity, BlockPos blockPos, DamageSource damageSource, @Nullable PlayerEntity playerEntity) {
-		if (playerEntity != null) {
+		if (playerEntity != null && !playerEntity.abilities.invulnerable) {
 			this.method_13174(playerEntity);
 		}
 	}

@@ -80,6 +80,34 @@ public class Box {
 		return 31 * i + (int)(l ^ l >>> 32);
 	}
 
+	public Box shrink(double x, double y, double z) {
+		double d = this.minX;
+		double e = this.minY;
+		double f = this.minZ;
+		double g = this.maxX;
+		double h = this.maxY;
+		double i = this.maxZ;
+		if (x < 0.0) {
+			d -= x;
+		} else if (x > 0.0) {
+			g -= x;
+		}
+
+		if (y < 0.0) {
+			e -= y;
+		} else if (y > 0.0) {
+			h -= y;
+		}
+
+		if (z < 0.0) {
+			f -= z;
+		} else if (z > 0.0) {
+			i -= z;
+		}
+
+		return new Box(d, e, f, g, h, i);
+	}
+
 	public Box stretch(double x, double y, double z) {
 		double d = this.minX;
 		double e = this.minY;
@@ -122,6 +150,16 @@ public class Box {
 		return this.expand(value, value, value);
 	}
 
+	public Box intersection(Box box) {
+		double d = Math.max(this.minX, box.minX);
+		double e = Math.max(this.minY, box.minY);
+		double f = Math.max(this.minZ, box.minZ);
+		double g = Math.min(this.maxX, box.maxX);
+		double h = Math.min(this.maxY, box.maxY);
+		double i = Math.min(this.maxZ, box.maxZ);
+		return new Box(d, e, f, g, h, i);
+	}
+
 	public Box union(Box box) {
 		double d = Math.min(this.minX, box.minX);
 		double e = Math.min(this.minY, box.minY);
@@ -145,6 +183,10 @@ public class Box {
 			this.maxY + (double)pos.getY(),
 			this.maxZ + (double)pos.getZ()
 		);
+	}
+
+	public Box offset(Vec3d ved) {
+		return this.offset(ved.x, ved.y, ved.z);
 	}
 
 	public double method_583(Box box, double d) {

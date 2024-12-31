@@ -18,23 +18,22 @@ public class FireChargeItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
 		if (world.isClient) {
 			return ActionResult.SUCCESS;
 		} else {
-			blockPos = blockPos.offset(direction);
-			if (!playerEntity.canModify(blockPos, direction, itemStack)) {
+			pos = pos.offset(direction);
+			ItemStack itemStack = player.getStackInHand(hand);
+			if (!player.canModify(pos, direction, itemStack)) {
 				return ActionResult.FAIL;
 			} else {
-				if (world.getBlockState(blockPos).getMaterial() == Material.AIR) {
-					world.method_11486(null, blockPos, Sounds.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 1.0F, (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2F + 1.0F);
-					world.setBlockState(blockPos, Blocks.FIRE.getDefaultState());
+				if (world.getBlockState(pos).getMaterial() == Material.AIR) {
+					world.method_11486(null, pos, Sounds.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 1.0F, (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2F + 1.0F);
+					world.setBlockState(pos, Blocks.FIRE.getDefaultState());
 				}
 
-				if (!playerEntity.abilities.creativeMode) {
-					itemStack.count--;
+				if (!player.abilities.creativeMode) {
+					itemStack.decrement(1);
 				}
 
 				return ActionResult.SUCCESS;

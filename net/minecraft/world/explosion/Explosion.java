@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -129,7 +130,7 @@ public class Explosion {
 						double ae = (double)this.world.method_3612(vec3d, entity.getBoundingBox());
 						double af = (1.0 - z) * ae;
 						entity.damage(DamageSource.explosion(this), (float)((int)((af * af + af) / 2.0 * 7.0 * (double)r + 1.0)));
-						double ag = 1.0;
+						double ag = af;
 						if (entity instanceof LivingEntity) {
 							ag = ProtectionEnchantment.method_11465((LivingEntity)entity, af);
 						}
@@ -217,6 +218,7 @@ public class Explosion {
 		return this.affectedPlayers;
 	}
 
+	@Nullable
 	public LivingEntity getCausingEntity() {
 		if (this.causingEntity == null) {
 			return null;

@@ -50,7 +50,6 @@ import net.minecraft.item.Items;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
@@ -105,10 +104,10 @@ public class ItemRenderer implements ResourceReloadListener {
 	}
 
 	private void renderBakedItemModel(BakedModel model, int color) {
-		this.renderBakedItemModel(model, color, null);
+		this.renderBakedItemModel(model, color, ItemStack.EMPTY);
 	}
 
-	private void renderBakedItemModel(BakedModel model, int color, @Nullable ItemStack stack) {
+	private void renderBakedItemModel(BakedModel model, int color, ItemStack stack) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(7, VertexFormats.BLOCK_NORMALS);
@@ -122,7 +121,7 @@ public class ItemRenderer implements ResourceReloadListener {
 	}
 
 	public void renderItem(ItemStack stack, BakedModel model) {
-		if (stack != null) {
+		if (!stack.isEmpty()) {
 			GlStateManager.pushMatrix();
 			GlStateManager.translate(-0.5F, -0.5F, -0.5F);
 			if (model.isBuiltin()) {
@@ -180,8 +179,8 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.renderQuad(bufferBuilder, quad);
 	}
 
-	private void renderBakedItemQuads(BufferBuilder bufferBuilder, List<BakedQuad> quads, int color, @Nullable ItemStack stack) {
-		boolean bl = color == -1 && stack != null;
+	private void renderBakedItemQuads(BufferBuilder bufferBuilder, List<BakedQuad> quads, int color, ItemStack stack) {
+		boolean bl = color == -1 && !stack.isEmpty();
 		int i = 0;
 
 		for (int j = quads.size(); i < j; i++) {
@@ -206,7 +205,7 @@ public class ItemRenderer implements ResourceReloadListener {
 	}
 
 	public void method_12458(ItemStack itemStack, ModelTransformation.Mode mode) {
-		if (itemStack != null) {
+		if (!itemStack.isEmpty()) {
 			BakedModel bakedModel = this.method_12457(itemStack, null, null);
 			this.method_12459(itemStack, bakedModel, mode, false);
 		}
@@ -224,14 +223,14 @@ public class ItemRenderer implements ResourceReloadListener {
 	}
 
 	public void method_12460(ItemStack itemStack, LivingEntity livingEntity, ModelTransformation.Mode mode, boolean bl) {
-		if (itemStack != null && livingEntity != null && itemStack.getItem() != null) {
+		if (!itemStack.isEmpty() && livingEntity != null) {
 			BakedModel bakedModel = this.method_12457(itemStack, livingEntity.world, livingEntity);
 			this.method_12459(itemStack, bakedModel, mode, bl);
 		}
 	}
 
 	protected void method_12459(ItemStack itemStack, BakedModel bakedModel, ModelTransformation.Mode mode, boolean bl) {
-		if (itemStack.getItem() != null) {
+		if (!itemStack.isEmpty()) {
 			this.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			this.textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pushFilter(false, false);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
@@ -304,7 +303,7 @@ public class ItemRenderer implements ResourceReloadListener {
 	}
 
 	public void method_10249(@Nullable LivingEntity livingEntity, ItemStack itemStack, int i, int j) {
-		if (itemStack != null && itemStack.getItem() != null) {
+		if (!itemStack.isEmpty()) {
 			this.zOffset += 50.0F;
 
 			try {
@@ -344,13 +343,9 @@ public class ItemRenderer implements ResourceReloadListener {
 	}
 
 	public void renderGuiItemOverlay(TextRenderer renderer, ItemStack stack, int x, int y, @Nullable String countLabel) {
-		if (stack != null) {
-			if (stack.count != 1 || countLabel != null) {
-				String string = countLabel == null ? String.valueOf(stack.count) : countLabel;
-				if (countLabel == null && stack.count < 1) {
-					string = Formatting.RED + String.valueOf(stack.count);
-				}
-
+		if (!stack.isEmpty()) {
+			if (stack.getCount() != 1 || countLabel != null) {
+				String string = countLabel == null ? String.valueOf(stack.getCount()) : countLabel;
 				GlStateManager.disableLighting();
 				GlStateManager.disableDepthTest();
 				GlStateManager.disableBlend();
@@ -360,8 +355,6 @@ public class ItemRenderer implements ResourceReloadListener {
 			}
 
 			if (stack.isDamaged()) {
-				int i = (int)Math.round(13.0 - (double)stack.getDamage() * 13.0 / (double)stack.getMaxDamage());
-				int j = (int)Math.round(255.0 - (double)stack.getDamage() * 255.0 / (double)stack.getMaxDamage());
 				GlStateManager.disableLighting();
 				GlStateManager.disableDepthTest();
 				GlStateManager.disableTexture();
@@ -369,9 +362,13 @@ public class ItemRenderer implements ResourceReloadListener {
 				GlStateManager.disableBlend();
 				Tessellator tessellator = Tessellator.getInstance();
 				BufferBuilder bufferBuilder = tessellator.getBuffer();
+				float f = (float)stack.getDamage();
+				float g = (float)stack.getMaxDamage();
+				float h = Math.max(0.0F, (g - f) / g);
+				int i = Math.round(13.0F - f * 13.0F / g);
+				int j = MathHelper.hsvToRgb(h / 3.0F, 1.0F, 1.0F);
 				this.renderGuiQuad(bufferBuilder, x + 2, y + 13, 13, 2, 0, 0, 0, 255);
-				this.renderGuiQuad(bufferBuilder, x + 2, y + 13, 12, 1, (255 - j) / 4, 64, 0, 255);
-				this.renderGuiQuad(bufferBuilder, x + 2, y + 13, i, 1, 255 - j, j, 0, 255);
+				this.renderGuiQuad(bufferBuilder, x + 2, y + 13, i, 1, j >> 16 & 0xFF, j >> 8 & 0xFF, j & 0xFF, 255);
 				GlStateManager.enableBlend();
 				GlStateManager.enableAlphaTest();
 				GlStateManager.enableTexture();
@@ -380,16 +377,16 @@ public class ItemRenderer implements ResourceReloadListener {
 			}
 
 			ClientPlayerEntity clientPlayerEntity = MinecraftClient.getInstance().player;
-			float f = clientPlayerEntity == null
+			float k = clientPlayerEntity == null
 				? 0.0F
 				: clientPlayerEntity.getItemCooldownManager().getCooldownProgress(stack.getItem(), MinecraftClient.getInstance().method_12143());
-			if (f > 0.0F) {
+			if (k > 0.0F) {
 				GlStateManager.disableLighting();
 				GlStateManager.disableDepthTest();
 				GlStateManager.disableTexture();
 				Tessellator tessellator2 = Tessellator.getInstance();
 				BufferBuilder bufferBuilder2 = tessellator2.getBuffer();
-				this.renderGuiQuad(bufferBuilder2, x, y + MathHelper.floor(16.0F * (1.0F - f)), 16, MathHelper.ceil(16.0F * f), 255, 255, 255, 127);
+				this.renderGuiQuad(bufferBuilder2, x, y + MathHelper.floor(16.0F * (1.0F - k)), 16, MathHelper.ceil(16.0F * k), 255, 255, 255, 127);
 				GlStateManager.enableTexture();
 				GlStateManager.enableLighting();
 				GlStateManager.enableDepthTest();
@@ -712,6 +709,23 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Blocks.RED_NETHER_BRICK, "red_nether_brick");
 		this.addModel(Blocks.BONE_BLOCK, "bone_block");
 		this.addModel(Blocks.STRUCTURE_VOID, "structure_void");
+		this.addModel(Blocks.OBSERVER, "observer");
+		this.addModel(Blocks.WHITE_SHULKER_BOX, "white_shulker_box");
+		this.addModel(Blocks.ORANGE_SHULKER_BOX, "orange_shulker_box");
+		this.addModel(Blocks.MAGENTA_SHULKER_BOX, "magenta_shulker_box");
+		this.addModel(Blocks.LIGHT_BLUE_SHULKER_BOX, "light_blue_shulker_box");
+		this.addModel(Blocks.YELLOW_SHULKER_BOX, "yellow_shulker_box");
+		this.addModel(Blocks.LIME_SHULKER_BOX, "lime_shulker_box");
+		this.addModel(Blocks.PINK_SHULKER_BOX, "pink_shulker_box");
+		this.addModel(Blocks.GRAY_SHULKER_BOX, "gray_shulker_box");
+		this.addModel(Blocks.SILVER_SHULKER_BOX, "silver_shulker_box");
+		this.addModel(Blocks.CYAN_SHULKER_BOX, "cyan_shulker_box");
+		this.addModel(Blocks.PURPLE_SHULKER_BOX, "purple_shulker_box");
+		this.addModel(Blocks.BLUE_SHULKER_BOX, "blue_shulker_box");
+		this.addModel(Blocks.BROWN_SHULKER_BOX, "brown_shulker_box");
+		this.addModel(Blocks.GREEN_SHULKER_BOX, "green_shulker_box");
+		this.addModel(Blocks.RED_SHULKER_BOX, "red_shulker_box");
+		this.addModel(Blocks.BLACK_SHULKER_BOX, "black_shulker_box");
 		this.addModel(Blocks.CHEST, "chest");
 		this.addModel(Blocks.TRAPPED_CHEST, "trapped_chest");
 		this.addModel(Blocks.ENDERCHEST, "ender_chest");
@@ -874,6 +888,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.BEETROOT, "beetroot");
 		this.addModel(Items.BEETROOT_SEED, "beetroot_seeds");
 		this.addModel(Items.BEETROOT_SOUP, "beetroot_soup");
+		this.addModel(Items.TOTEM_OF_UNDYING, "totem");
 		this.addModel(Items.POTION, "bottle_drinkable");
 		this.addModel(Items.SPLASH_POTION, "bottle_splash");
 		this.addModel(Items.LINGERING_POTION, "bottle_lingering");
@@ -942,6 +957,8 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.ELYTRA, "elytra");
 		this.addModel(Items.CHORUS_FRUIT, "chorus_fruit");
 		this.addModel(Items.CHORUS_FRUIT_POPPED, "chorus_fruit_popped");
+		this.addModel(Items.SHULKER_SHELL, "shulker_shell");
+		this.addModel(Items.IRON_NUGGET, "iron_nugget");
 		this.addModel(Items.RECORD_13, "record_13");
 		this.addModel(Items.RECORD_CAT, "record_cat");
 		this.addModel(Items.RECORD_BLOCKS, "record_blocks");

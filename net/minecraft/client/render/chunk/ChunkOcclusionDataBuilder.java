@@ -37,9 +37,9 @@ public class ChunkOcclusionDataBuilder {
 		} else if (this.openCount == 0) {
 			chunkOcclusionData.fill(false);
 		} else {
-			for (int k : EDGE_POINTS) {
-				if (!this.closed.get(k)) {
-					chunkOcclusionData.addOpenEdgeFaces(this.getOpenFaces(k));
+			for (int i : EDGE_POINTS) {
+				if (!this.closed.get(i)) {
+					chunkOcclusionData.addOpenEdgeFaces(this.getOpenFaces(i));
 				}
 			}
 		}
@@ -62,10 +62,10 @@ public class ChunkOcclusionDataBuilder {
 			this.addEdgeFaces(i, set);
 
 			for (Direction direction : Direction.values()) {
-				int l = this.offset(i, direction);
-				if (l >= 0 && !this.closed.get(l)) {
-					this.closed.set(l, true);
-					queue.add(IntegerStorage.get(l));
+				int j = this.offset(i, direction);
+				if (j >= 0 && !this.closed.get(j)) {
+					this.closed.set(j, true);
+					queue.add(IntegerStorage.get(j));
 				}
 			}
 		}

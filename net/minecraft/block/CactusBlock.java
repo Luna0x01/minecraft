@@ -11,6 +11,7 @@ import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class CactusBlock extends Block {
@@ -41,7 +42,7 @@ public class CactusBlock extends Block {
 					world.setBlockState(blockPos, this.getDefaultState());
 					BlockState blockState = state.with(AGE, 0);
 					world.setBlockState(pos, blockState, 4);
-					blockState.method_11707(world, blockPos, this);
+					blockState.neighbourUpdate(world, blockPos, this, pos);
 				} else {
 					world.setBlockState(pos, state.with(AGE, j + 1), 4);
 				}
@@ -50,7 +51,7 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return field_12607;
 	}
 
@@ -75,9 +76,9 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.canPlaceCactusAt(world, blockPos)) {
-			world.removeBlock(blockPos, true);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.canPlaceCactusAt(world, pos)) {
+			world.removeBlock(pos, true);
 		}
 	}
 

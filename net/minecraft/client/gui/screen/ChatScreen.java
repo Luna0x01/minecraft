@@ -35,7 +35,7 @@ public class ChatScreen extends Screen implements class_2844 {
 		Keyboard.enableRepeatEvents(true);
 		this.messageHistorySize = this.client.inGameHud.getChatHud().getMessageHistory().size();
 		this.chatField = new TextFieldWidget(0, this.textRenderer, 4, this.height - 12, this.width - 4, 12);
-		this.chatField.setMaxLength(100);
+		this.chatField.setMaxLength(256);
 		this.chatField.setHasBorder(false);
 		this.chatField.setFocused(true);
 		this.chatField.setText(this.lastChatFieldText);

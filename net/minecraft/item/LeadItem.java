@@ -19,15 +19,13 @@ public class LeadItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		Block block = world.getBlockState(blockPos).getBlock();
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		Block block = world.getBlockState(pos).getBlock();
 		if (!(block instanceof FenceBlock)) {
 			return ActionResult.PASS;
 		} else {
 			if (!world.isClient) {
-				useLead(playerEntity, world, blockPos);
+				useLead(player, world, pos);
 			}
 
 			return ActionResult.SUCCESS;

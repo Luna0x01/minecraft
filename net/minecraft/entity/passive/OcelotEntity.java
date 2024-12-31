@@ -1,6 +1,7 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -19,7 +20,6 @@ import net.minecraft.entity.ai.goal.PounceAtTargetGoal;
 import net.minecraft.entity.ai.goal.SitGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -62,7 +62,7 @@ public class OcelotEntity extends TameableEntity {
 		this.goals.add(7, new PounceAtTargetGoal(this, 0.3F));
 		this.goals.add(8, new AttackGoal(this));
 		this.goals.add(9, new BreedGoal(this, 0.8));
-		this.goals.add(10, new WanderAroundGoal(this, 0.8));
+		this.goals.add(10, new class_3133(this, 0.8, 1.0000001E-5F));
 		this.goals.add(11, new LookAtEntityGoal(this, PlayerEntity.class, 10.0F));
 		this.attackGoals.add(1, new FollowTargetIfTamedGoal(this, ChickenEntity.class, false, null));
 	}
@@ -110,7 +110,7 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Ozelot");
+		MobEntity.registerDataFixes(dataFixer, OcelotEntity.class);
 	}
 
 	@Override
@@ -179,17 +179,15 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (this.isTamed()) {
 			if (this.isOwner(playerEntity) && !this.world.isClient && !this.isBreedingItem(itemStack)) {
 				this.sitGoal.setEnabledWithOwner(!this.isSitting());
 			}
-		} else if ((this.field_3705 == null || this.field_3705.isActive())
-			&& itemStack != null
-			&& itemStack.getItem() == Items.RAW_FISH
-			&& playerEntity.squaredDistanceTo(this) < 9.0) {
+		} else if ((this.field_3705 == null || this.field_3705.isActive()) && itemStack.getItem() == Items.RAW_FISH && playerEntity.squaredDistanceTo(this) < 9.0) {
 			if (!playerEntity.abilities.creativeMode) {
-				itemStack.count--;
+				itemStack.decrement(1);
 			}
 
 			if (!this.world.isClient) {
@@ -209,7 +207,7 @@ public class OcelotEntity extends TameableEntity {
 			return true;
 		}
 
-		return super.method_13079(playerEntity, hand, itemStack);
+		return super.interactMob(playerEntity, hand);
 	}
 
 	public OcelotEntity breed(PassiveEntity passiveEntity) {
@@ -224,8 +222,8 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	@Override
-	public boolean isBreedingItem(@Nullable ItemStack stack) {
-		return stack != null && stack.getItem() == Items.RAW_FISH;
+	public boolean isBreedingItem(ItemStack stack) {
+		return stack.getItem() == Items.RAW_FISH;
 	}
 
 	@Override
@@ -282,11 +280,6 @@ public class OcelotEntity extends TameableEntity {
 		} else {
 			return this.isTamed() ? CommonI18n.translate("entity.Cat.name") : super.getTranslationKey();
 		}
-	}
-
-	@Override
-	public void setTamed(boolean tamed) {
-		super.setTamed(tamed);
 	}
 
 	@Override

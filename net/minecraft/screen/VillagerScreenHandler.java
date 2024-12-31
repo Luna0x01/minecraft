@@ -1,6 +1,5 @@
 package net.minecraft.screen;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -40,16 +39,6 @@ public class VillagerScreenHandler extends ScreenHandler {
 	}
 
 	@Override
-	public void addListener(ScreenHandlerListener listener) {
-		super.addListener(listener);
-	}
-
-	@Override
-	public void sendContentUpdates() {
-		super.sendContentUpdates();
-	}
-
-	@Override
 	public void onContentChanged(Inventory inventory) {
 		this.traderInventory.updateRecipes();
 		super.onContentChanged(inventory);
@@ -60,51 +49,46 @@ public class VillagerScreenHandler extends ScreenHandler {
 	}
 
 	@Override
-	public void setProperty(int id, int value) {
-	}
-
-	@Override
 	public boolean canUse(PlayerEntity player) {
 		return this.trader.getCurrentCustomer() == player;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (invSlot == 2) {
 				if (!this.insertItem(itemStack2, 3, 39, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
 			} else if (invSlot != 0 && invSlot != 1) {
 				if (invSlot >= 3 && invSlot < 30) {
 					if (!this.insertItem(itemStack2, 30, 39, false)) {
-						return null;
+						return ItemStack.EMPTY;
 					}
 				} else if (invSlot >= 30 && invSlot < 39 && !this.insertItem(itemStack2, 3, 30, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (!this.insertItem(itemStack2, 3, 39, false)) {
-				return null;
+				return ItemStack.EMPTY;
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			slot.method_3298(player, itemStack2);
 		}
 
 		return itemStack;
@@ -117,12 +101,12 @@ public class VillagerScreenHandler extends ScreenHandler {
 		super.close(player);
 		if (!this.world.isClient) {
 			ItemStack itemStack = this.traderInventory.removeInvStack(0);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				player.dropItem(itemStack, false);
 			}
 
 			itemStack = this.traderInventory.removeInvStack(1);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				player.dropItem(itemStack, false);
 			}
 		}

@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.FurnaceBlockEntity;
 import net.minecraft.block.material.Material;
@@ -35,7 +34,6 @@ public class FurnaceBlock extends BlockWithEntity {
 		this.isLit = bl;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.FURNACE);
@@ -103,25 +101,14 @@ public class FurnaceBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof FurnaceBlockEntity) {
-				playerEntity.openInventory((FurnaceBlockEntity)blockEntity);
-				playerEntity.incrementStat(Stats.FURNACE_INTERACTION);
+				player.openInventory((FurnaceBlockEntity)blockEntity);
+				player.incrementStat(Stats.FURNACE_INTERACTION);
 			}
 
 			return true;

@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -10,6 +9,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 
 public class PrismarineBlock extends Block {
 	public static final EnumProperty<PrismarineBlock.PrismarineType> VARIANT = EnumProperty.of("variant", PrismarineBlock.PrismarineType.class);
@@ -54,10 +54,10 @@ public class PrismarineBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item, 1, ROUGH_ID));
-		stacks.add(new ItemStack(item, 1, BRICKS_ID));
-		stacks.add(new ItemStack(item, 1, DARK_ID));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item, 1, ROUGH_ID));
+		defaultedList.add(new ItemStack(item, 1, BRICKS_ID));
+		defaultedList.add(new ItemStack(item, 1, DARK_ID));
 	}
 
 	public static enum PrismarineType implements StringIdentifiable {

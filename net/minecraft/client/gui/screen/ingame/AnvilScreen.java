@@ -2,7 +2,6 @@ package net.minecraft.client.gui.screen.ingame;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import io.netty.buffer.Unpooled;
-import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resource.language.I18n;
@@ -16,6 +15,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerListener;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 import org.lwjgl.input.Keyboard;
 
@@ -41,7 +41,7 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 		this.renameTextField.setEditableColor(-1);
 		this.renameTextField.setUneditableColor(-1);
 		this.renameTextField.setHasBorder(false);
-		this.renameTextField.setMaxLength(30);
+		this.renameTextField.setMaxLength(31);
 		this.screenHandler.removeListener(this);
 		this.screenHandler.addListener(this);
 	}
@@ -139,16 +139,16 @@ public class AnvilScreen extends HandledScreen implements ScreenHandlerListener 
 	}
 
 	@Override
-	public void updateScreenHandler(ScreenHandler handler, List<ItemStack> list) {
-		this.onScreenHandlerSlotUpdate(handler, 0, handler.getSlot(0).getStack());
+	public void method_13643(ScreenHandler screenHandler, DefaultedList<ItemStack> defaultedList) {
+		this.onScreenHandlerSlotUpdate(screenHandler, 0, screenHandler.getSlot(0).getStack());
 	}
 
 	@Override
 	public void onScreenHandlerSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
 		if (slotId == 0) {
-			this.renameTextField.setText(stack == null ? "" : stack.getCustomName());
-			this.renameTextField.setEditable(stack != null);
-			if (stack != null) {
+			this.renameTextField.setText(stack.isEmpty() ? "" : stack.getCustomName());
+			this.renameTextField.setEditable(!stack.isEmpty());
+			if (!stack.isEmpty()) {
 				this.sendRenameUpdates();
 			}
 		}

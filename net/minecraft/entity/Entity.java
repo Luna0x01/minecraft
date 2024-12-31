@@ -3,6 +3,7 @@ package net.minecraft.entity;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +26,9 @@ import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
+import net.minecraft.datafixer.DataFixer;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.ProtectionEnchantment;
 import net.minecraft.entity.damage.DamageSource;
@@ -56,6 +60,7 @@ import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -69,11 +74,13 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
+import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class Entity implements CommandSource {
 	private static final Logger LOGGER_ = LogManager.getLogger();
+	private static final List<ItemStack> EMPTY_STACK_LIST = Collections.emptyList();
 	private static final Box HITBOX = new Box(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 	private static double renderDistanceMultiplier = 1.0;
 	private static int entityCount;
@@ -121,7 +128,6 @@ public abstract class Entity implements CommandSource {
 	public float pushSpeedReduction;
 	protected Random random;
 	public int ticksAlive;
-	public int fireResistance;
 	private int fireTicks;
 	protected boolean touchingWater;
 	public int timeUntilRegen;
@@ -154,10 +160,11 @@ public abstract class Entity implements CommandSource {
 	protected UUID playerUuid;
 	protected String uuidString;
 	private final CommandStats commandStats;
-	private final List<ItemStack> field_14496;
 	protected boolean isGlowing;
 	private final Set<String> scoreboardTags;
 	private boolean teleportRequested;
+	private double[] pistonMovementDelta;
+	private long field_15444;
 
 	public Entity(World world) {
 		this.entityId = entityCount++;
@@ -167,13 +174,13 @@ public abstract class Entity implements CommandSource {
 		this.height = 1.8F;
 		this.field_3233 = 1;
 		this.random = new Random();
-		this.fireResistance = 1;
+		this.fireTicks = -this.getBurningDuration();
 		this.firstUpdate = true;
 		this.playerUuid = MathHelper.randomUuid(this.random);
 		this.uuidString = this.playerUuid.toString();
 		this.commandStats = new CommandStats();
-		this.field_14496 = Lists.newArrayList();
 		this.scoreboardTags = Sets.newHashSet();
+		this.pistonMovementDelta = new double[]{0.0, 0.0, 0.0};
 		this.world = world;
 		this.updatePosition(0.0, 0.0, 0.0);
 		if (world != null) {
@@ -263,10 +270,16 @@ public abstract class Entity implements CommandSource {
 			float f = this.width;
 			this.width = width;
 			this.height = height;
+			if (this.width < f) {
+				double d = (double)width / 2.0;
+				this.setBoundingBox(new Box(this.x - d, this.y, this.z - d, this.x + d, this.y + (double)this.height, this.z + d));
+				return;
+			}
+
 			Box box = this.getBoundingBox();
 			this.setBoundingBox(new Box(box.minX, box.minY, box.minZ, box.minX + (double)this.width, box.minY + (double)this.height, box.minZ + (double)this.width));
 			if (this.width > f && !this.firstUpdate && !this.world.isClient) {
-				this.move((double)(f - this.width), 0.0, (double)(f - this.width));
+				this.move(MovementType.SELF, (double)(f - this.width), 0.0, (double)(f - this.width));
 			}
 		}
 	}
@@ -362,12 +375,12 @@ public abstract class Entity implements CommandSource {
 		this.attemptSprintingParticles();
 		this.updateWaterState();
 		if (this.world.isClient) {
-			this.fireTicks = 0;
+			this.extinguish();
 		} else if (this.fireTicks > 0) {
 			if (this.isFireImmune) {
 				this.fireTicks -= 4;
 				if (this.fireTicks < 0) {
-					this.fireTicks = 0;
+					this.extinguish();
 				}
 			} else {
 				if (this.fireTicks % 20 == 0) {
@@ -440,181 +453,239 @@ public abstract class Entity implements CommandSource {
 		return this.world.doesBoxCollide(this, box).isEmpty() && !this.world.containsFluid(box);
 	}
 
-	public void move(double velocityX, double velocityY, double velocityZ) {
+	public void move(MovementType type, double movementX, double movementY, double movementZ) {
 		if (this.noClip) {
-			this.setBoundingBox(this.getBoundingBox().offset(velocityX, velocityY, velocityZ));
+			this.setBoundingBox(this.getBoundingBox().offset(movementX, movementY, movementZ));
 			this.updateSubmergedInWaterState();
 		} else {
+			if (type == MovementType.PISTON) {
+				long l = this.world.getLastUpdateTime();
+				if (l != this.field_15444) {
+					Arrays.fill(this.pistonMovementDelta, 0.0);
+					this.field_15444 = l;
+				}
+
+				if (movementX != 0.0) {
+					int i = Direction.Axis.X.ordinal();
+					double d = MathHelper.clamp(movementX + this.pistonMovementDelta[i], -0.51, 0.51);
+					movementX = d - this.pistonMovementDelta[i];
+					this.pistonMovementDelta[i] = d;
+					if (Math.abs(movementX) <= 1.0E-5F) {
+						return;
+					}
+				} else if (movementY != 0.0) {
+					int j = Direction.Axis.Y.ordinal();
+					double e = MathHelper.clamp(movementY + this.pistonMovementDelta[j], -0.51, 0.51);
+					movementY = e - this.pistonMovementDelta[j];
+					this.pistonMovementDelta[j] = e;
+					if (Math.abs(movementY) <= 1.0E-5F) {
+						return;
+					}
+				} else {
+					if (movementZ == 0.0) {
+						return;
+					}
+
+					int k = Direction.Axis.Z.ordinal();
+					double f = MathHelper.clamp(movementZ + this.pistonMovementDelta[k], -0.51, 0.51);
+					movementZ = f - this.pistonMovementDelta[k];
+					this.pistonMovementDelta[k] = f;
+					if (Math.abs(movementZ) <= 1.0E-5F) {
+						return;
+					}
+				}
+			}
+
 			this.world.profiler.push("move");
-			double d = this.x;
-			double e = this.y;
-			double f = this.z;
+			double g = this.x;
+			double h = this.y;
+			double m = this.z;
 			if (this.inLava) {
 				this.inLava = false;
-				velocityX *= 0.25;
-				velocityY *= 0.05F;
-				velocityZ *= 0.25;
+				movementX *= 0.25;
+				movementY *= 0.05F;
+				movementZ *= 0.25;
 				this.velocityX = 0.0;
 				this.velocityY = 0.0;
 				this.velocityZ = 0.0;
 			}
 
-			double g = velocityX;
-			double h = velocityY;
-			double i = velocityZ;
-			boolean bl = this.onGround && this.isSneaking() && this instanceof PlayerEntity;
-			if (bl) {
-				for (double j = 0.05; velocityX != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(velocityX, -1.0, 0.0)).isEmpty(); g = velocityX) {
-					if (velocityX < 0.05 && velocityX >= -0.05) {
-						velocityX = 0.0;
-					} else if (velocityX > 0.0) {
-						velocityX -= 0.05;
+			double n = movementX;
+			double o = movementY;
+			double p = movementZ;
+			if ((type == MovementType.SELF || type == MovementType.PLAYER) && this.onGround && this.isSneaking() && this instanceof PlayerEntity) {
+				for (double q = 0.05;
+					movementX != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(movementX, (double)(-this.stepHeight), 0.0)).isEmpty();
+					n = movementX
+				) {
+					if (movementX < 0.05 && movementX >= -0.05) {
+						movementX = 0.0;
+					} else if (movementX > 0.0) {
+						movementX -= 0.05;
 					} else {
-						velocityX += 0.05;
-					}
-				}
-
-				for (; velocityZ != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(0.0, -1.0, velocityZ)).isEmpty(); i = velocityZ) {
-					if (velocityZ < 0.05 && velocityZ >= -0.05) {
-						velocityZ = 0.0;
-					} else if (velocityZ > 0.0) {
-						velocityZ -= 0.05;
-					} else {
-						velocityZ += 0.05;
+						movementX += 0.05;
 					}
 				}
 
 				for (;
-					velocityX != 0.0 && velocityZ != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(velocityX, -1.0, velocityZ)).isEmpty();
-					i = velocityZ
+					movementZ != 0.0 && this.world.doesBoxCollide(this, this.getBoundingBox().offset(0.0, (double)(-this.stepHeight), movementZ)).isEmpty();
+					p = movementZ
 				) {
-					if (velocityX < 0.05 && velocityX >= -0.05) {
-						velocityX = 0.0;
-					} else if (velocityX > 0.0) {
-						velocityX -= 0.05;
+					if (movementZ < 0.05 && movementZ >= -0.05) {
+						movementZ = 0.0;
+					} else if (movementZ > 0.0) {
+						movementZ -= 0.05;
 					} else {
-						velocityX += 0.05;
+						movementZ += 0.05;
+					}
+				}
+
+				for (;
+					movementX != 0.0
+						&& movementZ != 0.0
+						&& this.world.doesBoxCollide(this, this.getBoundingBox().offset(movementX, (double)(-this.stepHeight), movementZ)).isEmpty();
+					p = movementZ
+				) {
+					if (movementX < 0.05 && movementX >= -0.05) {
+						movementX = 0.0;
+					} else if (movementX > 0.0) {
+						movementX -= 0.05;
+					} else {
+						movementX += 0.05;
 					}
 
-					g = velocityX;
-					if (velocityZ < 0.05 && velocityZ >= -0.05) {
-						velocityZ = 0.0;
-					} else if (velocityZ > 0.0) {
-						velocityZ -= 0.05;
+					n = movementX;
+					if (movementZ < 0.05 && movementZ >= -0.05) {
+						movementZ = 0.0;
+					} else if (movementZ > 0.0) {
+						movementZ -= 0.05;
 					} else {
-						velocityZ += 0.05;
+						movementZ += 0.05;
 					}
 				}
 			}
 
-			List<Box> list = this.world.doesBoxCollide(this, this.getBoundingBox().stretch(velocityX, velocityY, velocityZ));
+			List<Box> list = this.world.doesBoxCollide(this, this.getBoundingBox().stretch(movementX, movementY, movementZ));
 			Box box = this.getBoundingBox();
-			int k = 0;
+			if (movementY != 0.0) {
+				int r = 0;
 
-			for (int l = list.size(); k < l; k++) {
-				velocityY = ((Box)list.get(k)).method_589(this.getBoundingBox(), velocityY);
+				for (int s = list.size(); r < s; r++) {
+					movementY = ((Box)list.get(r)).method_589(this.getBoundingBox(), movementY);
+				}
+
+				this.setBoundingBox(this.getBoundingBox().offset(0.0, movementY, 0.0));
 			}
 
-			this.setBoundingBox(this.getBoundingBox().offset(0.0, velocityY, 0.0));
-			boolean bl2 = this.onGround || h != velocityY && h < 0.0;
-			int m = 0;
+			if (movementX != 0.0) {
+				int t = 0;
 
-			for (int n = list.size(); m < n; m++) {
-				velocityX = ((Box)list.get(m)).method_583(this.getBoundingBox(), velocityX);
+				for (int u = list.size(); t < u; t++) {
+					movementX = ((Box)list.get(t)).method_583(this.getBoundingBox(), movementX);
+				}
+
+				if (movementX != 0.0) {
+					this.setBoundingBox(this.getBoundingBox().offset(movementX, 0.0, 0.0));
+				}
 			}
 
-			this.setBoundingBox(this.getBoundingBox().offset(velocityX, 0.0, 0.0));
-			m = 0;
+			if (movementZ != 0.0) {
+				int v = 0;
 
-			for (int p = list.size(); m < p; m++) {
-				velocityZ = ((Box)list.get(m)).method_594(this.getBoundingBox(), velocityZ);
+				for (int w = list.size(); v < w; v++) {
+					movementZ = ((Box)list.get(v)).method_594(this.getBoundingBox(), movementZ);
+				}
+
+				if (movementZ != 0.0) {
+					this.setBoundingBox(this.getBoundingBox().offset(0.0, 0.0, movementZ));
+				}
 			}
 
-			this.setBoundingBox(this.getBoundingBox().offset(0.0, 0.0, velocityZ));
-			if (this.stepHeight > 0.0F && bl2 && (g != velocityX || i != velocityZ)) {
-				double q = velocityX;
-				double r = velocityY;
-				double s = velocityZ;
+			boolean bl = this.onGround || o != movementY && o < 0.0;
+			if (this.stepHeight > 0.0F && bl && (n != movementX || p != movementZ)) {
+				double x = movementX;
+				double y = movementY;
+				double z = movementZ;
 				Box box2 = this.getBoundingBox();
 				this.setBoundingBox(box);
-				velocityY = (double)this.stepHeight;
-				List<Box> list2 = this.world.doesBoxCollide(this, this.getBoundingBox().stretch(g, velocityY, i));
+				movementY = (double)this.stepHeight;
+				List<Box> list2 = this.world.doesBoxCollide(this, this.getBoundingBox().stretch(n, movementY, p));
 				Box box3 = this.getBoundingBox();
-				Box box4 = box3.stretch(g, 0.0, i);
-				double t = velocityY;
-				int u = 0;
+				Box box4 = box3.stretch(n, 0.0, p);
+				double aa = movementY;
+				int ab = 0;
 
-				for (int v = list2.size(); u < v; u++) {
-					t = ((Box)list2.get(u)).method_589(box4, t);
+				for (int ac = list2.size(); ab < ac; ab++) {
+					aa = ((Box)list2.get(ab)).method_589(box4, aa);
 				}
 
-				box3 = box3.offset(0.0, t, 0.0);
-				double w = g;
-				int x = 0;
+				box3 = box3.offset(0.0, aa, 0.0);
+				double ad = n;
+				int ae = 0;
 
-				for (int y = list2.size(); x < y; x++) {
-					w = ((Box)list2.get(x)).method_583(box3, w);
+				for (int af = list2.size(); ae < af; ae++) {
+					ad = ((Box)list2.get(ae)).method_583(box3, ad);
 				}
 
-				box3 = box3.offset(w, 0.0, 0.0);
-				double z = i;
-				int aa = 0;
+				box3 = box3.offset(ad, 0.0, 0.0);
+				double ag = p;
+				int ah = 0;
 
-				for (int ab = list2.size(); aa < ab; aa++) {
-					z = ((Box)list2.get(aa)).method_594(box3, z);
+				for (int ai = list2.size(); ah < ai; ah++) {
+					ag = ((Box)list2.get(ah)).method_594(box3, ag);
 				}
 
-				box3 = box3.offset(0.0, 0.0, z);
+				box3 = box3.offset(0.0, 0.0, ag);
 				Box box5 = this.getBoundingBox();
-				double ac = velocityY;
-				int ad = 0;
+				double aj = movementY;
+				int ak = 0;
 
-				for (int ae = list2.size(); ad < ae; ad++) {
-					ac = ((Box)list2.get(ad)).method_589(box5, ac);
+				for (int al = list2.size(); ak < al; ak++) {
+					aj = ((Box)list2.get(ak)).method_589(box5, aj);
 				}
 
-				Box var80 = box5.offset(0.0, ac, 0.0);
-				double af = g;
-				int ag = 0;
-
-				for (int ah = list2.size(); ag < ah; ag++) {
-					af = ((Box)list2.get(ag)).method_583(var80, af);
-				}
-
-				Box var81 = var80.offset(af, 0.0, 0.0);
-				double ai = i;
-				int aj = 0;
-
-				for (int ak = list2.size(); aj < ak; aj++) {
-					ai = ((Box)list2.get(aj)).method_594(var81, ai);
-				}
-
-				Box var82 = var81.offset(0.0, 0.0, ai);
-				double al = w * w + z * z;
-				double am = af * af + ai * ai;
-				if (al > am) {
-					velocityX = w;
-					velocityZ = z;
-					velocityY = -t;
-					this.setBoundingBox(box3);
-				} else {
-					velocityX = af;
-					velocityZ = ai;
-					velocityY = -ac;
-					this.setBoundingBox(var82);
-				}
-
+				Box var88 = box5.offset(0.0, aj, 0.0);
+				double am = n;
 				int an = 0;
 
 				for (int ao = list2.size(); an < ao; an++) {
-					velocityY = ((Box)list2.get(an)).method_589(this.getBoundingBox(), velocityY);
+					am = ((Box)list2.get(an)).method_583(var88, am);
 				}
 
-				this.setBoundingBox(this.getBoundingBox().offset(0.0, velocityY, 0.0));
-				if (q * q + s * s >= velocityX * velocityX + velocityZ * velocityZ) {
-					velocityX = q;
-					velocityY = r;
-					velocityZ = s;
+				Box var89 = var88.offset(am, 0.0, 0.0);
+				double ap = p;
+				int aq = 0;
+
+				for (int ar = list2.size(); aq < ar; aq++) {
+					ap = ((Box)list2.get(aq)).method_594(var89, ap);
+				}
+
+				Box var90 = var89.offset(0.0, 0.0, ap);
+				double as = ad * ad + ag * ag;
+				double at = am * am + ap * ap;
+				if (as > at) {
+					movementX = ad;
+					movementZ = ag;
+					movementY = -aa;
+					this.setBoundingBox(box3);
+				} else {
+					movementX = am;
+					movementZ = ap;
+					movementY = -aj;
+					this.setBoundingBox(var90);
+				}
+
+				int au = 0;
+
+				for (int av = list2.size(); au < av; au++) {
+					movementY = ((Box)list2.get(au)).method_589(this.getBoundingBox(), movementY);
+				}
+
+				this.setBoundingBox(this.getBoundingBox().offset(0.0, movementY, 0.0));
+				if (x * x + z * z >= movementX * movementX + movementZ * movementZ) {
+					movementX = x;
+					movementY = y;
+					movementZ = z;
 					this.setBoundingBox(box2);
 				}
 			}
@@ -622,14 +693,14 @@ public abstract class Entity implements CommandSource {
 			this.world.profiler.pop();
 			this.world.profiler.push("rest");
 			this.updateSubmergedInWaterState();
-			this.horizontalCollision = g != velocityX || i != velocityZ;
-			this.verticalCollision = h != velocityY;
-			this.onGround = this.verticalCollision && h < 0.0;
+			this.horizontalCollision = n != movementX || p != movementZ;
+			this.verticalCollision = o != movementY;
+			this.onGround = this.verticalCollision && o < 0.0;
 			this.colliding = this.horizontalCollision || this.verticalCollision;
-			m = MathHelper.floor(this.x);
-			int aq = MathHelper.floor(this.y - 0.2F);
-			int ar = MathHelper.floor(this.z);
-			BlockPos blockPos = new BlockPos(m, aq, ar);
+			int aw = MathHelper.floor(this.x);
+			int ax = MathHelper.floor(this.y - 0.2F);
+			int ay = MathHelper.floor(this.z);
+			BlockPos blockPos = new BlockPos(aw, ax, ay);
 			BlockState blockState = this.world.getBlockState(blockPos);
 			if (blockState.getMaterial() == Material.AIR) {
 				BlockPos blockPos2 = blockPos.down();
@@ -641,46 +712,49 @@ public abstract class Entity implements CommandSource {
 				}
 			}
 
-			this.fall(velocityY, this.onGround, blockState, blockPos);
-			if (g != velocityX) {
+			this.fall(movementY, this.onGround, blockState, blockPos);
+			if (n != movementX) {
 				this.velocityX = 0.0;
 			}
 
-			if (i != velocityZ) {
+			if (p != movementZ) {
 				this.velocityZ = 0.0;
 			}
 
 			Block block2 = blockState.getBlock();
-			if (h != velocityY) {
+			if (o != movementY) {
 				block2.setEntityVelocity(this.world, this);
 			}
 
-			if (this.canClimb() && !bl && !this.hasMount()) {
-				double as = this.x - d;
-				double at = this.y - e;
-				double au = this.z - f;
+			if (this.canClimb() && (!this.onGround || !this.isSneaking() || !(this instanceof PlayerEntity)) && !this.hasMount()) {
+				double az = this.x - g;
+				double ba = this.y - h;
+				double bb = this.z - m;
 				if (block2 != Blocks.LADDER) {
-					at = 0.0;
+					ba = 0.0;
 				}
 
 				if (block2 != null && this.onGround) {
 					block2.onSteppedOn(this.world, blockPos, this);
 				}
 
-				this.horizontalSpeed = (float)((double)this.horizontalSpeed + (double)MathHelper.sqrt(as * as + au * au) * 0.6);
-				this.distanceTraveled = (float)((double)this.distanceTraveled + (double)MathHelper.sqrt(as * as + at * at + au * au) * 0.6);
+				this.horizontalSpeed = (float)((double)this.horizontalSpeed + (double)MathHelper.sqrt(az * az + bb * bb) * 0.6);
+				this.distanceTraveled = (float)((double)this.distanceTraveled + (double)MathHelper.sqrt(az * az + ba * ba + bb * bb) * 0.6);
 				if (this.distanceTraveled > (float)this.field_3233 && blockState.getMaterial() != Material.AIR) {
 					this.field_3233 = (int)this.distanceTraveled + 1;
 					if (this.isTouchingWater()) {
-						float av = MathHelper.sqrt(this.velocityX * this.velocityX * 0.2F + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ * 0.2F) * 0.35F;
-						if (av > 1.0F) {
-							av = 1.0F;
+						Entity entity = this.hasPassengers() && this.getPrimaryPassenger() != null ? this.getPrimaryPassenger() : this;
+						float bc = entity == this ? 0.35F : 0.4F;
+						float bd = MathHelper.sqrt(entity.velocityX * entity.velocityX * 0.2F + entity.velocityY * entity.velocityY + entity.velocityZ * entity.velocityZ * 0.2F)
+							* bc;
+						if (bd > 1.0F) {
+							bd = 1.0F;
 						}
 
-						this.playSound(this.method_12984(), av, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+						this.playSound(this.method_12984(), bd, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+					} else {
+						this.playStepSound(blockPos, block2);
 					}
-
-					this.playStepSound(blockPos, block2);
 				}
 			}
 
@@ -693,22 +767,22 @@ public abstract class Entity implements CommandSource {
 				throw new CrashException(crashReport);
 			}
 
-			boolean bl3 = this.tickFire();
+			boolean bl2 = this.tickFire();
 			if (this.world.containsFireSource(this.getBoundingBox().contract(0.001))) {
 				this.burn(1);
-				if (!bl3) {
+				if (!bl2) {
 					this.fireTicks++;
 					if (this.fireTicks == 0) {
 						this.setOnFireFor(8);
 					}
 				}
 			} else if (this.fireTicks <= 0) {
-				this.fireTicks = -this.fireResistance;
+				this.fireTicks = -this.getBurningDuration();
 			}
 
-			if (bl3 && this.fireTicks > 0) {
+			if (bl2 && this.isOnFire()) {
 				this.playSound(Sounds.ENTITY_GENERIC_EXTINGUISH_FIRE, 0.7F, 1.6F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
-				this.fireTicks = -this.fireResistance;
+				this.fireTicks = -this.getBurningDuration();
 			}
 
 			this.world.profiler.pop();
@@ -860,7 +934,7 @@ public abstract class Entity implements CommandSource {
 
 			this.fallDistance = 0.0F;
 			this.touchingWater = true;
-			this.fireTicks = 0;
+			this.extinguish();
 		} else {
 			this.touchingWater = false;
 		}
@@ -869,33 +943,35 @@ public abstract class Entity implements CommandSource {
 	}
 
 	protected void onSwimmingStart() {
-		float f = MathHelper.sqrt(this.velocityX * this.velocityX * 0.2F + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ * 0.2F) * 0.2F;
-		if (f > 1.0F) {
-			f = 1.0F;
+		Entity entity = this.hasPassengers() && this.getPrimaryPassenger() != null ? this.getPrimaryPassenger() : this;
+		float f = entity == this ? 0.2F : 0.9F;
+		float g = MathHelper.sqrt(entity.velocityX * entity.velocityX * 0.2F + entity.velocityY * entity.velocityY + entity.velocityZ * entity.velocityZ * 0.2F) * f;
+		if (g > 1.0F) {
+			g = 1.0F;
 		}
 
-		this.playSound(this.method_12985(), f, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
-		float g = (float)MathHelper.floor(this.getBoundingBox().minY);
+		this.playSound(this.method_12985(), g, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+		float h = (float)MathHelper.floor(this.getBoundingBox().minY);
 
 		for (int i = 0; (float)i < 1.0F + this.width * 20.0F; i++) {
-			float h = (this.random.nextFloat() * 2.0F - 1.0F) * this.width;
 			float j = (this.random.nextFloat() * 2.0F - 1.0F) * this.width;
+			float k = (this.random.nextFloat() * 2.0F - 1.0F) * this.width;
 			this.world
 				.addParticle(
 					ParticleType.BUBBLE,
-					this.x + (double)h,
-					(double)(g + 1.0F),
-					this.z + (double)j,
+					this.x + (double)j,
+					(double)(h + 1.0F),
+					this.z + (double)k,
 					this.velocityX,
 					this.velocityY - (double)(this.random.nextFloat() * 0.2F),
 					this.velocityZ
 				);
 		}
 
-		for (int k = 0; (float)k < 1.0F + this.width * 20.0F; k++) {
-			float l = (this.random.nextFloat() * 2.0F - 1.0F) * this.width;
+		for (int l = 0; (float)l < 1.0F + this.width * 20.0F; l++) {
 			float m = (this.random.nextFloat() * 2.0F - 1.0F) * this.width;
-			this.world.addParticle(ParticleType.WATER, this.x + (double)l, (double)(g + 1.0F), this.z + (double)m, this.velocityX, this.velocityY, this.velocityZ);
+			float n = (this.random.nextFloat() * 2.0F - 1.0F) * this.width;
+			this.world.addParticle(ParticleType.WATER, this.x + (double)m, (double)(h + 1.0F), this.z + (double)n, this.velocityX, this.velocityY, this.velocityZ);
 		}
 	}
 
@@ -1214,6 +1290,23 @@ public abstract class Entity implements CommandSource {
 		}
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.ENTITY, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if (tag.contains("Passengers", 9)) {
+					NbtList nbtList = tag.getList("Passengers", 10);
+
+					for (int i = 0; i < nbtList.size(); i++) {
+						nbtList.set(i, dataFixer.update(LevelDataType.ENTITY, nbtList.getCompound(i), dataVersion));
+					}
+				}
+
+				return tag;
+			}
+		});
+	}
+
 	public NbtCompound toNbt(NbtCompound nbt) {
 		try {
 			nbt.put("Pos", this.toListNbt(this.x, this.y, this.z));
@@ -1227,7 +1320,7 @@ public abstract class Entity implements CommandSource {
 			nbt.putBoolean("Invulnerable", this.invulnerable);
 			nbt.putInt("PortalCooldown", this.netherPortalCooldown);
 			nbt.putUuid("UUID", this.getUuid());
-			if (this.getCustomName() != null && !this.getCustomName().isEmpty()) {
+			if (this.hasCustomName()) {
 				nbt.putString("CustomName", this.getCustomName());
 			}
 
@@ -1370,8 +1463,10 @@ public abstract class Entity implements CommandSource {
 		return true;
 	}
 
+	@Nullable
 	protected final String getSavedEntityId() {
-		return EntityType.getEntityName(this);
+		Identifier identifier = EntityType.getId(this);
+		return identifier == null ? null : identifier.toString();
 	}
 
 	protected abstract void readCustomDataFromNbt(NbtCompound nbt);
@@ -1398,22 +1493,25 @@ public abstract class Entity implements CommandSource {
 		return nbtList;
 	}
 
+	@Nullable
 	public ItemEntity dropItem(Item item, int yOffset) {
 		return this.dropItem(item, yOffset, 0.0F);
 	}
 
+	@Nullable
 	public ItemEntity dropItem(Item item, int count, float yOffset) {
 		return this.dropItem(new ItemStack(item, count, 0), yOffset);
 	}
 
+	@Nullable
 	public ItemEntity dropItem(ItemStack stack, float yOffset) {
-		if (stack.count != 0 && stack.getItem() != null) {
+		if (stack.isEmpty()) {
+			return null;
+		} else {
 			ItemEntity itemEntity = new ItemEntity(this.world, this.x, this.y + (double)yOffset, this.z, stack);
 			itemEntity.setToDefaultPickupDelay();
 			this.world.spawnEntity(itemEntity);
 			return itemEntity;
-		} else {
-			return null;
 		}
 	}
 
@@ -1433,7 +1531,7 @@ public abstract class Entity implements CommandSource {
 				int l = MathHelper.floor(this.z + (double)(((float)((i >> 2) % 2) - 0.5F) * this.width * 0.8F));
 				if (pooled.getX() != k || pooled.getY() != j || pooled.getZ() != l) {
 					pooled.setPosition(k, j, l);
-					if (this.world.getBlockState(pooled).getBlock().isLeafBlock()) {
+					if (this.world.getBlockState(pooled).method_13763()) {
 						pooled.method_12576();
 						return true;
 					}
@@ -1445,7 +1543,7 @@ public abstract class Entity implements CommandSource {
 		}
 	}
 
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+	public boolean interact(PlayerEntity player, Hand hand) {
 		return false;
 	}
 
@@ -1491,6 +1589,12 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public boolean startRiding(Entity entity, boolean force) {
+		for (Entity entity2 = entity; entity2.mount != null; entity2 = entity2.mount) {
+			if (entity2.mount == this) {
+				return false;
+			}
+		}
+
 		if (force || this.canStartRiding(entity) && entity.canAddPassenger(this)) {
 			if (this.hasMount()) {
 				this.stopRiding();
@@ -1608,18 +1712,18 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public Iterable<ItemStack> getItemsHand() {
-		return this.field_14496;
+		return EMPTY_STACK_LIST;
 	}
 
 	public Iterable<ItemStack> getArmorItems() {
-		return this.field_14496;
+		return EMPTY_STACK_LIST;
 	}
 
 	public Iterable<ItemStack> getItemsEquipped() {
 		return Iterables.concat(this.getItemsHand(), this.getArmorItems());
 	}
 
-	public void equipStack(EquipmentSlot slot, @Nullable ItemStack stack) {
+	public void equipStack(EquipmentSlot slot, ItemStack stack) {
 	}
 
 	public boolean isOnFire() {
@@ -1731,8 +1835,7 @@ public abstract class Entity implements CommandSource {
 		double d = x - (double)blockPos.getX();
 		double e = y - (double)blockPos.getY();
 		double f = z - (double)blockPos.getZ();
-		List<Box> list = this.world.method_3608(this.getBoundingBox());
-		if (list.isEmpty()) {
+		if (!this.world.method_11488(this.getBoundingBox())) {
 			return false;
 		} else {
 			Direction direction = Direction.UP;
@@ -1765,11 +1868,17 @@ public abstract class Entity implements CommandSource {
 			float h = this.random.nextFloat() * 0.2F + 0.1F;
 			float i = (float)direction.getAxisDirection().offset();
 			if (direction.getAxis() == Direction.Axis.X) {
-				this.velocityX += (double)(i * h);
+				this.velocityX = (double)(i * h);
+				this.velocityY *= 0.75;
+				this.velocityZ *= 0.75;
 			} else if (direction.getAxis() == Direction.Axis.Y) {
-				this.velocityY += (double)(i * h);
+				this.velocityX *= 0.75;
+				this.velocityY = (double)(i * h);
+				this.velocityZ *= 0.75;
 			} else if (direction.getAxis() == Direction.Axis.Z) {
-				this.velocityZ += (double)(i * h);
+				this.velocityX *= 0.75;
+				this.velocityY *= 0.75;
+				this.velocityZ = (double)(i * h);
 			}
 
 			return true;
@@ -1795,6 +1904,7 @@ public abstract class Entity implements CommandSource {
 		}
 	}
 
+	@Nullable
 	public Entity[] getParts() {
 		return null;
 	}
@@ -1836,6 +1946,10 @@ public abstract class Entity implements CommandSource {
 
 	public boolean isInvulnerableTo(DamageSource damageSource) {
 		return this.invulnerable && damageSource != DamageSource.OUT_OF_WORLD && !damageSource.isSourceCreativePlayer();
+	}
+
+	public boolean isInvulnerable() {
+		return this.invulnerable;
 	}
 
 	public void setInvulnerable(boolean invulnerable) {
@@ -1899,7 +2013,7 @@ public abstract class Entity implements CommandSource {
 
 			serverWorld.checkChunk(this, false);
 			this.world.profiler.swap("reloading");
-			Entity entity = EntityType.createInstanceFromName(EntityType.getEntityName(this), serverWorld2);
+			Entity entity = EntityType.createInstanceFromClass(this.getClass(), serverWorld2);
 			if (entity != null) {
 				entity.copyPortalInfo(this);
 				if (i == 1 && newDimension == 1) {
@@ -1958,7 +2072,7 @@ public abstract class Entity implements CommandSource {
 	public void populateCrashReport(CrashReportSection section) {
 		section.add("Entity Type", new CrashCallable<String>() {
 			public String call() throws Exception {
-				return EntityType.getEntityName(Entity.this) + " (" + Entity.this.getClass().getCanonicalName() + ")";
+				return EntityType.getId(Entity.this) + " (" + Entity.this.getClass().getCanonicalName() + ")";
 			}
 		});
 		section.add("Entity ID", this.entityId);
@@ -2062,10 +2176,10 @@ public abstract class Entity implements CommandSource {
 
 	protected HoverEvent getHoverEvent() {
 		NbtCompound nbtCompound = new NbtCompound();
-		String string = EntityType.getEntityName(this);
+		Identifier identifier = EntityType.getId(this);
 		nbtCompound.putString("id", this.getEntityName());
-		if (string != null) {
-			nbtCompound.putString("type", string);
+		if (identifier != null) {
+			nbtCompound.putString("type", identifier.toString());
 		}
 
 		nbtCompound.putString("name", this.getTranslationKey());
@@ -2159,7 +2273,7 @@ public abstract class Entity implements CommandSource {
 		this.commandStats.setAllStats(entity.getCommandStats());
 	}
 
-	public ActionResult method_12976(PlayerEntity playerEntity, Vec3d vec3d, @Nullable ItemStack itemStack, Hand hand) {
+	public ActionResult interactAt(PlayerEntity player, Vec3d hitPos, Hand hand) {
 		return ActionResult.PASS;
 	}
 
@@ -2302,5 +2416,9 @@ public abstract class Entity implements CommandSource {
 
 	public SoundCategory getSoundCategory() {
 		return SoundCategory.NEUTRAL;
+	}
+
+	protected int getBurningDuration() {
+		return 1;
 	}
 }

@@ -1,7 +1,6 @@
 package net.minecraft.entity;
 
 import net.minecraft.block.material.Material;
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.damage.DamageSource;
@@ -111,7 +110,7 @@ public class ExperienceOrbEntity extends Entity {
 			}
 		}
 
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 		float j = 0.98F;
 		if (this.onGround) {
 			j = this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z))).getBlock().slipperiness
@@ -176,20 +175,9 @@ public class ExperienceOrbEntity extends Entity {
 		if (!this.world.isClient) {
 			if (this.pickupDelay == 0 && player.experiencePickUpDelay == 0) {
 				player.experiencePickUpDelay = 2;
-				this.world
-					.playSound(
-						null,
-						player.x,
-						player.y,
-						player.z,
-						Sounds.ENTITY_EXPERIENCE_ORB_TOUCH,
-						SoundCategory.PLAYERS,
-						0.1F,
-						0.5F * ((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.8F)
-					);
 				player.sendPickup(this, 1);
 				ItemStack itemStack = EnchantmentHelper.chooseEquipmentWith(Enchantments.MENDING, player);
-				if (itemStack != null && itemStack.isDamaged()) {
+				if (!itemStack.isEmpty() && itemStack.isDamaged()) {
 					int i = Math.min(this.getMendingRepairAmount(this.amount), itemStack.getDamage());
 					this.amount = this.amount - this.getMendingRepairCost(i);
 					itemStack.setDamage(itemStack.getDamage() - i);

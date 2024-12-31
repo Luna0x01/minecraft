@@ -21,6 +21,7 @@ import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.BlockView;
 
@@ -87,8 +88,8 @@ public class BlockModelRenderer {
 		for (Direction direction : Direction.values()) {
 			List<BakedQuad> list = bakedModel.method_12502(blockState, direction, l);
 			if (!list.isEmpty() && (!bl || blockState.method_11724(blockView, blockPos, direction))) {
-				int k = blockState.method_11712(blockView, blockPos.offset(direction));
-				this.method_12347(blockView, blockState, blockPos, k, false, bufferBuilder, list, bitSet);
+				int i = blockState.method_11712(blockView, blockPos.offset(direction));
+				this.method_12347(blockView, blockState, blockPos, i, false, bufferBuilder, list, bitSet);
 				bl2 = true;
 			}
 		}
@@ -112,20 +113,10 @@ public class BlockModelRenderer {
 		BitSet bitSet,
 		BlockModelRenderer.AmbientOcclusionCalculator ambientOcclusionCalculator
 	) {
-		double d = (double)blockPos.getX();
-		double e = (double)blockPos.getY();
-		double f = (double)blockPos.getZ();
-		Block block = blockState.getBlock();
-		Block.OffsetType offsetType = block.getOffsetType();
-		if (offsetType != Block.OffsetType.NONE) {
-			long l = MathHelper.hashCode(blockPos);
-			d += ((double)((float)(l >> 16 & 15L) / 15.0F) - 0.5) * 0.5;
-			f += ((double)((float)(l >> 24 & 15L) / 15.0F) - 0.5) * 0.5;
-			if (offsetType == Block.OffsetType.XYZ) {
-				e += ((double)((float)(l >> 20 & 15L) / 15.0F) - 1.0) * 0.2;
-			}
-		}
-
+		Vec3d vec3d = blockState.method_13761(blockView, blockPos);
+		double d = (double)blockPos.getX() + vec3d.x;
+		double e = (double)blockPos.getY() + vec3d.y;
+		double f = (double)blockPos.getZ() + vec3d.z;
 		int i = 0;
 
 		for (int j = list.size(); i < j; i++) {
@@ -144,18 +135,18 @@ public class BlockModelRenderer {
 
 				float g = (float)(k >> 16 & 0xFF) / 255.0F;
 				float h = (float)(k >> 8 & 0xFF) / 255.0F;
-				float m = (float)(k & 0xFF) / 255.0F;
+				float l = (float)(k & 0xFF) / 255.0F;
 				bufferBuilder.faceTint(
-					ambientOcclusionCalculator.brightness[0] * g, ambientOcclusionCalculator.brightness[0] * h, ambientOcclusionCalculator.brightness[0] * m, 4
+					ambientOcclusionCalculator.brightness[0] * g, ambientOcclusionCalculator.brightness[0] * h, ambientOcclusionCalculator.brightness[0] * l, 4
 				);
 				bufferBuilder.faceTint(
-					ambientOcclusionCalculator.brightness[1] * g, ambientOcclusionCalculator.brightness[1] * h, ambientOcclusionCalculator.brightness[1] * m, 3
+					ambientOcclusionCalculator.brightness[1] * g, ambientOcclusionCalculator.brightness[1] * h, ambientOcclusionCalculator.brightness[1] * l, 3
 				);
 				bufferBuilder.faceTint(
-					ambientOcclusionCalculator.brightness[2] * g, ambientOcclusionCalculator.brightness[2] * h, ambientOcclusionCalculator.brightness[2] * m, 2
+					ambientOcclusionCalculator.brightness[2] * g, ambientOcclusionCalculator.brightness[2] * h, ambientOcclusionCalculator.brightness[2] * l, 2
 				);
 				bufferBuilder.faceTint(
-					ambientOcclusionCalculator.brightness[3] * g, ambientOcclusionCalculator.brightness[3] * h, ambientOcclusionCalculator.brightness[3] * m, 1
+					ambientOcclusionCalculator.brightness[3] * g, ambientOcclusionCalculator.brightness[3] * h, ambientOcclusionCalculator.brightness[3] * l, 1
 				);
 			} else {
 				bufferBuilder.faceTint(ambientOcclusionCalculator.brightness[0], ambientOcclusionCalculator.brightness[0], ambientOcclusionCalculator.brightness[0], 4);
@@ -195,16 +186,17 @@ public class BlockModelRenderer {
 			fs[Direction.UP.getId()] = j;
 			fs[Direction.NORTH.getId()] = h;
 			fs[Direction.SOUTH.getId()] = k;
-			fs[Direction.WEST.getId() + Direction.values().length] = 1.0F - f;
-			fs[Direction.EAST.getId() + Direction.values().length] = 1.0F - i;
-			fs[Direction.DOWN.getId() + Direction.values().length] = 1.0F - g;
-			fs[Direction.UP.getId() + Direction.values().length] = 1.0F - j;
-			fs[Direction.NORTH.getId() + Direction.values().length] = 1.0F - h;
-			fs[Direction.SOUTH.getId() + Direction.values().length] = 1.0F - k;
+			int p = Direction.values().length;
+			fs[Direction.WEST.getId() + p] = 1.0F - f;
+			fs[Direction.EAST.getId() + p] = 1.0F - i;
+			fs[Direction.DOWN.getId() + p] = 1.0F - g;
+			fs[Direction.UP.getId() + p] = 1.0F - j;
+			fs[Direction.NORTH.getId() + p] = 1.0F - h;
+			fs[Direction.SOUTH.getId() + p] = 1.0F - k;
 		}
 
-		float p = 1.0E-4F;
-		float q = 0.9999F;
+		float q = 1.0E-4F;
+		float r = 0.9999F;
 		switch (direction) {
 			case DOWN:
 				bitSet.set(1, f >= 1.0E-4F || h >= 1.0E-4F || i <= 0.9999F || k <= 0.9999F);
@@ -235,27 +227,14 @@ public class BlockModelRenderer {
 	private void method_12347(
 		BlockView blockView, BlockState blockState, BlockPos blockPos, int i, boolean bl, BufferBuilder bufferBuilder, List<BakedQuad> list, BitSet bitSet
 	) {
-		double d = (double)blockPos.getX();
-		double e = (double)blockPos.getY();
-		double f = (double)blockPos.getZ();
-		Block block = blockState.getBlock();
-		Block.OffsetType offsetType = block.getOffsetType();
-		if (offsetType != Block.OffsetType.NONE) {
-			int j = blockPos.getX();
-			int k = blockPos.getZ();
-			long l = (long)(j * 3129871) ^ (long)k * 116129781L;
-			l = l * l * 42317861L + l * 11L;
-			d += ((double)((float)(l >> 16 & 15L) / 15.0F) - 0.5) * 0.5;
-			f += ((double)((float)(l >> 24 & 15L) / 15.0F) - 0.5) * 0.5;
-			if (offsetType == Block.OffsetType.XYZ) {
-				e += ((double)((float)(l >> 20 & 15L) / 15.0F) - 1.0) * 0.2;
-			}
-		}
+		Vec3d vec3d = blockState.method_13761(blockView, blockPos);
+		double d = (double)blockPos.getX() + vec3d.x;
+		double e = (double)blockPos.getY() + vec3d.y;
+		double f = (double)blockPos.getZ() + vec3d.z;
+		int j = 0;
 
-		int m = 0;
-
-		for (int n = list.size(); m < n; m++) {
-			BakedQuad bakedQuad = (BakedQuad)list.get(m);
+		for (int k = list.size(); j < k; j++) {
+			BakedQuad bakedQuad = (BakedQuad)list.get(j);
 			if (bl) {
 				this.method_9964(blockState, bakedQuad.getVertexData(), bakedQuad.getFace(), null, bitSet);
 				BlockPos blockPos2 = bitSet.get(0) ? blockPos.offset(bakedQuad.getFace()) : blockPos;
@@ -265,18 +244,18 @@ public class BlockModelRenderer {
 			bufferBuilder.putArray(bakedQuad.getVertexData());
 			bufferBuilder.faceTexture2(i, i, i, i);
 			if (bakedQuad.hasColor()) {
-				int o = this.field_13551.method_12157(blockState, blockView, blockPos, bakedQuad.getColorIndex());
+				int l = this.field_13551.method_12157(blockState, blockView, blockPos, bakedQuad.getColorIndex());
 				if (GameRenderer.anaglyphEnabled) {
-					o = TextureUtil.getAnaglyphColor(o);
+					l = TextureUtil.getAnaglyphColor(l);
 				}
 
-				float g = (float)(o >> 16 & 0xFF) / 255.0F;
-				float h = (float)(o >> 8 & 0xFF) / 255.0F;
-				float p = (float)(o & 0xFF) / 255.0F;
-				bufferBuilder.faceTint(g, h, p, 4);
-				bufferBuilder.faceTint(g, h, p, 3);
-				bufferBuilder.faceTint(g, h, p, 2);
-				bufferBuilder.faceTint(g, h, p, 1);
+				float g = (float)(l >> 16 & 0xFF) / 255.0F;
+				float h = (float)(l >> 8 & 0xFF) / 255.0F;
+				float m = (float)(l & 0xFF) / 255.0F;
+				bufferBuilder.faceTint(g, h, m, 4);
+				bufferBuilder.faceTint(g, h, m, 3);
+				bufferBuilder.faceTint(g, h, m, 2);
+				bufferBuilder.faceTint(g, h, m, 1);
 			}
 
 			bufferBuilder.postProcessFacePosition(d, e, f);

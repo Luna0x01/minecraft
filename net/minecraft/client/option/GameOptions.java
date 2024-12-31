@@ -178,7 +178,7 @@ public class GameOptions {
 	public float saturation;
 	public int guiScale;
 	public int particle;
-	public String language = "en_US";
+	public String language = "en_us";
 	public boolean forcesUnicodeFont;
 
 	public GameOptions(MinecraftClient minecraftClient, File file) {
@@ -498,7 +498,7 @@ public class GameOptions {
 					return f == 110.0F ? string + I18n.translate("options.fov.max") : string + (int)f;
 				}
 			} else if (option == GameOptions.Option.MAX_FPS) {
-				return f == option.max ? string + I18n.translate("options.framerateLimit.max") : string + (int)f + " fps";
+				return f == option.max ? string + I18n.translate("options.framerateLimit.max") : string + I18n.translate("options.framerate", (int)f);
 			} else if (option == GameOptions.Option.SHOW_CLOUDS) {
 				return f == option.min ? string + I18n.translate("options.cloudHeight.min") : string + ((int)f + 128);
 			} else if (option == GameOptions.Option.BRIGHTNESS) {
@@ -518,7 +518,7 @@ public class GameOptions {
 			} else if (option == GameOptions.Option.CHAT_WIDTH) {
 				return string + ChatHud.getWidth(g) + "px";
 			} else if (option == GameOptions.Option.RENDER_DISTANCE) {
-				return string + (int)f + " chunks";
+				return string + I18n.translate("options.chunks", (int)f);
 			} else if (option == GameOptions.Option.MIPMAP_LEVELS) {
 				return f == 0.0F ? string + I18n.translate("options.off") : string + (int)f;
 			} else {
@@ -563,8 +563,8 @@ public class GameOptions {
 
 			for (String string : list) {
 				try {
-					Iterator<String> iterator2 = field_14904.omitEmptyStrings().limit(2).split(string).iterator();
-					nbtCompound.putString((String)iterator2.next(), (String)iterator2.next());
+					Iterator<String> iterator = field_14904.omitEmptyStrings().limit(2).split(string).iterator();
+					nbtCompound.putString((String)iterator.next(), (String)iterator.next());
 				} catch (Exception var10) {
 					LOGGER.warn("Skipping bad option: {}", new Object[]{string});
 				}
@@ -860,7 +860,7 @@ public class GameOptions {
 
 		try {
 			printWriter = new PrintWriter(new FileWriter(this.optionsFile));
-			printWriter.println("version:512");
+			printWriter.println("version:922");
 			printWriter.println("invertYMouse:" + this.invertYMouse);
 			printWriter.println("mouseSensitivity:" + this.sensitivity);
 			printWriter.println("fov:" + (this.fov - 70.0F) / 40.0F);

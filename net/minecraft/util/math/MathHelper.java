@@ -151,6 +151,10 @@ public class MathHelper {
 		return (dividend % divisor + divisor) % divisor;
 	}
 
+	public static double floorMod(double dividend, double divisor) {
+		return (dividend % divisor + divisor) % divisor;
+	}
+
 	public static float wrapDegrees(float degrees) {
 		degrees %= 360.0F;
 		if (degrees >= 180.0F) {
@@ -402,10 +406,10 @@ public class MathHelper {
 				throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
 		}
 
-		int n = clamp((int)(k * 255.0F), 0, 255);
-		int o = clamp((int)(l * 255.0F), 0, 255);
-		int p = clamp((int)(m * 255.0F), 0, 255);
-		return n << 16 | o << 8 | p;
+		int af = clamp((int)(k * 255.0F), 0, 255);
+		int ag = clamp((int)(l * 255.0F), 0, 255);
+		int ah = clamp((int)(m * 255.0F), 0, 255);
+		return af << 16 | ag << 8 | ah;
 	}
 
 	public static int idealHash(int value) {

@@ -33,27 +33,26 @@ public class HoeItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		if (!playerEntity.canModify(blockPos.offset(direction), direction, itemStack)) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!player.canModify(pos.offset(direction), direction, itemStack)) {
 			return ActionResult.FAIL;
 		} else {
-			BlockState blockState = world.getBlockState(blockPos);
+			BlockState blockState = world.getBlockState(pos);
 			Block block = blockState.getBlock();
-			if (direction != Direction.DOWN && world.getBlockState(blockPos.up()).getMaterial() == Material.AIR) {
+			if (direction != Direction.DOWN && world.getBlockState(pos.up()).getMaterial() == Material.AIR) {
 				if (block == Blocks.GRASS || block == Blocks.GRASS_PATH) {
-					this.method_11372(itemStack, playerEntity, world, blockPos, Blocks.FARMLAND.getDefaultState());
+					this.method_11372(itemStack, player, world, pos, Blocks.FARMLAND.getDefaultState());
 					return ActionResult.SUCCESS;
 				}
 
 				if (block == Blocks.DIRT) {
 					switch ((DirtBlock.DirtType)blockState.get(DirtBlock.VARIANT)) {
 						case DIRT:
-							this.method_11372(itemStack, playerEntity, world, blockPos, Blocks.FARMLAND.getDefaultState());
+							this.method_11372(itemStack, player, world, pos, Blocks.FARMLAND.getDefaultState());
 							return ActionResult.SUCCESS;
 						case COARSE_DIRT:
-							this.method_11372(itemStack, playerEntity, world, blockPos, Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT));
+							this.method_11372(itemStack, player, world, pos, Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT));
 							return ActionResult.SUCCESS;
 					}
 				}

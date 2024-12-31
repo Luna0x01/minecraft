@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EnderDragonEntityRenderer;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.util.Identifier;
@@ -27,7 +28,9 @@ public class DragonEyesFeatureRenderer implements FeatureRenderer<EnderDragonEnt
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, 61680.0F, 0.0F);
 		GlStateManager.enableLighting();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		MinecraftClient.getInstance().gameRenderer.method_13847(true);
 		this.dragonRenderer.getModel().render(enderDragonEntity, f, g, i, j, k, l);
+		MinecraftClient.getInstance().gameRenderer.method_13847(false);
 		this.dragonRenderer.method_10261(enderDragonEntity, h);
 		GlStateManager.disableBlend();
 		GlStateManager.enableAlphaTest();

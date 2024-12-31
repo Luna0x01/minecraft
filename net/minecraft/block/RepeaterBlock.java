@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -49,22 +48,11 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if (!playerEntity.abilities.allowModifyWorld) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if (!player.abilities.allowModifyWorld) {
 			return false;
 		} else {
-			world.setBlockState(blockPos, blockState.withDefaultValue(DELAY), 3);
+			world.setBlockState(pos, state.withDefaultValue(DELAY), 3);
 			return true;
 		}
 	}
@@ -90,7 +78,6 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 		return Blocks.UNPOWERED_REPEATER.getDefaultState().with(DIRECTION, direction).with(DELAY, integer).with(LOCKED, boolean_);
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.REPEATER;

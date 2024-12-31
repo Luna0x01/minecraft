@@ -32,10 +32,10 @@ public class PagedEntryListWidget extends EntryListWidget {
 	}
 
 	private void initWidgets() {
-		for (PagedEntryListWidget.ListEntry[] listEntrys2 : this.pages) {
-			for (int k = 0; k < listEntrys2.length; k += 2) {
-				PagedEntryListWidget.ListEntry listEntry = listEntrys2[k];
-				PagedEntryListWidget.ListEntry listEntry2 = k < listEntrys2.length - 1 ? listEntrys2[k + 1] : null;
+		for (PagedEntryListWidget.ListEntry[] listEntrys : this.pages) {
+			for (int i = 0; i < listEntrys.length; i += 2) {
+				PagedEntryListWidget.ListEntry listEntry = listEntrys[i];
+				PagedEntryListWidget.ListEntry listEntry2 = i < listEntrys.length - 1 ? listEntrys[i + 1] : null;
 				DrawableHelper drawableHelper = this.createWidget(listEntry, 0, listEntry2 == null);
 				DrawableHelper drawableHelper2 = this.createWidget(listEntry2, 160, listEntry == null);
 				PagedEntryListWidget.DualDrawableEntry dualDrawableEntry = new PagedEntryListWidget.DualDrawableEntry(drawableHelper, drawableHelper2);
@@ -218,28 +218,28 @@ public class PagedEntryListWidget extends EntryListWidget {
 			if (!Screen.isPaste(code)) {
 				if (code == 15) {
 					textFieldWidget.setFocused(false);
-					int m = this.textFields.indexOf(this.currentWidget);
+					int k = this.textFields.indexOf(this.currentWidget);
 					if (Screen.hasShiftDown()) {
-						if (m == 0) {
-							m = this.textFields.size() - 1;
+						if (k == 0) {
+							k = this.textFields.size() - 1;
 						} else {
-							m--;
+							k--;
 						}
-					} else if (m == this.textFields.size() - 1) {
-						m = 0;
+					} else if (k == this.textFields.size() - 1) {
+						k = 0;
 					} else {
-						m++;
+						k++;
 					}
 
-					this.currentWidget = (DrawableHelper)this.textFields.get(m);
+					this.currentWidget = (DrawableHelper)this.textFields.get(k);
 					textFieldWidget = (TextFieldWidget)this.currentWidget;
 					textFieldWidget.setFocused(true);
-					int n = textFieldWidget.y + this.entryHeight;
-					int o = textFieldWidget.y;
-					if (n > this.yEnd) {
-						this.scrollAmount = this.scrollAmount + (float)(n - this.yEnd);
-					} else if (o < this.yStart) {
-						this.scrollAmount = (float)o;
+					int l = textFieldWidget.y + this.entryHeight;
+					int m = textFieldWidget.y;
+					if (l > this.yEnd) {
+						this.scrollAmount = this.scrollAmount + (float)(l - this.yEnd);
+					} else if (m < this.yStart) {
+						this.scrollAmount = (float)m;
 					}
 				} else {
 					textFieldWidget.keyPressed(id, code);
@@ -251,7 +251,9 @@ public class PagedEntryListWidget extends EntryListWidget {
 				int j = i;
 
 				for (String string2 : strings) {
-					((TextFieldWidget)this.textFields.get(j)).setText(string2);
+					TextFieldWidget textFieldWidget2 = (TextFieldWidget)this.textFields.get(j);
+					textFieldWidget2.setText(string2);
+					textFieldWidget2.method_13838(textFieldWidget2.getId(), string2);
 					if (j == this.textFields.size() - 1) {
 						j = 0;
 					} else {

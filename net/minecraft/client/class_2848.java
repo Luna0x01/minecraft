@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.gui.screen.FatalErrorScreen;
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
 import net.minecraft.client.gui.widget.EntryListWidget;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.world.level.storage.LevelStorageAccess;
 import net.minecraft.world.level.storage.LevelSummary;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +33,7 @@ public class class_2848 extends EntryListWidget {
 			list = levelStorageAccess.getLevelList();
 		} catch (ClientException var5) {
 			field_13373.error("Couldn't load level list", var5);
-			this.client.setScreen(new FatalErrorScreen("Unable to load worlds", var5.getMessage()));
+			this.client.setScreen(new FatalErrorScreen(I18n.translate("selectWorld.unable_to_load"), var5.getMessage()));
 			return;
 		}
 

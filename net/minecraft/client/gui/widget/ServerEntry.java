@@ -70,8 +70,8 @@ public class ServerEntry implements EntryListWidget.Entry {
 			});
 		}
 
-		boolean bl = this.serverInfo.protocolVersion > 210;
-		boolean bl2 = this.serverInfo.protocolVersion < 210;
+		boolean bl = this.serverInfo.protocolVersion > 316;
+		boolean bl2 = this.serverInfo.protocolVersion < 316;
 		boolean bl3 = bl || bl2;
 		this.client.textRenderer.draw(this.serverInfo.name, x + 32 + 3, y + 1, 16777215);
 		List<String> list = this.client.textRenderer.wrapLines(this.serverInfo.label, rowWidth - 32 - 2);
@@ -194,21 +194,24 @@ public class ServerEntry implements EntryListWidget.Entry {
 			this.icon = null;
 		} else {
 			ByteBuf byteBuf = Unpooled.copiedBuffer(this.serverInfo.getIcon(), Charsets.UTF_8);
-			ByteBuf byteBuf2 = Base64.decode(byteBuf);
+			ByteBuf byteBuf2 = null;
 
 			BufferedImage bufferedImage;
-			label62: {
+			label80: {
 				try {
+					byteBuf2 = Base64.decode(byteBuf);
 					bufferedImage = TextureUtil.create(new ByteBufInputStream(byteBuf2));
 					Validate.validState(bufferedImage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
 					Validate.validState(bufferedImage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
-					break label62;
+					break label80;
 				} catch (Throwable var8) {
 					LOGGER.error("Invalid icon for server {} ({})", new Object[]{this.serverInfo.name, this.serverInfo.address, var8});
 					this.serverInfo.setIcon(null);
 				} finally {
 					byteBuf.release();
-					byteBuf2.release();
+					if (byteBuf2 != null) {
+						byteBuf2.release();
+					}
 				}
 
 				return;

@@ -55,14 +55,13 @@ public class FlowerPotBlockEntity extends BlockEntity {
 		return this.toNbt(new NbtCompound());
 	}
 
-	public void setFlower(Item item, int data) {
-		this.item = item;
-		this.data = data;
+	public void method_13725(ItemStack itemStack) {
+		this.item = itemStack.getItem();
+		this.data = itemStack.getData();
 	}
 
-	@Nullable
 	public ItemStack method_11659() {
-		return this.item == null ? null : new ItemStack(this.item, 1, this.data);
+		return this.item == null ? ItemStack.EMPTY : new ItemStack(this.item, 1, this.data);
 	}
 
 	@Nullable

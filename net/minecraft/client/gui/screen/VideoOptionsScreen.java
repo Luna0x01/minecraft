@@ -68,6 +68,15 @@ public class VideoOptionsScreen extends Screen {
 	}
 
 	@Override
+	protected void keyPressed(char id, int code) {
+		if (code == 1) {
+			this.client.options.save();
+		}
+
+		super.keyPressed(id, code);
+	}
+
+	@Override
 	protected void buttonClicked(ButtonWidget button) {
 		if (button.active) {
 			if (button.id == 200) {

@@ -3,7 +3,6 @@ package net.minecraft.recipe;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StoneBrickBlock;
@@ -55,6 +54,30 @@ public class SmeltingRecipeRegistry {
 		this.addBlock(Blocks.REDSTONE_ORE, new ItemStack(Items.REDSTONE), 0.7F);
 		this.addBlock(Blocks.LAPIS_LAZULI_ORE, new ItemStack(Items.DYE, 1, DyeColor.BLUE.getSwappedId()), 0.2F);
 		this.addBlock(Blocks.NETHER_QUARTZ_ORE, new ItemStack(Items.QUARTZ), 0.2F);
+		this.addItem(Items.CHAINMAIL_HELMET, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.CHAINMAIL_CHESTPLATE, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.CHAINMAIL_LEGGINGS, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.CHAINMAIL_BOOTS, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_PICKAXE, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_SHOVEL, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_AXE, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_HOE, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_SWORD, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_HELMET, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_CHESTPLATE, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_LEGGINGS, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_BOOTS, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.IRON_HORSE_ARMOR, new ItemStack(Items.IRON_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_PICKAXE, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_SHOVEL, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_AXE, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_HOE, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_SWORD, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_HELMET, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_CHESTPLATE, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_LEGGINGS, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_BOOTS, new ItemStack(Items.GOLD_NUGGET), 0.1F);
+		this.addItem(Items.GOLDEN_HORSE_ARMOR, new ItemStack(Items.GOLD_NUGGET), 0.1F);
 	}
 
 	public void addBlock(Block block, ItemStack stack, float xp) {
@@ -70,7 +93,6 @@ public class SmeltingRecipeRegistry {
 		this.PRODUCT_XP_MAP.put(product, xp);
 	}
 
-	@Nullable
 	public ItemStack getResult(ItemStack stack) {
 		for (Entry<ItemStack, ItemStack> entry : this.ORIGINAL_PRODUCT_MAP.entrySet()) {
 			if (this.stackEquals(stack, (ItemStack)entry.getKey())) {
@@ -78,7 +100,7 @@ public class SmeltingRecipeRegistry {
 			}
 		}
 
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	private boolean stackEquals(ItemStack stack1, ItemStack stack2) {

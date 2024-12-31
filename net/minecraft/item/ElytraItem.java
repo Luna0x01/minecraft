@@ -37,12 +37,13 @@ public class ElytraItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		EquipmentSlot equipmentSlot = MobEntity.method_13083(itemStack);
-		ItemStack itemStack2 = playerEntity.getStack(equipmentSlot);
-		if (itemStack2 == null) {
-			playerEntity.equipStack(equipmentSlot, itemStack.copy());
-			itemStack.count = 0;
+		ItemStack itemStack2 = player.getStack(equipmentSlot);
+		if (itemStack2.isEmpty()) {
+			player.equipStack(equipmentSlot, itemStack.copy());
+			itemStack.setCount(0);
 			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 		} else {
 			return new TypedActionResult<>(ActionResult.FAIL, itemStack);

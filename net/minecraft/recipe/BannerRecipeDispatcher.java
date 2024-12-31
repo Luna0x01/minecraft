@@ -1,21 +1,24 @@
 package net.minecraft.recipe;
 
 import javax.annotation.Nullable;
+import net.minecraft.block.BannerPattern;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.item.BannerItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class BannerRecipeDispatcher {
 	void registerRecipes(RecipeDispatcher recipes) {
 		for (DyeColor dyeColor : DyeColor.values()) {
 			recipes.registerShapedRecipe(
-				new ItemStack(Items.BANNER, 1, dyeColor.getSwappedId()), "###", "###", " | ", '#', new ItemStack(Blocks.WOOL, 1, dyeColor.getId()), '|', Items.STICK
+				BannerItem.method_13645(dyeColor, null), "###", "###", " | ", '#', new ItemStack(Blocks.WOOL, 1, dyeColor.getId()), '|', Items.STICK
 			);
 		}
 
@@ -33,7 +36,7 @@ public class BannerRecipeDispatcher {
 
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack = inventory.getInvStack(i);
-				if (itemStack != null && itemStack.getItem() == Items.BANNER) {
+				if (itemStack.getItem() == Items.BANNER) {
 					if (bl) {
 						return false;
 					}
@@ -49,33 +52,32 @@ public class BannerRecipeDispatcher {
 			return !bl ? false : this.method_8442(inventory) != null;
 		}
 
-		@Nullable
 		@Override
 		public ItemStack getResult(CraftingInventory inventory) {
-			ItemStack itemStack = null;
+			ItemStack itemStack = ItemStack.EMPTY;
 
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack2 = inventory.getInvStack(i);
-				if (itemStack2 != null && itemStack2.getItem() == Items.BANNER) {
+				if (!itemStack2.isEmpty() && itemStack2.getItem() == Items.BANNER) {
 					itemStack = itemStack2.copy();
-					itemStack.count = 1;
+					itemStack.setCount(1);
 					break;
 				}
 			}
 
-			BannerBlockEntity.BannerPattern bannerPattern = this.method_8442(inventory);
+			BannerPattern bannerPattern = this.method_8442(inventory);
 			if (bannerPattern != null) {
 				int j = 0;
 
 				for (int k = 0; k < inventory.getInvSize(); k++) {
 					ItemStack itemStack3 = inventory.getInvStack(k);
-					if (itemStack3 != null && itemStack3.getItem() == Items.DYE) {
+					if (itemStack3.getItem() == Items.DYE) {
 						j = itemStack3.getData();
 						break;
 					}
 				}
 
-				NbtCompound nbtCompound = itemStack.getSubNbt("BlockEntityTag", true);
+				NbtCompound nbtCompound = itemStack.getOrCreateNbtCompound("BlockEntityTag");
 				NbtList nbtList;
 				if (nbtCompound.contains("Patterns", 9)) {
 					nbtList = nbtCompound.getList("Patterns", 10);
@@ -98,38 +100,37 @@ public class BannerRecipeDispatcher {
 			return 10;
 		}
 
-		@Nullable
 		@Override
 		public ItemStack getOutput() {
-			return null;
+			return ItemStack.EMPTY;
 		}
 
 		@Override
-		public ItemStack[] getRemainders(CraftingInventory inventory) {
-			ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+		public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+			DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-			for (int i = 0; i < itemStacks.length; i++) {
-				ItemStack itemStack = inventory.getInvStack(i);
-				if (itemStack != null && itemStack.getItem().isFood()) {
-					itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+			for (int i = 0; i < defaultedList.size(); i++) {
+				ItemStack itemStack = craftingInventory.getInvStack(i);
+				if (itemStack.getItem().isFood()) {
+					defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 				}
 			}
 
-			return itemStacks;
+			return defaultedList;
 		}
 
 		@Nullable
-		private BannerBlockEntity.BannerPattern method_8442(CraftingInventory inventory) {
-			for (BannerBlockEntity.BannerPattern bannerPattern : BannerBlockEntity.BannerPattern.values()) {
-				if (bannerPattern.isCraftable()) {
+		private BannerPattern method_8442(CraftingInventory craftingInventory) {
+			for (BannerPattern bannerPattern : BannerPattern.values()) {
+				if (bannerPattern.hasRecipeOrItem()) {
 					boolean bl = true;
-					if (bannerPattern.hasIngredient()) {
+					if (bannerPattern.hasRecipeItem()) {
 						boolean bl2 = false;
 						boolean bl3 = false;
 
-						for (int k = 0; k < inventory.getInvSize() && bl; k++) {
-							ItemStack itemStack = inventory.getInvStack(k);
-							if (itemStack != null && itemStack.getItem() != Items.BANNER) {
+						for (int i = 0; i < craftingInventory.getInvSize() && bl; i++) {
+							ItemStack itemStack = craftingInventory.getInvStack(i);
+							if (!itemStack.isEmpty() && itemStack.getItem() != Items.BANNER) {
 								if (itemStack.getItem() == Items.DYE) {
 									if (bl3) {
 										bl = false;
@@ -138,7 +139,7 @@ public class BannerRecipeDispatcher {
 
 									bl3 = true;
 								} else {
-									if (bl2 || !itemStack.equalsIgnoreNbt(bannerPattern.getIngredient())) {
+									if (bl2 || !itemStack.equalsIgnoreNbt(bannerPattern.getRecipeItem())) {
 										bl = false;
 										break;
 									}
@@ -148,34 +149,34 @@ public class BannerRecipeDispatcher {
 							}
 						}
 
-						if (!bl2) {
+						if (!bl2 || !bl3) {
 							bl = false;
 						}
-					} else if (inventory.getInvSize() == bannerPattern.getRecipe().length * bannerPattern.getRecipe()[0].length()) {
-						int l = -1;
+					} else if (craftingInventory.getInvSize() == bannerPattern.getRecipeString().length * bannerPattern.getRecipeString()[0].length()) {
+						int j = -1;
 
-						for (int m = 0; m < inventory.getInvSize() && bl; m++) {
-							int n = m / 3;
-							int o = m % 3;
-							ItemStack itemStack2 = inventory.getInvStack(m);
-							if (itemStack2 != null && itemStack2.getItem() != Items.BANNER) {
+						for (int k = 0; k < craftingInventory.getInvSize() && bl; k++) {
+							int l = k / 3;
+							int m = k % 3;
+							ItemStack itemStack2 = craftingInventory.getInvStack(k);
+							if (!itemStack2.isEmpty() && itemStack2.getItem() != Items.BANNER) {
 								if (itemStack2.getItem() != Items.DYE) {
 									bl = false;
 									break;
 								}
 
-								if (l != -1 && l != itemStack2.getData()) {
+								if (j != -1 && j != itemStack2.getData()) {
 									bl = false;
 									break;
 								}
 
-								if (bannerPattern.getRecipe()[n].charAt(o) == ' ') {
+								if (bannerPattern.getRecipeString()[l].charAt(m) == ' ') {
 									bl = false;
 									break;
 								}
 
-								l = itemStack2.getData();
-							} else if (bannerPattern.getRecipe()[n].charAt(o) != ' ') {
+								j = itemStack2.getData();
+							} else if (bannerPattern.getRecipeString()[l].charAt(m) != ' ') {
 								bl = false;
 								break;
 							}
@@ -200,38 +201,38 @@ public class BannerRecipeDispatcher {
 
 		@Override
 		public boolean matches(CraftingInventory inventory, World world) {
-			ItemStack itemStack = null;
-			ItemStack itemStack2 = null;
+			ItemStack itemStack = ItemStack.EMPTY;
+			ItemStack itemStack2 = ItemStack.EMPTY;
 
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack3 = inventory.getInvStack(i);
-				if (itemStack3 != null) {
+				if (!itemStack3.isEmpty()) {
 					if (itemStack3.getItem() != Items.BANNER) {
 						return false;
 					}
 
-					if (itemStack != null && itemStack2 != null) {
+					if (!itemStack.isEmpty() && !itemStack2.isEmpty()) {
 						return false;
 					}
 
-					int j = BannerBlockEntity.getBase(itemStack3);
+					DyeColor dyeColor = BannerItem.getDyeColor(itemStack3);
 					boolean bl = BannerBlockEntity.getPatternCount(itemStack3) > 0;
-					if (itemStack != null) {
+					if (!itemStack.isEmpty()) {
 						if (bl) {
 							return false;
 						}
 
-						if (j != BannerBlockEntity.getBase(itemStack)) {
+						if (dyeColor != BannerItem.getDyeColor(itemStack)) {
 							return false;
 						}
 
 						itemStack2 = itemStack3;
-					} else if (itemStack2 != null) {
+					} else if (!itemStack2.isEmpty()) {
 						if (!bl) {
 							return false;
 						}
 
-						if (j != BannerBlockEntity.getBase(itemStack2)) {
+						if (dyeColor != BannerItem.getDyeColor(itemStack2)) {
 							return false;
 						}
 
@@ -244,22 +245,21 @@ public class BannerRecipeDispatcher {
 				}
 			}
 
-			return itemStack != null && itemStack2 != null;
+			return !itemStack.isEmpty() && !itemStack2.isEmpty();
 		}
 
-		@Nullable
 		@Override
 		public ItemStack getResult(CraftingInventory inventory) {
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack = inventory.getInvStack(i);
-				if (itemStack != null && BannerBlockEntity.getPatternCount(itemStack) > 0) {
+				if (!itemStack.isEmpty() && BannerBlockEntity.getPatternCount(itemStack) > 0) {
 					ItemStack itemStack2 = itemStack.copy();
-					itemStack2.count = 1;
+					itemStack2.setCount(1);
 					return itemStack2;
 				}
 			}
 
-			return null;
+			return ItemStack.EMPTY;
 		}
 
 		@Override
@@ -267,29 +267,29 @@ public class BannerRecipeDispatcher {
 			return 2;
 		}
 
-		@Nullable
 		@Override
 		public ItemStack getOutput() {
-			return null;
+			return ItemStack.EMPTY;
 		}
 
 		@Override
-		public ItemStack[] getRemainders(CraftingInventory inventory) {
-			ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+		public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+			DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-			for (int i = 0; i < itemStacks.length; i++) {
-				ItemStack itemStack = inventory.getInvStack(i);
-				if (itemStack != null) {
+			for (int i = 0; i < defaultedList.size(); i++) {
+				ItemStack itemStack = craftingInventory.getInvStack(i);
+				if (!itemStack.isEmpty()) {
 					if (itemStack.getItem().isFood()) {
-						itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+						defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 					} else if (itemStack.hasNbt() && BannerBlockEntity.getPatternCount(itemStack) > 0) {
-						itemStacks[i] = itemStack.copy();
-						itemStacks[i].count = 1;
+						ItemStack itemStack2 = itemStack.copy();
+						itemStack2.setCount(1);
+						defaultedList.set(i, itemStack2);
 					}
 				}
 			}
 
-			return itemStacks;
+			return defaultedList;
 		}
 	}
 }

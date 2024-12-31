@@ -24,6 +24,7 @@ import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.mob.WitchEntity;
 import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.CowEntity;
@@ -116,7 +117,8 @@ public abstract class Biome {
 		this.passiveEntries.add(new Biome.SpawnEntry(ChickenEntity.class, 10, 4, 4));
 		this.passiveEntries.add(new Biome.SpawnEntry(CowEntity.class, 8, 4, 4));
 		this.monsterEntries.add(new Biome.SpawnEntry(SpiderEntity.class, 100, 4, 4));
-		this.monsterEntries.add(new Biome.SpawnEntry(ZombieEntity.class, 100, 4, 4));
+		this.monsterEntries.add(new Biome.SpawnEntry(ZombieEntity.class, 95, 4, 4));
+		this.monsterEntries.add(new Biome.SpawnEntry(ZombieVillagerEntity.class, 5, 1, 1));
 		this.monsterEntries.add(new Biome.SpawnEntry(SkeletonEntity.class, 100, 4, 4));
 		this.monsterEntries.add(new Biome.SpawnEntry(CreeperEntity.class, 100, 4, 4));
 		this.monsterEntries.add(new Biome.SpawnEntry(SlimeEntity.class, 100, 4, 4));
@@ -636,7 +638,7 @@ public abstract class Biome {
 			"mutated_birch_forest_hills",
 			new BirchForestBiome(
 				new Biome.Settings("Birch Forest Hills M")
-					.setParent("birch_forest")
+					.setParent("birch_forest_hills")
 					.setBaseHeightModifier(0.55F)
 					.setVariationModifier(0.5F)
 					.setTemperature(0.6F)

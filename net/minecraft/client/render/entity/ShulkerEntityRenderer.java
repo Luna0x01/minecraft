@@ -12,22 +12,35 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
-	private static final Identifier field_13635 = new Identifier("textures/entity/shulker/endergolem.png");
-	private int field_13636;
+	public static final Identifier[] TEXTURES = new Identifier[]{
+		new Identifier("textures/entity/shulker/shulker_white.png"),
+		new Identifier("textures/entity/shulker/shulker_orange.png"),
+		new Identifier("textures/entity/shulker/shulker_magenta.png"),
+		new Identifier("textures/entity/shulker/shulker_light_blue.png"),
+		new Identifier("textures/entity/shulker/shulker_yellow.png"),
+		new Identifier("textures/entity/shulker/shulker_lime.png"),
+		new Identifier("textures/entity/shulker/shulker_pink.png"),
+		new Identifier("textures/entity/shulker/shulker_gray.png"),
+		new Identifier("textures/entity/shulker/shulker_silver.png"),
+		new Identifier("textures/entity/shulker/shulker_cyan.png"),
+		new Identifier("textures/entity/shulker/shulker_purple.png"),
+		new Identifier("textures/entity/shulker/shulker_blue.png"),
+		new Identifier("textures/entity/shulker/shulker_brown.png"),
+		new Identifier("textures/entity/shulker/shulker_green.png"),
+		new Identifier("textures/entity/shulker/shulker_red.png"),
+		new Identifier("textures/entity/shulker/shulker_black.png")
+	};
 
-	public ShulkerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ShulkerEntityModel shulkerEntityModel) {
-		super(entityRenderDispatcher, shulkerEntityModel, 0.0F);
+	public ShulkerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
+		super(entityRenderDispatcher, new ShulkerEntityModel(), 0.0F);
 		this.addFeature(new ShulkerEntityRenderer.class_2897());
-		this.field_13636 = shulkerEntityModel.method_12225();
-		this.shadowSize = 0.0F;
+	}
+
+	public ShulkerEntityModel getModel() {
+		return (ShulkerEntityModel)super.getModel();
 	}
 
 	public void render(ShulkerEntity shulkerEntity, double d, double e, double f, float g, float h) {
-		if (this.field_13636 != ((ShulkerEntityModel)this.model).method_12225()) {
-			this.model = new ShulkerEntityModel();
-			this.field_13636 = ((ShulkerEntityModel)this.model).method_12225();
-		}
-
 		int i = shulkerEntity.method_13229();
 		if (i > 0 && shulkerEntity.method_13231()) {
 			BlockPos blockPos = shulkerEntity.method_13227();
@@ -62,7 +75,7 @@ public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
 	}
 
 	protected Identifier getTexture(ShulkerEntity shulkerEntity) {
-		return field_13635;
+		return TEXTURES[shulkerEntity.method_13573().getId()];
 	}
 
 	protected void method_5777(ShulkerEntity shulkerEntity, float f, float g, float h) {
@@ -137,10 +150,10 @@ public class ShulkerEntityRenderer extends MobEntityRenderer<ShulkerEntity> {
 					GlStateManager.translate(0.0F, -2.0F, 0.0F);
 			}
 
-			ModelPart modelPart = ((ShulkerEntityModel)ShulkerEntityRenderer.this.getModel()).field_13395;
+			ModelPart modelPart = ShulkerEntityRenderer.this.getModel().field_13395;
 			modelPart.posY = j * (float) (Math.PI / 180.0);
 			modelPart.posX = k * (float) (Math.PI / 180.0);
-			ShulkerEntityRenderer.this.bindTexture(ShulkerEntityRenderer.field_13635);
+			ShulkerEntityRenderer.this.bindTexture(ShulkerEntityRenderer.TEXTURES[shulkerEntity.method_13573().getId()]);
 			modelPart.render(l);
 			GlStateManager.popMatrix();
 		}

@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import com.google.common.collect.Sets;
+import com.google.common.collect.UnmodifiableIterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -20,6 +21,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.stat.Stats;
@@ -27,13 +29,16 @@ import net.minecraft.state.StateManager;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.collection.IdList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.BiDefaultedRegistry;
 import net.minecraft.world.BlockView;
@@ -45,6 +50,7 @@ public class Block {
 	public static final BiDefaultedRegistry<Identifier, Block> REGISTRY = new BiDefaultedRegistry<>(AIR_ID);
 	public static final IdList<BlockState> BLOCK_STATES = new IdList<>();
 	public static final Box collisionBox = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+	@Nullable
 	public static final Box EMPTY_BOX = null;
 	private ItemGroup itemGroup;
 	protected boolean fullBlock;
@@ -85,8 +91,8 @@ public class Block {
 		return getById(i).stateFromData(j);
 	}
 
-	public static Block getBlockFromItem(Item item) {
-		return item instanceof BlockItem ? ((BlockItem)item).getBlock() : null;
+	public static Block getBlockFromItem(@Nullable Item item) {
+		return item instanceof BlockItem ? ((BlockItem)item).getBlock() : Blocks.AIR;
 	}
 
 	@Nullable
@@ -154,10 +160,10 @@ public class Block {
 	}
 
 	public int getData(BlockState state) {
-		if (state != null && !state.getProperties().isEmpty()) {
-			throw new IllegalArgumentException("Don't know how to convert " + state + " back into data...");
-		} else {
+		if (state.getProperties().isEmpty()) {
 			return 0;
+		} else {
+			throw new IllegalArgumentException("Don't know how to convert " + state + " back into data...");
 		}
 	}
 
@@ -220,13 +226,19 @@ public class Block {
 		return state.getMaterial().isOpaque() && state.method_11730() && !state.emitsRedstonePower();
 	}
 
-	public boolean isLeafBlock() {
+	@Deprecated
+	public boolean method_13703(BlockState state) {
 		return this.material.blocksMovement() && this.getDefaultState().method_11730();
 	}
 
 	@Deprecated
 	public boolean method_11562(BlockState state) {
 		return true;
+	}
+
+	@Deprecated
+	public boolean method_13704(BlockState state) {
+		return false;
 	}
 
 	public boolean blocksMovement(BlockView view, BlockPos pos) {
@@ -335,12 +347,12 @@ public class Block {
 
 	@Deprecated
 	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
-		return blockState.getCollisionBox((BlockView)world, blockPos).offset(blockPos);
+		return blockState.getCollisionBox(world, blockPos).offset(blockPos);
 	}
 
 	@Deprecated
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
-		appendCollisionBoxes(pos, entityBox, boxes, state.getCollisionBox(world, pos));
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+		appendCollisionBoxes(pos, entityBox, boxes, state.method_11726(world, pos));
 	}
 
 	protected static void appendCollisionBoxes(BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Box boxToAdd) {
@@ -354,8 +366,8 @@ public class Block {
 
 	@Deprecated
 	@Nullable
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
-		return state.getCollisionBox((BlockView)world, pos);
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
+		return state.getCollisionBox(view, pos);
 	}
 
 	@Deprecated
@@ -385,7 +397,7 @@ public class Block {
 	}
 
 	@Deprecated
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 	}
 
 	public int getTickRate(World world) {
@@ -402,7 +414,6 @@ public class Block {
 		return 1;
 	}
 
-	@Nullable
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(this);
 	}
@@ -428,7 +439,7 @@ public class Block {
 			for (int j = 0; j < i; j++) {
 				if (!(world.random.nextFloat() > chance)) {
 					Item item = this.getDropItem(state, world.random, id);
-					if (item != null) {
+					if (item != Items.AIR) {
 						onBlockBreak(world, pos, new ItemStack(item, 1, this.getMeta(state)));
 					}
 				}
@@ -437,7 +448,7 @@ public class Block {
 	}
 
 	public static void onBlockBreak(World world, BlockPos pos, ItemStack item) {
-		if (!world.isClient && world.getGameRules().getBoolean("doTileDrops")) {
+		if (!world.isClient && !item.isEmpty() && world.getGameRules().getBoolean("doTileDrops")) {
 			float f = 0.5F;
 			double d = (double)(world.random.nextFloat() * 0.5F) + 0.25;
 			double e = (double)(world.random.nextFloat() * 0.5F) + 0.25;
@@ -469,7 +480,7 @@ public class Block {
 	@Deprecated
 	@Nullable
 	public BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
-		return this.method_11559(blockPos, vec3d, vec3d2, blockState.getCollisionBox((BlockView)world, blockPos));
+		return this.method_11559(blockPos, vec3d, vec3d2, blockState.getCollisionBox(world, blockPos));
 	}
 
 	@Nullable
@@ -489,10 +500,6 @@ public class Block {
 		return RenderLayer.SOLID;
 	}
 
-	public boolean canBeReplaced(World world, BlockPos pos, Direction dir, @Nullable ItemStack stack) {
-		return this.canBePlacedAdjacent(world, pos, dir);
-	}
-
 	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
 		return this.canBePlacedAtPos(world, pos);
 	}
@@ -501,18 +508,7 @@ public class Block {
 		return world.getBlockState(pos).getBlock().material.isReplaceable();
 	}
 
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		return false;
 	}
 
@@ -548,14 +544,12 @@ public class Block {
 		return 0;
 	}
 
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
 		player.incrementStat(Stats.mined(this));
-		player.addExhaustion(0.025F);
+		player.addExhaustion(0.005F);
 		if (this.requiresSilkTouch() && EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, stack) > 0) {
 			ItemStack itemStack = this.createStackFromBlock(state);
-			if (itemStack != null) {
-				onBlockBreak(world, pos, itemStack);
-			}
+			onBlockBreak(world, pos, itemStack);
 		} else {
 			int i = EnchantmentHelper.getLevel(Enchantments.FORTUNE, stack);
 			this.dropAsItem(world, pos, state, i);
@@ -566,19 +560,14 @@ public class Block {
 		return this.getDefaultState().method_11730() && !this.blockEntity;
 	}
 
-	@Nullable
 	protected ItemStack createStackFromBlock(BlockState state) {
 		Item item = Item.fromBlock(this);
-		if (item == null) {
-			return null;
-		} else {
-			int i = 0;
-			if (item.isUnbreakable()) {
-				i = this.getData(state);
-			}
-
-			return new ItemStack(item, 1, i);
+		int i = 0;
+		if (item.isUnbreakable()) {
+			i = this.getData(state);
 		}
+
+		return new ItemStack(item, 1, i);
 	}
 
 	public int getBonusDrops(int id, Random rand) {
@@ -637,13 +626,12 @@ public class Block {
 		entity.velocityY = 0.0;
 	}
 
-	@Nullable
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
 		return new ItemStack(Item.fromBlock(this), 1, this.getMeta(blockState));
 	}
 
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item));
 	}
 
 	public ItemGroup getItemGroup() {
@@ -711,12 +699,30 @@ public class Block {
 		return Block.OffsetType.NONE;
 	}
 
+	@Deprecated
+	public Vec3d method_13702(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		Block.OffsetType offsetType = this.getOffsetType();
+		if (offsetType == Block.OffsetType.NONE) {
+			return Vec3d.ZERO;
+		} else {
+			long l = MathHelper.hashCode(blockPos.getX(), 0, blockPos.getZ());
+			return new Vec3d(
+				((double)((float)(l >> 16 & 15L) / 15.0F) - 0.5) * 0.5,
+				offsetType == Block.OffsetType.XYZ ? ((double)((float)(l >> 20 & 15L) / 15.0F) - 1.0) * 0.2 : 0.0,
+				((double)((float)(l >> 24 & 15L) / 15.0F) - 0.5) * 0.5
+			);
+		}
+	}
+
 	public BlockSoundGroup getSoundGroup() {
 		return this.blockSoundGroup;
 	}
 
 	public String toString() {
 		return "Block{" + REGISTRY.getIdentifier(this) + "}";
+	}
+
+	public void method_13701(ItemStack itemStack, PlayerEntity playerEntity, List<String> list, boolean bl) {
 	}
 
 	public static void setup() {
@@ -1415,7 +1421,7 @@ public class Block {
 		);
 		register(199, "chorus_plant", new ChorusPlantBlock().setStrength(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("chorusPlant"));
 		register(200, "chorus_flower", new ChorusFlowerBlock().setStrength(0.4F).setBlockSoundGroup(BlockSoundGroup.field_12759).setTranslationKey("chorusFlower"));
-		Block block14 = new Block(Material.STONE)
+		Block block14 = new Block(Material.STONE, MaterialColor.MAGENTA)
 			.setStrength(1.5F)
 			.setResistance(10.0F)
 			.setBlockSoundGroup(BlockSoundGroup.STONE)
@@ -1425,7 +1431,7 @@ public class Block {
 		register(
 			202,
 			"purpur_pillar",
-			new PillarBlock(Material.STONE)
+			new PillarBlock(Material.STONE, MaterialColor.MAGENTA)
 				.setStrength(1.5F)
 				.setResistance(10.0F)
 				.setBlockSoundGroup(BlockSoundGroup.STONE)
@@ -1444,7 +1450,11 @@ public class Block {
 		register(
 			206,
 			"end_bricks",
-			new Block(Material.STONE).setBlockSoundGroup(BlockSoundGroup.STONE).setStrength(0.8F).setItemGroup(ItemGroup.BUILDING_BLOCKS).setTranslationKey("endBricks")
+			new Block(Material.STONE, MaterialColor.SAND)
+				.setBlockSoundGroup(BlockSoundGroup.STONE)
+				.setStrength(0.8F)
+				.setItemGroup(ItemGroup.BUILDING_BLOCKS)
+				.setTranslationKey("endBricks")
 		);
 		register(207, "beetroots", new BeetrootsBlock().setTranslationKey("beetroots"));
 		Block block15 = new GrassPathBlock().setStrength(0.65F).setBlockSoundGroup(BlockSoundGroup.field_12761).setTranslationKey("grassPath").disableStats();
@@ -1479,6 +1489,75 @@ public class Block {
 		);
 		register(216, "bone_block", new BoneBlock().setTranslationKey("boneBlock"));
 		register(217, "structure_void", new StructureVoidBlock().setTranslationKey("structureVoid"));
+		register(218, "observer", new ObserverBlock().setStrength(3.0F).setTranslationKey("observer"));
+		register(
+			219,
+			"white_shulker_box",
+			new ShulkerBoxBlock(DyeColor.WHITE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxWhite")
+		);
+		register(
+			220,
+			"orange_shulker_box",
+			new ShulkerBoxBlock(DyeColor.ORANGE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxOrange")
+		);
+		register(
+			221,
+			"magenta_shulker_box",
+			new ShulkerBoxBlock(DyeColor.MAGENTA).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxMagenta")
+		);
+		register(
+			222,
+			"light_blue_shulker_box",
+			new ShulkerBoxBlock(DyeColor.LIGHT_BLUE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxLightBlue")
+		);
+		register(
+			223,
+			"yellow_shulker_box",
+			new ShulkerBoxBlock(DyeColor.YELLOW).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxYellow")
+		);
+		register(
+			224, "lime_shulker_box", new ShulkerBoxBlock(DyeColor.LIME).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxLime")
+		);
+		register(
+			225, "pink_shulker_box", new ShulkerBoxBlock(DyeColor.PINK).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxPink")
+		);
+		register(
+			226, "gray_shulker_box", new ShulkerBoxBlock(DyeColor.GRAY).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxGray")
+		);
+		register(
+			227,
+			"silver_shulker_box",
+			new ShulkerBoxBlock(DyeColor.SILVER).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxSilver")
+		);
+		register(
+			228, "cyan_shulker_box", new ShulkerBoxBlock(DyeColor.CYAN).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxCyan")
+		);
+		register(
+			229,
+			"purple_shulker_box",
+			new ShulkerBoxBlock(DyeColor.PURPLE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxPurple")
+		);
+		register(
+			230, "blue_shulker_box", new ShulkerBoxBlock(DyeColor.BLUE).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxBlue")
+		);
+		register(
+			231,
+			"brown_shulker_box",
+			new ShulkerBoxBlock(DyeColor.BROWN).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxBrown")
+		);
+		register(
+			232,
+			"green_shulker_box",
+			new ShulkerBoxBlock(DyeColor.GREEN).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxGreen")
+		);
+		register(
+			233, "red_shulker_box", new ShulkerBoxBlock(DyeColor.RED).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxRed")
+		);
+		register(
+			234,
+			"black_shulker_box",
+			new ShulkerBoxBlock(DyeColor.BLACK).setStrength(2.0F).setBlockSoundGroup(BlockSoundGroup.STONE).setTranslationKey("shulkerBoxBlack")
+		);
 		register(255, "structure_block", new StructureBlock().setUnbreakable().setResistance(6000000.0F).setTranslationKey("structureBlock"));
 		REGISTRY.validate();
 
@@ -1509,7 +1588,10 @@ public class Block {
 					BLOCK_STATES.set(block17.stateFromData(i), j);
 				}
 			} else {
-				for (BlockState blockState : block17.getStateManager().getBlockStates()) {
+				UnmodifiableIterator var26 = block17.getStateManager().getBlockStates().iterator();
+
+				while (var26.hasNext()) {
+					BlockState blockState = (BlockState)var26.next();
 					int k = REGISTRY.getRawId(block17) << 4 | block17.getData(blockState);
 					BLOCK_STATES.set(blockState, k);
 				}

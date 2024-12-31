@@ -4,6 +4,7 @@ import net.minecraft.Bootstrap;
 import net.minecraft.util.Identifier;
 
 public class Items {
+	public static final Item AIR;
 	public static final Item IRON_SHOVEL;
 	public static final Item IRON_PICKAXE;
 	public static final Item IRON_AXE;
@@ -209,6 +210,9 @@ public class Items {
 	public static final Item BEETROOT_SEED;
 	public static final Item BEETROOT;
 	public static final Item BEETROOT_SOUP;
+	public static final Item TOTEM_OF_UNDYING;
+	public static final Item SHULKER_SHELL;
+	public static final Item IRON_NUGGET;
 
 	private static Item getById(String id) {
 		Item item = Item.REGISTRY.get(new Identifier(id));
@@ -223,6 +227,7 @@ public class Items {
 		if (!Bootstrap.isInitialized()) {
 			throw new RuntimeException("Accessed Items before Bootstrap!");
 		} else {
+			AIR = getById("air");
 			IRON_SHOVEL = getById("iron_shovel");
 			IRON_PICKAXE = getById("iron_pickaxe");
 			IRON_AXE = getById("iron_axe");
@@ -428,6 +433,9 @@ public class Items {
 			BEETROOT_SEED = getById("beetroot_seeds");
 			BEETROOT = getById("beetroot");
 			BEETROOT_SOUP = getById("beetroot_soup");
+			TOTEM_OF_UNDYING = getById("totem_of_undying");
+			SHULKER_SHELL = getById("shulker_shell");
+			IRON_NUGGET = getById("iron_nugget");
 		}
 	}
 }

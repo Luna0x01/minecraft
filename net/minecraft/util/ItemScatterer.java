@@ -22,7 +22,7 @@ public class ItemScatterer {
 	private static void spawn(World world, double x, double y, double z, Inventory inventory) {
 		for (int i = 0; i < inventory.getInvSize(); i++) {
 			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				spawnItemStack(world, x, y, z, itemStack);
 			}
 		}
@@ -33,19 +33,9 @@ public class ItemScatterer {
 		float g = RANDOM.nextFloat() * 0.8F + 0.1F;
 		float h = RANDOM.nextFloat() * 0.8F + 0.1F;
 
-		while (itemStack.count > 0) {
-			int i = RANDOM.nextInt(21) + 10;
-			if (i > itemStack.count) {
-				i = itemStack.count;
-			}
-
-			itemStack.count -= i;
-			ItemEntity itemEntity = new ItemEntity(world, x + (double)f, y + (double)g, z + (double)h, new ItemStack(itemStack.getItem(), i, itemStack.getData()));
-			if (itemStack.hasNbt()) {
-				itemEntity.getItemStack().setNbt(itemStack.getNbt().copy());
-			}
-
-			float j = 0.05F;
+		while (!itemStack.isEmpty()) {
+			ItemEntity itemEntity = new ItemEntity(world, x + (double)f, y + (double)g, z + (double)h, itemStack.split(RANDOM.nextInt(21) + 10));
+			float i = 0.05F;
 			itemEntity.velocityX = RANDOM.nextGaussian() * 0.05F;
 			itemEntity.velocityY = RANDOM.nextGaussian() * 0.05F + 0.2F;
 			itemEntity.velocityZ = RANDOM.nextGaussian() * 0.05F;

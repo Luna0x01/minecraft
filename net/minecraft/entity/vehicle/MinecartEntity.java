@@ -1,9 +1,7 @@
 package net.minecraft.entity.vehicle;
 
-import javax.annotation.Nullable;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
@@ -17,18 +15,18 @@ public class MinecartEntity extends AbstractMinecartEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractMinecartEntity.method_13302(dataFixer, "MinecartRideable");
+		AbstractMinecartEntity.registerDataFixes(dataFixer, MinecartEntity.class);
 	}
 
 	@Override
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
-		if (playerEntity.isSneaking()) {
+	public boolean interact(PlayerEntity player, Hand hand) {
+		if (player.isSneaking()) {
 			return false;
 		} else if (this.hasPassengers()) {
 			return true;
 		} else {
 			if (!this.world.isClient) {
-				playerEntity.ride(this);
+				player.ride(this);
 			}
 
 			return true;

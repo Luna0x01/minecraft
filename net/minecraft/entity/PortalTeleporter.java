@@ -315,7 +315,7 @@ public class PortalTeleporter {
 					int bo = au + bm;
 					int bp = av + (bk - 1) * ax;
 					BlockPos blockPos = new BlockPos(bn, bo, bp);
-					this.world.updateNeighborsAlways(blockPos, this.world.getBlockState(blockPos).getBlock());
+					this.world.method_13692(blockPos, this.world.getBlockState(blockPos).getBlock(), false);
 				}
 			}
 		}

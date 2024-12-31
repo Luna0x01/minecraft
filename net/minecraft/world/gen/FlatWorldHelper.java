@@ -3,6 +3,7 @@ package net.minecraft.world.gen;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import net.minecraft.block.Block;
@@ -68,7 +69,7 @@ public class FlatWorldHelper {
 					stringBuilder.append(",");
 				}
 
-				stringBuilder.append(((String)entry.getKey()).toLowerCase());
+				stringBuilder.append(((String)entry.getKey()).toLowerCase(Locale.ROOT));
 				Map<String, String> map = (Map<String, String>)entry.getValue();
 				if (!map.isEmpty()) {
 					stringBuilder.append("(");
@@ -196,20 +197,20 @@ public class FlatWorldHelper {
 
 					flatWorldHelper.setBiomeId(k);
 					if (i > 0 && strings.length > j) {
-						String[] strings2 = strings[j++].toLowerCase().split(",");
+						String[] strings2 = strings[j++].toLowerCase(Locale.ROOT).split(",");
 
 						for (String string : strings2) {
-							String[] strings4 = string.split("\\(", 2);
+							String[] strings3 = string.split("\\(", 2);
 							Map<String, String> map = Maps.newHashMap();
-							if (!strings4[0].isEmpty()) {
-								flatWorldHelper.getStructures().put(strings4[0], map);
-								if (strings4.length > 1 && strings4[1].endsWith(")") && strings4[1].length() > 1) {
-									String[] strings5 = strings4[1].substring(0, strings4[1].length() - 1).split(" ");
+							if (!strings3[0].isEmpty()) {
+								flatWorldHelper.getStructures().put(strings3[0], map);
+								if (strings3.length > 1 && strings3[1].endsWith(")") && strings3[1].length() > 1) {
+									String[] strings4 = strings3[1].substring(0, strings3[1].length() - 1).split(" ");
 
-									for (String string2 : strings5) {
-										String[] strings7 = string2.split("=", 2);
-										if (strings7.length == 2) {
-											map.put(strings7[0], strings7[1]);
+									for (String string2 : strings4) {
+										String[] strings5 = string2.split("=", 2);
+										if (strings5.length == 2) {
+											map.put(strings5[0], strings5[1]);
 										}
 									}
 								}

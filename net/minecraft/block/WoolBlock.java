@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -9,6 +8,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.collection.DefaultedList;
 
 public class WoolBlock extends Block {
 	public static final EnumProperty<DyeColor> COLOR = EnumProperty.of("color", DyeColor.class);
@@ -25,9 +25,9 @@ public class WoolBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (DyeColor dyeColor : DyeColor.values()) {
-			stacks.add(new ItemStack(item, 1, dyeColor.getId()));
+			defaultedList.add(new ItemStack(item, 1, dyeColor.getId()));
 		}
 	}
 

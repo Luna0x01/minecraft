@@ -22,8 +22,17 @@ public class ElytraModel extends EntityModel {
 	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.disableCull();
-		this.field_13383.render(scale);
-		this.field_13382.render(scale);
+		if (entity instanceof LivingEntity && ((LivingEntity)entity).isBaby()) {
+			GlStateManager.pushMatrix();
+			GlStateManager.scale(0.5F, 0.5F, 0.5F);
+			GlStateManager.translate(0.0F, 1.5F, -0.1F);
+			this.field_13383.render(scale);
+			this.field_13382.render(scale);
+			GlStateManager.popMatrix();
+		} else {
+			this.field_13383.render(scale);
+			this.field_13382.render(scale);
+		}
 	}
 
 	@Override
@@ -70,10 +79,5 @@ public class ElytraModel extends EntityModel {
 		this.field_13382.pivotY = this.field_13383.pivotY;
 		this.field_13382.posX = this.field_13383.posX;
 		this.field_13382.posZ = -this.field_13383.posZ;
-	}
-
-	@Override
-	public void animateModel(LivingEntity entity, float limbAngle, float limbDistance, float tickDelta) {
-		super.animateModel(entity, limbAngle, limbDistance, tickDelta);
 	}
 }

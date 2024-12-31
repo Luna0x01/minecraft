@@ -2,8 +2,10 @@ package net.minecraft.structure;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.Map.Entry;
 import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
@@ -39,19 +41,19 @@ public abstract class class_2762 extends StructurePiece {
 	}
 
 	@Override
-	protected void deserialize(NbtCompound structureNbt) {
-		this.field_13018 = new BlockPos(structureNbt.getInt("TPX"), structureNbt.getInt("TPY"), structureNbt.getInt("TPZ"));
+	protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+		this.field_13018 = new BlockPos(nbtCompound.getInt("TPX"), nbtCompound.getInt("TPY"), nbtCompound.getInt("TPZ"));
 	}
 
 	@Override
 	public boolean generate(World world, Random random, BlockBox boundingBox) {
 		this.field_13017.method_11869(boundingBox);
-		this.field_13016.method_11896(world, this.field_13018, this.field_13017);
+		this.field_13016.method_13391(world, this.field_13018, this.field_13017, 18);
 		Map<BlockPos, String> map = this.field_13016.method_11890(this.field_13018, this.field_13017);
 
-		for (BlockPos blockPos : map.keySet()) {
-			String string = (String)map.get(blockPos);
-			this.method_11857(string, blockPos, world, random, boundingBox);
+		for (Entry<BlockPos, String> entry : map.entrySet()) {
+			String string = (String)entry.getValue();
+			this.method_11857(string, (BlockPos)entry.getKey(), world, random, boundingBox);
 		}
 
 		return true;
@@ -62,6 +64,7 @@ public abstract class class_2762 extends StructurePiece {
 	private void method_11858() {
 		BlockRotation blockRotation = this.field_13017.method_11874();
 		BlockPos blockPos = this.field_13016.method_11885(blockRotation);
+		BlockMirror blockMirror = this.field_13017.method_11871();
 		this.boundingBox = new BlockBox(0, 0, 0, blockPos.getX(), blockPos.getY() - 1, blockPos.getZ());
 		switch (blockRotation) {
 			case NONE:
@@ -75,6 +78,35 @@ public abstract class class_2762 extends StructurePiece {
 				break;
 			case CLOCKWISE_180:
 				this.boundingBox.move(-blockPos.getX(), 0, -blockPos.getZ());
+		}
+
+		switch (blockMirror) {
+			case NONE:
+			default:
+				break;
+			case FRONT_BACK:
+				BlockPos blockPos2 = BlockPos.ORIGIN;
+				if (blockRotation == BlockRotation.CLOCKWISE_90 || blockRotation == BlockRotation.COUNTERCLOCKWISE_90) {
+					blockPos2 = blockPos2.offset(blockRotation.rotate(Direction.WEST), blockPos.getZ());
+				} else if (blockRotation == BlockRotation.CLOCKWISE_180) {
+					blockPos2 = blockPos2.offset(Direction.EAST, blockPos.getX());
+				} else {
+					blockPos2 = blockPos2.offset(Direction.WEST, blockPos.getX());
+				}
+
+				this.boundingBox.move(blockPos2.getX(), 0, blockPos2.getZ());
+				break;
+			case LEFT_RIGHT:
+				BlockPos blockPos3 = BlockPos.ORIGIN;
+				if (blockRotation == BlockRotation.CLOCKWISE_90 || blockRotation == BlockRotation.COUNTERCLOCKWISE_90) {
+					blockPos3 = blockPos3.offset(blockRotation.rotate(Direction.NORTH), blockPos.getX());
+				} else if (blockRotation == BlockRotation.CLOCKWISE_180) {
+					blockPos3 = blockPos3.offset(Direction.SOUTH, blockPos.getZ());
+				} else {
+					blockPos3 = blockPos3.offset(Direction.NORTH, blockPos.getZ());
+				}
+
+				this.boundingBox.move(blockPos3.getX(), 0, blockPos3.getZ());
 		}
 
 		this.boundingBox.move(this.field_13018.getX(), this.field_13018.getY(), this.field_13018.getZ());

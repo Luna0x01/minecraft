@@ -53,7 +53,7 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
 		appendCollisionBoxes(pos, entityBox, boxes, field_12685);
 		appendCollisionBoxes(pos, entityBox, boxes, field_12689);
 		appendCollisionBoxes(pos, entityBox, boxes, field_12688);
@@ -82,7 +82,7 @@ public class HopperBlock extends BlockWithEntity {
 		if (itemStack.hasCustomName()) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof HopperBlockEntity) {
-				((HopperBlockEntity)blockEntity).setCustomName(itemStack.getCustomName());
+				((HopperBlockEntity)blockEntity).setName(itemStack.getCustomName());
 			}
 		}
 	}
@@ -98,25 +98,14 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof HopperBlockEntity) {
-				playerEntity.openInventory((HopperBlockEntity)blockEntity);
-				playerEntity.incrementStat(Stats.INTERACTIONS_WITH_HOPPER);
+				player.openInventory((HopperBlockEntity)blockEntity);
+				player.incrementStat(Stats.INTERACTIONS_WITH_HOPPER);
 			}
 
 			return true;
@@ -124,8 +113,8 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		this.updateEnabled(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		this.updateEnabled(world, pos, state);
 	}
 
 	private void updateEnabled(World world, BlockPos pos, BlockState state) {

@@ -79,14 +79,6 @@ public class EndRodBlock extends FacingBlock {
 	}
 
 	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-	}
-
-	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-	}
-
-	@Override
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		Direction direction = state.get(FACING);
 		double d = (double)pos.getX() + 0.55 - (double)(random.nextFloat() * 0.1F);

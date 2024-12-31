@@ -2,6 +2,7 @@ package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
@@ -38,7 +39,7 @@ public class SquidEntity extends WaterCreatureEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Squid");
+		MobEntity.registerDataFixes(dataFixer, SquidEntity.class);
 	}
 
 	@Override
@@ -86,11 +87,6 @@ public class SquidEntity extends WaterCreatureEntity {
 	@Override
 	protected Identifier getLootTableId() {
 		return LootTables.SQUID_ENTITIE;
-	}
-
-	@Override
-	public boolean isTouchingWater() {
-		return super.isTouchingWater();
 	}
 
 	@Override
@@ -161,7 +157,7 @@ public class SquidEntity extends WaterCreatureEntity {
 
 	@Override
 	public void travel(float f, float g) {
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 	}
 
 	@Override

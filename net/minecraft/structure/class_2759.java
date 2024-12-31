@@ -21,7 +21,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class class_2759 {
-	public static final class_2763 field_12995 = new class_2763("structures");
 	private static final StructurePlacementData field_12996 = new StructurePlacementData().method_11870(true);
 	private static final StructurePlacementData field_12997 = new StructurePlacementData().method_11870(true).method_11866(Blocks.AIR);
 	private static final class_2759.class_1926 field_12998 = new class_2759.class_1926() {
@@ -30,24 +29,24 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(int i, class_2759.class_2760 arg, BlockPos blockPos, List<StructurePiece> list, Random random) {
+		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
 			if (i > 8) {
 				return false;
 			} else {
-				BlockRotation blockRotation = arg.field_13017.method_11874();
-				class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, blockPos, "base_floor", blockRotation, true));
+				BlockRotation blockRotation = arg2.field_13017.method_11874();
+				class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, arg2, blockPos, "base_floor", blockRotation, true));
 				int j = random.nextInt(3);
 				if (j == 0) {
-					lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 4, -1), "base_roof", blockRotation, true));
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 4, -1), "base_roof", blockRotation, true));
 				} else if (j == 1) {
-					lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 0, -1), "second_floor_2", blockRotation, false));
-					lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 8, -1), "second_roof", blockRotation, false));
-					class_2759.method_11840(class_2759.field_13000, i + 1, lv, null, list, random);
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 0, -1), "second_floor_2", blockRotation, false));
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 8, -1), "second_roof", blockRotation, false));
+					class_2759.method_11840(arg, class_2759.field_13000, i + 1, lv, null, list, random);
 				} else if (j == 2) {
-					lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 0, -1), "second_floor_2", blockRotation, false));
-					lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 4, -1), "third_floor_c", blockRotation, false));
-					lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 8, -1), "third_roof", blockRotation, true));
-					class_2759.method_11840(class_2759.field_13000, i + 1, lv, null, list, random);
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 0, -1), "second_floor_2", blockRotation, false));
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 4, -1), "third_floor_c", blockRotation, false));
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 8, -1), "third_roof", blockRotation, true));
+					class_2759.method_11840(arg, class_2759.field_13000, i + 1, lv, null, list, random);
 				}
 
 				return true;
@@ -68,17 +67,17 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(int i, class_2759.class_2760 arg, BlockPos blockPos, List<StructurePiece> list, Random random) {
-			BlockRotation blockRotation = arg.field_13017.method_11874();
+		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+			BlockRotation blockRotation = arg2.field_13017.method_11874();
 			class_2759.class_2760 lv = class_2759.method_13366(
-				list, class_2759.method_11839(arg, new BlockPos(3 + random.nextInt(2), -3, 3 + random.nextInt(2)), "tower_base", blockRotation, true)
+				list, class_2759.method_11839(arg, arg2, new BlockPos(3 + random.nextInt(2), -3, 3 + random.nextInt(2)), "tower_base", blockRotation, true)
 			);
-			lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(0, 7, 0), "tower_piece", blockRotation, true));
+			lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, 7, 0), "tower_piece", blockRotation, true));
 			class_2759.class_2760 lv2 = random.nextInt(3) == 0 ? lv : null;
 			int j = 1 + random.nextInt(3);
 
 			for (int k = 0; k < j; k++) {
-				lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(0, 4, 0), "tower_piece", blockRotation, true));
+				lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, 4, 0), "tower_piece", blockRotation, true));
 				if (k < j - 1 && random.nextBoolean()) {
 					lv2 = lv;
 				}
@@ -88,19 +87,19 @@ public class class_2759 {
 				for (Pair<BlockRotation, BlockPos> pair : class_2759.field_12999) {
 					if (random.nextBoolean()) {
 						class_2759.class_2760 lv3 = class_2759.method_13366(
-							list, class_2759.method_11839(lv2, pair.getRight(), "bridge_end", blockRotation.rotate(pair.getLeft()), true)
+							list, class_2759.method_11839(arg, lv2, pair.getRight(), "bridge_end", blockRotation.rotate(pair.getLeft()), true)
 						);
-						class_2759.method_11840(class_2759.field_13001, i + 1, lv3, null, list, random);
+						class_2759.method_11840(arg, class_2759.field_13001, i + 1, lv3, null, list, random);
 					}
 				}
 
-				lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 4, -1), "tower_top", blockRotation, true));
+				lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 4, -1), "tower_top", blockRotation, true));
 			} else {
 				if (i != 7) {
-					return class_2759.method_11840(class_2759.field_13003, i + 1, lv, null, list, random);
+					return class_2759.method_11840(arg, class_2759.field_13003, i + 1, lv, null, list, random);
 				}
 
-				lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-1, 4, -1), "tower_top", blockRotation, true));
+				lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-1, 4, -1), "tower_top", blockRotation, true));
 			}
 
 			return true;
@@ -115,22 +114,22 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(int i, class_2759.class_2760 arg, BlockPos blockPos, List<StructurePiece> list, Random random) {
-			BlockRotation blockRotation = arg.field_13017.method_11874();
+		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+			BlockRotation blockRotation = arg2.field_13017.method_11874();
 			int j = random.nextInt(4) + 1;
-			class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, new BlockPos(0, 0, -4), "bridge_piece", blockRotation, true));
+			class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, arg2, new BlockPos(0, 0, -4), "bridge_piece", blockRotation, true));
 			lv.chainLength = -1;
 			int k = 0;
 
 			for (int l = 0; l < j; l++) {
 				if (random.nextBoolean()) {
-					lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(0, k, -4), "bridge_piece", blockRotation, true));
+					lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, k, -4), "bridge_piece", blockRotation, true));
 					k = 0;
 				} else {
 					if (random.nextBoolean()) {
-						lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(0, k, -4), "bridge_steep_stairs", blockRotation, true));
+						lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, k, -4), "bridge_steep_stairs", blockRotation, true));
 					} else {
-						lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(0, k, -8), "bridge_gentle_stairs", blockRotation, true));
+						lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, k, -8), "bridge_gentle_stairs", blockRotation, true));
 					}
 
 					k = 4;
@@ -138,13 +137,17 @@ public class class_2759 {
 			}
 
 			if (!this.field_13004 && random.nextInt(10 - i) == 0) {
-				class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-8 + random.nextInt(8), k, -70 + random.nextInt(10)), "ship", blockRotation, true));
+				class_2759.method_13366(
+					list, class_2759.method_11839(arg, lv, new BlockPos(-8 + random.nextInt(8), k, -70 + random.nextInt(10)), "ship", blockRotation, true)
+				);
 				this.field_13004 = true;
-			} else if (!class_2759.method_11840(class_2759.field_12998, i + 1, lv, new BlockPos(-3, k + 1, -11), list, random)) {
+			} else if (!class_2759.method_11840(arg, class_2759.field_12998, i + 1, lv, new BlockPos(-3, k + 1, -11), list, random)) {
 				return false;
 			}
 
-			lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(4, k, 0), "bridge_end", blockRotation.rotate(BlockRotation.CLOCKWISE_180), true));
+			lv = class_2759.method_13366(
+				list, class_2759.method_11839(arg, lv, new BlockPos(4, k, 0), "bridge_end", blockRotation.rotate(BlockRotation.CLOCKWISE_180), true)
+			);
 			lv.chainLength = -1;
 			return true;
 		}
@@ -163,25 +166,25 @@ public class class_2759 {
 		}
 
 		@Override
-		public boolean method_11849(int i, class_2759.class_2760 arg, BlockPos blockPos, List<StructurePiece> list, Random random) {
-			BlockRotation blockRotation = arg.field_13017.method_11874();
-			class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, new BlockPos(-3, 4, -3), "fat_tower_base", blockRotation, true));
-			lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(0, 4, 0), "fat_tower_middle", blockRotation, true));
+		public boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+			BlockRotation blockRotation = arg2.field_13017.method_11874();
+			class_2759.class_2760 lv = class_2759.method_13366(list, class_2759.method_11839(arg, arg2, new BlockPos(-3, 4, -3), "fat_tower_base", blockRotation, true));
+			lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, 4, 0), "fat_tower_middle", blockRotation, true));
 
 			for (int j = 0; j < 2 && random.nextInt(3) != 0; j++) {
-				lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(0, 8, 0), "fat_tower_middle", blockRotation, true));
+				lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(0, 8, 0), "fat_tower_middle", blockRotation, true));
 
 				for (Pair<BlockRotation, BlockPos> pair : class_2759.field_13002) {
 					if (random.nextBoolean()) {
 						class_2759.class_2760 lv2 = class_2759.method_13366(
-							list, class_2759.method_11839(lv, pair.getRight(), "bridge_end", blockRotation.rotate(pair.getLeft()), true)
+							list, class_2759.method_11839(arg, lv, pair.getRight(), "bridge_end", blockRotation.rotate(pair.getLeft()), true)
 						);
-						class_2759.method_11840(class_2759.field_13001, i + 1, lv2, null, list, random);
+						class_2759.method_11840(arg, class_2759.field_13001, i + 1, lv2, null, list, random);
 					}
 				}
 			}
 
-			lv = class_2759.method_13366(list, class_2759.method_11839(lv, new BlockPos(-2, 8, -2), "fat_tower_top", blockRotation, true));
+			lv = class_2759.method_13366(list, class_2759.method_11839(arg, lv, new BlockPos(-2, 8, -2), "fat_tower_top", blockRotation, true));
 			return true;
 		}
 	};
@@ -190,23 +193,25 @@ public class class_2759 {
 		StructurePieceManager.registerPiece(class_2759.class_2760.class, "ECP");
 	}
 
-	private static class_2759.class_2760 method_11839(class_2759.class_2760 arg, BlockPos blockPos, String string, BlockRotation blockRotation, boolean bl) {
-		class_2759.class_2760 lv = new class_2759.class_2760(string, arg.field_13018, blockRotation, bl);
-		BlockPos blockPos2 = arg.field_13016.method_11887(arg.field_13017, blockPos, lv.field_13017, BlockPos.ORIGIN);
+	private static class_2759.class_2760 method_11839(
+		class_2763 arg, class_2759.class_2760 arg2, BlockPos blockPos, String string, BlockRotation blockRotation, boolean bl
+	) {
+		class_2759.class_2760 lv = new class_2759.class_2760(arg, string, arg2.field_13018, blockRotation, bl);
+		BlockPos blockPos2 = arg2.field_13016.method_11887(arg2.field_13017, blockPos, lv.field_13017, BlockPos.ORIGIN);
 		lv.translate(blockPos2.getX(), blockPos2.getY(), blockPos2.getZ());
 		return lv;
 	}
 
-	public static void method_11837(BlockPos blockPos, BlockRotation blockRotation, List<StructurePiece> list, Random random) {
+	public static void method_11837(class_2763 arg, BlockPos blockPos, BlockRotation blockRotation, List<StructurePiece> list, Random random) {
 		field_13003.method_10465();
 		field_12998.method_10465();
 		field_13001.method_10465();
 		field_13000.method_10465();
-		class_2759.class_2760 lv = method_13366(list, new class_2759.class_2760("base_floor", blockPos, blockRotation, true));
-		lv = method_13366(list, method_11839(lv, new BlockPos(-1, 0, -1), "second_floor", blockRotation, false));
-		lv = method_13366(list, method_11839(lv, new BlockPos(-1, 4, -1), "third_floor", blockRotation, false));
-		lv = method_13366(list, method_11839(lv, new BlockPos(-1, 8, -1), "third_roof", blockRotation, true));
-		method_11840(field_13000, 1, lv, null, list, random);
+		class_2759.class_2760 lv = method_13366(list, new class_2759.class_2760(arg, "base_floor", blockPos, blockRotation, true));
+		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 0, -1), "second_floor", blockRotation, false));
+		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 4, -1), "third_floor", blockRotation, false));
+		lv = method_13366(list, method_11839(arg, lv, new BlockPos(-1, 8, -1), "third_roof", blockRotation, true));
+		method_11840(arg, field_13000, 1, lv, null, list, random);
 	}
 
 	private static class_2759.class_2760 method_13366(List<StructurePiece> list, class_2759.class_2760 arg) {
@@ -214,19 +219,21 @@ public class class_2759 {
 		return arg;
 	}
 
-	private static boolean method_11840(class_2759.class_1926 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random) {
+	private static boolean method_11840(
+		class_2763 arg, class_2759.class_1926 arg2, int i, class_2759.class_2760 arg3, BlockPos blockPos, List<StructurePiece> list, Random random
+	) {
 		if (i > 8) {
 			return false;
 		} else {
 			List<StructurePiece> list2 = Lists.newArrayList();
-			if (arg.method_11849(i, arg2, blockPos, list2, random)) {
+			if (arg2.method_11849(arg, i, arg3, blockPos, list2, random)) {
 				boolean bl = false;
 				int j = random.nextInt();
 
 				for (StructurePiece structurePiece : list2) {
 					structurePiece.chainLength = j;
 					StructurePiece structurePiece2 = StructurePiece.getOverlappingPiece(list, structurePiece.getBoundingBox());
-					if (structurePiece2 != null && structurePiece2.chainLength != arg2.chainLength) {
+					if (structurePiece2 != null && structurePiece2.chainLength != arg3.chainLength) {
 						bl = true;
 						break;
 					}
@@ -245,7 +252,7 @@ public class class_2759 {
 	interface class_1926 {
 		void method_10465();
 
-		boolean method_11849(int i, class_2759.class_2760 arg, BlockPos blockPos, List<StructurePiece> list, Random random);
+		boolean method_11849(class_2763 arg, int i, class_2759.class_2760 arg2, BlockPos blockPos, List<StructurePiece> list, Random random);
 	}
 
 	public static class class_2760 extends class_2762 {
@@ -256,24 +263,21 @@ public class class_2759 {
 		public class_2760() {
 		}
 
-		public class_2760(String string, BlockPos blockPos, BlockRotation blockRotation, boolean bl) {
+		public class_2760(class_2763 arg, String string, BlockPos blockPos, BlockRotation blockRotation, boolean bl) {
 			super(0);
 			this.field_13005 = string;
+			this.field_13018 = blockPos;
 			this.field_13006 = blockRotation;
 			this.field_13007 = bl;
-			this.method_11848(blockPos);
+			this.method_13773(arg);
 		}
 
-		private void method_11848(BlockPos blockPos) {
-			Structure structure = class_2759.field_12995.method_11861(null, new Identifier("endcity/" + this.field_13005));
-			StructurePlacementData structurePlacementData;
-			if (this.field_13007) {
-				structurePlacementData = class_2759.field_12996.method_11864().method_11868(this.field_13006);
-			} else {
-				structurePlacementData = class_2759.field_12997.method_11864().method_11868(this.field_13006);
-			}
-
-			this.method_11856(structure, blockPos, structurePlacementData);
+		private void method_13773(class_2763 arg) {
+			Structure structure = arg.method_11861(null, new Identifier("endcity/" + this.field_13005));
+			StructurePlacementData structurePlacementData = (this.field_13007 ? class_2759.field_12996 : class_2759.field_12997)
+				.method_11864()
+				.method_11868(this.field_13006);
+			this.method_11856(structure, this.field_13018, structurePlacementData);
 		}
 
 		@Override
@@ -285,12 +289,12 @@ public class class_2759 {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.field_13005 = structureNbt.getString("Template");
-			this.field_13006 = BlockRotation.valueOf(structureNbt.getString("Rot"));
-			this.field_13007 = structureNbt.getBoolean("OW");
-			this.method_11848(this.field_13018);
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.field_13005 = nbtCompound.getString("Template");
+			this.field_13006 = BlockRotation.valueOf(nbtCompound.getString("Rot"));
+			this.field_13007 = nbtCompound.getBoolean("OW");
+			this.method_13773(arg);
 		}
 
 		@Override

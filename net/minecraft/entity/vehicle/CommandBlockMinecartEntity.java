@@ -1,9 +1,10 @@
 package net.minecraft.entity.vehicle;
 
 import io.netty.buffer.ByteBuf;
-import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.datafixer.DataFixer;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.datafixer.Schema;
@@ -12,12 +13,12 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
@@ -80,11 +81,11 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper arg) {
-		AbstractMinecartEntity.method_13302(arg, "MinecartCommandBlock");
+		AbstractMinecartEntity.registerDataFixes(arg, CommandBlockMinecartEntity.class);
 		arg.addSchema(LevelDataType.ENTITY, new Schema() {
 			@Override
 			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if ("MinecartCommandBlock".equals(tag.getString("id"))) {
+				if (BlockEntity.getIdentifier(CommandBlockBlockEntity.class).equals(new Identifier(tag.getString("id")))) {
 					tag.putString("id", "Control");
 					dataFixer.update(LevelDataType.BLOCK_ENTITY, tag, dataVersion);
 					tag.putString("id", "MinecartCommandBlock");
@@ -139,8 +140,8 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
-		this.executor.interact(playerEntity);
+	public boolean interact(PlayerEntity player, Hand hand) {
+		this.executor.interact(player);
 		return false;
 	}
 

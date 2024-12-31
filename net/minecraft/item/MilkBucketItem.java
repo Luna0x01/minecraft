@@ -1,6 +1,5 @@
 package net.minecraft.item;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -17,11 +16,10 @@ public class MilkBucketItem extends Item {
 		this.setItemGroup(ItemGroup.MISC);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
 		if (entity instanceof PlayerEntity && !((PlayerEntity)entity).abilities.creativeMode) {
-			stack.count--;
+			stack.decrement(1);
 		}
 
 		if (!world.isClient) {
@@ -32,7 +30,7 @@ public class MilkBucketItem extends Item {
 			((PlayerEntity)entity).incrementStat(Stats.used(this));
 		}
 
-		return stack.count <= 0 ? new ItemStack(Items.BUCKET) : stack;
+		return stack.isEmpty() ? new ItemStack(Items.BUCKET) : stack;
 	}
 
 	@Override
@@ -46,8 +44,8 @@ public class MilkBucketItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		playerEntity.method_13050(hand);
-		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		player.method_13050(hand);
+		return new TypedActionResult<>(ActionResult.SUCCESS, player.getStackInHand(hand));
 	}
 }

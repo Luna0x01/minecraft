@@ -1,7 +1,7 @@
 package net.minecraft.item;
 
-import java.util.List;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.collection.DefaultedList;
 
 public class CoalItem extends Item {
 	public CoalItem() {
@@ -16,8 +16,8 @@ public class CoalItem extends Item {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
-		list.add(new ItemStack(item, 1, 0));
-		list.add(new ItemStack(item, 1, 1));
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item, 1, 0));
+		defaultedList.add(new ItemStack(item, 1, 1));
 	}
 }

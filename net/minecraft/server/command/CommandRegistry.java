@@ -15,6 +15,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
 import net.minecraft.command.IncorrectUsageException;
+import net.minecraft.command.PlayerNotFoundException;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.TranslatableText;
@@ -40,40 +41,50 @@ public abstract class CommandRegistry implements CommandRegistryProvider {
 		String string = strings[0];
 		strings = method_3104(strings);
 		Command command = (Command)this.commandMap.get(string);
-		int i = this.method_4642(command, strings);
-		int j = 0;
-		if (command == null) {
-			TranslatableText translatableText = new TranslatableText("commands.generic.notFound");
-			translatableText.getStyle().setFormatting(Formatting.RED);
-			source.sendMessage(translatableText);
-		} else if (command.method_3278(this.getServer(), source)) {
-			if (i > -1) {
-				List<Entity> list = PlayerSelector.method_10866(source, strings[i], Entity.class);
-				String string2 = strings[i];
-				source.setStat(CommandStats.Type.AFFECTED_ENTITIES, list.size());
+		int i = 0;
 
-				for (Entity entity : list) {
-					strings[i] = entity.getEntityName();
+		try {
+			int j = this.method_4642(command, strings);
+			if (command == null) {
+				TranslatableText translatableText = new TranslatableText("commands.generic.notFound");
+				translatableText.getStyle().setFormatting(Formatting.RED);
+				source.sendMessage(translatableText);
+			} else if (command.method_3278(this.getServer(), source)) {
+				if (j > -1) {
+					List<Entity> list = PlayerSelector.method_10866(source, strings[j], Entity.class);
+					String string2 = strings[j];
+					source.setStat(CommandStats.Type.AFFECTED_ENTITIES, list.size());
+					if (list.isEmpty()) {
+						throw new PlayerNotFoundException("commands.generic.selector.notFound", strings[j]);
+					}
+
+					for (Entity entity : list) {
+						strings[j] = entity.getEntityName();
+						if (this.method_10732(source, strings, command, name)) {
+							i++;
+						}
+					}
+
+					strings[j] = string2;
+				} else {
+					source.setStat(CommandStats.Type.AFFECTED_ENTITIES, 1);
 					if (this.method_10732(source, strings, command, name)) {
-						j++;
+						i++;
 					}
 				}
-
-				strings[i] = string2;
 			} else {
-				source.setStat(CommandStats.Type.AFFECTED_ENTITIES, 1);
-				if (this.method_10732(source, strings, command, name)) {
-					j++;
-				}
+				TranslatableText translatableText2 = new TranslatableText("commands.generic.permission");
+				translatableText2.getStyle().setFormatting(Formatting.RED);
+				source.sendMessage(translatableText2);
 			}
-		} else {
-			TranslatableText translatableText2 = new TranslatableText("commands.generic.permission");
-			translatableText2.getStyle().setFormatting(Formatting.RED);
-			source.sendMessage(translatableText2);
+		} catch (CommandException var12) {
+			TranslatableText translatableText3 = new TranslatableText(var12.getMessage(), var12.getArgs());
+			translatableText3.getStyle().setFormatting(Formatting.RED);
+			source.sendMessage(translatableText3);
 		}
 
-		source.setStat(CommandStats.Type.SUCCESS_COUNT, j);
-		return j;
+		source.setStat(CommandStats.Type.SUCCESS_COUNT, i);
+		return i;
 	}
 
 	protected boolean method_10732(CommandSource commandSource, String[] strings, Command command, String string) {
@@ -164,7 +175,7 @@ public abstract class CommandRegistry implements CommandRegistryProvider {
 		return this.commandMap;
 	}
 
-	private int method_4642(Command command, String[] args) {
+	private int method_4642(Command command, String[] args) throws CommandException {
 		if (command == null) {
 			return -1;
 		} else {

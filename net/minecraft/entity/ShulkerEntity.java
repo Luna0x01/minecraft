@@ -33,6 +33,7 @@ import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -50,6 +51,8 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		ShulkerEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS
 	);
 	protected static final TrackedData<Byte> field_14769 = DataTracker.registerData(ShulkerEntity.class, TrackedDataHandlerRegistry.BYTE);
+	protected static final TrackedData<Byte> field_15060 = DataTracker.registerData(ShulkerEntity.class, TrackedDataHandlerRegistry.BYTE);
+	public static final DyeColor field_15061 = DyeColor.PURPLE;
 	private float field_14767;
 	private float field_14768;
 	private BlockPos field_14762;
@@ -126,6 +129,7 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		this.dataTracker.startTracking(field_14761, Direction.DOWN);
 		this.dataTracker.startTracking(field_14764, Optional.absent());
 		this.dataTracker.startTracking(field_14769, (byte)0);
+		this.dataTracker.startTracking(field_15060, (byte)field_15061.getId());
 	}
 
 	@Override
@@ -140,7 +144,7 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Shulker");
+		MobEntity.registerDataFixes(dataFixer, ShulkerEntity.class);
 	}
 
 	@Override
@@ -148,6 +152,7 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		super.readCustomDataFromNbt(nbt);
 		this.dataTracker.set(field_14761, Direction.getById(nbt.getByte("AttachFace")));
 		this.dataTracker.set(field_14769, nbt.getByte("Peek"));
+		this.dataTracker.set(field_15060, nbt.getByte("Color"));
 		if (nbt.contains("APX")) {
 			int i = nbt.getInt("APX");
 			int j = nbt.getInt("APY");
@@ -163,6 +168,7 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putByte("AttachFace", (byte)this.dataTracker.get(field_14761).getId());
 		nbt.putByte("Peek", this.dataTracker.get(field_14769));
+		nbt.putByte("Color", this.dataTracker.get(field_15060));
 		BlockPos blockPos = this.method_13227();
 		if (blockPos != null) {
 			nbt.putInt("APX", blockPos.getX());
@@ -192,12 +198,20 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 			if (blockState.getMaterial() != Material.AIR) {
 				if (blockState.getBlock() == Blocks.PISTON_EXTENSION) {
 					Direction direction = blockState.get(PistonBlock.FACING);
-					blockPos = blockPos.offset(direction);
-					this.dataTracker.set(field_14764, Optional.of(blockPos));
+					if (this.world.isAir(blockPos.offset(direction))) {
+						blockPos = blockPos.offset(direction);
+						this.dataTracker.set(field_14764, Optional.of(blockPos));
+					} else {
+						this.method_13235();
+					}
 				} else if (blockState.getBlock() == Blocks.PISTON_HEAD) {
 					Direction direction2 = blockState.get(PistonHeadBlock.FACING);
-					blockPos = blockPos.offset(direction2);
-					this.dataTracker.set(field_14764, Optional.of(blockPos));
+					if (this.world.isAir(blockPos.offset(direction2))) {
+						blockPos = blockPos.offset(direction2);
+						this.dataTracker.set(field_14764, Optional.of(blockPos));
+					} else {
+						this.method_13235();
+					}
 				} else {
 					this.method_13235();
 				}
@@ -256,34 +270,34 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 			double d = 0.5 - (double)MathHelper.sin((0.5F + this.field_14768) * (float) Math.PI) * 0.5;
 			double e = 0.5 - (double)MathHelper.sin((0.5F + this.field_14767) * (float) Math.PI) * 0.5;
 			double h = d - e;
+			double i = 0.0;
+			double j = 0.0;
 			double k = 0.0;
-			double l = 0.0;
-			double m = 0.0;
 			Direction direction4 = this.method_13226();
 			switch (direction4) {
 				case DOWN:
 					this.setBoundingBox(new Box(this.x - 0.5, this.y, this.z - 0.5, this.x + 0.5, this.y + 1.0 + d, this.z + 0.5));
-					l = h;
+					j = h;
 					break;
 				case UP:
 					this.setBoundingBox(new Box(this.x - 0.5, this.y - d, this.z - 0.5, this.x + 0.5, this.y + 1.0, this.z + 0.5));
-					l = -h;
+					j = -h;
 					break;
 				case NORTH:
 					this.setBoundingBox(new Box(this.x - 0.5, this.y, this.z - 0.5, this.x + 0.5, this.y + 1.0, this.z + 0.5 + d));
-					m = h;
+					k = h;
 					break;
 				case SOUTH:
 					this.setBoundingBox(new Box(this.x - 0.5, this.y, this.z - 0.5 - d, this.x + 0.5, this.y + 1.0, this.z + 0.5));
-					m = -h;
+					k = -h;
 					break;
 				case WEST:
 					this.setBoundingBox(new Box(this.x - 0.5, this.y, this.z - 0.5, this.x + 0.5 + d, this.y + 1.0, this.z + 0.5));
-					k = h;
+					i = h;
 					break;
 				case EAST:
 					this.setBoundingBox(new Box(this.x - 0.5 - d, this.y, this.z - 0.5, this.x + 0.5, this.y + 1.0, this.z + 0.5));
-					k = -h;
+					i = -h;
 			}
 
 			if (h > 0.0) {
@@ -291,11 +305,20 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 				if (!list.isEmpty()) {
 					for (Entity entity : list) {
 						if (!(entity instanceof ShulkerEntity) && !entity.noClip) {
-							entity.move(k, l, m);
+							entity.move(MovementType.SHULKER, i, j, k);
 						}
 					}
 				}
 			}
+		}
+	}
+
+	@Override
+	public void move(MovementType type, double movementX, double movementY, double movementZ) {
+		if (type == MovementType.SHULKER_BOX) {
+			this.method_13235();
+		} else {
+			super.move(type, movementX, movementY, movementZ);
 		}
 	}
 
@@ -319,10 +342,7 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 
 			for (int i = 0; i < 5; i++) {
 				BlockPos blockPos2 = blockPos.add(8 - this.random.nextInt(17), 8 - this.random.nextInt(17), 8 - this.random.nextInt(17));
-				if (blockPos2.getY() > 0
-					&& this.world.isAir(blockPos2)
-					&& this.world.isInsideWorld(this.world.getWorldBorder(), this)
-					&& this.world.doesBoxCollide(this, new Box(blockPos2)).isEmpty()) {
+				if (blockPos2.getY() > 0 && this.world.isAir(blockPos2) && this.world.method_13694(this) && this.world.doesBoxCollide(this, new Box(blockPos2)).isEmpty()) {
 					boolean bl = false;
 
 					for (Direction direction : Direction.values()) {
@@ -496,6 +516,10 @@ public class ShulkerEntity extends GolemEntity implements Monster {
 	@Override
 	protected Identifier getLootTableId() {
 		return LootTables.SHULKER_ENTITIE;
+	}
+
+	public DyeColor method_13573() {
+		return DyeColor.byId(this.dataTracker.get(field_15060));
 	}
 
 	class class_2997 extends Goal {

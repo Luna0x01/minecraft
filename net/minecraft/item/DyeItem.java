@@ -1,6 +1,5 @@
 package net.minecraft.item;
 
-import java.util.List;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -16,9 +15,9 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class DyeItem extends Item {
@@ -39,39 +38,38 @@ public class DyeItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		if (!playerEntity.canModify(blockPos.offset(direction), direction, itemStack)) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!player.canModify(pos.offset(direction), direction, itemStack)) {
 			return ActionResult.FAIL;
 		} else {
 			DyeColor dyeColor = DyeColor.getById(itemStack.getData());
 			if (dyeColor == DyeColor.WHITE) {
-				if (fertilize(itemStack, world, blockPos)) {
+				if (fertilize(itemStack, world, pos)) {
 					if (!world.isClient) {
-						world.syncGlobalEvent(2005, blockPos, 0);
+						world.syncGlobalEvent(2005, pos, 0);
 					}
 
 					return ActionResult.SUCCESS;
 				}
 			} else if (dyeColor == DyeColor.BROWN) {
-				BlockState blockState = world.getBlockState(blockPos);
+				BlockState blockState = world.getBlockState(pos);
 				Block block = blockState.getBlock();
 				if (block == Blocks.LOG && blockState.get(Log1Block.VARIANT) == PlanksBlock.WoodType.JUNGLE) {
-					if (direction != Direction.DOWN && direction != Direction.UP) {
-						blockPos = blockPos.offset(direction);
-						if (world.isAir(blockPos)) {
-							BlockState blockState2 = Blocks.COCOA.getStateFromData(world, blockPos, direction, f, g, h, 0, playerEntity);
-							world.setBlockState(blockPos, blockState2, 10);
-							if (!playerEntity.abilities.creativeMode) {
-								itemStack.count--;
-							}
+					if (direction == Direction.DOWN || direction == Direction.UP) {
+						return ActionResult.FAIL;
+					}
+
+					pos = pos.offset(direction);
+					if (world.isAir(pos)) {
+						BlockState blockState2 = Blocks.COCOA.getStateFromData(world, pos, direction, x, y, z, 0, player);
+						world.setBlockState(pos, blockState2, 10);
+						if (!player.abilities.creativeMode) {
+							itemStack.decrement(1);
 						}
 
 						return ActionResult.SUCCESS;
 					}
-
-					return ActionResult.FAIL;
 				}
 
 				return ActionResult.FAIL;
@@ -91,7 +89,7 @@ public class DyeItem extends Item {
 						growable.grow(world, world.random, pos, blockState);
 					}
 
-					stack.count--;
+					stack.decrement(1);
 				}
 
 				return true;
@@ -115,7 +113,7 @@ public class DyeItem extends Item {
 				world.addParticle(
 					ParticleType.HAPPY_VILLAGER,
 					(double)((float)pos.getX() + RANDOM.nextFloat()),
-					(double)pos.getY() + (double)RANDOM.nextFloat() * blockState.getCollisionBox((BlockView)world, pos).maxY,
+					(double)pos.getY() + (double)RANDOM.nextFloat() * blockState.getCollisionBox(world, pos).maxY,
 					(double)((float)pos.getZ() + RANDOM.nextFloat()),
 					d,
 					e,
@@ -132,7 +130,7 @@ public class DyeItem extends Item {
 			DyeColor dyeColor = DyeColor.getById(itemStack.getData());
 			if (!sheepEntity.isSheared() && sheepEntity.getColor() != dyeColor) {
 				sheepEntity.setColor(dyeColor);
-				itemStack.count--;
+				itemStack.decrement(1);
 			}
 
 			return true;
@@ -142,9 +140,9 @@ public class DyeItem extends Item {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (int i = 0; i < 16; i++) {
-			list.add(new ItemStack(item, 1, i));
+			defaultedList.add(new ItemStack(item, 1, i));
 		}
 	}
 }

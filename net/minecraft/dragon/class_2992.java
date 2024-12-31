@@ -18,15 +18,15 @@ public class class_2992 extends class_2979 {
 
 	@Override
 	public void method_13183() {
-		if (this.field_14695) {
-			this.field_14695 = false;
-			this.method_13194();
-		} else {
+		if (!this.field_14695 && this.field_14696 != null) {
 			BlockPos blockPos = this.dragon.world.getTopPosition(EndExitPortalFeature.ORIGIN);
 			double d = this.dragon.squaredDistanceToCenter(blockPos);
 			if (d > 100.0) {
 				this.dragon.method_13168().method_13203(class_2993.HOLDING_PATTERN);
 			}
+		} else {
+			this.field_14695 = false;
+			this.method_13194();
 		}
 	}
 
@@ -41,7 +41,7 @@ public class class_2992 extends class_2979 {
 		int i = this.dragon.method_13171();
 		Vec3d vec3d = this.dragon.method_13162(1.0F);
 		int j = this.dragon.method_13170(-vec3d.x * 40.0, 105.0, -vec3d.z * 40.0);
-		if (this.dragon.method_13169() != null && this.dragon.method_13169().getAliveCrystals() >= 0) {
+		if (this.dragon.method_13169() != null && this.dragon.method_13169().getAliveCrystals() > 0) {
 			j %= 12;
 			if (j < 0) {
 				j += 12;

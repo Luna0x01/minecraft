@@ -30,13 +30,18 @@ public class AbstractSignBlock extends BlockWithEntity {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
 	@Override
 	public boolean method_11562(BlockState state) {
 		return false;
+	}
+
+	@Override
+	public boolean method_13704(BlockState state) {
+		return true;
 	}
 
 	@Override
@@ -59,7 +64,6 @@ public class AbstractSignBlock extends BlockWithEntity {
 		return new SignBlockEntity();
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.SIGN;
@@ -71,23 +75,12 @@ public class AbstractSignBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
-			return blockEntity instanceof SignBlockEntity ? ((SignBlockEntity)blockEntity).onActivate(playerEntity) : false;
+			BlockEntity blockEntity = world.getBlockEntity(pos);
+			return blockEntity instanceof SignBlockEntity ? ((SignBlockEntity)blockEntity).onActivate(player) : false;
 		}
 	}
 

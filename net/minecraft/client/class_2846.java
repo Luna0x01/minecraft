@@ -34,7 +34,7 @@ public class class_2846 extends ResourcePackWidget {
 
 	@Override
 	protected int getFormat() {
-		return 2;
+		return 3;
 	}
 
 	@Override

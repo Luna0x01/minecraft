@@ -36,20 +36,20 @@ public class class_2776 {
 
 		for (class_2778 lv : this.field_13178) {
 			if (class_2818.method_12082(lv.field_13184, random, arg)) {
-				int l = lv.method_11974(arg.method_11993());
-				if (l > 0) {
+				int j = lv.method_11974(arg.method_11993());
+				if (j > 0) {
 					list.add(lv);
-					i += l;
+					i += j;
 				}
 			}
 		}
 
 		if (i != 0 && !list.isEmpty()) {
-			int m = random.nextInt(i);
+			int k = random.nextInt(i);
 
 			for (class_2778 lv2 : list) {
-				m -= lv2.method_11974(arg.method_11993());
-				if (m < 0) {
+				k -= lv2.method_11974(arg.method_11993());
+				if (k < 0) {
 					lv2.method_11976(collection, random, arg);
 					return;
 				}

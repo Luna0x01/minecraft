@@ -1,12 +1,11 @@
 package net.minecraft.entity.decoration;
 
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.FenceBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
@@ -28,6 +27,7 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 		float g = 0.1875F;
 		float h = 0.25F;
 		this.setBoundingBox(new Box(this.x - 0.1875, this.y - 0.25 + 0.125, this.z - 0.1875, this.x + 0.1875, this.y + 0.25 + 0.125, this.z + 0.1875));
+		this.teleporting = true;
 	}
 
 	@Override
@@ -85,30 +85,26 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+	public boolean interact(PlayerEntity player, Hand hand) {
 		if (this.world.isClient) {
 			return true;
 		} else {
 			boolean bl = false;
-			if (itemStack != null && itemStack.getItem() == Items.LEAD) {
-				double d = 7.0;
+			double d = 7.0;
+			List<MobEntity> list = this.world
+				.getEntitiesInBox(MobEntity.class, new Box(this.x - 7.0, this.y - 7.0, this.z - 7.0, this.x + 7.0, this.y + 7.0, this.z + 7.0));
 
-				for (MobEntity mobEntity : this.world
-					.getEntitiesInBox(MobEntity.class, new Box(this.x - 7.0, this.y - 7.0, this.z - 7.0, this.x + 7.0, this.y + 7.0, this.z + 7.0))) {
-					if (mobEntity.isLeashed() && mobEntity.getLeashOwner() == playerEntity) {
-						mobEntity.attachLeash(this, true);
-						bl = true;
-					}
+			for (MobEntity mobEntity : list) {
+				if (mobEntity.isLeashed() && mobEntity.getLeashOwner() == player) {
+					mobEntity.attachLeash(this, true);
+					bl = true;
 				}
 			}
 
 			if (!bl) {
 				this.remove();
-				if (playerEntity.abilities.creativeMode) {
-					double e = 7.0;
-
-					for (MobEntity mobEntity2 : this.world
-						.getEntitiesInBox(MobEntity.class, new Box(this.x - 7.0, this.y - 7.0, this.z - 7.0, this.x + 7.0, this.y + 7.0, this.z + 7.0))) {
+				if (player.abilities.creativeMode) {
+					for (MobEntity mobEntity2 : list) {
 						if (mobEntity2.isLeashed() && mobEntity2.getLeashOwner() == this) {
 							mobEntity2.detachLeash(true, false);
 						}
@@ -127,12 +123,12 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 
 	public static LeashKnotEntity create(World world, BlockPos pos) {
 		LeashKnotEntity leashKnotEntity = new LeashKnotEntity(world, pos);
-		leashKnotEntity.teleporting = true;
 		world.spawnEntity(leashKnotEntity);
 		leashKnotEntity.onPlace();
 		return leashKnotEntity;
 	}
 
+	@Nullable
 	public static LeashKnotEntity getOrCreate(World world, BlockPos pos) {
 		int i = pos.getX();
 		int j = pos.getY();

@@ -10,10 +10,12 @@ import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.layer.Layer;
+import net.minecraft.world.gen.CustomizedWorldProperties;
 import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraft.world.level.LevelProperties;
 
 public class SingletonBiomeSource {
+	private CustomizedWorldProperties field_15122;
 	private Layer field_12462;
 	private Layer field_12463;
 	private final BiomeCache field_12464 = new BiomeCache(this);
@@ -26,7 +28,11 @@ public class SingletonBiomeSource {
 
 	private SingletonBiomeSource(long l, LevelGeneratorType levelGeneratorType, String string) {
 		this();
-		Layer[] layers = Layer.init(l, levelGeneratorType, string);
+		if (levelGeneratorType == LevelGeneratorType.CUSTOMIZED && !string.isEmpty()) {
+			this.field_15122 = CustomizedWorldProperties.Builder.fromJson(string).build();
+		}
+
+		Layer[] layers = Layer.method_146(l, levelGeneratorType, this.field_15122);
 		this.field_12462 = layers[0];
 		this.field_12463 = layers[1];
 	}
@@ -161,5 +167,13 @@ public class SingletonBiomeSource {
 
 	public void method_11539() {
 		this.field_12464.method_3840();
+	}
+
+	public boolean method_13697() {
+		return this.field_15122 != null && this.field_15122.fixedBiome >= 0;
+	}
+
+	public Biome method_13698() {
+		return this.field_15122 != null && this.field_15122.fixedBiome >= 0 ? Biome.getBiomeFromIndex(this.field_15122.fixedBiome) : null;
 	}
 }

@@ -17,6 +17,7 @@ import net.minecraft.world.World;
 
 public abstract class AbstractRailBlock extends Block {
 	protected static final Box field_12566 = new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0);
+	protected static final Box field_15123 = new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0);
 	protected final boolean forbidCurves;
 
 	public static boolean isRail(World world, BlockPos pos) {
@@ -36,7 +37,7 @@ public abstract class AbstractRailBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -48,7 +49,7 @@ public abstract class AbstractRailBlock extends Block {
 	@Override
 	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		AbstractRailBlock.RailShapeType railShapeType = state.getBlock() == this ? state.get(this.getShapeProperty()) : null;
-		return railShapeType != null && railShapeType.isAscending() ? collisionBox : field_12566;
+		return railShapeType != null && railShapeType.isAscending() ? field_15123 : field_12566;
 	}
 
 	@Override
@@ -66,35 +67,35 @@ public abstract class AbstractRailBlock extends Block {
 		if (!world.isClient) {
 			state = this.updateBlockState(world, pos, state, true);
 			if (this.forbidCurves) {
-				state.method_11707(world, pos, this);
+				state.neighbourUpdate(world, pos, this, pos);
 			}
 		}
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
-			AbstractRailBlock.RailShapeType railShapeType = blockState.get(this.getShapeProperty());
+			AbstractRailBlock.RailShapeType railShapeType = state.get(this.getShapeProperty());
 			boolean bl = false;
-			if (!world.getBlockState(blockPos.down()).method_11739()) {
+			if (!world.getBlockState(pos.down()).method_11739()) {
 				bl = true;
 			}
 
-			if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_EAST && !world.getBlockState(blockPos.east()).method_11739()) {
+			if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_EAST && !world.getBlockState(pos.east()).method_11739()) {
 				bl = true;
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_WEST && !world.getBlockState(blockPos.west()).method_11739()) {
+			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_WEST && !world.getBlockState(pos.west()).method_11739()) {
 				bl = true;
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_NORTH && !world.getBlockState(blockPos.north()).method_11739()) {
+			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_NORTH && !world.getBlockState(pos.north()).method_11739()) {
 				bl = true;
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_SOUTH && !world.getBlockState(blockPos.south()).method_11739()) {
+			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_SOUTH && !world.getBlockState(pos.south()).method_11739()) {
 				bl = true;
 			}
 
-			if (bl && !world.isAir(blockPos)) {
-				this.dropAsItem(world, blockPos, blockState, 0);
-				world.setAir(blockPos);
+			if (bl && !world.isAir(pos)) {
+				this.dropAsItem(world, pos, state, 0);
+				world.setAir(pos);
 			} else {
-				this.updateBlockState(blockState, world, blockPos, block);
+				this.updateBlockState(state, world, pos, block);
 			}
 		}
 	}
@@ -122,12 +123,12 @@ public abstract class AbstractRailBlock extends Block {
 	public void onBreaking(World world, BlockPos pos, BlockState state) {
 		super.onBreaking(world, pos, state);
 		if (((AbstractRailBlock.RailShapeType)state.get(this.getShapeProperty())).isAscending()) {
-			world.updateNeighborsAlways(pos.up(), this);
+			world.method_13692(pos.up(), this, false);
 		}
 
 		if (this.forbidCurves) {
-			world.updateNeighborsAlways(pos, this);
-			world.updateNeighborsAlways(pos.down(), this);
+			world.method_13692(pos, this, false);
+			world.method_13692(pos.down(), this, false);
 		}
 	}
 

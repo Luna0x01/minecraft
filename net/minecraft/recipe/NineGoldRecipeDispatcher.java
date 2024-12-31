@@ -20,14 +20,16 @@ public class NineGoldRecipeDispatcher {
 	};
 
 	public void register(RecipeDispatcher recipes) {
-		for (Object[] objects2 : this.recipe) {
-			Block block = (Block)objects2[0];
-			ItemStack itemStack = (ItemStack)objects2[1];
+		for (Object[] objects : this.recipe) {
+			Block block = (Block)objects[0];
+			ItemStack itemStack = (ItemStack)objects[1];
 			recipes.registerShapedRecipe(new ItemStack(block), "###", "###", "###", '#', itemStack);
 			recipes.registerShapedRecipe(itemStack, "#", '#', block);
 		}
 
 		recipes.registerShapedRecipe(new ItemStack(Items.GOLD_INGOT), "###", "###", "###", '#', Items.GOLD_NUGGET);
 		recipes.registerShapedRecipe(new ItemStack(Items.GOLD_NUGGET, 9), "#", '#', Items.GOLD_INGOT);
+		recipes.registerShapedRecipe(new ItemStack(Items.IRON_INGOT), "###", "###", "###", '#', Items.IRON_NUGGET);
+		recipes.registerShapedRecipe(new ItemStack(Items.IRON_NUGGET, 9), "#", '#', Items.IRON_INGOT);
 	}
 }

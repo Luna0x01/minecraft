@@ -3,64 +3,80 @@ package net.minecraft.block.entity;
 import com.google.common.collect.Lists;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.FlowerBlock;
+import net.minecraft.block.BannerPattern;
+import net.minecraft.item.BannerItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Nameable;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.DyeColor;
 
-public class BannerBlockEntity extends BlockEntity {
-	private int base;
+public class BannerBlockEntity extends BlockEntity implements Nameable {
+	private String field_15147;
+	private DyeColor field_15148 = DyeColor.BLACK;
 	private NbtList patternsNbt;
 	private boolean patternListTagRead;
-	private List<BannerBlockEntity.BannerPattern> patterns;
+	private List<BannerPattern> patterns;
 	private List<DyeColor> colors;
 	private String textureIdentifier;
 
-	public void fromItemStack(ItemStack stack) {
+	public void method_13720(ItemStack stack, boolean bl) {
 		this.patternsNbt = null;
-		if (stack.hasNbt() && stack.getNbt().contains("BlockEntityTag", 10)) {
-			NbtCompound nbtCompound = stack.getNbt().getCompound("BlockEntityTag");
-			if (nbtCompound.contains("Patterns")) {
-				this.patternsNbt = nbtCompound.getList("Patterns", 10).copy();
-			}
-
-			if (nbtCompound.contains("Base", 99)) {
-				this.base = nbtCompound.getInt("Base");
-			} else {
-				this.base = stack.getData() & 15;
-			}
-		} else {
-			this.base = stack.getData() & 15;
+		NbtCompound nbtCompound = stack.getNbtCompound("BlockEntityTag");
+		if (nbtCompound != null && nbtCompound.contains("Patterns", 9)) {
+			this.patternsNbt = nbtCompound.getList("Patterns", 10).copy();
 		}
 
+		this.field_15148 = bl ? method_13721(stack) : BannerItem.getDyeColor(stack);
 		this.patterns = null;
 		this.colors = null;
 		this.textureIdentifier = "";
 		this.patternListTagRead = true;
+		this.field_15147 = stack.hasCustomName() ? stack.getCustomName() : null;
+	}
+
+	@Override
+	public String getTranslationKey() {
+		return this.hasCustomName() ? this.field_15147 : "banner";
+	}
+
+	@Override
+	public boolean hasCustomName() {
+		return this.field_15147 != null && !this.field_15147.isEmpty();
+	}
+
+	@Override
+	public Text getName() {
+		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
 	}
 
 	@Override
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
-		toNbt(nbt, this.base, this.patternsNbt);
-		return nbt;
-	}
-
-	public static void toNbt(NbtCompound compound, int base, @Nullable NbtList patterns) {
-		compound.putInt("Base", base);
-		if (patterns != null) {
-			compound.put("Patterns", patterns);
+		nbt.putInt("Base", this.field_15148.getSwappedId());
+		if (this.patternsNbt != null) {
+			nbt.put("Patterns", this.patternsNbt);
 		}
+
+		if (this.hasCustomName()) {
+			nbt.putString("CustomName", this.field_15147);
+		}
+
+		return nbt;
 	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
-		this.base = nbt.getInt("Base");
+		if (nbt.contains("CustomName", 8)) {
+			this.field_15147 = nbt.getString("CustomName");
+		}
+
+		this.field_15148 = DyeColor.getById(nbt.getInt("Base"));
 		this.patternsNbt = nbt.getList("Patterns", 10);
 		this.patterns = null;
 		this.colors = null;
@@ -79,27 +95,14 @@ public class BannerBlockEntity extends BlockEntity {
 		return this.toNbt(new NbtCompound());
 	}
 
-	public int getBase() {
-		return this.base;
-	}
-
-	public static int getBase(ItemStack stack) {
-		NbtCompound nbtCompound = stack.getSubNbt("BlockEntityTag", false);
-		return nbtCompound != null && nbtCompound.contains("Base") ? nbtCompound.getInt("Base") : stack.getData();
-	}
-
 	public static int getPatternCount(ItemStack stack) {
-		NbtCompound nbtCompound = stack.getSubNbt("BlockEntityTag", false);
+		NbtCompound nbtCompound = stack.getNbtCompound("BlockEntityTag");
 		return nbtCompound != null && nbtCompound.contains("Patterns") ? nbtCompound.getList("Patterns", 10).size() : 0;
 	}
 
-	public List<BannerBlockEntity.BannerPattern> getPatterns() {
+	public List<BannerPattern> getPatterns() {
 		this.buildTextureIdentifier();
 		return this.patterns;
-	}
-
-	public NbtList getPatternsNbt() {
-		return this.patternsNbt;
 	}
 
 	public List<DyeColor> getColors() {
@@ -119,13 +122,13 @@ public class BannerBlockEntity extends BlockEntity {
 			} else {
 				this.patterns = Lists.newArrayList();
 				this.colors = Lists.newArrayList();
-				this.patterns.add(BannerBlockEntity.BannerPattern.BASE);
-				this.colors.add(DyeColor.getById(this.base));
-				this.textureIdentifier = "b" + this.base;
+				this.patterns.add(BannerPattern.BASE);
+				this.colors.add(this.field_15148);
+				this.textureIdentifier = "b" + this.field_15148.getSwappedId();
 				if (this.patternsNbt != null) {
 					for (int i = 0; i < this.patternsNbt.size(); i++) {
 						NbtCompound nbtCompound = this.patternsNbt.getCompound(i);
-						BannerBlockEntity.BannerPattern bannerPattern = BannerBlockEntity.BannerPattern.getById(nbtCompound.getString("Pattern"));
+						BannerPattern bannerPattern = BannerPattern.getById(nbtCompound.getString("Pattern"));
 						if (bannerPattern != null) {
 							this.patterns.add(bannerPattern);
 							int j = nbtCompound.getInt("Color");
@@ -138,16 +141,11 @@ public class BannerBlockEntity extends BlockEntity {
 		}
 	}
 
-	public static void method_11644(ItemStack itemStack, DyeColor dyeColor) {
-		NbtCompound nbtCompound = itemStack.getSubNbt("BlockEntityTag", true);
-		nbtCompound.putInt("Base", dyeColor.getSwappedId());
-	}
-
 	public static void loadFromItemStack(ItemStack stack) {
-		NbtCompound nbtCompound = stack.getSubNbt("BlockEntityTag", false);
+		NbtCompound nbtCompound = stack.getNbtCompound("BlockEntityTag");
 		if (nbtCompound != null && nbtCompound.contains("Patterns", 9)) {
 			NbtList nbtList = nbtCompound.getList("Patterns", 10);
-			if (nbtList.size() > 0) {
+			if (!nbtList.isEmpty()) {
 				nbtList.remove(nbtList.size() - 1);
 				if (nbtList.isEmpty()) {
 					stack.getNbt().remove("BlockEntityTag");
@@ -159,102 +157,17 @@ public class BannerBlockEntity extends BlockEntity {
 		}
 	}
 
-	public static enum BannerPattern {
-		BASE("base", "b"),
-		SQUARE_BOTTOM_LEFT("square_bottom_left", "bl", "   ", "   ", "#  "),
-		SQUARE_BOTTOM_RIGHT("square_bottom_right", "br", "   ", "   ", "  #"),
-		SQUARE_TOP_LEFT("square_top_left", "tl", "#  ", "   ", "   "),
-		SQUARE_TOP_RIGHT("square_top_right", "tr", "  #", "   ", "   "),
-		STRIPE_BOTTOM("stripe_bottom", "bs", "   ", "   ", "###"),
-		STRIPE_TOP("stripe_top", "ts", "###", "   ", "   "),
-		STRIPE_LEFT("stripe_left", "ls", "#  ", "#  ", "#  "),
-		STRIPE_RIGHT("stripe_right", "rs", "  #", "  #", "  #"),
-		STRIPE_CENTER("stripe_center", "cs", " # ", " # ", " # "),
-		STRIPE_MIDDLE("stripe_middle", "ms", "   ", "###", "   "),
-		STRIPE_DOWNRIGHT("stripe_downright", "drs", "#  ", " # ", "  #"),
-		STRIPE_DOWNLEFT("stripe_downleft", "dls", "  #", " # ", "#  "),
-		STRIPE_SMALL("small_stripes", "ss", "# #", "# #", "   "),
-		CROSS("cross", "cr", "# #", " # ", "# #"),
-		STRAIGHT_CROSS("straight_cross", "sc", " # ", "###", " # "),
-		TRIANGLE_BOTTOM("triangle_bottom", "bt", "   ", " # ", "# #"),
-		TRIANGLE_TOP("triangle_top", "tt", "# #", " # ", "   "),
-		TRIANGLES_BOTTOM("triangles_bottom", "bts", "   ", "# #", " # "),
-		TRIANGLES_TOP("triangles_top", "tts", " # ", "# #", "   "),
-		DIAGONAL_LEFT("diagonal_left", "ld", "## ", "#  ", "   "),
-		DIAGONAL_RIGHT("diagonal_up_right", "rd", "   ", "  #", " ##"),
-		DIAGONAL_LEFT_MIRROR("diagonal_up_left", "lud", "   ", "#  ", "## "),
-		DIAGONAL_RIGHT_MIRROR("diagonal_right", "rud", " ##", "  #", "   "),
-		CIRCLE_MIDDLE("circle", "mc", "   ", " # ", "   "),
-		RHOMBUS_MIDDLE("rhombus", "mr", " # ", "# #", " # "),
-		HALF_VERTICAL("half_vertical", "vh", "## ", "## ", "## "),
-		HALF_HORIZONTAL("half_horizontal", "hh", "###", "###", "   "),
-		HALF_VERTICAL_MIRROR("half_vertical_right", "vhr", " ##", " ##", " ##"),
-		HALF_HORIZONTAL_MIRROR("half_horizontal_bottom", "hhb", "   ", "###", "###"),
-		BORDER("border", "bo", "###", "# #", "###"),
-		CURLY_BORDER("curly_border", "cbo", new ItemStack(Blocks.VINE)),
-		CREEPER("creeper", "cre", new ItemStack(Items.SKULL, 1, 4)),
-		GRADIENT("gradient", "gra", "# #", " # ", " # "),
-		GRADIENT_UP("gradient_up", "gru", " # ", " # ", "# #"),
-		BRICKS("bricks", "bri", new ItemStack(Blocks.BRICKS)),
-		SKULL("skull", "sku", new ItemStack(Items.SKULL, 1, 1)),
-		FLOWER("flower", "flo", new ItemStack(Blocks.RED_FLOWER, 1, FlowerBlock.FlowerType.OXEYE_DAISY.getDataIndex())),
-		MOJANG("mojang", "moj", new ItemStack(Items.GOLDEN_APPLE, 1, 1));
-
-		private final String name;
-		private final String id;
-		private final String[] recipe = new String[3];
-		private ItemStack ingredient;
-
-		private BannerPattern(String string2, String string3) {
-			this.name = string2;
-			this.id = string3;
+	public ItemStack method_13722() {
+		ItemStack itemStack = BannerItem.method_13645(this.field_15148, this.patternsNbt);
+		if (this.hasCustomName()) {
+			itemStack.setCustomName(this.getTranslationKey());
 		}
 
-		private BannerPattern(String string2, String string3, ItemStack itemStack) {
-			this(string2, string3);
-			this.ingredient = itemStack;
-		}
+		return itemStack;
+	}
 
-		private BannerPattern(String string2, String string3, String string4, String string5, String string6) {
-			this(string2, string3);
-			this.recipe[0] = string4;
-			this.recipe[1] = string5;
-			this.recipe[2] = string6;
-		}
-
-		public String getName() {
-			return this.name;
-		}
-
-		public String getId() {
-			return this.id;
-		}
-
-		public String[] getRecipe() {
-			return this.recipe;
-		}
-
-		public boolean isCraftable() {
-			return this.ingredient != null || this.recipe[0] != null;
-		}
-
-		public boolean hasIngredient() {
-			return this.ingredient != null;
-		}
-
-		public ItemStack getIngredient() {
-			return this.ingredient;
-		}
-
-		@Nullable
-		public static BannerBlockEntity.BannerPattern getById(String id) {
-			for (BannerBlockEntity.BannerPattern bannerPattern : values()) {
-				if (bannerPattern.id.equals(id)) {
-					return bannerPattern;
-				}
-			}
-
-			return null;
-		}
+	public static DyeColor method_13721(ItemStack itemStack) {
+		NbtCompound nbtCompound = itemStack.getNbtCompound("BlockEntityTag");
+		return nbtCompound != null && nbtCompound.contains("Base") ? DyeColor.getById(nbtCompound.getInt("Base")) : DyeColor.BLACK;
 	}
 }

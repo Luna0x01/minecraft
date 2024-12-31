@@ -47,7 +47,7 @@ public class ToolItem extends Item {
 
 	@Override
 	public boolean method_3356(ItemStack itemStack, World world, BlockState blockState, BlockPos blockPos, LivingEntity livingEntity) {
-		if ((double)blockState.getHardness(world, blockPos) != 0.0) {
+		if (!world.isClient && (double)blockState.getHardness(world, blockPos) != 0.0) {
 			itemStack.damage(1, livingEntity);
 		}
 

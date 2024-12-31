@@ -5,8 +5,10 @@ import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.ElderGuardianEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.ai.control.LookControl;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -22,15 +24,9 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.SquidEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.loot.LootTables;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
@@ -41,17 +37,17 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 
 public class GuardianEntity extends HostileEntity {
-	private static final TrackedData<Byte> field_14755 = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final TrackedData<Boolean> field_15549 = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Integer> field_14756 = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private float spikesExtension;
-	private float prevSpikesExtension;
-	private float spikesExtensionRate;
-	private float tailAngle;
-	private float prevTailAngle;
+	protected float spikesExtension;
+	protected float prevSpikesExtension;
+	protected float spikesExtensionRate;
+	protected float tailAngle;
+	protected float prevTailAngle;
 	private LivingEntity cachedBeamTarget;
 	private int beamTicks;
 	private boolean flopping;
-	private WanderAroundGoal wanderAroundGoal;
+	protected WanderAroundGoal wanderAroundGoal;
 
 	public GuardianEntity(World world) {
 		super(world);
@@ -87,19 +83,7 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Guardian");
-	}
-
-	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-		this.setElder(nbt.getBoolean("Elder"));
-	}
-
-	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
-		nbt.putBoolean("Elder", this.isElder());
+		MobEntity.registerDataFixes(dataFixer, GuardianEntity.class);
 	}
 
 	@Override
@@ -110,57 +94,20 @@ public class GuardianEntity extends HostileEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_14755, (byte)0);
+		this.dataTracker.startTracking(field_15549, false);
 		this.dataTracker.startTracking(field_14756, 0);
 	}
 
-	private boolean method_11192(int i) {
-		return (this.dataTracker.get(field_14755) & i) != 0;
-	}
-
-	private void method_11193(int i, boolean bl) {
-		byte b = this.dataTracker.get(field_14755);
-		if (bl) {
-			this.dataTracker.set(field_14755, (byte)(b | i));
-		} else {
-			this.dataTracker.set(field_14755, (byte)(b & ~i));
-		}
-	}
-
 	public boolean areSpikesRetracted() {
-		return this.method_11192(2);
+		return this.dataTracker.get(field_15549);
 	}
 
 	private void setSpikesRetracted(boolean retracted) {
-		this.method_11193(2, retracted);
+		this.dataTracker.set(field_15549, retracted);
 	}
 
 	public int getWarmupTime() {
-		return this.isElder() ? 60 : 80;
-	}
-
-	public boolean isElder() {
-		return this.method_11192(4);
-	}
-
-	public void setElder(boolean elder) {
-		this.method_11193(4, elder);
-		if (elder) {
-			this.setBounds(1.9975F, 1.9975F);
-			this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3F);
-			this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(8.0);
-			this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(80.0);
-			this.setPersistent();
-			if (this.wanderAroundGoal != null) {
-				this.wanderAroundGoal.setChance(400);
-			}
-		}
-	}
-
-	public void method_11201() {
-		this.setElder(true);
-		this.tailAngle = 1.0F;
-		this.prevTailAngle = this.tailAngle;
+		return 80;
 	}
 
 	private void setBeamTarget(int progress) {
@@ -171,6 +118,7 @@ public class GuardianEntity extends HostileEntity {
 		return this.dataTracker.get(field_14756) != 0;
 	}
 
+	@Nullable
 	public LivingEntity getBeamTarget() {
 		if (!this.hasBeamTarget()) {
 			return null;
@@ -194,11 +142,7 @@ public class GuardianEntity extends HostileEntity {
 	@Override
 	public void onTrackedDataSet(TrackedData<?> data) {
 		super.onTrackedDataSet(data);
-		if (field_14755.equals(data)) {
-			if (this.isElder() && this.width < 1.0F) {
-				this.setBounds(1.9975F, 1.9975F);
-			}
-		} else if (field_14756.equals(data)) {
+		if (field_14756.equals(data)) {
 			this.beamTicks = 0;
 			this.cachedBeamTarget = null;
 		}
@@ -211,29 +155,17 @@ public class GuardianEntity extends HostileEntity {
 
 	@Override
 	protected Sound ambientSound() {
-		if (this.isElder()) {
-			return this.isTouchingWater() ? Sounds.ENTITY_ELDER_GUARDIAN_AMBIENT : Sounds.ENTITY_ELDER_GUARDIAN_AMBIENT_LAND;
-		} else {
-			return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_AMBIENT : Sounds.ENTITY_GUARDIAN_AMBIENT_LAND;
-		}
+		return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_AMBIENT : Sounds.ENTITY_GUARDIAN_AMBIENT_LAND;
 	}
 
 	@Override
 	protected Sound method_13048() {
-		if (this.isElder()) {
-			return this.isTouchingWater() ? Sounds.ENTITY_ELDER_GUARDIAN_HURT : Sounds.ENTITY_ELDER_GUARDIAN_HURT_LAND;
-		} else {
-			return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_HURT : Sounds.ENTITY_GUARDIAN_HURT_LAND;
-		}
+		return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_HURT : Sounds.ENTITY_GUARDIAN_HURT_LAND;
 	}
 
 	@Override
 	protected Sound deathSound() {
-		if (this.isElder()) {
-			return this.isTouchingWater() ? Sounds.ENTITY_ELDER_GUARDIAN_DEATH : Sounds.ENTITY_ELDER_GUARDIAN_DEATH_LAND;
-		} else {
-			return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_DEATH : Sounds.ENTITY_GUARDIAN_DEATH_LAND;
-		}
+		return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_DEATH : Sounds.ENTITY_GUARDIAN_DEATH_LAND;
 	}
 
 	@Override
@@ -258,7 +190,7 @@ public class GuardianEntity extends HostileEntity {
 			if (!this.isTouchingWater()) {
 				this.spikesExtensionRate = 2.0F;
 				if (this.velocityY > 0.0 && this.flopping && !this.isSilent()) {
-					this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_GUARDIAN_FLOP, this.getSoundCategory(), 1.0F, 1.0F, false);
+					this.world.playSound(this.x, this.y, this.z, this.method_14091(), this.getSoundCategory(), 1.0F, 1.0F, false);
 				}
 
 				this.flopping = this.velocityY < 0.0 && this.world.renderAsNormalBlock(new BlockPos(this).down(), false);
@@ -344,6 +276,10 @@ public class GuardianEntity extends HostileEntity {
 		super.tickMovement();
 	}
 
+	protected Sound method_14091() {
+		return Sounds.ENTITY_GUARDIAN_FLOP;
+	}
+
 	public float getSpikesExtension(float tickDelta) {
 		return this.prevSpikesExtension + (this.spikesExtension - this.prevSpikesExtension) * tickDelta;
 	}
@@ -356,41 +292,10 @@ public class GuardianEntity extends HostileEntity {
 		return ((float)this.beamTicks + tickDelta) / (float)this.getWarmupTime();
 	}
 
-	@Override
-	protected void mobTick() {
-		super.mobTick();
-		if (this.isElder()) {
-			int i = 1200;
-			int j = 1200;
-			int k = 6000;
-			int l = 2;
-			if ((this.ticksAlive + this.getEntityId()) % 1200 == 0) {
-				StatusEffect statusEffect = StatusEffects.MINING_FATIGUE;
-
-				for (ServerPlayerEntity serverPlayerEntity : this.world.method_8536(ServerPlayerEntity.class, new Predicate<ServerPlayerEntity>() {
-					public boolean apply(@Nullable ServerPlayerEntity serverPlayerEntity) {
-						return GuardianEntity.this.squaredDistanceTo(serverPlayerEntity) < 2500.0 && serverPlayerEntity.interactionManager.isSurvival();
-					}
-				})) {
-					if (!serverPlayerEntity.hasStatusEffect(statusEffect)
-						|| serverPlayerEntity.getEffectInstance(statusEffect).getAmplifier() < 2
-						|| serverPlayerEntity.getEffectInstance(statusEffect).getDuration() < 1200) {
-						serverPlayerEntity.networkHandler.sendPacket(new GameStateChangeS2CPacket(10, 0.0F));
-						serverPlayerEntity.addStatusEffect(new StatusEffectInstance(statusEffect, 6000, 2));
-					}
-				}
-			}
-
-			if (!this.hasPositionTarget()) {
-				this.setPositionTarget(new BlockPos(this), 16);
-			}
-		}
-	}
-
 	@Nullable
 	@Override
 	protected Identifier getLootTableId() {
-		return this.isElder() ? LootTables.ELDER_GUARDIAN_ENTITIE : LootTables.GUARDIAN_ENTITIE;
+		return LootTables.GUARDIAN_ENTITIE;
 	}
 
 	@Override
@@ -431,18 +336,14 @@ public class GuardianEntity extends HostileEntity {
 
 	@Override
 	public void travel(float f, float g) {
-		if (this.canMoveVoluntarily()) {
-			if (this.isTouchingWater()) {
-				this.updateVelocity(f, g, 0.1F);
-				this.move(this.velocityX, this.velocityY, this.velocityZ);
-				this.velocityX *= 0.9F;
-				this.velocityY *= 0.9F;
-				this.velocityZ *= 0.9F;
-				if (!this.areSpikesRetracted() && this.getTarget() == null) {
-					this.velocityY -= 0.005;
-				}
-			} else {
-				super.travel(f, g);
+		if (this.canMoveVoluntarily() && this.isTouchingWater()) {
+			this.updateVelocity(f, g, 0.1F);
+			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
+			this.velocityX *= 0.9F;
+			this.velocityY *= 0.9F;
+			this.velocityZ *= 0.9F;
+			if (!this.areSpikesRetracted() && this.getTarget() == null) {
+				this.velocityY -= 0.005;
 			}
 		} else {
 			super.travel(f, g);
@@ -464,9 +365,11 @@ public class GuardianEntity extends HostileEntity {
 	static class FireBeamGoal extends Goal {
 		private final GuardianEntity guardian;
 		private int beamTicks;
+		private final boolean field_15550;
 
 		public FireBeamGoal(GuardianEntity guardianEntity) {
 			this.guardian = guardianEntity;
+			this.field_15550 = guardianEntity instanceof ElderGuardianEntity;
 			this.setCategoryBits(3);
 		}
 
@@ -478,7 +381,7 @@ public class GuardianEntity extends HostileEntity {
 
 		@Override
 		public boolean shouldContinue() {
-			return super.shouldContinue() && (this.guardian.isElder() || this.guardian.squaredDistanceTo(this.guardian.getTarget()) > 9.0);
+			return super.shouldContinue() && (this.field_15550 || this.guardian.squaredDistanceTo(this.guardian.getTarget()) > 9.0);
 		}
 
 		@Override
@@ -514,7 +417,7 @@ public class GuardianEntity extends HostileEntity {
 						f += 2.0F;
 					}
 
-					if (this.guardian.isElder()) {
+					if (this.field_15550) {
 						f += 2.0F;
 					}
 
@@ -542,8 +445,7 @@ public class GuardianEntity extends HostileEntity {
 				double d = this.targetX - this.guardian.x;
 				double e = this.targetY - this.guardian.y;
 				double f = this.targetZ - this.guardian.z;
-				double g = d * d + e * e + f * f;
-				g = (double)MathHelper.sqrt(g);
+				double g = (double)MathHelper.sqrt(d * d + e * e + f * f);
 				e /= g;
 				float h = (float)(MathHelper.atan2(f, d) * 180.0F / (float)Math.PI) - 90.0F;
 				this.guardian.yaw = this.wrapDegrees(this.guardian.yaw, h, 90.0F);

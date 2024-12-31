@@ -24,11 +24,6 @@ public class CatSitOnBlockGoal extends MoveToTargetPosGoal {
 	}
 
 	@Override
-	public boolean shouldContinue() {
-		return super.shouldContinue();
-	}
-
-	@Override
 	public void start() {
 		super.start();
 		this.ocelot.getSitGoal().setEnabledWithOwner(false);

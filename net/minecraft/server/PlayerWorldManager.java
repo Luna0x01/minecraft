@@ -122,14 +122,14 @@ public class PlayerWorldManager {
 		if (!this.field_13871.isEmpty()) {
 			long m = System.nanoTime() + 50000000L;
 			int j = 49;
-			Iterator<ChunkPlayerManager> iterator2 = this.field_13871.iterator();
+			Iterator<ChunkPlayerManager> iterator = this.field_13871.iterator();
 
-			while (iterator2.hasNext()) {
-				ChunkPlayerManager chunkPlayerManager3 = (ChunkPlayerManager)iterator2.next();
+			while (iterator.hasNext()) {
+				ChunkPlayerManager chunkPlayerManager3 = (ChunkPlayerManager)iterator.next();
 				if (chunkPlayerManager3.getChunk() == null) {
 					boolean bl = chunkPlayerManager3.method_12798(PLAYER_TO_GENERATE_CHUNKS);
 					if (chunkPlayerManager3.method_12800(bl)) {
-						iterator2.remove();
+						iterator.remove();
 						if (chunkPlayerManager3.method_12801()) {
 							this.field_13870.remove(chunkPlayerManager3);
 						}
@@ -144,12 +144,12 @@ public class PlayerWorldManager {
 
 		if (!this.field_13870.isEmpty()) {
 			int k = 81;
-			Iterator<ChunkPlayerManager> iterator3 = this.field_13870.iterator();
+			Iterator<ChunkPlayerManager> iterator2 = this.field_13870.iterator();
 
-			while (iterator3.hasNext()) {
-				ChunkPlayerManager chunkPlayerManager4 = (ChunkPlayerManager)iterator3.next();
+			while (iterator2.hasNext()) {
+				ChunkPlayerManager chunkPlayerManager4 = (ChunkPlayerManager)iterator2.next();
 				if (chunkPlayerManager4.method_12801()) {
-					iterator3.remove();
+					iterator2.remove();
 					if (--k < 0) {
 						break;
 					}

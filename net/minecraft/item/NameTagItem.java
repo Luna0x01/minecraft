@@ -13,16 +13,16 @@ public class NameTagItem extends Item {
 
 	@Override
 	public boolean method_3353(ItemStack itemStack, PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
-		if (!itemStack.hasCustomName()) {
-			return false;
-		} else if (livingEntity instanceof MobEntity) {
-			MobEntity mobEntity = (MobEntity)livingEntity;
-			mobEntity.setCustomName(itemStack.getCustomName());
-			mobEntity.setPersistent();
-			itemStack.count--;
+		if (itemStack.hasCustomName() && !(livingEntity instanceof PlayerEntity)) {
+			livingEntity.setCustomName(itemStack.getCustomName());
+			if (livingEntity instanceof MobEntity) {
+				((MobEntity)livingEntity).setPersistent();
+			}
+
+			itemStack.decrement(1);
 			return true;
 		} else {
-			return super.method_3353(itemStack, playerEntity, livingEntity, hand);
+			return false;
 		}
 	}
 }

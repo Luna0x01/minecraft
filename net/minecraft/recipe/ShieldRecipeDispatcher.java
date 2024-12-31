@@ -1,13 +1,11 @@
 package net.minecraft.recipe;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.DyeColor;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ShieldRecipeDispatcher {
@@ -22,14 +20,14 @@ public class ShieldRecipeDispatcher {
 
 		@Override
 		public boolean matches(CraftingInventory inventory, World world) {
-			ItemStack itemStack = null;
-			ItemStack itemStack2 = null;
+			ItemStack itemStack = ItemStack.EMPTY;
+			ItemStack itemStack2 = ItemStack.EMPTY;
 
 			for (int i = 0; i < inventory.getInvSize(); i++) {
 				ItemStack itemStack3 = inventory.getInvStack(i);
-				if (itemStack3 != null) {
+				if (!itemStack3.isEmpty()) {
 					if (itemStack3.getItem() == Items.BANNER) {
-						if (itemStack2 != null) {
+						if (!itemStack2.isEmpty()) {
 							return false;
 						}
 
@@ -39,11 +37,11 @@ public class ShieldRecipeDispatcher {
 							return false;
 						}
 
-						if (itemStack != null) {
+						if (!itemStack.isEmpty()) {
 							return false;
 						}
 
-						if (itemStack3.getSubNbt("BlockEntityTag", false) != null) {
+						if (itemStack3.getNbtCompound("BlockEntityTag") != null) {
 							return false;
 						}
 
@@ -52,35 +50,34 @@ public class ShieldRecipeDispatcher {
 				}
 			}
 
-			return itemStack != null && itemStack2 != null;
+			return !itemStack.isEmpty() && !itemStack2.isEmpty();
 		}
 
-		@Nullable
 		@Override
 		public ItemStack getResult(CraftingInventory inventory) {
-			ItemStack itemStack = null;
+			ItemStack itemStack = ItemStack.EMPTY;
+			ItemStack itemStack2 = ItemStack.EMPTY;
 
 			for (int i = 0; i < inventory.getInvSize(); i++) {
-				ItemStack itemStack2 = inventory.getInvStack(i);
-				if (itemStack2 != null && itemStack2.getItem() == Items.BANNER) {
-					itemStack = itemStack2;
+				ItemStack itemStack3 = inventory.getInvStack(i);
+				if (!itemStack3.isEmpty()) {
+					if (itemStack3.getItem() == Items.BANNER) {
+						itemStack = itemStack3;
+					} else if (itemStack3.getItem() == Items.SHIELD) {
+						itemStack2 = itemStack3.copy();
+					}
 				}
 			}
 
-			ItemStack itemStack3 = new ItemStack(Items.SHIELD, 1, 0);
-			DyeColor dyeColor;
-			NbtCompound nbtCompound;
-			if (itemStack.hasNbt()) {
-				nbtCompound = itemStack.getNbt().copy();
-				dyeColor = DyeColor.getById(BannerBlockEntity.getBase(itemStack));
+			if (itemStack2.isEmpty()) {
+				return itemStack2;
 			} else {
-				nbtCompound = new NbtCompound();
-				dyeColor = DyeColor.getById(itemStack.getDamage());
+				NbtCompound nbtCompound = itemStack.getNbtCompound("BlockEntityTag");
+				NbtCompound nbtCompound2 = nbtCompound == null ? new NbtCompound() : nbtCompound.copy();
+				nbtCompound2.putInt("Base", itemStack.getData() & 15);
+				itemStack2.putSubNbt("BlockEntityTag", nbtCompound2);
+				return itemStack2;
 			}
-
-			itemStack3.setNbt(nbtCompound);
-			BannerBlockEntity.method_11644(itemStack3, dyeColor);
-			return itemStack3;
 		}
 
 		@Override
@@ -88,24 +85,23 @@ public class ShieldRecipeDispatcher {
 			return 2;
 		}
 
-		@Nullable
 		@Override
 		public ItemStack getOutput() {
-			return null;
+			return ItemStack.EMPTY;
 		}
 
 		@Override
-		public ItemStack[] getRemainders(CraftingInventory inventory) {
-			ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+		public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+			DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-			for (int i = 0; i < itemStacks.length; i++) {
-				ItemStack itemStack = inventory.getInvStack(i);
-				if (itemStack != null && itemStack.getItem().isFood()) {
-					itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+			for (int i = 0; i < defaultedList.size(); i++) {
+				ItemStack itemStack = craftingInventory.getInvStack(i);
+				if (itemStack.getItem().isFood()) {
+					defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 				}
 			}
 
-			return itemStacks;
+			return defaultedList;
 		}
 	}
 }

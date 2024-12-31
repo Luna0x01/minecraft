@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import javax.annotation.concurrent.Immutable;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.BlockRotation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,15 +52,11 @@ public class BlockPos extends Vec3i {
 	}
 
 	public BlockPos add(Vec3i pos) {
-		return pos.getX() == 0 && pos.getY() == 0 && pos.getZ() == 0
-			? this
-			: new BlockPos(this.getX() + pos.getX(), this.getY() + pos.getY(), this.getZ() + pos.getZ());
+		return this.add(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	public BlockPos subtract(Vec3i pos) {
-		return pos.getX() == 0 && pos.getY() == 0 && pos.getZ() == 0
-			? this
-			: new BlockPos(this.getX() - pos.getX(), this.getY() - pos.getY(), this.getZ() - pos.getZ());
+		return this.add(-pos.getX(), -pos.getY(), -pos.getZ());
 	}
 
 	public BlockPos up() {
@@ -120,6 +117,20 @@ public class BlockPos extends Vec3i {
 			: new BlockPos(this.getX() + facing.getOffsetX() * distance, this.getY() + facing.getOffsetY() * distance, this.getZ() + facing.getOffsetZ() * distance);
 	}
 
+	public BlockPos rotate(BlockRotation rotation) {
+		switch (rotation) {
+			case NONE:
+			default:
+				return this;
+			case CLOCKWISE_90:
+				return new BlockPos(-this.getZ(), this.getY(), this.getX());
+			case CLOCKWISE_180:
+				return new BlockPos(-this.getX(), this.getY(), -this.getZ());
+			case COUNTERCLOCKWISE_90:
+				return new BlockPos(this.getZ(), this.getY(), -this.getX());
+		}
+	}
+
 	public BlockPos crossProduct(Vec3i vec3i) {
 		return new BlockPos(
 			this.getY() * vec3i.getZ() - this.getZ() * vec3i.getY(),
@@ -140,36 +151,47 @@ public class BlockPos extends Vec3i {
 	}
 
 	public static Iterable<BlockPos> iterate(BlockPos pos1, BlockPos pos2) {
-		final BlockPos blockPos = new BlockPos(Math.min(pos1.getX(), pos2.getX()), Math.min(pos1.getY(), pos2.getY()), Math.min(pos1.getZ(), pos2.getZ()));
-		final BlockPos blockPos2 = new BlockPos(Math.max(pos1.getX(), pos2.getX()), Math.max(pos1.getY(), pos2.getY()), Math.max(pos1.getZ(), pos2.getZ()));
+		return iterate(
+			Math.min(pos1.getX(), pos2.getX()),
+			Math.min(pos1.getY(), pos2.getY()),
+			Math.min(pos1.getZ(), pos2.getZ()),
+			Math.max(pos1.getX(), pos2.getX()),
+			Math.max(pos1.getY(), pos2.getY()),
+			Math.max(pos1.getZ(), pos2.getZ())
+		);
+	}
+
+	public static Iterable<BlockPos> iterate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
 		return new Iterable<BlockPos>() {
 			public Iterator<BlockPos> iterator() {
 				return new AbstractIterator<BlockPos>() {
-					private BlockPos field_14993;
+					private boolean field_15332 = true;
+					private int field_15333;
+					private int field_15334;
+					private int field_15335;
 
 					protected BlockPos computeNext() {
-						if (this.field_14993 == null) {
-							this.field_14993 = blockPos;
-							return this.field_14993;
-						} else if (this.field_14993.equals(blockPos2)) {
+						if (this.field_15332) {
+							this.field_15332 = false;
+							this.field_15333 = minX;
+							this.field_15334 = minY;
+							this.field_15335 = minZ;
+							return new BlockPos(minX, minY, minZ);
+						} else if (this.field_15333 == maxX && this.field_15334 == maxY && this.field_15335 == maxZ) {
 							return (BlockPos)this.endOfData();
 						} else {
-							int i = this.field_14993.getX();
-							int j = this.field_14993.getY();
-							int k = this.field_14993.getZ();
-							if (i < blockPos2.getX()) {
-								i++;
-							} else if (j < blockPos2.getY()) {
-								i = blockPos.getX();
-								j++;
-							} else if (k < blockPos2.getZ()) {
-								i = blockPos.getX();
-								j = blockPos.getY();
-								k++;
+							if (this.field_15333 < maxX) {
+								this.field_15333++;
+							} else if (this.field_15334 < maxY) {
+								this.field_15333 = minX;
+								this.field_15334++;
+							} else if (this.field_15335 < maxZ) {
+								this.field_15333 = minX;
+								this.field_15334 = minY;
+								this.field_15335++;
 							}
 
-							this.field_14993 = new BlockPos(i, j, k);
-							return this.field_14993;
+							return new BlockPos(this.field_15333, this.field_15334, this.field_15335);
 						}
 					}
 				};
@@ -182,8 +204,17 @@ public class BlockPos extends Vec3i {
 	}
 
 	public static Iterable<BlockPos.Mutable> mutableIterate(BlockPos pos1, BlockPos pos2) {
-		final BlockPos blockPos = new BlockPos(Math.min(pos1.getX(), pos2.getX()), Math.min(pos1.getY(), pos2.getY()), Math.min(pos1.getZ(), pos2.getZ()));
-		final BlockPos blockPos2 = new BlockPos(Math.max(pos1.getX(), pos2.getX()), Math.max(pos1.getY(), pos2.getY()), Math.max(pos1.getZ(), pos2.getZ()));
+		return mutableIterate(
+			Math.min(pos1.getX(), pos2.getX()),
+			Math.min(pos1.getY(), pos2.getY()),
+			Math.min(pos1.getZ(), pos2.getZ()),
+			Math.max(pos1.getX(), pos2.getX()),
+			Math.max(pos1.getY(), pos2.getY()),
+			Math.max(pos1.getZ(), pos2.getZ())
+		);
+	}
+
+	public static Iterable<BlockPos.Mutable> mutableIterate(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
 		return new Iterable<BlockPos.Mutable>() {
 			public Iterator<BlockPos.Mutable> iterator() {
 				return new AbstractIterator<BlockPos.Mutable>() {
@@ -191,28 +222,22 @@ public class BlockPos extends Vec3i {
 
 					protected BlockPos.Mutable computeNext() {
 						if (this.field_14994 == null) {
-							this.field_14994 = new BlockPos.Mutable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+							this.field_14994 = new BlockPos.Mutable(minX, minY, minZ);
 							return this.field_14994;
-						} else if (this.field_14994.equals(blockPos2)) {
+						} else if (this.field_14994.posX == maxX && this.field_14994.posY == maxY && this.field_14994.posZ == maxZ) {
 							return (BlockPos.Mutable)this.endOfData();
 						} else {
-							int i = this.field_14994.getX();
-							int j = this.field_14994.getY();
-							int k = this.field_14994.getZ();
-							if (i < blockPos2.getX()) {
-								i++;
-							} else if (j < blockPos2.getY()) {
-								i = blockPos.getX();
-								j++;
-							} else if (k < blockPos2.getZ()) {
-								i = blockPos.getX();
-								j = blockPos.getY();
-								k++;
+							if (this.field_14994.posX < maxX) {
+								this.field_14994.posX++;
+							} else if (this.field_14994.posY < maxY) {
+								this.field_14994.posX = minX;
+								this.field_14994.posY++;
+							} else if (this.field_14994.posZ < maxZ) {
+								this.field_14994.posX = minX;
+								this.field_14994.posY = minY;
+								this.field_14994.posZ++;
 							}
 
-							this.field_14994.posX = i;
-							this.field_14994.posY = j;
-							this.field_14994.posZ = k;
 							return this.field_14994;
 						}
 					}
@@ -239,6 +264,26 @@ public class BlockPos extends Vec3i {
 			this.posX = i;
 			this.posY = j;
 			this.posZ = k;
+		}
+
+		@Override
+		public BlockPos add(double x, double y, double z) {
+			return super.add(x, y, z).toImmutable();
+		}
+
+		@Override
+		public BlockPos add(int x, int y, int z) {
+			return super.add(x, y, z).toImmutable();
+		}
+
+		@Override
+		public BlockPos offset(Direction facing, int distance) {
+			return super.offset(facing, distance).toImmutable();
+		}
+
+		@Override
+		public BlockPos rotate(BlockRotation rotation) {
+			return super.rotate(rotation).toImmutable();
 		}
 
 		@Override

@@ -23,7 +23,7 @@ public class ChestMinecartEntity extends StorageMinecartEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		StorageMinecartEntity.method_13305(dataFixer, "MinecartChest");
+		StorageMinecartEntity.registerDataFixes(dataFixer, ChestMinecartEntity.class);
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package net.minecraft.util;
 
+import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -8,8 +9,8 @@ public class Identifier {
 	protected final String path;
 
 	protected Identifier(int i, String... strings) {
-		this.namespace = StringUtils.isEmpty(strings[0]) ? "minecraft" : strings[0].toLowerCase();
-		this.path = strings[1];
+		this.namespace = StringUtils.isEmpty(strings[0]) ? "minecraft" : strings[0].toLowerCase(Locale.ROOT);
+		this.path = strings[1].toLowerCase(Locale.ROOT);
 		Validate.notNull(this.path);
 	}
 

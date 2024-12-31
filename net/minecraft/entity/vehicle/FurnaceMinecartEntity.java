@@ -1,6 +1,5 @@
 package net.minecraft.entity.vehicle;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
@@ -35,7 +34,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		AbstractMinecartEntity.method_13302(dataFixer, "MinecartFurnace");
+		AbstractMinecartEntity.registerDataFixes(dataFixer, FurnaceMinecartEntity.class);
 	}
 
 	@Override
@@ -122,17 +121,18 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
-		if (itemStack != null && itemStack.getItem() == Items.COAL && this.fuel + 3600 <= 32000) {
-			if (!playerEntity.abilities.creativeMode) {
-				itemStack.count--;
+	public boolean interact(PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (itemStack.getItem() == Items.COAL && this.fuel + 3600 <= 32000) {
+			if (!player.abilities.creativeMode) {
+				itemStack.decrement(1);
 			}
 
 			this.fuel += 3600;
 		}
 
-		this.pushX = this.x - playerEntity.x;
-		this.pushZ = this.z - playerEntity.z;
+		this.pushX = this.x - player.x;
+		this.pushZ = this.z - player.z;
 		return true;
 	}
 

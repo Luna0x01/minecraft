@@ -501,8 +501,8 @@ public class StructureBlockScreen extends Screen {
 	private static boolean method_13414(char c, int i) {
 		boolean bl = true;
 
-		for (int l : field_14927) {
-			if (l == i) {
+		for (int j : field_14927) {
+			if (j == i) {
 				return true;
 			}
 		}

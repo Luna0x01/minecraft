@@ -226,6 +226,23 @@ public class Blocks {
 	public static final Block RED_NETHER_BRICK;
 	public static final Block BONE_BLOCK;
 	public static final Block STRUCTURE_VOID;
+	public static final Block OBSERVER;
+	public static final Block WHITE_SHULKER_BOX;
+	public static final Block ORANGE_SHULKER_BOX;
+	public static final Block MAGENTA_SHULKER_BOX;
+	public static final Block LIGHT_BLUE_SHULKER_BOX;
+	public static final Block YELLOW_SHULKER_BOX;
+	public static final Block LIME_SHULKER_BOX;
+	public static final Block PINK_SHULKER_BOX;
+	public static final Block GRAY_SHULKER_BOX;
+	public static final Block SILVER_SHULKER_BOX;
+	public static final Block CYAN_SHULKER_BOX;
+	public static final Block PURPLE_SHULKER_BOX;
+	public static final Block BLUE_SHULKER_BOX;
+	public static final Block BROWN_SHULKER_BOX;
+	public static final Block GREEN_SHULKER_BOX;
+	public static final Block RED_SHULKER_BOX;
+	public static final Block BLACK_SHULKER_BOX;
 	public static final Block STRUCTURE_BLOCK;
 
 	@Nullable
@@ -461,6 +478,23 @@ public class Blocks {
 			RED_NETHER_BRICK = getById("red_nether_brick");
 			BONE_BLOCK = getById("bone_block");
 			STRUCTURE_VOID = getById("structure_void");
+			OBSERVER = getById("observer");
+			WHITE_SHULKER_BOX = getById("white_shulker_box");
+			ORANGE_SHULKER_BOX = getById("orange_shulker_box");
+			MAGENTA_SHULKER_BOX = getById("magenta_shulker_box");
+			LIGHT_BLUE_SHULKER_BOX = getById("light_blue_shulker_box");
+			YELLOW_SHULKER_BOX = getById("yellow_shulker_box");
+			LIME_SHULKER_BOX = getById("lime_shulker_box");
+			PINK_SHULKER_BOX = getById("pink_shulker_box");
+			GRAY_SHULKER_BOX = getById("gray_shulker_box");
+			SILVER_SHULKER_BOX = getById("silver_shulker_box");
+			CYAN_SHULKER_BOX = getById("cyan_shulker_box");
+			PURPLE_SHULKER_BOX = getById("purple_shulker_box");
+			BLUE_SHULKER_BOX = getById("blue_shulker_box");
+			BROWN_SHULKER_BOX = getById("brown_shulker_box");
+			GREEN_SHULKER_BOX = getById("green_shulker_box");
+			RED_SHULKER_BOX = getById("red_shulker_box");
+			BLACK_SHULKER_BOX = getById("black_shulker_box");
 			STRUCTURE_BLOCK = getById("structure_block");
 			field_12591.clear();
 		}

@@ -47,7 +47,6 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 		return CommonI18n.translate("item.comparator.name");
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.COMPARATOR;
@@ -148,26 +147,15 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if (!playerEntity.abilities.allowModifyWorld) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if (!player.abilities.allowModifyWorld) {
 			return false;
 		} else {
-			blockState = blockState.withDefaultValue(MODE);
-			float i = blockState.get(MODE) == ComparatorBlock.ComparatorType.SUBTRACT ? 0.55F : 0.5F;
-			world.method_11486(playerEntity, blockPos, Sounds.BLOCK_COMPARATOR_CLICK, SoundCategory.BLOCKS, 0.3F, i);
-			world.setBlockState(blockPos, blockState, 2);
-			this.update(world, blockPos, blockState);
+			state = state.withDefaultValue(MODE);
+			float i = state.get(MODE) == ComparatorBlock.ComparatorType.SUBTRACT ? 0.55F : 0.5F;
+			world.method_11486(player, pos, Sounds.BLOCK_COMPARATOR_CLICK, SoundCategory.BLOCKS, 0.3F, i);
+			world.setBlockState(pos, state, 2);
+			this.update(world, pos, state);
 			return true;
 		}
 	}

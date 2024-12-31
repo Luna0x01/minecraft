@@ -1,8 +1,8 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -17,7 +17,7 @@ public abstract class PurpurSlab extends SlabBlock {
 	public static final EnumProperty<PurpurSlab.class_2732> field_12723 = EnumProperty.of("variant", PurpurSlab.class_2732.class);
 
 	public PurpurSlab() {
-		super(Material.STONE);
+		super(Material.STONE, MaterialColor.MAGENTA);
 		BlockState blockState = this.stateManager.getDefaultState();
 		if (!this.isDoubleSlab()) {
 			blockState = blockState.with(HALF, SlabBlock.SlabType.BOTTOM);
@@ -27,7 +27,6 @@ public abstract class PurpurSlab extends SlabBlock {
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.PURPUR_SLAB);

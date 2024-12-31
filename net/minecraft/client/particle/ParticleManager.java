@@ -30,7 +30,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class ParticleManager {
@@ -60,6 +59,7 @@ public class ParticleManager {
 
 	private void registerDefaultFactories() {
 		this.registerFactory(ParticleType.EXPLOSION.getId(), new ExplosionSmokeParticle.Factory());
+		this.registerFactory(ParticleType.SPIT.getId(), new SpitParticle.Factory());
 		this.registerFactory(ParticleType.BUBBLE.getId(), new WaterBubbleParticle.Factory());
 		this.registerFactory(ParticleType.WATER.getId(), new WaterSplashParticle.Factory());
 		this.registerFactory(ParticleType.WATER_WAKE.getId(), new FishingParticle.Factory());
@@ -105,6 +105,7 @@ public class ParticleManager {
 		this.registerFactory(ParticleType.END_ROD.getId(), new EndRodParticle.Factory());
 		this.registerFactory(ParticleType.DAMAGE_INDICATOR.getId(), new DamageParticle.Factory());
 		this.registerFactory(ParticleType.SWEEP_ATTACK.getId(), new SweepAttackParticle.Factory());
+		this.registerFactory(ParticleType.TOTEM.getId(), new TotemParticle.Factory());
 	}
 
 	public void registerFactory(int id, ParticleFactory factory) {
@@ -113,6 +114,10 @@ public class ParticleManager {
 
 	public void addEmitter(Entity entity, ParticleType type) {
 		this.field_13440.add(new EmitterParticle(this.world, entity, type));
+	}
+
+	public void method_13843(Entity entity, ParticleType particleType, int i) {
+		this.field_13440.add(new EmitterParticle(this.world, entity, particleType, i));
 	}
 
 	@Nullable
@@ -333,11 +338,11 @@ public class ParticleManager {
 			for (int j = 0; j < 4; j++) {
 				for (int k = 0; k < 4; k++) {
 					for (int l = 0; l < 4; l++) {
-						double d = (double)pos.getX() + ((double)j + 0.5) / 4.0;
-						double e = (double)pos.getY() + ((double)k + 0.5) / 4.0;
-						double f = (double)pos.getZ() + ((double)l + 0.5) / 4.0;
+						double d = ((double)j + 0.5) / 4.0;
+						double e = ((double)k + 0.5) / 4.0;
+						double f = ((double)l + 0.5) / 4.0;
 						this.method_12256(
-							new BlockDustParticle(this.world, d, e, f, d - (double)pos.getX() - 0.5, e - (double)pos.getY() - 0.5, f - (double)pos.getZ() - 0.5, state)
+							new BlockDustParticle(this.world, (double)pos.getX() + d, (double)pos.getY() + e, (double)pos.getZ() + f, d - 0.5, e - 0.5, f - 0.5, state)
 								.method_12260(pos)
 						);
 					}
@@ -353,7 +358,7 @@ public class ParticleManager {
 			int j = pos.getY();
 			int k = pos.getZ();
 			float f = 0.1F;
-			Box box = blockState.getCollisionBox((BlockView)this.world, pos);
+			Box box = blockState.getCollisionBox(this.world, pos);
 			double d = (double)i + this.random.nextDouble() * (box.maxX - box.minX - 0.2F) + 0.1F + box.minX;
 			double e = (double)j + this.random.nextDouble() * (box.maxY - box.minY - 0.2F) + 0.1F + box.minY;
 			double g = (double)k + this.random.nextDouble() * (box.maxZ - box.minZ - 0.2F) + 0.1F + box.minZ;

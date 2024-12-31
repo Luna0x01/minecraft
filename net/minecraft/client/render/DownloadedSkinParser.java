@@ -4,12 +4,14 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import javax.annotation.Nullable;
 
 public class DownloadedSkinParser implements BufferedImageSkinProvider {
 	private int[] data;
 	private int width;
 	private int height;
 
+	@Nullable
 	@Override
 	public BufferedImage parseSkin(BufferedImage image) {
 		if (image == null) {

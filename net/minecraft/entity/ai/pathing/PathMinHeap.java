@@ -1,5 +1,6 @@
 package net.minecraft.entity.ai.pathing;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.Vec3d;
@@ -25,6 +26,7 @@ public class PathMinHeap {
 		return this.field_13088 >= this.field_13089;
 	}
 
+	@Nullable
 	public PathNode method_11934() {
 		return this.field_13089 > 0 ? this.field_13084[this.field_13089 - 1] : null;
 	}

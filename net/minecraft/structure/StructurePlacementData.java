@@ -12,7 +12,7 @@ import net.minecraft.util.math.ChunkPos;
 public class StructurePlacementData {
 	private BlockMirror mirror = BlockMirror.NONE;
 	private BlockRotation rotation = BlockRotation.NONE;
-	private boolean field_13026 = false;
+	private boolean field_13026;
 	@Nullable
 	private Block block;
 	@Nullable

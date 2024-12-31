@@ -3,7 +3,6 @@ package net.minecraft.client.render.item;
 import com.google.common.base.Objects;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
-import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -38,8 +37,8 @@ public class HeldItemRenderer {
 	private static final Identifier MAP_BACKGROUND = new Identifier("textures/map/map_background.png");
 	private static final Identifier UNDERWATER_TEXTURE = new Identifier("textures/misc/underwater.png");
 	private final MinecraftClient client;
-	private ItemStack field_13531;
-	private ItemStack field_13532;
+	private ItemStack field_13531 = ItemStack.EMPTY;
+	private ItemStack field_13532 = ItemStack.EMPTY;
 	private float field_13533;
 	private float lastEquipProgress;
 	private float field_13534;
@@ -58,11 +57,11 @@ public class HeldItemRenderer {
 	}
 
 	public void method_12333(LivingEntity livingEntity, ItemStack itemStack, ModelTransformation.Mode mode, boolean bl) {
-		if (itemStack != null) {
+		if (!itemStack.isEmpty()) {
 			Item item = itemStack.getItem();
 			Block block = Block.getBlockFromItem(item);
 			GlStateManager.pushMatrix();
-			boolean bl2 = this.field_13536.hasDepth(itemStack) && this.isTranslucent(block);
+			boolean bl2 = this.field_13536.hasDepth(itemStack) && block.getRenderLayerType() == RenderLayer.TRANSLUCENT;
 			if (bl2) {
 				GlStateManager.depthMask(false);
 			}
@@ -74,10 +73,6 @@ public class HeldItemRenderer {
 
 			GlStateManager.popMatrix();
 		}
-	}
-
-	private boolean isTranslucent(@Nullable Block block) {
-		return block != null && block.getRenderLayerType() == RenderLayer.TRANSLUCENT;
 	}
 
 	private void rotate(float pitch, float yaw) {
@@ -308,16 +303,16 @@ public class HeldItemRenderer {
 		DiffuseLighting.disable();
 	}
 
-	public void method_12329(AbstractClientPlayerEntity abstractClientPlayerEntity, float f, float g, Hand hand, float h, @Nullable ItemStack itemStack, float i) {
+	public void method_12329(AbstractClientPlayerEntity abstractClientPlayerEntity, float f, float g, Hand hand, float h, ItemStack itemStack, float i) {
 		boolean bl = hand == Hand.MAIN_HAND;
 		HandOption handOption = bl ? abstractClientPlayerEntity.getDurability() : abstractClientPlayerEntity.getDurability().method_13037();
 		GlStateManager.pushMatrix();
-		if (itemStack == null) {
+		if (itemStack.isEmpty()) {
 			if (bl && !abstractClientPlayerEntity.isInvisible()) {
 				this.method_12325(i, h, handOption);
 			}
 		} else if (itemStack.getItem() == Items.FILLED_MAP) {
-			if (bl && this.field_13532 == null) {
+			if (bl && this.field_13532.isEmpty()) {
 				this.method_12324(g, i, h);
 			} else {
 				this.method_12326(i, handOption, h, itemStack);
@@ -392,7 +387,7 @@ public class HeldItemRenderer {
 				double f = playerEntity.z + (double)(((float)((i >> 2) % 2) - 0.5F) * playerEntity.width * 0.8F);
 				BlockPos blockPos = new BlockPos(d, e + (double)playerEntity.getEyeHeight(), f);
 				BlockState blockState2 = this.client.world.getBlockState(blockPos);
-				if (blockState2.getBlock().isLeafBlock()) {
+				if (blockState2.method_13763()) {
 					blockState = blockState2;
 				}
 			}

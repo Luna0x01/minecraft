@@ -6,11 +6,15 @@ import com.mojang.authlib.exceptions.AuthenticationUnavailableException;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.PrivateKey;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.ClientConnection;
@@ -150,7 +154,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 								.toString(16);
 							ServerLoginNetworkHandler.this.profile = ServerLoginNetworkHandler.this.server
 								.getSessionService()
-								.hasJoinedServer(new GameProfile(null, gameProfile.getName()), string);
+								.hasJoinedServer(new GameProfile(null, gameProfile.getName()), string, this.method_13911());
 							if (ServerLoginNetworkHandler.this.profile != null) {
 								ServerLoginNetworkHandler.LOGGER
 									.info("UUID of player {} is {}", new Object[]{ServerLoginNetworkHandler.this.profile.getName(), ServerLoginNetworkHandler.this.profile.getId()});
@@ -173,6 +177,14 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 								ServerLoginNetworkHandler.LOGGER.error("Couldn't verify username because servers are unavailable");
 							}
 						}
+					}
+
+					@Nullable
+					private InetAddress method_13911() {
+						SocketAddress socketAddress = ServerLoginNetworkHandler.this.connection.getAddress();
+						return ServerLoginNetworkHandler.this.server.method_13912() && socketAddress instanceof InetSocketAddress
+							? ((InetSocketAddress)socketAddress).getAddress()
+							: null;
 					}
 				})
 				.start();

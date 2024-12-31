@@ -85,17 +85,17 @@ public class TrackedDataHandlerRegistry {
 			return new TrackedData<>(i, this);
 		}
 	};
-	public static final TrackedDataHandler<Optional<ItemStack>> ITEM_STACK = new TrackedDataHandler<Optional<ItemStack>>() {
-		public void write(PacketByteBuf packetByteBuf, Optional<ItemStack> optional) {
-			packetByteBuf.writeItemStack((ItemStack)optional.orNull());
+	public static final TrackedDataHandler<ItemStack> ITEM_STACK = new TrackedDataHandler<ItemStack>() {
+		public void write(PacketByteBuf packetByteBuf, ItemStack itemStack) {
+			packetByteBuf.writeItemStack(itemStack);
 		}
 
-		public Optional<ItemStack> read(PacketByteBuf packetByteBuf) {
-			return Optional.fromNullable(packetByteBuf.readItemStack());
+		public ItemStack read(PacketByteBuf packetByteBuf) {
+			return packetByteBuf.readItemStack();
 		}
 
 		@Override
-		public TrackedData<Optional<ItemStack>> create(int i) {
+		public TrackedData<ItemStack> create(int i) {
 			return new TrackedData<>(i, this);
 		}
 	};

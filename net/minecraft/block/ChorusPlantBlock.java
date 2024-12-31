@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.Item;
@@ -26,7 +27,7 @@ public class ChorusPlantBlock extends Block {
 	public static final BooleanProperty field_12631 = BooleanProperty.of("down");
 
 	protected ChorusPlantBlock() {
-		super(Material.PLANT);
+		super(Material.PLANT, MaterialColor.PURPLE);
 		this.setItemGroup(ItemGroup.DECORATIONS);
 		this.setDefaultState(
 			this.stateManager
@@ -70,8 +71,11 @@ public class ChorusPlantBlock extends Block {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
-		state = state.getBlockState(world, pos);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+		if (!isActualState) {
+			state = state.getBlockState(world, pos);
+		}
+
 		float f = 0.1875F;
 		float g = 0.8125F;
 		appendCollisionBoxes(pos, entityBox, boxes, new Box(0.1875, 0.1875, 0.1875, 0.8125, 0.8125, 0.8125));
@@ -112,7 +116,6 @@ public class ChorusPlantBlock extends Block {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.CHORUS_FRUIT;
@@ -139,9 +142,9 @@ public class ChorusPlantBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.method_11590(world, blockPos)) {
-			world.createAndScheduleBlockTick(blockPos, this, 1);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.method_11590(world, pos)) {
+			world.createAndScheduleBlockTick(pos, this, 1);
 		}
 	}
 

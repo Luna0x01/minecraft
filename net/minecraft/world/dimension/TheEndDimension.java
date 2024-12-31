@@ -18,14 +18,13 @@ public class TheEndDimension extends Dimension {
 	@Override
 	public void init() {
 		this.field_4787 = new class_2711(Biomes.SKY);
-		this.hasNoSkylight = true;
 		NbtCompound nbtCompound = this.world.getLevelProperties().method_11954(DimensionType.THE_END);
 		this.dragonFight = this.world instanceof ServerWorld ? new DragonRespawnAnimation((ServerWorld)this.world, nbtCompound.getCompound("DragonFight")) : null;
 	}
 
 	@Override
 	public ChunkGenerator getChunkGenerator() {
-		return new EndChunkGenerator(this.world, this.world.getLevelProperties().hasStructures(), this.world.getSeed());
+		return new EndChunkGenerator(this.world, this.world.getLevelProperties().hasStructures(), this.world.getSeed(), this.getForcedSpawnPoint());
 	}
 
 	@Override
@@ -33,6 +32,7 @@ public class TheEndDimension extends Dimension {
 		return 0.0F;
 	}
 
+	@Nullable
 	@Override
 	public float[] getBackgroundColor(float skyAngle, float tickDelta) {
 		return null;

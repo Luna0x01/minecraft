@@ -1,6 +1,5 @@
 package net.minecraft.inventory.slot;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -22,14 +21,14 @@ public class TradeOutputSlot extends Slot {
 	}
 
 	@Override
-	public boolean canInsert(@Nullable ItemStack stack) {
+	public boolean canInsert(ItemStack stack) {
 		return false;
 	}
 
 	@Override
 	public ItemStack takeStack(int amount) {
 		if (this.hasStack()) {
-			this.amount = this.amount + Math.min(amount, this.getStack().count);
+			this.amount = this.amount + Math.min(amount, this.getStack().getCount());
 		}
 
 		return super.takeStack(amount);
@@ -48,41 +47,35 @@ public class TradeOutputSlot extends Slot {
 	}
 
 	@Override
-	public void onTakeItem(PlayerEntity player, ItemStack stack) {
-		this.onCrafted(stack);
+	public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
+		this.onCrafted(itemStack);
 		TradeOffer tradeOffer = this.traderInventory.getTradeOffer();
 		if (tradeOffer != null) {
-			ItemStack itemStack = this.traderInventory.getInvStack(0);
-			ItemStack itemStack2 = this.traderInventory.getInvStack(1);
-			if (this.depleteBuyItems(tradeOffer, itemStack, itemStack2) || this.depleteBuyItems(tradeOffer, itemStack2, itemStack)) {
+			ItemStack itemStack2 = this.traderInventory.getInvStack(0);
+			ItemStack itemStack3 = this.traderInventory.getInvStack(1);
+			if (this.depleteBuyItems(tradeOffer, itemStack2, itemStack3) || this.depleteBuyItems(tradeOffer, itemStack3, itemStack2)) {
 				this.trader.trade(tradeOffer);
-				player.incrementStat(Stats.TRADED_WITH_VILLAGER);
-				if (itemStack != null && itemStack.count <= 0) {
-					itemStack = null;
-				}
-
-				if (itemStack2 != null && itemStack2.count <= 0) {
-					itemStack2 = null;
-				}
-
-				this.traderInventory.setInvStack(0, itemStack);
-				this.traderInventory.setInvStack(1, itemStack2);
+				playerEntity.incrementStat(Stats.TRADED_WITH_VILLAGER);
+				this.traderInventory.setInvStack(0, itemStack2);
+				this.traderInventory.setInvStack(1, itemStack3);
 			}
 		}
+
+		return itemStack;
 	}
 
 	private boolean depleteBuyItems(TradeOffer offer, ItemStack first, ItemStack second) {
 		ItemStack itemStack = offer.getFirstStack();
 		ItemStack itemStack2 = offer.getSecondStack();
-		if (first != null && first.getItem() == itemStack.getItem() && first.count >= itemStack.count) {
-			if (itemStack2 != null && second != null && itemStack2.getItem() == second.getItem() && second.count >= itemStack2.count) {
-				first.count = first.count - itemStack.count;
-				second.count = second.count - itemStack2.count;
+		if (first.getItem() == itemStack.getItem() && first.getCount() >= itemStack.getCount()) {
+			if (!itemStack2.isEmpty() && !second.isEmpty() && itemStack2.getItem() == second.getItem() && second.getCount() >= itemStack2.getCount()) {
+				first.decrement(itemStack.getCount());
+				second.decrement(itemStack2.getCount());
 				return true;
 			}
 
-			if (itemStack2 == null && second == null) {
-				first.count = first.count - itemStack.count;
+			if (itemStack2.isEmpty() && second.isEmpty()) {
+				first.decrement(itemStack.getCount());
 				return true;
 			}
 		}

@@ -121,17 +121,15 @@ public class StemBlock extends PlantBlock implements Growable {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
 		Item item = this.getSeeds();
-		return item == null ? null : new ItemStack(item);
+		return item == null ? ItemStack.EMPTY : new ItemStack(item);
 	}
 
 	@Override

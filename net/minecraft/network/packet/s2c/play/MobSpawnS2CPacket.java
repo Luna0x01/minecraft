@@ -33,7 +33,7 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public MobSpawnS2CPacket(LivingEntity livingEntity) {
 		this.id = livingEntity.getEntityId();
 		this.uuid = livingEntity.getUuid();
-		this.entityTypeId = (byte)EntityType.getIdByEntity(livingEntity);
+		this.entityTypeId = EntityType.REGISTRY.getRawId(livingEntity.getClass());
 		this.x = livingEntity.x;
 		this.y = livingEntity.y;
 		this.z = livingEntity.z;
@@ -78,7 +78,7 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void read(PacketByteBuf buf) throws IOException {
 		this.id = buf.readVarInt();
 		this.uuid = buf.readUuid();
-		this.entityTypeId = buf.readByte() & 255;
+		this.entityTypeId = buf.readVarInt();
 		this.x = buf.readDouble();
 		this.y = buf.readDouble();
 		this.z = buf.readDouble();
@@ -95,7 +95,7 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.id);
 		buf.writeUuid(this.uuid);
-		buf.writeByte(this.entityTypeId & 0xFF);
+		buf.writeVarInt(this.entityTypeId);
 		buf.writeDouble(this.x);
 		buf.writeDouble(this.y);
 		buf.writeDouble(this.z);
@@ -114,10 +114,6 @@ public class MobSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Nullable
 	public List<DataTracker.DataEntry<?>> getEntries() {
-		if (this.entries == null) {
-			this.entries = this.tracker.getEntries();
-		}
-
 		return this.entries;
 	}
 

@@ -5,9 +5,9 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
+import net.minecraft.entity.ElderGuardianEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.GuardianEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -35,9 +35,9 @@ public class ElderGuardianAppearanceParticle extends Particle {
 	public void method_12241() {
 		super.method_12241();
 		if (this.entity == null) {
-			GuardianEntity guardianEntity = new GuardianEntity(this.field_13424);
-			guardianEntity.method_11201();
-			this.entity = guardianEntity;
+			ElderGuardianEntity elderGuardianEntity = new ElderGuardianEntity(this.field_13424);
+			elderGuardianEntity.method_14064();
+			this.entity = elderGuardianEntity;
 		}
 	}
 

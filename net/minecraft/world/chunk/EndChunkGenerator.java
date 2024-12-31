@@ -7,6 +7,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ChorusFlowerBlock;
 import net.minecraft.block.FallingBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.server.world.ChunkGenerator;
@@ -18,6 +20,7 @@ import net.minecraft.util.math.noise.NoiseSampler;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.NoiseGenerator;
+import net.minecraft.world.gen.feature.EndGatewayFeature;
 import net.minecraft.world.gen.feature.class_2754;
 
 public class EndChunkGenerator implements ChunkGenerator {
@@ -31,6 +34,7 @@ public class EndChunkGenerator implements ChunkGenerator {
 	public NoiseGenerator field_12974;
 	private final World world;
 	private final boolean hasStructures;
+	private final BlockPos field_15189;
 	private final EndCityStructure endCityFeature = new EndCityStructure(this);
 	private final NoiseSampler field_12977;
 	private double[] field_4860;
@@ -40,9 +44,10 @@ public class EndChunkGenerator implements ChunkGenerator {
 	double[] field_4851;
 	private final class_2754 field_12978 = new class_2754();
 
-	public EndChunkGenerator(World world, boolean bl, long l) {
+	public EndChunkGenerator(World world, boolean bl, long l, BlockPos blockPos) {
 		this.world = world;
 		this.hasStructures = bl;
+		this.field_15189 = blockPos;
 		this.random = new Random(l);
 		this.field_4856 = new NoiseGenerator(this.random, 16);
 		this.field_4857 = new NoiseGenerator(this.random, 16);
@@ -295,6 +300,22 @@ public class EndChunkGenerator implements ChunkGenerator {
 						}
 					}
 				}
+
+				if (this.random.nextInt(700) == 0) {
+					int p = this.random.nextInt(16) + 8;
+					int q = this.random.nextInt(16) + 8;
+					int r = this.world.getHighestBlock(blockPos.add(p, 0, q)).getY();
+					if (r > 0) {
+						int s = r + 3 + this.random.nextInt(7);
+						BlockPos blockPos2 = blockPos.add(p, s, q);
+						new EndGatewayFeature().generate(this.world, this.random, blockPos2);
+						BlockEntity blockEntity = this.world.getBlockEntity(blockPos2);
+						if (blockEntity instanceof EndGatewayBlockEntity) {
+							EndGatewayBlockEntity endGatewayBlockEntity = (EndGatewayBlockEntity)blockEntity;
+							endGatewayBlockEntity.setExitPortal(this.field_15189);
+						}
+					}
+				}
 			}
 		}
 
@@ -313,8 +334,8 @@ public class EndChunkGenerator implements ChunkGenerator {
 
 	@Nullable
 	@Override
-	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
-		return null;
+	public BlockPos method_3866(World world, String string, BlockPos pos, boolean bl) {
+		return "EndCity".equals(string) && this.endCityFeature != null ? this.endCityFeature.method_9269(world, pos, bl) : null;
 	}
 
 	@Override

@@ -74,6 +74,11 @@ public class SkullBlock extends BlockWithEntity {
 	}
 
 	@Override
+	public boolean method_13704(BlockState state) {
+		return true;
+	}
+
+	@Override
 	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		switch ((Direction)state.get(FACING)) {
 			case UP:
@@ -148,7 +153,6 @@ public class SkullBlock extends BlockWithEntity {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.SKULL;
@@ -211,7 +215,7 @@ public class SkullBlock extends BlockWithEntity {
 				for (int m = 0; m < blockPattern.getWidth(); m++) {
 					for (int n = 0; n < blockPattern.getHeight(); n++) {
 						CachedBlockPosition cachedBlockPosition3 = result.translate(m, n, 0);
-						world.updateNeighbors(cachedBlockPosition3.getPos(), Blocks.AIR);
+						world.method_8531(cachedBlockPosition3.getPos(), Blocks.AIR, false);
 					}
 				}
 			}

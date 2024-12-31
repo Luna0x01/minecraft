@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.LivingEntity;
@@ -10,8 +11,8 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.LandType;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -43,14 +44,14 @@ public class BlazeEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Blaze");
+		MobEntity.registerDataFixes(dataFixer, BlazeEntity.class);
 	}
 
 	@Override
 	protected void initGoals() {
 		this.goals.add(4, new BlazeEntity.ShootFireballGoal(this));
 		this.goals.add(5, new GoToWalkTargetGoal(this, 1.0));
-		this.goals.add(7, new WanderAroundGoal(this, 1.0));
+		this.goals.add(7, new class_3133(this, 1.0, 0.0F));
 		this.goals.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(8, new LookAroundGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, true));
@@ -228,7 +229,7 @@ public class BlazeEntity extends HostileEntity {
 				}
 
 				this.blaze.getMotionHelper().moveTo(livingEntity.x, livingEntity.y, livingEntity.z, 1.0);
-			} else if (d < 256.0) {
+			} else if (d < this.method_14061() * this.method_14061()) {
 				double e = livingEntity.x - this.blaze.x;
 				double f = livingEntity.getBoundingBox().minY + (double)(livingEntity.height / 2.0F) - (this.blaze.y + (double)(this.blaze.height / 2.0F));
 				double g = livingEntity.z - this.blaze.z;
@@ -266,6 +267,11 @@ public class BlazeEntity extends HostileEntity {
 			}
 
 			super.tick();
+		}
+
+		private double method_14061() {
+			EntityAttributeInstance entityAttributeInstance = this.blaze.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE);
+			return entityAttributeInstance == null ? 16.0 : entityAttributeInstance.getValue();
 		}
 	}
 }

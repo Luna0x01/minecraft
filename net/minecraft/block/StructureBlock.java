@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.StructureBlockEntity;
 import net.minecraft.block.material.Material;
@@ -30,20 +29,9 @@ public class StructureBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
-		return blockEntity instanceof StructureBlockEntity ? ((StructureBlockEntity)blockEntity).method_13342(playerEntity) : false;
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
+		return blockEntity instanceof StructureBlockEntity ? ((StructureBlockEntity)blockEntity).method_13342(player) : false;
 	}
 
 	@Override
@@ -55,12 +43,6 @@ public class StructureBlock extends BlockWithEntity {
 				structureBlockEntity.method_13341(placer);
 			}
 		}
-	}
-
-	@Nullable
-	@Override
-	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return super.getItemStack(world, blockPos, blockState);
 	}
 
 	@Override
@@ -94,12 +76,12 @@ public class StructureBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof StructureBlockEntity) {
 				StructureBlockEntity structureBlockEntity = (StructureBlockEntity)blockEntity;
-				boolean bl = world.isReceivingRedstonePower(blockPos);
+				boolean bl = world.isReceivingRedstonePower(pos);
 				boolean bl2 = structureBlockEntity.method_13334();
 				if (bl && !bl2) {
 					structureBlockEntity.method_13346(true);

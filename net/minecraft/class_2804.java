@@ -18,7 +18,7 @@ public class class_2804 extends class_2795 {
 
 	@Override
 	public ItemStack method_12029(ItemStack itemStack, Random random, class_2782 arg) {
-		itemStack.count = this.field_13232.method_12015(random);
+		itemStack.setCount(this.field_13232.method_12015(random));
 		return itemStack;
 	}
 

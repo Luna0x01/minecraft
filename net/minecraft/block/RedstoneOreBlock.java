@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
@@ -44,20 +43,9 @@ public class RedstoneOreBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		this.activateGlowing(world, blockPos);
-		return super.method_421(world, blockPos, blockState, playerEntity, hand, itemStack, direction, f, g, h);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		this.activateGlowing(world, pos);
+		return super.use(world, pos, state, player, hand, direction, f, g, h);
 	}
 
 	private void activateGlowing(World world, BlockPos pos) {
@@ -74,7 +62,6 @@ public class RedstoneOreBlock extends Block {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.REDSTONE;
@@ -154,7 +141,6 @@ public class RedstoneOreBlock extends Block {
 		return new ItemStack(Blocks.REDSTONE_ORE);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
 		return new ItemStack(Item.fromBlock(Blocks.REDSTONE_ORE), 1, this.getMeta(blockState));

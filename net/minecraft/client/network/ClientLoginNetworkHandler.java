@@ -9,6 +9,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import java.math.BigInteger;
 import java.security.PublicKey;
+import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
@@ -32,11 +33,12 @@ import org.apache.logging.log4j.Logger;
 public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MinecraftClient client;
+	@Nullable
 	private final Screen parent;
 	private final ClientConnection connection;
 	private GameProfile profile;
 
-	public ClientLoginNetworkHandler(ClientConnection clientConnection, MinecraftClient minecraftClient, Screen screen) {
+	public ClientLoginNetworkHandler(ClientConnection clientConnection, MinecraftClient minecraftClient, @Nullable Screen screen) {
 		this.connection = clientConnection;
 		this.client = minecraftClient;
 		this.parent = screen;

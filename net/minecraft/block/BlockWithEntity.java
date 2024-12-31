@@ -1,8 +1,17 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.stat.Stats;
+import net.minecraft.text.Nameable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -37,6 +46,29 @@ public abstract class BlockWithEntity extends Block implements BlockEntityProvid
 	public void onBreaking(World world, BlockPos pos, BlockState state) {
 		super.onBreaking(world, pos, state);
 		world.removeBlockEntity(pos);
+	}
+
+	@Override
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (blockEntity instanceof Nameable && ((Nameable)blockEntity).hasCustomName()) {
+			player.incrementStat(Stats.mined(this));
+			player.addExhaustion(0.005F);
+			if (world.isClient) {
+				return;
+			}
+
+			int i = EnchantmentHelper.getLevel(Enchantments.FORTUNE, stack);
+			Item item = this.getDropItem(state, world.random, i);
+			if (item == Items.AIR) {
+				return;
+			}
+
+			ItemStack itemStack = new ItemStack(item, this.getDropCount(world.random));
+			itemStack.setCustomName(((Nameable)blockEntity).getTranslationKey());
+			onBlockBreak(world, pos, itemStack);
+		} else {
+			super.method_8651(world, player, pos, state, null, stack);
+		}
 	}
 
 	@Override

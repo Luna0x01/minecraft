@@ -19,6 +19,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
 
 public class FilledMapItem extends NetworkSyncedItem {
@@ -26,17 +27,27 @@ public class FilledMapItem extends NetworkSyncedItem {
 		this.setUnbreakable(true);
 	}
 
-	public static MapState getMapState(int i, World world) {
-		String string = "map_" + i;
-		MapState mapState = (MapState)world.getOrCreateState(MapState.class, string);
-		if (mapState == null) {
-			mapState = new MapState(string);
-			world.replaceState(string, mapState);
-		}
-
-		return mapState;
+	public static ItemStack method_13663(World world, double d, double e, byte b, boolean bl, boolean bl2) {
+		ItemStack itemStack = new ItemStack(Items.FILLED_MAP, 1, world.getIntState("map"));
+		String string = "map_" + itemStack.getData();
+		MapState mapState = new MapState(string);
+		world.replaceState(string, mapState);
+		mapState.scale = b;
+		mapState.method_9308(d, e, mapState.scale);
+		mapState.dimensionId = (byte)world.dimension.getDimensionType().getId();
+		mapState.trackingPosition = bl;
+		mapState.field_15238 = bl2;
+		mapState.markDirty();
+		return itemStack;
 	}
 
+	@Nullable
+	public static MapState getMapState(int i, World world) {
+		String string = "map_" + i;
+		return (MapState)world.getOrCreateState(MapState.class, string);
+	}
+
+	@Nullable
 	public MapState getMapState(ItemStack itemStack, World world) {
 		String string = "map_" + itemStack.getData();
 		MapState mapState = (MapState)world.getOrCreateState(MapState.class, string);
@@ -106,7 +117,9 @@ public class FilledMapItem extends NetworkSyncedItem {
 										for (int z = 0; z < i; z++) {
 											int aa = chunk.getHighestBlockY(y + u, z + v) + 1;
 											BlockState blockState = Blocks.AIR.getDefaultState();
-											if (aa > 1) {
+											if (aa <= 1) {
+												blockState = Blocks.BEDROCK.getDefaultState();
+											} else {
 												do {
 													blockState = chunk.getBlockState(mutable.setPosition(y + u, --aa, z + v));
 												} while (blockState.getMaterialColor() == MaterialColor.AIR && aa > 0);
@@ -170,6 +183,96 @@ public class FilledMapItem extends NetworkSyncedItem {
 		}
 	}
 
+	public static void method_13664(World world, ItemStack itemStack) {
+		if (itemStack.getItem() == Items.FILLED_MAP) {
+			MapState mapState = Items.FILLED_MAP.getMapState(itemStack, world);
+			if (mapState != null) {
+				if (world.dimension.getDimensionType().getId() == mapState.dimensionId) {
+					int i = 1 << mapState.scale;
+					int j = mapState.xCenter;
+					int k = mapState.zCenter;
+					Biome[] biomes = world.method_3726().method_11538(null, (j / i - 64) * i, (k / i - 64) * i, 128 * i, 128 * i, false);
+
+					for (int l = 0; l < 128; l++) {
+						for (int m = 0; m < 128; m++) {
+							int n = l * i;
+							int o = m * i;
+							Biome biome = biomes[n + o * 128 * i];
+							MaterialColor materialColor = MaterialColor.AIR;
+							int p = 3;
+							int q = 8;
+							if (l > 0 && m > 0 && l < 127 && m < 127) {
+								if (biomes[(l - 1) * i + (m - 1) * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biomes[(l - 1) * i + (m + 1) * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biomes[(l - 1) * i + m * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biomes[(l + 1) * i + (m - 1) * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biomes[(l + 1) * i + (m + 1) * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biomes[(l + 1) * i + m * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biomes[l * i + (m - 1) * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biomes[l * i + (m + 1) * i * 128 * i].getDepth() >= 0.0F) {
+									q--;
+								}
+
+								if (biome.getDepth() < 0.0F) {
+									materialColor = MaterialColor.ORANGE;
+									if (q > 7 && m % 2 == 0) {
+										p = (l + (int)(MathHelper.sin((float)m + 0.0F) * 7.0F)) / 8 % 5;
+										if (p == 3) {
+											p = 1;
+										} else if (p == 4) {
+											p = 0;
+										}
+									} else if (q > 7) {
+										materialColor = MaterialColor.AIR;
+									} else if (q > 5) {
+										p = 1;
+									} else if (q > 3) {
+										p = 0;
+									} else if (q > 1) {
+										p = 0;
+									}
+								} else if (q > 0) {
+									materialColor = MaterialColor.BROWN;
+									if (q > 3) {
+										p = 1;
+									} else {
+										p = 3;
+									}
+								}
+							}
+
+							if (materialColor != MaterialColor.AIR) {
+								mapState.colors[l + m * 128] = (byte)(materialColor.id * 4 + p);
+								mapState.markDirty(l, m);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	@Override
 	public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
 		if (!world.isClient) {
@@ -209,12 +312,14 @@ public class FilledMapItem extends NetworkSyncedItem {
 		MapState mapState = Items.FILLED_MAP.getMapState(itemStack, world);
 		itemStack.setDamage(world.getIntState("map"));
 		MapState mapState2 = new MapState("map_" + itemStack.getData());
-		mapState2.scale = (byte)MathHelper.clamp(mapState.scale + i, 0, 4);
-		mapState2.trackingPosition = mapState.trackingPosition;
-		mapState2.method_9308((double)mapState.xCenter, (double)mapState.zCenter, mapState2.scale);
-		mapState2.dimensionId = mapState.dimensionId;
-		mapState2.markDirty();
-		world.replaceState("map_" + itemStack.getData(), mapState2);
+		if (mapState != null) {
+			mapState2.scale = (byte)MathHelper.clamp(mapState.scale + i, 0, 4);
+			mapState2.trackingPosition = mapState.trackingPosition;
+			mapState2.method_9308((double)mapState.xCenter, (double)mapState.zCenter, mapState2.scale);
+			mapState2.dimensionId = mapState.dimensionId;
+			mapState2.markDirty();
+			world.replaceState("map_" + itemStack.getData(), mapState2);
+		}
 	}
 
 	protected static void method_11400(ItemStack itemStack, World world) {
@@ -222,12 +327,14 @@ public class FilledMapItem extends NetworkSyncedItem {
 		itemStack.setDamage(world.getIntState("map"));
 		MapState mapState2 = new MapState("map_" + itemStack.getData());
 		mapState2.trackingPosition = true;
-		mapState2.xCenter = mapState.xCenter;
-		mapState2.zCenter = mapState.zCenter;
-		mapState2.scale = mapState.scale;
-		mapState2.dimensionId = mapState.dimensionId;
-		mapState2.markDirty();
-		world.replaceState("map_" + itemStack.getData(), mapState2);
+		if (mapState != null) {
+			mapState2.xCenter = mapState.xCenter;
+			mapState2.zCenter = mapState.zCenter;
+			mapState2.scale = mapState.scale;
+			mapState2.dimensionId = mapState.dimensionId;
+			mapState2.markDirty();
+			world.replaceState("map_" + itemStack.getData(), mapState2);
+		}
 	}
 
 	@Override
@@ -240,6 +347,16 @@ public class FilledMapItem extends NetworkSyncedItem {
 				lines.add("Scaling at 1:" + (1 << mapState.scale));
 				lines.add("(Level " + mapState.scale + "/" + 4 + ")");
 			}
+		}
+	}
+
+	public static int method_13665(ItemStack itemStack) {
+		NbtCompound nbtCompound = itemStack.getNbtCompound("display");
+		if (nbtCompound != null && nbtCompound.contains("MapColor", 99)) {
+			int i = nbtCompound.getInt("MapColor");
+			return 0xFF000000 | i & 16777215;
+		} else {
+			return -12173266;
 		}
 	}
 }

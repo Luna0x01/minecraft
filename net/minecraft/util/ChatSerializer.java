@@ -15,14 +15,14 @@ import net.minecraft.text.TranslatableText;
 
 public class ChatSerializer {
 	public static Text process(CommandSource source, Text test, Entity entity) throws CommandException {
-		Text text = null;
+		Text text;
 		if (test instanceof ScoreText) {
 			ScoreText scoreText = (ScoreText)test;
 			String string = scoreText.getName();
 			if (PlayerSelector.method_4091(string)) {
 				List<Entity> list = PlayerSelector.method_10866(source, string, Entity.class);
 				if (list.size() != 1) {
-					throw new EntityNotFoundException();
+					throw new EntityNotFoundException("commands.generic.selector.notFound", string);
 				}
 
 				Entity entity2 = (Entity)list.get(0);
@@ -33,13 +33,13 @@ public class ChatSerializer {
 				}
 			}
 
-			text = entity != null && string.equals("*")
-				? new ScoreText(entity.getTranslationKey(), scoreText.getObjective())
-				: new ScoreText(string, scoreText.getObjective());
+			String string2 = entity != null && string.equals("*") ? entity.getTranslationKey() : string;
+			text = new ScoreText(string2, scoreText.getObjective());
+			((ScoreText)text).setScore(scoreText.computeValue());
 			((ScoreText)text).method_12607(source);
 		} else if (test instanceof SelectorText) {
-			String string2 = ((SelectorText)test).getPattern();
-			text = PlayerSelector.method_6362(source, string2);
+			String string3 = ((SelectorText)test).getPattern();
+			text = PlayerSelector.method_6362(source, string3);
 			if (text == null) {
 				text = new LiteralText("");
 			}
@@ -67,8 +67,8 @@ public class ChatSerializer {
 			text.setStyle(style.deepCopy());
 		}
 
-		for (Text text2 : test.getSiblings()) {
-			text.append(process(source, text2, entity));
+		for (Text text6 : test.getSiblings()) {
+			text.append(process(source, text6, entity));
 		}
 
 		return text;

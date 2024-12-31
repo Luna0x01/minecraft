@@ -21,6 +21,7 @@ import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.mob.WitchEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.entity.mob.ZombieVillagerEntity;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.CowEntity;
@@ -48,6 +49,10 @@ public class EntityLocations {
 		field_14564.put(ChickenEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(CowEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(HorseBaseEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SkeletonHorseEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(ZombieHorseEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(DonkeyEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(MuleEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(MooshroomEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(OcelotEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(PigEntity.class, MobEntity.Location.ON_GROUND);
@@ -72,9 +77,13 @@ public class EntityLocations {
 		field_14564.put(ZombiePigmanEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(SilverfishEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(SkeletonEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(WhitherSkeletonEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(StrayEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(SlimeEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(SpiderEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(WitchEntity.class, MobEntity.Location.ON_GROUND);
 		field_14564.put(ZombieEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(ZombieVillagerEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(HuskEntity.class, MobEntity.Location.ON_GROUND);
 	}
 }

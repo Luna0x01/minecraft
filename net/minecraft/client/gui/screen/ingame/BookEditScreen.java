@@ -59,13 +59,10 @@ public class BookEditScreen extends Screen {
 		this.writeable = bl;
 		if (itemStack.hasNbt()) {
 			NbtCompound nbtCompound = itemStack.getNbt();
-			this.pages = nbtCompound.getList("pages", 8);
-			if (this.pages != null) {
-				this.pages = this.pages.copy();
-				this.totalPages = this.pages.size();
-				if (this.totalPages < 1) {
-					this.totalPages = 1;
-				}
+			this.pages = nbtCompound.getList("pages", 8).copy();
+			this.totalPages = this.pages.size();
+			if (this.totalPages < 1) {
+				this.totalPages = 1;
 			}
 		}
 

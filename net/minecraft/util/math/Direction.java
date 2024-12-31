@@ -4,9 +4,11 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.StringIdentifiable;
 
 public enum Direction implements StringIdentifiable {
@@ -164,7 +166,7 @@ public enum Direction implements StringIdentifiable {
 
 	@Nullable
 	public static Direction byName(String name) {
-		return name == null ? null : (Direction)DIRECTION_MAP.get(name.toLowerCase());
+		return name == null ? null : (Direction)DIRECTION_MAP.get(name.toLowerCase(Locale.ROOT));
 	}
 
 	public static Direction getById(int id) {
@@ -221,6 +223,21 @@ public enum Direction implements StringIdentifiable {
 		throw new IllegalArgumentException("No such direction: " + direction + " " + axis);
 	}
 
+	public static Direction getLookingDirection(BlockPos pos, LivingEntity entity) {
+		if (Math.abs(entity.x - (double)((float)pos.getX() + 0.5F)) < 2.0 && Math.abs(entity.z - (double)((float)pos.getZ() + 0.5F)) < 2.0) {
+			double d = entity.y + (double)entity.getEyeHeight();
+			if (d - (double)pos.getY() > 2.0) {
+				return UP;
+			}
+
+			if ((double)pos.getY() - d > 0.0) {
+				return DOWN;
+			}
+		}
+
+		return entity.getHorizontalDirection().getOpposite();
+	}
+
 	public Vec3i getVector() {
 		return this.vec;
 	}
@@ -232,7 +249,7 @@ public enum Direction implements StringIdentifiable {
 				HORIZONTAL[direction.idHorizontal] = direction;
 			}
 
-			DIRECTION_MAP.put(direction.getName().toLowerCase(), direction);
+			DIRECTION_MAP.put(direction.getName().toLowerCase(Locale.ROOT), direction);
 		}
 	}
 
@@ -252,7 +269,7 @@ public enum Direction implements StringIdentifiable {
 
 		@Nullable
 		public static Direction.Axis fromName(String name) {
-			return name == null ? null : (Direction.Axis)BY_NAME.get(name.toLowerCase());
+			return name == null ? null : (Direction.Axis)BY_NAME.get(name.toLowerCase(Locale.ROOT));
 		}
 
 		public String getName() {
@@ -286,7 +303,7 @@ public enum Direction implements StringIdentifiable {
 
 		static {
 			for (Direction.Axis axis : values()) {
-				BY_NAME.put(axis.getName().toLowerCase(), axis);
+				BY_NAME.put(axis.getName().toLowerCase(Locale.ROOT), axis);
 			}
 		}
 	}

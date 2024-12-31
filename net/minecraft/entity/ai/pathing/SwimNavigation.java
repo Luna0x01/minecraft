@@ -47,11 +47,6 @@ public class SwimNavigation extends EntityNavigation {
 	}
 
 	@Override
-	protected void adjustPath() {
-		super.adjustPath();
-	}
-
-	@Override
 	protected boolean canPathDirectlyThrough(Vec3d origin, Vec3d target, int sizeX, int sizeY, int sizeZ) {
 		BlockHitResult blockHitResult = this.world.rayTrace(origin, new Vec3d(target.x, target.y + (double)this.mob.height * 0.5, target.z), false, true, false);
 		return blockHitResult == null || blockHitResult.type == BlockHitResult.Type.MISS;

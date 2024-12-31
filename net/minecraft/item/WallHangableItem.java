@@ -21,19 +21,18 @@ public class WallHangableItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockPos blockPos2 = blockPos.offset(direction);
-		if (direction != Direction.DOWN && direction != Direction.UP && playerEntity.canModify(blockPos2, direction, itemStack)) {
-			AbstractDecorationEntity abstractDecorationEntity = this.createEntity(world, blockPos2, direction);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		BlockPos blockPos = pos.offset(direction);
+		if (direction != Direction.DOWN && direction != Direction.UP && player.canModify(blockPos, direction, itemStack)) {
+			AbstractDecorationEntity abstractDecorationEntity = this.createEntity(world, blockPos, direction);
 			if (abstractDecorationEntity != null && abstractDecorationEntity.isPosValid()) {
 				if (!world.isClient) {
 					abstractDecorationEntity.onPlace();
 					world.spawnEntity(abstractDecorationEntity);
 				}
 
-				itemStack.count--;
+				itemStack.decrement(1);
 			}
 
 			return ActionResult.SUCCESS;

@@ -14,6 +14,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class CobwebBlock extends Block {
@@ -34,7 +35,7 @@ public class CobwebBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -43,7 +44,6 @@ public class CobwebBlock extends Block {
 		return false;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.STRING;
@@ -60,8 +60,8 @@ public class CobwebBlock extends Block {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
-		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (!world.isClient && stack.getItem() == Items.SHEARS) {
 			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Item.fromBlock(this), 1));
 		} else {

@@ -1,6 +1,5 @@
 package net.minecraft.entity.passive;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
@@ -72,7 +71,7 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 
 	@Override
 	public float getPathfindingFavor(BlockPos pos) {
-		return this.world.getBlockState(pos.down()).getBlock() == Blocks.GRASS ? 10.0F : this.world.getBrightness(pos) - 0.5F;
+		return this.world.getBlockState(pos.down()).getBlock() == this.field_11973 ? 10.0F : this.world.getBrightness(pos) - 0.5F;
 	}
 
 	@Override
@@ -83,7 +82,7 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 
 	@Override
 	public double getHeightOffset() {
-		return 0.29;
+		return 0.14;
 	}
 
 	@Override
@@ -116,13 +115,14 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 		return 1 + this.world.random.nextInt(3);
 	}
 
-	public boolean isBreedingItem(@Nullable ItemStack stack) {
-		return stack == null ? false : stack.getItem() == Items.WHEAT;
+	public boolean isBreedingItem(ItemStack stack) {
+		return stack.getItem() == Items.WHEAT;
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (itemStack != null) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (!itemStack.isEmpty()) {
 			if (this.isBreedingItem(itemStack) && this.age() == 0 && this.loveTicks <= 0) {
 				this.eat(playerEntity, itemStack);
 				this.lovePlayer(playerEntity);
@@ -136,12 +136,12 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 			}
 		}
 
-		return super.method_13079(playerEntity, hand, itemStack);
+		return super.interactMob(playerEntity, hand);
 	}
 
 	protected void eat(PlayerEntity player, ItemStack stack) {
 		if (!player.abilities.creativeMode) {
-			stack.count--;
+			stack.decrement(1);
 		}
 	}
 

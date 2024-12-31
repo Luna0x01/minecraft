@@ -1,8 +1,11 @@
 package net.minecraft.world.biome;
 
+import java.util.Iterator;
 import java.util.Random;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.PolarBearEntity;
+import net.minecraft.entity.StrayEntity;
+import net.minecraft.entity.mob.SkeletonEntity;
 import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -26,6 +29,17 @@ public class IceBiome extends Biome {
 		this.passiveEntries.clear();
 		this.passiveEntries.add(new Biome.SpawnEntry(RabbitEntity.class, 10, 2, 3));
 		this.passiveEntries.add(new Biome.SpawnEntry(PolarBearEntity.class, 1, 1, 2));
+		Iterator<Biome.SpawnEntry> iterator = this.monsterEntries.iterator();
+
+		while (iterator.hasNext()) {
+			Biome.SpawnEntry spawnEntry = (Biome.SpawnEntry)iterator.next();
+			if (spawnEntry.entity == SkeletonEntity.class) {
+				iterator.remove();
+			}
+		}
+
+		this.monsterEntries.add(new Biome.SpawnEntry(SkeletonEntity.class, 20, 4, 4));
+		this.monsterEntries.add(new Biome.SpawnEntry(StrayEntity.class, 80, 4, 4));
 	}
 
 	@Override

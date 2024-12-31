@@ -2,21 +2,21 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class FireworkRecipeType implements RecipeType {
-	private ItemStack ingredient;
+	private ItemStack ingredient = ItemStack.EMPTY;
 
 	@Override
 	public boolean matches(CraftingInventory inventory, World world) {
-		this.ingredient = null;
+		this.ingredient = ItemStack.EMPTY;
 		int i = 0;
 		int j = 0;
 		int k = 0;
@@ -26,7 +26,7 @@ public class FireworkRecipeType implements RecipeType {
 
 		for (int o = 0; o < inventory.getInvSize(); o++) {
 			ItemStack itemStack = inventory.getInvStack(o);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				if (itemStack.getItem() == Items.GUNPOWDER) {
 					j++;
 				} else if (itemStack.getItem() == Items.FIREWORK_CHARGE) {
@@ -60,24 +60,24 @@ public class FireworkRecipeType implements RecipeType {
 			return false;
 		} else if (j >= 1 && i == 1 && m == 0) {
 			this.ingredient = new ItemStack(Items.FIREWORKS, 3);
+			NbtCompound nbtCompound = new NbtCompound();
 			if (l > 0) {
-				NbtCompound nbtCompound = new NbtCompound();
-				NbtCompound nbtCompound2 = new NbtCompound();
 				NbtList nbtList = new NbtList();
 
 				for (int p = 0; p < inventory.getInvSize(); p++) {
 					ItemStack itemStack2 = inventory.getInvStack(p);
-					if (itemStack2 != null && itemStack2.getItem() == Items.FIREWORK_CHARGE && itemStack2.hasNbt() && itemStack2.getNbt().contains("Explosion", 10)) {
+					if (itemStack2.getItem() == Items.FIREWORK_CHARGE && itemStack2.hasNbt() && itemStack2.getNbt().contains("Explosion", 10)) {
 						nbtList.add(itemStack2.getNbt().getCompound("Explosion"));
 					}
 				}
 
-				nbtCompound2.put("Explosions", nbtList);
-				nbtCompound2.putByte("Flight", (byte)j);
-				nbtCompound.put("Fireworks", nbtCompound2);
-				this.ingredient.setNbt(nbtCompound);
+				nbtCompound.put("Explosions", nbtList);
 			}
 
+			nbtCompound.putByte("Flight", (byte)j);
+			NbtCompound nbtCompound2 = new NbtCompound();
+			nbtCompound2.put("Fireworks", nbtCompound);
+			this.ingredient.setNbt(nbtCompound2);
 			return true;
 		} else if (j == 1 && i == 0 && l == 0 && k > 0 && n <= 1) {
 			this.ingredient = new ItemStack(Items.FIREWORK_CHARGE);
@@ -88,7 +88,7 @@ public class FireworkRecipeType implements RecipeType {
 
 			for (int q = 0; q < inventory.getInvSize(); q++) {
 				ItemStack itemStack3 = inventory.getInvStack(q);
-				if (itemStack3 != null) {
+				if (!itemStack3.isEmpty()) {
 					if (itemStack3.getItem() == Items.DYE) {
 						list.add(DyeItem.COLORS[itemStack3.getData() & 15]);
 					} else if (itemStack3.getItem() == Items.GLOWSTONE_DUST) {
@@ -123,12 +123,12 @@ public class FireworkRecipeType implements RecipeType {
 
 			for (int s = 0; s < inventory.getInvSize(); s++) {
 				ItemStack itemStack4 = inventory.getInvStack(s);
-				if (itemStack4 != null) {
+				if (!itemStack4.isEmpty()) {
 					if (itemStack4.getItem() == Items.DYE) {
 						list2.add(DyeItem.COLORS[itemStack4.getData() & 15]);
 					} else if (itemStack4.getItem() == Items.FIREWORK_CHARGE) {
 						this.ingredient = itemStack4.copy();
-						this.ingredient.count = 1;
+						this.ingredient.setCount(1);
 					}
 				}
 			}
@@ -139,7 +139,7 @@ public class FireworkRecipeType implements RecipeType {
 				js[t] = (Integer)list2.get(t);
 			}
 
-			if (this.ingredient != null && this.ingredient.hasNbt()) {
+			if (!this.ingredient.isEmpty() && this.ingredient.hasNbt()) {
 				NbtCompound nbtCompound5 = this.ingredient.getNbt().getCompound("Explosion");
 				if (nbtCompound5 == null) {
 					return false;
@@ -155,7 +155,6 @@ public class FireworkRecipeType implements RecipeType {
 		}
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		return this.ingredient.copy();
@@ -166,23 +165,22 @@ public class FireworkRecipeType implements RecipeType {
 		return 10;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return this.ingredient;
 	}
 
 	@Override
-	public ItemStack[] getRemainders(CraftingInventory inventory) {
-		ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null && itemStack.getItem().isFood()) {
-				itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack = craftingInventory.getInvStack(i);
+			if (itemStack.getItem().isFood()) {
+				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 			}
 		}
 
-		return itemStacks;
+		return defaultedList;
 	}
 }

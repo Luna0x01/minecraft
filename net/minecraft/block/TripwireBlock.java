@@ -62,7 +62,7 @@ public class TripwireBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -81,7 +81,6 @@ public class TripwireBlock extends Block {
 		return RenderLayer.TRANSLUCENT;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.STRING;
@@ -106,7 +105,7 @@ public class TripwireBlock extends Block {
 	@Override
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state, PlayerEntity player) {
 		if (!world.isClient) {
-			if (player.getMainHandStack() != null && player.getMainHandStack().getItem() == Items.SHEARS) {
+			if (!player.getMainHandStack().isEmpty() && player.getMainHandStack().getItem() == Items.SHEARS) {
 				world.setBlockState(pos, state.with(DISARMED, true), 4);
 			}
 		}
@@ -114,12 +113,12 @@ public class TripwireBlock extends Block {
 
 	private void update(World world, BlockPos pos, BlockState state) {
 		for (Direction direction : new Direction[]{Direction.SOUTH, Direction.WEST}) {
-			for (int k = 1; k < 42; k++) {
-				BlockPos blockPos = pos.offset(direction, k);
+			for (int i = 1; i < 42; i++) {
+				BlockPos blockPos = pos.offset(direction, i);
 				BlockState blockState = world.getBlockState(blockPos);
 				if (blockState.getBlock() == Blocks.TRIPWIRE_HOOK) {
 					if (blockState.get(TripwireHookBlock.FACING) == direction.getOpposite()) {
-						Blocks.TRIPWIRE_HOOK.update(world, blockPos, blockState, false, true, k, state);
+						Blocks.TRIPWIRE_HOOK.update(world, blockPos, blockState, false, true, i, state);
 					}
 					break;
 				}
@@ -157,7 +156,7 @@ public class TripwireBlock extends Block {
 		BlockState blockState = world.getBlockState(pos);
 		boolean bl = (Boolean)blockState.get(POWERED);
 		boolean bl2 = false;
-		List<? extends Entity> list = world.getEntitiesIn(null, blockState.getCollisionBox((BlockView)world, pos).offset(pos));
+		List<? extends Entity> list = world.getEntitiesIn(null, blockState.getCollisionBox(world, pos).offset(pos));
 		if (!list.isEmpty()) {
 			for (Entity entity : list) {
 				if (!entity.canAvoidTraps()) {

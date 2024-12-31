@@ -2,7 +2,6 @@ package net.minecraft.entity.ai.goal;
 
 import com.google.common.collect.Sets;
 import java.util.Set;
-import javax.annotation.Nullable;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.player.PlayerEntity;
@@ -51,8 +50,8 @@ public class TemptGoal extends Goal {
 		}
 	}
 
-	protected boolean method_13103(@Nullable ItemStack itemStack) {
-		return itemStack == null ? false : this.field_14593.contains(itemStack.getItem());
+	protected boolean method_13103(ItemStack itemStack) {
+		return this.field_14593.contains(itemStack.getItem());
 	}
 
 	@Override

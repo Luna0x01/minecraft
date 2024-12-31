@@ -20,6 +20,7 @@ import net.minecraft.client.gui.screen.ingame.EnchantingScreen;
 import net.minecraft.client.gui.screen.ingame.FurnaceScreen;
 import net.minecraft.client.gui.screen.ingame.HopperScreen;
 import net.minecraft.client.gui.screen.ingame.HorseScreen;
+import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.client.gui.screen.ingame.SignEditScreen;
 import net.minecraft.client.gui.screen.ingame.StructureBlockScreen;
 import net.minecraft.client.gui.screen.ingame.VillagerTradingScreen;
@@ -31,16 +32,17 @@ import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.ElytraSoundInstance;
 import net.minecraft.client.sound.MinecartSoundInstance;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.inventory.Inventory;
@@ -151,6 +153,11 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
+	public Vec3d getRotationVector(float vector) {
+		return this.getRotationVector(this.pitch, this.yaw);
+	}
+
+	@Override
 	public void tick() {
 		if (this.world.blockExists(new BlockPos(this.x, 0.0, this.z))) {
 			super.tick();
@@ -238,10 +245,9 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		return null;
 	}
 
-	@Nullable
 	@Override
 	protected ItemStack method_3164(ItemEntity itemEntity) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	public void sendChatMessage(String string) {
@@ -273,7 +279,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	public void closeScreen() {
-		this.inventory.setCursorStack(null);
+		this.inventory.setCursorStack(ItemStack.EMPTY);
 		super.closeHandledScreen();
 		this.client.setScreen(null);
 	}
@@ -349,8 +355,12 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void addMessage(Text text) {
-		this.client.inGameHud.getChatHud().addMessage(text);
+	public void sendMessage(Text text, boolean actionBar) {
+		if (actionBar) {
+			this.client.inGameHud.setOverlayMessage(text, false);
+		} else {
+			this.client.inGameHud.getChatHud().addMessage(text);
+		}
 	}
 
 	@Override
@@ -459,7 +469,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	@Override
 	public void method_13050(Hand hand) {
 		ItemStack itemStack = this.getStackInHand(hand);
-		if (itemStack != null && !this.method_13061()) {
+		if (!itemStack.isEmpty() && !this.method_13061()) {
 			super.method_13050(hand);
 			this.field_13458 = true;
 			this.field_13459 = hand;
@@ -550,16 +560,18 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			this.client.setScreen(new BrewingStandScreen(this.inventory, inventory));
 		} else if ("minecraft:beacon".equals(string)) {
 			this.client.setScreen(new BeaconScreen(this.inventory, inventory));
-		} else if (!"minecraft:dispenser".equals(string) && !"minecraft:dropper".equals(string)) {
-			this.client.setScreen(new ChestScreen(this.inventory, inventory));
-		} else {
+		} else if ("minecraft:dispenser".equals(string) || "minecraft:dropper".equals(string)) {
 			this.client.setScreen(new DispenserScreen(this.inventory, inventory));
+		} else if ("minecraft:shulker_box".equals(string)) {
+			this.client.setScreen(new ShulkerBoxScreen(this.inventory, inventory));
+		} else {
+			this.client.setScreen(new ChestScreen(this.inventory, inventory));
 		}
 	}
 
 	@Override
-	public void openHorseInventory(HorseBaseEntity horse, Inventory inventory) {
-		this.client.setScreen(new HorseScreen(this.inventory, inventory, horse));
+	public void method_6317(AbstractHorseEntity abstractHorseEntity, Inventory inventory) {
+		this.client.setScreen(new HorseScreen(this.inventory, inventory, abstractHorseEntity));
 	}
 
 	@Override
@@ -591,7 +603,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public boolean isSneaking() {
-		boolean bl = this.input != null ? this.input.sneaking : false;
+		boolean bl = this.input != null && this.input.sneaking;
 		return bl && !this.inBed;
 	}
 
@@ -726,7 +738,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 		if (this.input.jumping && !bl && !this.onGround && this.velocityY < 0.0 && !this.method_13055() && !this.abilities.flying) {
 			ItemStack itemStack = this.getStack(EquipmentSlot.CHEST);
-			if (itemStack != null && itemStack.getItem() == Items.ELYTRA && ElytraItem.method_11370(itemStack)) {
+			if (itemStack.getItem() == Items.ELYTRA && ElytraItem.method_11370(itemStack)) {
 				this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
 			}
 		}
@@ -806,10 +818,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void move(double velocityX, double velocityY, double velocityZ) {
+	public void move(MovementType type, double movementX, double movementY, double movementZ) {
 		double d = this.x;
 		double e = this.z;
-		super.move(velocityX, velocityY, velocityZ);
+		super.move(type, movementX, movementY, movementZ);
 		this.method_13426((float)(this.x - d), (float)(this.z - e));
 	}
 
@@ -846,10 +858,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 					if (!(o < -0.15F)) {
 						BlockPos blockPos = new BlockPos(this.x, this.getBoundingBox().maxY, this.z);
 						BlockState blockState = this.world.getBlockState(blockPos);
-						if (blockState.getCollisionBox(this.world, blockPos) == null) {
+						if (blockState.method_11726(this.world, blockPos) == null) {
 							blockPos = blockPos.up();
 							BlockState blockState2 = this.world.getBlockState(blockPos);
-							if (blockState2.getCollisionBox(this.world, blockPos) == null) {
+							if (blockState2.method_11726(this.world, blockPos) == null) {
 								float p = 7.0F;
 								float q = 1.2F;
 								if (this.hasStatusEffect(StatusEffects.JUMP_BOOST)) {
@@ -885,7 +897,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 											BlockPos blockPos3 = blockPos2.up(v);
 											BlockState blockState3 = this.world.getBlockState(blockPos3);
 											Box box3;
-											if ((box3 = blockState3.getCollisionBox(this.world, blockPos3)) != null) {
+											if ((box3 = blockState3.method_11726(this.world, blockPos3)) != null) {
 												u = (float)box3.maxY + (float)blockPos3.getY();
 												if ((double)u - this.getBoundingBox().minY > (double)q) {
 													return;
@@ -895,7 +907,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 											if (v > 1) {
 												blockPos = blockPos.up();
 												BlockState blockState4 = this.world.getBlockState(blockPos);
-												if (blockState4.getCollisionBox(this.world, blockPos) != null) {
+												if (blockState4.method_11726(this.world, blockPos) != null) {
 													return;
 												}
 											}

@@ -25,6 +25,10 @@ import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.datafixer.DataFixer;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
+import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -32,7 +36,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.EntityDamageSource;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.CraftingResultSlot;
@@ -93,6 +96,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.JsonSet;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -101,6 +105,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.TraderOfferList;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.level.storage.LevelDataType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -142,7 +147,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		serverPlayerInteractionManager.player = this;
 		this.interactionManager = serverPlayerInteractionManager;
 		BlockPos blockPos = serverWorld.getSpawnPos();
-		if (!serverWorld.dimension.hasNoSkylight() && serverWorld.getLevelProperties().getGamemode() != GameMode.ADVENTURE) {
+		if (serverWorld.dimension.isOverworld() && serverWorld.getLevelProperties().getGamemode() != GameMode.ADVENTURE) {
 			int i = Math.max(0, minecraftServer.method_12834(serverWorld));
 			int j = MathHelper.floor(serverWorld.getWorldBorder().getDistanceInsideBorder((double)blockPos.getX(), (double)blockPos.getZ()));
 			if (j < i) {
@@ -178,16 +183,33 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 	}
 
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.PLAYER, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if (tag.contains("RootVehicle", 10)) {
+					NbtCompound nbtCompound = tag.getCompound("RootVehicle");
+					if (nbtCompound.contains("Entity", 10)) {
+						nbtCompound.put("Entity", dataFixer.update(LevelDataType.ENTITY, nbtCompound.getCompound("Entity"), dataVersion));
+					}
+				}
+
+				return tag;
+			}
+		});
+	}
+
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putInt("playerGameType", this.interactionManager.getGameMode().getGameModeId());
 		Entity entity = this.getRootVehicle();
-		if (this.getVehicle() != null && entity != this & entity.getPassengersDeep(ServerPlayerEntity.class).size() == 1) {
+		Entity entity2 = this.getVehicle();
+		if (entity2 != null && entity != this & entity.getPassengersDeep(ServerPlayerEntity.class).size() == 1) {
 			NbtCompound nbtCompound = new NbtCompound();
 			NbtCompound nbtCompound2 = new NbtCompound();
 			entity.saveToNbt(nbtCompound2);
-			nbtCompound.putUuid("Attach", this.getVehicle().getUuid());
+			nbtCompound.putUuid("Attach", entity2.getUuid());
 			nbtCompound.put("Entity", nbtCompound2);
 			nbt.put("RootVehicle", nbtCompound);
 		}
@@ -274,7 +296,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 			for (int i = 0; i < this.inventory.getInvSize(); i++) {
 				ItemStack itemStack = this.inventory.getInvStack(i);
-				if (itemStack != null && itemStack.getItem().isNetworkSynced()) {
+				if (!itemStack.isEmpty() && itemStack.getItem().isNetworkSynced()) {
 					Packet<?> packet = ((NetworkSyncedItem)itemStack.getItem()).createSyncPacket(itemStack, this.world, this);
 					if (packet != null) {
 						this.networkHandler.sendPacket(packet);
@@ -326,7 +348,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 				this.networkHandler.sendPacket(new ExperienceBarUpdateS2CPacket(this.experienceProgress, this.totalExperience, this.experienceLevel));
 			}
 
-			if (this.ticksAlive % 20 * 5 == 0 && !this.getStatHandler().hasAchievement(AchievementsAndCriterions.EXPLORE_ALL_BIOMES)) {
+			if (this.ticksAlive % 100 == 0 && !this.getStatHandler().hasAchievement(AchievementsAndCriterions.EXPLORE_ALL_BIOMES)) {
 				this.updateExploredBiomes();
 			}
 		} catch (Throwable var4) {
@@ -357,12 +379,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 			Set<Biome> set = Sets.newHashSet(Biome.BIOMESET);
 
 			for (String string2 : jsonSet) {
-				Iterator<Biome> iterator2 = set.iterator();
+				Iterator<Biome> iterator = set.iterator();
 
-				while (iterator2.hasNext()) {
-					Biome biome2 = (Biome)iterator2.next();
+				while (iterator.hasNext()) {
+					Biome biome2 = (Biome)iterator.next();
 					if (biome2.getName().equals(string2)) {
-						iterator2.remove();
+						iterator.remove();
 					}
 				}
 
@@ -393,6 +415,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 		}
 
 		if (!this.world.getGameRules().getBoolean("keepInventory") && !this.isSpectator()) {
+			this.method_13618();
 			this.inventory.dropAll();
 		}
 
@@ -403,7 +426,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 		LivingEntity livingEntity = this.getOpponent();
 		if (livingEntity != null) {
-			EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)EntityType.SPAWN_EGGS.get(EntityType.getEntityName(livingEntity));
+			EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)EntityType.SPAWN_EGGS.get(EntityType.getId(livingEntity));
 			if (spawnEggData != null) {
 				this.incrementStat(spawnEggData.killedByEntityStat);
 			}
@@ -413,6 +436,8 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 
 		this.incrementStat(Stats.DEATHS);
 		this.method_11238(Stats.TIME_SINCE_DEATH);
+		this.extinguish();
+		this.setFlag(0, false);
 		this.getDamageTracker().update();
 	}
 
@@ -610,7 +635,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public void openHandledScreen(NamedScreenHandlerFactory screenHandlerFactory) {
 		if (screenHandlerFactory instanceof class_2964 && ((class_2964)screenHandlerFactory).getLootTableId() != null && this.isSpectator()) {
-			this.sendMessage(new TranslatableText("container.spectatorCantOpen").setStyle(new Style().setFormatting(Formatting.RED)));
+			this.sendMessage(new TranslatableText("container.spectatorCantOpen").setStyle(new Style().setFormatting(Formatting.RED)), true);
 		} else {
 			this.incrementSyncId();
 			this.networkHandler.sendPacket(new OpenScreenS2CPacket(this.screenHandlerSyncId, screenHandlerFactory.getId(), screenHandlerFactory.getName()));
@@ -623,7 +648,7 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	@Override
 	public void openInventory(Inventory inventory) {
 		if (inventory instanceof class_2964 && ((class_2964)inventory).getLootTableId() != null && this.isSpectator()) {
-			this.sendMessage(new TranslatableText("container.spectatorCantOpen").setStyle(new Style().setFormatting(Formatting.RED)));
+			this.sendMessage(new TranslatableText("container.spectatorCantOpen").setStyle(new Style().setFormatting(Formatting.RED)), true);
 		} else {
 			if (this.openScreenHandler != this.playerScreenHandler) {
 				this.closeHandledScreen();
@@ -672,15 +697,15 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void openHorseInventory(HorseBaseEntity horse, Inventory inventory) {
+	public void method_6317(AbstractHorseEntity abstractHorseEntity, Inventory inventory) {
 		if (this.openScreenHandler != this.playerScreenHandler) {
 			this.closeHandledScreen();
 		}
 
 		this.incrementSyncId();
 		this.networkHandler
-			.sendPacket(new OpenScreenS2CPacket(this.screenHandlerSyncId, "EntityHorse", inventory.getName(), inventory.getInvSize(), horse.getEntityId()));
-		this.openScreenHandler = new HorseScreenHandler(this.inventory, inventory, horse, this);
+			.sendPacket(new OpenScreenS2CPacket(this.screenHandlerSyncId, "EntityHorse", inventory.getName(), inventory.getInvSize(), abstractHorseEntity.getEntityId()));
+		this.openScreenHandler = new HorseScreenHandler(this.inventory, inventory, abstractHorseEntity, this);
 		this.openScreenHandler.syncId = this.screenHandlerSyncId;
 		this.openScreenHandler.addListener(this);
 	}
@@ -711,12 +736,12 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	public void refreshScreenHandler(ScreenHandler handler) {
-		this.updateScreenHandler(handler, handler.getStacks());
+		this.method_13643(handler, handler.method_13641());
 	}
 
 	@Override
-	public void updateScreenHandler(ScreenHandler handler, List<ItemStack> list) {
-		this.networkHandler.sendPacket(new InventoryS2CPacket(handler.syncId, list));
+	public void method_13643(ScreenHandler screenHandler, DefaultedList<ItemStack> defaultedList) {
+		this.networkHandler.sendPacket(new InventoryS2CPacket(screenHandler.syncId, defaultedList));
 		this.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, -1, this.inventory.getCursorStack()));
 	}
 
@@ -811,13 +836,13 @@ public class ServerPlayerEntity extends PlayerEntity implements ScreenHandlerLis
 	}
 
 	@Override
-	public void addMessage(Text text) {
-		this.networkHandler.sendPacket(new ChatMessageS2CPacket(text));
+	public void sendMessage(Text text, boolean actionBar) {
+		this.networkHandler.sendPacket(new ChatMessageS2CPacket(text, (byte)(actionBar ? 2 : 0)));
 	}
 
 	@Override
 	protected void method_3217() {
-		if (this.field_14546 != null && this.method_13061()) {
+		if (!this.field_14546.isEmpty() && this.method_13061()) {
 			this.networkHandler.sendPacket(new EntityStatusS2CPacket(this, (byte)9));
 			super.method_3217();
 		}

@@ -73,10 +73,6 @@ public class Camera {
 		return blockState;
 	}
 
-	public static Vec3d getPosition() {
-		return position;
-	}
-
 	public static float getRotationX() {
 		return rotationX;
 	}

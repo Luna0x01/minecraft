@@ -1,6 +1,7 @@
 package net.minecraft.structure;
 
 import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -49,29 +50,29 @@ public class StrongholdStructure extends StructureFeature {
 	}
 
 	@Override
-	public BlockPos method_9269(World world, BlockPos pos) {
+	public BlockPos method_9269(World world, BlockPos blockPos, boolean bl) {
 		if (!this.initialized) {
 			this.method_11850();
 			this.initialized = true;
 		}
 
-		BlockPos blockPos = null;
+		BlockPos blockPos2 = null;
 		BlockPos.Mutable mutable = new BlockPos.Mutable(0, 0, 0);
 		double d = Double.MAX_VALUE;
 
 		for (ChunkPos chunkPos : this.count) {
 			mutable.setPosition((chunkPos.x << 4) + 8, 32, (chunkPos.z << 4) + 8);
-			double e = mutable.getSquaredDistance(pos);
-			if (blockPos == null) {
-				blockPos = new BlockPos(mutable);
+			double e = mutable.getSquaredDistance(blockPos);
+			if (blockPos2 == null) {
+				blockPos2 = new BlockPos(mutable);
 				d = e;
 			} else if (e < d) {
-				blockPos = new BlockPos(mutable);
+				blockPos2 = new BlockPos(mutable);
 				d = e;
 			}
 		}
 
-		return blockPos;
+		return blockPos2;
 	}
 
 	@Override
@@ -93,25 +94,27 @@ public class StrongholdStructure extends StructureFeature {
 	private void method_11850() {
 		this.method_5515(this.world);
 		int i = 0;
+		ObjectIterator random = this.field_13012.values().iterator();
 
-		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
+		while (random.hasNext()) {
+			GeneratorConfig generatorConfig = (GeneratorConfig)random.next();
 			if (i < this.count.length) {
 				this.count[i++] = new ChunkPos(generatorConfig.getChunkX(), generatorConfig.getChunkZ());
 			}
 		}
 
-		Random random = new Random();
-		random.setSeed(this.world.getSeed());
-		double d = random.nextDouble() * Math.PI * 2.0;
+		Random randomx = new Random();
+		randomx.setSeed(this.world.getSeed());
+		double d = randomx.nextDouble() * Math.PI * 2.0;
 		int j = 0;
 		int k = 0;
 		int l = this.field_13012.size();
 		if (l < this.count.length) {
 			for (int m = 0; m < this.count.length; m++) {
-				double e = 4.0 * this.distance + this.distance * (double)j * 6.0 + (random.nextDouble() - 0.5) * this.distance * 2.5;
+				double e = 4.0 * this.distance + this.distance * (double)j * 6.0 + (randomx.nextDouble() - 0.5) * this.distance * 2.5;
 				int n = (int)Math.round(Math.cos(d) * e);
 				int o = (int)Math.round(Math.sin(d) * e);
-				BlockPos blockPos = this.world.method_3726().method_11534((n << 4) + 8, (o << 4) + 8, 112, this.biomes, random);
+				BlockPos blockPos = this.world.method_3726().method_11534((n << 4) + 8, (o << 4) + 8, 112, this.biomes, randomx);
 				if (blockPos != null) {
 					n = blockPos.getX() >> 4;
 					o = blockPos.getZ() >> 4;
@@ -127,23 +130,10 @@ public class StrongholdStructure extends StructureFeature {
 					k = 0;
 					this.spread = this.spread + 2 * this.spread / (j + 1);
 					this.spread = Math.min(this.spread, this.count.length - m);
-					d += random.nextDouble() * Math.PI * 2.0;
+					d += randomx.nextDouble() * Math.PI * 2.0;
 				}
 			}
 		}
-	}
-
-	@Override
-	protected List<BlockPos> method_50() {
-		List<BlockPos> list = Lists.newArrayList();
-
-		for (ChunkPos chunkPos : this.count) {
-			if (chunkPos != null) {
-				list.add(chunkPos.toBlockPos(64));
-			}
-		}
-
-		return list;
 	}
 
 	@Override

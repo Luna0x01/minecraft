@@ -1,5 +1,6 @@
 package net.minecraft.client.util;
 
+import java.util.Locale;
 import net.minecraft.util.Identifier;
 import org.apache.commons.lang3.StringUtils;
 
@@ -8,7 +9,7 @@ public class ModelIdentifier extends Identifier {
 
 	protected ModelIdentifier(int i, String... strings) {
 		super(0, strings[0], strings[1]);
-		this.variant = StringUtils.isEmpty(strings[2]) ? "normal" : strings[2].toLowerCase();
+		this.variant = StringUtils.isEmpty(strings[2]) ? "normal" : strings[2].toLowerCase(Locale.ROOT);
 	}
 
 	public ModelIdentifier(String string) {

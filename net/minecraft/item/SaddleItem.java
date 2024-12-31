@@ -21,18 +21,12 @@ public class SaddleItem extends Item {
 			if (!pigEntity.isSaddled() && !pigEntity.isBaby()) {
 				pigEntity.setSaddled(true);
 				pigEntity.world.playSound(playerEntity, pigEntity.x, pigEntity.y, pigEntity.z, Sounds.ENTITY_PIG_SADDLE, SoundCategory.NEUTRAL, 0.5F, 1.0F);
-				itemStack.count--;
+				itemStack.decrement(1);
 			}
 
 			return true;
 		} else {
 			return false;
 		}
-	}
-
-	@Override
-	public boolean onEntityHit(ItemStack stack, LivingEntity entity1, LivingEntity entity2) {
-		this.method_3353(stack, null, entity1, Hand.MAIN_HAND);
-		return true;
 	}
 }

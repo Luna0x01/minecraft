@@ -13,18 +13,18 @@ import net.minecraft.inventory.DoubleInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.ChestScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.level.storage.LevelDataType;
 
-public class ChestBlockEntity extends class_2737 implements Tickable, Inventory {
-	private ItemStack[] inventoryStacks = new ItemStack[27];
+public class ChestBlockEntity extends class_2737 implements Tickable {
+	private DefaultedList<ItemStack> field_15152 = DefaultedList.ofSize(27, ItemStack.EMPTY);
 	public boolean neighborChestsChecked;
 	public ChestBlockEntity neighborChestNorth;
 	public ChestBlockEntity neighborChestEast;
@@ -35,7 +35,6 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 	public int viewerCount;
 	private int ticksOpen;
 	private ChestBlock.Type field_12843;
-	private String translationKey;
 
 	public ChestBlockEntity() {
 	}
@@ -49,79 +48,36 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 		return 27;
 	}
 
-	@Nullable
 	@Override
-	public ItemStack getInvStack(int slot) {
-		this.method_11662(null);
-		return this.inventoryStacks[slot];
-	}
-
-	@Nullable
-	@Override
-	public ItemStack takeInvStack(int slot, int amount) {
-		this.method_11662(null);
-		ItemStack itemStack = class_2960.method_12933(this.inventoryStacks, slot, amount);
-		if (itemStack != null) {
-			this.markDirty();
+	public boolean isEmpty() {
+		for (ItemStack itemStack : this.field_15152) {
+			if (!itemStack.isEmpty()) {
+				return false;
+			}
 		}
 
-		return itemStack;
-	}
-
-	@Nullable
-	@Override
-	public ItemStack removeInvStack(int slot) {
-		this.method_11662(null);
-		return class_2960.method_12932(this.inventoryStacks, slot);
-	}
-
-	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
-		this.method_11662(null);
-		this.inventoryStacks[slot] = stack;
-		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
-			stack.count = this.getInvMaxStackAmount();
-		}
-
-		this.markDirty();
+		return true;
 	}
 
 	@Override
 	public String getTranslationKey() {
-		return this.hasCustomName() ? this.translationKey : "container.chest";
-	}
-
-	@Override
-	public boolean hasCustomName() {
-		return this.translationKey != null && !this.translationKey.isEmpty();
-	}
-
-	public void setTranslationKeyName(String name) {
-		this.translationKey = name;
+		return this.hasCustomName() ? this.name : "container.chest";
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema("Chest", "Items"));
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemListSchema(ChestBlockEntity.class, "Items"));
 	}
 
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
-		this.inventoryStacks = new ItemStack[this.getInvSize()];
-		if (nbt.contains("CustomName", 8)) {
-			this.translationKey = nbt.getString("CustomName");
+		this.field_15152 = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
+		if (!this.method_11661(nbt)) {
+			class_2960.method_13927(nbt, this.field_15152);
 		}
 
-		if (!this.method_11661(nbt)) {
-			NbtList nbtList = nbt.getList("Items", 10);
-
-			for (int i = 0; i < nbtList.size(); i++) {
-				NbtCompound nbtCompound = nbtList.getCompound(i);
-				int j = nbtCompound.getByte("Slot") & 255;
-				if (j >= 0 && j < this.inventoryStacks.length) {
-					this.inventoryStacks[j] = ItemStack.fromNbt(nbtCompound);
-				}
-			}
+		if (nbt.contains("CustomName", 8)) {
+			this.name = nbt.getString("CustomName");
 		}
 	}
 
@@ -129,22 +85,11 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		if (!this.method_11663(nbt)) {
-			NbtList nbtList = new NbtList();
-
-			for (int i = 0; i < this.inventoryStacks.length; i++) {
-				if (this.inventoryStacks[i] != null) {
-					NbtCompound nbtCompound = new NbtCompound();
-					nbtCompound.putByte("Slot", (byte)i);
-					this.inventoryStacks[i].toNbt(nbtCompound);
-					nbtList.add(nbtCompound);
-				}
-			}
-
-			nbt.put("Items", nbtList);
+			class_2960.method_13923(nbt, this.field_15152);
 		}
 
 		if (this.hasCustomName()) {
-			nbt.putString("CustomName", this.translationKey);
+			nbt.putString("CustomName", this.name);
 		}
 
 		return nbt;
@@ -153,13 +98,6 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 	@Override
 	public int getInvMaxStackAmount() {
 		return 64;
-	}
-
-	@Override
-	public boolean canPlayerUseInv(PlayerEntity player) {
-		return this.world.getBlockEntity(this.pos) != this
-			? false
-			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
 	}
 
 	@Override
@@ -330,8 +268,10 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 
 			this.viewerCount++;
 			this.world.addBlockAction(this.pos, this.getBlock(), 1, this.viewerCount);
-			this.world.updateNeighborsAlways(this.pos, this.getBlock());
-			this.world.updateNeighborsAlways(this.pos.down(), this.getBlock());
+			this.world.method_13692(this.pos, this.getBlock(), false);
+			if (this.method_4806() == ChestBlock.Type.TRAP) {
+				this.world.method_13692(this.pos.down(), this.getBlock(), false);
+			}
 		}
 	}
 
@@ -340,14 +280,11 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 		if (!player.isSpectator() && this.getBlock() instanceof ChestBlock) {
 			this.viewerCount--;
 			this.world.addBlockAction(this.pos, this.getBlock(), 1, this.viewerCount);
-			this.world.updateNeighborsAlways(this.pos, this.getBlock());
-			this.world.updateNeighborsAlways(this.pos.down(), this.getBlock());
+			this.world.method_13692(this.pos, this.getBlock(), false);
+			if (this.method_4806() == ChestBlock.Type.TRAP) {
+				this.world.method_13692(this.pos.down(), this.getBlock(), false);
+			}
 		}
-	}
-
-	@Override
-	public boolean isValidInvStack(int slot, ItemStack stack) {
-		return true;
 	}
 
 	@Override
@@ -381,25 +318,7 @@ public class ChestBlockEntity extends class_2737 implements Tickable, Inventory 
 	}
 
 	@Override
-	public int getProperty(int key) {
-		return 0;
-	}
-
-	@Override
-	public void setProperty(int id, int value) {
-	}
-
-	@Override
-	public int getProperties() {
-		return 0;
-	}
-
-	@Override
-	public void clear() {
-		this.method_11662(null);
-
-		for (int i = 0; i < this.inventoryStacks.length; i++) {
-			this.inventoryStacks[i] = null;
-		}
+	protected DefaultedList<ItemStack> method_13730() {
+		return this.field_15152;
 	}
 }

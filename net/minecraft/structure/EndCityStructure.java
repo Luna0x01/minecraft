@@ -1,7 +1,6 @@
 package net.minecraft.structure;
 
 import java.util.Random;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -42,12 +41,46 @@ public class EndCityStructure extends StructureFeature {
 		l *= 20;
 		k += (random.nextInt(9) + random.nextInt(9)) / 2;
 		l += (random.nextInt(9) + random.nextInt(9)) / 2;
-		return i == k && j == l && this.field_12993.method_11822(i, j);
+		if (i == k && j == l && this.field_12993.method_11822(i, j)) {
+			int m = method_13772(i, j, this.field_12993);
+			return m >= 60;
+		} else {
+			return false;
+		}
 	}
 
 	@Override
 	protected GeneratorConfig getGeneratorConfig(int chunkX, int chunkZ) {
 		return new EndCityStructure.EndCityGeneratorConfig(this.world, this.field_12993, this.random, chunkX, chunkZ);
+	}
+
+	@Override
+	public BlockPos method_9269(World world, BlockPos blockPos, boolean bl) {
+		this.world = world;
+		return method_13774(world, this, blockPos, 20, 11, 10387313, true, 100, bl);
+	}
+
+	private static int method_13772(int i, int j, EndChunkGenerator endChunkGenerator) {
+		Random random = new Random((long)(i + j * 10387313));
+		BlockRotation blockRotation = BlockRotation.values()[random.nextInt(BlockRotation.values().length)];
+		ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
+		endChunkGenerator.method_9195(i, j, chunkBlockStateStorage);
+		int k = 5;
+		int l = 5;
+		if (blockRotation == BlockRotation.CLOCKWISE_90) {
+			k = -5;
+		} else if (blockRotation == BlockRotation.CLOCKWISE_180) {
+			k = -5;
+			l = -5;
+		} else if (blockRotation == BlockRotation.COUNTERCLOCKWISE_90) {
+			l = -5;
+		}
+
+		int m = chunkBlockStateStorage.method_11819(7, 7);
+		int n = chunkBlockStateStorage.method_11819(7, 7 + l);
+		int o = chunkBlockStateStorage.method_11819(7 + k, 7);
+		int p = chunkBlockStateStorage.method_11819(7 + k, 7 + l);
+		return Math.min(Math.min(m, n), Math.min(o, p));
 	}
 
 	public static class EndCityGeneratorConfig extends GeneratorConfig {
@@ -62,30 +95,14 @@ public class EndCityStructure extends StructureFeature {
 		}
 
 		private void method_11833(World world, EndChunkGenerator endChunkGenerator, Random random, int i, int j) {
-			BlockRotation blockRotation = BlockRotation.values()[random.nextInt(BlockRotation.values().length)];
-			ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
-			endChunkGenerator.method_9195(i, j, chunkBlockStateStorage);
-			int k = 5;
-			int l = 5;
-			if (blockRotation == BlockRotation.CLOCKWISE_90) {
-				k = -5;
-			} else if (blockRotation == BlockRotation.CLOCKWISE_180) {
-				k = -5;
-				l = -5;
-			} else if (blockRotation == BlockRotation.COUNTERCLOCKWISE_90) {
-				l = -5;
-			}
-
-			int m = chunkBlockStateStorage.method_11819(7, 7);
-			int n = chunkBlockStateStorage.method_11819(7, 7 + l);
-			int o = chunkBlockStateStorage.method_11819(7 + k, 7);
-			int p = chunkBlockStateStorage.method_11819(7 + k, 7 + l);
-			int q = Math.min(Math.min(m, n), Math.min(o, p));
-			if (q < 60) {
+			Random random2 = new Random((long)(i + j * 10387313));
+			BlockRotation blockRotation = BlockRotation.values()[random2.nextInt(BlockRotation.values().length)];
+			int k = EndCityStructure.method_13772(i, j, endChunkGenerator);
+			if (k < 60) {
 				this.field_12994 = false;
 			} else {
-				BlockPos blockPos = new BlockPos(i * 16 + 8, q, j * 16 + 8);
-				class_2759.method_11837(blockPos, blockRotation, this.field_13015, random);
+				BlockPos blockPos = new BlockPos(i * 16 + 8, k, j * 16 + 8);
+				class_2759.method_11837(world.getSaveHandler().method_11956(), blockPos, blockRotation, this.field_13015, random);
 				this.setBoundingBoxFromChildren();
 				this.field_12994 = true;
 			}
@@ -94,16 +111,6 @@ public class EndCityStructure extends StructureFeature {
 		@Override
 		public boolean isValid() {
 			return this.field_12994;
-		}
-
-		@Override
-		public void serialize(NbtCompound nbt) {
-			super.serialize(nbt);
-		}
-
-		@Override
-		public void deserialize(NbtCompound nbt) {
-			super.deserialize(nbt);
 		}
 	}
 }

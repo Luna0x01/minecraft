@@ -9,7 +9,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.IntProperty;
@@ -38,7 +37,7 @@ public class BannerBlock extends BlockWithEntity {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -67,42 +66,29 @@ public class BannerBlock extends BlockWithEntity {
 		return new BannerBlockEntity();
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.BANNER;
 	}
 
-	@Nullable
-	private ItemStack method_11547(World world, BlockPos blockPos, BlockState blockState) {
+	private ItemStack method_13699(World world, BlockPos blockPos) {
 		BlockEntity blockEntity = world.getBlockEntity(blockPos);
-		if (blockEntity instanceof BannerBlockEntity) {
-			ItemStack itemStack = new ItemStack(Items.BANNER, 1, ((BannerBlockEntity)blockEntity).getBase());
-			NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
-			nbtCompound.remove("x");
-			nbtCompound.remove("y");
-			nbtCompound.remove("z");
-			nbtCompound.remove("id");
-			itemStack.putSubNbt("BlockEntityTag", nbtCompound);
-			return itemStack;
-		} else {
-			return null;
-		}
+		return blockEntity instanceof BannerBlockEntity ? ((BannerBlockEntity)blockEntity).method_13722() : ItemStack.EMPTY;
 	}
 
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		ItemStack itemStack = this.method_11547(world, blockPos, blockState);
-		return itemStack != null ? itemStack : new ItemStack(Items.BANNER);
+		ItemStack itemStack = this.method_13699(world, blockPos);
+		return itemStack.isEmpty() ? new ItemStack(Items.BANNER) : itemStack;
 	}
 
 	@Override
 	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
-		ItemStack itemStack = this.method_11547(world, pos, state);
-		if (itemStack != null) {
-			onBlockBreak(world, pos, itemStack);
-		} else {
+		ItemStack itemStack = this.method_13699(world, pos);
+		if (itemStack.isEmpty()) {
 			super.randomDropAsItem(world, pos, state, chance, id);
+		} else {
+			onBlockBreak(world, pos, itemStack);
 		}
 	}
 
@@ -112,13 +98,10 @@ public class BannerBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
 		if (blockEntity instanceof BannerBlockEntity) {
 			BannerBlockEntity bannerBlockEntity = (BannerBlockEntity)blockEntity;
-			ItemStack itemStack = new ItemStack(Items.BANNER, 1, ((BannerBlockEntity)blockEntity).getBase());
-			NbtCompound nbtCompound = new NbtCompound();
-			BannerBlockEntity.toNbt(nbtCompound, bannerBlockEntity.getBase(), bannerBlockEntity.getPatternsNbt());
-			itemStack.putSubNbt("BlockEntityTag", nbtCompound);
+			ItemStack itemStack = bannerBlockEntity.method_13722();
 			onBlockBreak(world, pos, itemStack);
 		} else {
 			super.method_8651(world, player, pos, state, null, stack);
@@ -146,13 +129,13 @@ public class BannerBlock extends BlockWithEntity {
 		}
 
 		@Override
-		public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-			if (!world.getBlockState(blockPos.down()).getMaterial().isSolid()) {
-				this.dropAsItem(world, blockPos, blockState, 0);
-				world.setAir(blockPos);
+		public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+			if (!world.getBlockState(pos.down()).getMaterial().isSolid()) {
+				this.dropAsItem(world, pos, state, 0);
+				world.setAir(pos);
 			}
 
-			super.method_8641(blockState, world, blockPos, block);
+			super.neighborUpdate(state, world, pos, block, neighborPos);
 		}
 
 		@Override
@@ -207,14 +190,14 @@ public class BannerBlock extends BlockWithEntity {
 		}
 
 		@Override
-		public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-			Direction direction = blockState.get(FACING);
-			if (!world.getBlockState(blockPos.offset(direction.getOpposite())).getMaterial().isSolid()) {
-				this.dropAsItem(world, blockPos, blockState, 0);
-				world.setAir(blockPos);
+		public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+			Direction direction = state.get(FACING);
+			if (!world.getBlockState(pos.offset(direction.getOpposite())).getMaterial().isSolid()) {
+				this.dropAsItem(world, pos, state, 0);
+				world.setAir(pos);
 			}
 
-			super.method_8641(blockState, world, blockPos, block);
+			super.neighborUpdate(state, world, pos, block, neighborPos);
 		}
 
 		@Override

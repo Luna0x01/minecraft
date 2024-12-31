@@ -9,95 +9,96 @@ import net.minecraft.enchantment.EnchantmentTarget;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.PotionUtil;
+import net.minecraft.potion.Potions;
+import net.minecraft.util.collection.DefaultedList;
 
 public abstract class ItemGroup {
 	public static final ItemGroup[] itemGroups = new ItemGroup[12];
 	public static final ItemGroup BUILDING_BLOCKS = new ItemGroup(0, "buildingBlocks") {
 		@Override
-		public Item getIconItem() {
-			return Item.fromBlock(Blocks.BRICKS);
+		public ItemStack method_13647() {
+			return new ItemStack(Item.fromBlock(Blocks.BRICKS));
 		}
 	};
 	public static final ItemGroup DECORATIONS = new ItemGroup(1, "decorations") {
 		@Override
-		public Item getIconItem() {
-			return Item.fromBlock(Blocks.DOUBLE_PLANT);
-		}
-
-		@Override
-		public int getIconMeta() {
-			return DoublePlantBlock.DoublePlantType.PAEONIA.getId();
+		public ItemStack method_13647() {
+			return new ItemStack(Item.fromBlock(Blocks.DOUBLE_PLANT), 1, DoublePlantBlock.DoublePlantType.PAEONIA.getId());
 		}
 	};
 	public static final ItemGroup REDSTONE = new ItemGroup(2, "redstone") {
 		@Override
-		public Item getIconItem() {
-			return Items.REDSTONE;
+		public ItemStack method_13647() {
+			return new ItemStack(Items.REDSTONE);
 		}
 	};
 	public static final ItemGroup TRANSPORTATION = new ItemGroup(3, "transportation") {
 		@Override
-		public Item getIconItem() {
-			return Item.fromBlock(Blocks.POWERED_RAIL);
+		public ItemStack method_13647() {
+			return new ItemStack(Item.fromBlock(Blocks.POWERED_RAIL));
 		}
 	};
-	public static final ItemGroup MISC = (new ItemGroup(4, "misc") {
+	public static final ItemGroup MISC = new ItemGroup(4, "misc") {
 		@Override
-		public Item getIconItem() {
-			return Items.LAVA_BUCKET;
+		public ItemStack method_13647() {
+			return new ItemStack(Items.LAVA_BUCKET);
 		}
-	}).setEnchantments(new EnchantmentTarget[]{EnchantmentTarget.ALL});
+	};
 	public static final ItemGroup SEARCH = (new ItemGroup(5, "search") {
 		@Override
-		public Item getIconItem() {
-			return Items.COMPASS;
+		public ItemStack method_13647() {
+			return new ItemStack(Items.COMPASS);
 		}
 	}).setTexture("item_search.png");
 	public static final ItemGroup FOOD = new ItemGroup(6, "food") {
 		@Override
-		public Item getIconItem() {
-			return Items.APPLE;
+		public ItemStack method_13647() {
+			return new ItemStack(Items.APPLE);
 		}
 	};
 	public static final ItemGroup TOOLS = (new ItemGroup(7, "tools") {
 		@Override
-		public Item getIconItem() {
-			return Items.IRON_AXE;
+		public ItemStack method_13647() {
+			return new ItemStack(Items.IRON_AXE);
 		}
-	}).setEnchantments(new EnchantmentTarget[]{EnchantmentTarget.DIGGER, EnchantmentTarget.FISHING_ROD, EnchantmentTarget.BREAKABLE});
+	}).setEnchantments(new EnchantmentTarget[]{EnchantmentTarget.ALL, EnchantmentTarget.DIGGER, EnchantmentTarget.FISHING_ROD, EnchantmentTarget.BREAKABLE});
 	public static final ItemGroup COMBAT = (new ItemGroup(8, "combat") {
 			@Override
-			public Item getIconItem() {
-				return Items.GOLDEN_SWORD;
+			public ItemStack method_13647() {
+				return new ItemStack(Items.GOLDEN_SWORD);
 			}
 		})
 		.setEnchantments(
 			new EnchantmentTarget[]{
+				EnchantmentTarget.ALL,
 				EnchantmentTarget.ALL_ARMOR,
 				EnchantmentTarget.FEET,
 				EnchantmentTarget.HEAD,
 				EnchantmentTarget.LEGS,
 				EnchantmentTarget.ARMOR_CHEST,
 				EnchantmentTarget.BOW,
-				EnchantmentTarget.WEAPON
+				EnchantmentTarget.WEAPON,
+				EnchantmentTarget.WEARABLE,
+				EnchantmentTarget.BREAKABLE
 			}
 		);
 	public static final ItemGroup BREWING = new ItemGroup(9, "brewing") {
 		@Override
-		public Item getIconItem() {
-			return Items.POTION;
+		public ItemStack method_13647() {
+			return PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.WATER);
 		}
 	};
 	public static final ItemGroup MATERIALS = new ItemGroup(10, "materials") {
 		@Override
-		public Item getIconItem() {
-			return Items.STICK;
+		public ItemStack method_13647() {
+			return new ItemStack(Items.STICK);
 		}
 	};
 	public static final ItemGroup INVENTORY = (new ItemGroup(11, "inventory") {
 		@Override
-		public Item getIconItem() {
-			return Item.fromBlock(Blocks.CHEST);
+		public ItemStack method_13647() {
+			return new ItemStack(Item.fromBlock(Blocks.CHEST));
 		}
 	}).setTexture("inventory.png").setNoScrollbar().setNoTooltip();
 	private final int index;
@@ -111,6 +112,7 @@ public abstract class ItemGroup {
 	public ItemGroup(int i, String string) {
 		this.index = i;
 		this.id = string;
+		this.item = ItemStack.EMPTY;
 		itemGroups[i] = this;
 	}
 
@@ -127,18 +129,14 @@ public abstract class ItemGroup {
 	}
 
 	public ItemStack getIcon() {
-		if (this.item == null) {
-			this.item = new ItemStack(this.getIconItem(), 1, this.getIconMeta());
+		if (this.item.isEmpty()) {
+			this.item = this.method_13647();
 		}
 
 		return this.item;
 	}
 
-	public abstract Item getIconItem();
-
-	public int getIconMeta() {
-		return 0;
-	}
+	public abstract ItemStack method_13647();
 
 	public String getTexture() {
 		return this.texture;
@@ -198,15 +196,15 @@ public abstract class ItemGroup {
 		}
 	}
 
-	public void showItems(List<ItemStack> stacks) {
+	public void method_13646(DefaultedList<ItemStack> defaultedList) {
 		for (Item item : Item.REGISTRY) {
 			if (item != null && item.getItemGroup() == this) {
-				item.appendItemStacks(item, this, stacks);
+				item.method_13648(item, this, defaultedList);
 			}
 		}
 
 		if (this.getEnchantments() != null) {
-			this.showBooks(stacks, this.getEnchantments());
+			this.showBooks(defaultedList, this.getEnchantments());
 		}
 	}
 

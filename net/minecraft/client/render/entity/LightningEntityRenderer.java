@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
@@ -111,6 +112,7 @@ public class LightningEntityRenderer extends EntityRenderer<LightningBoltEntity>
 		GlStateManager.enableTexture();
 	}
 
+	@Nullable
 	protected Identifier getTexture(LightningBoltEntity lightningBoltEntity) {
 		return null;
 	}

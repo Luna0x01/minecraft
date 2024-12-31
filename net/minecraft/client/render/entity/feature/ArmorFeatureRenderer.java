@@ -3,7 +3,7 @@ package net.minecraft.client.render.entity.feature;
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
-import javax.annotation.Nullable;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.entity.EquipmentSlot;
@@ -43,8 +43,8 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 	}
 
 	private void method_10278(LivingEntity livingEntity, float f, float g, float h, float i, float j, float k, float l, EquipmentSlot equipmentSlot) {
-		ItemStack itemStack = this.method_10279(livingEntity, equipmentSlot);
-		if (itemStack != null && itemStack.getItem() instanceof ArmorItem) {
+		ItemStack itemStack = livingEntity.getStack(equipmentSlot);
+		if (itemStack.getItem() instanceof ArmorItem) {
 			ArmorItem armorItem = (ArmorItem)itemStack.getItem();
 			if (armorItem.method_11352() == equipmentSlot) {
 				T entityModel = this.method_12480(equipmentSlot);
@@ -77,11 +77,6 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 		}
 	}
 
-	@Nullable
-	public ItemStack method_10279(LivingEntity livingEntity, EquipmentSlot equipmentSlot) {
-		return livingEntity.getStack(equipmentSlot);
-	}
-
 	public T method_12480(EquipmentSlot equipmentSlot) {
 		return this.method_12481(equipmentSlot) ? this.secondLayer : this.firstLayer;
 	}
@@ -104,6 +99,7 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 	) {
 		float m = (float)livingEntity.ticksAlive + h;
 		livingEntityRenderer.bindTexture(GLINT_TEXTURE);
+		MinecraftClient.getInstance().gameRenderer.method_13847(true);
 		GlStateManager.enableBlend();
 		GlStateManager.depthFunc(514);
 		GlStateManager.depthMask(false);
@@ -123,6 +119,7 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 			GlStateManager.translate(0.0F, m * (0.001F + (float)o * 0.003F) * 20.0F, 0.0F);
 			GlStateManager.matrixMode(5888);
 			entityModel.render(livingEntity, f, g, i, j, k, l);
+			GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO);
 		}
 
 		GlStateManager.matrixMode(5890);
@@ -132,6 +129,7 @@ public abstract class ArmorFeatureRenderer<T extends EntityModel> implements Fea
 		GlStateManager.depthMask(true);
 		GlStateManager.depthFunc(515);
 		GlStateManager.disableBlend();
+		MinecraftClient.getInstance().gameRenderer.method_13847(false);
 	}
 
 	private Identifier getArmorTexture(ArmorItem armor, boolean secondLayer) {

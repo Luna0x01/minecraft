@@ -3,7 +3,6 @@ package net.minecraft.entity.effect;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.item.FishItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -18,7 +17,7 @@ public class StatusEffectStrings {
 	private static final List<StatusEffectStrings.class_2697<Item>> field_12340 = Lists.newArrayList();
 	private static final List<StatusEffectStrings.class_2696> field_12341 = Lists.newArrayList();
 	private static final Predicate<ItemStack> field_12342 = new Predicate<ItemStack>() {
-		public boolean apply(@Nullable ItemStack itemStack) {
+		public boolean apply(ItemStack itemStack) {
 			for (StatusEffectStrings.class_2696 lv : StatusEffectStrings.field_12341) {
 				if (lv.apply(itemStack)) {
 					return true;
@@ -89,9 +88,8 @@ public class StatusEffectStrings {
 		return false;
 	}
 
-	@Nullable
-	public static ItemStack method_11427(ItemStack itemStack, @Nullable ItemStack itemStack2) {
-		if (itemStack2 != null) {
+	public static ItemStack method_11427(ItemStack itemStack, ItemStack itemStack2) {
+		if (!itemStack2.isEmpty()) {
 			Potion potion = PotionUtil.getPotion(itemStack2);
 			Item item = itemStack2.getItem();
 			int i = 0;
@@ -211,8 +209,8 @@ public class StatusEffectStrings {
 			this.field_12344 = i;
 		}
 
-		public boolean apply(@Nullable ItemStack itemStack) {
-			return itemStack != null && itemStack.getItem() == this.field_12343 && (this.field_12344 == -1 || this.field_12344 == itemStack.getData());
+		public boolean apply(ItemStack itemStack) {
+			return itemStack.getItem() == this.field_12343 && (this.field_12344 == -1 || this.field_12344 == itemStack.getData());
 		}
 	}
 

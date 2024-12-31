@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -16,6 +17,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.PotionUtil;
 import net.minecraft.potion.Potions;
+import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -41,7 +43,7 @@ public class CauldronBlock extends Block {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
 		appendCollisionBoxes(pos, entityBox, boxes, field_12611);
 		appendCollisionBoxes(pos, entityBox, boxes, field_12615);
 		appendCollisionBoxes(pos, entityBox, boxes, field_12612);
@@ -75,65 +77,75 @@ public class CauldronBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if (itemStack == null) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (itemStack.isEmpty()) {
 			return true;
 		} else {
-			int i = (Integer)blockState.get(LEVEL);
+			int i = (Integer)state.get(LEVEL);
 			Item item = itemStack.getItem();
 			if (item == Items.WATER_BUCKET) {
 				if (i < 3 && !world.isClient) {
-					if (!playerEntity.abilities.creativeMode) {
-						playerEntity.equipStack(hand, new ItemStack(Items.BUCKET));
+					if (!player.abilities.creativeMode) {
+						player.equipStack(hand, new ItemStack(Items.BUCKET));
 					}
 
-					playerEntity.incrementStat(Stats.CAULDRONS_FILLED);
-					this.setLevel(world, blockPos, blockState, 3);
+					player.incrementStat(Stats.CAULDRONS_FILLED);
+					this.setLevel(world, pos, state, 3);
+					world.method_11486(null, pos, Sounds.ITEM_BUCKET_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
 				}
 
 				return true;
 			} else if (item == Items.BUCKET) {
 				if (i == 3 && !world.isClient) {
-					if (!playerEntity.abilities.creativeMode) {
-						itemStack.count--;
-						if (itemStack.count == 0) {
-							playerEntity.equipStack(hand, new ItemStack(Items.WATER_BUCKET));
-						} else if (!playerEntity.inventory.insertStack(new ItemStack(Items.WATER_BUCKET))) {
-							playerEntity.dropItem(new ItemStack(Items.WATER_BUCKET), false);
+					if (!player.abilities.creativeMode) {
+						itemStack.decrement(1);
+						if (itemStack.isEmpty()) {
+							player.equipStack(hand, new ItemStack(Items.WATER_BUCKET));
+						} else if (!player.inventory.insertStack(new ItemStack(Items.WATER_BUCKET))) {
+							player.dropItem(new ItemStack(Items.WATER_BUCKET), false);
 						}
 					}
 
-					playerEntity.incrementStat(Stats.CAULDRONS_USED);
-					this.setLevel(world, blockPos, blockState, 0);
+					player.incrementStat(Stats.CAULDRONS_USED);
+					this.setLevel(world, pos, state, 0);
+					world.method_11486(null, pos, Sounds.ITEM_BUCKET_FILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
 				}
 
 				return true;
 			} else if (item == Items.GLASS_BOTTLE) {
 				if (i > 0 && !world.isClient) {
-					if (!playerEntity.abilities.creativeMode) {
+					if (!player.abilities.creativeMode) {
 						ItemStack itemStack2 = PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.WATER);
-						playerEntity.incrementStat(Stats.CAULDRONS_USED);
-						if (--itemStack.count == 0) {
-							playerEntity.equipStack(hand, itemStack2);
-						} else if (!playerEntity.inventory.insertStack(itemStack2)) {
-							playerEntity.dropItem(itemStack2, false);
-						} else if (playerEntity instanceof ServerPlayerEntity) {
-							((ServerPlayerEntity)playerEntity).refreshScreenHandler(playerEntity.playerScreenHandler);
+						player.incrementStat(Stats.CAULDRONS_USED);
+						itemStack.decrement(1);
+						if (itemStack.isEmpty()) {
+							player.equipStack(hand, itemStack2);
+						} else if (!player.inventory.insertStack(itemStack2)) {
+							player.dropItem(itemStack2, false);
+						} else if (player instanceof ServerPlayerEntity) {
+							((ServerPlayerEntity)player).refreshScreenHandler(player.playerScreenHandler);
 						}
 					}
 
-					this.setLevel(world, blockPos, blockState, i - 1);
+					world.method_11486(null, pos, Sounds.ITEM_BOTTLE_FILL, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					this.setLevel(world, pos, state, i - 1);
+				}
+
+				return true;
+			} else if (item == Items.POTION && PotionUtil.getPotion(itemStack) == Potions.WATER) {
+				if (i < 3 && !world.isClient) {
+					if (!player.abilities.creativeMode) {
+						ItemStack itemStack3 = new ItemStack(Items.GLASS_BOTTLE);
+						player.incrementStat(Stats.CAULDRONS_USED);
+						player.equipStack(hand, itemStack3);
+						if (player instanceof ServerPlayerEntity) {
+							((ServerPlayerEntity)player).refreshScreenHandler(player.playerScreenHandler);
+						}
+					}
+
+					world.method_11486(null, pos, Sounds.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					this.setLevel(world, pos, state, i + 1);
 				}
 
 				return true;
@@ -142,32 +154,29 @@ public class CauldronBlock extends Block {
 					ArmorItem armorItem = (ArmorItem)item;
 					if (armorItem.getMaterial() == ArmorItem.Material.LEATHER && armorItem.hasColor(itemStack) && !world.isClient) {
 						armorItem.removeColor(itemStack);
-						this.setLevel(world, blockPos, blockState, i - 1);
-						playerEntity.incrementStat(Stats.ARMOR_CLEANED);
+						this.setLevel(world, pos, state, i - 1);
+						player.incrementStat(Stats.ARMOR_CLEANED);
 						return true;
 					}
 				}
 
 				if (i > 0 && item instanceof BannerItem) {
 					if (BannerBlockEntity.getPatternCount(itemStack) > 0 && !world.isClient) {
-						ItemStack itemStack3 = itemStack.copy();
-						itemStack3.count = 1;
-						BannerBlockEntity.loadFromItemStack(itemStack3);
-						playerEntity.incrementStat(Stats.BANNER_CLEANED);
-						if (!playerEntity.abilities.creativeMode) {
-							itemStack.count--;
+						ItemStack itemStack4 = itemStack.copy();
+						itemStack4.setCount(1);
+						BannerBlockEntity.loadFromItemStack(itemStack4);
+						player.incrementStat(Stats.BANNER_CLEANED);
+						if (!player.abilities.creativeMode) {
+							itemStack.decrement(1);
+							this.setLevel(world, pos, state, i - 1);
 						}
 
-						if (itemStack.count == 0) {
-							playerEntity.equipStack(hand, itemStack3);
-						} else if (!playerEntity.inventory.insertStack(itemStack3)) {
-							playerEntity.dropItem(itemStack3, false);
-						} else if (playerEntity instanceof ServerPlayerEntity) {
-							((ServerPlayerEntity)playerEntity).refreshScreenHandler(playerEntity.playerScreenHandler);
-						}
-
-						if (!playerEntity.abilities.creativeMode) {
-							this.setLevel(world, blockPos, blockState, i - 1);
+						if (itemStack.isEmpty()) {
+							player.equipStack(hand, itemStack4);
+						} else if (!player.inventory.insertStack(itemStack4)) {
+							player.dropItem(itemStack4, false);
+						} else if (player instanceof ServerPlayerEntity) {
+							((ServerPlayerEntity)player).refreshScreenHandler(player.playerScreenHandler);
 						}
 					}
 
@@ -197,7 +206,6 @@ public class CauldronBlock extends Block {
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.CAULDRON;

@@ -1,45 +1,54 @@
 package net.minecraft.screen;
 
-import javax.annotation.Nullable;
-import net.minecraft.entity.passive.HorseBaseEntity;
+import net.minecraft.class_3135;
+import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.util.HorseArmorType;
 
 public class HorseScreenHandler extends ScreenHandler {
 	private final Inventory playerInv;
-	private final HorseBaseEntity entity;
+	private final AbstractHorseEntity field_15101;
 
-	public HorseScreenHandler(Inventory inventory, Inventory inventory2, HorseBaseEntity horseBaseEntity, PlayerEntity playerEntity) {
+	public HorseScreenHandler(Inventory inventory, Inventory inventory2, AbstractHorseEntity abstractHorseEntity, PlayerEntity playerEntity) {
 		this.playerInv = inventory2;
-		this.entity = horseBaseEntity;
+		this.field_15101 = abstractHorseEntity;
 		int i = 3;
 		inventory2.onInvOpen(playerEntity);
 		int j = -18;
 		this.addSlot(new Slot(inventory2, 0, 8, 18) {
 			@Override
-			public boolean canInsert(@Nullable ItemStack stack) {
-				return super.canInsert(stack) && stack.getItem() == Items.SADDLE && !this.hasStack();
-			}
-		});
-		this.addSlot(new Slot(inventory2, 1, 8, 36) {
-			@Override
-			public boolean canInsert(@Nullable ItemStack stack) {
-				return super.canInsert(stack) && horseBaseEntity.method_13129().method_13152() && HorseArmorType.method_13139(stack.getItem());
+			public boolean canInsert(ItemStack stack) {
+				return stack.getItem() == Items.SADDLE && !this.hasStack() && abstractHorseEntity.method_13974();
 			}
 
 			@Override
 			public boolean doDrawHoveringEffect() {
-				return horseBaseEntity.method_13129().method_13152();
+				return abstractHorseEntity.method_13974();
 			}
 		});
-		if (horseBaseEntity.hasChest()) {
+		this.addSlot(new Slot(inventory2, 1, 8, 36) {
+			@Override
+			public boolean canInsert(ItemStack stack) {
+				return abstractHorseEntity.method_14001(stack);
+			}
+
+			@Override
+			public boolean doDrawHoveringEffect() {
+				return abstractHorseEntity.method_13984();
+			}
+
+			@Override
+			public int getMaxStackAmount() {
+				return 1;
+			}
+		});
+		if (abstractHorseEntity instanceof class_3135 && ((class_3135)abstractHorseEntity).method_13963()) {
 			for (int k = 0; k < 3; k++) {
-				for (int l = 0; l < 5; l++) {
-					this.addSlot(new Slot(inventory2, 2 + l + k * 5, 80 + l * 18, 18 + k * 18));
+				for (int l = 0; l < ((class_3135)abstractHorseEntity).method_13965(); l++) {
+					this.addSlot(new Slot(inventory2, 2 + l + k * ((class_3135)abstractHorseEntity).method_13965(), 80 + l * 18, 18 + k * 18));
 				}
 			}
 		}
@@ -57,35 +66,34 @@ public class HorseScreenHandler extends ScreenHandler {
 
 	@Override
 	public boolean canUse(PlayerEntity player) {
-		return this.playerInv.canPlayerUseInv(player) && this.entity.isAlive() && this.entity.distanceTo(player) < 8.0F;
+		return this.playerInv.canPlayerUseInv(player) && this.field_15101.isAlive() && this.field_15101.distanceTo(player) < 8.0F;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (invSlot < this.playerInv.getInvSize()) {
 				if (!this.insertItem(itemStack2, this.playerInv.getInvSize(), this.slots.size(), true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (this.getSlot(1).canInsert(itemStack2) && !this.getSlot(1).hasStack()) {
 				if (!this.insertItem(itemStack2, 1, 2, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (this.getSlot(0).canInsert(itemStack2)) {
 				if (!this.insertItem(itemStack2, 0, 1, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (this.playerInv.getInvSize() <= 2 || !this.insertItem(itemStack2, 2, this.playerInv.getInvSize(), false)) {
-				return null;
+				return ItemStack.EMPTY;
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}

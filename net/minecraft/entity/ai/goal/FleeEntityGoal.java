@@ -15,7 +15,7 @@ import net.minecraft.util.math.Vec3d;
 public class FleeEntityGoal<T extends Entity> extends Goal {
 	private final Predicate<Entity> inclusionSelector = new Predicate<Entity>() {
 		public boolean apply(@Nullable Entity entity) {
-			return entity.isAlive() && FleeEntityGoal.this.mob.getVisibilityCache().canSee(entity);
+			return entity.isAlive() && FleeEntityGoal.this.mob.getVisibilityCache().canSee(entity) && !FleeEntityGoal.this.mob.isTeammate(entity);
 		}
 	};
 	protected PathAwareEntity mob;

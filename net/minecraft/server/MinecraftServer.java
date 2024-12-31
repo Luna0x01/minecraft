@@ -18,7 +18,9 @@ import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.Proxy;
+import java.net.URLEncoder;
 import java.security.KeyPair;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -100,6 +102,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	public String progressType;
 	public int progress;
 	private boolean onlineMode;
+	private boolean field_15357;
 	private boolean spawnAnimals;
 	private boolean spawnNpcs;
 	private boolean pvpEnabled;
@@ -197,6 +200,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.serverOperation = operation;
 	}
 
+	@Nullable
 	public synchronized String getServerOperation() {
 		return this.serverOperation;
 	}
@@ -292,7 +296,11 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	public void loadResourcePack(String levelName, SaveHandler saveHandler) {
 		File file = new File(saveHandler.getWorldFolder(), "resources.zip");
 		if (file.isFile()) {
-			this.setResourcePack("level://" + levelName + "/" + "resources.zip", "");
+			try {
+				this.setResourcePack("level://" + URLEncoder.encode(levelName, Charsets.UTF_8.toString()) + "/" + "resources.zip", "");
+			} catch (UnsupportedEncodingException var5) {
+				LOGGER.warn("Something went wrong url encoding {}", new Object[]{levelName});
+			}
 		}
 	}
 
@@ -388,7 +396,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				this.timeReference = getTimeMillis();
 				long l = 0L;
 				this.serverMetadata.setDescription(new LiteralText(this.motd));
-				this.serverMetadata.setVersion(new ServerMetadata.Version("1.10.2", 210));
+				this.serverMetadata.setVersion(new ServerMetadata.Version("1.11.2", 316));
 				this.setServerMeta(this.serverMetadata);
 
 				while (this.running) {
@@ -637,7 +645,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	public String getVersion() {
-		return "1.10.2";
+		return "1.11.2";
 	}
 
 	public int getCurrentPlayerCount() {
@@ -885,6 +893,10 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 	public void setOnlineMode(boolean onlineMode) {
 		this.onlineMode = onlineMode;
+	}
+
+	public boolean method_13912() {
+		return this.field_15357;
 	}
 
 	public boolean shouldSpawnAnimals() {

@@ -254,6 +254,13 @@ public class DataTracker {
 
 	public void clearDirty() {
 		this.dirty = false;
+		this.lock.readLock().lock();
+
+		for (DataTracker.DataEntry<?> dataEntry : this.field_13833.values()) {
+			dataEntry.setModified(false);
+		}
+
+		this.lock.readLock().unlock();
 	}
 
 	public static class DataEntry<T> {

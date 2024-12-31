@@ -116,7 +116,6 @@ public abstract class PlayerManager {
 		);
 		ServerWorld serverWorld = this.server.getWorld(serverPlayerEntity.dimension);
 		LevelProperties levelProperties = serverWorld.getLevelProperties();
-		BlockPos blockPos = serverWorld.getSpawnPos();
 		this.setGameMode(serverPlayerEntity, null, serverWorld);
 		ServerPlayNetworkHandler serverPlayNetworkHandler = new ServerPlayNetworkHandler(this.server, clientConnection, serverPlayerEntity);
 		serverPlayNetworkHandler.sendPacket(
@@ -135,7 +134,6 @@ public abstract class PlayerManager {
 			new CustomPayloadS2CPacket("MC|Brand", new PacketByteBuf(Unpooled.buffer()).writeString(this.getServer().getServerModName()))
 		);
 		serverPlayNetworkHandler.sendPacket(new DifficultyS2CPacket(levelProperties.getDifficulty(), levelProperties.isDifficultyLocked()));
-		serverPlayNetworkHandler.sendPacket(new PlayerSpawnPositionS2CPacket(blockPos));
 		serverPlayNetworkHandler.sendPacket(new PlayerAbilitiesS2CPacket(serverPlayerEntity.abilities));
 		serverPlayNetworkHandler.sendPacket(new HeldItemChangeS2CPacket(serverPlayerEntity.inventory.selectedSlot));
 		this.method_12831(serverPlayerEntity);
@@ -163,36 +161,29 @@ public abstract class PlayerManager {
 			serverPlayNetworkHandler.sendPacket(new EntityStatusEffectS2CPacket(serverPlayerEntity.getEntityId(), statusEffectInstance));
 		}
 
-		if (nbtCompound != null) {
-			if (nbtCompound.contains("RootVehicle", 10)) {
-				NbtCompound nbtCompound2 = nbtCompound.getCompound("RootVehicle");
-				Entity entity = ThreadedAnvilChunkStorage.method_11784(nbtCompound2.getCompound("Entity"), serverWorld, true);
-				if (entity != null) {
-					UUID uUID = nbtCompound2.getUuid("Attach");
-					if (entity.getUuid().equals(uUID)) {
-						serverPlayerEntity.startRiding(entity, true);
-					} else {
-						for (Entity entity2 : entity.getPassengersDeep()) {
-							if (entity2.getUuid().equals(uUID)) {
-								serverPlayerEntity.startRiding(entity2, true);
-								break;
-							}
-						}
-					}
-
-					if (!serverPlayerEntity.hasMount()) {
-						LOGGER.warn("Couldn't reattach entity to player");
-						serverWorld.method_3700(entity);
-
-						for (Entity entity3 : entity.getPassengersDeep()) {
-							serverWorld.method_3700(entity3);
+		if (nbtCompound != null && nbtCompound.contains("RootVehicle", 10)) {
+			NbtCompound nbtCompound2 = nbtCompound.getCompound("RootVehicle");
+			Entity entity = ThreadedAnvilChunkStorage.method_11784(nbtCompound2.getCompound("Entity"), serverWorld, true);
+			if (entity != null) {
+				UUID uUID = nbtCompound2.getUuid("Attach");
+				if (entity.getUuid().equals(uUID)) {
+					serverPlayerEntity.startRiding(entity, true);
+				} else {
+					for (Entity entity2 : entity.getPassengersDeep()) {
+						if (entity2.getUuid().equals(uUID)) {
+							serverPlayerEntity.startRiding(entity2, true);
+							break;
 						}
 					}
 				}
-			} else if (nbtCompound.contains("Riding", 10)) {
-				Entity entity4 = ThreadedAnvilChunkStorage.method_11784(nbtCompound.getCompound("Riding"), serverWorld, true);
-				if (entity4 != null) {
-					serverPlayerEntity.startRiding(entity4, true);
+
+				if (!serverPlayerEntity.hasMount()) {
+					LOGGER.warn("Couldn't reattach entity to player");
+					serverWorld.method_3700(entity);
+
+					for (Entity entity3 : entity.getPassengersDeep()) {
+						serverWorld.method_3700(entity3);
+					}
 				}
 			}
 		}
@@ -271,6 +262,7 @@ public abstract class PlayerManager {
 		return PlayerWorldManager.method_2104(this.getViewDistance());
 	}
 
+	@Nullable
 	public NbtCompound loadPlayerData(ServerPlayerEntity player) {
 		NbtCompound nbtCompound = this.server.worlds[0].getLevelProperties().getNbt();
 		NbtCompound nbtCompound2;
@@ -757,6 +749,8 @@ public abstract class PlayerManager {
 		player.networkHandler.sendPacket(new WorldBorderS2CPacket(worldBorder, WorldBorderS2CPacket.Type.INITIALIZE));
 		player.networkHandler
 			.sendPacket(new WorldTimeUpdateS2CPacket(world.getLastUpdateTime(), world.getTimeOfDay(), world.getGameRules().getBoolean("doDaylightCycle")));
+		BlockPos blockPos = world.getSpawnPos();
+		player.networkHandler.sendPacket(new PlayerSpawnPositionS2CPacket(blockPos));
 		if (world.isRaining()) {
 			player.networkHandler.sendPacket(new GameStateChangeS2CPacket(1, 0.0F));
 			player.networkHandler.sendPacket(new GameStateChangeS2CPacket(7, world.getRainGradient(1.0F)));

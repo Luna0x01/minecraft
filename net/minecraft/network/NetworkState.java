@@ -303,12 +303,12 @@ public enum NetworkState {
 
 	static {
 		for (NetworkState networkState : values()) {
-			int k = networkState.getId();
-			if (k < -1 || k > 2) {
-				throw new Error("Invalid protocol ID " + Integer.toString(k));
+			int i = networkState.getId();
+			if (i < -1 || i > 2) {
+				throw new Error("Invalid protocol ID " + Integer.toString(i));
 			}
 
-			NetworkState.networkStates[k - -1] = networkState;
+			networkStates[i - -1] = networkState;
 
 			for (NetworkSide networkSide : networkState.packetClasses.keySet()) {
 				for (Class<? extends Packet<?>> class_ : ((BiMap)networkState.packetClasses.get(networkSide)).values()) {

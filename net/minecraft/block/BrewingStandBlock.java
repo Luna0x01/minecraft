@@ -65,7 +65,7 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
 		appendCollisionBoxes(pos, entityBox, boxes, field_12593);
 		appendCollisionBoxes(pos, entityBox, boxes, field_12592);
 	}
@@ -76,25 +76,14 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
-				playerEntity.openInventory((BrewingStandBlockEntity)blockEntity);
-				playerEntity.incrementStat(Stats.INTERACTIONS_WITH_BREWING_STAND);
+				player.openInventory((BrewingStandBlockEntity)blockEntity);
+				player.incrementStat(Stats.INTERACTIONS_WITH_BREWING_STAND);
 			}
 
 			return true;
@@ -129,7 +118,6 @@ public class BrewingStandBlock extends BlockWithEntity {
 		super.onBreaking(world, pos, state);
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.BREWING_STAND;

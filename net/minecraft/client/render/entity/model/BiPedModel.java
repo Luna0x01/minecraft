@@ -5,6 +5,7 @@ import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 
 public class BiPedModel extends EntityModel {
@@ -260,7 +261,13 @@ public class BiPedModel extends EntityModel {
 	}
 
 	protected HandOption method_12222(Entity entity) {
-		return entity instanceof LivingEntity ? ((LivingEntity)entity).getDurability() : HandOption.RIGHT;
+		if (entity instanceof LivingEntity) {
+			LivingEntity livingEntity = (LivingEntity)entity;
+			HandOption handOption = livingEntity.getDurability();
+			return livingEntity.mainHand == Hand.MAIN_HAND ? handOption : handOption.method_13037();
+		} else {
+			return HandOption.RIGHT;
+		}
 	}
 
 	public static enum class_2850 {

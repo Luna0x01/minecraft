@@ -17,15 +17,15 @@ public class DelegatingRealmsButtonWidget extends ButtonWidget {
 	}
 
 	public int getId() {
-		return super.id;
+		return this.id;
 	}
 
 	public boolean isActive() {
-		return super.active;
+		return this.active;
 	}
 
 	public void setActive(boolean value) {
-		super.active = value;
+		this.active = value;
 	}
 
 	public void setMessage(String message) {
@@ -38,7 +38,7 @@ public class DelegatingRealmsButtonWidget extends ButtonWidget {
 	}
 
 	public int getY() {
-		return super.y;
+		return this.y;
 	}
 
 	@Override

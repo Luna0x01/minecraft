@@ -46,7 +46,7 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 	private StatusEffect field_12839;
 	@Nullable
 	private StatusEffect field_12840;
-	private ItemStack priceStack;
+	private ItemStack priceStack = ItemStack.EMPTY;
 	private String customName;
 
 	@Override
@@ -246,41 +246,42 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 		return 1;
 	}
 
-	@Nullable
 	@Override
-	public ItemStack getInvStack(int slot) {
-		return slot == 0 ? this.priceStack : null;
+	public boolean isEmpty() {
+		return this.priceStack.isEmpty();
 	}
 
-	@Nullable
+	@Override
+	public ItemStack getInvStack(int slot) {
+		return slot == 0 ? this.priceStack : ItemStack.EMPTY;
+	}
+
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (slot != 0 || this.priceStack == null) {
-			return null;
-		} else if (amount >= this.priceStack.count) {
+		if (slot != 0 || this.priceStack.isEmpty()) {
+			return ItemStack.EMPTY;
+		} else if (amount >= this.priceStack.getCount()) {
 			ItemStack itemStack = this.priceStack;
-			this.priceStack = null;
+			this.priceStack = ItemStack.EMPTY;
 			return itemStack;
 		} else {
-			this.priceStack.count -= amount;
-			return new ItemStack(this.priceStack.getItem(), amount, this.priceStack.getData());
+			return this.priceStack.split(amount);
 		}
 	}
 
-	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
 		if (slot == 0) {
 			ItemStack itemStack = this.priceStack;
-			this.priceStack = null;
+			this.priceStack = ItemStack.EMPTY;
 			return itemStack;
 		} else {
-			return null;
+			return ItemStack.EMPTY;
 		}
 	}
 
 	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
+	public void setInvStack(int slot, ItemStack stack) {
 		if (slot == 0) {
 			this.priceStack = stack;
 		}
@@ -370,7 +371,7 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 
 	@Override
 	public void clear() {
-		this.priceStack = null;
+		this.priceStack = ItemStack.EMPTY;
 	}
 
 	@Override
@@ -399,8 +400,8 @@ public class BeaconBlockEntity extends LockableContainerBlockEntity implements T
 	}
 
 	static {
-		for (StatusEffect[] statusEffects2 : EFFECTS) {
-			Collections.addAll(field_12838, statusEffects2);
+		for (StatusEffect[] statusEffects : EFFECTS) {
+			Collections.addAll(field_12838, statusEffects);
 		}
 	}
 

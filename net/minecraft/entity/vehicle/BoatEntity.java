@@ -10,6 +10,7 @@ import net.minecraft.block.PlanksBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.ProjectileDamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -30,7 +31,6 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class BoatEntity extends Entity {
@@ -99,7 +99,7 @@ public class BoatEntity extends Entity {
 	@Nullable
 	@Override
 	public Box getHardCollisionBox(Entity collidingEntity) {
-		return collidingEntity.getBoundingBox();
+		return collidingEntity.isPushable() ? collidingEntity.getBoundingBox() : null;
 	}
 
 	@Nullable
@@ -238,7 +238,7 @@ public class BoatEntity extends Entity {
 				this.world.method_11483(new SteerBoatC2SPacket(this.isPaddleMoving(0), this.isPaddleMoving(1)));
 			}
 
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 		} else {
 			this.velocityX = 0.0;
 			this.velocityY = 0.0;
@@ -342,7 +342,7 @@ public class BoatEntity extends Entity {
 							pooled.setPosition(p, o, q);
 							BlockState blockState = this.world.getBlockState(pooled);
 							if (blockState.getMaterial() == Material.WATER) {
-								f = Math.max(f, method_11326(blockState, this.world, pooled));
+								f = Math.max(f, AbstractFluidBlock.method_13709(blockState, this.world, pooled));
 							}
 
 							if (f >= 1.0F) {
@@ -389,7 +389,7 @@ public class BoatEntity extends Entity {
 							if (r <= 0 || s != k && s != l - 1) {
 								pooled.setPosition(p, s, q);
 								BlockState blockState = this.world.getBlockState(pooled);
-								blockState.addCollisionBoxesToList(this.world, pooled, box2, list, this);
+								blockState.appendCollisionBoxes(this.world, pooled, box2, list, this, false);
 								if (!list.isEmpty()) {
 									f += blockState.getBlock().slipperiness;
 									o++;
@@ -427,7 +427,7 @@ public class BoatEntity extends Entity {
 						pooled.setPosition(o, p, q);
 						BlockState blockState = this.world.getBlockState(pooled);
 						if (blockState.getMaterial() == Material.WATER) {
-							float f = method_11330(blockState, this.world, pooled);
+							float f = AbstractFluidBlock.method_13710(blockState, this.world, pooled);
 							this.waterLevel = Math.max((double)f, this.waterLevel);
 							bl |= box.minY < (double)f;
 						}
@@ -460,7 +460,7 @@ public class BoatEntity extends Entity {
 					for (int q = m; q < n; q++) {
 						pooled.setPosition(o, p, q);
 						BlockState blockState = this.world.getBlockState(pooled);
-						if (blockState.getMaterial() == Material.WATER && d < (double)method_11330(blockState, this.world, pooled)) {
+						if (blockState.getMaterial() == Material.WATER && d < (double)AbstractFluidBlock.method_13710(blockState, this.world, pooled)) {
 							if ((Integer)blockState.get(AbstractFluidBlock.LEVEL) != 0) {
 								return BoatEntity.Location.UNDER_FLOWING_WATER;
 							}
@@ -475,15 +475,6 @@ public class BoatEntity extends Entity {
 		}
 
 		return bl ? BoatEntity.Location.UNDER_WATER : null;
-	}
-
-	public static float method_11326(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		int i = (Integer)blockState.get(AbstractFluidBlock.LEVEL);
-		return (i & 7) == 0 && blockView.getBlockState(blockPos.up()).getMaterial() == Material.WATER ? 1.0F : 1.0F - AbstractFluidBlock.getHeightPercent(i);
-	}
-
-	public static float method_11330(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return (float)blockPos.getY() + method_11326(blockState, blockView, blockPos);
 	}
 
 	private void updateVelocity() {
@@ -555,7 +546,7 @@ public class BoatEntity extends Entity {
 
 			this.velocityX = this.velocityX + (double)(MathHelper.sin(-this.yaw * (float) (Math.PI / 180.0)) * f);
 			this.velocityZ = this.velocityZ + (double)(MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)) * f);
-			this.setPaddleMoving(this.pressingRight || this.pressingForward, this.pressingLeft || this.pressingForward);
+			this.setPaddleMoving(this.pressingRight && !this.pressingLeft || this.pressingForward, this.pressingLeft && !this.pressingRight || this.pressingForward);
 		}
 	}
 
@@ -617,12 +608,16 @@ public class BoatEntity extends Entity {
 	}
 
 	@Override
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
-		if (!this.world.isClient && !playerEntity.isSneaking() && this.ticksUnderwater < 60.0F) {
-			playerEntity.ride(this);
-		}
+	public boolean interact(PlayerEntity player, Hand hand) {
+		if (player.isSneaking()) {
+			return false;
+		} else {
+			if (!this.world.isClient && this.ticksUnderwater < 60.0F) {
+				player.ride(this);
+			}
 
-		return true;
+			return true;
+		}
 	}
 
 	@Override

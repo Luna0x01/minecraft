@@ -1,8 +1,6 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -13,6 +11,7 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -33,7 +32,6 @@ public abstract class StoneSlabBlock extends SlabBlock {
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.STONE_SLAB);
@@ -60,11 +58,11 @@ public abstract class StoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		if (item != Item.fromBlock(Blocks.DOUBLE_STONE_SLAB)) {
 			for (StoneSlabBlock.SlabType slabType : StoneSlabBlock.SlabType.values()) {
 				if (slabType != StoneSlabBlock.SlabType.WOOD) {
-					stacks.add(new ItemStack(item, 1, slabType.getId()));
+					defaultedList.add(new ItemStack(item, 1, slabType.getId()));
 				}
 			}
 		}

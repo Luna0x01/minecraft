@@ -13,16 +13,14 @@ public class SetBaseBiomesLayer extends Layer {
 	private final Biome[] coolBiomes = new Biome[]{Biomes.ICE_FLATS, Biomes.ICE_FLATS, Biomes.ICE_FLATS, Biomes.TAIGA_COLD};
 	private final CustomizedWorldProperties properties;
 
-	public SetBaseBiomesLayer(long l, Layer layer, LevelGeneratorType levelGeneratorType, String string) {
+	public SetBaseBiomesLayer(long l, Layer layer, LevelGeneratorType levelGeneratorType, CustomizedWorldProperties customizedWorldProperties) {
 		super(l);
 		this.field_172 = layer;
 		if (levelGeneratorType == LevelGeneratorType.DEFAULT_1_1) {
 			this.warmBiomes = new Biome[]{Biomes.DESERT, Biomes.FOREST, Biomes.EXTREME_HILLS, Biomes.SWAMP, Biomes.PLAINS, Biomes.TAIGA};
 			this.properties = null;
-		} else if (levelGeneratorType == LevelGeneratorType.CUSTOMIZED) {
-			this.properties = CustomizedWorldProperties.Builder.fromJson(string).build();
 		} else {
-			this.properties = null;
+			this.properties = customizedWorldProperties;
 		}
 	}
 

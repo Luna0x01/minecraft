@@ -40,7 +40,7 @@ public class EndPortalBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
 	}
 
 	@Override
@@ -64,7 +64,7 @@ public class EndPortalBlock extends BlockWithEntity {
 			&& !entity.hasPassengers()
 			&& entity.canUsePortals()
 			&& !world.isClient
-			&& entity.getBoundingBox().intersects(state.getCollisionBox((BlockView)world, pos).offset(pos))) {
+			&& entity.getBoundingBox().intersects(state.getCollisionBox(world, pos).offset(pos))) {
 			entity.changeDimension(1);
 		}
 	}
@@ -80,10 +80,9 @@ public class EndPortalBlock extends BlockWithEntity {
 		world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override

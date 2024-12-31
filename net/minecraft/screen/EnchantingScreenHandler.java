@@ -2,7 +2,6 @@ package net.minecraft.screen;
 
 import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.Enchantment;
@@ -52,7 +51,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		this.enchantmentPower = playerInventory.player.getEnchantmentTableSeed();
 		this.addSlot(new Slot(this.inventory, 0, 15, 47) {
 			@Override
-			public boolean canInsert(@Nullable ItemStack stack) {
+			public boolean canInsert(ItemStack stack) {
 				return true;
 			}
 
@@ -63,7 +62,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		});
 		this.addSlot(new Slot(this.inventory, 1, 35, 47) {
 			@Override
-			public boolean canInsert(@Nullable ItemStack stack) {
+			public boolean canInsert(ItemStack stack) {
 				return stack.getItem() == Items.DYE && DyeColor.getById(stack.getData()) == DyeColor.BLUE;
 			}
 		});
@@ -127,7 +126,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 	public void onContentChanged(Inventory inventory) {
 		if (inventory == this.inventory) {
 			ItemStack itemStack = inventory.getInvStack(0);
-			if (itemStack != null && itemStack.isEnchantable()) {
+			if (!itemStack.isEmpty() && itemStack.isEnchantable()) {
 				if (!this.world.isClient) {
 					int j = 0;
 
@@ -202,18 +201,19 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		ItemStack itemStack = this.inventory.getInvStack(0);
 		ItemStack itemStack2 = this.inventory.getInvStack(1);
 		int i = id + 1;
-		if ((itemStack2 == null || itemStack2.count < i) && !player.abilities.creativeMode) {
+		if ((itemStack2.isEmpty() || itemStack2.getCount() < i) && !player.abilities.creativeMode) {
 			return false;
 		} else if (this.enchantmentId[id] > 0
-			&& itemStack != null
+			&& !itemStack.isEmpty()
 			&& (player.experienceLevel >= i && player.experienceLevel >= this.enchantmentId[id] || player.abilities.creativeMode)) {
 			if (!this.world.isClient) {
 				List<EnchantmentLevelEntry> list = this.getRandomEnchantments(itemStack, id, this.enchantmentId[id]);
-				boolean bl = itemStack.getItem() == Items.BOOK;
-				if (list != null) {
+				if (!list.isEmpty()) {
 					player.decrementXp(i);
+					boolean bl = itemStack.getItem() == Items.BOOK;
 					if (bl) {
-						itemStack.setItem(Items.ENCHANTED_BOOK);
+						itemStack = new ItemStack(Items.ENCHANTED_BOOK);
+						this.inventory.setInvStack(0, itemStack);
 					}
 
 					for (int j = 0; j < list.size(); j++) {
@@ -226,9 +226,9 @@ public class EnchantingScreenHandler extends ScreenHandler {
 					}
 
 					if (!player.abilities.creativeMode) {
-						itemStack2.count -= i;
-						if (itemStack2.count <= 0) {
-							this.inventory.setInvStack(1, null);
+						itemStack2.decrement(i);
+						if (itemStack2.isEmpty()) {
+							this.inventory.setInvStack(1, ItemStack.EMPTY);
 						}
 					}
 
@@ -258,7 +258,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 
 	public int getLapisCount() {
 		ItemStack itemStack = this.inventory.getInvStack(1);
-		return itemStack == null ? 0 : itemStack.count;
+		return itemStack.isEmpty() ? 0 : itemStack.getCount();
 	}
 
 	@Override
@@ -267,7 +267,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		if (!this.world.isClient) {
 			for (int i = 0; i < this.inventory.getInvSize(); i++) {
 				ItemStack itemStack = this.inventory.removeInvStack(i);
-				if (itemStack != null) {
+				if (!itemStack.isEmpty()) {
 					player.dropItem(itemStack, false);
 				}
 			}
@@ -281,51 +281,50 @@ public class EnchantingScreenHandler extends ScreenHandler {
 			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (invSlot == 0) {
 				if (!this.insertItem(itemStack2, 2, 38, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (invSlot == 1) {
 				if (!this.insertItem(itemStack2, 2, 38, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (itemStack2.getItem() == Items.DYE && DyeColor.getById(itemStack2.getData()) == DyeColor.BLUE) {
 				if (!this.insertItem(itemStack2, 1, 2, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else {
 				if (((Slot)this.slots.get(0)).hasStack() || !((Slot)this.slots.get(0)).canInsert(itemStack2)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
-				if (itemStack2.hasNbt() && itemStack2.count == 1) {
+				if (itemStack2.hasNbt() && itemStack2.getCount() == 1) {
 					((Slot)this.slots.get(0)).setStack(itemStack2.copy());
-					itemStack2.count = 0;
-				} else if (itemStack2.count >= 1) {
+					itemStack2.setCount(0);
+				} else if (!itemStack2.isEmpty()) {
 					((Slot)this.slots.get(0)).setStack(new ItemStack(itemStack2.getItem(), 1, itemStack2.getData()));
-					itemStack2.count--;
+					itemStack2.decrement(1);
 				}
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			slot.method_3298(player, itemStack2);
 		}
 
 		return itemStack;

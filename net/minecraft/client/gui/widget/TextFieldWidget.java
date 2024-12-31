@@ -104,9 +104,13 @@ public class TextFieldWidget extends DrawableHelper {
 		if (this.textPredicate.apply(string)) {
 			this.text = string;
 			this.moveCursor(i - this.selectionEnd + l);
-			if (this.updateListener != null) {
-				this.updateListener.setStringValue(this.id, this.text);
-			}
+			this.method_13838(this.id, this.text);
+		}
+	}
+
+	public void method_13838(int i, String string) {
+		if (this.updateListener != null) {
+			this.updateListener.setStringValue(i, string);
 		}
 	}
 
@@ -143,9 +147,7 @@ public class TextFieldWidget extends DrawableHelper {
 						this.moveCursor(characterOffset);
 					}
 
-					if (this.updateListener != null) {
-						this.updateListener.setStringValue(this.id, this.text);
-					}
+					this.method_13838(this.id, this.text);
 				}
 			}
 		}

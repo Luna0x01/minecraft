@@ -114,6 +114,7 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 			new PagedEntryListWidget.ButtonEntry(152, I18n.translate("createWorld.customize.custom.useMineShafts"), true, this.props.useMineshafts),
 			new PagedEntryListWidget.ButtonEntry(153, I18n.translate("createWorld.customize.custom.useTemples"), true, this.props.useTemples),
 			new PagedEntryListWidget.ButtonEntry(210, I18n.translate("createWorld.customize.custom.useMonuments"), true, this.props.useMonuments),
+			new PagedEntryListWidget.ButtonEntry(211, I18n.translate("createWorld.customize.custom.useMansions"), true, this.props.useMansions),
 			new PagedEntryListWidget.ButtonEntry(154, I18n.translate("createWorld.customize.custom.useRavines"), true, this.props.useRavines),
 			new PagedEntryListWidget.ButtonEntry(149, I18n.translate("createWorld.customize.custom.useDungeons"), true, this.props.useDungeons),
 			new PagedEntryListWidget.LabelSupplierEntry(
@@ -589,6 +590,9 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 				break;
 			case 210:
 				this.props.useMonuments = value;
+				break;
+			case 211:
+				this.props.useMansions = value;
 		}
 
 		if (!this.props.equals(this.defaultProps)) {

@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,7 +14,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.MetadataSerializer;
 import org.apache.commons.io.IOUtils;
 
-public class ResourceImpl implements Resource, Closeable {
+public class ResourceImpl implements Resource {
 	private final Map<String, ResourceMetadataProvider> metaProviders = Maps.newHashMap();
 	private final String packName;
 	private final Identifier id;

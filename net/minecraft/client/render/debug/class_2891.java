@@ -138,8 +138,8 @@ public class class_2891 implements DebugRenderer.DebugRenderable {
 					}
 				}
 
-				for (int o = 0; o < pathMinHeap2.method_11936(); o++) {
-					PathNode pathNode5 = pathMinHeap2.method_11925(o);
+				for (int j = 0; j < pathMinHeap2.method_11936(); j++) {
+					PathNode pathNode5 = pathMinHeap2.method_11925(j);
 					if (!(this.method_13454(pathNode5) > 40.0F)) {
 						DebugRenderer.method_13450(
 							String.format("%s", pathNode5.field_13074), (double)pathNode5.posX + 0.5, (double)pathNode5.posY + 0.75, (double)pathNode5.posZ + 0.5, tickDelta, -1

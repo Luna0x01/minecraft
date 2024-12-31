@@ -71,7 +71,7 @@ public class DebugCommand extends AbstractCommand {
 				int j = i - this.field_2728;
 				this.method_2057(m, j, minecraftServer);
 				minecraftServer.profiler.enabled = false;
-				run(commandSource, this, "commands.debug.stop", new Object[]{(float)m / 1000.0F, j});
+				run(commandSource, this, "commands.debug.stop", new Object[]{String.format("%.2f", (float)m / 1000.0F), j});
 			}
 		}
 	}
@@ -84,9 +84,10 @@ public class DebugCommand extends AbstractCommand {
 		try {
 			fileWriter = new FileWriter(file);
 			fileWriter.write(this.method_2058(l, i, minecraftServer));
-		} catch (Throwable var8) {
+		} catch (Throwable var11) {
+			field_7445.error("Could not save profiler results to {}", new Object[]{file, var11});
+		} finally {
 			IOUtils.closeQuietly(fileWriter);
-			field_7445.error("Could not save profiler results to {}", new Object[]{file, var8});
 		}
 	}
 

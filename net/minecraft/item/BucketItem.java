@@ -31,33 +31,34 @@ public class BucketItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
 		boolean bl = this.fluid == Blocks.AIR;
-		BlockHitResult blockHitResult = this.onHit(world, playerEntity, bl);
+		ItemStack itemStack = player.getStackInHand(hand);
+		BlockHitResult blockHitResult = this.onHit(world, player, bl);
 		if (blockHitResult == null) {
 			return new TypedActionResult<>(ActionResult.PASS, itemStack);
 		} else if (blockHitResult.type != BlockHitResult.Type.BLOCK) {
 			return new TypedActionResult<>(ActionResult.PASS, itemStack);
 		} else {
 			BlockPos blockPos = blockHitResult.getBlockPos();
-			if (!world.canPlayerModifyAt(playerEntity, blockPos)) {
+			if (!world.canPlayerModifyAt(player, blockPos)) {
 				return new TypedActionResult<>(ActionResult.FAIL, itemStack);
 			} else if (bl) {
-				if (!playerEntity.canModify(blockPos.offset(blockHitResult.direction), blockHitResult.direction, itemStack)) {
+				if (!player.canModify(blockPos.offset(blockHitResult.direction), blockHitResult.direction, itemStack)) {
 					return new TypedActionResult<>(ActionResult.FAIL, itemStack);
 				} else {
 					BlockState blockState = world.getBlockState(blockPos);
 					Material material = blockState.getMaterial();
 					if (material == Material.WATER && (Integer)blockState.get(AbstractFluidBlock.LEVEL) == 0) {
 						world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 11);
-						playerEntity.incrementStat(Stats.used(this));
-						playerEntity.playSound(Sounds.ITEM_BUCKET_FILL, 1.0F, 1.0F);
-						return new TypedActionResult<>(ActionResult.SUCCESS, this.fill(itemStack, playerEntity, Items.WATER_BUCKET));
+						player.incrementStat(Stats.used(this));
+						player.playSound(Sounds.ITEM_BUCKET_FILL, 1.0F, 1.0F);
+						return new TypedActionResult<>(ActionResult.SUCCESS, this.fill(itemStack, player, Items.WATER_BUCKET));
 					} else if (material == Material.LAVA && (Integer)blockState.get(AbstractFluidBlock.LEVEL) == 0) {
-						playerEntity.playSound(Sounds.ITEM_BUCKET_FILL_LAVA, 1.0F, 1.0F);
+						player.playSound(Sounds.ITEM_BUCKET_FILL_LAVA, 1.0F, 1.0F);
 						world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 11);
-						playerEntity.incrementStat(Stats.used(this));
-						return new TypedActionResult<>(ActionResult.SUCCESS, this.fill(itemStack, playerEntity, Items.LAVA_BUCKET));
+						player.incrementStat(Stats.used(this));
+						return new TypedActionResult<>(ActionResult.SUCCESS, this.fill(itemStack, player, Items.LAVA_BUCKET));
 					} else {
 						return new TypedActionResult<>(ActionResult.FAIL, itemStack);
 					}
@@ -65,11 +66,11 @@ public class BucketItem extends Item {
 			} else {
 				boolean bl2 = world.getBlockState(blockPos).getBlock().method_8638(world, blockPos);
 				BlockPos blockPos2 = bl2 && blockHitResult.direction == Direction.UP ? blockPos : blockPos.offset(blockHitResult.direction);
-				if (!playerEntity.canModify(blockPos2, blockHitResult.direction, itemStack)) {
+				if (!player.canModify(blockPos2, blockHitResult.direction, itemStack)) {
 					return new TypedActionResult<>(ActionResult.FAIL, itemStack);
-				} else if (this.method_11365(playerEntity, world, blockPos2)) {
-					playerEntity.incrementStat(Stats.used(this));
-					return !playerEntity.abilities.creativeMode
+				} else if (this.method_11365(player, world, blockPos2)) {
+					player.incrementStat(Stats.used(this));
+					return !player.abilities.creativeMode
 						? new TypedActionResult<>(ActionResult.SUCCESS, new ItemStack(Items.BUCKET))
 						: new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 				} else {
@@ -82,14 +83,17 @@ public class BucketItem extends Item {
 	private ItemStack fill(ItemStack stack, PlayerEntity player, Item item) {
 		if (player.abilities.creativeMode) {
 			return stack;
-		} else if (--stack.count <= 0) {
-			return new ItemStack(item);
 		} else {
-			if (!player.inventory.insertStack(new ItemStack(item))) {
-				player.dropItem(new ItemStack(item), false);
-			}
+			stack.decrement(1);
+			if (stack.isEmpty()) {
+				return new ItemStack(item);
+			} else {
+				if (!player.inventory.insertStack(new ItemStack(item))) {
+					player.dropItem(new ItemStack(item), false);
+				}
 
-			return stack;
+				return stack;
+			}
 		}
 	}
 

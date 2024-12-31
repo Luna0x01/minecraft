@@ -42,7 +42,7 @@ public class FireworkChargeItem extends Item {
 			boolean bl = true;
 			String string = "";
 
-			for (int k : is) {
+			for (int i : is) {
 				if (!bl) {
 					string = string + ", ";
 				}
@@ -50,10 +50,10 @@ public class FireworkChargeItem extends Item {
 				bl = false;
 				boolean bl2 = false;
 
-				for (int l = 0; l < DyeItem.COLORS.length; l++) {
-					if (k == DyeItem.COLORS[l]) {
+				for (int j = 0; j < DyeItem.COLORS.length; j++) {
+					if (i == DyeItem.COLORS[j]) {
 						bl2 = true;
-						string = string + CommonI18n.translate("item.fireworksCharge." + DyeColor.getById(l).getTranslationKey());
+						string = string + CommonI18n.translate("item.fireworksCharge." + DyeColor.getById(j).getTranslationKey());
 						break;
 					}
 				}
@@ -66,12 +66,12 @@ public class FireworkChargeItem extends Item {
 			list.add(string);
 		}
 
-		int[] ks = nbt.getIntArray("FadeColors");
-		if (ks.length > 0) {
+		int[] js = nbt.getIntArray("FadeColors");
+		if (js.length > 0) {
 			boolean bl3 = true;
 			String string2 = CommonI18n.translate("item.fireworksCharge.fadeTo") + " ";
 
-			for (int o : ks) {
+			for (int k : js) {
 				if (!bl3) {
 					string2 = string2 + ", ";
 				}
@@ -79,10 +79,10 @@ public class FireworkChargeItem extends Item {
 				bl3 = false;
 				boolean bl4 = false;
 
-				for (int p = 0; p < 16; p++) {
-					if (o == DyeItem.COLORS[p]) {
+				for (int l = 0; l < 16; l++) {
+					if (k == DyeItem.COLORS[l]) {
 						bl4 = true;
-						string2 = string2 + CommonI18n.translate("item.fireworksCharge." + DyeColor.getById(p).getTranslationKey());
+						string2 = string2 + CommonI18n.translate("item.fireworksCharge." + DyeColor.getById(l).getTranslationKey());
 						break;
 					}
 				}

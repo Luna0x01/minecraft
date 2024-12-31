@@ -52,15 +52,15 @@ public class SnowLayerBlock extends Block {
 
 	@Override
 	public boolean method_11568(BlockState state) {
-		return (Integer)state.get(LAYERS) == 7;
+		return (Integer)state.get(LAYERS) == 8;
 	}
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		int i = (Integer)state.get(LAYERS) - 1;
 		float f = 0.125F;
-		Box box = state.getCollisionBox((BlockView)world, pos);
+		Box box = state.getCollisionBox(view, pos);
 		return new Box(box.minX, box.minY, box.minZ, box.maxX, (double)((float)i * 0.125F), box.maxZ);
 	}
 
@@ -82,7 +82,7 @@ public class SnowLayerBlock extends Block {
 			if (blockState.getMaterial() == Material.FOLIAGE) {
 				return true;
 			} else {
-				return block == this && blockState.get(LAYERS) >= 7 ? true : blockState.isFullBoundsCubeForCulling() && blockState.getMaterial().blocksMovement();
+				return block == this && blockState.get(LAYERS) == 8 ? true : blockState.isFullBoundsCubeForCulling() && blockState.getMaterial().blocksMovement();
 			}
 		} else {
 			return false;
@@ -90,8 +90,8 @@ public class SnowLayerBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		this.isPlacementValid(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		this.isPlacementValid(world, pos, state);
 	}
 
 	private boolean isPlacementValid(World world, BlockPos pos, BlockState state) {
@@ -105,13 +105,12 @@ public class SnowLayerBlock extends Block {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
 		onBlockBreak(world, pos, new ItemStack(Items.SNOWBALL, (Integer)state.get(LAYERS) + 1, 0));
 		world.setAir(pos);
 		player.incrementStat(Stats.mined(this));
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.SNOWBALL;
@@ -136,7 +135,7 @@ public class SnowLayerBlock extends Block {
 			return true;
 		} else {
 			BlockState blockState = view.getBlockState(pos.offset(direction));
-			return blockState.getBlock() == this && blockState.get(LAYERS) >= state.get(LAYERS) ? true : super.method_8654(state, view, pos, direction);
+			return blockState.getBlock() == this && blockState.get(LAYERS) >= state.get(LAYERS) ? false : super.method_8654(state, view, pos, direction);
 		}
 	}
 

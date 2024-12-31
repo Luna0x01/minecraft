@@ -68,9 +68,7 @@ public class class_2991 extends class_2979 {
 						double t = this.field_14693.z - q;
 						this.dragon.world.syncWorldEvent(null, 1017, new BlockPos(this.dragon), 0);
 						DragonFireballEntity dragonFireballEntity = new DragonFireballEntity(this.dragon.world, this.dragon, r, s, t);
-						dragonFireballEntity.x = o;
-						dragonFireballEntity.y = p;
-						dragonFireballEntity.z = q;
+						dragonFireballEntity.refreshPositionAndAngles(o, p, q, 0.0F, 0.0F);
 						this.dragon.world.spawnEntity(dragonFireballEntity);
 						this.field_14690 = 0;
 						if (this.field_14691 != null) {
@@ -105,7 +103,7 @@ public class class_2991 extends class_2979 {
 				j--;
 			}
 
-			if (this.dragon.method_13169() != null && this.dragon.method_13169().getAliveCrystals() >= 0) {
+			if (this.dragon.method_13169() != null && this.dragon.method_13169().getAliveCrystals() > 0) {
 				j %= 12;
 				if (j < 0) {
 					j += 12;

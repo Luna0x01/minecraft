@@ -7,8 +7,8 @@ import net.minecraft.nbt.NbtCompound;
 public class ItemSchema extends EntityIdentifierSchema {
 	private final String[] properties;
 
-	public ItemSchema(String string, String... strings) {
-		super("id", string);
+	public ItemSchema(Class<?> class_, String... strings) {
+		super(class_);
 		this.properties = strings;
 	}
 

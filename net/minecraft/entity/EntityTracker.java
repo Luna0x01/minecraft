@@ -8,6 +8,7 @@ import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.decoration.AbstractDecorationEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.mob.EvokerFangsEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.entity.passive.SquidEntity;
@@ -15,6 +16,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
+import net.minecraft.entity.projectile.LlamaSpitEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
 import net.minecraft.entity.thrown.EggEntity;
 import net.minecraft.entity.thrown.EnderPearlEntity;
@@ -77,9 +79,11 @@ public class EntityTracker {
 		} else if (entity instanceof SmallFireballEntity) {
 			this.startTracking(entity, 64, 10, false);
 		} else if (entity instanceof ExplosiveProjectileEntity) {
-			this.startTracking(entity, 64, 10, false);
+			this.startTracking(entity, 64, 10, true);
 		} else if (entity instanceof SnowballEntity) {
 			this.startTracking(entity, 64, 10, true);
+		} else if (entity instanceof LlamaSpitEntity) {
+			this.startTracking(entity, 64, 10, false);
 		} else if (entity instanceof EnderPearlEntity) {
 			this.startTracking(entity, 64, 10, true);
 		} else if (entity instanceof EyeOfEnderEntity) {
@@ -124,6 +128,8 @@ public class EntityTracker {
 			this.startTracking(entity, 160, Integer.MAX_VALUE, true);
 		} else if (entity instanceof EndCrystalEntity) {
 			this.startTracking(entity, 256, Integer.MAX_VALUE, false);
+		} else if (entity instanceof EvokerFangsEntity) {
+			this.startTracking(entity, 160, 2, false);
 		}
 	}
 

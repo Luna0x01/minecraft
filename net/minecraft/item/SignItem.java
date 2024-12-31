@@ -22,32 +22,31 @@ public class SignItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockState blockState = world.getBlockState(blockPos);
-		boolean bl = blockState.getBlock().method_8638(world, blockPos);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		BlockState blockState = world.getBlockState(pos);
+		boolean bl = blockState.getBlock().method_8638(world, pos);
 		if (direction != Direction.DOWN && (blockState.getMaterial().isSolid() || bl) && (!bl || direction == Direction.UP)) {
-			blockPos = blockPos.offset(direction);
-			if (!playerEntity.canModify(blockPos, direction, itemStack) || !Blocks.STANDING_SIGN.canBePlacedAtPos(world, blockPos)) {
+			pos = pos.offset(direction);
+			ItemStack itemStack = player.getStackInHand(hand);
+			if (!player.canModify(pos, direction, itemStack) || !Blocks.STANDING_SIGN.canBePlacedAtPos(world, pos)) {
 				return ActionResult.FAIL;
 			} else if (world.isClient) {
 				return ActionResult.SUCCESS;
 			} else {
-				blockPos = bl ? blockPos.down() : blockPos;
+				pos = bl ? pos.down() : pos;
 				if (direction == Direction.UP) {
-					int i = MathHelper.floor((double)((playerEntity.yaw + 180.0F) * 16.0F / 360.0F) + 0.5) & 15;
-					world.setBlockState(blockPos, Blocks.STANDING_SIGN.getDefaultState().with(StandingSignBlock.ROTATION, i), 11);
+					int i = MathHelper.floor((double)((player.yaw + 180.0F) * 16.0F / 360.0F) + 0.5) & 15;
+					world.setBlockState(pos, Blocks.STANDING_SIGN.getDefaultState().with(StandingSignBlock.ROTATION, i), 11);
 				} else {
-					world.setBlockState(blockPos, Blocks.WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, direction), 11);
+					world.setBlockState(pos, Blocks.WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, direction), 11);
 				}
 
-				itemStack.count--;
-				BlockEntity blockEntity = world.getBlockEntity(blockPos);
-				if (blockEntity instanceof SignBlockEntity && !BlockItem.setBlockEntityNbt(world, playerEntity, blockPos, itemStack)) {
-					playerEntity.openEditSignScreen((SignBlockEntity)blockEntity);
+				BlockEntity blockEntity = world.getBlockEntity(pos);
+				if (blockEntity instanceof SignBlockEntity && !BlockItem.setBlockEntityNbt(world, player, pos, itemStack)) {
+					player.openEditSignScreen((SignBlockEntity)blockEntity);
 				}
 
+				itemStack.decrement(1);
 				return ActionResult.SUCCESS;
 			}
 		} else {

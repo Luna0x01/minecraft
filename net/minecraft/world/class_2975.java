@@ -45,8 +45,8 @@ public class class_2975 implements WorldEventListener {
 	}
 
 	protected boolean method_13115(World world, BlockPos blockPos, BlockState blockState, BlockState blockState2) {
-		Box box = blockState.getCollisionBox(world, blockPos);
-		Box box2 = blockState2.getCollisionBox(world, blockPos);
+		Box box = blockState.method_11726(world, blockPos);
+		Box box2 = blockState2.method_11726(world, blockPos);
 		return box != box2 && (box == null || !box.equals(box2));
 	}
 
@@ -64,6 +64,10 @@ public class class_2975 implements WorldEventListener {
 
 	@Override
 	public void addParticle(int id, boolean bl, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... args) {
+	}
+
+	@Override
+	public void method_13696(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is) {
 	}
 
 	@Override

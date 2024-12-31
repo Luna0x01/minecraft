@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -22,7 +23,6 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
@@ -69,7 +69,7 @@ public class EndermanEntity extends HostileEntity {
 	protected void initGoals() {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(2, new MeleeAttackGoal(this, 1.0, false));
-		this.goals.add(7, new WanderAroundGoal(this, 1.0));
+		this.goals.add(7, new class_3133(this, 1.0, 0.0F));
 		this.goals.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(8, new LookAroundGoal(this));
 		this.goals.add(10, new EndermanEntity.PlaceBlockGoal(this));
@@ -135,7 +135,7 @@ public class EndermanEntity extends HostileEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Enderman");
+		MobEntity.registerDataFixes(dataFixer, EndermanEntity.class);
 	}
 
 	@Override
@@ -166,8 +166,8 @@ public class EndermanEntity extends HostileEntity {
 	}
 
 	private boolean isPlayerStaring(PlayerEntity player) {
-		ItemStack itemStack = player.inventory.armor[3];
-		if (itemStack != null && itemStack.getItem() == Item.fromBlock(Blocks.PUMPKIN)) {
+		ItemStack itemStack = player.inventory.field_15083.get(3);
+		if (itemStack.getItem() == Item.fromBlock(Blocks.PUMPKIN)) {
 			return false;
 		} else {
 			Vec3d vec3d = player.getRotationVector(1.0F).normalize();
@@ -274,10 +274,8 @@ public class EndermanEntity extends HostileEntity {
 		BlockState blockState = this.getCarriedBlock();
 		if (blockState != null) {
 			Item item = Item.fromBlock(blockState.getBlock());
-			if (item != null) {
-				int j = item.isUnbreakable() ? blockState.getBlock().getData(blockState) : 0;
-				this.dropItem(new ItemStack(item, 1, j), 0.0F);
-			}
+			int j = item.isUnbreakable() ? blockState.getBlock().getData(blockState) : 0;
+			this.dropItem(new ItemStack(item, 1, j), 0.0F);
 		}
 	}
 

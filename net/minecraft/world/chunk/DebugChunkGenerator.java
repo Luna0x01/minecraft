@@ -87,7 +87,7 @@ public class DebugChunkGenerator implements ChunkGenerator {
 
 	@Nullable
 	@Override
-	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
+	public BlockPos method_3866(World world, String string, BlockPos pos, boolean bl) {
 		return null;
 	}
 

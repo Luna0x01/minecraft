@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Map.Entry;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -65,6 +66,12 @@ public class VillageStructure extends StructureFeature {
 		}
 
 		return false;
+	}
+
+	@Override
+	public BlockPos method_9269(World world, BlockPos blockPos, boolean bl) {
+		this.world = world;
+		return method_13774(world, this, blockPos, this.distance, 8, 10387312, false, 100, bl);
 	}
 
 	@Override

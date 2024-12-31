@@ -70,8 +70,7 @@ public class MobNavigation extends EntityNavigation {
 
 	@Override
 	public PathMinHeap method_13109(Entity entity) {
-		BlockPos blockPos = new BlockPos(entity);
-		return this.method_13108(blockPos);
+		return this.method_13108(new BlockPos(entity));
 	}
 
 	private int getPathfindingY() {

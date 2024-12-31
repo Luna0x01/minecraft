@@ -47,10 +47,6 @@ public abstract class MoveToTargetPosGoal extends Goal {
 	}
 
 	@Override
-	public void stop() {
-	}
-
-	@Override
 	public void tick() {
 		if (this.mob.squaredDistanceToCenter(this.targetPos.up()) > 1.0) {
 			this.reached = false;

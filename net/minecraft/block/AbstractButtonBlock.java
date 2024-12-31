@@ -8,7 +8,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -47,7 +46,7 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -95,10 +94,10 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (this.isButtonPlacementValid(world, blockPos, blockState) && !canHoldButton(world, blockPos, ((Direction)blockState.get(FACING)).getOpposite())) {
-			this.dropAsItem(world, blockPos, blockState, 0);
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (this.isButtonPlacementValid(world, pos, state) && !canHoldButton(world, pos, ((Direction)state.get(FACING)).getOpposite())) {
+			this.dropAsItem(world, pos, state, 0);
+			world.setAir(pos);
 		}
 	}
 
@@ -134,26 +133,15 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if ((Boolean)blockState.get(POWERED)) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if ((Boolean)state.get(POWERED)) {
 			return true;
 		} else {
-			world.setBlockState(blockPos, blockState.with(POWERED, true), 3);
-			world.onRenderRegionUpdate(blockPos, blockPos);
-			this.method_11580(playerEntity, world, blockPos);
-			this.updateNeighborsAfterActivation(world, blockPos, blockState.get(FACING));
-			world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
+			world.setBlockState(pos, state.with(POWERED, true), 3);
+			world.onRenderRegionUpdate(pos, pos);
+			this.method_11580(player, world, pos);
+			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
+			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
 			return true;
 		}
 	}
@@ -222,7 +210,7 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	}
 
 	private void tryPowerWithProjectiles(BlockState state, World world, BlockPos pos) {
-		List<? extends Entity> list = world.getEntitiesInBox(AbstractArrowEntity.class, state.getCollisionBox((BlockView)world, pos).offset(pos));
+		List<? extends Entity> list = world.getEntitiesInBox(AbstractArrowEntity.class, state.getCollisionBox(world, pos).offset(pos));
 		boolean bl = !list.isEmpty();
 		boolean bl2 = (Boolean)state.get(POWERED);
 		if (bl && !bl2) {
@@ -245,8 +233,8 @@ public abstract class AbstractButtonBlock extends FacingBlock {
 	}
 
 	private void updateNeighborsAfterActivation(World world, BlockPos pos, Direction dir) {
-		world.updateNeighborsAlways(pos, this);
-		world.updateNeighborsAlways(pos.offset(dir.getOpposite()), this);
+		world.method_13692(pos, this, false);
+		world.method_13692(pos.offset(dir.getOpposite()), this, false);
 	}
 
 	@Override

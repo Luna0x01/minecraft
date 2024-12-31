@@ -3,6 +3,7 @@ package net.minecraft.entity.mob;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
@@ -15,7 +16,6 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.ProjectileAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -52,14 +52,14 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Witch");
+		MobEntity.registerDataFixes(dataFixer, WitchEntity.class);
 	}
 
 	@Override
 	protected void initGoals() {
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new ProjectileAttackGoal(this, 1.0, 60, 10.0F));
-		this.goals.add(2, new WanderAroundGoal(this, 1.0));
+		this.goals.add(2, new class_3133(this, 1.0));
 		this.goals.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(3, new LookAroundGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, false));
@@ -109,8 +109,8 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 				if (this.drinkTimeLeft-- <= 0) {
 					this.method_4556(false);
 					ItemStack itemStack = this.getMainHandStack();
-					this.equipStack(EquipmentSlot.MAINHAND, null);
-					if (itemStack != null && itemStack.getItem() == Items.POTION) {
+					this.equipStack(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+					if (itemStack.getItem() == Items.POTION) {
 						List<StatusEffectInstance> list = PotionUtil.getPotionEffects(itemStack);
 						if (list != null) {
 							for (StatusEffectInstance statusEffectInstance : list) {

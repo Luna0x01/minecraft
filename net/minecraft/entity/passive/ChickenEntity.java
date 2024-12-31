@@ -3,6 +3,7 @@ package net.minecraft.entity.passive;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Block;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
@@ -14,7 +15,6 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.MobEntity;
@@ -55,7 +55,7 @@ public class ChickenEntity extends AnimalEntity {
 		this.goals.add(2, new BreedGoal(this, 1.0));
 		this.goals.add(3, new TemptGoal(this, 1.0, false, field_14611));
 		this.goals.add(4, new FollowParentGoal(this, 1.1));
-		this.goals.add(5, new WanderAroundGoal(this, 1.0));
+		this.goals.add(5, new class_3133(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(7, new LookAroundGoal(this));
 	}
@@ -131,8 +131,8 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean isBreedingItem(@Nullable ItemStack stack) {
-		return stack != null && field_14611.contains(stack.getItem());
+	public boolean isBreedingItem(ItemStack stack) {
+		return field_14611.contains(stack.getItem());
 	}
 
 	@Override
@@ -141,7 +141,7 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Chicken");
+		MobEntity.registerDataFixes(dataFixer, ChickenEntity.class);
 	}
 
 	@Override

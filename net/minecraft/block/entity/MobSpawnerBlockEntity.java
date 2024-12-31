@@ -9,6 +9,7 @@ import net.minecraft.datafixer.Schema;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -45,7 +46,7 @@ public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
 		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new Schema() {
 			@Override
 			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if ("MobSpawner".equals(tag.getString("id"))) {
+				if (BlockEntity.getIdentifier(MobSpawnerBlockEntity.class).equals(new Identifier(tag.getString("id")))) {
 					if (tag.contains("SpawnPotentials", 9)) {
 						NbtList nbtList = tag.getList("SpawnPotentials", 10);
 

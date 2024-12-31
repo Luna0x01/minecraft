@@ -1,6 +1,5 @@
 package net.minecraft.inventory;
 
-import javax.annotation.Nullable;
 import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -8,16 +7,16 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.collection.DefaultedList;
 
 public class CraftingInventory implements Inventory {
-	private final ItemStack[] stacks;
+	private final DefaultedList<ItemStack> field_15100;
 	private final int width;
 	private final int height;
 	private final ScreenHandler screenHandler;
 
 	public CraftingInventory(ScreenHandler screenHandler, int i, int j) {
-		int k = i * j;
-		this.stacks = new ItemStack[k];
+		this.field_15100 = DefaultedList.ofSize(i * j, ItemStack.EMPTY);
 		this.screenHandler = screenHandler;
 		this.width = i;
 		this.height = j;
@@ -25,18 +24,27 @@ public class CraftingInventory implements Inventory {
 
 	@Override
 	public int getInvSize() {
-		return this.stacks.length;
+		return this.field_15100.size();
 	}
 
-	@Nullable
+	@Override
+	public boolean isEmpty() {
+		for (ItemStack itemStack : this.field_15100) {
+			if (!itemStack.isEmpty()) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	@Override
 	public ItemStack getInvStack(int slot) {
-		return slot >= this.getInvSize() ? null : this.stacks[slot];
+		return slot >= this.getInvSize() ? ItemStack.EMPTY : this.field_15100.get(slot);
 	}
 
-	@Nullable
 	public ItemStack getStackAt(int width, int height) {
-		return width >= 0 && width < this.width && height >= 0 && height <= this.height ? this.getInvStack(width + height * this.width) : null;
+		return width >= 0 && width < this.width && height >= 0 && height <= this.height ? this.getInvStack(width + height * this.width) : ItemStack.EMPTY;
 	}
 
 	@Override
@@ -54,17 +62,15 @@ public class CraftingInventory implements Inventory {
 		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
 	}
 
-	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		return class_2960.method_12932(this.stacks, slot);
+		return class_2960.method_13925(this.field_15100, slot);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		ItemStack itemStack = class_2960.method_12933(this.stacks, slot, amount);
-		if (itemStack != null) {
+		ItemStack itemStack = class_2960.method_13926(this.field_15100, slot, amount);
+		if (!itemStack.isEmpty()) {
 			this.screenHandler.onContentChanged(this);
 		}
 
@@ -72,8 +78,8 @@ public class CraftingInventory implements Inventory {
 	}
 
 	@Override
-	public void setInvStack(int slot, @Nullable ItemStack stack) {
-		this.stacks[slot] = stack;
+	public void setInvStack(int slot, ItemStack stack) {
+		this.field_15100.set(slot, stack);
 		this.screenHandler.onContentChanged(this);
 	}
 
@@ -120,9 +126,7 @@ public class CraftingInventory implements Inventory {
 
 	@Override
 	public void clear() {
-		for (int i = 0; i < this.stacks.length; i++) {
-			this.stacks[i] = null;
-		}
+		this.field_15100.clear();
 	}
 
 	public int getHeight() {

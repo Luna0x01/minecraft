@@ -15,6 +15,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.StructureBlockEntity;
+import net.minecraft.datafixer.DataFixer;
+import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.datafixer.Schema;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
@@ -33,6 +36,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 
 public class Structure {
 	private final List<Structure.StructureBlockInfo> blockInfoLists = Lists.newArrayList();
@@ -162,7 +166,10 @@ public class Structure {
 	}
 
 	public void method_13392(World world, BlockPos blockPos, @Nullable class_3017 arg, StructurePlacementData structurePlacementData, int i) {
-		if (!this.blockInfoLists.isEmpty() && this.size.getX() >= 1 && this.size.getY() >= 1 && this.size.getZ() >= 1) {
+		if ((!this.blockInfoLists.isEmpty() || !structurePlacementData.method_11875() && !this.entities.isEmpty())
+			&& this.size.getX() >= 1
+			&& this.size.getY() >= 1
+			&& this.size.getZ() >= 1) {
 			Block block = structurePlacementData.method_11876();
 			BlockBox blockBox = structurePlacementData.method_11877();
 
@@ -206,7 +213,7 @@ public class Structure {
 				if (block == null || block != structureBlockInfo3.state.getBlock()) {
 					BlockPos blockPos3 = method_11886(structurePlacementData, structureBlockInfo3.pos).add(blockPos);
 					if (blockBox == null || blockBox.contains(blockPos3)) {
-						world.updateNeighbors(blockPos3, structureBlockInfo3.state.getBlock());
+						world.method_8531(blockPos3, structureBlockInfo3.state.getBlock(), false);
 						if (structureBlockInfo3.tag != null) {
 							BlockEntity blockEntity3 = world.getBlockEntity(blockPos3);
 							if (blockEntity3 != null) {
@@ -321,8 +328,12 @@ public class Structure {
 	}
 
 	public BlockPos method_13393(BlockPos blockPos, BlockMirror blockMirror, BlockRotation blockRotation) {
-		int i = this.getSize().getX() - 1;
-		int j = this.getSize().getZ() - 1;
+		return method_13817(blockPos, blockMirror, blockRotation, this.getSize().getX(), this.getSize().getZ());
+	}
+
+	public static BlockPos method_13817(BlockPos blockPos, BlockMirror blockMirror, BlockRotation blockRotation, int i, int j) {
+		i--;
+		j--;
 		int k = blockMirror == BlockMirror.FRONT_BACK ? i : 0;
 		int l = blockMirror == BlockMirror.LEFT_RIGHT ? j : 0;
 		BlockPos blockPos2 = blockPos;
@@ -341,6 +352,37 @@ public class Structure {
 		}
 
 		return blockPos2;
+	}
+
+	public static void registerDataFixes(DataFixerUpper dataFixer) {
+		dataFixer.addSchema(LevelDataType.STRUCTURE, new Schema() {
+			@Override
+			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
+				if (tag.contains("entities", 9)) {
+					NbtList nbtList = tag.getList("entities", 10);
+
+					for (int i = 0; i < nbtList.size(); i++) {
+						NbtCompound nbtCompound = (NbtCompound)nbtList.get(i);
+						if (nbtCompound.contains("nbt", 10)) {
+							nbtCompound.put("nbt", dataFixer.update(LevelDataType.ENTITY, nbtCompound.getCompound("nbt"), dataVersion));
+						}
+					}
+				}
+
+				if (tag.contains("blocks", 9)) {
+					NbtList nbtList2 = tag.getList("blocks", 10);
+
+					for (int j = 0; j < nbtList2.size(); j++) {
+						NbtCompound nbtCompound2 = (NbtCompound)nbtList2.get(j);
+						if (nbtCompound2.contains("nbt", 10)) {
+							nbtCompound2.put("nbt", dataFixer.update(LevelDataType.BLOCK_ENTITY, nbtCompound2.getCompound("nbt"), dataVersion));
+						}
+					}
+				}
+
+				return tag;
+			}
+		});
 	}
 
 	public NbtCompound method_11891(NbtCompound nbtCompound) {
@@ -383,8 +425,8 @@ public class Structure {
 		nbtCompound.put("blocks", nbtList);
 		nbtCompound.put("entities", nbtList2);
 		nbtCompound.put("size", this.method_11894(this.size.getX(), this.size.getY(), this.size.getZ()));
-		nbtCompound.putInt("version", 1);
 		nbtCompound.putString("author", this.author);
+		nbtCompound.putInt("DataVersion", 922);
 		return nbtCompound;
 	}
 
@@ -436,8 +478,8 @@ public class Structure {
 	private NbtList method_11894(int... is) {
 		NbtList nbtList = new NbtList();
 
-		for (int k : is) {
-			nbtList.add(new NbtInt(k));
+		for (int i : is) {
+			nbtList.add(new NbtInt(i));
 		}
 
 		return nbtList;

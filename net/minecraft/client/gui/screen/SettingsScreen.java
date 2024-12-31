@@ -5,7 +5,6 @@ import net.minecraft.client.gui.screen.options.ControlsOptionsScreen;
 import net.minecraft.client.gui.screen.options.LanguageOptionsScreen;
 import net.minecraft.client.gui.screen.options.SkinOptionsScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.gui.widget.LockButtonWidget;
 import net.minecraft.client.gui.widget.OptionButtonWidget;
 import net.minecraft.client.gui.widget.OptionSliderWidget;
@@ -16,7 +15,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.world.Difficulty;
 
-public class SettingsScreen extends Screen implements IdentifiableBooleanConsumer {
+public class SettingsScreen extends Screen {
 	private static final GameOptions.Option[] OPTIONS = new GameOptions.Option[]{GameOptions.Option.FIELD_OF_VIEW};
 	private final Screen parent;
 	private final GameOptions options;
@@ -104,6 +103,15 @@ public class SettingsScreen extends Screen implements IdentifiableBooleanConsume
 			this.lockDifficultyButton.active = false;
 			this.difficultyButton.active = false;
 		}
+	}
+
+	@Override
+	protected void keyPressed(char id, int code) {
+		if (code == 1) {
+			this.client.options.save();
+		}
+
+		super.keyPressed(id, code);
 	}
 
 	@Override

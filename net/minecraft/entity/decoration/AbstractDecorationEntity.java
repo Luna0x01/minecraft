@@ -7,6 +7,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningBoltEntity;
+import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -162,8 +163,8 @@ public abstract class AbstractDecorationEntity extends Entity {
 	}
 
 	@Override
-	public void move(double velocityX, double velocityY, double velocityZ) {
-		if (!this.world.isClient && !this.removed && velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ > 0.0) {
+	public void move(MovementType type, double movementX, double movementY, double movementZ) {
+		if (!this.world.isClient && !this.removed && movementX * movementX + movementY * movementY + movementZ * movementZ > 0.0) {
 			this.remove();
 			this.onBreak(null);
 		}

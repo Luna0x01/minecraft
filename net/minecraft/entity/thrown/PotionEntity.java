@@ -1,6 +1,6 @@
 package net.minecraft.entity.thrown;
 
-import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
@@ -8,11 +8,14 @@ import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.mob.BlazeEntity;
+import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -29,8 +32,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PotionEntity extends ThrowableEntity {
-	private static final TrackedData<Optional<ItemStack>> ITEM = DataTracker.registerData(PotionEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+	private static final TrackedData<ItemStack> ITEM = DataTracker.registerData(PotionEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final Predicate<LivingEntity> WATER_HURTS = new Predicate<LivingEntity>() {
+		public boolean apply(@Nullable LivingEntity livingEntity) {
+			return PotionEntity.isHurtByWater(livingEntity);
+		}
+	};
 
 	public PotionEntity(World world) {
 		super(world);
@@ -41,21 +49,21 @@ public class PotionEntity extends ThrowableEntity {
 		this.setItem(itemStack);
 	}
 
-	public PotionEntity(World world, double d, double e, double f, @Nullable ItemStack itemStack) {
+	public PotionEntity(World world, double d, double e, double f, ItemStack itemStack) {
 		super(world, d, e, f);
-		if (itemStack != null) {
+		if (!itemStack.isEmpty()) {
 			this.setItem(itemStack);
 		}
 	}
 
 	@Override
 	protected void initDataTracker() {
-		this.getDataTracker().startTracking(ITEM, Optional.absent());
+		this.getDataTracker().startTracking(ITEM, ItemStack.EMPTY);
 	}
 
 	public ItemStack getItem() {
-		ItemStack itemStack = (ItemStack)this.getDataTracker().get(ITEM).orNull();
-		if (itemStack == null || itemStack.getItem() != Items.SPLASH_POTION && itemStack.getItem() != Items.LINGERING_POTION) {
+		ItemStack itemStack = this.getDataTracker().get(ITEM);
+		if (itemStack.getItem() != Items.SPLASH_POTION && itemStack.getItem() != Items.LINGERING_POTION) {
 			if (this.world != null) {
 				LOGGER.error("ThrownPotion entity {} has no item?!", new Object[]{this.getEntityId()});
 			}
@@ -66,8 +74,8 @@ public class PotionEntity extends ThrowableEntity {
 		}
 	}
 
-	public void setItem(@Nullable ItemStack item) {
-		this.getDataTracker().set(ITEM, Optional.fromNullable(item));
+	public void setItem(ItemStack item) {
+		this.getDataTracker().set(ITEM, item);
 		this.getDataTracker().method_12754(ITEM);
 	}
 
@@ -82,69 +90,98 @@ public class PotionEntity extends ThrowableEntity {
 			ItemStack itemStack = this.getItem();
 			Potion potion = PotionUtil.getPotion(itemStack);
 			List<StatusEffectInstance> list = PotionUtil.getPotionEffects(itemStack);
-			if (result.type == BlockHitResult.Type.BLOCK && potion == Potions.WATER && list.isEmpty()) {
+			boolean bl = potion == Potions.WATER && list.isEmpty();
+			if (result.type == BlockHitResult.Type.BLOCK && bl) {
 				BlockPos blockPos = result.getBlockPos().offset(result.direction);
 				this.method_11316(blockPos);
 
 				for (Direction direction : Direction.DirectionType.HORIZONTAL) {
 					this.method_11316(blockPos.offset(direction));
 				}
+			}
 
-				this.world.syncGlobalEvent(2002, new BlockPos(this), Potion.getId(potion));
-				this.remove();
-			} else {
-				if (!list.isEmpty()) {
-					if (this.isLingering()) {
-						AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.x, this.y, this.z);
-						areaEffectCloudEntity.method_12954(this.getOwner());
-						areaEffectCloudEntity.setRadius(3.0F);
-						areaEffectCloudEntity.method_12956(-0.5F);
-						areaEffectCloudEntity.method_12959(10);
-						areaEffectCloudEntity.method_12958(-areaEffectCloudEntity.getRadius() / (float)areaEffectCloudEntity.getDuration());
-						areaEffectCloudEntity.setPotion(potion);
+			if (bl) {
+				this.damageEntitiesHurtByWater();
+			} else if (!list.isEmpty()) {
+				if (this.isLingering()) {
+					this.applyLingeringPotion(itemStack, potion);
+				} else {
+					this.applySplashPotion(result, list);
+				}
+			}
 
-						for (StatusEffectInstance statusEffectInstance : PotionUtil.getCustomPotionEffects(itemStack)) {
-							areaEffectCloudEntity.addEffect(
-								new StatusEffectInstance(statusEffectInstance.getStatusEffect(), statusEffectInstance.getDuration(), statusEffectInstance.getAmplifier())
-							);
+			int i = potion.method_11415() ? 2007 : 2002;
+			this.world.syncGlobalEvent(i, new BlockPos(this), PotionUtil.getColor(itemStack));
+			this.remove();
+		}
+	}
+
+	private void damageEntitiesHurtByWater() {
+		Box box = this.getBoundingBox().expand(4.0, 2.0, 4.0);
+		List<LivingEntity> list = this.world.getEntitiesInBox(LivingEntity.class, box, WATER_HURTS);
+		if (!list.isEmpty()) {
+			for (LivingEntity livingEntity : list) {
+				double d = this.squaredDistanceTo(livingEntity);
+				if (d < 16.0 && isHurtByWater(livingEntity)) {
+					livingEntity.damage(DamageSource.DROWN, 1.0F);
+				}
+			}
+		}
+	}
+
+	private void applySplashPotion(BlockHitResult result, List<StatusEffectInstance> effects) {
+		Box box = this.getBoundingBox().expand(4.0, 2.0, 4.0);
+		List<LivingEntity> list = this.world.getEntitiesInBox(LivingEntity.class, box);
+		if (!list.isEmpty()) {
+			for (LivingEntity livingEntity : list) {
+				if (livingEntity.method_13057()) {
+					double d = this.squaredDistanceTo(livingEntity);
+					if (d < 16.0) {
+						double e = 1.0 - Math.sqrt(d) / 4.0;
+						if (livingEntity == result.entity) {
+							e = 1.0;
 						}
 
-						this.world.spawnEntity(areaEffectCloudEntity);
-					} else {
-						Box box = this.getBoundingBox().expand(4.0, 2.0, 4.0);
-						List<LivingEntity> list2 = this.world.getEntitiesInBox(LivingEntity.class, box);
-						if (!list2.isEmpty()) {
-							for (LivingEntity livingEntity : list2) {
-								if (livingEntity.method_13057()) {
-									double d = this.squaredDistanceTo(livingEntity);
-									if (d < 16.0) {
-										double e = 1.0 - Math.sqrt(d) / 4.0;
-										if (livingEntity == result.entity) {
-											e = 1.0;
-										}
-
-										for (StatusEffectInstance statusEffectInstance2 : list) {
-											StatusEffect statusEffect = statusEffectInstance2.getStatusEffect();
-											if (statusEffect.isInstant()) {
-												statusEffect.method_6088(this, this.getOwner(), livingEntity, statusEffectInstance2.getAmplifier(), e);
-											} else {
-												int i = (int)(e * (double)statusEffectInstance2.getDuration() + 0.5);
-												if (i > 20) {
-													livingEntity.addStatusEffect(new StatusEffectInstance(statusEffect, i, statusEffectInstance2.getAmplifier()));
-												}
-											}
-										}
-									}
+						for (StatusEffectInstance statusEffectInstance : effects) {
+							StatusEffect statusEffect = statusEffectInstance.getStatusEffect();
+							if (statusEffect.isInstant()) {
+								statusEffect.method_6088(this, this.getOwner(), livingEntity, statusEffectInstance.getAmplifier(), e);
+							} else {
+								int i = (int)(e * (double)statusEffectInstance.getDuration() + 0.5);
+								if (i > 20) {
+									livingEntity.addStatusEffect(
+										new StatusEffectInstance(
+											statusEffect, i, statusEffectInstance.getAmplifier(), statusEffectInstance.isAmbient(), statusEffectInstance.shouldShowParticles()
+										)
+									);
 								}
 							}
 						}
 					}
 				}
-
-				this.world.syncGlobalEvent(2002, new BlockPos(this), Potion.getId(potion));
-				this.remove();
 			}
 		}
+	}
+
+	private void applyLingeringPotion(ItemStack stack, Potion potion) {
+		AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.x, this.y, this.z);
+		areaEffectCloudEntity.method_12954(this.getOwner());
+		areaEffectCloudEntity.setRadius(3.0F);
+		areaEffectCloudEntity.method_12956(-0.5F);
+		areaEffectCloudEntity.method_12959(10);
+		areaEffectCloudEntity.method_12958(-areaEffectCloudEntity.getRadius() / (float)areaEffectCloudEntity.getDuration());
+		areaEffectCloudEntity.setPotion(potion);
+
+		for (StatusEffectInstance statusEffectInstance : PotionUtil.getCustomPotionEffects(stack)) {
+			areaEffectCloudEntity.addEffect(new StatusEffectInstance(statusEffectInstance));
+		}
+
+		NbtCompound nbtCompound = stack.getNbt();
+		if (nbtCompound != null && nbtCompound.contains("CustomPotionColor", 99)) {
+			areaEffectCloudEntity.setColor(nbtCompound.getInt("CustomPotionColor"));
+		}
+
+		this.world.spawnEntity(areaEffectCloudEntity);
 	}
 
 	private boolean isLingering() {
@@ -159,14 +196,14 @@ public class PotionEntity extends ThrowableEntity {
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
 		ThrowableEntity.registerDataFixes(dataFixer, "ThrownPotion");
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("ThrownPotion", "Potion"));
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(PotionEntity.class, "Potion"));
 	}
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
-		ItemStack itemStack = ItemStack.fromNbt(nbt.getCompound("Potion"));
-		if (itemStack == null) {
+		ItemStack itemStack = new ItemStack(nbt.getCompound("Potion"));
+		if (itemStack.isEmpty()) {
 			this.remove();
 		} else {
 			this.setItem(itemStack);
@@ -177,8 +214,12 @@ public class PotionEntity extends ThrowableEntity {
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		ItemStack itemStack = this.getItem();
-		if (itemStack != null) {
+		if (!itemStack.isEmpty()) {
 			nbt.put("Potion", itemStack.toNbt(new NbtCompound()));
 		}
+	}
+
+	private static boolean isHurtByWater(LivingEntity entity) {
+		return entity instanceof EndermanEntity || entity instanceof BlazeEntity;
 	}
 }

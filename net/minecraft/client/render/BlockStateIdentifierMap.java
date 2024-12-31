@@ -1,6 +1,7 @@
 package net.minecraft.client.render;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.UnmodifiableIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import net.minecraft.block.Block;
@@ -38,7 +39,10 @@ public abstract class BlockStateIdentifierMap implements BlockStateIdentifierMap
 
 	@Override
 	public Map<BlockState, ModelIdentifier> addBlock(Block block) {
-		for (BlockState blockState : block.getStateManager().getBlockStates()) {
+		UnmodifiableIterator var2 = block.getStateManager().getBlockStates().iterator();
+
+		while (var2.hasNext()) {
+			BlockState blockState = (BlockState)var2.next();
 			this.map.put(blockState, this.getBlockStateIdentifier(blockState));
 		}
 

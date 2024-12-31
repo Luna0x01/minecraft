@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import net.minecraft.class_3082;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -22,11 +23,12 @@ public class MapState extends PersistentState {
 	public int zCenter;
 	public byte dimensionId;
 	public boolean trackingPosition;
+	public boolean field_15238;
 	public byte scale;
 	public byte[] colors = new byte[16384];
 	public List<MapState.PlayerUpdateTracker> updateTrackers = Lists.newArrayList();
 	private final Map<PlayerEntity, MapState.PlayerUpdateTracker> updateTrackersByPlayer = Maps.newHashMap();
-	public Map<String, MapIcon> icons = Maps.newLinkedHashMap();
+	public Map<String, class_3082> icons = Maps.newLinkedHashMap();
 
 	public MapState(String string) {
 		super(string);
@@ -53,6 +55,7 @@ public class MapState extends PersistentState {
 			this.trackingPosition = true;
 		}
 
+		this.field_15238 = nbt.getBoolean("unlimitedTracking");
 		int i = nbt.getShort("width");
 		int j = nbt.getShort("height");
 		if (i == 128 && j == 128) {
@@ -87,6 +90,7 @@ public class MapState extends PersistentState {
 		nbt.putShort("height", (short)128);
 		nbt.putByteArray("colors", this.colors);
 		nbt.putBoolean("trackingPosition", this.trackingPosition);
+		nbt.putBoolean("unlimitedTracking", this.field_15238);
 		return nbt;
 	}
 
@@ -106,7 +110,7 @@ public class MapState extends PersistentState {
 			if (!playerUpdateTracker2.player.removed && (playerUpdateTracker2.player.inventory.contains(stack) || stack.isInItemFrame())) {
 				if (!stack.isInItemFrame() && playerUpdateTracker2.player.dimension == this.dimensionId && this.trackingPosition) {
 					this.method_4126(
-						0,
+						class_3082.class_3083.PLAYER,
 						playerUpdateTracker2.player.world,
 						playerUpdateTracker2.player.getTranslationKey(),
 						playerUpdateTracker2.player.x,
@@ -124,7 +128,7 @@ public class MapState extends PersistentState {
 			ItemFrameEntity itemFrameEntity = stack.getItemFrame();
 			BlockPos blockPos = itemFrameEntity.getTilePos();
 			this.method_4126(
-				1,
+				class_3082.class_3083.FRAME,
 				player.world,
 				"frame-" + itemFrameEntity.getEntityId(),
 				(double)blockPos.getX(),
@@ -140,7 +144,7 @@ public class MapState extends PersistentState {
 				NbtCompound nbtCompound = nbtList.getCompound(j);
 				if (!this.icons.containsKey(nbtCompound.getString("id"))) {
 					this.method_4126(
-						nbtCompound.getByte("type"),
+						class_3082.class_3083.method_13826(nbtCompound.getByte("type")),
 						player.world,
 						nbtCompound.getString("id"),
 						nbtCompound.getDouble("x"),
@@ -152,29 +156,62 @@ public class MapState extends PersistentState {
 		}
 	}
 
-	private void method_4126(int i, World world, String string, double d, double e, double f) {
-		int j = 1 << this.scale;
-		float g = (float)(d - (double)this.xCenter) / (float)j;
-		float h = (float)(e - (double)this.zCenter) / (float)j;
+	public static void method_13830(ItemStack itemStack, BlockPos blockPos, String string, class_3082.class_3083 arg) {
+		NbtList nbtList;
+		if (itemStack.hasNbt() && itemStack.getNbt().contains("Decorations", 9)) {
+			nbtList = itemStack.getNbt().getList("Decorations", 10);
+		} else {
+			nbtList = new NbtList();
+			itemStack.putSubNbt("Decorations", nbtList);
+		}
+
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.putByte("type", arg.method_13825());
+		nbtCompound.putString("id", string);
+		nbtCompound.putDouble("x", (double)blockPos.getX());
+		nbtCompound.putDouble("z", (double)blockPos.getZ());
+		nbtCompound.putDouble("rot", 180.0);
+		nbtList.add(nbtCompound);
+		if (arg.method_13828()) {
+			NbtCompound nbtCompound2 = itemStack.getOrCreateNbtCompound("display");
+			nbtCompound2.putInt("MapColor", arg.method_13829());
+		}
+	}
+
+	private void method_4126(class_3082.class_3083 arg, World world, String string, double d, double e, double f) {
+		int i = 1 << this.scale;
+		float g = (float)(d - (double)this.xCenter) / (float)i;
+		float h = (float)(e - (double)this.zCenter) / (float)i;
 		byte b = (byte)((int)((double)(g * 2.0F) + 0.5));
 		byte c = (byte)((int)((double)(h * 2.0F) + 0.5));
-		int k = 63;
-		byte l;
+		int j = 63;
+		byte k;
 		if (g >= -63.0F && h >= -63.0F && g <= 63.0F && h <= 63.0F) {
 			f += f < 0.0 ? -8.0 : 8.0;
-			l = (byte)((int)(f * 16.0 / 360.0));
+			k = (byte)((int)(f * 16.0 / 360.0));
 			if (this.dimensionId < 0) {
-				int m = (int)(world.getLevelProperties().getTimeOfDay() / 10L);
-				l = (byte)(m * m * 34187121 + m * 121 >> 15 & 15);
+				int l = (int)(world.getLevelProperties().getTimeOfDay() / 10L);
+				k = (byte)(l * l * 34187121 + l * 121 >> 15 & 15);
 			}
 		} else {
-			if (!(Math.abs(g) < 320.0F) || !(Math.abs(h) < 320.0F)) {
+			if (arg != class_3082.class_3083.PLAYER) {
 				this.icons.remove(string);
 				return;
 			}
 
-			i = 6;
-			l = 0;
+			int m = 320;
+			if (Math.abs(g) < 320.0F && Math.abs(h) < 320.0F) {
+				arg = class_3082.class_3083.PLAYER_OFF_MAP;
+			} else {
+				if (!this.field_15238) {
+					this.icons.remove(string);
+					return;
+				}
+
+				arg = class_3082.class_3083.PLAYER_OFF_LIMITS;
+			}
+
+			k = 0;
 			if (g <= -63.0F) {
 				b = -128;
 			}
@@ -192,7 +229,7 @@ public class MapState extends PersistentState {
 			}
 		}
 
-		this.icons.put(string, new MapIcon((byte)i, b, c, l));
+		this.icons.put(string, new class_3082(arg, b, c, k));
 	}
 
 	@Nullable
@@ -234,6 +271,7 @@ public class MapState extends PersistentState {
 			this.player = playerEntity;
 		}
 
+		@Nullable
 		public Packet<?> getPacket(ItemStack stack) {
 			if (this.dirty) {
 				this.dirty = false;

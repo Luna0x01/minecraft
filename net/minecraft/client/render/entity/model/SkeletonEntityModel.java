@@ -1,10 +1,10 @@
 package net.minecraft.client.render.entity.model;
 
+import net.minecraft.class_3146;
 import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.SkeletonEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
@@ -40,7 +40,7 @@ public class SkeletonEntityModel extends BiPedModel {
 		this.field_13385 = BiPedModel.class_2850.EMPTY;
 		this.field_13384 = BiPedModel.class_2850.EMPTY;
 		ItemStack itemStack = entity.getStackInHand(Hand.MAIN_HAND);
-		if (itemStack != null && itemStack.getItem() == Items.BOW && ((SkeletonEntity)entity).method_13239()) {
+		if (itemStack.getItem() == Items.BOW && ((class_3146)entity).method_14059()) {
 			if (entity.getDurability() == HandOption.RIGHT) {
 				this.field_13385 = BiPedModel.class_2850.BOW_AND_ARROW;
 			} else {
@@ -55,8 +55,8 @@ public class SkeletonEntityModel extends BiPedModel {
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
 		ItemStack itemStack = ((LivingEntity)entity).getMainHandStack();
-		SkeletonEntity skeletonEntity = (SkeletonEntity)entity;
-		if (skeletonEntity.method_13239() && (itemStack == null || itemStack.getItem() != Items.BOW)) {
+		class_3146 lv = (class_3146)entity;
+		if (lv.method_14059() && (itemStack.isEmpty() || itemStack.getItem() != Items.BOW)) {
 			float f = MathHelper.sin(this.handSwingProgress * (float) Math.PI);
 			float g = MathHelper.sin((1.0F - (1.0F - this.handSwingProgress) * (1.0F - this.handSwingProgress)) * (float) Math.PI);
 			this.rightArm.posZ = 0.0F;

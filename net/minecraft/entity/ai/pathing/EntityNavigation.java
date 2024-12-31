@@ -9,7 +9,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkCache;
 
@@ -174,7 +173,7 @@ public abstract class EntityNavigation {
 				Vec3d vec3d3 = this.field_14599.method_11928(this.mob);
 				if (vec3d3 != null) {
 					BlockPos blockPos = new BlockPos(vec3d3).down();
-					Box box = this.world.getBlockState(blockPos).getCollisionBox((BlockView)this.world, blockPos);
+					Box box = this.world.getBlockState(blockPos).getCollisionBox(this.world, blockPos);
 					vec3d3 = vec3d3.subtract(0.0, 1.0 - box.maxY, 0.0);
 					this.mob.getMotionHelper().moveTo(vec3d3.x, vec3d3.y, vec3d3.z, this.speed);
 				}

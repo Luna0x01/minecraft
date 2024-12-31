@@ -23,12 +23,12 @@ public class ServerHandshakeNetworkHandler implements ServerHandshakePacketListe
 		switch (packet.getIntendedState()) {
 			case LOGIN:
 				this.connection.setState(NetworkState.LOGIN);
-				if (packet.getProtocolVersion() > 210) {
-					LiteralText literalText = new LiteralText("Outdated server! I'm still on 1.10.2");
+				if (packet.getProtocolVersion() > 316) {
+					LiteralText literalText = new LiteralText("Outdated server! I'm still on 1.11.2");
 					this.connection.send(new LoginDisconnectS2CPacket(literalText));
 					this.connection.disconnect(literalText);
-				} else if (packet.getProtocolVersion() < 210) {
-					LiteralText literalText2 = new LiteralText("Outdated client! Please use 1.10.2");
+				} else if (packet.getProtocolVersion() < 316) {
+					LiteralText literalText2 = new LiteralText("Outdated client! Please use 1.11.2");
 					this.connection.send(new LoginDisconnectS2CPacket(literalText2));
 					this.connection.disconnect(literalText2);
 				} else {

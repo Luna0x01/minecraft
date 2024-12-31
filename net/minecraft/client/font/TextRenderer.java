@@ -86,6 +86,7 @@ public class TextRenderer implements ResourceReloadListener {
 	@Override
 	public void reload(ResourceManager resourceManager) {
 		this.init();
+		this.readGlyphSizes();
 	}
 
 	private void init() {
@@ -266,7 +267,7 @@ public class TextRenderer implements ResourceReloadListener {
 		for (int i = 0; i < text.length(); i++) {
 			char c = text.charAt(i);
 			if (c == 167 && i + 1 < text.length()) {
-				int j = "0123456789abcdefklmnor".indexOf(text.toLowerCase(Locale.ENGLISH).charAt(i + 1));
+				int j = "0123456789abcdefklmnor".indexOf(String.valueOf(text.charAt(i + 1)).toLowerCase(Locale.ROOT).charAt(0));
 				if (j < 16) {
 					this.obfuscated = false;
 					this.bold = false;

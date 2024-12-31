@@ -1,12 +1,12 @@
 package net.minecraft.item;
 
-import java.util.List;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.Rarity;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class AppleItem extends FoodItem {
@@ -17,7 +17,7 @@ public class AppleItem extends FoodItem {
 
 	@Override
 	public boolean hasEnchantmentGlint(ItemStack stack) {
-		return stack.getData() > 0;
+		return super.hasEnchantmentGlint(stack) || stack.getData() > 0;
 	}
 
 	@Override
@@ -42,8 +42,8 @@ public class AppleItem extends FoodItem {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
-		list.add(new ItemStack(item));
-		list.add(new ItemStack(item, 1, 1));
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item));
+		defaultedList.add(new ItemStack(item, 1, 1));
 	}
 }

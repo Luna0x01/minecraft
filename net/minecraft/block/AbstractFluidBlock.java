@@ -8,6 +8,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -35,7 +36,7 @@ public abstract class AbstractFluidBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -115,10 +116,9 @@ public abstract class AbstractFluidBlock extends Block {
 		return BlockRenderType.LIQUID;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
 	@Override
@@ -224,7 +224,7 @@ public abstract class AbstractFluidBlock extends Block {
 			&& !world.getBlockState(pos.up()).isFullBoundsCubeForCulling()) {
 			if (random.nextInt(100) == 0) {
 				double g = d + (double)random.nextFloat();
-				double h = e + state.getCollisionBox((BlockView)world, pos).maxY;
+				double h = e + state.getCollisionBox(world, pos).maxY;
 				double j = f + (double)random.nextFloat();
 				world.addParticle(ParticleType.LAVA, g, h, j, 0.0, 0.0, 0.0);
 				world.playSound(g, h, j, Sounds.BLOCK_LAVA_POP, SoundCategory.BLOCKS, 0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
@@ -261,8 +261,8 @@ public abstract class AbstractFluidBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		this.canChangeFromLava(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		this.canChangeFromLava(world, pos, state);
 	}
 
 	public boolean canChangeFromLava(World world, BlockPos pos, BlockState state) {
@@ -341,5 +341,14 @@ public abstract class AbstractFluidBlock extends Block {
 		} else {
 			throw new IllegalArgumentException("Invalid material");
 		}
+	}
+
+	public static float method_13709(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		int i = (Integer)blockState.get(LEVEL);
+		return (i & 7) == 0 && blockView.getBlockState(blockPos.up()).getMaterial() == Material.WATER ? 1.0F : 1.0F - getHeightPercent(i);
+	}
+
+	public static float method_13710(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return (float)blockPos.getY() + method_13709(blockState, blockView, blockPos);
 	}
 }

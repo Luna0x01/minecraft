@@ -6,6 +6,7 @@ public class class_2864 extends Particle {
 	private final int field_13448;
 	private final int field_13442;
 	private final float field_13443;
+	private float field_15272 = 0.91F;
 	private float field_13444;
 	private float field_13445;
 	private float field_13446;
@@ -59,9 +60,9 @@ public class class_2864 extends Particle {
 		this.setMiscTexture(this.field_13448 + (this.field_13442 - 1 - this.age * this.field_13442 / this.maxAge));
 		this.velocityY = this.velocityY + (double)this.field_13443;
 		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
-		this.velocityX *= 0.91F;
-		this.velocityY *= 0.91F;
-		this.velocityZ *= 0.91F;
+		this.velocityX = this.velocityX * (double)this.field_15272;
+		this.velocityY = this.velocityY * (double)this.field_15272;
+		this.velocityZ = this.velocityZ * (double)this.field_15272;
 		if (this.field_13434) {
 			this.velocityX *= 0.7F;
 			this.velocityZ *= 0.7F;
@@ -71,5 +72,9 @@ public class class_2864 extends Particle {
 	@Override
 	public int method_12243(float f) {
 		return 15728880;
+	}
+
+	protected void method_13844(float f) {
+		this.field_15272 = f;
 	}
 }

@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.block.material.Material;
@@ -50,11 +49,15 @@ public class EnderChestBlock extends BlockWithEntity {
 	}
 
 	@Override
+	public boolean method_13704(BlockState state) {
+		return true;
+	}
+
+	@Override
 	public BlockRenderType getRenderType(BlockState state) {
 		return BlockRenderType.ENTITYBLOCK_ANIMATED;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.OBSIDIAN);
@@ -81,30 +84,19 @@ public class EnderChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		EnderChestInventory enderChestInventory = playerEntity.getEnderChestInventory();
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		EnderChestInventory enderChestInventory = player.getEnderChestInventory();
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (enderChestInventory == null || !(blockEntity instanceof EnderChestBlockEntity)) {
 			return true;
-		} else if (world.getBlockState(blockPos.up()).method_11734()) {
+		} else if (world.getBlockState(pos.up()).method_11734()) {
 			return true;
 		} else if (world.isClient) {
 			return true;
 		} else {
 			enderChestInventory.setBlockEntity((EnderChestBlockEntity)blockEntity);
-			playerEntity.openInventory(enderChestInventory);
-			playerEntity.incrementStat(Stats.ENDERCHEST_OPENED);
+			player.openInventory(enderChestInventory);
+			player.incrementStat(Stats.ENDERCHEST_OPENED);
 			return true;
 		}
 	}

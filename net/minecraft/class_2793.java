@@ -21,8 +21,7 @@ public class class_2793 extends class_2795 {
 
 	@Override
 	public ItemStack method_12029(ItemStack itemStack, Random random, class_2782 arg) {
-		EnchantmentHelper.enchant(random, itemStack, this.field_13216.method_12015(random), this.field_13217);
-		return itemStack;
+		return EnchantmentHelper.enchant(random, itemStack, this.field_13216.method_12015(random), this.field_13217);
 	}
 
 	public static class class_2794 extends class_2795.class_2796<class_2793> {

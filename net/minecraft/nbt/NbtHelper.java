@@ -1,6 +1,7 @@
 package net.minecraft.nbt;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.UnmodifiableIterator;
 import com.mojang.authlib.GameProfile;
 import java.util.UUID;
 import java.util.Map.Entry;
@@ -27,9 +28,7 @@ public final class NbtHelper {
 			string2 = nbt.getString("Id");
 		}
 
-		if (ChatUtil.isEmpty(string) && ChatUtil.isEmpty(string2)) {
-			return null;
-		} else {
+		try {
 			UUID uUID;
 			try {
 				uUID = UUID.fromString(string2);
@@ -57,6 +56,8 @@ public final class NbtHelper {
 			}
 
 			return gameProfile;
+		} catch (Throwable var13) {
+			return null;
 		}
 	}
 
@@ -119,8 +120,8 @@ public final class NbtHelper {
 		} else if (standard instanceof NbtList && equalValue) {
 			NbtList nbtList = (NbtList)standard;
 			NbtList nbtList2 = (NbtList)subject;
-			if (nbtList.size() == 0) {
-				return nbtList2.size() == 0;
+			if (nbtList.isEmpty()) {
+				return nbtList2.isEmpty();
 			} else {
 				for (int i = 0; i < nbtList.size(); i++) {
 					NbtElement nbtElement2 = nbtList.get(i);
@@ -198,8 +199,10 @@ public final class NbtHelper {
 		compound.putString("Name", Block.REGISTRY.getIdentifier(state.getBlock()).toString());
 		if (!state.getPropertyMap().isEmpty()) {
 			NbtCompound nbtCompound = new NbtCompound();
+			UnmodifiableIterator var3 = state.getPropertyMap().entrySet().iterator();
 
-			for (Entry<Property<?>, Comparable<?>> entry : state.getPropertyMap().entrySet()) {
+			while (var3.hasNext()) {
+				Entry<Property<?>, Comparable<?>> entry = (Entry<Property<?>, Comparable<?>>)var3.next();
 				Property<?> property = (Property<?>)entry.getKey();
 				nbtCompound.putString(property.getName(), nameValue(property, (Comparable<?>)entry.getValue()));
 			}

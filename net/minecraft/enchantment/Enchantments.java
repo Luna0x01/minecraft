@@ -15,12 +15,14 @@ public class Enchantments {
 	public static final Enchantment THORNS = get("thorns");
 	public static final Enchantment DEPTH_STRIDER = get("depth_strider");
 	public static final Enchantment FROST_WALKER = get("frost_walker");
+	public static final Enchantment BINDING_CURSE = get("binding_curse");
 	public static final Enchantment SHARPNESS = get("sharpness");
 	public static final Enchantment SMITE = get("smite");
 	public static final Enchantment BANE_OF_ARTHROPODS = get("bane_of_arthropods");
 	public static final Enchantment KNOCKBACK = get("knockback");
 	public static final Enchantment FIRE_ASPECT = get("fire_aspect");
 	public static final Enchantment LOOTING = get("looting");
+	public static final Enchantment SWEEPING = get("sweeping");
 	public static final Enchantment EFFICIENCY = get("efficiency");
 	public static final Enchantment SILK_TOUCH = get("silk_touch");
 	public static final Enchantment UNBREAKING = get("unbreaking");
@@ -32,6 +34,7 @@ public class Enchantments {
 	public static final Enchantment LUCK_OF_THE_SEA = get("luck_of_the_sea");
 	public static final Enchantment LURE = get("lure");
 	public static final Enchantment MENDING = get("mending");
+	public static final Enchantment VANISHING_CURSE = get("vanishing_curse");
 
 	@Nullable
 	private static Enchantment get(String id) {
@@ -45,7 +48,7 @@ public class Enchantments {
 
 	static {
 		if (!Bootstrap.isInitialized()) {
-			throw new RuntimeException("Accessed MobEffects before Bootstrap!");
+			throw new RuntimeException("Accessed Enchantments before Bootstrap!");
 		}
 	}
 }

@@ -3,6 +3,7 @@ package net.minecraft.client.util;
 import com.google.common.collect.Maps;
 import com.mojang.authlib.GameProfile;
 import com.mojang.util.UUIDTypeAdapter;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -58,7 +59,7 @@ public class Session {
 
 		@Nullable
 		public static Session.AccountType byName(String string) {
-			return (Session.AccountType)BY_NAME.get(string.toLowerCase());
+			return (Session.AccountType)BY_NAME.get(string.toLowerCase(Locale.ROOT));
 		}
 
 		static {

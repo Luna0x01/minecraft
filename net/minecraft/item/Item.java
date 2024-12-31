@@ -1,6 +1,5 @@
 package net.minecraft.item;
 
-import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -9,6 +8,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_3056;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -46,6 +46,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -103,11 +104,12 @@ public class Item {
 		return REGISTRY.getByRawId(id);
 	}
 
-	@Nullable
 	public static Item fromBlock(Block block) {
-		return (Item)BLOCK_ITEMS.get(block);
+		Item item = (Item)BLOCK_ITEMS.get(block);
+		return item == null ? Items.AIR : item;
 	}
 
+	@Nullable
 	public static Item getFromId(String id) {
 		Item item = REGISTRY.get(new Identifier(id));
 		if (item == null) {
@@ -118,6 +120,10 @@ public class Item {
 		}
 
 		return item;
+	}
+
+	public ItemStack getDefaultStack() {
+		return new ItemStack(this);
 	}
 
 	public final void addProperty(Identifier identifier, ItemPropertyGetter itemPropertyGetter) {
@@ -147,9 +153,7 @@ public class Item {
 		return this;
 	}
 
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
 		return ActionResult.PASS;
 	}
 
@@ -157,11 +161,10 @@ public class Item {
 		return 1.0F;
 	}
 
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		return new TypedActionResult<>(ActionResult.PASS, itemStack);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		return new TypedActionResult<>(ActionResult.PASS, player.getStackInHand(hand));
 	}
 
-	@Nullable
 	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
 		return stack;
 	}
@@ -236,8 +239,7 @@ public class Item {
 	}
 
 	public String getItemStackTranslatedName(ItemStack stack) {
-		String string = this.getTranslationKey(stack);
-		return string == null ? "" : CommonI18n.translate(string);
+		return CommonI18n.translate(this.getTranslationKey(stack));
 	}
 
 	public String getTranslationKey() {
@@ -257,6 +259,7 @@ public class Item {
 		return true;
 	}
 
+	@Nullable
 	public Item getRecipeRemainder() {
 		return this.recipeRemainder;
 	}
@@ -290,7 +293,7 @@ public class Item {
 	}
 
 	public String getDisplayName(ItemStack stack) {
-		return ("" + CommonI18n.translate(this.getItemStackTranslatedName(stack) + ".name")).trim();
+		return CommonI18n.translate(this.getItemStackTranslatedName(stack) + ".name").trim();
 	}
 
 	public boolean hasEnchantmentGlint(ItemStack stack) {
@@ -327,10 +330,11 @@ public class Item {
 		return 0;
 	}
 
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
-		list.add(new ItemStack(item));
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item));
 	}
 
+	@Nullable
 	public ItemGroup getItemGroup() {
 		return this.group;
 	}
@@ -353,36 +357,37 @@ public class Item {
 	}
 
 	public static void setup() {
-		registerBlockItem(Blocks.STONE, new VariantBlockItem(Blocks.STONE, Blocks.STONE, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.AIR, new class_3056(Blocks.AIR));
+		registerBlockItem(Blocks.STONE, new VariantBlockItem(Blocks.STONE, Blocks.STONE, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return StoneBlock.StoneType.getById(itemStack.getData()).getTranslationKey();
 			}
 		}).setTranslationKey("stone"));
 		registerBlockItem(Blocks.GRASS, new GrassBlockItem(Blocks.GRASS, false));
-		registerBlockItem(Blocks.DIRT, new VariantBlockItem(Blocks.DIRT, Blocks.DIRT, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.DIRT, new VariantBlockItem(Blocks.DIRT, Blocks.DIRT, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return DirtBlock.DirtType.getById(itemStack.getData()).getStateName();
 			}
 		}).setTranslationKey("dirt"));
 		registerBlockItem(Blocks.COBBLESTONE);
-		registerBlockItem(Blocks.PLANKS, new VariantBlockItem(Blocks.PLANKS, Blocks.PLANKS, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.PLANKS, new VariantBlockItem(Blocks.PLANKS, Blocks.PLANKS, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return PlanksBlock.WoodType.getById(itemStack.getData()).getOldName();
 			}
 		}).setTranslationKey("wood"));
-		registerBlockItem(Blocks.SAPLING, new VariantBlockItem(Blocks.SAPLING, Blocks.SAPLING, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.SAPLING, new VariantBlockItem(Blocks.SAPLING, Blocks.SAPLING, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return PlanksBlock.WoodType.getById(itemStack.getData()).getOldName();
 			}
 		}).setTranslationKey("sapling"));
 		registerBlockItem(Blocks.BEDROCK);
-		registerBlockItem(Blocks.SAND, new VariantBlockItem(Blocks.SAND, Blocks.SAND, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.SAND, new VariantBlockItem(Blocks.SAND, Blocks.SAND, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return SandBlock.SandType.getById(itemStack.getData()).getTranslationKey();
 			}
 		}).setTranslationKey("sand"));
@@ -390,23 +395,23 @@ public class Item {
 		registerBlockItem(Blocks.GOLD_ORE);
 		registerBlockItem(Blocks.IRON_ORE);
 		registerBlockItem(Blocks.COAL_ORE);
-		registerBlockItem(Blocks.LOG, new VariantBlockItem(Blocks.LOG, Blocks.LOG, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.LOG, new VariantBlockItem(Blocks.LOG, Blocks.LOG, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return PlanksBlock.WoodType.getById(itemStack.getData()).getOldName();
 			}
 		}).setTranslationKey("log"));
-		registerBlockItem(Blocks.LOG2, new VariantBlockItem(Blocks.LOG2, Blocks.LOG2, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.LOG2, new VariantBlockItem(Blocks.LOG2, Blocks.LOG2, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return PlanksBlock.WoodType.getById(itemStack.getData() + 4).getOldName();
 			}
 		}).setTranslationKey("log"));
 		registerBlockItem(Blocks.LEAVES, new LeavesItem(Blocks.LEAVES).setTranslationKey("leaves"));
 		registerBlockItem(Blocks.LEAVES2, new LeavesItem(Blocks.LEAVES2).setTranslationKey("leaves"));
-		registerBlockItem(Blocks.SPONGE, new VariantBlockItem(Blocks.SPONGE, Blocks.SPONGE, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.SPONGE, new VariantBlockItem(Blocks.SPONGE, Blocks.SPONGE, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return (itemStack.getData() & 1) == 1 ? "wet" : "dry";
 			}
 		}).setTranslationKey("sponge"));
@@ -414,9 +419,9 @@ public class Item {
 		registerBlockItem(Blocks.LAPIS_LAZULI_ORE);
 		registerBlockItem(Blocks.LAPIS_LAZULI_BLOCK);
 		registerBlockItem(Blocks.DISPENSER);
-		registerBlockItem(Blocks.SANDSTONE, new VariantBlockItem(Blocks.SANDSTONE, Blocks.SANDSTONE, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.SANDSTONE, new VariantBlockItem(Blocks.SANDSTONE, Blocks.SANDSTONE, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return SandstoneBlock.SandstoneType.getById(itemStack.getData()).getBlockStateName();
 			}
 		}).setTranslationKey("sandStone"));
@@ -429,15 +434,15 @@ public class Item {
 		registerBlockItem(Blocks.DEADBUSH);
 		registerBlockItem(Blocks.PISTON, new StickyPistonBlockItem(Blocks.PISTON));
 		registerBlockItem(Blocks.WOOL, new WoolItem(Blocks.WOOL).setTranslationKey("cloth"));
-		registerBlockItem(Blocks.YELLOW_FLOWER, new VariantBlockItem(Blocks.YELLOW_FLOWER, Blocks.YELLOW_FLOWER, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.YELLOW_FLOWER, new VariantBlockItem(Blocks.YELLOW_FLOWER, Blocks.YELLOW_FLOWER, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return FlowerBlock.FlowerType.getType(FlowerBlock.Color.YELLOW, itemStack.getData()).getName();
 			}
 		}).setTranslationKey("flower"));
-		registerBlockItem(Blocks.RED_FLOWER, new VariantBlockItem(Blocks.RED_FLOWER, Blocks.RED_FLOWER, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.RED_FLOWER, new VariantBlockItem(Blocks.RED_FLOWER, Blocks.RED_FLOWER, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return FlowerBlock.FlowerType.getType(FlowerBlock.Color.RED, itemStack.getData()).getName();
 			}
 		}).setTranslationKey("rose"));
@@ -494,15 +499,15 @@ public class Item {
 		registerBlockItem(Blocks.GLOWSTONE);
 		registerBlockItem(Blocks.JACK_O_LANTERN);
 		registerBlockItem(Blocks.TRAPDOOR);
-		registerBlockItem(Blocks.MONSTER_EGG, new VariantBlockItem(Blocks.MONSTER_EGG, Blocks.MONSTER_EGG, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.MONSTER_EGG, new VariantBlockItem(Blocks.MONSTER_EGG, Blocks.MONSTER_EGG, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return InfestedBlock.Variants.getById(itemStack.getData()).getTranslationKey();
 			}
 		}).setTranslationKey("monsterStoneEgg"));
-		registerBlockItem(Blocks.STONE_BRICKS, new VariantBlockItem(Blocks.STONE_BRICKS, Blocks.STONE_BRICKS, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.STONE_BRICKS, new VariantBlockItem(Blocks.STONE_BRICKS, Blocks.STONE_BRICKS, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return StoneBrickBlock.Type.getById(itemStack.getData()).getValueName();
 			}
 		}).setTranslationKey("stonebricksmooth"));
@@ -542,9 +547,9 @@ public class Item {
 		registerBlockItem(Blocks.JUNGLE_STAIRS);
 		registerBlockItem(Blocks.COMMAND_BLOCK);
 		registerBlockItem(Blocks.BEACON);
-		registerBlockItem(Blocks.COBBLESTONE_WALL, new VariantBlockItem(Blocks.COBBLESTONE_WALL, Blocks.COBBLESTONE_WALL, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.COBBLESTONE_WALL, new VariantBlockItem(Blocks.COBBLESTONE_WALL, Blocks.COBBLESTONE_WALL, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return WallBlock.WallType.getById(itemStack.getData()).getBlockStateName();
 			}
 		}).setTranslationKey("cobbleWall"));
@@ -576,24 +581,24 @@ public class Item {
 		registerBlockItem(Blocks.DARK_OAK_STAIRS);
 		registerBlockItem(Blocks.SLIME_BLOCK);
 		registerBlockItem(Blocks.GRASS_PATH);
-		registerBlockItem(Blocks.DOUBLE_PLANT, new VariantBlockItem(Blocks.DOUBLE_PLANT, Blocks.DOUBLE_PLANT, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.DOUBLE_PLANT, new VariantBlockItem(Blocks.DOUBLE_PLANT, Blocks.DOUBLE_PLANT, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return DoublePlantBlock.DoublePlantType.getById(itemStack.getData()).getSingleName();
 			}
 		}).setTranslationKey("doublePlant"));
 		registerBlockItem(Blocks.STAINED_GLASS, new WoolItem(Blocks.STAINED_GLASS).setTranslationKey("stainedGlass"));
 		registerBlockItem(Blocks.STAINED_GLASS_PANE, new WoolItem(Blocks.STAINED_GLASS_PANE).setTranslationKey("stainedGlassPane"));
-		registerBlockItem(Blocks.PRISMARINE, new VariantBlockItem(Blocks.PRISMARINE, Blocks.PRISMARINE, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.PRISMARINE, new VariantBlockItem(Blocks.PRISMARINE, Blocks.PRISMARINE, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return PrismarineBlock.PrismarineType.getById(itemStack.getData()).getStateName();
 			}
 		}).setTranslationKey("prismarine"));
 		registerBlockItem(Blocks.SEA_LANTERN);
-		registerBlockItem(Blocks.RED_SANDSTONE, new VariantBlockItem(Blocks.RED_SANDSTONE, Blocks.RED_SANDSTONE, new Function<ItemStack, String>() {
-			@Nullable
-			public String apply(@Nullable ItemStack itemStack) {
+		registerBlockItem(Blocks.RED_SANDSTONE, new VariantBlockItem(Blocks.RED_SANDSTONE, Blocks.RED_SANDSTONE, new VariantBlockItem.class_3057() {
+			@Override
+			public String method_8437(ItemStack itemStack) {
 				return RedSandstoneBlock.RedSandstoneType.getById(itemStack.getData()).getBlockStateName();
 			}
 		}).setTranslationKey("redSandStone"));
@@ -606,6 +611,23 @@ public class Item {
 		registerBlockItem(Blocks.RED_NETHER_BRICK);
 		registerBlockItem(Blocks.BONE_BLOCK);
 		registerBlockItem(Blocks.STRUCTURE_VOID);
+		registerBlockItem(Blocks.OBSERVER);
+		registerBlockItem(Blocks.WHITE_SHULKER_BOX, new ShulkerBoxItem(Blocks.WHITE_SHULKER_BOX));
+		registerBlockItem(Blocks.ORANGE_SHULKER_BOX, new ShulkerBoxItem(Blocks.ORANGE_SHULKER_BOX));
+		registerBlockItem(Blocks.MAGENTA_SHULKER_BOX, new ShulkerBoxItem(Blocks.MAGENTA_SHULKER_BOX));
+		registerBlockItem(Blocks.LIGHT_BLUE_SHULKER_BOX, new ShulkerBoxItem(Blocks.LIGHT_BLUE_SHULKER_BOX));
+		registerBlockItem(Blocks.YELLOW_SHULKER_BOX, new ShulkerBoxItem(Blocks.YELLOW_SHULKER_BOX));
+		registerBlockItem(Blocks.LIME_SHULKER_BOX, new ShulkerBoxItem(Blocks.LIME_SHULKER_BOX));
+		registerBlockItem(Blocks.PINK_SHULKER_BOX, new ShulkerBoxItem(Blocks.PINK_SHULKER_BOX));
+		registerBlockItem(Blocks.GRAY_SHULKER_BOX, new ShulkerBoxItem(Blocks.GRAY_SHULKER_BOX));
+		registerBlockItem(Blocks.SILVER_SHULKER_BOX, new ShulkerBoxItem(Blocks.SILVER_SHULKER_BOX));
+		registerBlockItem(Blocks.CYAN_SHULKER_BOX, new ShulkerBoxItem(Blocks.CYAN_SHULKER_BOX));
+		registerBlockItem(Blocks.PURPLE_SHULKER_BOX, new ShulkerBoxItem(Blocks.PURPLE_SHULKER_BOX));
+		registerBlockItem(Blocks.BLUE_SHULKER_BOX, new ShulkerBoxItem(Blocks.BLUE_SHULKER_BOX));
+		registerBlockItem(Blocks.BROWN_SHULKER_BOX, new ShulkerBoxItem(Blocks.BROWN_SHULKER_BOX));
+		registerBlockItem(Blocks.GREEN_SHULKER_BOX, new ShulkerBoxItem(Blocks.GREEN_SHULKER_BOX));
+		registerBlockItem(Blocks.RED_SHULKER_BOX, new ShulkerBoxItem(Blocks.RED_SHULKER_BOX));
+		registerBlockItem(Blocks.BLACK_SHULKER_BOX, new ShulkerBoxItem(Blocks.BLACK_SHULKER_BOX));
 		registerBlockItem(Blocks.STRUCTURE_BLOCK);
 		register(256, "iron_shovel", new ShovelItem(Item.ToolMaterialType.IRON).setTranslationKey("shovelIron"));
 		register(257, "iron_pickaxe", new PickaxeItem(Item.ToolMaterialType.IRON).setTranslationKey("pickaxeIron"));
@@ -814,6 +836,9 @@ public class Item {
 		register(446, "jungle_boat", new BoatItem(BoatEntity.Type.JUNGLE));
 		register(447, "acacia_boat", new BoatItem(BoatEntity.Type.ACACIA));
 		register(448, "dark_oak_boat", new BoatItem(BoatEntity.Type.DARK_OAK));
+		register(449, "totem_of_undying", new Item().setTranslationKey("totem").setMaxCount(1).setItemGroup(ItemGroup.COMBAT));
+		register(450, "shulker_shell", new Item().setTranslationKey("shulkerShell").setItemGroup(ItemGroup.MATERIALS));
+		register(452, "iron_nugget", new Item().setTranslationKey("ironNugget").setItemGroup(ItemGroup.MATERIALS));
 		register(2256, "record_13", new MusicDiscItem("13", Sounds.RECORD_13).setTranslationKey("record"));
 		register(2257, "record_cat", new MusicDiscItem("cat", Sounds.RECORD_CAT).setTranslationKey("record"));
 		register(2258, "record_blocks", new MusicDiscItem("blocks", Sounds.RECORD_BLOCKS).setTranslationKey("record"));

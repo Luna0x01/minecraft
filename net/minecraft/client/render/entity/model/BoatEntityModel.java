@@ -74,11 +74,7 @@ public class BoatEntityModel extends EntityModel implements class_2854 {
 		GlStateManager.colorMask(true, true, true, true);
 	}
 
-	@Override
-	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-	}
-
-	ModelPart method_12220(boolean bl) {
+	protected ModelPart method_12220(boolean bl) {
 		ModelPart modelPart = new ModelPart(this, 62, bl ? 0 : 20).setTextureSize(128, 64);
 		int i = 20;
 		int j = 7;
@@ -89,7 +85,7 @@ public class BoatEntityModel extends EntityModel implements class_2854 {
 		return modelPart;
 	}
 
-	void method_12219(BoatEntity boatEntity, int i, float f, float g) {
+	protected void method_12219(BoatEntity boatEntity, int i, float f, float g) {
 		float h = 40.0F;
 		float j = boatEntity.interpolatePaddlePhase(i, g) * 40.0F;
 		ModelPart modelPart = this.field_13379[i];

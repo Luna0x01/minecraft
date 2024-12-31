@@ -52,7 +52,9 @@ public enum ParticleType {
 	END_ROD("endRod", 43, false),
 	DAMAGE_INDICATOR("damageIndicator", 44, true),
 	SWEEP_ATTACK("sweepAttack", 45, true),
-	FALLING_DUST("fallingdust", 46, false, 1);
+	FALLING_DUST("fallingdust", 46, false, 1),
+	TOTEM("totem", 47, false),
+	SPIT("spit", 48, true);
 
 	private final String name;
 	private final int id;

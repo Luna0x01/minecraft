@@ -2,12 +2,11 @@ package net.minecraft.block.entity;
 
 import net.minecraft.inventory.ScreenHandlerLock;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
-public abstract class LockableContainerBlockEntity extends BlockEntity implements NamedScreenHandlerFactory, LockableScreenHandlerFactory {
+public abstract class LockableContainerBlockEntity extends BlockEntity implements LockableScreenHandlerFactory {
 	private ScreenHandlerLock lock = ScreenHandlerLock.NONE;
 
 	@Override

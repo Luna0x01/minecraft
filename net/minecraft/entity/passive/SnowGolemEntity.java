@@ -1,6 +1,7 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.datafixer.DataFixerUpper;
@@ -10,7 +11,6 @@ import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.ProjectileAttackGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -23,6 +23,7 @@ import net.minecraft.entity.thrown.SnowballEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.loot.LootTables;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Hand;
@@ -40,13 +41,13 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "SnowMan");
+		MobEntity.registerDataFixes(dataFixer, SnowGolemEntity.class);
 	}
 
 	@Override
 	protected void initGoals() {
 		this.goals.add(1, new ProjectileAttackGoal(this, 1.25, 20, 10.0F));
-		this.goals.add(2, new WanderAroundGoal(this, 1.0));
+		this.goals.add(2, new class_3133(this, 1.0, 1.0000001E-5F));
 		this.goals.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
 		this.goals.add(4, new LookAroundGoal(this));
 		this.attackGoals.add(1, new FollowTargetGoal(this, MobEntity.class, 10, true, false, Monster.MONSTER_PREDICATE));
@@ -62,7 +63,21 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(field_14622, (byte)0);
+		this.dataTracker.startTracking(field_14622, (byte)16);
+	}
+
+	@Override
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		super.writeCustomDataToNbt(nbt);
+		nbt.putBoolean("Pumpkin", this.method_13124());
+	}
+
+	@Override
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		super.readCustomDataFromNbt(nbt);
+		if (nbt.contains("Pumpkin")) {
+			this.method_13123(nbt.getBoolean("Pumpkin"));
+		}
 	}
 
 	@Override
@@ -90,7 +105,7 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 				k = MathHelper.floor(this.z + (double)((float)(l / 2 % 2 * 2 - 1) * 0.25F));
 				BlockPos blockPos = new BlockPos(i, j, k);
 				if (this.world.getBlockState(blockPos).getMaterial() == Material.AIR
-					&& this.world.getBiome(new BlockPos(i, 0, k)).getTemperature(blockPos) < 0.8F
+					&& this.world.getBiome(blockPos).getTemperature(blockPos) < 0.8F
 					&& Blocks.SNOW_LAYER.canBePlacedAtPos(this.world, blockPos)) {
 					this.world.setBlockState(blockPos, Blocks.SNOW_LAYER.getDefaultState());
 				}
@@ -123,13 +138,14 @@ public class SnowGolemEntity extends GolemEntity implements RangedAttackMob {
 	}
 
 	@Override
-	protected boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (itemStack != null && itemStack.getItem() == Items.SHEARS && !this.method_13124() && !this.world.isClient) {
-			this.method_13123(true);
+	protected boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (itemStack.getItem() == Items.SHEARS && this.method_13124() && !this.world.isClient) {
+			this.method_13123(false);
 			itemStack.damage(1, playerEntity);
 		}
 
-		return super.method_13079(playerEntity, hand, itemStack);
+		return super.interactMob(playerEntity, hand);
 	}
 
 	public boolean method_13124() {

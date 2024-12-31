@@ -10,8 +10,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.hud.SpectatorHud;
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.world.GameMode;
 
 public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, SpectatorMenuCommand {
@@ -41,7 +41,7 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 
 	@Override
 	public Text getPrompt() {
-		return new LiteralText("Select a player to teleport to");
+		return new TranslatableText("spectatorMenu.teleport.prompt");
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 
 	@Override
 	public Text getName() {
-		return new LiteralText("Teleport to player");
+		return new TranslatableText("spectatorMenu.teleport");
 	}
 
 	@Override

@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -38,11 +37,11 @@ public class FrostedIceBlock extends IceBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (block == this) {
-			int i = this.method_11614(world, blockPos);
+			int i = this.method_11614(world, pos);
 			if (i < 2) {
-				this.method_11617(world, blockPos);
+				this.method_11617(world, pos);
 			}
 		}
 	}
@@ -85,9 +84,8 @@ public class FrostedIceBlock extends IceBlock {
 		return new StateManager(this, field_12680);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 }

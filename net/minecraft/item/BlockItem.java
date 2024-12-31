@@ -14,6 +14,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -25,43 +26,30 @@ public class BlockItem extends Item {
 		this.block = block;
 	}
 
-	public BlockItem setTranslationKey(String string) {
-		super.setTranslationKey(string);
-		return this;
-	}
-
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockState blockState = world.getBlockState(blockPos);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		BlockState blockState = world.getBlockState(pos);
 		Block block = blockState.getBlock();
-		if (!block.method_8638(world, blockPos)) {
-			blockPos = blockPos.offset(direction);
+		if (!block.method_8638(world, pos)) {
+			pos = pos.offset(direction);
 		}
 
-		if (itemStack.count != 0
-			&& playerEntity.canModify(blockPos, direction, itemStack)
-			&& world.canBlockBePlaced(this.block, blockPos, false, direction, null, itemStack)) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!itemStack.isEmpty() && player.canModify(pos, direction, itemStack) && world.method_8493(this.block, pos, false, direction, null)) {
 			int i = this.getMeta(itemStack.getData());
-			BlockState blockState2 = this.block.getStateFromData(world, blockPos, direction, f, g, h, i, playerEntity);
-			if (world.setBlockState(blockPos, blockState2, 11)) {
-				blockState2 = world.getBlockState(blockPos);
+			BlockState blockState2 = this.block.getStateFromData(world, pos, direction, x, y, z, i, player);
+			if (world.setBlockState(pos, blockState2, 11)) {
+				blockState2 = world.getBlockState(pos);
 				if (blockState2.getBlock() == this.block) {
-					setBlockEntityNbt(world, playerEntity, blockPos, itemStack);
-					this.block.onPlaced(world, blockPos, blockState2, playerEntity, itemStack);
+					setBlockEntityNbt(world, player, pos, itemStack);
+					this.block.onPlaced(world, pos, blockState2, player, itemStack);
 				}
 
 				BlockSoundGroup blockSoundGroup = this.block.getSoundGroup();
 				world.method_11486(
-					playerEntity,
-					blockPos,
-					blockSoundGroup.method_4194(),
-					SoundCategory.BLOCKS,
-					(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
-					blockSoundGroup.getPitch() * 0.8F
+					player, pos, blockSoundGroup.method_4194(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F
 				);
-				itemStack.count--;
+				itemStack.decrement(1);
 			}
 
 			return ActionResult.SUCCESS;
@@ -75,22 +63,22 @@ public class BlockItem extends Item {
 		if (minecraftServer == null) {
 			return false;
 		} else {
-			if (itemStack.hasNbt() && itemStack.getNbt().contains("BlockEntityTag", 10)) {
+			NbtCompound nbtCompound = itemStack.getNbtCompound("BlockEntityTag");
+			if (nbtCompound != null) {
 				BlockEntity blockEntity = world.getBlockEntity(pos);
 				if (blockEntity != null) {
 					if (!world.isClient && blockEntity.shouldNotCopyNbtFromItem() && (player == null || !player.method_13567())) {
 						return false;
 					}
 
-					NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
-					NbtCompound nbtCompound2 = nbtCompound.copy();
-					NbtCompound nbtCompound3 = (NbtCompound)itemStack.getNbt().get("BlockEntityTag");
-					nbtCompound.copyFrom(nbtCompound3);
-					nbtCompound.putInt("x", pos.getX());
-					nbtCompound.putInt("y", pos.getY());
-					nbtCompound.putInt("z", pos.getZ());
-					if (!nbtCompound.equals(nbtCompound2)) {
-						blockEntity.fromNbt(nbtCompound);
+					NbtCompound nbtCompound2 = blockEntity.toNbt(new NbtCompound());
+					NbtCompound nbtCompound3 = nbtCompound2.copy();
+					nbtCompound2.copyFrom(nbtCompound);
+					nbtCompound2.putInt("x", pos.getX());
+					nbtCompound2.putInt("y", pos.getY());
+					nbtCompound2.putInt("z", pos.getZ());
+					if (!nbtCompound2.equals(nbtCompound3)) {
+						blockEntity.fromNbt(nbtCompound2);
 						blockEntity.markDirty();
 						return true;
 					}
@@ -109,7 +97,7 @@ public class BlockItem extends Item {
 			pos = pos.offset(dir);
 		}
 
-		return world.canBlockBePlaced(this.block, pos, false, dir, null, stack);
+		return world.method_8493(this.block, pos, false, dir, null);
 	}
 
 	@Override
@@ -128,8 +116,14 @@ public class BlockItem extends Item {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
-		this.block.appendItemStacks(item, group, list);
+	public void method_13648(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		this.block.method_13700(item, itemGroup, defaultedList);
+	}
+
+	@Override
+	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
+		super.appendTooltip(stack, player, lines, advanced);
+		this.block.method_13701(stack, player, lines, advanced);
 	}
 
 	public Block getBlock() {

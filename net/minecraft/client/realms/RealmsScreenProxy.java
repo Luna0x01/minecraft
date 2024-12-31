@@ -15,7 +15,7 @@ public class RealmsScreenProxy extends Screen {
 
 	public RealmsScreenProxy(RealmsScreen realmsScreen) {
 		this.realmsScreen = realmsScreen;
-		super.buttons = Collections.synchronizedList(Lists.newArrayList());
+		this.buttons = Collections.synchronizedList(Lists.newArrayList());
 	}
 
 	public RealmsScreen getRealmsScreen() {
@@ -114,17 +114,17 @@ public class RealmsScreenProxy extends Screen {
 	}
 
 	public void clear() {
-		super.buttons.clear();
+		this.buttons.clear();
 	}
 
 	public void addButton(RealmsButton button) {
-		super.buttons.add(button.getProxy());
+		this.buttons.add(button.getProxy());
 	}
 
 	public List<RealmsButton> getButtons() {
-		List<RealmsButton> list = Lists.newArrayListWithExpectedSize(super.buttons.size());
+		List<RealmsButton> list = Lists.newArrayListWithExpectedSize(this.buttons.size());
 
-		for (ButtonWidget buttonWidget : super.buttons) {
+		for (ButtonWidget buttonWidget : this.buttons) {
 			list.add(((DelegatingRealmsButtonWidget)buttonWidget).getDelegate());
 		}
 
@@ -132,7 +132,7 @@ public class RealmsScreenProxy extends Screen {
 	}
 
 	public void removeButton(RealmsButton button) {
-		super.buttons.remove(button.getProxy());
+		this.buttons.remove(button.getProxy());
 	}
 
 	@Override

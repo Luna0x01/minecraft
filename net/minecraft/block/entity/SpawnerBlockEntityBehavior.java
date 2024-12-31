@@ -2,12 +2,14 @@ package net.minecraft.block.entity;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.ChatUtil;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.Weighting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -28,12 +30,16 @@ public abstract class SpawnerBlockEntityBehavior {
 	private int requiredPlayerRange = 16;
 	private int spawnRange = 4;
 
-	private String getEntityId() {
-		return this.entry.getCompoundTag().getString("id");
+	@Nullable
+	private Identifier getSpawnedEntityIdentifier() {
+		String string = this.entry.getCompoundTag().getString("id");
+		return ChatUtil.isEmpty(string) ? null : new Identifier(string);
 	}
 
-	public void setEntityId(String entityId) {
-		this.entry.getCompoundTag().putString("id", entityId);
+	public void setSpawnedEntity(@Nullable Identifier identifier) {
+		if (identifier != null) {
+			this.entry.getCompoundTag().putString("id", identifier.toString());
+		}
 	}
 
 	private boolean isPlayerInRange() {
@@ -155,12 +161,12 @@ public abstract class SpawnerBlockEntityBehavior {
 			}
 		}
 
-		NbtCompound nbtCompound = nbt.getCompound("SpawnData");
-		if (!nbtCompound.contains("id", 8)) {
-			nbtCompound.putString("id", "Pig");
+		if (nbt.contains("SpawnData", 10)) {
+			this.setSpawnData(new SpawnerBlockEntityBehaviorEntry(1, nbt.getCompound("SpawnData")));
+		} else if (!this.spawnPotentials.isEmpty()) {
+			this.setSpawnData(Weighting.getRandom(this.getWorld().random, this.spawnPotentials));
 		}
 
-		this.setSpawnData(new SpawnerBlockEntityBehaviorEntry(1, nbtCompound));
 		if (nbt.contains("MinSpawnDelay", 99)) {
 			this.minSpawnDelay = nbt.getShort("MinSpawnDelay");
 			this.maxSpawnDelay = nbt.getShort("MaxSpawnDelay");
@@ -182,8 +188,8 @@ public abstract class SpawnerBlockEntityBehavior {
 	}
 
 	public NbtCompound toTag(NbtCompound tag) {
-		String string = this.getEntityId();
-		if (ChatUtil.isEmpty(string)) {
+		Identifier identifier = this.getSpawnedEntityIdentifier();
+		if (identifier == null) {
 			return tag;
 		} else {
 			tag.putShort("Delay", (short)this.spawnDelay);

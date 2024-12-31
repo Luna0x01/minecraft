@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
@@ -25,7 +24,7 @@ public class JukeboxBlock extends BlockWithEntity {
 	public static final BooleanProperty HAS_RECORD = BooleanProperty.of("has_record");
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemSchema("RecordPlayer", "RecordItem"));
+		dataFixer.addSchema(LevelDataType.BLOCK_ENTITY, new ItemSchema(JukeboxBlock.JukeboxBlockEntity.class, "RecordItem"));
 	}
 
 	protected JukeboxBlock() {
@@ -35,22 +34,11 @@ public class JukeboxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		if ((Boolean)blockState.get(HAS_RECORD)) {
-			this.removeRecord(world, blockPos, blockState);
-			blockState = blockState.with(HAS_RECORD, false);
-			world.setBlockState(blockPos, blockState, 2);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		if ((Boolean)state.get(HAS_RECORD)) {
+			this.removeRecord(world, pos, state);
+			state = state.with(HAS_RECORD, false);
+			world.setBlockState(pos, state, 2);
 			return true;
 		} else {
 			return false;
@@ -73,10 +61,10 @@ public class JukeboxBlock extends BlockWithEntity {
 			if (blockEntity instanceof JukeboxBlock.JukeboxBlockEntity) {
 				JukeboxBlock.JukeboxBlockEntity jukeboxBlockEntity = (JukeboxBlock.JukeboxBlockEntity)blockEntity;
 				ItemStack itemStack = jukeboxBlockEntity.getRecord();
-				if (itemStack != null) {
+				if (!itemStack.isEmpty()) {
 					world.syncGlobalEvent(1010, pos, 0);
 					world.method_8509(pos, null);
-					jukeboxBlockEntity.setRecord(null);
+					jukeboxBlockEntity.setRecord(ItemStack.EMPTY);
 					float f = 0.7F;
 					double d = (double)(world.random.nextFloat() * 0.7F) + 0.15F;
 					double e = (double)(world.random.nextFloat() * 0.7F) + 0.060000002F + 0.6;
@@ -118,7 +106,7 @@ public class JukeboxBlock extends BlockWithEntity {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof JukeboxBlock.JukeboxBlockEntity) {
 			ItemStack itemStack = ((JukeboxBlock.JukeboxBlockEntity)blockEntity).getRecord();
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				return Item.getRawId(itemStack.getItem()) + 1 - Item.getRawId(Items.RECORD_13);
 			}
 		}
@@ -147,13 +135,13 @@ public class JukeboxBlock extends BlockWithEntity {
 	}
 
 	public static class JukeboxBlockEntity extends BlockEntity {
-		private ItemStack record;
+		private ItemStack field_15141 = ItemStack.EMPTY;
 
 		@Override
 		public void fromNbt(NbtCompound nbt) {
 			super.fromNbt(nbt);
 			if (nbt.contains("RecordItem", 10)) {
-				this.setRecord(ItemStack.fromNbt(nbt.getCompound("RecordItem")));
+				this.setRecord(new ItemStack(nbt.getCompound("RecordItem")));
 			} else if (nbt.getInt("Record") > 0) {
 				this.setRecord(new ItemStack(Item.byRawId(nbt.getInt("Record"))));
 			}
@@ -162,20 +150,19 @@ public class JukeboxBlock extends BlockWithEntity {
 		@Override
 		public NbtCompound toNbt(NbtCompound nbt) {
 			super.toNbt(nbt);
-			if (this.getRecord() != null) {
+			if (!this.getRecord().isEmpty()) {
 				nbt.put("RecordItem", this.getRecord().toNbt(new NbtCompound()));
 			}
 
 			return nbt;
 		}
 
-		@Nullable
 		public ItemStack getRecord() {
-			return this.record;
+			return this.field_15141;
 		}
 
-		public void setRecord(@Nullable ItemStack record) {
-			this.record = record;
+		public void setRecord(ItemStack record) {
+			this.field_15141 = record;
 			this.markDirty();
 		}
 	}

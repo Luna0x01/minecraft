@@ -13,7 +13,7 @@ public class AvoidSunlightGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		return this.entity.world.isDay() && this.entity.getStack(EquipmentSlot.HEAD) == null;
+		return this.entity.world.isDay() && this.entity.getStack(EquipmentSlot.HEAD).isEmpty();
 	}
 
 	@Override

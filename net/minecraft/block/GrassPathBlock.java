@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -37,6 +36,18 @@ public class GrassPathBlock extends Block {
 	}
 
 	@Override
+	public void onCreation(World world, BlockPos pos, BlockState state) {
+		super.onCreation(world, pos, state);
+		this.method_13708(world, pos);
+	}
+
+	private void method_13708(World world, BlockPos blockPos) {
+		if (world.getBlockState(blockPos.up()).getMaterial().isSolid()) {
+			world.setBlockState(blockPos, Blocks.DIRT.getDefaultState());
+		}
+	}
+
+	@Override
 	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		return field_12681;
 	}
@@ -51,7 +62,6 @@ public class GrassPathBlock extends Block {
 		return false;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Blocks.DIRT.getDropItem(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT), random, id);
@@ -63,10 +73,8 @@ public class GrassPathBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		super.method_8641(blockState, world, blockPos, block);
-		if (world.getBlockState(blockPos.up()).getMaterial().isSolid()) {
-			world.setBlockState(blockPos, Blocks.DIRT.getDefaultState());
-		}
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		super.neighborUpdate(state, world, pos, block, neighborPos);
+		this.method_13708(world, pos);
 	}
 }

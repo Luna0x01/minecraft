@@ -5,7 +5,6 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -81,24 +80,13 @@ public class TrapdoorBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (this.material == Material.IRON) {
-			return true;
+			return false;
 		} else {
-			blockState = blockState.withDefaultValue(OPEN);
-			world.setBlockState(blockPos, blockState, 2);
-			this.method_11640(playerEntity, world, blockPos, (Boolean)blockState.get(OPEN));
+			state = state.withDefaultValue(OPEN);
+			world.setBlockState(pos, state, 2);
+			this.method_11640(player, world, pos, (Boolean)state.get(OPEN));
 			return true;
 		}
 	}
@@ -114,14 +102,14 @@ public class TrapdoorBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
-			boolean bl = world.isReceivingRedstonePower(blockPos);
+			boolean bl = world.isReceivingRedstonePower(pos);
 			if (bl || block.getDefaultState().emitsRedstonePower()) {
-				boolean bl2 = (Boolean)blockState.get(OPEN);
+				boolean bl2 = (Boolean)state.get(OPEN);
 				if (bl2 != bl) {
-					world.setBlockState(blockPos, blockState.with(OPEN, bl), 2);
-					this.method_11640(null, world, blockPos, bl);
+					world.setBlockState(pos, state.with(OPEN, bl), 2);
+					this.method_11640(null, world, pos, bl);
 				}
 			}
 		}
@@ -136,6 +124,10 @@ public class TrapdoorBlock extends Block {
 		} else {
 			blockState = blockState.with(FACING, entity.getHorizontalDirection().getOpposite()).with(OPEN, false);
 			blockState = blockState.with(HALF, dir == Direction.UP ? TrapdoorBlock.TrapdoorType.BOTTOM : TrapdoorBlock.TrapdoorType.TOP);
+		}
+
+		if (world.isReceivingRedstonePower(pos)) {
+			blockState = blockState.with(OPEN, true);
 		}
 
 		return blockState;

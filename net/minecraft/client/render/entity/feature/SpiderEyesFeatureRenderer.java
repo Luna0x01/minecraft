@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.SpiderEntityRenderer;
 import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.util.Identifier;
@@ -30,7 +31,9 @@ public class SpiderEyesFeatureRenderer<T extends SpiderEntity> implements Featur
 		int o = m / 65536;
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		MinecraftClient.getInstance().gameRenderer.method_13847(true);
 		this.spiderRenderer.getModel().render(spiderEntity, f, g, i, j, k, l);
+		MinecraftClient.getInstance().gameRenderer.method_13847(false);
 		m = spiderEntity.getLightmapCoordinates(h);
 		n = m % 65536;
 		o = m / 65536;

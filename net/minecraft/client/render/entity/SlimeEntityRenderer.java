@@ -2,15 +2,15 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.SlimeFeatureRenderer;
-import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.SlimeEntityModel;
 import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.util.Identifier;
 
 public class SlimeEntityRenderer extends MobEntityRenderer<SlimeEntity> {
 	private static final Identifier SLIME_TEX = new Identifier("textures/entity/slime/slime.png");
 
-	public SlimeEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f) {
-		super(entityRenderDispatcher, entityModel, f);
+	public SlimeEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
+		super(entityRenderDispatcher, new SlimeEntityModel(16), 0.25F);
 		this.addFeature(new SlimeFeatureRenderer(this));
 	}
 

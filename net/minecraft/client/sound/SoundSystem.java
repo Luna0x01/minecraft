@@ -189,10 +189,10 @@ public class SoundSystem {
 			}
 		}
 
-		Iterator<Entry<String, SoundInstance>> iterator2 = this.field_8195.entrySet().iterator();
+		Iterator<Entry<String, SoundInstance>> iterator = this.field_8195.entrySet().iterator();
 
-		while (iterator2.hasNext()) {
-			Entry<String, SoundInstance> entry = (Entry<String, SoundInstance>)iterator2.next();
+		while (iterator.hasNext()) {
+			Entry<String, SoundInstance> entry = (Entry<String, SoundInstance>)iterator.next();
 			String string2 = (String)entry.getKey();
 			SoundInstance soundInstance = (SoundInstance)entry.getValue();
 			if (!this.field_8193.playing(string2)) {
@@ -203,7 +203,7 @@ public class SoundSystem {
 						this.startTicks.put(soundInstance, this.ticks + j);
 					}
 
-					iterator2.remove();
+					iterator.remove();
 					LOGGER.debug(MARKER, "Removed channel {} because it's not playing anymore", new Object[]{string2});
 					this.field_8193.removeSource(string2);
 					this.field_8201.remove(string2);
@@ -220,10 +220,10 @@ public class SoundSystem {
 			}
 		}
 
-		Iterator<Entry<SoundInstance, Integer>> iterator3 = this.startTicks.entrySet().iterator();
+		Iterator<Entry<SoundInstance, Integer>> iterator2 = this.startTicks.entrySet().iterator();
 
-		while (iterator3.hasNext()) {
-			Entry<SoundInstance, Integer> entry2 = (Entry<SoundInstance, Integer>)iterator3.next();
+		while (iterator2.hasNext()) {
+			Entry<SoundInstance, Integer> entry2 = (Entry<SoundInstance, Integer>)iterator2.next();
 			if (this.ticks >= (Integer)entry2.getValue()) {
 				SoundInstance soundInstance2 = (SoundInstance)entry2.getKey();
 				if (soundInstance2 instanceof TickableSoundInstance) {
@@ -231,7 +231,7 @@ public class SoundSystem {
 				}
 
 				this.play(soundInstance2);
-				iterator3.remove();
+				iterator2.remove();
 			}
 		}
 	}
@@ -323,16 +323,13 @@ public class SoundSystem {
 									);
 							}
 
-							LOGGER.debug(MARKER, "Playing sound {} for event {} as channel {}", new Object[]{lv2.method_12522(), identifier2, string});
+							LOGGER.debug(MARKER, "Playing sound {} for event {} as channel {}", new Object[]{lv2.method_12522(), identifier, string});
 							this.field_8193.setPitch(string, i);
 							this.field_8193.setVolume(string, h);
 							this.field_8193.play(string);
 							this.field_8201.put(string, this.ticks + 20);
 							this.field_8195.put(string, soundInstance);
-							if (soundCategory != SoundCategory.MASTER) {
-								this.field_8198.put(soundCategory, string);
-							}
-
+							this.field_8198.put(soundCategory, string);
 							if (soundInstance instanceof TickableSoundInstance) {
 								this.field_8199.add((TickableSoundInstance)soundInstance);
 							}
@@ -381,7 +378,7 @@ public class SoundSystem {
 		URLStreamHandler uRLStreamHandler = new URLStreamHandler() {
 			protected URLConnection openConnection(URL url) {
 				return new URLConnection(url) {
-					public void connect() throws IOException {
+					public void connect() {
 					}
 
 					public InputStream getInputStream() throws IOException {
@@ -424,22 +421,20 @@ public class SoundSystem {
 		if (soundCategory != null) {
 			for (String string2 : this.field_8198.get(soundCategory)) {
 				SoundInstance soundInstance = (SoundInstance)this.field_8195.get(string2);
-				if (!string.isEmpty()) {
-					if (soundInstance.getIdentifier().equals(new Identifier(string))) {
-						this.stop(soundInstance);
-					}
-				} else {
+				if (string.isEmpty()) {
+					this.stop(soundInstance);
+				} else if (soundInstance.getIdentifier().equals(new Identifier(string))) {
 					this.stop(soundInstance);
 				}
 			}
-		} else if (!string.isEmpty()) {
+		} else if (string.isEmpty()) {
+			this.stopAll();
+		} else {
 			for (SoundInstance soundInstance2 : this.field_8195.values()) {
 				if (soundInstance2.getIdentifier().equals(new Identifier(string))) {
 					this.stop(soundInstance2);
 				}
 			}
-		} else {
-			this.stopAll();
 		}
 	}
 

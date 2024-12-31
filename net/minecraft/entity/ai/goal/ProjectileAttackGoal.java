@@ -77,7 +77,7 @@ public class ProjectileAttackGoal extends Goal {
 
 		this.entity.getLookControl().lookAt(this.target, 30.0F, 30.0F);
 		if (--this.updateCountdownTicks == 0) {
-			if (d > (double)this.squaredMaxShootRange || !bl) {
+			if (!bl) {
 				return;
 			}
 

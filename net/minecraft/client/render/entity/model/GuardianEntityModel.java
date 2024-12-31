@@ -46,10 +46,6 @@ public class GuardianEntityModel extends EntityModel {
 		this.tail[1].add(this.tail[2]);
 	}
 
-	public int method_9635() {
-		return 54;
-	}
-
 	@Override
 	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
 		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);

@@ -64,14 +64,17 @@ public class SlimeEntity extends MobEntity implements Monster {
 		this.dataTracker.startTracking(field_14781, 1);
 	}
 
-	protected void setSize(int size) {
-		this.dataTracker.set(field_14781, size);
-		this.setBounds(0.51000005F * (float)size, 0.51000005F * (float)size);
+	protected void method_3089(int i, boolean bl) {
+		this.dataTracker.set(field_14781, i);
+		this.setBounds(0.51000005F * (float)i, 0.51000005F * (float)i);
 		this.updatePosition(this.x, this.y, this.z);
-		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue((double)(size * size));
-		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue((double)(0.2F + 0.1F * (float)size));
-		this.setHealth(this.getMaxHealth());
-		this.experiencePoints = size;
+		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue((double)(i * i));
+		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue((double)(0.2F + 0.1F * (float)i));
+		if (bl) {
+			this.setHealth(this.getMaxHealth());
+		}
+
+		this.experiencePoints = i;
 	}
 
 	public int getSize() {
@@ -79,7 +82,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Slime");
+		MobEntity.registerDataFixes(dataFixer, SlimeEntity.class);
 	}
 
 	@Override
@@ -97,7 +100,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 			i = 0;
 		}
 
-		this.setSize(i + 1);
+		this.method_3089(i + 1, false);
 		this.wasOnGround = nbt.getBoolean("wasOnGround");
 	}
 
@@ -188,7 +191,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 					slimeEntity.setPersistent();
 				}
 
-				slimeEntity.setSize(i / 2);
+				slimeEntity.method_3089(i / 2, true);
 				slimeEntity.refreshPositionAndAngles(this.x + (double)f, this.y + 0.5, this.z + (double)g, this.random.nextFloat() * 360.0F, 0.0F);
 				this.world.spawnEntity(slimeEntity);
 			}
@@ -316,7 +319,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 		}
 
 		int j = 1 << i;
-		this.setSize(j);
+		this.method_3089(j, true);
 		return super.initialize(difficulty, data);
 	}
 

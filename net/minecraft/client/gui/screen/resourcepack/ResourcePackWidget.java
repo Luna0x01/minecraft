@@ -29,7 +29,7 @@ public abstract class ResourcePackWidget implements EntryListWidget.Entry {
 	@Override
 	public void render(int index, int x, int y, int rowWidth, int rowHeight, int mouseX, int mouseY, boolean hovered) {
 		int i = this.getFormat();
-		if (i != 2) {
+		if (i != 3) {
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			DrawableHelper.fill(x - 1, y - 1, x + rowWidth - 9, y + rowHeight + 1, -8978432);
 		}
@@ -45,10 +45,10 @@ public abstract class ResourcePackWidget implements EntryListWidget.Entry {
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			int j = mouseX - x;
 			int k = mouseY - y;
-			if (i < 2) {
+			if (i < 3) {
 				string = INCOMPATIBLE_TEXT.asFormattedString();
 				string2 = INCOMPATIBLE_OLD_TEXT.asFormattedString();
-			} else if (i > 2) {
+			} else if (i > 3) {
 				string = INCOMPATIBLE_TEXT.asFormattedString();
 				string2 = INCOMPATIBLE_NEW_TEXT.asFormattedString();
 			}
@@ -138,12 +138,12 @@ public abstract class ResourcePackWidget implements EntryListWidget.Entry {
 				this.screen.markDirty();
 				final int i = ((ResourcePackWidget)this.screen.getSelectedPacks().get(0)).method_12199() ? 1 : 0;
 				int j = this.getFormat();
-				if (j == 2) {
+				if (j == 3) {
 					this.screen.getContainingList(this).remove(this);
 					this.screen.getSelectedPacks().add(i, this);
 				} else {
 					String string = I18n.translate("resourcePack.incompatible.confirm.title");
-					String string2 = I18n.translate("resourcePack.incompatible.confirm." + (j > 2 ? "new" : "old"));
+					String string2 = I18n.translate("resourcePack.incompatible.confirm." + (j > 3 ? "new" : "old"));
 					this.client.setScreen(new ConfirmScreen(new IdentifiableBooleanConsumer() {
 						@Override
 						public void confirmResult(boolean confirmed, int id) {

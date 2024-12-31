@@ -1,7 +1,6 @@
 package net.minecraft.screen;
 
 import java.util.Map;
-import javax.annotation.Nullable;
 import net.minecraft.block.AnvilBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -15,6 +14,7 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.NameTagItem;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.StringUtils;
@@ -51,7 +51,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 		this.addSlot(
 			new Slot(this.resultInventory, 2, 134, 47) {
 				@Override
-				public boolean canInsert(@Nullable ItemStack stack) {
+				public boolean canInsert(ItemStack stack) {
 					return false;
 				}
 
@@ -63,27 +63,33 @@ public class AnvilScreenHandler extends ScreenHandler {
 				}
 
 				@Override
-				public void onTakeItem(PlayerEntity player, ItemStack stack) {
-					if (!player.abilities.creativeMode) {
-						player.incrementXp(-AnvilScreenHandler.this.repairCost);
+				public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
+					if (!playerEntity.abilities.creativeMode) {
+						playerEntity.incrementXp(-AnvilScreenHandler.this.repairCost);
 					}
 
-					AnvilScreenHandler.this.inventory.setInvStack(0, null);
+					ItemStack itemStack2 = AnvilScreenHandler.this.inventory.getInvStack(0);
+					if (itemStack2.getCount() != 1 && !playerEntity.abilities.creativeMode && !(itemStack2.getItem() instanceof NameTagItem)) {
+						itemStack2.setCount(itemStack2.getCount() - 1);
+					} else {
+						AnvilScreenHandler.this.inventory.setInvStack(0, ItemStack.EMPTY);
+					}
+
 					if (AnvilScreenHandler.this.field_5420 > 0) {
-						ItemStack itemStack = AnvilScreenHandler.this.inventory.getInvStack(1);
-						if (itemStack != null && itemStack.count > AnvilScreenHandler.this.field_5420) {
-							itemStack.count = itemStack.count - AnvilScreenHandler.this.field_5420;
-							AnvilScreenHandler.this.inventory.setInvStack(1, itemStack);
+						ItemStack itemStack3 = AnvilScreenHandler.this.inventory.getInvStack(1);
+						if (!itemStack3.isEmpty() && itemStack3.getCount() > AnvilScreenHandler.this.field_5420) {
+							itemStack3.decrement(AnvilScreenHandler.this.field_5420);
+							AnvilScreenHandler.this.inventory.setInvStack(1, itemStack3);
 						} else {
-							AnvilScreenHandler.this.inventory.setInvStack(1, null);
+							AnvilScreenHandler.this.inventory.setInvStack(1, ItemStack.EMPTY);
 						}
 					} else {
-						AnvilScreenHandler.this.inventory.setInvStack(1, null);
+						AnvilScreenHandler.this.inventory.setInvStack(1, ItemStack.EMPTY);
 					}
 
 					AnvilScreenHandler.this.repairCost = 0;
 					BlockState blockState = world.getBlockState(blockPos);
-					if (!player.abilities.creativeMode && !world.isClient && blockState.getBlock() == Blocks.ANVIL && player.getRandom().nextFloat() < 0.12F) {
+					if (!playerEntity.abilities.creativeMode && !world.isClient && blockState.getBlock() == Blocks.ANVIL && playerEntity.getRandom().nextFloat() < 0.12F) {
 						int i = (Integer)blockState.get(AnvilBlock.DAMAGE);
 						if (++i > 2) {
 							world.setAir(blockPos);
@@ -95,6 +101,8 @@ public class AnvilScreenHandler extends ScreenHandler {
 					} else if (!world.isClient) {
 						world.syncGlobalEvent(1030, blockPos, 0);
 					}
+
+					return itemStack;
 				}
 			}
 		);
@@ -124,27 +132,31 @@ public class AnvilScreenHandler extends ScreenHandler {
 		int i = 0;
 		int j = 0;
 		int k = 0;
-		if (itemStack == null) {
-			this.resultInventory.setInvStack(0, null);
+		if (itemStack.isEmpty()) {
+			this.resultInventory.setInvStack(0, ItemStack.EMPTY);
 			this.repairCost = 0;
 		} else {
 			ItemStack itemStack2 = itemStack.copy();
+			if (itemStack2.getCount() > 1 && !this.player.abilities.creativeMode && !(itemStack2.getItem() instanceof NameTagItem)) {
+				itemStack2.setCount(1);
+			}
+
 			ItemStack itemStack3 = this.inventory.getInvStack(1);
 			Map<Enchantment, Integer> map = EnchantmentHelper.get(itemStack2);
-			j += itemStack.getRepairCost() + (itemStack3 == null ? 0 : itemStack3.getRepairCost());
+			j += itemStack.getRepairCost() + (itemStack3.isEmpty() ? 0 : itemStack3.getRepairCost());
 			this.field_5420 = 0;
-			if (itemStack3 != null) {
+			if (!itemStack3.isEmpty()) {
 				boolean bl = itemStack3.getItem() == Items.ENCHANTED_BOOK && !Items.ENCHANTED_BOOK.getEnchantmentNbt(itemStack3).isEmpty();
 				if (itemStack2.isDamageable() && itemStack2.getItem().canRepair(itemStack, itemStack3)) {
 					int l = Math.min(itemStack2.getDamage(), itemStack2.getMaxDamage() / 4);
 					if (l <= 0) {
-						this.resultInventory.setInvStack(0, null);
+						this.resultInventory.setInvStack(0, ItemStack.EMPTY);
 						this.repairCost = 0;
 						return;
 					}
 
 					int m;
-					for (m = 0; l > 0 && m < itemStack3.count; m++) {
+					for (m = 0; l > 0 && m < itemStack3.getCount(); m++) {
 						int n = itemStack2.getDamage() - l;
 						itemStack2.setDamage(n);
 						i++;
@@ -154,7 +166,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 					this.field_5420 = m;
 				} else {
 					if (!bl && (itemStack2.getItem() != itemStack3.getItem() || !itemStack2.isDamageable())) {
-						this.resultInventory.setInvStack(0, null);
+						this.resultInventory.setInvStack(0, ItemStack.EMPTY);
 						this.repairCost = 0;
 						return;
 					}
@@ -176,25 +188,30 @@ public class AnvilScreenHandler extends ScreenHandler {
 					}
 
 					Map<Enchantment, Integer> map2 = EnchantmentHelper.get(itemStack3);
+					boolean bl2 = false;
+					boolean bl3 = false;
 
 					for (Enchantment enchantment : map2.keySet()) {
 						if (enchantment != null) {
 							int t = map.containsKey(enchantment) ? (Integer)map.get(enchantment) : 0;
 							int u = (Integer)map2.get(enchantment);
 							u = t == u ? u + 1 : Math.max(u, t);
-							boolean bl2 = enchantment.isAcceptableItem(itemStack);
+							boolean bl4 = enchantment.isAcceptableItem(itemStack);
 							if (this.player.abilities.creativeMode || itemStack.getItem() == Items.ENCHANTED_BOOK) {
-								bl2 = true;
+								bl4 = true;
 							}
 
 							for (Enchantment enchantment2 : map.keySet()) {
-								if (enchantment2 != enchantment && !enchantment.differs(enchantment2)) {
-									bl2 = false;
+								if (enchantment2 != enchantment && !enchantment.isDifferent(enchantment2)) {
+									bl4 = false;
 									i++;
 								}
 							}
 
-							if (bl2) {
+							if (!bl4) {
+								bl3 = true;
+							} else {
+								bl2 = true;
 								if (u > enchantment.getMaximumLevel()) {
 									u = enchantment.getMaximumLevel();
 								}
@@ -223,6 +240,12 @@ public class AnvilScreenHandler extends ScreenHandler {
 							}
 						}
 					}
+
+					if (bl3 && !bl2) {
+						this.resultInventory.setInvStack(0, ItemStack.EMPTY);
+						this.repairCost = 0;
+						return;
+					}
 				}
 			}
 
@@ -240,7 +263,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 
 			this.repairCost = j + i;
 			if (i <= 0) {
-				itemStack2 = null;
+				itemStack2 = ItemStack.EMPTY;
 			}
 
 			if (k == i && k > 0 && this.repairCost >= 40) {
@@ -248,12 +271,12 @@ public class AnvilScreenHandler extends ScreenHandler {
 			}
 
 			if (this.repairCost >= 40 && !this.player.abilities.creativeMode) {
-				itemStack2 = null;
+				itemStack2 = ItemStack.EMPTY;
 			}
 
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				int w = itemStack2.getRepairCost();
-				if (itemStack3 != null && w < itemStack3.getRepairCost()) {
+				if (!itemStack3.isEmpty() && w < itemStack3.getRepairCost()) {
 					w = itemStack3.getRepairCost();
 				}
 
@@ -289,7 +312,7 @@ public class AnvilScreenHandler extends ScreenHandler {
 		if (!this.world.isClient) {
 			for (int i = 0; i < this.inventory.getInvSize(); i++) {
 				ItemStack itemStack = this.inventory.removeInvStack(i);
-				if (itemStack != null) {
+				if (!itemStack.isEmpty()) {
 					player.dropItem(itemStack, false);
 				}
 			}
@@ -303,39 +326,38 @@ public class AnvilScreenHandler extends ScreenHandler {
 			: !(player.squaredDistanceTo((double)this.blockPos.getX() + 0.5, (double)this.blockPos.getY() + 0.5, (double)this.blockPos.getZ() + 0.5) > 64.0);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (invSlot == 2) {
 				if (!this.insertItem(itemStack2, 3, 39, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
 			} else if (invSlot != 0 && invSlot != 1) {
 				if (invSlot >= 3 && invSlot < 39 && !this.insertItem(itemStack2, 0, 2, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (!this.insertItem(itemStack2, 3, 39, false)) {
-				return null;
+				return ItemStack.EMPTY;
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			slot.method_3298(player, itemStack2);
 		}
 
 		return itemStack;

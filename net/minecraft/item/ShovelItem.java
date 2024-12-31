@@ -43,20 +43,19 @@ public class ShovelItem extends ToolItem {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		if (!playerEntity.canModify(blockPos.offset(direction), direction, itemStack)) {
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!player.canModify(pos.offset(direction), direction, itemStack)) {
 			return ActionResult.FAIL;
 		} else {
-			BlockState blockState = world.getBlockState(blockPos);
+			BlockState blockState = world.getBlockState(pos);
 			Block block = blockState.getBlock();
-			if (direction != Direction.DOWN && world.getBlockState(blockPos.up()).getMaterial() == Material.AIR && block == Blocks.GRASS) {
+			if (direction != Direction.DOWN && world.getBlockState(pos.up()).getMaterial() == Material.AIR && block == Blocks.GRASS) {
 				BlockState blockState2 = Blocks.GRASS_PATH.getDefaultState();
-				world.method_11486(playerEntity, blockPos, Sounds.ITEM_SHOVEL_FLATTEN, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				world.method_11486(player, pos, Sounds.ITEM_SHOVEL_FLATTEN, SoundCategory.BLOCKS, 1.0F, 1.0F);
 				if (!world.isClient) {
-					world.setBlockState(blockPos, blockState2, 11);
-					itemStack.damage(1, playerEntity);
+					world.setBlockState(pos, blockState2, 11);
+					itemStack.damage(1, player);
 				}
 
 				return ActionResult.SUCCESS;

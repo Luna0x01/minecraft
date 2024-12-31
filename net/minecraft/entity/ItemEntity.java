@@ -1,11 +1,9 @@
 package net.minecraft.entity;
 
-import com.google.common.base.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.datafixer.schema.ItemSchema;
 import net.minecraft.entity.damage.DamageSource;
@@ -29,7 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 public class ItemEntity extends Entity {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final TrackedData<Optional<ItemStack>> STACK = DataTracker.registerData(ItemEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+	private static final TrackedData<ItemStack> STACK = DataTracker.registerData(ItemEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private int age;
 	private int pickupDelay;
 	private int health = 5;
@@ -60,17 +58,17 @@ public class ItemEntity extends Entity {
 	public ItemEntity(World world) {
 		super(world);
 		this.setBounds(0.25F, 0.25F);
-		this.setItemStack(new ItemStack(Blocks.AIR, 0));
+		this.setItemStack(ItemStack.EMPTY);
 	}
 
 	@Override
 	protected void initDataTracker() {
-		this.getDataTracker().startTracking(STACK, Optional.absent());
+		this.getDataTracker().startTracking(STACK, ItemStack.EMPTY);
 	}
 
 	@Override
 	public void tick() {
-		if (this.getItemStack() == null) {
+		if (this.getItemStack().isEmpty()) {
 			this.remove();
 		} else {
 			super.tick();
@@ -81,12 +79,20 @@ public class ItemEntity extends Entity {
 			this.prevX = this.x;
 			this.prevY = this.y;
 			this.prevZ = this.z;
+			double d = this.velocityX;
+			double e = this.velocityY;
+			double f = this.velocityZ;
 			if (!this.hasNoGravity()) {
 				this.velocityY -= 0.04F;
 			}
 
-			this.noClip = this.pushOutOfBlocks(this.x, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.z);
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			if (this.world.isClient) {
+				this.noClip = false;
+			} else {
+				this.noClip = this.pushOutOfBlocks(this.x, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.z);
+			}
+
+			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			boolean bl = (int)this.prevX != (int)this.x || (int)this.prevY != (int)this.y || (int)this.prevZ != (int)this.z;
 			if (bl || this.ticksAlive % 25 == 0) {
 				if (this.world.getBlockState(new BlockPos(this)).getMaterial() == Material.LAVA) {
@@ -101,15 +107,15 @@ public class ItemEntity extends Entity {
 				}
 			}
 
-			float f = 0.98F;
+			float g = 0.98F;
 			if (this.onGround) {
-				f = this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z))).getBlock().slipperiness
+				g = this.world.getBlockState(new BlockPos(MathHelper.floor(this.x), MathHelper.floor(this.getBoundingBox().minY) - 1, MathHelper.floor(this.z))).getBlock().slipperiness
 					* 0.98F;
 			}
 
-			this.velocityX *= (double)f;
+			this.velocityX *= (double)g;
 			this.velocityY *= 0.98F;
-			this.velocityZ *= (double)f;
+			this.velocityZ *= (double)g;
 			if (this.onGround) {
 				this.velocityY *= -0.5;
 			}
@@ -119,6 +125,16 @@ public class ItemEntity extends Entity {
 			}
 
 			this.updateWaterState();
+			if (!this.world.isClient) {
+				double h = this.velocityX - d;
+				double i = this.velocityY - e;
+				double j = this.velocityZ - f;
+				double k = h * h + i * i + j * j;
+				if (k > 0.01) {
+					this.velocityDirty = true;
+				}
+			}
+
 			if (!this.world.isClient && this.age >= 6000) {
 				this.remove();
 			}
@@ -150,12 +166,12 @@ public class ItemEntity extends Entity {
 					return false;
 				} else if (itemStack2.getItem().isUnbreakable() && itemStack2.getData() != itemStack.getData()) {
 					return false;
-				} else if (itemStack2.count < itemStack.count) {
+				} else if (itemStack2.getCount() < itemStack.getCount()) {
 					return other.tryMerge(this);
-				} else if (itemStack2.count + itemStack.count > itemStack2.getMaxCount()) {
+				} else if (itemStack2.getCount() + itemStack.getCount() > itemStack2.getMaxCount()) {
 					return false;
 				} else {
-					itemStack2.count = itemStack2.count + itemStack.count;
+					itemStack2.increment(itemStack.getCount());
 					other.pickupDelay = Math.max(other.pickupDelay, this.pickupDelay);
 					other.age = Math.min(other.age, this.age);
 					other.setItemStack(itemStack2);
@@ -198,7 +214,7 @@ public class ItemEntity extends Entity {
 	public boolean damage(DamageSource source, float amount) {
 		if (this.isInvulnerableTo(source)) {
 			return false;
-		} else if (this.getItemStack() != null && this.getItemStack().getItem() == Items.NETHER_STAR && source.isExplosive()) {
+		} else if (!this.getItemStack().isEmpty() && this.getItemStack().getItem() == Items.NETHER_STAR && source.isExplosive()) {
 			return false;
 		} else {
 			this.scheduleVelocityUpdate();
@@ -212,7 +228,7 @@ public class ItemEntity extends Entity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("Item", "Item"));
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(ItemEntity.class, "Item"));
 	}
 
 	@Override
@@ -228,7 +244,7 @@ public class ItemEntity extends Entity {
 			nbt.putString("Owner", this.owner);
 		}
 
-		if (this.getItemStack() != null) {
+		if (!this.getItemStack().isEmpty()) {
 			nbt.put("Item", this.getItemStack().toNbt(new NbtCompound()));
 		}
 	}
@@ -250,8 +266,8 @@ public class ItemEntity extends Entity {
 		}
 
 		NbtCompound nbtCompound = nbt.getCompound("Item");
-		this.setItemStack(ItemStack.fromNbt(nbtCompound));
-		if (this.getItemStack() == null) {
+		this.setItemStack(new ItemStack(nbtCompound));
+		if (this.getItemStack().isEmpty()) {
 			this.remove();
 		}
 	}
@@ -260,57 +276,45 @@ public class ItemEntity extends Entity {
 	public void onPlayerCollision(PlayerEntity player) {
 		if (!this.world.isClient) {
 			ItemStack itemStack = this.getItemStack();
-			int i = itemStack.count;
+			Item item = itemStack.getItem();
+			int i = itemStack.getCount();
 			if (this.pickupDelay == 0
 				&& (this.owner == null || 6000 - this.age <= 200 || this.owner.equals(player.getTranslationKey()))
 				&& player.inventory.insertStack(itemStack)) {
-				if (itemStack.getItem() == Item.fromBlock(Blocks.LOG)) {
+				if (item == Item.fromBlock(Blocks.LOG)) {
 					player.incrementStat(AchievementsAndCriterions.GETTING_WOOD);
 				}
 
-				if (itemStack.getItem() == Item.fromBlock(Blocks.LOG2)) {
+				if (item == Item.fromBlock(Blocks.LOG2)) {
 					player.incrementStat(AchievementsAndCriterions.GETTING_WOOD);
 				}
 
-				if (itemStack.getItem() == Items.LEATHER) {
+				if (item == Items.LEATHER) {
 					player.incrementStat(AchievementsAndCriterions.KILL_COW);
 				}
 
-				if (itemStack.getItem() == Items.DIAMOND) {
+				if (item == Items.DIAMOND) {
 					player.incrementStat(AchievementsAndCriterions.DIAMONDS);
 				}
 
-				if (itemStack.getItem() == Items.BLAZE_ROD) {
+				if (item == Items.BLAZE_ROD) {
 					player.incrementStat(AchievementsAndCriterions.BLAZE_ROD);
 				}
 
-				if (itemStack.getItem() == Items.DIAMOND && this.getThrower() != null) {
+				if (item == Items.DIAMOND && this.getThrower() != null) {
 					PlayerEntity playerEntity = this.world.getPlayerByName(this.getThrower());
 					if (playerEntity != null && playerEntity != player) {
 						playerEntity.incrementStat(AchievementsAndCriterions.DIAMONDS_TO_YOU);
 					}
 				}
 
-				if (!this.isSilent()) {
-					this.world
-						.playSound(
-							null,
-							player.x,
-							player.y,
-							player.z,
-							Sounds.ENTITY_ITEM_PICKUP,
-							SoundCategory.PLAYERS,
-							0.2F,
-							((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.0F) * 2.0F
-						);
-				}
-
 				player.sendPickup(this, i);
-				if (itemStack.count <= 0) {
+				if (itemStack.isEmpty()) {
 					this.remove();
+					itemStack.setCount(i);
 				}
 
-				player.incrementStat(Stats.picked(itemStack.getItem()), i);
+				player.incrementStat(Stats.picked(item), i);
 			}
 		}
 	}
@@ -337,20 +341,11 @@ public class ItemEntity extends Entity {
 	}
 
 	public ItemStack getItemStack() {
-		ItemStack itemStack = (ItemStack)this.getDataTracker().get(STACK).orNull();
-		if (itemStack == null) {
-			if (this.world != null) {
-				LOGGER.error("Item entity {} has no item?!", new Object[]{this.getEntityId()});
-			}
-
-			return new ItemStack(Blocks.STONE);
-		} else {
-			return itemStack;
-		}
+		return this.getDataTracker().get(STACK);
 	}
 
-	public void setItemStack(@Nullable ItemStack itemStack) {
-		this.getDataTracker().set(STACK, Optional.fromNullable(itemStack));
+	public void setItemStack(ItemStack itemStack) {
+		this.getDataTracker().set(STACK, itemStack);
 		this.getDataTracker().method_12754(STACK);
 	}
 

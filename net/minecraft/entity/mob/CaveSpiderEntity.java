@@ -21,7 +21,7 @@ public class CaveSpiderEntity extends SpiderEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "CaveSpider");
+		MobEntity.registerDataFixes(dataFixer, CaveSpiderEntity.class);
 	}
 
 	@Override

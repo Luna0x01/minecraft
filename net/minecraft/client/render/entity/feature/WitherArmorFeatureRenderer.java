@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.WitherEntityRenderer;
 import net.minecraft.client.render.entity.model.WitherEntityModel;
 import net.minecraft.entity.boss.WitherEntity;
@@ -34,7 +35,9 @@ public class WitherArmorFeatureRenderer implements FeatureRenderer<WitherEntity>
 			GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 			this.model.animateModel(witherEntity, f, g, h);
 			this.model.copy(this.witherEntityRenderer.getModel());
+			MinecraftClient.getInstance().gameRenderer.method_13847(true);
 			this.model.render(witherEntity, f, g, i, j, k, l);
+			MinecraftClient.getInstance().gameRenderer.method_13847(false);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.loadIdentity();
 			GlStateManager.matrixMode(5888);

@@ -83,18 +83,22 @@ public class AreaEffectCloudEntity extends Entity {
 	public void setPotion(Potion potion) {
 		this.potion = potion;
 		if (!this.customColor) {
-			if (potion == Potions.EMPTY && this.effects.isEmpty()) {
-				this.getDataTracker().set(COLOR, 0);
-			} else {
-				this.getDataTracker().set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(potion, this.effects)));
-			}
+			this.updateColor();
+		}
+	}
+
+	private void updateColor() {
+		if (this.potion == Potions.EMPTY && this.effects.isEmpty()) {
+			this.getDataTracker().set(COLOR, 0);
+		} else {
+			this.getDataTracker().set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(this.potion, this.effects)));
 		}
 	}
 
 	public void addEffect(StatusEffectInstance effect) {
 		this.effects.add(effect);
 		if (!this.customColor) {
-			this.getDataTracker().set(COLOR, PotionUtil.getColor(PotionUtil.getPotionEffects(this.potion, this.effects)));
+			this.updateColor();
 		}
 	}
 
@@ -176,8 +180,8 @@ public class AreaEffectCloudEntity extends Entity {
 							int n = l >> 8 & 0xFF;
 							int o = l & 0xFF;
 							this.world
-								.addParticle(
-									ParticleType.MOB_SPELL,
+								.method_13687(
+									ParticleType.MOB_SPELL.getId(),
 									this.x + (double)j,
 									this.y,
 									this.z + (double)k,
@@ -186,7 +190,7 @@ public class AreaEffectCloudEntity extends Entity {
 									(double)((float)o / 255.0F)
 								);
 						} else {
-							this.world.addParticle(particleType, this.x + (double)j, this.y, this.z + (double)k, 0.0, 0.0, 0.0, is);
+							this.world.method_13687(particleType.getId(), this.x + (double)j, this.y, this.z + (double)k, 0.0, 0.0, 0.0, is);
 						}
 					}
 				}
@@ -204,8 +208,8 @@ public class AreaEffectCloudEntity extends Entity {
 						int x = v >> 8 & 0xFF;
 						int y = v & 0xFF;
 						this.world
-							.addParticle(
-								ParticleType.MOB_SPELL,
+							.method_13687(
+								ParticleType.MOB_SPELL.getId(),
 								this.x + (double)t,
 								this.y,
 								this.z + (double)u,
@@ -215,8 +219,8 @@ public class AreaEffectCloudEntity extends Entity {
 							);
 					} else {
 						this.world
-							.addParticle(
-								particleType,
+							.method_13687(
+								particleType.getId(),
 								this.x + (double)t,
 								this.y,
 								this.z + (double)u,

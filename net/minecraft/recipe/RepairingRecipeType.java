@@ -2,10 +2,10 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class RepairingRecipeType implements RecipeType {
@@ -15,11 +15,11 @@ public class RepairingRecipeType implements RecipeType {
 
 		for (int i = 0; i < inventory.getInvSize(); i++) {
 			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				list.add(itemStack);
 				if (list.size() > 1) {
 					ItemStack itemStack2 = (ItemStack)list.get(0);
-					if (itemStack.getItem() != itemStack2.getItem() || itemStack2.count != 1 || itemStack.count != 1 || !itemStack2.getItem().isDamageable()) {
+					if (itemStack.getItem() != itemStack2.getItem() || itemStack2.getCount() != 1 || itemStack.getCount() != 1 || !itemStack2.getItem().isDamageable()) {
 						return false;
 					}
 				}
@@ -29,19 +29,18 @@ public class RepairingRecipeType implements RecipeType {
 		return list.size() == 2;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		List<ItemStack> list = Lists.newArrayList();
 
 		for (int i = 0; i < inventory.getInvSize(); i++) {
 			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				list.add(itemStack);
 				if (list.size() > 1) {
 					ItemStack itemStack2 = (ItemStack)list.get(0);
-					if (itemStack.getItem() != itemStack2.getItem() || itemStack2.count != 1 || itemStack.count != 1 || !itemStack2.getItem().isDamageable()) {
-						return null;
+					if (itemStack.getItem() != itemStack2.getItem() || itemStack2.getCount() != 1 || itemStack.getCount() != 1 || !itemStack2.getItem().isDamageable()) {
+						return ItemStack.EMPTY;
 					}
 				}
 			}
@@ -50,7 +49,7 @@ public class RepairingRecipeType implements RecipeType {
 		if (list.size() == 2) {
 			ItemStack itemStack3 = (ItemStack)list.get(0);
 			ItemStack itemStack4 = (ItemStack)list.get(1);
-			if (itemStack3.getItem() == itemStack4.getItem() && itemStack3.count == 1 && itemStack4.count == 1 && itemStack3.getItem().isDamageable()) {
+			if (itemStack3.getItem() == itemStack4.getItem() && itemStack3.getCount() == 1 && itemStack4.getCount() == 1 && itemStack3.getItem().isDamageable()) {
 				Item item = itemStack3.getItem();
 				int j = item.getMaxDamage() - itemStack3.getDamage();
 				int k = item.getMaxDamage() - itemStack4.getDamage();
@@ -64,7 +63,7 @@ public class RepairingRecipeType implements RecipeType {
 			}
 		}
 
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
@@ -72,23 +71,22 @@ public class RepairingRecipeType implements RecipeType {
 		return 4;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getOutput() {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemStack[] getRemainders(CraftingInventory inventory) {
-		ItemStack[] itemStacks = new ItemStack[inventory.getInvSize()];
+	public DefaultedList<ItemStack> method_13670(CraftingInventory craftingInventory) {
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(craftingInventory.getInvSize(), ItemStack.EMPTY);
 
-		for (int i = 0; i < itemStacks.length; i++) {
-			ItemStack itemStack = inventory.getInvStack(i);
-			if (itemStack != null && itemStack.getItem().isFood()) {
-				itemStacks[i] = new ItemStack(itemStack.getItem().getRecipeRemainder());
+		for (int i = 0; i < defaultedList.size(); i++) {
+			ItemStack itemStack = craftingInventory.getInvStack(i);
+			if (itemStack.getItem().isFood()) {
+				defaultedList.set(i, new ItemStack(itemStack.getItem().getRecipeRemainder()));
 			}
 		}
 
-		return itemStacks;
+		return defaultedList;
 	}
 }

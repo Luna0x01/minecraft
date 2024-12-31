@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.piston.PistonBehavior;
@@ -116,30 +115,19 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (this.material == Material.IRON) {
-			return true;
+			return false;
 		} else {
-			BlockPos blockPos2 = blockState.get(HALF) == DoorBlock.HalfType.LOWER ? blockPos : blockPos.down();
-			BlockState blockState2 = blockPos.equals(blockPos2) ? blockState : world.getBlockState(blockPos2);
-			if (blockState2.getBlock() != this) {
+			BlockPos blockPos = state.get(HALF) == DoorBlock.HalfType.LOWER ? pos : pos.down();
+			BlockState blockState = pos.equals(blockPos) ? state : world.getBlockState(blockPos);
+			if (blockState.getBlock() != this) {
 				return false;
 			} else {
-				blockState = blockState2.withDefaultValue(OPEN);
-				world.setBlockState(blockPos2, blockState, 10);
-				world.onRenderRegionUpdate(blockPos2, blockPos);
-				world.syncWorldEvent(playerEntity, blockState.get(OPEN) ? this.method_11605() : this.method_11604(), blockPos, 0);
+				state = blockState.withDefaultValue(OPEN);
+				world.setBlockState(blockPos, state, 10);
+				world.onRenderRegionUpdate(blockPos, pos);
+				world.syncWorldEvent(player, state.get(OPEN) ? this.method_11605() : this.method_11604(), pos, 0);
 				return true;
 			}
 		}
@@ -159,54 +147,53 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (blockState.get(HALF) == DoorBlock.HalfType.UPPER) {
-			BlockPos blockPos2 = blockPos.down();
-			BlockState blockState2 = world.getBlockState(blockPos2);
-			if (blockState2.getBlock() != this) {
-				world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (state.get(HALF) == DoorBlock.HalfType.UPPER) {
+			BlockPos blockPos = pos.down();
+			BlockState blockState = world.getBlockState(blockPos);
+			if (blockState.getBlock() != this) {
+				world.setAir(pos);
 			} else if (block != this) {
-				blockState2.method_11707(world, blockPos2, block);
+				blockState.neighbourUpdate(world, blockPos, block, neighborPos);
 			}
 		} else {
 			boolean bl = false;
-			BlockPos blockPos3 = blockPos.up();
-			BlockState blockState3 = world.getBlockState(blockPos3);
-			if (blockState3.getBlock() != this) {
-				world.setAir(blockPos);
+			BlockPos blockPos2 = pos.up();
+			BlockState blockState2 = world.getBlockState(blockPos2);
+			if (blockState2.getBlock() != this) {
+				world.setAir(pos);
 				bl = true;
 			}
 
-			if (!world.getBlockState(blockPos.down()).method_11739()) {
-				world.setAir(blockPos);
+			if (!world.getBlockState(pos.down()).method_11739()) {
+				world.setAir(pos);
 				bl = true;
-				if (blockState3.getBlock() == this) {
-					world.setAir(blockPos3);
+				if (blockState2.getBlock() == this) {
+					world.setAir(blockPos2);
 				}
 			}
 
 			if (bl) {
 				if (!world.isClient) {
-					this.dropAsItem(world, blockPos, blockState, 0);
+					this.dropAsItem(world, pos, state, 0);
 				}
 			} else {
-				boolean bl2 = world.isReceivingRedstonePower(blockPos) || world.isReceivingRedstonePower(blockPos3);
-				if (block != this && (bl2 || block.getDefaultState().emitsRedstonePower()) && bl2 != (Boolean)blockState3.get(POWERED)) {
-					world.setBlockState(blockPos3, blockState3.with(POWERED, bl2), 2);
-					if (bl2 != (Boolean)blockState.get(OPEN)) {
-						world.setBlockState(blockPos, blockState.with(OPEN, bl2), 2);
-						world.onRenderRegionUpdate(blockPos, blockPos);
-						world.syncWorldEvent(null, bl2 ? this.method_11605() : this.method_11604(), blockPos, 0);
+				boolean bl2 = world.isReceivingRedstonePower(pos) || world.isReceivingRedstonePower(blockPos2);
+				if (block != this && (bl2 || block.getDefaultState().emitsRedstonePower()) && bl2 != (Boolean)blockState2.get(POWERED)) {
+					world.setBlockState(blockPos2, blockState2.with(POWERED, bl2), 2);
+					if (bl2 != (Boolean)state.get(OPEN)) {
+						world.setBlockState(pos, state.with(OPEN, bl2), 2);
+						world.onRenderRegionUpdate(pos, pos);
+						world.syncWorldEvent(null, bl2 ? this.method_11605() : this.method_11604(), pos, 0);
 					}
 				}
 			}
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return state.get(HALF) == DoorBlock.HalfType.UPPER ? null : this.getItem();
+		return state.get(HALF) == DoorBlock.HalfType.UPPER ? Items.AIR : this.getItem();
 	}
 
 	@Override

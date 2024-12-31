@@ -101,7 +101,7 @@ public class BeaconScreen extends HandledScreen {
 			}
 		}
 
-		this.doneButton.active = this.beaconInventory.getInvStack(0) != null && statusEffect != null;
+		this.doneButton.active = !this.beaconInventory.getInvStack(0).isEmpty() && statusEffect != null;
 	}
 
 	@Override

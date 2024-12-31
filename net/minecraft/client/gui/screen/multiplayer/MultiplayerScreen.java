@@ -10,7 +10,6 @@ import net.minecraft.client.gui.screen.DirectConnectScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.EntryListWidget;
-import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.gui.widget.LanServerEntry;
 import net.minecraft.client.network.LanServerQueryManager;
 import net.minecraft.client.network.MultiplayerServerListPinger;
@@ -22,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 
-public class MultiplayerScreen extends Screen implements IdentifiableBooleanConsumer {
+public class MultiplayerScreen extends Screen {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MultiplayerServerListPinger pinger = new MultiplayerServerListPinger();
 	private final Screen parent;

@@ -55,4 +55,14 @@ public class class_2711 extends SingletonBiomeSource {
 	public boolean method_3854(int i, int j, int k, List<Biome> list) {
 		return list.contains(this.field_12534);
 	}
+
+	@Override
+	public boolean method_13697() {
+		return true;
+	}
+
+	@Override
+	public Biome method_13698() {
+		return this.field_12534;
+	}
 }

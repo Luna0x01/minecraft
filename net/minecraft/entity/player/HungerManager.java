@@ -42,8 +42,8 @@ public class HungerManager {
 		if (bl && this.foodSaturationLevel > 0.0F && player.canFoodHeal() && this.foodLevel >= 20) {
 			this.foodStarvationTimer++;
 			if (this.foodStarvationTimer >= 10) {
-				float f = Math.min(this.foodSaturationLevel, 4.0F);
-				player.heal(f / 4.0F);
+				float f = Math.min(this.foodSaturationLevel, 6.0F);
+				player.heal(f / 6.0F);
 				this.addExhaustion(f);
 				this.foodStarvationTimer = 0;
 			}
@@ -51,7 +51,7 @@ public class HungerManager {
 			this.foodStarvationTimer++;
 			if (this.foodStarvationTimer >= 80) {
 				player.heal(1.0F);
-				this.addExhaustion(4.0F);
+				this.addExhaustion(6.0F);
 				this.foodStarvationTimer = 0;
 			}
 		} else if (this.foodLevel <= 0) {

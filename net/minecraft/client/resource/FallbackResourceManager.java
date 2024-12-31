@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.resource.Resource;
@@ -31,7 +32,7 @@ public class FallbackResourceManager implements ResourceManager {
 
 	@Override
 	public Set<String> getAllNamespaces() {
-		return null;
+		return Collections.emptySet();
 	}
 
 	@Override

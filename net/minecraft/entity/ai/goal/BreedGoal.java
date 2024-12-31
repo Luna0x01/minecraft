@@ -14,14 +14,20 @@ import net.minecraft.world.World;
 
 public class BreedGoal extends Goal {
 	private final AnimalEntity animal;
+	private final Class<? extends AnimalEntity> field_15477;
 	World world;
 	private AnimalEntity mate;
 	int timer;
 	double chance;
 
 	public BreedGoal(AnimalEntity animalEntity, double d) {
+		this(animalEntity, d, animalEntity.getClass());
+	}
+
+	public BreedGoal(AnimalEntity animalEntity, double d, Class<? extends AnimalEntity> class_) {
 		this.animal = animalEntity;
 		this.world = animalEntity.world;
+		this.field_15477 = class_;
 		this.chance = d;
 		this.setCategoryBits(3);
 	}
@@ -58,7 +64,7 @@ public class BreedGoal extends Goal {
 	}
 
 	private AnimalEntity findMate() {
-		List<AnimalEntity> list = this.world.getEntitiesInBox(this.animal.getClass(), this.animal.getBoundingBox().expand(8.0));
+		List<AnimalEntity> list = this.world.getEntitiesInBox(this.field_15477, this.animal.getBoundingBox().expand(8.0));
 		double d = Double.MAX_VALUE;
 		AnimalEntity animalEntity = null;
 

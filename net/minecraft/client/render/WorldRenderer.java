@@ -62,8 +62,6 @@ import net.minecraft.item.DyeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.item.MusicDiscItem;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionUtil;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.sound.BlockSoundGroup;
@@ -398,7 +396,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		} else {
 			this.chunksToRebuild.clear();
 			this.visibleChunks.clear();
-			this.chunks = null;
+			if (this.chunks != null) {
+				this.chunks.clear();
+				this.chunks = null;
+			}
+
 			if (this.chunkBuilder != null) {
 				this.chunkBuilder.method_12421();
 			}
@@ -594,22 +596,23 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 			for (BlockBreakingInfo blockBreakingInfo : this.blockBreakingInfos.values()) {
 				BlockPos blockPos = blockBreakingInfo.getPos();
-				BlockEntity blockEntity3 = this.world.getBlockEntity(blockPos);
-				if (blockEntity3 instanceof ChestBlockEntity) {
-					ChestBlockEntity chestBlockEntity = (ChestBlockEntity)blockEntity3;
-					if (chestBlockEntity.neighborChestWest != null) {
-						blockPos = blockPos.offset(Direction.WEST);
-						blockEntity3 = this.world.getBlockEntity(blockPos);
-					} else if (chestBlockEntity.neighborChestNorth != null) {
-						blockPos = blockPos.offset(Direction.NORTH);
-						blockEntity3 = this.world.getBlockEntity(blockPos);
+				if (this.world.getBlockState(blockPos).getBlock().hasBlockEntity()) {
+					BlockEntity blockEntity3 = this.world.getBlockEntity(blockPos);
+					if (blockEntity3 instanceof ChestBlockEntity) {
+						ChestBlockEntity chestBlockEntity = (ChestBlockEntity)blockEntity3;
+						if (chestBlockEntity.neighborChestWest != null) {
+							blockPos = blockPos.offset(Direction.WEST);
+							blockEntity3 = this.world.getBlockEntity(blockPos);
+						} else if (chestBlockEntity.neighborChestNorth != null) {
+							blockPos = blockPos.offset(Direction.NORTH);
+							blockEntity3 = this.world.getBlockEntity(blockPos);
+						}
 					}
-				}
 
-				Block block = this.world.getBlockState(blockPos).getBlock();
-				if (blockEntity3 != null
-					&& (block instanceof ChestBlock || block instanceof EnderChestBlock || block instanceof AbstractSignBlock || block instanceof SkullBlock)) {
-					BlockEntityRenderDispatcher.INSTANCE.renderEntity(blockEntity3, tickDelta, blockBreakingInfo.getStage());
+					BlockState blockState = this.world.getBlockState(blockPos);
+					if (blockEntity3 != null && blockState.method_13762()) {
+						BlockEntityRenderDispatcher.INSTANCE.renderEntity(blockEntity3, tickDelta, blockBreakingInfo.getStage());
+					}
 				}
 			}
 
@@ -1233,16 +1236,14 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		}
 	}
 
-	public void renderClouds(float tickDelta, int anaglyphFilter) {
+	public void method_13849(float f, int i, double d, double e, double g) {
 		if (this.client.world.dimension.canPlayersSleep()) {
 			if (this.client.options.getCloudMode() == 2) {
-				this.renderFancyClouds(tickDelta, anaglyphFilter);
+				this.method_13851(f, i, d, e, g);
 			} else {
 				GlStateManager.disableCull();
-				Entity entity = this.client.getCameraEntity();
-				float f = (float)(entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta);
-				int i = 32;
-				int j = 8;
+				int j = 32;
+				int k = 8;
 				Tessellator tessellator = Tessellator.getInstance();
 				BufferBuilder bufferBuilder = tessellator.getBuffer();
 				this.textureManager.bindTexture(CLOUDS);
@@ -1250,49 +1251,48 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				GlStateManager.method_12288(
 					GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
 				);
-				Vec3d vec3d = this.world.getCloudColor(tickDelta);
-				float g = (float)vec3d.x;
-				float h = (float)vec3d.y;
-				float k = (float)vec3d.z;
-				if (anaglyphFilter != 2) {
-					float l = (g * 30.0F + h * 59.0F + k * 11.0F) / 100.0F;
-					float m = (g * 30.0F + h * 70.0F) / 100.0F;
-					float n = (g * 30.0F + k * 70.0F) / 100.0F;
-					g = l;
-					h = m;
-					k = n;
+				Vec3d vec3d = this.world.getCloudColor(f);
+				float h = (float)vec3d.x;
+				float l = (float)vec3d.y;
+				float m = (float)vec3d.z;
+				if (i != 2) {
+					float n = (h * 30.0F + l * 59.0F + m * 11.0F) / 100.0F;
+					float o = (h * 30.0F + l * 70.0F) / 100.0F;
+					float p = (h * 30.0F + m * 70.0F) / 100.0F;
+					h = n;
+					l = o;
+					m = p;
 				}
 
-				float o = 4.8828125E-4F;
-				double d = (double)((float)this.ticks + tickDelta);
-				double e = entity.prevX + (entity.x - entity.prevX) * (double)tickDelta + d * 0.03F;
-				double p = entity.prevZ + (entity.z - entity.prevZ) * (double)tickDelta;
-				int q = MathHelper.floor(e / 2048.0);
-				int r = MathHelper.floor(p / 2048.0);
-				e -= (double)(q * 2048);
-				p -= (double)(r * 2048);
-				float s = this.world.dimension.getCloudHeight() - f + 0.33F;
-				float t = (float)(e * 4.8828125E-4);
-				float u = (float)(p * 4.8828125E-4);
+				float q = 4.8828125E-4F;
+				double r = (double)((float)this.ticks + f);
+				double s = d + r * 0.03F;
+				int u = MathHelper.floor(s / 2048.0);
+				int v = MathHelper.floor(g / 2048.0);
+				s -= (double)(u * 2048);
+				double t = g - (double)(v * 2048);
+				float w = this.world.dimension.getCloudHeight() - (float)e + 0.33F;
+				float x = (float)(s * 4.8828125E-4);
+				float y = (float)(t * 4.8828125E-4);
 				bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 
-				for (int v = -256; v < 256; v += 32) {
-					for (int w = -256; w < 256; w += 32) {
-						bufferBuilder.vertex((double)(v + 0), (double)s, (double)(w + 32))
-							.texture((double)((float)(v + 0) * 4.8828125E-4F + t), (double)((float)(w + 32) * 4.8828125E-4F + u))
-							.color(g, h, k, 0.8F)
+				for (int z = -256; z < 256; z += 32) {
+					for (int aa = -256; aa < 256; aa += 32) {
+						bufferBuilder.vertex((double)(z + 0), (double)w, (double)(aa + 32))
+							.texture((double)((float)(z + 0) * 4.8828125E-4F + x), (double)((float)(aa + 32) * 4.8828125E-4F + y))
+							.color(h, l, m, 0.8F)
 							.next();
-						bufferBuilder.vertex((double)(v + 32), (double)s, (double)(w + 32))
-							.texture((double)((float)(v + 32) * 4.8828125E-4F + t), (double)((float)(w + 32) * 4.8828125E-4F + u))
-							.color(g, h, k, 0.8F)
+						bufferBuilder.vertex((double)(z + 32), (double)w, (double)(aa + 32))
+							.texture((double)((float)(z + 32) * 4.8828125E-4F + x), (double)((float)(aa + 32) * 4.8828125E-4F + y))
+							.color(h, l, m, 0.8F)
 							.next();
-						bufferBuilder.vertex((double)(v + 32), (double)s, (double)(w + 0))
-							.texture((double)((float)(v + 32) * 4.8828125E-4F + t), (double)((float)(w + 0) * 4.8828125E-4F + u))
-							.color(g, h, k, 0.8F)
+						bufferBuilder.vertex((double)(z + 32), (double)w, (double)(aa + 0))
+							.texture((double)((float)(z + 32) * 4.8828125E-4F + x), (double)((float)(aa + 0) * 4.8828125E-4F + y))
+							.color(h, l, m, 0.8F)
 							.next();
-						bufferBuilder.vertex((double)(v + 0), (double)s, (double)(w + 0))
-							.texture((double)((float)(v + 0) * 4.8828125E-4F + t), (double)((float)(w + 0) * 4.8828125E-4F + u))
-							.color(g, h, k, 0.8F)
+						bufferBuilder.vertex((double)(z + 0), (double)w, (double)(aa + 0))
+							.texture((double)((float)(z + 0) * 4.8828125E-4F + x), (double)((float)(aa + 0) * 4.8828125E-4F + y))
+							.color(h, l, m, 0.8F)
 							.next();
 					}
 				}
@@ -1309,64 +1309,62 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		return false;
 	}
 
-	private void renderFancyClouds(float tickDelta, int anaglyphFilter) {
+	private void method_13851(float f, int i, double d, double e, double g) {
 		GlStateManager.disableCull();
-		Entity entity = this.client.getCameraEntity();
-		float f = (float)(entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		float g = 12.0F;
-		float h = 4.0F;
-		double d = (double)((float)this.ticks + tickDelta);
-		double e = (entity.prevX + (entity.x - entity.prevX) * (double)tickDelta + d * 0.03F) / 12.0;
-		double i = (entity.prevZ + (entity.z - entity.prevZ) * (double)tickDelta) / 12.0 + 0.33F;
-		float j = this.world.dimension.getCloudHeight() - f + 0.33F;
-		int k = MathHelper.floor(e / 2048.0);
-		int l = MathHelper.floor(i / 2048.0);
-		e -= (double)(k * 2048);
-		i -= (double)(l * 2048);
+		float h = 12.0F;
+		float j = 4.0F;
+		double k = (double)((float)this.ticks + f);
+		double l = (d + k * 0.03F) / 12.0;
+		double m = g / 12.0 + 0.33F;
+		float n = this.world.dimension.getCloudHeight() - (float)e + 0.33F;
+		int o = MathHelper.floor(l / 2048.0);
+		int p = MathHelper.floor(m / 2048.0);
+		l -= (double)(o * 2048);
+		m -= (double)(p * 2048);
 		this.textureManager.bindTexture(CLOUDS);
 		GlStateManager.enableBlend();
 		GlStateManager.method_12288(
 			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
 		);
-		Vec3d vec3d = this.world.getCloudColor(tickDelta);
-		float m = (float)vec3d.x;
-		float n = (float)vec3d.y;
-		float o = (float)vec3d.z;
-		if (anaglyphFilter != 2) {
-			float p = (m * 30.0F + n * 59.0F + o * 11.0F) / 100.0F;
-			float q = (m * 30.0F + n * 70.0F) / 100.0F;
-			float r = (m * 30.0F + o * 70.0F) / 100.0F;
-			m = p;
-			n = q;
-			o = r;
+		Vec3d vec3d = this.world.getCloudColor(f);
+		float q = (float)vec3d.x;
+		float r = (float)vec3d.y;
+		float s = (float)vec3d.z;
+		if (i != 2) {
+			float t = (q * 30.0F + r * 59.0F + s * 11.0F) / 100.0F;
+			float u = (q * 30.0F + r * 70.0F) / 100.0F;
+			float v = (q * 30.0F + s * 70.0F) / 100.0F;
+			q = t;
+			r = u;
+			s = v;
 		}
 
-		float s = m * 0.9F;
-		float t = n * 0.9F;
-		float u = o * 0.9F;
-		float v = m * 0.7F;
-		float w = n * 0.7F;
-		float x = o * 0.7F;
-		float y = m * 0.8F;
-		float z = n * 0.8F;
-		float aa = o * 0.8F;
-		float ab = 0.00390625F;
-		float ac = (float)MathHelper.floor(e) * 0.00390625F;
-		float ad = (float)MathHelper.floor(i) * 0.00390625F;
-		float ae = (float)(e - (double)MathHelper.floor(e));
-		float af = (float)(i - (double)MathHelper.floor(i));
-		int ag = 8;
-		int ah = 4;
-		float ai = 9.765625E-4F;
+		float w = q * 0.9F;
+		float x = r * 0.9F;
+		float y = s * 0.9F;
+		float z = q * 0.7F;
+		float aa = r * 0.7F;
+		float ab = s * 0.7F;
+		float ac = q * 0.8F;
+		float ad = r * 0.8F;
+		float ae = s * 0.8F;
+		float af = 0.00390625F;
+		float ag = (float)MathHelper.floor(l) * 0.00390625F;
+		float ah = (float)MathHelper.floor(m) * 0.00390625F;
+		float ai = (float)(l - (double)MathHelper.floor(l));
+		float aj = (float)(m - (double)MathHelper.floor(m));
+		int ak = 8;
+		int al = 4;
+		float am = 9.765625E-4F;
 		GlStateManager.scale(12.0F, 1.0F, 12.0F);
 
-		for (int aj = 0; aj < 2; aj++) {
-			if (aj == 0) {
+		for (int an = 0; an < 2; an++) {
+			if (an == 0) {
 				GlStateManager.colorMask(false, false, false, false);
 			} else {
-				switch (anaglyphFilter) {
+				switch (i) {
 					case 0:
 						GlStateManager.colorMask(false, true, true, true);
 						break;
@@ -1378,154 +1376,154 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				}
 			}
 
-			for (int ak = -3; ak <= 4; ak++) {
-				for (int al = -3; al <= 4; al++) {
+			for (int ao = -3; ao <= 4; ao++) {
+				for (int ap = -3; ap <= 4; ap++) {
 					bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
-					float am = (float)(ak * 8);
-					float an = (float)(al * 8);
-					float ao = am - ae;
-					float ap = an - af;
-					if (j > -5.0F) {
-						bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 0.0F), (double)(ap + 8.0F))
-							.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-							.color(v, w, x, 0.8F)
+					float aq = (float)(ao * 8);
+					float ar = (float)(ap * 8);
+					float as = aq - ai;
+					float at = ar - aj;
+					if (n > -5.0F) {
+						bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 0.0F), (double)(at + 8.0F))
+							.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+							.color(z, aa, ab, 0.8F)
 							.normal(0.0F, -1.0F, 0.0F)
 							.next();
-						bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 0.0F), (double)(ap + 8.0F))
-							.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-							.color(v, w, x, 0.8F)
+						bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 0.0F), (double)(at + 8.0F))
+							.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+							.color(z, aa, ab, 0.8F)
 							.normal(0.0F, -1.0F, 0.0F)
 							.next();
-						bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 0.0F), (double)(ap + 0.0F))
-							.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-							.color(v, w, x, 0.8F)
+						bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 0.0F), (double)(at + 0.0F))
+							.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+							.color(z, aa, ab, 0.8F)
 							.normal(0.0F, -1.0F, 0.0F)
 							.next();
-						bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 0.0F), (double)(ap + 0.0F))
-							.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-							.color(v, w, x, 0.8F)
+						bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 0.0F), (double)(at + 0.0F))
+							.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+							.color(z, aa, ab, 0.8F)
 							.normal(0.0F, -1.0F, 0.0F)
 							.next();
 					}
 
-					if (j <= 5.0F) {
-						bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 4.0F - 9.765625E-4F), (double)(ap + 8.0F))
-							.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-							.color(m, n, o, 0.8F)
+					if (n <= 5.0F) {
+						bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 4.0F - 9.765625E-4F), (double)(at + 8.0F))
+							.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+							.color(q, r, s, 0.8F)
 							.normal(0.0F, 1.0F, 0.0F)
 							.next();
-						bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 4.0F - 9.765625E-4F), (double)(ap + 8.0F))
-							.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-							.color(m, n, o, 0.8F)
+						bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 4.0F - 9.765625E-4F), (double)(at + 8.0F))
+							.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+							.color(q, r, s, 0.8F)
 							.normal(0.0F, 1.0F, 0.0F)
 							.next();
-						bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 4.0F - 9.765625E-4F), (double)(ap + 0.0F))
-							.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-							.color(m, n, o, 0.8F)
+						bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 4.0F - 9.765625E-4F), (double)(at + 0.0F))
+							.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+							.color(q, r, s, 0.8F)
 							.normal(0.0F, 1.0F, 0.0F)
 							.next();
-						bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 4.0F - 9.765625E-4F), (double)(ap + 0.0F))
-							.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-							.color(m, n, o, 0.8F)
+						bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 4.0F - 9.765625E-4F), (double)(at + 0.0F))
+							.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+							.color(q, r, s, 0.8F)
 							.normal(0.0F, 1.0F, 0.0F)
 							.next();
 					}
 
-					if (ak > -1) {
-						for (int aq = 0; aq < 8; aq++) {
-							bufferBuilder.vertex((double)(ao + (float)aq + 0.0F), (double)(j + 0.0F), (double)(ap + 8.0F))
-								.texture((double)((am + (float)aq + 0.5F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+					if (ao > -1) {
+						for (int au = 0; au < 8; au++) {
+							bufferBuilder.vertex((double)(as + (float)au + 0.0F), (double)(n + 0.0F), (double)(at + 8.0F))
+								.texture((double)((aq + (float)au + 0.5F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(-1.0F, 0.0F, 0.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + (float)aq + 0.0F), (double)(j + 4.0F), (double)(ap + 8.0F))
-								.texture((double)((am + (float)aq + 0.5F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+							bufferBuilder.vertex((double)(as + (float)au + 0.0F), (double)(n + 4.0F), (double)(at + 8.0F))
+								.texture((double)((aq + (float)au + 0.5F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(-1.0F, 0.0F, 0.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + (float)aq + 0.0F), (double)(j + 4.0F), (double)(ap + 0.0F))
-								.texture((double)((am + (float)aq + 0.5F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+							bufferBuilder.vertex((double)(as + (float)au + 0.0F), (double)(n + 4.0F), (double)(at + 0.0F))
+								.texture((double)((aq + (float)au + 0.5F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(-1.0F, 0.0F, 0.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + (float)aq + 0.0F), (double)(j + 0.0F), (double)(ap + 0.0F))
-								.texture((double)((am + (float)aq + 0.5F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+							bufferBuilder.vertex((double)(as + (float)au + 0.0F), (double)(n + 0.0F), (double)(at + 0.0F))
+								.texture((double)((aq + (float)au + 0.5F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(-1.0F, 0.0F, 0.0F)
 								.next();
 						}
 					}
 
-					if (ak <= 1) {
-						for (int ar = 0; ar < 8; ar++) {
-							bufferBuilder.vertex((double)(ao + (float)ar + 1.0F - 9.765625E-4F), (double)(j + 0.0F), (double)(ap + 8.0F))
-								.texture((double)((am + (float)ar + 0.5F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+					if (ao <= 1) {
+						for (int av = 0; av < 8; av++) {
+							bufferBuilder.vertex((double)(as + (float)av + 1.0F - 9.765625E-4F), (double)(n + 0.0F), (double)(at + 8.0F))
+								.texture((double)((aq + (float)av + 0.5F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(1.0F, 0.0F, 0.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + (float)ar + 1.0F - 9.765625E-4F), (double)(j + 4.0F), (double)(ap + 8.0F))
-								.texture((double)((am + (float)ar + 0.5F) * 0.00390625F + ac), (double)((an + 8.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+							bufferBuilder.vertex((double)(as + (float)av + 1.0F - 9.765625E-4F), (double)(n + 4.0F), (double)(at + 8.0F))
+								.texture((double)((aq + (float)av + 0.5F) * 0.00390625F + ag), (double)((ar + 8.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(1.0F, 0.0F, 0.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + (float)ar + 1.0F - 9.765625E-4F), (double)(j + 4.0F), (double)(ap + 0.0F))
-								.texture((double)((am + (float)ar + 0.5F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+							bufferBuilder.vertex((double)(as + (float)av + 1.0F - 9.765625E-4F), (double)(n + 4.0F), (double)(at + 0.0F))
+								.texture((double)((aq + (float)av + 0.5F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(1.0F, 0.0F, 0.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + (float)ar + 1.0F - 9.765625E-4F), (double)(j + 0.0F), (double)(ap + 0.0F))
-								.texture((double)((am + (float)ar + 0.5F) * 0.00390625F + ac), (double)((an + 0.0F) * 0.00390625F + ad))
-								.color(s, t, u, 0.8F)
+							bufferBuilder.vertex((double)(as + (float)av + 1.0F - 9.765625E-4F), (double)(n + 0.0F), (double)(at + 0.0F))
+								.texture((double)((aq + (float)av + 0.5F) * 0.00390625F + ag), (double)((ar + 0.0F) * 0.00390625F + ah))
+								.color(w, x, y, 0.8F)
 								.normal(1.0F, 0.0F, 0.0F)
 								.next();
 						}
 					}
 
-					if (al > -1) {
-						for (int as = 0; as < 8; as++) {
-							bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 4.0F), (double)(ap + (float)as + 0.0F))
-								.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + (float)as + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+					if (ap > -1) {
+						for (int aw = 0; aw < 8; aw++) {
+							bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 4.0F), (double)(at + (float)aw + 0.0F))
+								.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + (float)aw + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, -1.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 4.0F), (double)(ap + (float)as + 0.0F))
-								.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + (float)as + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+							bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 4.0F), (double)(at + (float)aw + 0.0F))
+								.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + (float)aw + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, -1.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 0.0F), (double)(ap + (float)as + 0.0F))
-								.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + (float)as + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+							bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 0.0F), (double)(at + (float)aw + 0.0F))
+								.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + (float)aw + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, -1.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 0.0F), (double)(ap + (float)as + 0.0F))
-								.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + (float)as + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+							bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 0.0F), (double)(at + (float)aw + 0.0F))
+								.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + (float)aw + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, -1.0F)
 								.next();
 						}
 					}
 
-					if (al <= 1) {
-						for (int at = 0; at < 8; at++) {
-							bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 4.0F), (double)(ap + (float)at + 1.0F - 9.765625E-4F))
-								.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + (float)at + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+					if (ap <= 1) {
+						for (int ax = 0; ax < 8; ax++) {
+							bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 4.0F), (double)(at + (float)ax + 1.0F - 9.765625E-4F))
+								.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + (float)ax + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, 1.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 4.0F), (double)(ap + (float)at + 1.0F - 9.765625E-4F))
-								.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + (float)at + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+							bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 4.0F), (double)(at + (float)ax + 1.0F - 9.765625E-4F))
+								.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + (float)ax + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, 1.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + 8.0F), (double)(j + 0.0F), (double)(ap + (float)at + 1.0F - 9.765625E-4F))
-								.texture((double)((am + 8.0F) * 0.00390625F + ac), (double)((an + (float)at + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+							bufferBuilder.vertex((double)(as + 8.0F), (double)(n + 0.0F), (double)(at + (float)ax + 1.0F - 9.765625E-4F))
+								.texture((double)((aq + 8.0F) * 0.00390625F + ag), (double)((ar + (float)ax + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, 1.0F)
 								.next();
-							bufferBuilder.vertex((double)(ao + 0.0F), (double)(j + 0.0F), (double)(ap + (float)at + 1.0F - 9.765625E-4F))
-								.texture((double)((am + 0.0F) * 0.00390625F + ac), (double)((an + (float)at + 0.5F) * 0.00390625F + ad))
-								.color(y, z, aa, 0.8F)
+							bufferBuilder.vertex((double)(as + 0.0F), (double)(n + 0.0F), (double)(at + (float)ax + 1.0F - 9.765625E-4F))
+								.texture((double)((aq + 0.0F) * 0.00390625F + ag), (double)((ar + (float)ax + 0.5F) * 0.00390625F + ah))
+								.color(ac, ad, ae, 0.8F)
 								.normal(0.0F, 0.0F, 1.0F)
 								.next();
 						}
@@ -1895,19 +1893,24 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 	@Override
 	public void addParticle(int id, boolean bl, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... args) {
+		this.method_13696(id, bl, false, x, y, z, velocityX, velocityY, velocityZ, args);
+	}
+
+	@Override
+	public void method_13696(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is) {
 		try {
-			this.addParticleInternal(id, bl, x, y, z, velocityX, velocityY, velocityZ, args);
-		} catch (Throwable var19) {
-			CrashReport crashReport = CrashReport.create(var19, "Exception while adding particle");
+			this.method_13852(i, bl, bl2, d, e, f, g, h, j, is);
+		} catch (Throwable var20) {
+			CrashReport crashReport = CrashReport.create(var20, "Exception while adding particle");
 			CrashReportSection crashReportSection = crashReport.addElement("Particle being added");
-			crashReportSection.add("ID", id);
-			if (args != null) {
-				crashReportSection.add("Parameters", args);
+			crashReportSection.add("ID", i);
+			if (is != null) {
+				crashReportSection.add("Parameters", is);
 			}
 
 			crashReportSection.add("Position", new CrashCallable<String>() {
 				public String call() throws Exception {
-					return CrashReportSection.createPositionString(x, y, z);
+					return CrashReportSection.createPositionString(d, e, f);
 				}
 			});
 			throw new CrashException(crashReport);
@@ -1920,13 +1923,14 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 	@Nullable
 	private Particle addParticleInternal(int i, boolean bl, double d, double e, double f, double g, double h, double j, int... is) {
+		return this.method_13852(i, bl, false, d, e, f, g, h, j, is);
+	}
+
+	@Nullable
+	private Particle method_13852(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is) {
 		Entity entity = this.client.getCameraEntity();
 		if (this.client != null && entity != null && this.client.particleManager != null) {
-			int k = this.client.options.particle;
-			if (k == 1 && this.world.random.nextInt(3) == 0) {
-				k = 2;
-			}
-
+			int k = this.method_13850(bl2);
 			double l = entity.x - d;
 			double m = entity.y - e;
 			double n = entity.z - f;
@@ -1940,6 +1944,19 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		} else {
 			return null;
 		}
+	}
+
+	private int method_13850(boolean bl) {
+		int i = this.client.options.particle;
+		if (bl && i == 2 && this.world.random.nextInt(10) == 0) {
+			i = 1;
+		}
+
+		if (i == 1 && this.world.random.nextInt(3) == 0) {
+			i = 2;
+		}
+
+		return i;
 	}
 
 	@Override
@@ -2133,6 +2150,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				this.client.particleManager.addBlockBreakParticles(pos, block.stateFromData(data >> 12 & 0xFF));
 				break;
 			case 2002:
+			case 2007:
 				double v = (double)pos.getX();
 				double w = (double)pos.getY();
 				double x = (double)pos.getZ();
@@ -2150,24 +2168,22 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 					);
 				}
 
-				Potion potion = Potion.byIndex(data);
-				int z = PotionUtil.getColor(potion);
-				float aa = (float)(z >> 16 & 0xFF) / 255.0F;
-				float ab = (float)(z >> 8 & 0xFF) / 255.0F;
-				float ac = (float)(z >> 0 & 0xFF) / 255.0F;
-				ParticleType particleType = potion.method_11415() ? ParticleType.INSTANT_SPELL : ParticleType.SPELL;
+				float z = (float)(data >> 16 & 0xFF) / 255.0F;
+				float aa = (float)(data >> 8 & 0xFF) / 255.0F;
+				float ab = (float)(data >> 0 & 0xFF) / 255.0F;
+				ParticleType particleType = eventId == 2007 ? ParticleType.INSTANT_SPELL : ParticleType.SPELL;
 
-				for (int ad = 0; ad < 100; ad++) {
-					double ae = random.nextDouble() * 4.0;
-					double af = random.nextDouble() * Math.PI * 2.0;
-					double ag = Math.cos(af) * ae;
-					double ah = 0.01 + random.nextDouble() * 0.5;
-					double ai = Math.sin(af) * ae;
-					Particle particle = this.addParticleInternal(particleType.getId(), particleType.getAlwaysShow(), v + ag * 0.1, w + 0.3, x + ai * 0.1, ag, ah, ai);
+				for (int ac = 0; ac < 100; ac++) {
+					double ad = random.nextDouble() * 4.0;
+					double ae = random.nextDouble() * Math.PI * 2.0;
+					double af = Math.cos(ae) * ad;
+					double ag = 0.01 + random.nextDouble() * 0.5;
+					double ah = Math.sin(ae) * ad;
+					Particle particle = this.addParticleInternal(particleType.getId(), particleType.getAlwaysShow(), v + af * 0.1, w + 0.3, x + ah * 0.1, af, ag, ah);
 					if (particle != null) {
-						float aj = 0.75F + random.nextFloat() * 0.25F;
-						particle.setColor(aa * aj, ab * aj, ac * aj);
-						particle.method_12249((float)ae);
+						float ai = 0.75F + random.nextFloat() * 0.25F;
+						particle.setColor(z * ai, aa * ai, ab * ai);
+						particle.method_12249((float)ad);
 					}
 				}
 
@@ -2197,29 +2213,29 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				}
 				break;
 			case 2004:
-				for (int ak = 0; ak < 20; ak++) {
-					double al = (double)pos.getX() + 0.5 + ((double)this.world.random.nextFloat() - 0.5) * 2.0;
-					double am = (double)pos.getY() + 0.5 + ((double)this.world.random.nextFloat() - 0.5) * 2.0;
-					double an = (double)pos.getZ() + 0.5 + ((double)this.world.random.nextFloat() - 0.5) * 2.0;
-					this.world.addParticle(ParticleType.SMOKE, al, am, an, 0.0, 0.0, 0.0, new int[0]);
-					this.world.addParticle(ParticleType.FIRE, al, am, an, 0.0, 0.0, 0.0, new int[0]);
+				for (int aj = 0; aj < 20; aj++) {
+					double ak = (double)pos.getX() + 0.5 + ((double)this.world.random.nextFloat() - 0.5) * 2.0;
+					double al = (double)pos.getY() + 0.5 + ((double)this.world.random.nextFloat() - 0.5) * 2.0;
+					double am = (double)pos.getZ() + 0.5 + ((double)this.world.random.nextFloat() - 0.5) * 2.0;
+					this.world.addParticle(ParticleType.SMOKE, ak, al, am, 0.0, 0.0, 0.0, new int[0]);
+					this.world.addParticle(ParticleType.FIRE, ak, al, am, 0.0, 0.0, 0.0, new int[0]);
 				}
 				break;
 			case 2005:
 				DyeItem.spawnParticles(this.world, pos, data);
 				break;
 			case 2006:
-				for (int ao = 0; ao < 200; ao++) {
-					float ap = random.nextFloat() * 4.0F;
-					float aq = random.nextFloat() * (float) (Math.PI * 2);
-					double ar = (double)(MathHelper.cos(aq) * ap);
-					double as = 0.01 + random.nextDouble() * 0.5;
-					double at = (double)(MathHelper.sin(aq) * ap);
+				for (int an = 0; an < 200; an++) {
+					float ao = random.nextFloat() * 4.0F;
+					float ap = random.nextFloat() * (float) (Math.PI * 2);
+					double aq = (double)(MathHelper.cos(ap) * ao);
+					double ar = 0.01 + random.nextDouble() * 0.5;
+					double as = (double)(MathHelper.sin(ap) * ao);
 					Particle particle2 = this.addParticleInternal(
-						ParticleType.DRAGON_BREATH.getId(), false, (double)pos.getX() + ar * 0.1, (double)pos.getY() + 0.3, (double)pos.getZ() + at * 0.1, ar, as, at
+						ParticleType.DRAGON_BREATH.getId(), false, (double)pos.getX() + aq * 0.1, (double)pos.getY() + 0.3, (double)pos.getZ() + as * 0.1, aq, ar, as
 					);
 					if (particle2 != null) {
-						particle2.method_12249(ap);
+						particle2.method_12249(ao);
 					}
 				}
 

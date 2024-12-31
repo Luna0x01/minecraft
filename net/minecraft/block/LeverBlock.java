@@ -5,7 +5,6 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
@@ -39,7 +38,7 @@ public class LeverBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -92,11 +91,10 @@ public class LeverBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (this.placeLever(world, blockPos, blockState)
-			&& !canHoldLever(world, blockPos, ((LeverBlock.LeverType)blockState.get(FACING)).getDirection().getOpposite())) {
-			this.dropAsItem(world, blockPos, blockState, 0);
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (this.placeLever(world, pos, state) && !canHoldLever(world, pos, ((LeverBlock.LeverType)state.get(FACING)).getDirection().getOpposite())) {
+			this.dropAsItem(world, pos, state, 0);
+			world.setAir(pos);
 		}
 	}
 
@@ -132,28 +130,17 @@ public class LeverBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			blockState = blockState.withDefaultValue(POWERED);
-			world.setBlockState(blockPos, blockState, 3);
-			float i = blockState.get(POWERED) ? 0.6F : 0.5F;
-			world.method_11486(null, blockPos, Sounds.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.3F, i);
-			world.updateNeighborsAlways(blockPos, this);
-			Direction direction2 = ((LeverBlock.LeverType)blockState.get(FACING)).getDirection();
-			world.updateNeighborsAlways(blockPos.offset(direction2.getOpposite()), this);
+			state = state.withDefaultValue(POWERED);
+			world.setBlockState(pos, state, 3);
+			float i = state.get(POWERED) ? 0.6F : 0.5F;
+			world.method_11486(null, pos, Sounds.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.3F, i);
+			world.method_13692(pos, this, false);
+			Direction direction2 = ((LeverBlock.LeverType)state.get(FACING)).getDirection();
+			world.method_13692(pos.offset(direction2.getOpposite()), this, false);
 			return true;
 		}
 	}
@@ -161,9 +148,9 @@ public class LeverBlock extends Block {
 	@Override
 	public void onBreaking(World world, BlockPos pos, BlockState state) {
 		if ((Boolean)state.get(POWERED)) {
-			world.updateNeighborsAlways(pos, this);
+			world.method_13692(pos, this, false);
 			Direction direction = ((LeverBlock.LeverType)state.get(FACING)).getDirection();
-			world.updateNeighborsAlways(pos.offset(direction.getOpposite()), this);
+			world.method_13692(pos.offset(direction.getOpposite()), this, false);
 		}
 
 		super.onBreaking(world, pos, state);

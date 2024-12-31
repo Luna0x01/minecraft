@@ -12,6 +12,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.texture.Texture;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
@@ -197,12 +198,14 @@ public class JsonGlProgram {
 		this.uniformStateDirty = true;
 	}
 
+	@Nullable
 	public GlUniform getUniformByName(String name) {
-		return this.uniformByName.containsKey(name) ? (GlUniform)this.uniformByName.get(name) : null;
+		return (GlUniform)this.uniformByName.get(name);
 	}
 
 	public GlUniform getUniformByNameOrDummy(String name) {
-		return (GlUniform)(this.uniformByName.containsKey(name) ? (GlUniform)this.uniformByName.get(name) : dummyUniform);
+		GlUniform glUniform = this.getUniformByName(name);
+		return (GlUniform)(glUniform == null ? dummyUniform : glUniform);
 	}
 
 	private void finalizeUniformsAndSamplers() {
@@ -236,7 +239,7 @@ public class JsonGlProgram {
 		}
 	}
 
-	private void addSampler(JsonElement jsonElement) throws ShaderParseException {
+	private void addSampler(JsonElement jsonElement) {
 		JsonObject jsonObject = JsonHelper.asObject(jsonElement, "sampler");
 		String string = JsonHelper.getString(jsonObject, "name");
 		if (!JsonHelper.hasString(jsonObject, "file")) {

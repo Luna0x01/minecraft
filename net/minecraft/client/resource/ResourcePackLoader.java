@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -26,10 +27,12 @@ import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.client.util.NetworkUtils;
 import net.minecraft.resource.DirectoryResourcePack;
 import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ZipResourcePack;
+import net.minecraft.resource.class_3112;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -50,6 +53,7 @@ public class ResourcePackLoader {
 		}
 	};
 	private static final Pattern field_14991 = Pattern.compile("^[a-fA-F0-9]{40}$");
+	private static final Identifier field_15325 = new Identifier("textures/misc/unknown_pack.png");
 	private final File resourcePackDir;
 	public final ResourcePack defaultResourcePack;
 	private final File serverResourcePackDir;
@@ -74,7 +78,7 @@ public class ResourcePackLoader {
 
 			for (ResourcePackLoader.Entry entry : this.availableResourcePacks) {
 				if (entry.getName().equals(string)) {
-					if (entry.getFormat() == 2 || gameOptions.incompatibleResourcePacks.contains(entry.getName())) {
+					if (entry.getFormat() == 3 || gameOptions.incompatibleResourcePacks.contains(entry.getName())) {
 						this.selectedResourcePacks.add(entry);
 						break;
 					}
@@ -90,7 +94,7 @@ public class ResourcePackLoader {
 		Map<String, String> map = Maps.newHashMap();
 		map.put("X-Minecraft-Username", MinecraftClient.getInstance().getSession().getUsername());
 		map.put("X-Minecraft-UUID", MinecraftClient.getInstance().getSession().getUuid());
-		map.put("X-Minecraft-Version", "1.10.2");
+		map.put("X-Minecraft-Version", "1.11.2");
 		return map;
 	}
 
@@ -106,6 +110,25 @@ public class ResourcePackLoader {
 
 	private List<File> getResourcePacks() {
 		return this.resourcePackDir.isDirectory() ? Arrays.asList(this.resourcePackDir.listFiles(FILE_FILTER)) : Collections.emptyList();
+	}
+
+	private ResourcePack method_13889(File file) {
+		ResourcePack resourcePack;
+		if (file.isDirectory()) {
+			resourcePack = new DirectoryResourcePack(file);
+		} else {
+			resourcePack = new ZipResourcePack(file);
+		}
+
+		try {
+			ResourcePackMetadata resourcePackMetadata = resourcePack.parseMetadata(this.metadataSerializer, "pack");
+			if (resourcePackMetadata != null && resourcePackMetadata.getPackFormat() == 2) {
+				return new class_3112(resourcePack);
+			}
+		} catch (Exception var4) {
+		}
+
+		return resourcePack;
 	}
 
 	public void initResourcePacks() {
@@ -227,7 +250,7 @@ public class ResourcePackLoader {
 				return true;
 			}
 
-			if (string2.toLowerCase().equals(string.toLowerCase())) {
+			if (string2.toLowerCase(Locale.ROOT).equals(string.toLowerCase(Locale.ROOT))) {
 				LOGGER.info("Found file {} matching requested hash {}", new Object[]{file, string});
 				return true;
 			}
@@ -241,7 +264,7 @@ public class ResourcePackLoader {
 	}
 
 	private boolean method_13467(File file) {
-		ResourcePackLoader.Entry entry = new ResourcePackLoader.Entry(new ZipResourcePack(file));
+		ResourcePackLoader.Entry entry = new ResourcePackLoader.Entry(file);
 
 		try {
 			entry.loadIcon();
@@ -278,6 +301,7 @@ public class ResourcePackLoader {
 		}
 	}
 
+	@Nullable
 	public ResourcePack getServerContainer() {
 		return this.serverContainer;
 	}
@@ -306,7 +330,7 @@ public class ResourcePackLoader {
 		private Identifier field_13657;
 
 		private Entry(File file) {
-			this((ResourcePack)(file.isDirectory() ? new DirectoryResourcePack(file) : new ZipResourcePack(file)));
+			this(ResourcePackLoader.this.method_13889(file));
 		}
 
 		private Entry(ResourcePack resourcePack) {
@@ -328,7 +352,7 @@ public class ResourcePackLoader {
 
 			if (bufferedImage == null) {
 				try {
-					bufferedImage = ResourcePackLoader.this.defaultResourcePack.getIcon();
+					bufferedImage = TextureUtil.create(MinecraftClient.getInstance().getResourceManager().getResource(ResourcePackLoader.field_15325).getInputStream());
 				} catch (IOException var4) {
 					throw new Error("Couldn't bind resource pack icon", var4);
 				}

@@ -128,7 +128,7 @@ public class RedstoneWireBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -153,7 +153,7 @@ public class RedstoneWireBlock extends Block {
 		this.affectedNeighbors.clear();
 
 		for (BlockPos blockPos : list) {
-			world.updateNeighborsAlways(blockPos, this);
+			world.method_13692(blockPos, this, false);
 		}
 
 		return state;
@@ -219,10 +219,10 @@ public class RedstoneWireBlock extends Block {
 
 	private void updateNeighbors(World world, BlockPos pos) {
 		if (world.getBlockState(pos).getBlock() == this) {
-			world.updateNeighborsAlways(pos, this);
+			world.method_13692(pos, this, false);
 
 			for (Direction direction : Direction.values()) {
-				world.updateNeighborsAlways(pos.offset(direction), this);
+				world.method_13692(pos.offset(direction), this, false);
 			}
 		}
 	}
@@ -233,7 +233,7 @@ public class RedstoneWireBlock extends Block {
 			this.update(world, pos, state);
 
 			for (Direction direction : Direction.DirectionType.VERTICAL) {
-				world.updateNeighborsAlways(pos.offset(direction), this);
+				world.method_13692(pos.offset(direction), this, false);
 			}
 
 			for (Direction direction2 : Direction.DirectionType.HORIZONTAL) {
@@ -256,7 +256,7 @@ public class RedstoneWireBlock extends Block {
 		super.onBreaking(world, pos, state);
 		if (!world.isClient) {
 			for (Direction direction : Direction.values()) {
-				world.updateNeighborsAlways(pos.offset(direction), this);
+				world.method_13692(pos.offset(direction), this, false);
 			}
 
 			this.update(world, pos, state);
@@ -286,18 +286,17 @@ public class RedstoneWireBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
-			if (this.canBePlacedAtPos(world, blockPos)) {
-				this.update(world, blockPos, blockState);
+			if (this.canBePlacedAtPos(world, pos)) {
+				this.update(world, pos, state);
 			} else {
-				this.dropAsItem(world, blockPos, blockState, 0);
-				world.setAir(blockPos);
+				this.dropAsItem(world, pos, state, 0);
+				world.setAir(pos);
 			}
 		}
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.REDSTONE;
@@ -368,7 +367,7 @@ public class RedstoneWireBlock extends Block {
 			Direction direction = state.get(RepeaterBlock.DIRECTION);
 			return direction == dir || direction.getOpposite() == dir;
 		} else {
-			return state.emitsRedstonePower() && dir != null;
+			return Blocks.OBSERVER == state.getBlock() ? dir == state.get(ObserverBlock.FACING) : state.emitsRedstonePower() && dir != null;
 		}
 	}
 

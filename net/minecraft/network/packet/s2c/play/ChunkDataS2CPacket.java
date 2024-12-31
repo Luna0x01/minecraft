@@ -30,7 +30,7 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.chunkX = chunk.chunkX;
 		this.chunkZ = chunk.chunkZ;
 		this.isFullChunk = i == 65535;
-		boolean bl = !chunk.getWorld().dimension.hasNoSkylight();
+		boolean bl = chunk.getWorld().dimension.isOverworld();
 		this.data = new byte[this.getDataSize(chunk, bl, i)];
 		this.field_13771 = this.writeData(new PacketByteBuf(this.getWriteBuffer()), chunk, bl, i);
 		this.blockEntities = Lists.newArrayList();

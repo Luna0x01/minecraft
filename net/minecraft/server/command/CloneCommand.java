@@ -1,5 +1,6 @@
 package net.minecraft.server.command;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.Deque;
@@ -55,7 +56,7 @@ public class CloneCommand extends AbstractCommand {
 			} else {
 				boolean bl = false;
 				Block block = null;
-				int j = -1;
+				Predicate<BlockState> predicate = null;
 				if ((args.length < 11 || !"force".equals(args[10]) && !"move".equals(args[10])) && blockBox.intersects(blockBox2)) {
 					throw new CommandException("commands.clone.noOverlap");
 				} else {
@@ -77,7 +78,7 @@ public class CloneCommand extends AbstractCommand {
 
 									block = getBlock(commandSource, args[11]);
 									if (args.length >= 13) {
-										j = parseClampedInt(args[12], 0, 15);
+										predicate = method_13904(block, args[12]);
 									}
 								}
 							}
@@ -88,14 +89,14 @@ public class CloneCommand extends AbstractCommand {
 							Deque<BlockPos> deque = Lists.newLinkedList();
 							BlockPos blockPos4 = new BlockPos(blockBox2.minX - blockBox.minX, blockBox2.minY - blockBox.minY, blockBox2.minZ - blockBox.minZ);
 
-							for (int k = blockBox.minZ; k <= blockBox.maxZ; k++) {
-								for (int l = blockBox.minY; l <= blockBox.maxY; l++) {
-									for (int m = blockBox.minX; m <= blockBox.maxX; m++) {
-										BlockPos blockPos5 = new BlockPos(m, l, k);
+							for (int j = blockBox.minZ; j <= blockBox.maxZ; j++) {
+								for (int k = blockBox.minY; k <= blockBox.maxY; k++) {
+									for (int l = blockBox.minX; l <= blockBox.maxX; l++) {
+										BlockPos blockPos5 = new BlockPos(l, k, j);
 										BlockPos blockPos6 = blockPos5.add(blockPos4);
 										BlockState blockState = world.getBlockState(blockPos5);
 										if ((!bl2 || blockState.getBlock() != Blocks.AIR)
-											&& (block == null || blockState.getBlock() == block && (j < 0 || blockState.getBlock().getData(blockState) == j))) {
+											&& (block == null || blockState.getBlock() == block && (predicate == null || predicate.apply(blockState)))) {
 											BlockEntity blockEntity = world.getBlockEntity(blockPos5);
 											if (blockEntity != null) {
 												NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
@@ -165,7 +166,7 @@ public class CloneCommand extends AbstractCommand {
 							}
 
 							for (CloneCommand.BlockInfo blockInfo4 : list5) {
-								world.updateNeighbors(blockInfo4.field_12011, blockInfo4.field_12012.getBlock());
+								world.method_8531(blockInfo4.field_12011, blockInfo4.field_12012.getBlock(), false);
 							}
 
 							List<ScheduledTick> list6 = world.getScheduledTicks(blockBox, false);

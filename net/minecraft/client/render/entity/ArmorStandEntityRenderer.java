@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.ArmorRenderer;
+import net.minecraft.client.render.entity.feature.ElytraFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeldItemRenderer;
 import net.minecraft.client.render.entity.model.ArmorStandArmorEntityModel;
@@ -24,6 +25,7 @@ public class ArmorStandEntityRenderer extends LivingEntityRenderer<ArmorStandEnt
 		};
 		this.addFeature(armorRenderer);
 		this.addFeature(new HeldItemRenderer(this));
+		this.addFeature(new ElytraFeatureRenderer(this));
 		this.addFeature(new HeadFeatureRenderer(this.getModel().head));
 	}
 

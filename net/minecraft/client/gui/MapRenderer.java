@@ -3,13 +3,14 @@ package net.minecraft.client.gui;
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
+import javax.annotation.Nullable;
+import net.minecraft.class_3082;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.TextureManager;
-import net.minecraft.item.map.MapIcon;
 import net.minecraft.item.map.MapState;
 import net.minecraft.util.Identifier;
 
@@ -40,12 +41,22 @@ public class MapRenderer {
 		return mapTexture;
 	}
 
+	@Nullable
+	public MapRenderer.MapTexture method_13835(String string) {
+		return (MapRenderer.MapTexture)this.mapTextures.get(string);
+	}
+
 	public void clearStateTextures() {
 		for (MapRenderer.MapTexture mapTexture : this.mapTextures.values()) {
 			this.textureManager.close(mapTexture.currentTexture);
 		}
 
 		this.mapTextures.clear();
+	}
+
+	@Nullable
+	public MapState method_13834(@Nullable MapRenderer.MapTexture mapTexture) {
+		return mapTexture != null ? mapTexture.mapState : null;
 	}
 
 	class MapTexture {
@@ -101,14 +112,14 @@ public class MapRenderer {
 			MapRenderer.this.textureManager.bindTexture(MapRenderer.MAP_ICONS_TEXTURE);
 			int k = 0;
 
-			for (MapIcon mapIcon : this.mapState.icons.values()) {
-				if (!noIcons || mapIcon.getTypeId() == 1) {
+			for (class_3082 lv : this.mapState.icons.values()) {
+				if (!noIcons || lv.method_13824()) {
 					GlStateManager.pushMatrix();
-					GlStateManager.translate(0.0F + (float)mapIcon.getX() / 2.0F + 64.0F, 0.0F + (float)mapIcon.getY() / 2.0F + 64.0F, -0.02F);
-					GlStateManager.rotate((float)(mapIcon.getRotation() * 360) / 16.0F, 0.0F, 0.0F, 1.0F);
+					GlStateManager.translate(0.0F + (float)lv.method_13821() / 2.0F + 64.0F, 0.0F + (float)lv.method_13822() / 2.0F + 64.0F, -0.02F);
+					GlStateManager.rotate((float)(lv.method_13823() * 360) / 16.0F, 0.0F, 0.0F, 1.0F);
 					GlStateManager.scale(4.0F, 4.0F, 3.0F);
 					GlStateManager.translate(-0.125F, 0.125F, 0.0F);
-					byte b = mapIcon.getTypeId();
+					byte b = lv.method_13819();
 					float g = (float)(b % 4 + 0) / 4.0F;
 					float h = (float)(b / 4 + 0) / 4.0F;
 					float l = (float)(b % 4 + 1) / 4.0F;

@@ -13,6 +13,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Pair;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -42,9 +43,9 @@ public class SpongeBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		this.attemptAbsorbWater(world, blockPos, blockState);
-		super.method_8641(blockState, world, blockPos, block);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		this.attemptAbsorbWater(world, pos, state);
+		super.neighborUpdate(state, world, pos, block, neighborPos);
 	}
 
 	protected void attemptAbsorbWater(World world, BlockPos pos, BlockState state) {
@@ -83,16 +84,16 @@ public class SpongeBlock extends Block {
 		}
 
 		for (BlockPos blockPos3 : list) {
-			world.updateNeighborsAlways(blockPos3, Blocks.AIR);
+			world.method_13692(blockPos3, Blocks.AIR, false);
 		}
 
 		return i > 0;
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item, 1, 0));
-		stacks.add(new ItemStack(item, 1, 1));
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
+		defaultedList.add(new ItemStack(item, 1, 0));
+		defaultedList.add(new ItemStack(item, 1, 1));
 	}
 
 	@Override

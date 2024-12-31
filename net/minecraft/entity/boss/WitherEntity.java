@@ -6,6 +6,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.class_2925;
 import net.minecraft.class_2957;
+import net.minecraft.class_3133;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -25,7 +26,6 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.ProjectileAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -65,7 +65,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	private final class_2925 field_14718 = (class_2925)new class_2925(this.getName(), class_2957.Color.PURPLE, class_2957.Division.PROGRESS).method_12921(true);
 	private static final Predicate<Entity> CAN_ATTACK_PREDICATE = new Predicate<Entity>() {
 		public boolean apply(@Nullable Entity entity) {
-			return entity instanceof LivingEntity && ((LivingEntity)entity).getGroup() != EntityGroup.UNDEAD;
+			return entity instanceof LivingEntity && ((LivingEntity)entity).getGroup() != EntityGroup.UNDEAD && ((LivingEntity)entity).method_13948();
 		}
 	};
 
@@ -83,7 +83,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 		this.goals.add(0, new WitherEntity.class_2995());
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new ProjectileAttackGoal(this, 1.0, 40, 20.0F));
-		this.goals.add(5, new WanderAroundGoal(this, 1.0));
+		this.goals.add(5, new class_3133(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(7, new LookAroundGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, false));
@@ -100,7 +100,7 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "WitherBoss");
+		MobEntity.registerDataFixes(dataFixer, WitherEntity.class);
 	}
 
 	@Override
@@ -113,6 +113,15 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
 		this.setInvulnerabilityTime(nbt.getInt("Invul"));
+		if (this.hasCustomName()) {
+			this.field_14718.setTitle(this.getName());
+		}
+	}
+
+	@Override
+	public void setCustomName(String name) {
+		super.setCustomName(name);
+		this.field_14718.setTitle(this.getName());
 	}
 
 	@Override
@@ -347,7 +356,9 @@ public class WitherEntity extends HostileEntity implements RangedAttackMob {
 			&& block != Blocks.COMMAND_BLOCK
 			&& block != Blocks.REPEATING_COMMAND_BLOCK
 			&& block != Blocks.CHAIN_COMMAND_BLOCK
-			&& block != Blocks.BARRIER;
+			&& block != Blocks.BARRIER
+			&& block != Blocks.STRUCTURE_BLOCK
+			&& block != Blocks.STRUCTURE_VOID;
 	}
 
 	public void onSummoned() {

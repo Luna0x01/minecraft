@@ -28,7 +28,11 @@ public class DisconnectedScreen extends Screen {
 		this.reasonFormatted = this.textRenderer.wrapLines(this.reason.asFormattedString(), this.width - 50);
 		this.reasonHeight = this.reasonFormatted.size() * this.textRenderer.fontHeight;
 		this.buttons
-			.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 2 + this.reasonHeight / 2 + this.textRenderer.fontHeight, I18n.translate("gui.toMenu")));
+			.add(
+				new ButtonWidget(
+					0, this.width / 2 - 100, Math.min(this.height / 2 + this.reasonHeight / 2 + this.textRenderer.fontHeight, this.height - 30), I18n.translate("gui.toMenu")
+				)
+			);
 	}
 
 	@Override

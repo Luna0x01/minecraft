@@ -1,7 +1,10 @@
 package net.minecraft.entity.passive;
 
+import java.util.Locale;
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.class_3082;
+import net.minecraft.class_3133;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixer;
@@ -14,11 +17,15 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EvocationIllagerEntity;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Tradable;
+import net.minecraft.entity.VexEntity;
+import net.minecraft.entity.VindicationIllagerEntity;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.FollowGolemGoal;
 import net.minecraft.entity.ai.goal.FormCaravanGoal;
@@ -34,7 +41,6 @@ import net.minecraft.entity.ai.goal.StopFollowingCustomerGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.VillagerInteractGoal;
 import net.minecraft.entity.ai.goal.VillagerMatingGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -50,9 +56,12 @@ import net.minecraft.entity.mob.WitchEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.map.MapState;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.scoreboard.AbstractTeam;
@@ -65,6 +74,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -74,14 +84,18 @@ import net.minecraft.village.Village;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.level.storage.LevelDataType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
+public class VillagerEntity extends PassiveEntity implements Tradable, Trader {
+	private static final Logger VILLAGER_LOGGER = LogManager.getLogger();
 	private static final TrackedData<Integer> field_14789 = DataTracker.registerData(VillagerEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private int field_3951;
 	private boolean field_3952;
 	private boolean field_3953;
 	Village field_3950;
 	private PlayerEntity customer;
+	@Nullable
 	private TraderOfferList offers;
 	private int field_3956;
 	private boolean field_3948;
@@ -108,10 +122,10 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 						},
 						{
 								new VillagerEntity.ItemTradeEntry(Item.fromBlock(Blocks.MELON_BLOCK), new VillagerEntity.Cost(7, 12)),
-								new VillagerEntity.ItemStackTradeEntry(Items.APPLE, new VillagerEntity.Cost(-5, -7))
+								new VillagerEntity.ItemStackTradeEntry(Items.APPLE, new VillagerEntity.Cost(-7, -5))
 						},
 						{
-								new VillagerEntity.ItemStackTradeEntry(Items.COOKIE, new VillagerEntity.Cost(-6, -10)),
+								new VillagerEntity.ItemStackTradeEntry(Items.COOKIE, new VillagerEntity.Cost(-10, -6)),
 								new VillagerEntity.ItemStackTradeEntry(Items.CAKE, new VillagerEntity.Cost(1, 1))
 						}
 				},
@@ -174,6 +188,15 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 						{new VillagerEntity.EnchantedBook()},
 						{new VillagerEntity.EnchantedBook()},
 						{new VillagerEntity.ItemStackTradeEntry(Items.NAME_TAG, new VillagerEntity.Cost(20, 22))}
+				},
+				{
+						{new VillagerEntity.ItemTradeEntry(Items.PAPER, new VillagerEntity.Cost(24, 36))},
+						{new VillagerEntity.ItemTradeEntry(Items.COMPASS, new VillagerEntity.Cost(1, 1))},
+						{new VillagerEntity.ItemStackTradeEntry(Items.MAP, new VillagerEntity.Cost(7, 11))},
+						{
+								new VillagerEntity.class_3051(new VillagerEntity.Cost(12, 20), "Monument", class_3082.class_3083.MONUMENT),
+								new VillagerEntity.class_3051(new VillagerEntity.Cost(16, 28), "Mansion", class_3082.class_3083.MANSION)
+						}
 				}
 		},
 		{
@@ -264,7 +287,8 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 						{new VillagerEntity.EnchantedItemStackTradeEntry(Items.LEATHER_CHESTPLATE, new VillagerEntity.Cost(7, 12))},
 						{new VillagerEntity.ItemStackTradeEntry(Items.SADDLE, new VillagerEntity.Cost(8, 10))}
 				}
-		}
+		},
+		{new VillagerEntity.TradeProvider[0][]}
 	};
 
 	public VillagerEntity(World world) {
@@ -283,6 +307,9 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	protected void initGoals() {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new FleeEntityGoal(this, ZombieEntity.class, 8.0F, 0.6, 0.6));
+		this.goals.add(1, new FleeEntityGoal(this, EvocationIllagerEntity.class, 12.0F, 0.8, 0.8));
+		this.goals.add(1, new FleeEntityGoal(this, VindicationIllagerEntity.class, 8.0F, 0.8, 0.8));
+		this.goals.add(1, new FleeEntityGoal(this, VexEntity.class, 8.0F, 0.6, 0.6));
 		this.goals.add(1, new StopFollowingCustomerGoal(this));
 		this.goals.add(1, new LookAtCustomerGoal(this));
 		this.goals.add(2, new StayIndoorsGoal(this));
@@ -293,7 +320,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		this.goals.add(7, new FollowGolemGoal(this));
 		this.goals.add(9, new StopAndLookAtEntityGoal(this, PlayerEntity.class, 3.0F, 1.0F));
 		this.goals.add(9, new VillagerInteractGoal(this));
-		this.goals.add(9, new WanderAroundGoal(this, 0.6));
+		this.goals.add(9, new class_3133(this, 0.6));
 		this.goals.add(10, new LookAtEntityGoal(this, MobEntity.class, 8.0F));
 	}
 
@@ -368,18 +395,31 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		boolean bl = itemStack != null && itemStack.getItem() == Items.SPAWN_EGG;
-		if (!bl && this.isAlive() && !this.hasCustomer() && !this.isBaby()) {
-			if (!this.world.isClient && (this.offers == null || !this.offers.isEmpty())) {
-				this.setCurrentCustomer(playerEntity);
-				playerEntity.openTradingScreen(this);
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		boolean bl = itemStack.getItem() == Items.NAME_TAG;
+		if (bl) {
+			itemStack.method_6329(playerEntity, this, hand);
+			return true;
+		} else if (!this.method_13929(itemStack, this.getClass()) && this.isAlive() && !this.hasCustomer() && !this.isBaby()) {
+			if (this.offers == null) {
+				this.getOffers();
 			}
 
-			playerEntity.incrementStat(Stats.TALKED_TO_VILLAGER);
+			if (hand == Hand.MAIN_HAND) {
+				playerEntity.incrementStat(Stats.TALKED_TO_VILLAGER);
+			}
+
+			if (!this.world.isClient && !this.offers.isEmpty()) {
+				this.setCurrentCustomer(playerEntity);
+				playerEntity.openTradingScreen(this);
+			} else if (this.offers.isEmpty()) {
+				return super.interactMob(playerEntity, hand);
+			}
+
 			return true;
 		} else {
-			return super.method_13079(playerEntity, hand, itemStack);
+			return super.interactMob(playerEntity, hand);
 		}
 	}
 
@@ -390,12 +430,12 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Villager");
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema("Villager", "Inventory"));
+		MobEntity.registerDataFixes(dataFixer, VillagerEntity.class);
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema(VillagerEntity.class, "Inventory"));
 		dataFixer.addSchema(LevelDataType.ENTITY, new Schema() {
 			@Override
 			public NbtCompound fixData(DataFixer dataFixer, NbtCompound tag, int dataVersion) {
-				if ("Villager".equals(tag.getString("id")) && tag.contains("Offers", 10)) {
+				if (EntityType.getId(VillagerEntity.class).equals(new Identifier(tag.getString("id"))) && tag.contains("Offers", 10)) {
 					NbtCompound nbtCompound = tag.getCompound("Offers");
 					if (nbtCompound.contains("Recipes", 9)) {
 						NbtList nbtList = nbtCompound.getList("Recipes", 10);
@@ -431,7 +471,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 
 		for (int i = 0; i < this.villagerInventory.getInvSize(); i++) {
 			ItemStack itemStack = this.villagerInventory.getInvStack(i);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				nbtList.add(itemStack.toNbt(new NbtCompound()));
 			}
 		}
@@ -455,8 +495,8 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		NbtList nbtList = nbt.getList("Inventory", 10);
 
 		for (int i = 0; i < nbtList.size(); i++) {
-			ItemStack itemStack = ItemStack.fromNbt(nbtList.getCompound(i));
-			if (itemStack != null) {
+			ItemStack itemStack = new ItemStack(nbtList.getCompound(i));
+			if (!itemStack.isEmpty()) {
 				this.villagerInventory.fillInventoryWith(itemStack);
 			}
 		}
@@ -485,12 +525,18 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		return Sounds.ENTITY_VILLAGER_DEATH;
 	}
 
+	@Nullable
+	@Override
+	protected Identifier getLootTableId() {
+		return LootTables.VILLAGER_ENTITIE;
+	}
+
 	public void setProfession(int profession) {
 		this.dataTracker.set(field_14789, profession);
 	}
 
 	public int profession() {
-		return Math.max(this.dataTracker.get(field_14789) % 5, 0);
+		return Math.max(this.dataTracker.get(field_14789) % 6, 0);
 	}
 
 	public boolean method_3116() {
@@ -569,11 +615,11 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 
 			for (int i = 0; i < this.villagerInventory.getInvSize(); i++) {
 				ItemStack itemStack = this.villagerInventory.getInvStack(i);
-				if (itemStack != null) {
-					if (itemStack.getItem() == Items.BREAD && itemStack.count >= 3) {
+				if (!itemStack.isEmpty()) {
+					if (itemStack.getItem() == Items.BREAD && itemStack.getCount() >= 3) {
 						bl2 = true;
 						this.villagerInventory.takeInvStack(i, 3);
-					} else if ((itemStack.getItem() == Items.POTATO || itemStack.getItem() == Items.CARROT) && itemStack.count >= 12) {
+					} else if ((itemStack.getItem() == Items.POTATO || itemStack.getItem() == Items.CARROT) && itemStack.getCount() >= 12) {
 						bl2 = true;
 						this.villagerInventory.takeInvStack(i, 12);
 					}
@@ -614,7 +660,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		}
 
 		if (offer.getFirstStack().getItem() == Items.EMERALD) {
-			this.riches = this.riches + offer.getFirstStack().count;
+			this.riches = this.riches + offer.getFirstStack().getCount();
 		}
 
 		if (offer.shouldRewardPlayerExperience()) {
@@ -626,14 +672,11 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	public void method_5501(ItemStack stack) {
 		if (!this.world.isClient && this.ambientSoundChance > -this.getMinAmbientSoundDelay() + 20) {
 			this.ambientSoundChance = -this.getMinAmbientSoundDelay();
-			if (stack != null) {
-				this.playSound(Sounds.ENTITY_VILLAGER_YES, this.getSoundVolume(), this.getSoundPitch());
-			} else {
-				this.playSound(Sounds.ENTITY_VILLAGER_NO, this.getSoundVolume(), this.getSoundPitch());
-			}
+			this.playSound(stack.isEmpty() ? Sounds.ENTITY_VILLAGER_NO : Sounds.ENTITY_VILLAGER_YES, this.getSoundVolume(), this.getSoundPitch());
 		}
 	}
 
+	@Nullable
 	@Override
 	public TraderOfferList getOffers(PlayerEntity player) {
 		if (this.offers == null) {
@@ -658,18 +701,30 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 
 		int i = this.career - 1;
 		int j = this.careerLevel - 1;
-		VillagerEntity.TradeProvider[][] tradeProviders2 = tradeProviders[i];
-		if (j >= 0 && j < tradeProviders2.length) {
-			VillagerEntity.TradeProvider[] tradeProviders3 = tradeProviders2[j];
+		if (i >= 0 && i < tradeProviders.length) {
+			VillagerEntity.TradeProvider[][] tradeProviders2 = tradeProviders[i];
+			if (j >= 0 && j < tradeProviders2.length) {
+				VillagerEntity.TradeProvider[] tradeProviders3 = tradeProviders2[j];
 
-			for (VillagerEntity.TradeProvider tradeProvider : tradeProviders3) {
-				tradeProvider.convert(this.offers, this.random);
+				for (VillagerEntity.TradeProvider tradeProvider : tradeProviders3) {
+					tradeProvider.method_11230(this, this.offers, this.random);
+				}
 			}
 		}
 	}
 
 	@Override
-	public void setTraderOfferList(TraderOfferList list) {
+	public void setTraderOfferList(@Nullable TraderOfferList list) {
+	}
+
+	@Override
+	public World method_13682() {
+		return this.world;
+	}
+
+	@Override
+	public BlockPos method_13683() {
+		return new BlockPos(this);
 	}
 
 	@Override
@@ -700,7 +755,11 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 					}
 					break;
 				case 1:
-					string2 = "librarian";
+					if (this.career == 1) {
+						string2 = "librarian";
+					} else if (this.career == 2) {
+						string2 = "cartographer";
+					}
 					break;
 				case 2:
 					string2 = "cleric";
@@ -720,17 +779,20 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 					} else if (this.career == 2) {
 						string2 = "leather";
 					}
+					break;
+				case 5:
+					string2 = "nitwit";
 			}
 
 			if (string2 != null) {
-				TranslatableText translatableText = new TranslatableText("entity.Villager." + string2);
-				translatableText.getStyle().setHoverEvent(this.getHoverEvent());
-				translatableText.getStyle().setInsertion(this.getEntityName());
+				Text text = new TranslatableText("entity.Villager." + string2);
+				text.getStyle().setHoverEvent(this.getHoverEvent());
+				text.getStyle().setInsertion(this.getEntityName());
 				if (abstractTeam != null) {
-					translatableText.getStyle().setFormatting(abstractTeam.method_12130());
+					text.getStyle().setFormatting(abstractTeam.method_12130());
 				}
 
-				return translatableText;
+				return text;
 			} else {
 				return super.getName();
 			}
@@ -776,10 +838,18 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	@Nullable
 	@Override
 	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
-		data = super.initialize(difficulty, data);
-		this.setProfession(this.world.random.nextInt(5));
+		return this.initialize(difficulty, data, true);
+	}
+
+	public EntityData initialize(LocalDifficulty localDifficulty, @Nullable EntityData entityData, boolean bl) {
+		entityData = super.initialize(localDifficulty, entityData);
+		if (bl) {
+			this.setProfession(this.world.random.nextInt(6));
+		}
+
 		this.method_11225();
-		return data;
+		this.getOffers();
+		return entityData;
 	}
 
 	public void method_4567() {
@@ -824,10 +894,10 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		Item item2 = itemStack.getItem();
 		if (this.canPickUp(item2)) {
 			ItemStack itemStack2 = this.villagerInventory.fillInventoryWith(itemStack);
-			if (itemStack2 == null) {
+			if (itemStack2.isEmpty()) {
 				item.remove();
 			} else {
-				itemStack.count = itemStack2.count;
+				itemStack.setCount(itemStack2.getCount());
 			}
 		}
 	}
@@ -860,15 +930,15 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 
 		for (int j = 0; j < this.villagerInventory.getInvSize(); j++) {
 			ItemStack itemStack = this.villagerInventory.getInvStack(j);
-			if (itemStack != null) {
-				if (itemStack.getItem() == Items.BREAD && itemStack.count >= 3 * i
-					|| itemStack.getItem() == Items.POTATO && itemStack.count >= 12 * i
-					|| itemStack.getItem() == Items.CARROT && itemStack.count >= 12 * i
-					|| itemStack.getItem() == Items.BEETROOT && itemStack.count >= 12 * i) {
+			if (!itemStack.isEmpty()) {
+				if (itemStack.getItem() == Items.BREAD && itemStack.getCount() >= 3 * i
+					|| itemStack.getItem() == Items.POTATO && itemStack.getCount() >= 12 * i
+					|| itemStack.getItem() == Items.CARROT && itemStack.getCount() >= 12 * i
+					|| itemStack.getItem() == Items.BEETROOT && itemStack.getCount() >= 12 * i) {
 					return true;
 				}
 
-				if (bl && itemStack.getItem() == Items.WHEAT && itemStack.count >= 9 * i) {
+				if (bl && itemStack.getItem() == Items.WHEAT && itemStack.getCount() >= 9 * i) {
 					return true;
 				}
 			}
@@ -880,7 +950,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	public boolean hasSeedToPlant() {
 		for (int i = 0; i < this.villagerInventory.getInvSize(); i++) {
 			ItemStack itemStack = this.villagerInventory.getInvStack(i);
-			if (itemStack != null
+			if (!itemStack.isEmpty()
 				&& (
 					itemStack.getItem() == Items.WHEAT_SEEDS
 						|| itemStack.getItem() == Items.POTATO
@@ -895,7 +965,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	}
 
 	@Override
-	public boolean equip(int slot, @Nullable ItemStack item) {
+	public boolean equip(int slot, ItemStack item) {
 		if (super.equip(slot, item)) {
 			return true;
 		} else {
@@ -912,6 +982,9 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 	static class Cost extends Pair<Integer, Integer> {
 		public Cost(int i, int j) {
 			super(i, j);
+			if (j < i) {
+				VillagerEntity.VILLAGER_LOGGER.warn("PriceRange({}, {}) invalid, {} smaller than {}", new Object[]{i, j, j, i});
+			}
 		}
 
 		public int getCost(Random random) {
@@ -933,18 +1006,10 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		}
 
 		@Override
-		public void convert(TraderOfferList list, Random random) {
-			int i = 1;
-			if (this.field_12117 != null) {
-				i = this.field_12117.getCost(random);
-			}
-
-			int j = 1;
-			if (this.field_12119 != null) {
-				j = this.field_12119.getCost(random);
-			}
-
-			list.add(
+		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
+			int i = this.field_12117.getCost(random);
+			int j = this.field_12119.getCost(random);
+			traderOfferList.add(
 				new TradeOffer(
 					new ItemStack(this.stack1.getItem(), i, this.stack1.getData()),
 					new ItemStack(Items.EMERALD),
@@ -959,7 +1024,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		}
 
 		@Override
-		public void convert(TraderOfferList list, Random random) {
+		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
 			Enchantment enchantment = Enchantment.REGISTRY.method_12584(random);
 			int i = MathHelper.nextInt(random, enchantment.getMinimumLevel(), enchantment.getMaximumLevel());
 			ItemStack itemStack = Items.ENCHANTED_BOOK.getAsItemStack(new EnchantmentLevelEntry(enchantment, i));
@@ -972,7 +1037,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 				j = 64;
 			}
 
-			list.add(new TradeOffer(new ItemStack(Items.BOOK), new ItemStack(Items.EMERALD, j), itemStack));
+			traderOfferList.add(new TradeOffer(new ItemStack(Items.BOOK), new ItemStack(Items.EMERALD, j), itemStack));
 		}
 	}
 
@@ -986,16 +1051,15 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		}
 
 		@Override
-		public void convert(TraderOfferList list, Random random) {
+		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
 			int i = 1;
 			if (this.cost != null) {
 				i = this.cost.getCost(random);
 			}
 
 			ItemStack itemStack = new ItemStack(Items.EMERALD, i, 0);
-			ItemStack itemStack2 = new ItemStack(this.item.getItem(), 1, this.item.getData());
-			itemStack2 = EnchantmentHelper.enchant(random, itemStack2, 5 + random.nextInt(15), false);
-			list.add(new TradeOffer(itemStack, itemStack2));
+			ItemStack itemStack2 = EnchantmentHelper.enchant(random, new ItemStack(this.item.getItem(), 1, this.item.getData()), 5 + random.nextInt(15), false);
+			traderOfferList.add(new TradeOffer(itemStack, itemStack2));
 		}
 	}
 
@@ -1014,7 +1078,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		}
 
 		@Override
-		public void convert(TraderOfferList list, Random random) {
+		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
 			int i = 1;
 			if (this.cost != null) {
 				i = this.cost.getCost(random);
@@ -1030,7 +1094,7 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 				itemStack2 = new ItemStack(this.item.getItem(), 1, this.item.getData());
 			}
 
-			list.add(new TradeOffer(itemStack, itemStack2));
+			traderOfferList.add(new TradeOffer(itemStack, itemStack2));
 		}
 	}
 
@@ -1044,17 +1108,43 @@ public class VillagerEntity extends PassiveEntity implements Trader, Tradable {
 		}
 
 		@Override
-		public void convert(TraderOfferList list, Random random) {
+		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
 			int i = 1;
 			if (this.cost != null) {
 				i = this.cost.getCost(random);
 			}
 
-			list.add(new TradeOffer(new ItemStack(this.item, i, 0), Items.EMERALD));
+			traderOfferList.add(new TradeOffer(new ItemStack(this.item, i, 0), Items.EMERALD));
 		}
 	}
 
 	interface TradeProvider {
-		void convert(TraderOfferList list, Random random);
+		void method_11230(Trader trader, TraderOfferList traderOfferList, Random random);
+	}
+
+	static class class_3051 implements VillagerEntity.TradeProvider {
+		public VillagerEntity.Cost field_15079;
+		public String field_15080;
+		public class_3082.class_3083 field_15081;
+
+		public class_3051(VillagerEntity.Cost cost, String string, class_3082.class_3083 arg) {
+			this.field_15079 = cost;
+			this.field_15080 = string;
+			this.field_15081 = arg;
+		}
+
+		@Override
+		public void method_11230(Trader trader, TraderOfferList traderOfferList, Random random) {
+			int i = this.field_15079.getCost(random);
+			World world = trader.method_13682();
+			BlockPos blockPos = world.method_13688(this.field_15080, trader.method_13683(), true);
+			if (blockPos != null) {
+				ItemStack itemStack = FilledMapItem.method_13663(world, (double)blockPos.getX(), (double)blockPos.getZ(), (byte)2, true, true);
+				FilledMapItem.method_13664(world, itemStack);
+				MapState.method_13830(itemStack, blockPos, "+", this.field_15081);
+				itemStack.method_13661("filled_map." + this.field_15080.toLowerCase(Locale.ROOT));
+				traderOfferList.add(new TradeOffer(new ItemStack(Items.EMERALD, i), new ItemStack(Items.COMPASS), itemStack));
+			}
+		}
 	}
 }

@@ -1,6 +1,5 @@
 package net.minecraft.entity.decoration;
 
-import com.google.common.base.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.datafixer.DataFixerUpper;
@@ -24,7 +23,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.level.storage.LevelDataType;
 
 public class ItemFrameEntity extends AbstractDecorationEntity {
-	private static final TrackedData<Optional<ItemStack>> ITEM_STACK = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+	private static final TrackedData<ItemStack> ITEM_STACK = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private static final TrackedData<Integer> ROTATION = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private float setDropChance = 1.0F;
 
@@ -39,7 +38,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 
 	@Override
 	protected void initDataTracker() {
-		this.getDataTracker().startTracking(ITEM_STACK, Optional.absent());
+		this.getDataTracker().startTracking(ITEM_STACK, ItemStack.EMPTY);
 		this.getDataTracker().startTracking(ROTATION, 0);
 	}
 
@@ -52,11 +51,11 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	public boolean damage(DamageSource source, float amount) {
 		if (this.isInvulnerableTo(source)) {
 			return false;
-		} else if (!source.isExplosive() && this.getHeldItemStack() != null) {
+		} else if (!source.isExplosive() && !this.getHeldItemStack().isEmpty()) {
 			if (!this.world.isClient) {
 				this.dropHeldStack(source.getAttacker(), false);
 				this.playSound(Sounds.ENTITY_ITEMFRAME_REMOVE_ITEM, 1.0F, 1.0F);
-				this.setHeldItemStack(null);
+				this.setHeldItemStack(ItemStack.EMPTY);
 			}
 
 			return true;
@@ -108,7 +107,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 				this.dropItem(new ItemStack(Items.ITEM_FRAME), 0.0F);
 			}
 
-			if (itemStack != null && this.random.nextFloat() < this.setDropChance) {
+			if (!itemStack.isEmpty() && this.random.nextFloat() < this.setDropChance) {
 				itemStack = itemStack.copy();
 				this.removeFromFrame(itemStack);
 				this.dropItem(itemStack, 0.0F);
@@ -117,7 +116,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	}
 
 	private void removeFromFrame(ItemStack map) {
-		if (map != null) {
+		if (!map.isEmpty()) {
 			if (map.getItem() == Items.FILLED_MAP) {
 				MapState mapState = ((FilledMapItem)map.getItem()).getMapState(map, this.world);
 				mapState.icons.remove("frame-" + this.getEntityId());
@@ -127,25 +126,24 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 		}
 	}
 
-	@Nullable
 	public ItemStack getHeldItemStack() {
-		return (ItemStack)this.getDataTracker().get(ITEM_STACK).orNull();
+		return this.getDataTracker().get(ITEM_STACK);
 	}
 
-	public void setHeldItemStack(@Nullable ItemStack stack) {
+	public void setHeldItemStack(ItemStack stack) {
 		this.setHeldItemStack(stack, true);
 	}
 
-	private void setHeldItemStack(@Nullable ItemStack stack, boolean update) {
-		if (stack != null) {
+	private void setHeldItemStack(ItemStack stack, boolean update) {
+		if (!stack.isEmpty()) {
 			stack = stack.copy();
-			stack.count = 1;
+			stack.setCount(1);
 			stack.setInItemFrame(this);
 		}
 
-		this.getDataTracker().set(ITEM_STACK, Optional.fromNullable(stack));
+		this.getDataTracker().set(ITEM_STACK, stack);
 		this.getDataTracker().method_12754(ITEM_STACK);
-		if (stack != null) {
+		if (!stack.isEmpty()) {
 			this.playSound(Sounds.ENTITY_ITEMFRAME_ADD_ITEM, 1.0F, 1.0F);
 		}
 
@@ -158,7 +156,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	public void onTrackedDataSet(TrackedData<?> data) {
 		if (data.equals(ITEM_STACK)) {
 			ItemStack itemStack = this.getHeldItemStack();
-			if (itemStack != null && itemStack.getItemFrame() != this) {
+			if (!itemStack.isEmpty() && itemStack.getItemFrame() != this) {
 				itemStack.setInItemFrame(this);
 			}
 		}
@@ -180,12 +178,12 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema("ItemFrame", "Item"));
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemSchema(ItemFrameEntity.class, "Item"));
 	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
-		if (this.getHeldItemStack() != null) {
+		if (!this.getHeldItemStack().isEmpty()) {
 			nbt.put("Item", this.getHeldItemStack().toNbt(new NbtCompound()));
 			nbt.putByte("ItemRotation", (byte)this.rotation());
 			nbt.putFloat("ItemDropChance", this.setDropChance);
@@ -198,7 +196,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		NbtCompound nbtCompound = nbt.getCompound("Item");
 		if (nbtCompound != null && !nbtCompound.isEmpty()) {
-			this.setHeldItemStack(ItemStack.fromNbt(nbtCompound), false);
+			this.setHeldItemStack(new ItemStack(nbtCompound), false);
 			this.setRotation(nbt.getByte("ItemRotation"), false);
 			if (nbt.contains("ItemDropChance", 99)) {
 				this.setDropChance = nbt.getFloat("ItemDropChance");
@@ -209,23 +207,26 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
-		if (this.getHeldItemStack() == null) {
-			if (itemStack != null && !this.world.isClient) {
-				this.setHeldItemStack(itemStack);
-				if (!playerEntity.abilities.creativeMode) {
-					itemStack.count--;
+	public boolean interact(PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!this.world.isClient) {
+			if (this.getHeldItemStack().isEmpty()) {
+				if (!itemStack.isEmpty()) {
+					this.setHeldItemStack(itemStack);
+					if (!player.abilities.creativeMode) {
+						itemStack.decrement(1);
+					}
 				}
+			} else {
+				this.playSound(Sounds.ENTITY_ITEMFRAME_ROTATE_ITEM, 1.0F, 1.0F);
+				this.setRotation(this.rotation() + 1);
 			}
-		} else if (!this.world.isClient) {
-			this.playSound(Sounds.ENTITY_ITEMFRAME_ROTATE_ITEM, 1.0F, 1.0F);
-			this.setRotation(this.rotation() + 1);
 		}
 
 		return true;
 	}
 
 	public int getComparatorPower() {
-		return this.getHeldItemStack() == null ? 0 : this.rotation() % 8 + 1;
+		return this.getHeldItemStack().isEmpty() ? 0 : this.rotation() % 8 + 1;
 	}
 }

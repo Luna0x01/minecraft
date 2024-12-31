@@ -29,6 +29,10 @@ public class ServerWorldManager implements WorldEventListener {
 	}
 
 	@Override
+	public void method_13696(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is) {
+	}
+
+	@Override
 	public void onEntitySpawned(Entity entity) {
 		this.world.getEntityTracker().startTracking(entity);
 		if (entity instanceof ServerPlayerEntity) {

@@ -21,12 +21,11 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 		boolean bl = entity.getDurability() == HandOption.RIGHT;
 		ItemStack itemStack = bl ? entity.getOffHandStack() : entity.getMainHandStack();
 		ItemStack itemStack2 = bl ? entity.getMainHandStack() : entity.getOffHandStack();
-		if (itemStack != null || itemStack2 != null) {
+		if (!itemStack.isEmpty() || !itemStack2.isEmpty()) {
 			GlStateManager.pushMatrix();
 			if (this.entityRenderer.getModel().child) {
 				float f = 0.5F;
-				GlStateManager.translate(0.0F, 0.625F, 0.0F);
-				GlStateManager.rotate(-20.0F, -1.0F, 0.0F, 0.0F);
+				GlStateManager.translate(0.0F, 0.75F, 0.0F);
 				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 			}
 
@@ -37,9 +36,9 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 	}
 
 	private void method_12484(LivingEntity livingEntity, ItemStack itemStack, ModelTransformation.Mode mode, HandOption handOption) {
-		if (itemStack != null) {
+		if (!itemStack.isEmpty()) {
 			GlStateManager.pushMatrix();
-			((BiPedModel)this.entityRenderer.getModel()).method_12221(0.0625F, handOption);
+			this.method_13883(handOption);
 			if (livingEntity.isSneaking()) {
 				GlStateManager.translate(0.0F, 0.2F, 0.0F);
 			}
@@ -51,6 +50,10 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 			MinecraftClient.getInstance().getHeldItemRenderer().method_12333(livingEntity, itemStack, mode, bl);
 			GlStateManager.popMatrix();
 		}
+	}
+
+	protected void method_13883(HandOption handOption) {
+		((BiPedModel)this.entityRenderer.getModel()).method_12221(0.0625F, handOption);
 	}
 
 	@Override

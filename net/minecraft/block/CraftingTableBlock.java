@@ -1,10 +1,8 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.screen.CraftingScreenHandler;
 import net.minecraft.screen.NamedScreenHandlerFactory;
@@ -24,23 +22,12 @@ public class CraftingTableBlock extends Block {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
 		if (world.isClient) {
 			return true;
 		} else {
-			playerEntity.openHandledScreen(new CraftingTableBlock.ClientDummyScreenHandlerProvider(world, blockPos));
-			playerEntity.incrementStat(Stats.INTERACT_WITH_CRAFTING_TABLE);
+			player.openHandledScreen(new CraftingTableBlock.ClientDummyScreenHandlerProvider(world, pos));
+			player.incrementStat(Stats.INTERACT_WITH_CRAFTING_TABLE);
 			return true;
 		}
 	}
@@ -56,7 +43,7 @@ public class CraftingTableBlock extends Block {
 
 		@Override
 		public String getTranslationKey() {
-			return null;
+			return "crafting_table";
 		}
 
 		@Override

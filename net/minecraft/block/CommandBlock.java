@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.material.Material;
@@ -39,22 +38,22 @@ public class CommandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
 		if (!world.isClient) {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof CommandBlockBlockEntity) {
 				CommandBlockBlockEntity commandBlockBlockEntity = (CommandBlockBlockEntity)blockEntity;
-				boolean bl = world.isReceivingRedstonePower(blockPos);
+				boolean bl = world.isReceivingRedstonePower(pos);
 				boolean bl2 = commandBlockBlockEntity.method_11653();
 				boolean bl3 = commandBlockBlockEntity.method_11654();
 				if (bl && !bl2) {
 					commandBlockBlockEntity.method_11649(true);
 					if (commandBlockBlockEntity.method_11657() != CommandBlockBlockEntity.class_2736.SEQUENCE && !bl3) {
-						boolean bl4 = !commandBlockBlockEntity.method_11658() || this.method_11592(world, blockPos, blockState);
+						boolean bl4 = !commandBlockBlockEntity.method_11658() || this.method_11592(world, pos, state);
 						commandBlockBlockEntity.method_11651(bl4);
-						world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
+						world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
 						if (bl4) {
-							this.method_11591(world, blockPos);
+							this.method_11591(world, pos);
 						}
 					}
 				} else if (!bl && bl2) {
@@ -117,21 +116,10 @@ public class CommandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean method_421(
-		World world,
-		BlockPos blockPos,
-		BlockState blockState,
-		PlayerEntity playerEntity,
-		Hand hand,
-		@Nullable ItemStack itemStack,
-		Direction direction,
-		float f,
-		float g,
-		float h
-	) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
-		if (blockEntity instanceof CommandBlockBlockEntity && playerEntity.method_13567()) {
-			playerEntity.method_13260((CommandBlockBlockEntity)blockEntity);
+	public boolean use(World world, BlockPos pos, BlockState state, PlayerEntity player, Hand hand, Direction direction, float f, float g, float h) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
+		if (blockEntity instanceof CommandBlockBlockEntity && player.method_13567()) {
+			player.method_13260((CommandBlockBlockEntity)blockEntity);
 			return true;
 		} else {
 			return false;
@@ -211,7 +199,7 @@ public class CommandBlock extends BlockWithEntity {
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, PistonBlock.method_9000(pos, entity)).with(field_12637, false);
+		return this.getDefaultState().with(FACING, Direction.getLookingDirection(pos, entity)).with(field_12637, false);
 	}
 
 	public void method_11591(World world, BlockPos blockPos) {

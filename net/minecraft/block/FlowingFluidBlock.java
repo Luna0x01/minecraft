@@ -73,7 +73,7 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 					state = state.with(LEVEL, m);
 					world.setBlockState(pos, state, 2);
 					world.createAndScheduleBlockTick(pos, this, k);
-					world.updateNeighborsAlways(pos, this);
+					world.method_13692(pos, this, false);
 				}
 			}
 		} else {

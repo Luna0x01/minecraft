@@ -78,7 +78,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			playerEntityModel.sneaking = player.isSneaking();
 			BiPedModel.class_2850 lv = BiPedModel.class_2850.EMPTY;
 			BiPedModel.class_2850 lv2 = BiPedModel.class_2850.EMPTY;
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				lv = BiPedModel.class_2850.ITEM;
 				if (player.method_13065() > 0) {
 					UseAction useAction = itemStack.getUseAction();
@@ -90,7 +90,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 				}
 			}
 
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				lv2 = BiPedModel.class_2850.ITEM;
 				if (player.method_13065() > 0) {
 					UseAction useAction2 = itemStack2.getUseAction();

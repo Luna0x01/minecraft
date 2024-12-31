@@ -43,15 +43,10 @@ public class TestForBlockCommand extends AbstractCommand {
 		} else {
 			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
 			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
-			Block block = Block.get(args[3]);
+			Block block = getBlock(commandSource, args[3]);
 			if (block == null) {
 				throw new InvalidNumberException("commands.setblock.notFound", args[3]);
 			} else {
-				int i = -1;
-				if (args.length >= 5) {
-					i = parseClampedInt(args[4], -1, 15);
-				}
-
 				World world = commandSource.getWorld();
 				if (!world.blockExists(blockPos)) {
 					throw new CommandException("commands.testforblock.outOfWorld");
@@ -75,14 +70,14 @@ public class TestForBlockCommand extends AbstractCommand {
 						throw new CommandException(
 							"commands.testforblock.failed.tile", blockPos.getX(), blockPos.getY(), blockPos.getZ(), block2.getTranslatedName(), block.getTranslatedName()
 						);
-					} else {
-						if (i > -1) {
-							int j = blockState.getBlock().getData(blockState);
-							if (j != i) {
-								throw new CommandException("commands.testforblock.failed.data", blockPos.getX(), blockPos.getY(), blockPos.getZ(), j, i);
-							}
+					} else if (args.length >= 5 && !AbstractCommand.method_13904(block, args[4]).apply(blockState)) {
+						try {
+							int i = blockState.getBlock().getData(blockState);
+							throw new CommandException("commands.testforblock.failed.data", blockPos.getX(), blockPos.getY(), blockPos.getZ(), i, Integer.parseInt(args[4]));
+						} catch (NumberFormatException var13) {
+							throw new CommandException("commands.testforblock.failed.data", blockPos.getX(), blockPos.getY(), blockPos.getZ(), blockState.toString(), args[4]);
 						}
-
+					} else {
 						if (bl) {
 							BlockEntity blockEntity = world.getBlockEntity(blockPos);
 							if (blockEntity == null) {

@@ -15,9 +15,10 @@ public class WritableBookItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		playerEntity.method_3201(itemStack, hand);
-		playerEntity.incrementStat(Stats.used(this));
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		player.method_3201(itemStack, hand);
+		player.incrementStat(Stats.used(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 
@@ -31,10 +32,6 @@ public class WritableBookItem extends Item {
 
 			for (int i = 0; i < nbtList.size(); i++) {
 				String string = nbtList.getString(i);
-				if (string == null) {
-					return false;
-				}
-
 				if (string.length() > 32767) {
 					return false;
 				}

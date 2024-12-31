@@ -7,6 +7,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class SoulSandBlock extends Block {
@@ -19,7 +20,7 @@ public class SoulSandBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return field_12758;
 	}
 

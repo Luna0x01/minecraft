@@ -20,7 +20,7 @@ public abstract class ProjectileDispenserBehavior extends ItemDispenserBehavior 
 			(double)direction.getOffsetX(), (double)((float)direction.getOffsetY() + 0.1F), (double)direction.getOffsetZ(), this.getForce(), this.getVariation()
 		);
 		world.spawnEntity((Entity)projectile);
-		stack.split(1);
+		stack.decrement(1);
 		return stack;
 	}
 

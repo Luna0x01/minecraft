@@ -1,8 +1,6 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -14,6 +12,7 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -39,7 +38,6 @@ public abstract class RedSandstoneSlabBlock extends SlabBlock {
 		return CommonI18n.translate(this.getTranslationKey() + ".red_sandstone.name");
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.STONE_SLAB2);
@@ -66,10 +64,10 @@ public abstract class RedSandstoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		if (item != Item.fromBlock(Blocks.DOUBLE_STONE_SLAB2)) {
 			for (RedSandstoneSlabBlock.SlabType slabType : RedSandstoneSlabBlock.SlabType.values()) {
-				stacks.add(new ItemStack(item, 1, slabType.getId()));
+				defaultedList.add(new ItemStack(item, 1, slabType.getId()));
 			}
 		}
 	}

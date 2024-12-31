@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
 
@@ -17,6 +18,7 @@ public class AreaEffectCloudEntityRenderer extends EntityRenderer<Entity> {
 		super.render(entity, x, y, z, yaw, tickDelta);
 	}
 
+	@Nullable
 	@Override
 	protected Identifier getTexture(Entity entity) {
 		return null;

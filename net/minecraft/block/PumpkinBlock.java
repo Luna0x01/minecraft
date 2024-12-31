@@ -76,7 +76,7 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 
 			for (int k = 0; k < this.getSnowGolemPattern().getHeight(); k++) {
 				CachedBlockPosition cachedBlockPosition2 = result.translate(0, k, 0);
-				world.updateNeighbors(cachedBlockPosition2.getPos(), Blocks.AIR);
+				world.method_8531(cachedBlockPosition2.getPos(), Blocks.AIR, false);
 			}
 		} else {
 			result = this.getIronGolemPattern().searchAround(world, pos);
@@ -108,7 +108,7 @@ public class PumpkinBlock extends HorizontalFacingBlock {
 				for (int o = 0; o < this.getIronGolemPattern().getWidth(); o++) {
 					for (int p = 0; p < this.getIronGolemPattern().getHeight(); p++) {
 						CachedBlockPosition cachedBlockPosition3 = result.translate(o, p, 0);
-						world.updateNeighbors(cachedBlockPosition3.getPos(), Blocks.AIR);
+						world.method_8531(cachedBlockPosition3.getPos(), Blocks.AIR, false);
 					}
 				}
 			}

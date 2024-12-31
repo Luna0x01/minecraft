@@ -13,6 +13,7 @@ import net.minecraft.client.ClientException;
 import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.util.CommonI18n;
 import net.minecraft.util.ProgressListener;
 import net.minecraft.world.AnvilWorldSaveHandler;
 import net.minecraft.world.SaveHandler;
@@ -64,7 +65,7 @@ public class AnvilLevelStorage extends LevelStorage {
 
 			return list;
 		} else {
-			throw new ClientException("Unable to read or access folder where game worlds are saved!");
+			throw new ClientException(CommonI18n.translate("selectWorld.load_folder_access"));
 		}
 	}
 
@@ -117,7 +118,7 @@ public class AnvilLevelStorage extends LevelStorage {
 		LOGGER.info("Total conversion count is {}", new Object[]{i});
 		LevelProperties levelProperties = this.getLevelProperties(worldName);
 		SingletonBiomeSource singletonBiomeSource;
-		if (levelProperties.getGeneratorType() == LevelGeneratorType.FLAT) {
+		if (levelProperties != null && levelProperties.getGeneratorType() == LevelGeneratorType.FLAT) {
 			singletonBiomeSource = new class_2711(Biomes.PLAINS);
 		} else {
 			singletonBiomeSource = new SingletonBiomeSource(levelProperties);

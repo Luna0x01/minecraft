@@ -8,14 +8,14 @@ import net.minecraft.util.PacketByteBuf;
 
 public class CreativeInventoryActionC2SPacket implements Packet<ServerPlayPacketListener> {
 	private int slot;
-	private ItemStack stack;
+	private ItemStack stack = ItemStack.EMPTY;
 
 	public CreativeInventoryActionC2SPacket() {
 	}
 
 	public CreativeInventoryActionC2SPacket(int i, ItemStack itemStack) {
 		this.slot = i;
-		this.stack = itemStack != null ? itemStack.copy() : null;
+		this.stack = itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
 	}
 
 	public void apply(ServerPlayPacketListener serverPlayPacketListener) {

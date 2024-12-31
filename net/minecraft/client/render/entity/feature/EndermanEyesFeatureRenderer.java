@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EndermanEntityRenderer;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.util.Identifier;
@@ -27,7 +28,9 @@ public class EndermanEyesFeatureRenderer implements FeatureRenderer<EndermanEnti
 		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, 61680.0F, 0.0F);
 		GlStateManager.enableLighting();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+		MinecraftClient.getInstance().gameRenderer.method_13847(true);
 		this.endermanRenderer.getModel().render(endermanEntity, f, g, i, j, k, l);
+		MinecraftClient.getInstance().gameRenderer.method_13847(false);
 		this.endermanRenderer.method_10261(endermanEntity, h);
 		GlStateManager.depthMask(true);
 		GlStateManager.disableBlend();

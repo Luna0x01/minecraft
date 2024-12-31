@@ -123,17 +123,17 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 
 		for (class_2906 lv : entry.getSounds()) {
 			final Identifier identifier = lv.method_12522();
-			SoundContainer<class_2906> soundContainer;
+			SoundContainer<class_2906> soundContainer2;
 			switch (lv.method_12527()) {
 				case FILE:
 					if (!this.method_12542(lv, id)) {
 						continue;
 					}
 
-					soundContainer = lv;
+					soundContainer2 = lv;
 					break;
 				case SOUND_EVENT:
-					soundContainer = new SoundContainer<class_2906>() {
+					soundContainer2 = new SoundContainer<class_2906>() {
 						@Override
 						public int getWeight() {
 							SoundContainerImpl soundContainerImpl = SoundManager.this.loadedSounds.get(identifier);
@@ -150,7 +150,7 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 					throw new IllegalStateException("Unknown SoundEventRegistration type: " + lv.method_12527());
 			}
 
-			soundContainerImpl.method_12549(soundContainer);
+			soundContainerImpl.method_12549(soundContainer2);
 		}
 	}
 

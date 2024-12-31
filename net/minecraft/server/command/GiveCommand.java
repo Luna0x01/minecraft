@@ -71,15 +71,15 @@ public class GiveCommand extends AbstractCommand {
 				playerEntity.playerScreenHandler.sendContentUpdates();
 			}
 
-			if (bl && itemStack.count <= 0) {
-				itemStack.count = 1;
+			if (bl && itemStack.isEmpty()) {
+				itemStack.setCount(1);
 				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, i);
 				ItemEntity itemEntity2 = playerEntity.dropItem(itemStack, false);
 				if (itemEntity2 != null) {
 					itemEntity2.setDespawnImmediately();
 				}
 			} else {
-				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, i - itemStack.count);
+				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, i - itemStack.getCount());
 				ItemEntity itemEntity = playerEntity.dropItem(itemStack, false);
 				if (itemEntity != null) {
 					itemEntity.resetPickupDelay();

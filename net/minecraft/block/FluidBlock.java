@@ -16,9 +16,9 @@ public class FluidBlock extends AbstractFluidBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.canChangeFromLava(world, blockPos, blockState)) {
-			this.updateLevel(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.canChangeFromLava(world, pos, state)) {
+			this.updateLevel(world, pos, state);
 		}
 	}
 

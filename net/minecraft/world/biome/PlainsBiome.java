@@ -3,6 +3,7 @@ package net.minecraft.world.biome;
 import java.util.Random;
 import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.block.FlowerBlock;
+import net.minecraft.entity.DonkeyEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -15,6 +16,7 @@ public class PlainsBiome extends Biome {
 		super(settings);
 		this.field_7252 = bl;
 		this.passiveEntries.add(new Biome.SpawnEntry(HorseBaseEntity.class, 5, 2, 6));
+		this.passiveEntries.add(new Biome.SpawnEntry(DonkeyEntity.class, 1, 1, 3));
 		this.biomeDecorator.treesPerChunk = 0;
 		this.biomeDecorator.field_14821 = 0.05F;
 		this.biomeDecorator.flowersPerChunk = 4;

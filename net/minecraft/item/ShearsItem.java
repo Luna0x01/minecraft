@@ -18,7 +18,10 @@ public class ShearsItem extends Item {
 
 	@Override
 	public boolean method_3356(ItemStack itemStack, World world, BlockState blockState, BlockPos blockPos, LivingEntity livingEntity) {
-		itemStack.damage(1, livingEntity);
+		if (!world.isClient) {
+			itemStack.damage(1, livingEntity);
+		}
+
 		Block block = blockState.getBlock();
 		return blockState.getMaterial() != Material.FOLIAGE
 				&& block != Blocks.COBWEB

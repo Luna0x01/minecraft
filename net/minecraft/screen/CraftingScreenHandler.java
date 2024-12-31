@@ -1,6 +1,5 @@
 package net.minecraft.screen;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -55,7 +54,7 @@ public class CraftingScreenHandler extends ScreenHandler {
 		if (!this.world.isClient) {
 			for (int i = 0; i < 9; i++) {
 				ItemStack itemStack = this.craftingInv.removeInvStack(i);
-				if (itemStack != null) {
+				if (!itemStack.isEmpty()) {
 					player.dropItem(itemStack, false);
 				}
 			}
@@ -69,43 +68,46 @@ public class CraftingScreenHandler extends ScreenHandler {
 			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
 			if (invSlot == 0) {
+				itemStack2.getItem().onCraft(itemStack2, this.world, player);
 				if (!this.insertItem(itemStack2, 10, 46, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
 			} else if (invSlot >= 10 && invSlot < 37) {
 				if (!this.insertItem(itemStack2, 37, 46, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (invSlot >= 37 && invSlot < 46) {
 				if (!this.insertItem(itemStack2, 10, 37, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (!this.insertItem(itemStack2, 10, 46, false)) {
-				return null;
+				return ItemStack.EMPTY;
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			ItemStack itemStack3 = slot.method_3298(player, itemStack2);
+			if (invSlot == 0) {
+				player.dropItem(itemStack3, false);
+			}
 		}
 
 		return itemStack;

@@ -1,15 +1,15 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.SquidEntityModel;
 import net.minecraft.entity.passive.SquidEntity;
 import net.minecraft.util.Identifier;
 
 public class SquidEntityRenderer extends MobEntityRenderer<SquidEntity> {
 	private static final Identifier SQUID_TEX = new Identifier("textures/entity/squid.png");
 
-	public SquidEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f) {
-		super(entityRenderDispatcher, entityModel, f);
+	public SquidEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
+		super(entityRenderDispatcher, new SquidEntityModel(), 0.7F);
 	}
 
 	protected Identifier getTexture(SquidEntity squidEntity) {

@@ -71,7 +71,7 @@ public class StatusEffect {
 		} else if (this == StatusEffects.WITHER) {
 			livingEntity.damage(DamageSource.WITHER, 1.0F);
 		} else if (this == StatusEffects.HUNGER && livingEntity instanceof PlayerEntity) {
-			((PlayerEntity)livingEntity).addExhaustion(0.025F * (float)(i + 1));
+			((PlayerEntity)livingEntity).addExhaustion(0.005F * (float)(i + 1));
 		} else if (this == StatusEffects.SATURATION && livingEntity instanceof PlayerEntity) {
 			if (!livingEntity.world.isClient) {
 				((PlayerEntity)livingEntity).getHungerManager().add(i + 1, 1.0F);

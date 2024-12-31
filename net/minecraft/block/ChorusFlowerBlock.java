@@ -4,10 +4,12 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -19,16 +21,15 @@ public class ChorusFlowerBlock extends Block {
 	public static final IntProperty field_12625 = IntProperty.of("age", 0, 5);
 
 	protected ChorusFlowerBlock() {
-		super(Material.PLANT);
+		super(Material.PLANT, MaterialColor.PURPLE);
 		this.setDefaultState(this.stateManager.getDefaultState().with(field_12625, 0));
 		this.setItemGroup(ItemGroup.DECORATIONS);
 		this.setTickRandomly(true);
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return null;
+		return Items.AIR;
 	}
 
 	@Override
@@ -141,9 +142,9 @@ public class ChorusFlowerBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.method_11588(world, blockPos)) {
-			world.createAndScheduleBlockTick(blockPos, this, 1);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.method_11588(world, pos)) {
+			world.createAndScheduleBlockTick(pos, this, 1);
 		}
 	}
 
@@ -174,14 +175,14 @@ public class ChorusFlowerBlock extends Block {
 	}
 
 	@Override
-	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
 		super.method_8651(world, player, pos, state, blockEntity, stack);
 		onBlockBreak(world, pos, new ItemStack(Item.fromBlock(this)));
 	}
 
 	@Override
 	protected ItemStack createStackFromBlock(BlockState state) {
-		return null;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
@@ -202,11 +203,6 @@ public class ChorusFlowerBlock extends Block {
 	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, field_12625);
-	}
-
-	@Override
-	public void onCreation(World world, BlockPos pos, BlockState state) {
-		super.onCreation(world, pos, state);
 	}
 
 	public static void method_11586(World world, BlockPos blockPos, Random random, int i) {

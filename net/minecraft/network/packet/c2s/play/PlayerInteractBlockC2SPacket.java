@@ -33,9 +33,9 @@ public class PlayerInteractBlockC2SPacket implements Packet<ServerPlayPacketList
 		this.pos = buf.readBlockPos();
 		this.field_13813 = buf.readEnumConstant(Direction.class);
 		this.field_13814 = buf.readEnumConstant(Hand.class);
-		this.distanceX = (float)buf.readUnsignedByte() / 16.0F;
-		this.distanceY = (float)buf.readUnsignedByte() / 16.0F;
-		this.distanceZ = (float)buf.readUnsignedByte() / 16.0F;
+		this.distanceX = buf.readFloat();
+		this.distanceY = buf.readFloat();
+		this.distanceZ = buf.readFloat();
 	}
 
 	@Override
@@ -43,9 +43,9 @@ public class PlayerInteractBlockC2SPacket implements Packet<ServerPlayPacketList
 		buf.writeBlockPos(this.pos);
 		buf.writeEnumConstant(this.field_13813);
 		buf.writeEnumConstant(this.field_13814);
-		buf.writeByte((int)(this.distanceX * 16.0F));
-		buf.writeByte((int)(this.distanceY * 16.0F));
-		buf.writeByte((int)(this.distanceZ * 16.0F));
+		buf.writeFloat(this.distanceX);
+		buf.writeFloat(this.distanceY);
+		buf.writeFloat(this.distanceZ);
 	}
 
 	public void apply(ServerPlayPacketListener serverPlayPacketListener) {

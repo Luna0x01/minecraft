@@ -21,7 +21,6 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTables;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.Sound;
 import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
@@ -112,16 +111,6 @@ public class PolarBearEntity extends AnimalEntity {
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(field_15032, false);
-	}
-
-	@Override
-	public void readCustomDataFromNbt(NbtCompound nbt) {
-		super.readCustomDataFromNbt(nbt);
-	}
-
-	@Override
-	public void writeCustomDataToNbt(NbtCompound nbt) {
-		super.writeCustomDataToNbt(nbt);
 	}
 
 	@Override
@@ -236,7 +225,7 @@ public class PolarBearEntity extends AnimalEntity {
 
 		@Override
 		protected void setMobEntityTarget(PathAwareEntity mob, LivingEntity target) {
-			if (mob instanceof PolarBearEntity && !((PolarBearEntity)mob).isBaby()) {
+			if (mob instanceof PolarBearEntity && !mob.isBaby()) {
 				super.setMobEntityTarget(mob, target);
 			}
 		}

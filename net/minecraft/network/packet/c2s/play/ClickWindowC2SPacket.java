@@ -12,7 +12,7 @@ public class ClickWindowC2SPacket implements Packet<ServerPlayPacketListener> {
 	private int slot;
 	private int button;
 	private short transactionId;
-	private ItemStack selectedStack;
+	private ItemStack selectedStack = ItemStack.EMPTY;
 	private ItemAction field_13798;
 
 	public ClickWindowC2SPacket() {
@@ -22,7 +22,7 @@ public class ClickWindowC2SPacket implements Packet<ServerPlayPacketListener> {
 		this.syncId = i;
 		this.slot = j;
 		this.button = k;
-		this.selectedStack = itemStack != null ? itemStack.copy() : null;
+		this.selectedStack = itemStack.isEmpty() ? ItemStack.EMPTY : itemStack.copy();
 		this.transactionId = s;
 		this.field_13798 = itemAction;
 	}

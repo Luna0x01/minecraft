@@ -26,15 +26,14 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.EntityTracker;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.HorseType;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobSpawnerHelper;
 import net.minecraft.entity.PortalTeleporter;
+import net.minecraft.entity.SkeletonHorseEntity;
 import net.minecraft.entity.Tradable;
 import net.minecraft.entity.mob.WaterCreatureEntity;
 import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.loot.class_2787;
@@ -249,7 +248,9 @@ public class ServerWorld extends World implements ThreadExecutor {
 			}
 		}
 
-		this.resetWeather();
+		if (this.getGameRules().getBoolean("doWeatherCycle")) {
+			this.resetWeather();
+		}
 	}
 
 	private void resetWeather() {
@@ -345,13 +346,12 @@ public class ServerWorld extends World implements ThreadExecutor {
 					BlockPos blockPos = this.method_10749(new BlockPos(j + (l & 15), 0, k + (l >> 8 & 15)));
 					if (this.hasRain(blockPos)) {
 						LocalDifficulty localDifficulty = this.getLocalDifficulty(blockPos);
-						if (this.random.nextDouble() < (double)localDifficulty.getLocalDifficulty() * 0.05) {
-							HorseBaseEntity horseBaseEntity = new HorseBaseEntity(this);
-							horseBaseEntity.method_13126(HorseType.SKELETON);
-							horseBaseEntity.method_13133(true);
-							horseBaseEntity.setAge(0);
-							horseBaseEntity.updatePosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
-							this.spawnEntity(horseBaseEntity);
+						if (this.getGameRules().getBoolean("doMobSpawning") && this.random.nextDouble() < (double)localDifficulty.getLocalDifficulty() * 0.01) {
+							SkeletonHorseEntity skeletonHorseEntity = new SkeletonHorseEntity(this);
+							skeletonHorseEntity.method_14041(true);
+							skeletonHorseEntity.setAge(0);
+							skeletonHorseEntity.updatePosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+							this.spawnEntity(skeletonHorseEntity);
 							this.addEntity(new LightningBoltEntity(this, (double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), true));
 						} else {
 							this.addEntity(new LightningBoltEntity(this, (double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), false));
@@ -382,17 +382,17 @@ public class ServerWorld extends World implements ThreadExecutor {
 				if (i > 0) {
 					for (ChunkSection chunkSection : chunk.getBlockStorage()) {
 						if (chunkSection != Chunk.EMPTY && chunkSection.hasTickableBlocks()) {
-							for (int p = 0; p < i; p++) {
+							for (int n = 0; n < i; n++) {
 								this.lcgBlockSeed = this.lcgBlockSeed * 3 + 1013904223;
-								int q = this.lcgBlockSeed >> 2;
-								int r = q & 15;
-								int s = q >> 8 & 15;
-								int t = q >> 16 & 15;
-								BlockState blockState = chunkSection.getBlockState(r, t, s);
+								int o = this.lcgBlockSeed >> 2;
+								int p = o & 15;
+								int q = o >> 8 & 15;
+								int r = o >> 16 & 15;
+								BlockState blockState = chunkSection.getBlockState(p, r, q);
 								Block block = blockState.getBlock();
 								this.profiler.push("randomTick");
 								if (block.ticksRandomly()) {
-									block.onRandomTick(this, new BlockPos(r + j, t + chunkSection.getYOffset(), s + k), blockState, this.random);
+									block.onRandomTick(this, new BlockPos(p + j, r + chunkSection.getYOffset(), q + k), blockState, this.random);
 								}
 
 								this.profiler.pop();
@@ -791,6 +791,7 @@ public class ServerWorld extends World implements ThreadExecutor {
 		}
 	}
 
+	@Nullable
 	public BlockPos getForcedSpawnPoint() {
 		return this.dimension.getForcedSpawnPoint();
 	}
@@ -863,7 +864,7 @@ public class ServerWorld extends World implements ThreadExecutor {
 
 	private boolean method_12781(Entity entity) {
 		if (entity.removed) {
-			LOGGER.warn("Tried to add entity {} but it was marked as removed already", new Object[]{EntityType.getEntityName(entity)});
+			LOGGER.warn("Tried to add entity {} but it was marked as removed already", new Object[]{EntityType.getId(entity)});
 			return false;
 		} else {
 			UUID uUID = entity.getUuid();
@@ -873,7 +874,7 @@ public class ServerWorld extends World implements ThreadExecutor {
 					this.unloadedEntities.remove(entity2);
 				} else {
 					if (!(entity instanceof PlayerEntity)) {
-						LOGGER.warn("Keeping entity {} that already exists with UUID {}", new Object[]{EntityType.getEntityName(entity2), uUID.toString()});
+						LOGGER.warn("Keeping entity {} that already exists with UUID {}", new Object[]{EntityType.getId(entity2), uUID.toString()});
 						return false;
 					}
 
@@ -1105,6 +1106,12 @@ public class ServerWorld extends World implements ThreadExecutor {
 	@Override
 	public boolean isOnThread() {
 		return this.server.isOnThread();
+	}
+
+	@Nullable
+	@Override
+	public BlockPos method_13688(String string, BlockPos blockPos, boolean bl) {
+		return this.getChunkProvider().method_12773(this, string, blockPos, bl);
 	}
 
 	static class BlockActionList extends ArrayList<BlockAction> {

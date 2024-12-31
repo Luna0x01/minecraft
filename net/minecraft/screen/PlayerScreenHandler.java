@@ -1,6 +1,7 @@
 package net.minecraft.screen;
 
 import javax.annotation.Nullable;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -41,13 +42,14 @@ public class PlayerScreenHandler extends ScreenHandler {
 				}
 
 				@Override
-				public boolean canInsert(@Nullable ItemStack stack) {
-					if (stack == null) {
-						return false;
-					} else {
-						EquipmentSlot equipmentSlot = MobEntity.method_13083(stack);
-						return equipmentSlot == equipmentSlot;
-					}
+				public boolean canInsert(ItemStack stack) {
+					return equipmentSlot == MobEntity.method_13083(stack);
+				}
+
+				@Override
+				public boolean canTakeItems(PlayerEntity playerEntity) {
+					ItemStack itemStack = this.getStack();
+					return !itemStack.isEmpty() && !playerEntity.isCreative() && EnchantmentHelper.hasBindingCurse(itemStack) ? false : super.canTakeItems(playerEntity);
 				}
 
 				@Nullable
@@ -69,11 +71,6 @@ public class PlayerScreenHandler extends ScreenHandler {
 		}
 
 		this.addSlot(new Slot(playerInventory, 40, 77, 62) {
-			@Override
-			public boolean canInsert(@Nullable ItemStack stack) {
-				return super.canInsert(stack);
-			}
-
 			@Nullable
 			@Override
 			public String getBackgroundSprite() {
@@ -94,12 +91,12 @@ public class PlayerScreenHandler extends ScreenHandler {
 
 		for (int i = 0; i < 4; i++) {
 			ItemStack itemStack = this.craftingInventory.removeInvStack(i);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				player.dropItem(itemStack, false);
 			}
 		}
 
-		this.craftingResultInventory.setInvStack(0, null);
+		this.craftingResultInventory.setInvStack(0, ItemStack.EMPTY);
 	}
 
 	@Override
@@ -107,10 +104,9 @@ public class PlayerScreenHandler extends ScreenHandler {
 		return true;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
-		ItemStack itemStack = null;
+		ItemStack itemStack = ItemStack.EMPTY;
 		Slot slot = (Slot)this.slots.get(invSlot);
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
@@ -118,50 +114,53 @@ public class PlayerScreenHandler extends ScreenHandler {
 			EquipmentSlot equipmentSlot = MobEntity.method_13083(itemStack);
 			if (invSlot == 0) {
 				if (!this.insertItem(itemStack2, 9, 45, true)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 
 				slot.onStackChanged(itemStack2, itemStack);
 			} else if (invSlot >= 1 && invSlot < 5) {
 				if (!this.insertItem(itemStack2, 9, 45, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (invSlot >= 5 && invSlot < 9) {
 				if (!this.insertItem(itemStack2, 9, 45, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (equipmentSlot.getType() == EquipmentSlot.Type.ARMOR && !((Slot)this.slots.get(8 - equipmentSlot.method_13032())).hasStack()) {
 				int i = 8 - equipmentSlot.method_13032();
 				if (!this.insertItem(itemStack2, i, i + 1, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (equipmentSlot == EquipmentSlot.OFFHAND && !((Slot)this.slots.get(45)).hasStack()) {
 				if (!this.insertItem(itemStack2, 45, 46, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (invSlot >= 9 && invSlot < 36) {
 				if (!this.insertItem(itemStack2, 36, 45, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (invSlot >= 36 && invSlot < 45) {
 				if (!this.insertItem(itemStack2, 9, 36, false)) {
-					return null;
+					return ItemStack.EMPTY;
 				}
 			} else if (!this.insertItem(itemStack2, 9, 45, false)) {
-				return null;
+				return ItemStack.EMPTY;
 			}
 
-			if (itemStack2.count == 0) {
-				slot.setStack(null);
+			if (itemStack2.isEmpty()) {
+				slot.setStack(ItemStack.EMPTY);
 			} else {
 				slot.markDirty();
 			}
 
-			if (itemStack2.count == itemStack.count) {
-				return null;
+			if (itemStack2.getCount() == itemStack.getCount()) {
+				return ItemStack.EMPTY;
 			}
 
-			slot.onTakeItem(player, itemStack2);
+			ItemStack itemStack3 = slot.method_3298(player, itemStack2);
+			if (invSlot == 0) {
+				player.dropItem(itemStack3, false);
+			}
 		}
 
 		return itemStack;

@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.CreeperEntityRenderer;
 import net.minecraft.client.render.entity.model.CreeperEntityModel;
 import net.minecraft.entity.mob.CreeperEntity;
@@ -31,7 +32,9 @@ public class CreeperLightningFeatureRenderer implements FeatureRenderer<CreeperE
 			GlStateManager.disableLighting();
 			GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 			this.model.copy(this.renderer.getModel());
+			MinecraftClient.getInstance().gameRenderer.method_13847(true);
 			this.model.render(creeperEntity, f, g, i, j, k, l);
+			MinecraftClient.getInstance().gameRenderer.method_13847(false);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.loadIdentity();
 			GlStateManager.matrixMode(5888);

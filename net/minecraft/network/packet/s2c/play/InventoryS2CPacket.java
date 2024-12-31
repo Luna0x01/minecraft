@@ -6,21 +6,24 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.collection.DefaultedList;
 
 public class InventoryS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int screenId;
-	private ItemStack[] stacks;
+	private List<ItemStack> field_15348;
 
 	public InventoryS2CPacket() {
 	}
 
-	public InventoryS2CPacket(int i, List<ItemStack> list) {
+	public InventoryS2CPacket(int i, DefaultedList<ItemStack> defaultedList) {
 		this.screenId = i;
-		this.stacks = new ItemStack[list.size()];
+		this.field_15348 = DefaultedList.<ItemStack>ofSize(defaultedList.size(), ItemStack.EMPTY);
 
-		for (int j = 0; j < this.stacks.length; j++) {
-			ItemStack itemStack = (ItemStack)list.get(j);
-			this.stacks[j] = itemStack == null ? null : itemStack.copy();
+		for (int j = 0; j < this.field_15348.size(); j++) {
+			ItemStack itemStack = defaultedList.get(j);
+			if (!itemStack.isEmpty()) {
+				this.field_15348.set(j, itemStack.copy());
+			}
 		}
 	}
 
@@ -28,19 +31,19 @@ public class InventoryS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void read(PacketByteBuf buf) throws IOException {
 		this.screenId = buf.readUnsignedByte();
 		int i = buf.readShort();
-		this.stacks = new ItemStack[i];
+		this.field_15348 = DefaultedList.<ItemStack>ofSize(i, ItemStack.EMPTY);
 
 		for (int j = 0; j < i; j++) {
-			this.stacks[j] = buf.readItemStack();
+			this.field_15348.set(j, buf.readItemStack());
 		}
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeByte(this.screenId);
-		buf.writeShort(this.stacks.length);
+		buf.writeShort(this.field_15348.size());
 
-		for (ItemStack itemStack : this.stacks) {
+		for (ItemStack itemStack : this.field_15348) {
 			buf.writeItemStack(itemStack);
 		}
 	}
@@ -53,7 +56,7 @@ public class InventoryS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.screenId;
 	}
 
-	public ItemStack[] getSlotStacks() {
-		return this.stacks;
+	public List<ItemStack> method_13899() {
+		return this.field_15348;
 	}
 }

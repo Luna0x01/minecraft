@@ -3,6 +3,7 @@ package net.minecraft.state;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
@@ -11,6 +12,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
+import com.google.common.collect.UnmodifiableIterator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -101,8 +103,11 @@ public class StateManager {
 
 	private List<Iterable<Comparable<?>>> method_11743() {
 		List<Iterable<Comparable<?>>> list = Lists.newArrayList();
+		ImmutableCollection<Property<?>> immutableCollection = this.properties.values();
+		UnmodifiableIterator var3 = immutableCollection.iterator();
 
-		for (Property<?> property : this.properties.values()) {
+		while (var3.hasNext()) {
+			Property<?> property = (Property<?>)var3.next();
 			list.add(property.getValues());
 		}
 
@@ -200,8 +205,10 @@ public class StateManager {
 				throw new IllegalStateException();
 			} else {
 				Table<Property<?>, Comparable<?>, BlockState> table = HashBasedTable.create();
+				UnmodifiableIterator var3 = this.map.entrySet().iterator();
 
-				for (Entry<Property<?>, Comparable<?>> entry : this.map.entrySet()) {
+				while (var3.hasNext()) {
+					Entry<Property<?>, Comparable<?>> entry = (Entry<Property<?>, Comparable<?>>)var3.next();
 					Property<?> property = (Property<?>)entry.getKey();
 
 					for (Comparable<?> comparable : property.getValues()) {
@@ -274,6 +281,11 @@ public class StateManager {
 		@Override
 		public boolean method_11730() {
 			return this.block.method_11562(this);
+		}
+
+		@Override
+		public boolean method_13762() {
+			return this.block.method_13704(this);
 		}
 
 		@Override
@@ -363,13 +375,13 @@ public class StateManager {
 
 		@Nullable
 		@Override
-		public Box getCollisionBox(World world, BlockPos pos) {
-			return this.block.getCollisionBox(this, world, pos);
+		public Box method_11726(BlockView view, BlockPos pos) {
+			return this.block.method_8640(this, view, pos);
 		}
 
 		@Override
-		public void addCollisionBoxesToList(World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
-			this.block.appendCollisionBoxes(this, world, pos, entityBox, boxes, entity);
+		public void appendCollisionBoxes(World world, BlockPos pos, Box box, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+			this.block.appendCollisionBoxes(this, world, pos, box, boxes, entity, isActualState);
 		}
 
 		@Override
@@ -388,13 +400,23 @@ public class StateManager {
 		}
 
 		@Override
+		public Vec3d method_13761(BlockView view, BlockPos pos) {
+			return this.block.method_13702(this, view, pos);
+		}
+
+		@Override
 		public boolean onSyncedBlockEvent(World world, BlockPos pos, int type, int data) {
 			return this.block.onSyncedBlockEvent(this, world, pos, type, data);
 		}
 
 		@Override
-		public void method_11707(World world, BlockPos blockPos, Block block) {
-			this.block.method_8641(this, world, blockPos, block);
+		public void neighbourUpdate(World world, BlockPos pos, Block block, BlockPos sourcePos) {
+			this.block.neighborUpdate(this, world, pos, block, sourcePos);
+		}
+
+		@Override
+		public boolean method_13763() {
+			return this.block.method_13703(this);
 		}
 	}
 }

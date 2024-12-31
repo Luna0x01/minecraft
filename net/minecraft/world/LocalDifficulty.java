@@ -17,10 +17,6 @@ public class LocalDifficulty {
 		return this.localDifficulty;
 	}
 
-	public boolean method_13484() {
-		return this.localDifficulty >= (float)Difficulty.HARD.ordinal();
-	}
-
 	public float getClampedLocalDifficulty() {
 		if (this.localDifficulty < 2.0F) {
 			return 0.0F;

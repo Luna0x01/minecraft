@@ -26,8 +26,8 @@ public class FallingBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
 	}
 
 	@Override
@@ -76,6 +76,9 @@ public class FallingBlock extends Block {
 	}
 
 	public void onDestroyedOnLanding(World world, BlockPos pos) {
+	}
+
+	public void method_13705(World world, BlockPos blockPos) {
 	}
 
 	@Override

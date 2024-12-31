@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
@@ -50,7 +51,10 @@ public class ServerChunkProvider implements ChunkProvider {
 	}
 
 	public void unloadAll() {
-		for (Chunk chunk : this.loadedChunksMap.values()) {
+		ObjectIterator var1 = this.loadedChunksMap.values().iterator();
+
+		while (var1.hasNext()) {
+			Chunk chunk = (Chunk)var1.next();
 			this.unload(chunk);
 		}
 	}
@@ -207,8 +211,8 @@ public class ServerChunkProvider implements ChunkProvider {
 	}
 
 	@Nullable
-	public BlockPos method_12773(World world, String string, BlockPos blockPos) {
-		return this.generator.method_3866(world, string, blockPos);
+	public BlockPos method_12773(World world, String string, BlockPos pos, boolean bl) {
+		return this.generator.method_3866(world, string, pos, bl);
 	}
 
 	public int method_3874() {
@@ -217,5 +221,10 @@ public class ServerChunkProvider implements ChunkProvider {
 
 	public boolean method_3864(int x, int z) {
 		return this.loadedChunksMap.containsKey(ChunkPos.getIdFromCoords(x, z));
+	}
+
+	@Override
+	public boolean isChunkGenerated(int x, int z) {
+		return this.loadedChunksMap.containsKey(ChunkPos.getIdFromCoords(x, z)) || this.chunkWriter.chunkExists(x, z);
 	}
 }

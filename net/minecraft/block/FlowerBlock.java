@@ -4,7 +4,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import java.util.Collection;
-import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -13,6 +12,10 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.world.BlockView;
 
 public abstract class FlowerBlock extends PlantBlock {
 	protected EnumProperty<FlowerBlock.FlowerType> flowerProperties;
@@ -26,14 +29,19 @@ public abstract class FlowerBlock extends PlantBlock {
 	}
 
 	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return super.getCollisionBox(state, view, pos).offset(state.method_13761(view, pos));
+	}
+
+	@Override
 	public int getMeta(BlockState state) {
 		return ((FlowerBlock.FlowerType)state.get(this.getFlowerProperties())).getDataIndex();
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (FlowerBlock.FlowerType flowerType : FlowerBlock.FlowerType.getTypes(this.getColor())) {
-			stacks.add(new ItemStack(item, 1, flowerType.getDataIndex()));
+			defaultedList.add(new ItemStack(item, 1, flowerType.getDataIndex()));
 		}
 	}
 

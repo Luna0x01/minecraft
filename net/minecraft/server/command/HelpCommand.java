@@ -14,7 +14,6 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.command.InvalidNumberException;
 import net.minecraft.command.NotFoundException;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
@@ -80,11 +79,11 @@ public class HelpCommand extends AbstractCommand {
 					throw new IncorrectUsageException(command.getUsageTranslationKey(commandSource));
 				}
 
-				if (MathHelper.parseInt(args[0], -1) != -1) {
-					throw var13;
+				if (MathHelper.parseInt(args[0], -1) == -1 && MathHelper.parseInt(args[0], -2) == -2) {
+					throw new NotFoundException();
 				}
 
-				throw new NotFoundException();
+				throw var13;
 			}
 
 			int l = Math.min((k + 1) * 7, list.size());
@@ -99,7 +98,7 @@ public class HelpCommand extends AbstractCommand {
 				commandSource.sendMessage(translatableText2);
 			}
 
-			if (k == 0 && commandSource instanceof PlayerEntity) {
+			if (k == 0) {
 				TranslatableText translatableText3 = new TranslatableText("commands.help.footer");
 				translatableText3.getStyle().setFormatting(Formatting.GREEN);
 				commandSource.sendMessage(translatableText3);

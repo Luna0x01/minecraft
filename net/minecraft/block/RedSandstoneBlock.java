@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -8,6 +7,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 
 public class RedSandstoneBlock extends Block {
 	public static final EnumProperty<RedSandstoneBlock.RedSandstoneType> TYPE = EnumProperty.of("type", RedSandstoneBlock.RedSandstoneType.class);
@@ -24,9 +24,9 @@ public class RedSandstoneBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (RedSandstoneBlock.RedSandstoneType redSandstoneType : RedSandstoneBlock.RedSandstoneType.values()) {
-			stacks.add(new ItemStack(item, 1, redSandstoneType.getId()));
+			defaultedList.add(new ItemStack(item, 1, redSandstoneType.getId()));
 		}
 	}
 

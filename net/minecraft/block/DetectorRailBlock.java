@@ -98,16 +98,16 @@ public class DetectorRailBlock extends AbstractRailBlock {
 		if (bl2 && !bl) {
 			world.setBlockState(pos, state.with(POWERED, true), 3);
 			this.method_11600(world, pos, state, true);
-			world.updateNeighborsAlways(pos, this);
-			world.updateNeighborsAlways(pos.down(), this);
+			world.method_13692(pos, this, false);
+			world.method_13692(pos.down(), this, false);
 			world.onRenderRegionUpdate(pos, pos);
 		}
 
 		if (!bl2 && bl) {
 			world.setBlockState(pos, state.with(POWERED, false), 3);
 			this.method_11600(world, pos, state, false);
-			world.updateNeighborsAlways(pos, this);
-			world.updateNeighborsAlways(pos.down(), this);
+			world.method_13692(pos, this, false);
+			world.method_13692(pos.down(), this, false);
 			world.onRenderRegionUpdate(pos, pos);
 		}
 
@@ -124,7 +124,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 		for (BlockPos blockPos2 : railPlacementHelper.method_11551()) {
 			BlockState blockState2 = world.getBlockState(blockPos2);
 			if (blockState2 != null) {
-				blockState2.method_11707(world, blockPos2, blockState2.getBlock());
+				blockState2.neighbourUpdate(world, blockPos2, blockState2.getBlock(), blockPos);
 			}
 		}
 	}

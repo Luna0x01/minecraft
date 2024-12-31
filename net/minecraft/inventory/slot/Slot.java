@@ -20,40 +20,39 @@ public class Slot {
 	}
 
 	public void onStackChanged(ItemStack originalItem, ItemStack newItem) {
-		if (originalItem != null && newItem != null) {
-			if (originalItem.getItem() == newItem.getItem()) {
-				int i = newItem.count - originalItem.count;
-				if (i > 0) {
-					this.onCrafted(originalItem, i);
-				}
-			}
+		int i = newItem.getCount() - originalItem.getCount();
+		if (i > 0) {
+			this.onCrafted(newItem, i);
 		}
 	}
 
 	protected void onCrafted(ItemStack stack, int amount) {
 	}
 
+	protected void method_13644(int i) {
+	}
+
 	protected void onCrafted(ItemStack stack) {
 	}
 
-	public void onTakeItem(PlayerEntity player, ItemStack stack) {
+	public ItemStack method_3298(PlayerEntity playerEntity, ItemStack itemStack) {
 		this.markDirty();
+		return itemStack;
 	}
 
-	public boolean canInsert(@Nullable ItemStack stack) {
+	public boolean canInsert(ItemStack stack) {
 		return true;
 	}
 
-	@Nullable
 	public ItemStack getStack() {
 		return this.inventory.getInvStack(this.invSlot);
 	}
 
 	public boolean hasStack() {
-		return this.getStack() != null;
+		return !this.getStack().isEmpty();
 	}
 
-	public void setStack(@Nullable ItemStack stack) {
+	public void setStack(ItemStack stack) {
 		this.inventory.setInvStack(this.invSlot, stack);
 		this.markDirty();
 	}

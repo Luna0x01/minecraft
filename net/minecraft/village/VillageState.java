@@ -3,6 +3,7 @@ package net.minecraft.village;
 import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
@@ -141,6 +142,7 @@ public class VillageState extends PersistentState {
 		}
 	}
 
+	@Nullable
 	private VillageDoor method_11065(BlockPos pos) {
 		for (VillageDoor villageDoor : this.doors) {
 			if (villageDoor.getPos1().getX() == pos.getX() && villageDoor.getPos1().getZ() == pos.getZ() && Math.abs(villageDoor.getPos1().getY() - pos.getY()) <= 1) {

@@ -5,7 +5,6 @@ import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.item.Item;
@@ -59,7 +58,7 @@ public class RedstoneTorchBlock extends TorchBlock {
 	public void onCreation(World world, BlockPos pos, BlockState state) {
 		if (this.lit) {
 			for (Direction direction : Direction.values()) {
-				world.updateNeighborsAlways(pos.offset(direction), this);
+				world.method_13692(pos.offset(direction), this, false);
 			}
 		}
 	}
@@ -68,7 +67,7 @@ public class RedstoneTorchBlock extends TorchBlock {
 	public void onBreaking(World world, BlockPos pos, BlockState state) {
 		if (this.lit) {
 			for (Direction direction : Direction.values()) {
-				world.updateNeighborsAlways(pos.offset(direction), this);
+				world.method_13692(pos.offset(direction), this, false);
 			}
 		}
 	}
@@ -120,10 +119,10 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.neighborUpdate(world, blockPos, blockState)) {
-			if (this.lit == this.shouldNotBeLit(world, blockPos, blockState)) {
-				world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.neighborUpdate(world, pos, state)) {
+			if (this.lit == this.shouldNotBeLit(world, pos, state)) {
+				world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
 			}
 		}
 	}
@@ -133,7 +132,6 @@ public class RedstoneTorchBlock extends TorchBlock {
 		return direction == Direction.DOWN ? state.getWeakRedstonePower(world, pos, direction) : 0;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.REDSTONE_TORCH);

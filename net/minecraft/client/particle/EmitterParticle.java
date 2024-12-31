@@ -11,9 +11,13 @@ public class EmitterParticle extends Particle {
 	private final ParticleType types;
 
 	public EmitterParticle(World world, Entity entity, ParticleType particleType) {
+		this(world, entity, particleType, 3);
+	}
+
+	public EmitterParticle(World world, Entity entity, ParticleType particleType, int i) {
 		super(world, entity.x, entity.getBoundingBox().minY + (double)(entity.height / 2.0F), entity.z, entity.velocityX, entity.velocityY, entity.velocityZ);
 		this.entity = entity;
-		this.maxEmitterAge = 3;
+		this.maxEmitterAge = i;
 		this.types = particleType;
 		this.method_12241();
 	}

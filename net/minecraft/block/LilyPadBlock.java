@@ -19,7 +19,7 @@ public class LilyPadBlock extends PlantBlock {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
 		if (!(entity instanceof BoatEntity)) {
 			appendCollisionBoxes(pos, entityBox, boxes, SHAPE);
 		}

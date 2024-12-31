@@ -1,7 +1,6 @@
 package net.minecraft.entity.mob;
 
 import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -24,10 +23,6 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 	public HostileEntity(World world) {
 		super(world);
 		this.experiencePoints = 5;
-	}
-
-	public static void method_13532(DataFixerUpper dataFixerUpper) {
-		MobEntity.method_13496(dataFixerUpper, "Monster");
 	}
 
 	@Override
@@ -112,8 +107,8 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 			if (target instanceof PlayerEntity) {
 				PlayerEntity playerEntity = (PlayerEntity)target;
 				ItemStack itemStack = this.getMainHandStack();
-				ItemStack itemStack2 = playerEntity.method_13061() ? playerEntity.method_13064() : null;
-				if (itemStack != null && itemStack2 != null && itemStack.getItem() instanceof AxeItem && itemStack2.getItem() == Items.SHIELD) {
+				ItemStack itemStack2 = playerEntity.method_13061() ? playerEntity.method_13064() : ItemStack.EMPTY;
+				if (!itemStack.isEmpty() && !itemStack2.isEmpty() && itemStack.getItem() instanceof AxeItem && itemStack2.getItem() == Items.SHIELD) {
 					float g = 0.25F + (float)EnchantmentHelper.getEfficiency(this) * 0.05F;
 					if (this.random.nextFloat() < g) {
 						playerEntity.getItemCooldownManager().method_11384(Items.SHIELD, 100);

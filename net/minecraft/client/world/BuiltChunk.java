@@ -46,8 +46,8 @@ public class BuiltChunk {
 	public Box field_13615;
 	private int field_11082 = -1;
 	private boolean field_11083 = true;
-	private BlockPos.Mutable position = new BlockPos.Mutable(-1, -1, -1);
-	private BlockPos.Mutable[] field_13617 = new BlockPos.Mutable[6];
+	private final BlockPos.Mutable position = new BlockPos.Mutable(-1, -1, -1);
+	private final BlockPos.Mutable[] field_13617 = new BlockPos.Mutable[6];
 	private boolean field_13618;
 	private ChunkCache field_14966;
 

@@ -1,11 +1,13 @@
 package net.minecraft.village;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.mojang.authlib.GameProfile;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeMap;
+import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
@@ -34,7 +36,7 @@ public class Village {
 	private int ticks;
 	private int populationSize;
 	private int mtick;
-	private final TreeMap<String, Integer> players = new TreeMap();
+	private final Map<String, Integer> field_15484 = Maps.newHashMap();
 	private final List<Village.Attacker> attackers = Lists.newArrayList();
 	private int golems;
 
@@ -136,7 +138,7 @@ public class Village {
 			);
 		this.populationSize = list.size();
 		if (this.populationSize == 0) {
-			this.players.clear();
+			this.field_15484.clear();
 		}
 	}
 
@@ -211,6 +213,7 @@ public class Village {
 		return villageDoor;
 	}
 
+	@Nullable
 	public VillageDoor method_11057(BlockPos pos) {
 		if (this.min.getSquaredDistance(pos) > (double)(this.radius * this.radius)) {
 			return null;
@@ -247,6 +250,7 @@ public class Village {
 		this.attackers.add(new Village.Attacker(entity, this.ticks));
 	}
 
+	@Nullable
 	public LivingEntity getClosestAttacker(LivingEntity entity) {
 		double d = Double.MAX_VALUE;
 		Village.Attacker attacker = null;
@@ -260,14 +264,14 @@ public class Village {
 			}
 		}
 
-		return attacker != null ? attacker.entity : null;
+		return attacker == null ? null : attacker.entity;
 	}
 
 	public PlayerEntity method_6229(LivingEntity entity) {
 		double d = Double.MAX_VALUE;
 		PlayerEntity playerEntity = null;
 
-		for (String string : this.players.keySet()) {
+		for (String string : this.field_15484.keySet()) {
 			if (this.method_4510(string)) {
 				PlayerEntity playerEntity2 = this.world.getPlayerByName(string);
 				if (playerEntity2 != null) {
@@ -342,14 +346,14 @@ public class Village {
 	}
 
 	public int method_4504(String string) {
-		Integer integer = (Integer)this.players.get(string);
-		return integer != null ? integer : 0;
+		Integer integer = (Integer)this.field_15484.get(string);
+		return integer == null ? 0 : integer;
 	}
 
 	public int method_4505(String name, int i) {
 		int j = this.method_4504(name);
 		int k = MathHelper.clamp(j + i, -30, 10);
-		this.players.put(name, k);
+		this.field_15484.put(name, k);
 		return k;
 	}
 
@@ -387,10 +391,10 @@ public class Village {
 				UserCache userCache = this.world.getServer().getUserCache();
 				GameProfile gameProfile = userCache.getByUuid(UUID.fromString(nbtCompound2.getString("UUID")));
 				if (gameProfile != null) {
-					this.players.put(gameProfile.getName(), nbtCompound2.getInt("S"));
+					this.field_15484.put(gameProfile.getName(), nbtCompound2.getInt("S"));
 				}
 			} else {
-				this.players.put(nbtCompound2.getString("Name"), nbtCompound2.getInt("S"));
+				this.field_15484.put(nbtCompound2.getString("Name"), nbtCompound2.getInt("S"));
 			}
 		}
 	}
@@ -424,14 +428,18 @@ public class Village {
 		nbt.put("Doors", nbtList);
 		NbtList nbtList2 = new NbtList();
 
-		for (String string : this.players.keySet()) {
+		for (String string : this.field_15484.keySet()) {
 			NbtCompound nbtCompound2 = new NbtCompound();
 			UserCache userCache = this.world.getServer().getUserCache();
-			GameProfile gameProfile = userCache.findByName(string);
-			if (gameProfile != null) {
-				nbtCompound2.putString("UUID", gameProfile.getId().toString());
-				nbtCompound2.putInt("S", (Integer)this.players.get(string));
-				nbtList2.add(nbtCompound2);
+
+			try {
+				GameProfile gameProfile = userCache.findByName(string);
+				if (gameProfile != null) {
+					nbtCompound2.putString("UUID", gameProfile.getId().toString());
+					nbtCompound2.putInt("S", (Integer)this.field_15484.get(string));
+					nbtList2.add(nbtCompound2);
+				}
+			} catch (RuntimeException var9) {
 			}
 		}
 
@@ -447,7 +455,7 @@ public class Village {
 	}
 
 	public void method_4507(int i) {
-		for (String string : this.players.keySet()) {
+		for (String string : this.field_15484.keySet()) {
 			this.method_4505(string, i);
 		}
 	}

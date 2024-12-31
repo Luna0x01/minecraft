@@ -23,33 +23,32 @@ public class EndCrystalItem extends Item {
 	}
 
 	@Override
-	public ActionResult method_3355(
-		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
-	) {
-		BlockState blockState = world.getBlockState(blockPos);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		BlockState blockState = world.getBlockState(pos);
 		if (blockState.getBlock() != Blocks.OBSIDIAN && blockState.getBlock() != Blocks.BEDROCK) {
 			return ActionResult.FAIL;
 		} else {
-			BlockPos blockPos2 = blockPos.up();
-			if (!playerEntity.canModify(blockPos2, direction, itemStack)) {
+			BlockPos blockPos = pos.up();
+			ItemStack itemStack = player.getStackInHand(hand);
+			if (!player.canModify(blockPos, direction, itemStack)) {
 				return ActionResult.FAIL;
 			} else {
-				BlockPos blockPos3 = blockPos2.up();
-				boolean bl = !world.isAir(blockPos2) && !world.getBlockState(blockPos2).getBlock().method_8638(world, blockPos2);
-				bl |= !world.isAir(blockPos3) && !world.getBlockState(blockPos3).getBlock().method_8638(world, blockPos3);
+				BlockPos blockPos2 = blockPos.up();
+				boolean bl = !world.isAir(blockPos) && !world.getBlockState(blockPos).getBlock().method_8638(world, blockPos);
+				bl |= !world.isAir(blockPos2) && !world.getBlockState(blockPos2).getBlock().method_8638(world, blockPos2);
 				if (bl) {
 					return ActionResult.FAIL;
 				} else {
-					double d = (double)blockPos2.getX();
-					double e = (double)blockPos2.getY();
-					double i = (double)blockPos2.getZ();
-					List<Entity> list = world.getEntitiesIn(null, new Box(d, e, i, d + 1.0, e + 2.0, i + 1.0));
+					double d = (double)blockPos.getX();
+					double e = (double)blockPos.getY();
+					double f = (double)blockPos.getZ();
+					List<Entity> list = world.getEntitiesIn(null, new Box(d, e, f, d + 1.0, e + 2.0, f + 1.0));
 					if (!list.isEmpty()) {
 						return ActionResult.FAIL;
 					} else {
 						if (!world.isClient) {
 							EndCrystalEntity endCrystalEntity = new EndCrystalEntity(
-								world, (double)((float)blockPos.getX() + 0.5F), (double)(blockPos.getY() + 1), (double)((float)blockPos.getZ() + 0.5F)
+								world, (double)((float)pos.getX() + 0.5F), (double)(pos.getY() + 1), (double)((float)pos.getZ() + 0.5F)
 							);
 							endCrystalEntity.setShowBottom(false);
 							world.spawnEntity(endCrystalEntity);
@@ -59,7 +58,7 @@ public class EndCrystalItem extends Item {
 							}
 						}
 
-						itemStack.count--;
+						itemStack.decrement(1);
 						return ActionResult.SUCCESS;
 					}
 				}

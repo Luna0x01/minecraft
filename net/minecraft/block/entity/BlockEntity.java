@@ -1,7 +1,5 @@
 package net.minecraft.block.entity;
 
-import com.google.common.collect.Maps;
-import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -12,30 +10,31 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.SimpleRegistry;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class BlockEntity {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Map<String, Class<? extends BlockEntity>> stringClassMap = Maps.newHashMap();
-	private static final Map<Class<? extends BlockEntity>, String> classStringMap = Maps.newHashMap();
+	private static final SimpleRegistry<Identifier, Class<? extends BlockEntity>> BLOCK_ENTITY = new SimpleRegistry<>();
 	protected World world;
 	protected BlockPos pos = BlockPos.ORIGIN;
 	protected boolean removed;
 	private int dataValue = -1;
 	protected Block block;
 
-	private static void registerBlockEntity(Class<? extends BlockEntity> clazz, String stringId) {
-		if (stringClassMap.containsKey(stringId)) {
-			throw new IllegalArgumentException("Duplicate id: " + stringId);
-		} else {
-			stringClassMap.put(stringId, clazz);
-			classStringMap.put(clazz, stringId);
-		}
+	private static void addBlockEntity(String identifier, Class<? extends BlockEntity> entityClass) {
+		BLOCK_ENTITY.put(new Identifier(identifier), entityClass);
+	}
+
+	@Nullable
+	public static Identifier getIdentifier(Class<? extends BlockEntity> entityClass) {
+		return BLOCK_ENTITY.getIdentifier(entityClass);
 	}
 
 	public World getEntityWorld() {
@@ -59,11 +58,11 @@ public abstract class BlockEntity {
 	}
 
 	private NbtCompound method_11648(NbtCompound tag) {
-		String string = (String)classStringMap.get(this.getClass());
-		if (string == null) {
+		Identifier identifier = BLOCK_ENTITY.getIdentifier(this.getClass());
+		if (identifier == null) {
 			throw new RuntimeException(this.getClass() + " is missing a mapping! This is a bug!");
 		} else {
-			tag.putString("id", string);
+			tag.putString("id", identifier.toString());
 			tag.putInt("x", this.pos.getX());
 			tag.putInt("y", this.pos.getY());
 			tag.putInt("z", this.pos.getZ());
@@ -71,12 +70,13 @@ public abstract class BlockEntity {
 		}
 	}
 
+	@Nullable
 	public static BlockEntity create(World world, NbtCompound tag) {
 		BlockEntity blockEntity = null;
 		String string = tag.getString("id");
 
 		try {
-			Class<? extends BlockEntity> class_ = (Class<? extends BlockEntity>)stringClassMap.get(string);
+			Class<? extends BlockEntity> class_ = BLOCK_ENTITY.get(new Identifier(string));
 			if (class_ != null) {
 				blockEntity = (BlockEntity)class_.newInstance();
 			}
@@ -178,7 +178,7 @@ public abstract class BlockEntity {
 	public void populateCrashReport(CrashReportSection section) {
 		section.add("Name", new CrashCallable<String>() {
 			public String call() throws Exception {
-				return (String)BlockEntity.classStringMap.get(BlockEntity.this.getClass()) + " // " + BlockEntity.this.getClass().getCanonicalName();
+				return BlockEntity.BLOCK_ENTITY.getIdentifier(BlockEntity.this.getClass()) + " // " + BlockEntity.this.getClass().getCanonicalName();
 			}
 		});
 		if (this.world != null) {
@@ -210,12 +210,7 @@ public abstract class BlockEntity {
 	}
 
 	public void setPosition(BlockPos pos) {
-		if (pos instanceof BlockPos.Mutable || pos instanceof BlockPos.Pooled) {
-			LOGGER.warn("Tried to assign a mutable BlockPos to a block entity...", new Error(pos.getClass().toString()));
-			pos = new BlockPos(pos);
-		}
-
-		this.pos = pos;
+		this.pos = pos.toImmutable();
 	}
 
 	public boolean shouldNotCopyNbtFromItem() {
@@ -234,28 +229,29 @@ public abstract class BlockEntity {
 	}
 
 	static {
-		registerBlockEntity(FurnaceBlockEntity.class, "Furnace");
-		registerBlockEntity(ChestBlockEntity.class, "Chest");
-		registerBlockEntity(EnderChestBlockEntity.class, "EnderChest");
-		registerBlockEntity(JukeboxBlock.JukeboxBlockEntity.class, "RecordPlayer");
-		registerBlockEntity(DispenserBlockEntity.class, "Trap");
-		registerBlockEntity(DropperBlockEntity.class, "Dropper");
-		registerBlockEntity(SignBlockEntity.class, "Sign");
-		registerBlockEntity(MobSpawnerBlockEntity.class, "MobSpawner");
-		registerBlockEntity(NoteBlockBlockEntity.class, "Music");
-		registerBlockEntity(PistonBlockEntity.class, "Piston");
-		registerBlockEntity(BrewingStandBlockEntity.class, "Cauldron");
-		registerBlockEntity(EnchantingTableBlockEntity.class, "EnchantTable");
-		registerBlockEntity(EndPortalBlockEntity.class, "Airportal");
-		registerBlockEntity(BeaconBlockEntity.class, "Beacon");
-		registerBlockEntity(SkullBlockEntity.class, "Skull");
-		registerBlockEntity(DaylightDetectorBlockEntity.class, "DLDetector");
-		registerBlockEntity(HopperBlockEntity.class, "Hopper");
-		registerBlockEntity(ComparatorBlockEntity.class, "Comparator");
-		registerBlockEntity(FlowerPotBlockEntity.class, "FlowerPot");
-		registerBlockEntity(BannerBlockEntity.class, "Banner");
-		registerBlockEntity(StructureBlockEntity.class, "Structure");
-		registerBlockEntity(EndGatewayBlockEntity.class, "EndGateway");
-		registerBlockEntity(CommandBlockBlockEntity.class, "Control");
+		addBlockEntity("furnace", FurnaceBlockEntity.class);
+		addBlockEntity("chest", ChestBlockEntity.class);
+		addBlockEntity("ender_chest", EnderChestBlockEntity.class);
+		addBlockEntity("jukebox", JukeboxBlock.JukeboxBlockEntity.class);
+		addBlockEntity("dispenser", DispenserBlockEntity.class);
+		addBlockEntity("dropper", DropperBlockEntity.class);
+		addBlockEntity("sign", SignBlockEntity.class);
+		addBlockEntity("mob_spawner", MobSpawnerBlockEntity.class);
+		addBlockEntity("noteblock", NoteBlockBlockEntity.class);
+		addBlockEntity("piston", PistonBlockEntity.class);
+		addBlockEntity("brewing_stand", BrewingStandBlockEntity.class);
+		addBlockEntity("enchanting_table", EnchantingTableBlockEntity.class);
+		addBlockEntity("end_portal", EndPortalBlockEntity.class);
+		addBlockEntity("beacon", BeaconBlockEntity.class);
+		addBlockEntity("skull", SkullBlockEntity.class);
+		addBlockEntity("daylight_detector", DaylightDetectorBlockEntity.class);
+		addBlockEntity("hopper", HopperBlockEntity.class);
+		addBlockEntity("comparator", ComparatorBlockEntity.class);
+		addBlockEntity("flower_pot", FlowerPotBlockEntity.class);
+		addBlockEntity("banner", BannerBlockEntity.class);
+		addBlockEntity("structure_block", StructureBlockEntity.class);
+		addBlockEntity("end_gateway", EndGatewayBlockEntity.class);
+		addBlockEntity("command_block", CommandBlockBlockEntity.class);
+		addBlockEntity("shulker_box", ShulkerBoxBlockEntity.class);
 	}
 }

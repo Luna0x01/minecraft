@@ -48,11 +48,11 @@ public enum HorseArmorType {
 		return values()[i];
 	}
 
-	public static HorseArmorType method_13137(@Nullable ItemStack itemStack) {
-		return itemStack == null ? NONE : method_13136(itemStack.getItem());
+	public static HorseArmorType method_13137(ItemStack itemStack) {
+		return itemStack.isEmpty() ? NONE : method_13136(itemStack.getItem());
 	}
 
-	public static HorseArmorType method_13136(@Nullable Item item) {
+	public static HorseArmorType method_13136(Item item) {
 		if (item == Items.IRON_HORSE_ARMOR) {
 			return IRON;
 		} else if (item == Items.GOLDEN_HORSE_ARMOR) {
@@ -62,7 +62,7 @@ public enum HorseArmorType {
 		}
 	}
 
-	public static boolean method_13139(@Nullable Item item) {
+	public static boolean method_13139(Item item) {
 		return method_13136(item) != NONE;
 	}
 }

@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import javax.annotation.Nullable;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
@@ -18,7 +17,7 @@ public class DropperBlock extends DispenserBlock {
 	private final DispenserBehavior BEHAVIOR = new ItemDispenserBehavior();
 
 	@Override
-	protected DispenserBehavior getBehaviorForItem(@Nullable ItemStack stack) {
+	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
 		return this.BEHAVIOR;
 	}
 
@@ -37,23 +36,18 @@ public class DropperBlock extends DispenserBlock {
 				world.syncGlobalEvent(1001, pos, 0);
 			} else {
 				ItemStack itemStack = dispenserBlockEntity.getInvStack(i);
-				if (itemStack != null) {
+				if (!itemStack.isEmpty()) {
 					Direction direction = world.getBlockState(pos).get(FACING);
 					BlockPos blockPos = pos.offset(direction);
 					Inventory inventory = HopperBlockEntity.getInventoryAt(world, (double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
 					ItemStack itemStack2;
 					if (inventory == null) {
 						itemStack2 = this.BEHAVIOR.dispense(blockPointerImpl, itemStack);
-						if (itemStack2 != null && itemStack2.count <= 0) {
-							itemStack2 = null;
-						}
 					} else {
-						itemStack2 = HopperBlockEntity.transfer(inventory, itemStack.copy().split(1), direction.getOpposite());
-						if (itemStack2 == null) {
+						itemStack2 = HopperBlockEntity.method_13727(dispenserBlockEntity, inventory, itemStack.copy().split(1), direction.getOpposite());
+						if (itemStack2.isEmpty()) {
 							itemStack2 = itemStack.copy();
-							if (--itemStack2.count <= 0) {
-								itemStack2 = null;
-							}
+							itemStack2.decrement(1);
 						} else {
 							itemStack2 = itemStack.copy();
 						}

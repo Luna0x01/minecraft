@@ -67,18 +67,19 @@ public class WrittenBookItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		if (!world.isClient) {
-			this.resolveContents(itemStack, playerEntity);
+			this.resolveContents(itemStack, player);
 		}
 
-		playerEntity.method_3201(itemStack, hand);
-		playerEntity.incrementStat(Stats.used(this));
+		player.method_3201(itemStack, hand);
+		player.incrementStat(Stats.used(this));
 		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 
 	private void resolveContents(ItemStack stack, PlayerEntity player) {
-		if (stack != null && stack.getNbt() != null) {
+		if (stack.getNbt() != null) {
 			NbtCompound nbtCompound = stack.getNbt();
 			if (!nbtCompound.getBoolean("resolved")) {
 				nbtCompound.putBoolean("resolved", true);
@@ -88,15 +89,15 @@ public class WrittenBookItem extends Item {
 					for (int i = 0; i < nbtList.size(); i++) {
 						String string = nbtList.getString(i);
 
-						Text text;
+						Text text2;
 						try {
-							text = Text.Serializer.lenientDeserializeText(string);
-							text = ChatSerializer.process(player, text, player);
+							text2 = Text.Serializer.lenientDeserializeText(string);
+							text2 = ChatSerializer.process(player, text2, player);
 						} catch (Exception var9) {
-							text = new LiteralText(string);
+							text2 = new LiteralText(string);
 						}
 
-						nbtList.set(i, new NbtString(Text.Serializer.serialize(text)));
+						nbtList.set(i, new NbtString(Text.Serializer.serialize(text2)));
 					}
 
 					nbtCompound.put("pages", nbtList);

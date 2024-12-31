@@ -1,6 +1,7 @@
 package net.minecraft.block.entity;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.Weighting;
 
 public class SpawnerBlockEntityBehaviorEntry extends Weighting.Weight {
@@ -9,7 +10,7 @@ public class SpawnerBlockEntityBehaviorEntry extends Weighting.Weight {
 	public SpawnerBlockEntityBehaviorEntry() {
 		super(1);
 		this.tag = new NbtCompound();
-		this.tag.putString("id", "Pig");
+		this.tag.putString("id", "minecraft:pig");
 	}
 
 	public SpawnerBlockEntityBehaviorEntry(NbtCompound nbtCompound) {
@@ -23,6 +24,12 @@ public class SpawnerBlockEntityBehaviorEntry extends Weighting.Weight {
 
 	public NbtCompound toCompoundTag() {
 		NbtCompound nbtCompound = new NbtCompound();
+		if (!this.tag.contains("id", 8)) {
+			this.tag.putString("id", "minecraft:pig");
+		} else if (!this.tag.getString("id").contains(":")) {
+			this.tag.putString("id", new Identifier(this.tag.getString("id")).toString());
+		}
+
 		nbtCompound.put("Entity", this.tag);
 		nbtCompound.putInt("Weight", this.weight);
 		return nbtCompound;

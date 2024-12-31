@@ -1,6 +1,5 @@
 package net.minecraft.inventory;
 
-import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Nameable;
@@ -8,16 +7,15 @@ import net.minecraft.text.Nameable;
 public interface Inventory extends Nameable {
 	int getInvSize();
 
-	@Nullable
+	boolean isEmpty();
+
 	ItemStack getInvStack(int slot);
 
-	@Nullable
 	ItemStack takeInvStack(int slot, int amount);
 
-	@Nullable
 	ItemStack removeInvStack(int slot);
 
-	void setInvStack(int slot, @Nullable ItemStack stack);
+	void setInvStack(int slot, ItemStack stack);
 
 	int getInvMaxStackAmount();
 

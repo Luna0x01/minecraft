@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.MovementType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -22,13 +23,13 @@ public abstract class FlyingEntity extends MobEntity {
 	public void travel(float f, float g) {
 		if (this.isTouchingWater()) {
 			this.updateVelocity(f, g, 0.02F);
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			this.velocityX *= 0.8F;
 			this.velocityY *= 0.8F;
 			this.velocityZ *= 0.8F;
 		} else if (this.isTouchingLava()) {
 			this.updateVelocity(f, g, 0.02F);
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			this.velocityX *= 0.5;
 			this.velocityY *= 0.5;
 			this.velocityZ *= 0.5;
@@ -47,7 +48,7 @@ public abstract class FlyingEntity extends MobEntity {
 					* 0.91F;
 			}
 
-			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.move(MovementType.SELF, this.velocityX, this.velocityY, this.velocityZ);
 			this.velocityX *= (double)h;
 			this.velocityY *= (double)h;
 			this.velocityZ *= (double)h;

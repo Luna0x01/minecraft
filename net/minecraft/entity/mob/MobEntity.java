@@ -53,6 +53,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.Sound;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
@@ -73,9 +74,9 @@ public abstract class MobEntity extends LivingEntity {
 	protected final GoalSelector attackGoals;
 	private LivingEntity attackTarget;
 	private final MobVisibilityCache visibilityCache;
-	private final ItemStack[] field_14560 = new ItemStack[2];
+	private final DefaultedList<ItemStack> field_15467 = DefaultedList.ofSize(2, ItemStack.EMPTY);
 	protected float[] armorDropChances = new float[2];
-	private final ItemStack[] field_14561 = new ItemStack[4];
+	private final DefaultedList<ItemStack> field_15468 = DefaultedList.ofSize(4, ItemStack.EMPTY);
 	protected float[] field_14559 = new float[4];
 	private boolean pickUpLoot;
 	private boolean persistent;
@@ -209,14 +210,14 @@ public abstract class MobEntity extends LivingEntity {
 		if (this.experiencePoints > 0) {
 			int i = this.experiencePoints;
 
-			for (int j = 0; j < this.field_14561.length; j++) {
-				if (this.field_14561[j] != null && this.field_14559[j] <= 1.0F) {
+			for (int j = 0; j < this.field_15468.size(); j++) {
+				if (!this.field_15468.get(j).isEmpty() && this.field_14559[j] <= 1.0F) {
 					i += 1 + this.random.nextInt(3);
 				}
 			}
 
-			for (int k = 0; k < this.field_14560.length; k++) {
-				if (this.field_14560[k] != null && this.armorDropChances[k] <= 1.0F) {
+			for (int k = 0; k < this.field_15467.size(); k++) {
+				if (!this.field_15467.get(k).isEmpty() && this.armorDropChances[k] <= 1.0F) {
 					i += 1 + this.random.nextInt(3);
 				}
 			}
@@ -305,12 +306,8 @@ public abstract class MobEntity extends LivingEntity {
 		}
 	}
 
-	public static void method_13496(DataFixerUpper dataFixerUpper, String string) {
-		dataFixerUpper.addSchema(LevelDataType.ENTITY, new ItemListSchema(string, "ArmorItems", "HandItems"));
-	}
-
-	public static void method_13495(DataFixerUpper dataFixerUpper) {
-		method_13496(dataFixerUpper, "Mob");
+	public static void registerDataFixes(DataFixerUpper dataFixer, Class<?> entityClass) {
+		dataFixer.addSchema(LevelDataType.ENTITY, new ItemListSchema(entityClass, "ArmorItems", "HandItems"));
 	}
 
 	@Override
@@ -320,9 +317,9 @@ public abstract class MobEntity extends LivingEntity {
 		nbt.putBoolean("PersistenceRequired", this.persistent);
 		NbtList nbtList = new NbtList();
 
-		for (ItemStack itemStack : this.field_14561) {
+		for (ItemStack itemStack : this.field_15468) {
 			NbtCompound nbtCompound = new NbtCompound();
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				itemStack.toNbt(nbtCompound);
 			}
 
@@ -332,9 +329,9 @@ public abstract class MobEntity extends LivingEntity {
 		nbt.put("ArmorItems", nbtList);
 		NbtList nbtList2 = new NbtList();
 
-		for (ItemStack itemStack2 : this.field_14560) {
+		for (ItemStack itemStack2 : this.field_15467) {
 			NbtCompound nbtCompound2 = new NbtCompound();
-			if (itemStack2 != null) {
+			if (!itemStack2.isEmpty()) {
 				itemStack2.toNbt(nbtCompound2);
 			}
 
@@ -396,16 +393,16 @@ public abstract class MobEntity extends LivingEntity {
 		if (nbt.contains("ArmorItems", 9)) {
 			NbtList nbtList = nbt.getList("ArmorItems", 10);
 
-			for (int i = 0; i < this.field_14561.length; i++) {
-				this.field_14561[i] = ItemStack.fromNbt(nbtList.getCompound(i));
+			for (int i = 0; i < this.field_15468.size(); i++) {
+				this.field_15468.set(i, new ItemStack(nbtList.getCompound(i)));
 			}
 		}
 
 		if (nbt.contains("HandItems", 9)) {
 			NbtList nbtList2 = nbt.getList("HandItems", 10);
 
-			for (int j = 0; j < this.field_14560.length; j++) {
-				this.field_14560[j] = ItemStack.fromNbt(nbtList2.getCompound(j));
+			for (int j = 0; j < this.field_15467.size(); j++) {
+				this.field_15467.set(j, new ItemStack(nbtList2.getCompound(j)));
 			}
 		}
 
@@ -489,7 +486,7 @@ public abstract class MobEntity extends LivingEntity {
 		this.world.profiler.push("looting");
 		if (!this.world.isClient && this.canPickUpLoot() && !this.dead && this.world.getGameRules().getBoolean("mobGriefing")) {
 			for (ItemEntity itemEntity : this.world.getEntitiesInBox(ItemEntity.class, this.getBoundingBox().expand(1.0, 0.0, 1.0))) {
-				if (!itemEntity.removed && itemEntity.getItemStack() != null && !itemEntity.cannotPickup()) {
+				if (!itemEntity.removed && !itemEntity.getItemStack().isEmpty() && !itemEntity.cannotPickup()) {
 					this.loot(itemEntity);
 				}
 			}
@@ -503,7 +500,7 @@ public abstract class MobEntity extends LivingEntity {
 		EquipmentSlot equipmentSlot = method_13083(itemStack);
 		boolean bl = true;
 		ItemStack itemStack2 = this.getStack(equipmentSlot);
-		if (itemStack2 != null) {
+		if (!itemStack2.isEmpty()) {
 			if (equipmentSlot.getType() == EquipmentSlot.Type.HAND) {
 				if (itemStack.getItem() instanceof SwordItem && !(itemStack2.getItem() instanceof SwordItem)) {
 					bl = true;
@@ -522,7 +519,7 @@ public abstract class MobEntity extends LivingEntity {
 				}
 			} else if (itemStack.getItem() instanceof ArmorItem && !(itemStack2.getItem() instanceof ArmorItem)) {
 				bl = true;
-			} else if (itemStack.getItem() instanceof ArmorItem && itemStack2.getItem() instanceof ArmorItem) {
+			} else if (itemStack.getItem() instanceof ArmorItem && itemStack2.getItem() instanceof ArmorItem && !EnchantmentHelper.hasBindingCurse(itemStack2)) {
 				ArmorItem armorItem = (ArmorItem)itemStack.getItem();
 				ArmorItem armorItem2 = (ArmorItem)itemStack2.getItem();
 				if (armorItem.protection == armorItem2.protection) {
@@ -548,7 +545,7 @@ public abstract class MobEntity extends LivingEntity {
 					d = 0.0;
 			}
 
-			if (itemStack2 != null && (double)(this.random.nextFloat() - 0.1F) < d) {
+			if (!itemStack2.isEmpty() && (double)(this.random.nextFloat() - 0.1F) < d) {
 				this.dropItem(itemStack2, 0.0F);
 			}
 
@@ -569,7 +566,7 @@ public abstract class MobEntity extends LivingEntity {
 			}
 
 			this.persistent = true;
-			this.sendPickup(item, 1);
+			this.sendPickup(item, itemStack.getCount());
 			item.remove();
 		}
 	}
@@ -721,37 +718,34 @@ public abstract class MobEntity extends LivingEntity {
 
 	@Override
 	public Iterable<ItemStack> getItemsHand() {
-		return Arrays.asList(this.field_14560);
+		return this.field_15467;
 	}
 
 	@Override
 	public Iterable<ItemStack> getArmorItems() {
-		return Arrays.asList(this.field_14561);
+		return this.field_15468;
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getStack(EquipmentSlot slot) {
-		ItemStack itemStack = null;
 		switch (slot.getType()) {
 			case HAND:
-				itemStack = this.field_14560[slot.method_13032()];
-				break;
+				return this.field_15467.get(slot.method_13032());
 			case ARMOR:
-				itemStack = this.field_14561[slot.method_13032()];
+				return this.field_15468.get(slot.method_13032());
+			default:
+				return ItemStack.EMPTY;
 		}
-
-		return itemStack;
 	}
 
 	@Override
-	public void equipStack(EquipmentSlot slot, @Nullable ItemStack stack) {
+	public void equipStack(EquipmentSlot slot, ItemStack stack) {
 		switch (slot.getType()) {
 			case HAND:
-				this.field_14560[slot.method_13032()] = stack;
+				this.field_15467.set(slot.method_13032(), stack);
 				break;
 			case ARMOR:
-				this.field_14561[slot.method_13032()] = stack;
+				this.field_15468.set(slot.method_13032(), stack);
 		}
 	}
 
@@ -772,19 +766,9 @@ public abstract class MobEntity extends LivingEntity {
 			}
 
 			boolean bl2 = d > 1.0;
-			if (itemStack != null && (bl || bl2) && (double)(this.random.nextFloat() - (float)i * 0.01F) < d) {
+			if (!itemStack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(itemStack) && (bl || bl2) && (double)(this.random.nextFloat() - (float)i * 0.01F) < d) {
 				if (!bl2 && itemStack.isDamageable()) {
-					int l = Math.max(itemStack.getMaxDamage() - 25, 1);
-					int m = itemStack.getMaxDamage() - this.random.nextInt(this.random.nextInt(l) + 1);
-					if (m > l) {
-						m = l;
-					}
-
-					if (m < 1) {
-						m = 1;
-					}
-
-					itemStack.setDamage(m);
+					itemStack.setDamage(itemStack.getMaxDamage() - this.random.nextInt(1 + this.random.nextInt(Math.max(itemStack.getMaxDamage() - 3, 1))));
 				}
 
 				this.dropItem(itemStack, 0.0F);
@@ -818,7 +802,7 @@ public abstract class MobEntity extends LivingEntity {
 					}
 
 					bl = false;
-					if (itemStack == null) {
+					if (itemStack.isEmpty()) {
 						Item item = method_13078(equipmentSlot, i);
 						if (item != null) {
 							this.equipStack(equipmentSlot, new ItemStack(item));
@@ -841,6 +825,7 @@ public abstract class MobEntity extends LivingEntity {
 		}
 	}
 
+	@Nullable
 	public static Item method_13078(EquipmentSlot equipmentSlot, int i) {
 		switch (equipmentSlot) {
 			case HEAD:
@@ -898,15 +883,17 @@ public abstract class MobEntity extends LivingEntity {
 
 	protected void updateEnchantments(LocalDifficulty difficulty) {
 		float f = difficulty.getClampedLocalDifficulty();
-		if (this.getMainHandStack() != null && this.random.nextFloat() < 0.25F * f) {
-			EnchantmentHelper.enchant(this.random, this.getMainHandStack(), (int)(5.0F + f * (float)this.random.nextInt(18)), false);
+		if (!this.getMainHandStack().isEmpty() && this.random.nextFloat() < 0.25F * f) {
+			this.equipStack(
+				EquipmentSlot.MAINHAND, EnchantmentHelper.enchant(this.random, this.getMainHandStack(), (int)(5.0F + f * (float)this.random.nextInt(18)), false)
+			);
 		}
 
 		for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
 			if (equipmentSlot.getType() == EquipmentSlot.Type.ARMOR) {
 				ItemStack itemStack = this.getStack(equipmentSlot);
-				if (itemStack != null && this.random.nextFloat() < 0.5F * f) {
-					EnchantmentHelper.enchant(this.random, itemStack, (int)(5.0F + f * (float)this.random.nextInt(18)), false);
+				if (!itemStack.isEmpty() && this.random.nextFloat() < 0.5F * f) {
+					this.equipStack(equipmentSlot, EnchantmentHelper.enchant(this.random, itemStack, (int)(5.0F + f * (float)this.random.nextInt(18)), false));
 				}
 			}
 		}
@@ -956,20 +943,23 @@ public abstract class MobEntity extends LivingEntity {
 	}
 
 	@Override
-	public final boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
-		if (this.isLeashed() && this.getLeashOwner() == playerEntity) {
-			this.detachLeash(true, !playerEntity.abilities.creativeMode);
-			return true;
-		} else if (itemStack != null && itemStack.getItem() == Items.LEAD && this.method_2537(playerEntity)) {
-			this.attachLeash(playerEntity, true);
-			itemStack.count--;
+	public final boolean interact(PlayerEntity player, Hand hand) {
+		if (this.isLeashed() && this.getLeashOwner() == player) {
+			this.detachLeash(true, !player.abilities.creativeMode);
 			return true;
 		} else {
-			return this.method_13079(playerEntity, hand, itemStack) ? true : super.method_6100(playerEntity, itemStack, hand);
+			ItemStack itemStack = player.getStackInHand(hand);
+			if (itemStack.getItem() == Items.LEAD && this.method_2537(player)) {
+				this.attachLeash(player, true);
+				itemStack.decrement(1);
+				return true;
+			} else {
+				return this.interactMob(player, hand) ? true : super.interact(player, hand);
+			}
 		}
 	}
 
-	protected boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
+	protected boolean interactMob(PlayerEntity playerEntity, Hand hand) {
 		return false;
 	}
 
@@ -1044,7 +1034,7 @@ public abstract class MobEntity extends LivingEntity {
 
 				for (LivingEntity livingEntity : this.world.getEntitiesInBox(LivingEntity.class, this.getBoundingBox().expand(10.0))) {
 					if (livingEntity.getUuid().equals(uUID)) {
-						this.leashOwner = livingEntity;
+						this.attachLeash(livingEntity, true);
 						break;
 					}
 				}
@@ -1055,7 +1045,7 @@ public abstract class MobEntity extends LivingEntity {
 					leashKnotEntity = LeashKnotEntity.create(this.world, blockPos);
 				}
 
-				this.leashOwner = leashKnotEntity;
+				this.attachLeash(leashKnotEntity, true);
 			} else {
 				this.detachLeash(false, true);
 			}
@@ -1065,7 +1055,7 @@ public abstract class MobEntity extends LivingEntity {
 	}
 
 	@Override
-	public boolean equip(int slot, @Nullable ItemStack item) {
+	public boolean equip(int slot, ItemStack item) {
 		EquipmentSlot equipmentSlot;
 		if (slot == 98) {
 			equipmentSlot = EquipmentSlot.MAINHAND;
@@ -1085,12 +1075,17 @@ public abstract class MobEntity extends LivingEntity {
 			equipmentSlot = EquipmentSlot.FEET;
 		}
 
-		if (item != null && !method_13080(equipmentSlot, item) && equipmentSlot != EquipmentSlot.HEAD) {
+		if (!item.isEmpty() && !method_13080(equipmentSlot, item) && equipmentSlot != EquipmentSlot.HEAD) {
 			return false;
 		} else {
 			this.equipStack(equipmentSlot, item);
 			return true;
 		}
+	}
+
+	@Override
+	public boolean method_13003() {
+		return this.canBeControlledByRider() && super.method_13003();
 	}
 
 	public static boolean method_13080(EquipmentSlot equipmentSlot, ItemStack itemStack) {

@@ -97,16 +97,16 @@ public class ChunkCache implements BlockView {
 	}
 
 	private int getLightAtPos(LightType type, BlockPos pos) {
-		if (type == LightType.SKY && this.world.dimension.hasNoSkylight()) {
+		if (type == LightType.SKY && !this.world.dimension.isOverworld()) {
 			return 0;
 		} else if (pos.getY() >= 0 && pos.getY() < 256) {
 			if (this.getBlockState(pos).useNeighbourLight()) {
 				int i = 0;
 
 				for (Direction direction : Direction.values()) {
-					int l = this.method_8586(type, pos.offset(direction));
-					if (l > i) {
-						i = l;
+					int j = this.method_8586(type, pos.offset(direction));
+					if (j > i) {
+						i = j;
 					}
 
 					if (i >= 15) {
@@ -116,9 +116,9 @@ public class ChunkCache implements BlockView {
 
 				return i;
 			} else {
-				int m = (pos.getX() >> 4) - this.minX;
-				int n = (pos.getZ() >> 4) - this.minZ;
-				return this.chunks[m][n].getLightAtPos(type, pos);
+				int k = (pos.getX() >> 4) - this.minX;
+				int l = (pos.getZ() >> 4) - this.minZ;
+				return this.chunks[k][l].getLightAtPos(type, pos);
 			}
 		} else {
 			return type.defaultValue;

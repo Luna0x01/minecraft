@@ -1,5 +1,6 @@
 package net.minecraft.entity.ai.goal;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.Tameable;
@@ -91,7 +92,7 @@ public abstract class TrackTargetGoal extends Goal {
 		this.field_14597 = null;
 	}
 
-	public static boolean method_11025(MobEntity mob, LivingEntity target, boolean bl, boolean bl2) {
+	public static boolean method_11025(MobEntity mob, @Nullable LivingEntity target, boolean bl, boolean bl2) {
 		if (target == null) {
 			return false;
 		} else if (target == mob) {
@@ -119,7 +120,7 @@ public abstract class TrackTargetGoal extends Goal {
 		}
 	}
 
-	protected boolean canTrack(LivingEntity target, boolean bl) {
+	protected boolean canTrack(@Nullable LivingEntity target, boolean bl) {
 		if (!method_11025(this.mob, target, bl, this.checkVisibility)) {
 			return false;
 		} else if (!this.mob.isInWalkTargetRange(new BlockPos(target))) {
@@ -158,5 +159,10 @@ public abstract class TrackTargetGoal extends Goal {
 				return (double)(i * i + j * j) <= 2.25;
 			}
 		}
+	}
+
+	public TrackTargetGoal method_13955(int i) {
+		this.field_14598 = i;
+		return this;
 	}
 }

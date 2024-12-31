@@ -1,8 +1,6 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -12,6 +10,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 
 public class StoneBlock extends Block {
 	public static final EnumProperty<StoneBlock.StoneType> VARIANT = EnumProperty.of("variant", StoneBlock.StoneType.class);
@@ -32,7 +31,6 @@ public class StoneBlock extends Block {
 		return ((StoneBlock.StoneType)state.get(VARIANT)).getColor();
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return state.get(VARIANT) == StoneBlock.StoneType.STONE ? Item.fromBlock(Blocks.COBBLESTONE) : Item.fromBlock(Blocks.STONE);
@@ -44,9 +42,9 @@ public class StoneBlock extends Block {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (StoneBlock.StoneType stoneType : StoneBlock.StoneType.values()) {
-			stacks.add(new ItemStack(item, 1, stoneType.byId()));
+			defaultedList.add(new ItemStack(item, 1, stoneType.byId()));
 		}
 	}
 
@@ -66,29 +64,31 @@ public class StoneBlock extends Block {
 	}
 
 	public static enum StoneType implements StringIdentifiable {
-		STONE(0, MaterialColor.STONE, "stone"),
-		GRANITE(1, MaterialColor.DIRT, "granite"),
-		POLISHED_GRANITE(2, MaterialColor.DIRT, "smooth_granite", "graniteSmooth"),
-		DIORITE(3, MaterialColor.QUARTZ, "diorite"),
-		POLISHED_DIORITE(4, MaterialColor.QUARTZ, "smooth_diorite", "dioriteSmooth"),
-		ANDESITE(5, MaterialColor.STONE, "andesite"),
-		POLISHED_ANDESITE(6, MaterialColor.STONE, "smooth_andesite", "andesiteSmooth");
+		STONE(0, MaterialColor.STONE, "stone", true),
+		GRANITE(1, MaterialColor.DIRT, "granite", true),
+		POLISHED_GRANITE(2, MaterialColor.DIRT, "smooth_granite", "graniteSmooth", false),
+		DIORITE(3, MaterialColor.QUARTZ, "diorite", true),
+		POLISHED_DIORITE(4, MaterialColor.QUARTZ, "smooth_diorite", "dioriteSmooth", false),
+		ANDESITE(5, MaterialColor.STONE, "andesite", true),
+		POLISHED_ANDESITE(6, MaterialColor.STONE, "smooth_andesite", "andesiteSmooth", false);
 
 		private static final StoneBlock.StoneType[] TYPES = new StoneBlock.StoneType[values().length];
 		private final int id;
 		private final String name;
 		private final String translationKey;
 		private final MaterialColor color;
+		private final boolean field_15146;
 
-		private StoneType(int j, MaterialColor materialColor, String string2) {
-			this(j, materialColor, string2, string2);
+		private StoneType(int j, MaterialColor materialColor, String string2, boolean bl) {
+			this(j, materialColor, string2, string2, bl);
 		}
 
-		private StoneType(int j, MaterialColor materialColor, String string2, String string3) {
+		private StoneType(int j, MaterialColor materialColor, String string2, String string3, boolean bl) {
 			this.id = j;
 			this.name = string2;
 			this.translationKey = string3;
 			this.color = materialColor;
+			this.field_15146 = bl;
 		}
 
 		public int byId() {
@@ -118,6 +118,10 @@ public class StoneBlock extends Block {
 
 		public String getTranslationKey() {
 			return this.translationKey;
+		}
+
+		public boolean method_13719() {
+			return this.field_15146;
 		}
 
 		static {

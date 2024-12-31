@@ -12,8 +12,8 @@ public class ChatMessageC2SPacket implements Packet<ServerPlayPacketListener> {
 	}
 
 	public ChatMessageC2SPacket(String string) {
-		if (string.length() > 100) {
-			string = string.substring(0, 100);
+		if (string.length() > 256) {
+			string = string.substring(0, 256);
 		}
 
 		this.chatMessage = string;
@@ -21,7 +21,7 @@ public class ChatMessageC2SPacket implements Packet<ServerPlayPacketListener> {
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.chatMessage = buf.readString(100);
+		this.chatMessage = buf.readString(256);
 	}
 
 	@Override

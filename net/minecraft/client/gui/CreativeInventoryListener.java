@@ -1,11 +1,11 @@
 package net.minecraft.client.gui;
 
-import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerListener;
+import net.minecraft.util.collection.DefaultedList;
 
 public class CreativeInventoryListener implements ScreenHandlerListener {
 	private final MinecraftClient client;
@@ -15,7 +15,7 @@ public class CreativeInventoryListener implements ScreenHandlerListener {
 	}
 
 	@Override
-	public void updateScreenHandler(ScreenHandler handler, List<ItemStack> list) {
+	public void method_13643(ScreenHandler screenHandler, DefaultedList<ItemStack> defaultedList) {
 	}
 
 	@Override

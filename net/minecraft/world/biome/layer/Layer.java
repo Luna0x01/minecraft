@@ -11,7 +11,7 @@ public abstract class Layer {
 	private long field_174;
 	protected long field_175;
 
-	public static Layer[] init(long seed, LevelGeneratorType type, String string) {
+	public static Layer[] method_146(long l, LevelGeneratorType levelGeneratorType, CustomizedWorldProperties customizedWorldProperties) {
 		Layer layer = new class_74(1L);
 		layer = new class_71(2000L, layer);
 		layer = new class_67(1L, layer);
@@ -33,28 +33,27 @@ public abstract class Layer {
 		layer = class_84.method_148(1000L, layer, 0);
 		int i = 4;
 		int j = i;
-		if (type == LevelGeneratorType.CUSTOMIZED && !string.isEmpty()) {
-			CustomizedWorldProperties customizedWorldProperties = CustomizedWorldProperties.Builder.fromJson(string).build();
+		if (customizedWorldProperties != null) {
 			i = customizedWorldProperties.biomeSize;
 			j = customizedWorldProperties.riverSize;
 		}
 
-		if (type == LevelGeneratorType.LARGE_BIOMES) {
+		if (levelGeneratorType == LevelGeneratorType.LARGE_BIOMES) {
 			i = 6;
 		}
 
 		Layer layer2 = class_84.method_148(1000L, layer, 0);
-		Layer var31 = new class_77(100L, layer2);
-		Layer layer3 = new SetBaseBiomesLayer(200L, layer, type, string);
-		Layer var36 = class_84.method_148(1000L, layer3, 2);
-		Layer var37 = new XBiomeLayer(1000L, var36);
-		Layer layer4 = class_84.method_148(1000L, var31, 2);
-		Layer var38 = new AddHillsLayer(1000L, var37, layer4);
-		layer2 = class_84.method_148(1000L, var31, 2);
+		Layer var30 = new class_77(100L, layer2);
+		Layer layer3 = new SetBaseBiomesLayer(200L, layer, levelGeneratorType, customizedWorldProperties);
+		Layer var35 = class_84.method_148(1000L, layer3, 2);
+		Layer var36 = new XBiomeLayer(1000L, var35);
+		Layer layer4 = class_84.method_148(1000L, var30, 2);
+		Layer var37 = new AddHillsLayer(1000L, var36, layer4);
+		layer2 = class_84.method_148(1000L, var30, 2);
 		layer2 = class_84.method_148(1000L, layer2, j);
-		Layer var34 = new AddRiverLayer(1L, layer2);
-		Layer var35 = new class_81(1000L, var34);
-		layer3 = new class_82(1001L, var38);
+		Layer var33 = new AddRiverLayer(1L, layer2);
+		Layer var34 = new class_81(1000L, var33);
+		layer3 = new class_82(1001L, var37);
 
 		for (int k = 0; k < i; k++) {
 			layer3 = new class_84((long)(1000 + k), layer3);
@@ -67,12 +66,12 @@ public abstract class Layer {
 			}
 		}
 
-		Layer var40 = new class_81(1000L, layer3);
-		Layer var41 = new class_79(100L, var40, var35);
-		Layer layer6 = new class_83(10L, var41);
-		var41.method_144(seed);
-		layer6.method_144(seed);
-		return new Layer[]{var41, layer6, var41};
+		Layer var39 = new class_81(1000L, layer3);
+		Layer var40 = new class_79(100L, var39, var34);
+		Layer layer6 = new class_83(10L, var40);
+		var40.method_144(l);
+		layer6.method_144(l);
+		return new Layer[]{var40, layer6, var40};
 	}
 
 	public Layer(long l) {

@@ -18,26 +18,26 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 	}
 
 	@Nullable
-	public TradeOffer getValidRecipe(ItemStack firstBuyItem, @Nullable ItemStack secondBuyItem, int index) {
+	public TradeOffer getValidRecipe(ItemStack firstBuyItem, ItemStack secondBuyItem, int index) {
 		if (index > 0 && index < this.size()) {
 			TradeOffer tradeOffer = (TradeOffer)this.get(index);
 			return !this.method_8454(firstBuyItem, tradeOffer.getFirstStack())
-					|| (secondBuyItem != null || tradeOffer.hasSecondStack())
+					|| (!secondBuyItem.isEmpty() || tradeOffer.hasSecondStack())
 						&& (!tradeOffer.hasSecondStack() || !this.method_8454(secondBuyItem, tradeOffer.getSecondStack()))
-					|| firstBuyItem.count < tradeOffer.getFirstStack().count
-					|| tradeOffer.hasSecondStack() && secondBuyItem.count < tradeOffer.getSecondStack().count
+					|| firstBuyItem.getCount() < tradeOffer.getFirstStack().getCount()
+					|| tradeOffer.hasSecondStack() && secondBuyItem.getCount() < tradeOffer.getSecondStack().getCount()
 				? null
 				: tradeOffer;
 		} else {
 			for (int i = 0; i < this.size(); i++) {
 				TradeOffer tradeOffer2 = (TradeOffer)this.get(i);
 				if (this.method_8454(firstBuyItem, tradeOffer2.getFirstStack())
-					&& firstBuyItem.count >= tradeOffer2.getFirstStack().count
+					&& firstBuyItem.getCount() >= tradeOffer2.getFirstStack().getCount()
 					&& (
-						!tradeOffer2.hasSecondStack() && secondBuyItem == null
+						!tradeOffer2.hasSecondStack() && secondBuyItem.isEmpty()
 							|| tradeOffer2.hasSecondStack()
 								&& this.method_8454(secondBuyItem, tradeOffer2.getSecondStack())
-								&& secondBuyItem.count >= tradeOffer2.getSecondStack().count
+								&& secondBuyItem.getCount() >= tradeOffer2.getSecondStack().getCount()
 					)) {
 					return tradeOffer2;
 				}
@@ -60,8 +60,8 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 			buffer.writeItemStack(tradeOffer.getFirstStack());
 			buffer.writeItemStack(tradeOffer.getResult());
 			ItemStack itemStack = tradeOffer.getSecondStack();
-			buffer.writeBoolean(itemStack != null);
-			if (itemStack != null) {
+			buffer.writeBoolean(!itemStack.isEmpty());
+			if (!itemStack.isEmpty()) {
 				buffer.writeItemStack(itemStack);
 			}
 
@@ -78,7 +78,7 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 		for (int j = 0; j < i; j++) {
 			ItemStack itemStack = byteBuf.readItemStack();
 			ItemStack itemStack2 = byteBuf.readItemStack();
-			ItemStack itemStack3 = null;
+			ItemStack itemStack3 = ItemStack.EMPTY;
 			if (byteBuf.readBoolean()) {
 				itemStack3 = byteBuf.readItemStack();
 			}

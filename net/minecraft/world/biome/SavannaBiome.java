@@ -2,6 +2,8 @@ package net.minecraft.world.biome;
 
 import java.util.Random;
 import net.minecraft.block.DoublePlantBlock;
+import net.minecraft.entity.DonkeyEntity;
+import net.minecraft.entity.LlamaEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -14,6 +16,11 @@ public class SavannaBiome extends Biome {
 	protected SavannaBiome(Biome.Settings settings) {
 		super(settings);
 		this.passiveEntries.add(new Biome.SpawnEntry(HorseBaseEntity.class, 1, 2, 6));
+		this.passiveEntries.add(new Biome.SpawnEntry(DonkeyEntity.class, 1, 1, 1));
+		if (this.getDepth() > 1.1F) {
+			this.passiveEntries.add(new Biome.SpawnEntry(LlamaEntity.class, 8, 4, 4));
+		}
+
 		this.biomeDecorator.treesPerChunk = 1;
 		this.biomeDecorator.flowersPerChunk = 4;
 		this.biomeDecorator.grassPerChunk = 20;

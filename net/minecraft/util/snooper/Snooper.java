@@ -71,7 +71,7 @@ public class Snooper {
 		this.addSystemInfo("os_version", System.getProperty("os.version"));
 		this.addSystemInfo("os_architecture", System.getProperty("os.arch"));
 		this.addSystemInfo("java_version", System.getProperty("java.version"));
-		this.addGameInfo("version", "1.10.2");
+		this.addGameInfo("version", "1.11.2");
 		this.snooped.addSnooper(this);
 	}
 

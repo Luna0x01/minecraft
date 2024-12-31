@@ -22,15 +22,15 @@ public class LilyPadItem extends GrassBlockItem {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
-		BlockHitResult blockHitResult = this.onHit(world, playerEntity, true);
+	public TypedActionResult<ItemStack> method_13649(World world, PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		BlockHitResult blockHitResult = this.onHit(world, player, true);
 		if (blockHitResult == null) {
 			return new TypedActionResult<>(ActionResult.PASS, itemStack);
 		} else {
 			if (blockHitResult.type == BlockHitResult.Type.BLOCK) {
 				BlockPos blockPos = blockHitResult.getBlockPos();
-				if (!world.canPlayerModifyAt(playerEntity, blockPos)
-					|| !playerEntity.canModify(blockPos.offset(blockHitResult.direction), blockHitResult.direction, itemStack)) {
+				if (!world.canPlayerModifyAt(player, blockPos) || !player.canModify(blockPos.offset(blockHitResult.direction), blockHitResult.direction, itemStack)) {
 					return new TypedActionResult<>(ActionResult.FAIL, itemStack);
 				}
 
@@ -38,12 +38,12 @@ public class LilyPadItem extends GrassBlockItem {
 				BlockState blockState = world.getBlockState(blockPos);
 				if (blockState.getMaterial() == Material.WATER && (Integer)blockState.get(AbstractFluidBlock.LEVEL) == 0 && world.isAir(blockPos2)) {
 					world.setBlockState(blockPos2, Blocks.LILY_PAD.getDefaultState(), 11);
-					if (!playerEntity.abilities.creativeMode) {
-						itemStack.count--;
+					if (!player.abilities.creativeMode) {
+						itemStack.decrement(1);
 					}
 
-					playerEntity.incrementStat(Stats.used(this));
-					world.method_11486(playerEntity, blockPos, Sounds.BLOCK_WATERLILY_PLACE, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					player.incrementStat(Stats.used(this));
+					world.method_11486(player, blockPos, Sounds.BLOCK_WATERLILY_PLACE, SoundCategory.BLOCKS, 1.0F, 1.0F);
 					return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 				}
 			}

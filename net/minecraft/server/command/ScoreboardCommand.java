@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -31,6 +32,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.PlayerSelector;
 import net.minecraft.util.math.BlockPos;
 
 public class ScoreboardCommand extends AbstractCommand {
@@ -344,7 +346,7 @@ public class ScoreboardCommand extends AbstractCommand {
 	protected void method_5311(CommandSource commandSource, String[] strings, int i, MinecraftServer minecraftServer) throws CommandException {
 		Team team = this.method_5304(strings[i++], minecraftServer);
 		if (team != null) {
-			String string = strings[i++].toLowerCase();
+			String string = strings[i++].toLowerCase(Locale.ROOT);
 			if (!"color".equalsIgnoreCase(string)
 				&& !"friendlyfire".equalsIgnoreCase(string)
 				&& !"seeFriendlyInvisibles".equalsIgnoreCase(string)
@@ -476,7 +478,7 @@ public class ScoreboardCommand extends AbstractCommand {
 		} else {
 			while (i < strings.length) {
 				String string3 = strings[i++];
-				if (string3.startsWith("@")) {
+				if (PlayerSelector.method_4091(string3)) {
 					for (Entity entity : method_12704(minecraftServer, commandSource, string3)) {
 						String string4 = method_12706(minecraftServer, commandSource, entity.getEntityName());
 						if (scoreboard.addPlayerToTeam(string4, string)) {
@@ -520,7 +522,7 @@ public class ScoreboardCommand extends AbstractCommand {
 		} else {
 			while (i < strings.length) {
 				String string2 = strings[i++];
-				if (string2.startsWith("@")) {
+				if (PlayerSelector.method_4091(string2)) {
 					for (Entity entity : method_12704(minecraftServer, commandSource, string2)) {
 						String string3 = method_12706(minecraftServer, commandSource, entity.getEntityName());
 						if (scoreboard.clearPlayerTeam(string3)) {

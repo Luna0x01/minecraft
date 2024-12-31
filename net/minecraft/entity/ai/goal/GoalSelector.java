@@ -61,14 +61,14 @@ public class GoalSelector {
 				}
 			}
 		} else {
-			Iterator<GoalSelector.Entry> iterator2 = this.field_14578.iterator();
+			Iterator<GoalSelector.Entry> iterator = this.field_14578.iterator();
 
-			while (iterator2.hasNext()) {
-				GoalSelector.Entry entry2 = (GoalSelector.Entry)iterator2.next();
+			while (iterator.hasNext()) {
+				GoalSelector.Entry entry2 = (GoalSelector.Entry)iterator.next();
 				if (!this.shouldContinue(entry2)) {
 					entry2.field_14580 = false;
 					entry2.goal.stop();
-					iterator2.remove();
+					iterator.remove();
 				}
 			}
 		}

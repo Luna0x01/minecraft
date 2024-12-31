@@ -13,6 +13,8 @@ import net.minecraft.block.TorchBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.CaveSpiderEntity;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
@@ -93,12 +95,12 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.hasRails = structureNbt.getBoolean("hr");
-			this.hasCobwebs = structureNbt.getBoolean("sc");
-			this.hasSpawner = structureNbt.getBoolean("hps");
-			this.length = structureNbt.getInt("Num");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.hasRails = nbtCompound.getBoolean("hr");
+			this.hasCobwebs = nbtCompound.getBoolean("sc");
+			this.hasSpawner = nbtCompound.getBoolean("hps");
+			this.length = nbtCompound.getInt("Num");
 		}
 
 		public MineshaftCorridor(int i, Random random, BlockBox blockBox, Direction direction, MineshaftStructure.class_3014 arg) {
@@ -308,7 +310,7 @@ public class MineshaftPieces {
 							world.setBlockState(blockPos, Blocks.SPAWNER.getDefaultState(), 2);
 							BlockEntity blockEntity = world.getBlockEntity(blockPos);
 							if (blockEntity instanceof MobSpawnerBlockEntity) {
-								((MobSpawnerBlockEntity)blockEntity).getLogic().setEntityId("CaveSpider");
+								((MobSpawnerBlockEntity)blockEntity).getLogic().setSpawnedEntity(EntityType.getId(CaveSpiderEntity.class));
 							}
 						}
 					}
@@ -381,10 +383,10 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.twoFloors = structureNbt.getBoolean("tf");
-			this.orientation = Direction.fromHorizontal(structureNbt.getInt("D"));
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.twoFloors = nbtCompound.getBoolean("tf");
+			this.orientation = Direction.fromHorizontal(nbtCompound.getInt("D"));
 		}
 
 		public MineshaftCrossing(int i, Random random, BlockBox blockBox, @Nullable Direction direction, MineshaftStructure.class_3014 arg) {
@@ -784,9 +786,9 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			NbtList nbtList = structureNbt.getList("Entrances", 11);
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			NbtList nbtList = nbtCompound.getList("Entrances", 11);
 
 			for (int i = 0; i < nbtList.size(); i++) {
 				this.entrances.add(new BlockBox(nbtList.getIntArray(i)));
@@ -802,16 +804,6 @@ public class MineshaftPieces {
 			super(i, arg);
 			this.method_11853(direction);
 			this.boundingBox = blockBox;
-		}
-
-		@Override
-		protected void serialize(NbtCompound structureNbt) {
-			super.serialize(structureNbt);
-		}
-
-		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
 		}
 
 		public static BlockBox getBoundingBox(List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation) {
@@ -896,8 +888,8 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			this.field_14868 = MineshaftStructure.class_3014.method_13368(structureNbt.getInt("MST"));
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			this.field_14868 = MineshaftStructure.class_3014.method_13368(nbtCompound.getInt("MST"));
 		}
 
 		protected BlockState method_13374() {

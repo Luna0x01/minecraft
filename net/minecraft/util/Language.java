@@ -20,7 +20,7 @@ public class Language {
 
 	public Language() {
 		try {
-			InputStream inputStream = Language.class.getResourceAsStream("/assets/minecraft/lang/en_US.lang");
+			InputStream inputStream = Language.class.getResourceAsStream("/assets/minecraft/lang/en_us.lang");
 
 			for (String string : IOUtils.readLines(inputStream, Charsets.UTF_8)) {
 				if (!string.isEmpty() && string.charAt(0) != '#') {

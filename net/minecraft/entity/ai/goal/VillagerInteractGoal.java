@@ -37,26 +37,26 @@ public class VillagerInteractGoal extends StopAndLookAtEntityGoal {
 
 				for (int i = 0; i < simpleInventory.getInvSize(); i++) {
 					ItemStack itemStack = simpleInventory.getInvStack(i);
-					ItemStack itemStack2 = null;
-					if (itemStack != null) {
+					ItemStack itemStack2 = ItemStack.EMPTY;
+					if (!itemStack.isEmpty()) {
 						Item item = itemStack.getItem();
-						if ((item == Items.BREAD || item == Items.POTATO || item == Items.CARROT || item == Items.BEETROOT) && itemStack.count > 3) {
-							int j = itemStack.count / 2;
-							itemStack.count -= j;
+						if ((item == Items.BREAD || item == Items.POTATO || item == Items.CARROT || item == Items.BEETROOT) && itemStack.getCount() > 3) {
+							int j = itemStack.getCount() / 2;
+							itemStack.decrement(j);
 							itemStack2 = new ItemStack(item, j, itemStack.getData());
-						} else if (item == Items.WHEAT && itemStack.count > 5) {
-							int k = itemStack.count / 2 / 3 * 3;
+						} else if (item == Items.WHEAT && itemStack.getCount() > 5) {
+							int k = itemStack.getCount() / 2 / 3 * 3;
 							int l = k / 3;
-							itemStack.count -= k;
+							itemStack.decrement(k);
 							itemStack2 = new ItemStack(Items.BREAD, l, 0);
 						}
 
-						if (itemStack.count <= 0) {
-							simpleInventory.setInvStack(i, null);
+						if (itemStack.isEmpty()) {
+							simpleInventory.setInvStack(i, ItemStack.EMPTY);
 						}
 					}
 
-					if (itemStack2 != null) {
+					if (!itemStack2.isEmpty()) {
 						double d = this.villager.y - 0.3F + (double)this.villager.getEyeHeight();
 						ItemEntity itemEntity = new ItemEntity(this.villager.world, this.villager.x, d, this.villager.z, itemStack2);
 						float f = 0.3F;

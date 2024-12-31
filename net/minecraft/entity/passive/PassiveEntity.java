@@ -28,13 +28,15 @@ public abstract class PassiveEntity extends PathAwareEntity {
 		super(world);
 	}
 
+	@Nullable
 	public abstract PassiveEntity breed(PassiveEntity entity);
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
-		if (itemStack != null && itemStack.getItem() == Items.SPAWN_EGG) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
+		if (itemStack.getItem() == Items.SPAWN_EGG) {
 			if (!this.world.isClient) {
-				Class<? extends Entity> class_ = EntityType.getEntityById(EntityType.getIdByName(SpawnEggItem.method_11407(itemStack)));
+				Class<? extends Entity> class_ = EntityType.REGISTRY.get(SpawnEggItem.getEntityIdentifierFromStack(itemStack));
 				if (class_ != null && this.getClass() == class_) {
 					PassiveEntity passiveEntity = this.breed(this);
 					if (passiveEntity != null) {
@@ -46,7 +48,7 @@ public abstract class PassiveEntity extends PathAwareEntity {
 						}
 
 						if (!playerEntity.abilities.creativeMode) {
-							itemStack.count--;
+							itemStack.decrement(1);
 						}
 					}
 				}
@@ -55,6 +57,15 @@ public abstract class PassiveEntity extends PathAwareEntity {
 			return true;
 		} else {
 			return false;
+		}
+	}
+
+	protected boolean method_13929(ItemStack itemStack, Class<? extends Entity> class_) {
+		if (itemStack.getItem() != Items.SPAWN_EGG) {
+			return false;
+		} else {
+			Class<? extends Entity> class2 = EntityType.REGISTRY.get(SpawnEggItem.getEntityIdentifierFromStack(itemStack));
+			return class2 != null && class_ == class2;
 		}
 	}
 

@@ -48,13 +48,13 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 
 	private int method_10222(ItemStack itemStack) {
 		int i = 1;
-		if (itemStack.count > 48) {
+		if (itemStack.getCount() > 48) {
 			i = 5;
-		} else if (itemStack.count > 32) {
+		} else if (itemStack.getCount() > 32) {
 			i = 4;
-		} else if (itemStack.count > 16) {
+		} else if (itemStack.getCount() > 16) {
 			i = 3;
-		} else if (itemStack.count > 1) {
+		} else if (itemStack.getCount() > 1) {
 			i = 2;
 		}
 
@@ -63,13 +63,7 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 
 	public void render(ItemEntity itemEntity, double d, double e, double f, float g, float h) {
 		ItemStack itemStack = itemEntity.getItemStack();
-		int i;
-		if (itemStack != null && itemStack.getItem() != null) {
-			i = Item.getRawId(itemStack.getItem()) + itemStack.getData();
-		} else {
-			i = 187;
-		}
-
+		int i = itemStack.isEmpty() ? 187 : Item.getRawId(itemStack.getItem()) + itemStack.getData();
 		this.random.setSeed((long)i);
 		boolean bl = false;
 		if (this.bindTexture(itemEntity)) {
@@ -86,16 +80,16 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 		);
 		GlStateManager.pushMatrix();
 		BakedModel bakedModel = this.itemRenderer.method_12457(itemStack, itemEntity.world, null);
-		int k = this.method_10221(itemEntity, d, e, f, h, bakedModel);
-		float l = bakedModel.getTransformation().ground.scale.x;
-		float m = bakedModel.getTransformation().ground.scale.y;
-		float n = bakedModel.getTransformation().ground.scale.z;
+		int j = this.method_10221(itemEntity, d, e, f, h, bakedModel);
+		float k = bakedModel.getTransformation().ground.scale.x;
+		float l = bakedModel.getTransformation().ground.scale.y;
+		float m = bakedModel.getTransformation().ground.scale.z;
 		boolean bl2 = bakedModel.hasDepth();
 		if (!bl2) {
-			float o = -0.0F * (float)(k - 1) * 0.5F * l;
-			float p = -0.0F * (float)(k - 1) * 0.5F * m;
-			float q = -0.09375F * (float)(k - 1) * 0.5F * n;
-			GlStateManager.translate(o, p, q);
+			float n = -0.0F * (float)(j - 1) * 0.5F * k;
+			float o = -0.0F * (float)(j - 1) * 0.5F * l;
+			float p = -0.09375F * (float)(j - 1) * 0.5F * m;
+			GlStateManager.translate(n, o, p);
 		}
 
 		if (this.field_13631) {
@@ -103,14 +97,14 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 			GlStateManager.method_12309(this.method_12454(itemEntity));
 		}
 
-		for (int r = 0; r < k; r++) {
+		for (int q = 0; q < j; q++) {
 			if (bl2) {
 				GlStateManager.pushMatrix();
-				if (r > 0) {
+				if (q > 0) {
+					float r = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
 					float s = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
 					float t = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					float u = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					GlStateManager.translate(s, t, u);
+					GlStateManager.translate(r, s, t);
 				}
 
 				bakedModel.getTransformation().apply(ModelTransformation.Mode.GROUND);
@@ -118,16 +112,16 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 				GlStateManager.popMatrix();
 			} else {
 				GlStateManager.pushMatrix();
-				if (r > 0) {
+				if (q > 0) {
+					float u = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
 					float v = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
-					float w = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
-					GlStateManager.translate(v, w, 0.0F);
+					GlStateManager.translate(u, v, 0.0F);
 				}
 
 				bakedModel.getTransformation().apply(ModelTransformation.Mode.GROUND);
 				this.itemRenderer.renderItem(itemStack, bakedModel);
 				GlStateManager.popMatrix();
-				GlStateManager.translate(0.0F * l, 0.0F * m, 0.09375F * n);
+				GlStateManager.translate(0.0F * k, 0.0F * l, 0.09375F * m);
 			}
 		}
 

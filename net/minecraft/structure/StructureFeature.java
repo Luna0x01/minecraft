@@ -2,8 +2,9 @@ package net.minecraft.structure;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import java.util.List;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.crash.CrashCallable;
@@ -68,8 +69,10 @@ public abstract class StructureFeature extends Carver {
 		int i = (chunkPos.x << 4) + 8;
 		int j = (chunkPos.z << 4) + 8;
 		boolean bl = false;
+		ObjectIterator var7 = this.field_13012.values().iterator();
 
-		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
+		while (var7.hasNext()) {
+			GeneratorConfig generatorConfig = (GeneratorConfig)var7.next();
 			if (generatorConfig.isValid() && generatorConfig.method_9277(chunkPos) && generatorConfig.getBoundingBox().intersectsXZ(i, j, i + 15, j + 15)) {
 				generatorConfig.generateStructure(world, random, new BlockBox(i, j, i + 15, j + 15));
 				generatorConfig.method_9278(chunkPos);
@@ -86,8 +89,12 @@ public abstract class StructureFeature extends Carver {
 		return this.getGeneratorConfigAtPos(pos) != null;
 	}
 
+	@Nullable
 	protected GeneratorConfig getGeneratorConfigAtPos(BlockPos pos) {
-		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
+		ObjectIterator var2 = this.field_13012.values().iterator();
+
+		while (var2.hasNext()) {
+			GeneratorConfig generatorConfig = (GeneratorConfig)var2.next();
 			if (generatorConfig.isValid() && generatorConfig.getBoundingBox().contains(pos)) {
 				for (StructurePiece structurePiece : generatorConfig.method_11855()) {
 					if (structurePiece.getBoundingBox().contains(pos)) {
@@ -102,8 +109,10 @@ public abstract class StructureFeature extends Carver {
 
 	public boolean method_9267(World world, BlockPos pos) {
 		this.method_5515(world);
+		ObjectIterator var3 = this.field_13012.values().iterator();
 
-		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
+		while (var3.hasNext()) {
+			GeneratorConfig generatorConfig = (GeneratorConfig)var3.next();
 			if (generatorConfig.isValid() && generatorConfig.getBoundingBox().contains(pos)) {
 				return true;
 			}
@@ -112,56 +121,8 @@ public abstract class StructureFeature extends Carver {
 		return false;
 	}
 
-	public BlockPos method_9269(World world, BlockPos pos) {
-		this.world = world;
-		this.method_5515(world);
-		this.random.setSeed(world.getSeed());
-		long l = this.random.nextLong();
-		long m = this.random.nextLong();
-		long n = (long)(pos.getX() >> 4) * l;
-		long o = (long)(pos.getZ() >> 4) * m;
-		this.random.setSeed(n ^ o ^ world.getSeed());
-		this.carve(world, pos.getX() >> 4, pos.getZ() >> 4, 0, 0, null);
-		double d = Double.MAX_VALUE;
-		BlockPos blockPos = null;
-
-		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
-			if (generatorConfig.isValid()) {
-				StructurePiece structurePiece = (StructurePiece)generatorConfig.method_11855().get(0);
-				BlockPos blockPos2 = structurePiece.getCenterBlockPos();
-				double e = blockPos2.getSquaredDistance(pos);
-				if (e < d) {
-					d = e;
-					blockPos = blockPos2;
-				}
-			}
-		}
-
-		if (blockPos != null) {
-			return blockPos;
-		} else {
-			List<BlockPos> list = this.method_50();
-			if (list != null) {
-				BlockPos blockPos3 = null;
-
-				for (BlockPos blockPos4 : list) {
-					double f = blockPos4.getSquaredDistance(pos);
-					if (f < d) {
-						d = f;
-						blockPos3 = blockPos4;
-					}
-				}
-
-				return blockPos3;
-			} else {
-				return null;
-			}
-		}
-	}
-
-	protected List<BlockPos> method_50() {
-		return null;
-	}
+	@Nullable
+	public abstract BlockPos method_9269(World world, BlockPos blockPos, boolean bl);
 
 	protected void method_5515(World world) {
 		if (this.field_6237 == null) {
@@ -198,4 +159,60 @@ public abstract class StructureFeature extends Carver {
 	protected abstract boolean shouldStartAt(int chunkX, int chunkZ);
 
 	protected abstract GeneratorConfig getGeneratorConfig(int chunkX, int chunkZ);
+
+	protected static BlockPos method_13774(World world, StructureFeature structureFeature, BlockPos blockPos, int i, int j, int k, boolean bl, int l, boolean bl2) {
+		int m = blockPos.getX() >> 4;
+		int n = blockPos.getZ() >> 4;
+		int o = 0;
+
+		for (Random random = new Random(); o <= l; o++) {
+			for (int p = -o; p <= o; p++) {
+				boolean bl3 = p == -o || p == o;
+
+				for (int q = -o; q <= o; q++) {
+					boolean bl4 = q == -o || q == o;
+					if (bl3 || bl4) {
+						int r = m + i * p;
+						int s = n + i * q;
+						if (r < 0) {
+							r -= i - 1;
+						}
+
+						if (s < 0) {
+							s -= i - 1;
+						}
+
+						int t = r / i;
+						int u = s / i;
+						Random random2 = world.getStructureRandom(t, u, k);
+						t *= i;
+						u *= i;
+						if (bl) {
+							t += (random2.nextInt(i - j) + random2.nextInt(i - j)) / 2;
+							u += (random2.nextInt(i - j) + random2.nextInt(i - j)) / 2;
+						} else {
+							t += random2.nextInt(i - j);
+							u += random2.nextInt(i - j);
+						}
+
+						Carver.method_13769(world.getSeed(), random, t, u);
+						random.nextInt();
+						if (structureFeature.shouldStartAt(t, u)) {
+							if (!bl2 || !world.method_13690(t, u)) {
+								return new BlockPos((t << 4) + 8, 64, (u << 4) + 8);
+							}
+						} else if (o == 0) {
+							break;
+						}
+					}
+				}
+
+				if (o == 0) {
+					break;
+				}
+			}
+		}
+
+		return null;
+	}
 }

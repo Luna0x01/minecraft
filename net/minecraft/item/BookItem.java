@@ -3,7 +3,7 @@ package net.minecraft.item;
 public class BookItem extends Item {
 	@Override
 	public boolean isEnchantable(ItemStack stack) {
-		return stack.count == 1;
+		return stack.getCount() == 1;
 	}
 
 	@Override

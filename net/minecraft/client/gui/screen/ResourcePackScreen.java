@@ -110,7 +110,7 @@ public class ResourcePackScreen extends Screen {
 
 					for (ResourcePackLoader.Entry entry : list) {
 						this.client.options.resourcePacks.add(entry.getName());
-						if (entry.getFormat() != 2) {
+						if (entry.getFormat() != 3) {
 							this.client.options.incompatibleResourcePacks.add(entry.getName());
 						}
 					}

@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.RenderLayer;
@@ -154,7 +153,6 @@ public abstract class LeavesBlock extends Block {
 		return rand.nextInt(20) == 0 ? 1 : 0;
 	}
 
-	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.SAPLING);
@@ -210,7 +208,7 @@ public abstract class LeavesBlock extends Block {
 	}
 
 	@Override
-	public boolean isLeafBlock() {
+	public boolean method_13703(BlockState state) {
 		return false;
 	}
 

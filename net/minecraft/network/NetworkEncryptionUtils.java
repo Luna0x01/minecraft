@@ -63,8 +63,8 @@ public class NetworkEncryptionUtils {
 		try {
 			MessageDigest messageDigest = MessageDigest.getInstance(algorithm);
 
-			for (byte[] cs : data) {
-				messageDigest.update(cs);
+			for (byte[] bs : data) {
+				messageDigest.update(bs);
 			}
 
 			return messageDigest.digest();

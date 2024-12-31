@@ -1,6 +1,6 @@
 package net.minecraft.client.render.entity;
 
-import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.ChickenEntityModel;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -8,8 +8,8 @@ import net.minecraft.util.math.MathHelper;
 public class ChickenEntityRenderer extends MobEntityRenderer<ChickenEntity> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/chicken.png");
 
-	public ChickenEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityModel entityModel, float f) {
-		super(entityRenderDispatcher, entityModel, f);
+	public ChickenEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
+		super(entityRenderDispatcher, new ChickenEntityModel(), 0.3F);
 	}
 
 	protected Identifier getTexture(ChickenEntity chickenEntity) {

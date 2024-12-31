@@ -145,7 +145,7 @@ public class StatsScreen extends Screen implements StatsListener {
 		this.renderIcon(x + 1, y + 1);
 		GlStateManager.enableRescaleNormal();
 		DiffuseLighting.enable();
-		this.itemRenderer.method_12455(new ItemStack(item), x + 2, y + 2);
+		this.itemRenderer.method_12455(item.getDefaultStack(), x + 2, y + 2);
 		DiffuseLighting.disable();
 		GlStateManager.disableRescaleNormal();
 	}
@@ -563,7 +563,7 @@ public class StatsScreen extends Screen implements StatsListener {
 		@Override
 		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
 			EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)this.entries.get(index);
-			String string = I18n.translate("entity." + spawnEggData.name + ".name");
+			String string = I18n.translate("entity." + EntityType.getEntityName(spawnEggData.identifier) + ".name");
 			int i = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killEntityStat);
 			int j = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killedByEntityStat);
 			String string2 = I18n.translate("stat.entityKills", i, string);

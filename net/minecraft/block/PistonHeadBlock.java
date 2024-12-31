@@ -35,6 +35,12 @@ public class PistonHeadBlock extends FacingBlock {
 	protected static final Box field_12891 = new Box(0.375, 0.375, 0.25, 0.625, 0.625, 1.25);
 	protected static final Box field_12892 = new Box(-0.25, 0.375, 0.375, 0.75, 0.625, 0.625);
 	protected static final Box field_12893 = new Box(0.25, 0.375, 0.375, 1.25, 0.625, 0.625);
+	protected static final Box field_15174 = new Box(0.375, 0.0, 0.375, 0.625, 0.75, 0.625);
+	protected static final Box field_15175 = new Box(0.375, 0.25, 0.375, 0.625, 1.0, 0.625);
+	protected static final Box field_15176 = new Box(0.375, 0.375, 0.0, 0.625, 0.625, 0.75);
+	protected static final Box field_15177 = new Box(0.375, 0.375, 0.25, 0.625, 0.625, 1.0);
+	protected static final Box field_15178 = new Box(0.0, 0.375, 0.375, 0.75, 0.625, 0.625);
+	protected static final Box field_15179 = new Box(0.25, 0.375, 0.375, 1.0, 0.625, 0.625);
 
 	public PistonHeadBlock() {
 		super(Material.PISTON);
@@ -63,26 +69,27 @@ public class PistonHeadBlock extends FacingBlock {
 	}
 
 	@Override
-	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
-		appendCollisionBoxes(pos, entityBox, boxes, state.getCollisionBox((BlockView)world, pos));
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity, boolean isActualState) {
+		appendCollisionBoxes(pos, entityBox, boxes, state.getCollisionBox(world, pos));
 		appendCollisionBoxes(pos, entityBox, boxes, this.method_11700(state));
 	}
 
 	private Box method_11700(BlockState blockState) {
+		boolean bl = (Boolean)blockState.get(SHORT);
 		switch ((Direction)blockState.get(FACING)) {
 			case DOWN:
 			default:
-				return field_12889;
+				return bl ? field_15175 : field_12889;
 			case UP:
-				return field_12888;
+				return bl ? field_15174 : field_12888;
 			case NORTH:
-				return field_12891;
+				return bl ? field_15177 : field_12891;
 			case SOUTH:
-				return field_12890;
+				return bl ? field_15176 : field_12890;
 			case WEST:
-				return field_12893;
+				return bl ? field_15179 : field_12893;
 			case EAST:
-				return field_12892;
+				return bl ? field_15178 : field_12892;
 		}
 	}
 
@@ -142,14 +149,14 @@ public class PistonHeadBlock extends FacingBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		Direction direction = blockState.get(FACING);
-		BlockPos blockPos2 = blockPos.offset(direction.getOpposite());
-		BlockState blockState2 = world.getBlockState(blockPos2);
-		if (blockState2.getBlock() != Blocks.PISTON && blockState2.getBlock() != Blocks.STICKY_PISTON) {
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		Direction direction = state.get(FACING);
+		BlockPos blockPos = pos.offset(direction.getOpposite());
+		BlockState blockState = world.getBlockState(blockPos);
+		if (blockState.getBlock() != Blocks.PISTON && blockState.getBlock() != Blocks.STICKY_PISTON) {
+			world.setAir(pos);
 		} else {
-			blockState2.method_11707(world, blockPos2, block);
+			blockState.neighbourUpdate(world, blockPos, block, neighborPos);
 		}
 	}
 

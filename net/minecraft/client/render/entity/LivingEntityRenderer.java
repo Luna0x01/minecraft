@@ -37,10 +37,6 @@ public abstract class LivingEntityRenderer<T extends LivingEntity> extends Entit
 		return this.features.add(featureRenderer);
 	}
 
-	protected <V extends LivingEntity, U extends FeatureRenderer<V>> boolean removeFeature(U featureRenderer) {
-		return this.features.remove(featureRenderer);
-	}
-
 	public EntityModel getModel() {
 		return this.model;
 	}

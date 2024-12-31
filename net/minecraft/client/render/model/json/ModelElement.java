@@ -8,6 +8,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
@@ -99,7 +100,7 @@ public class ModelElement {
 
 		private Direction.Axis deserializeAxis(JsonObject object) {
 			String string = JsonHelper.getString(object, "axis");
-			Direction.Axis axis = Direction.Axis.fromName(string.toLowerCase());
+			Direction.Axis axis = Direction.Axis.fromName(string.toLowerCase(Locale.ROOT));
 			if (axis == null) {
 				throw new JsonParseException("Invalid rotation axis: " + string);
 			} else {

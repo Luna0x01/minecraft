@@ -82,15 +82,15 @@ public abstract class AbstractRedstoneGateBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (this.isOnOpaqueBlock(world, blockPos)) {
-			this.updatePowered(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (this.isOnOpaqueBlock(world, pos)) {
+			this.updatePowered(world, pos, state);
 		} else {
-			this.dropAsItem(world, blockPos, blockState, 0);
-			world.setAir(blockPos);
+			this.dropAsItem(world, pos, state, 0);
+			world.setAir(pos);
 
 			for (Direction direction : Direction.values()) {
-				world.updateNeighborsAlways(blockPos.offset(direction), this);
+				world.method_13692(pos.offset(direction), this, false);
 			}
 		}
 	}
@@ -98,7 +98,7 @@ public abstract class AbstractRedstoneGateBlock extends HorizontalFacingBlock {
 	protected void updatePowered(World world, BlockPos pos, BlockState state) {
 		if (!this.isLocked(world, pos, state)) {
 			boolean bl = this.hasPower(world, pos, state);
-			if ((this.powered && !bl || !this.powered && bl) && !world.hasScheduledTick(pos, this)) {
+			if (this.powered != bl && !world.hasScheduledTick(pos, this)) {
 				int i = -1;
 				if (this.isTargetNotAligned(world, pos, state)) {
 					i = -3;
@@ -177,7 +177,7 @@ public abstract class AbstractRedstoneGateBlock extends HorizontalFacingBlock {
 	protected void updateTarget(World world, BlockPos pos, BlockState state) {
 		Direction direction = state.get(DIRECTION);
 		BlockPos blockPos = pos.offset(direction.getOpposite());
-		world.neighbourUpdate(blockPos, this);
+		world.updateNeighbor(blockPos, this, pos);
 		world.updateNeighborsExcept(blockPos, this, direction);
 	}
 
@@ -185,7 +185,7 @@ public abstract class AbstractRedstoneGateBlock extends HorizontalFacingBlock {
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state) {
 		if (this.powered) {
 			for (Direction direction : Direction.values()) {
-				world.updateNeighborsAlways(pos.offset(direction), this);
+				world.method_13692(pos.offset(direction), this, false);
 			}
 		}
 

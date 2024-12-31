@@ -45,14 +45,6 @@ public class ChunkPos {
 		return f * f + g * g;
 	}
 
-	public int getCenterX() {
-		return (this.x << 4) + 8;
-	}
-
-	public int getCenterZ() {
-		return (this.z << 4) + 8;
-	}
-
 	public int getActualX() {
 		return this.x << 4;
 	}
@@ -71,10 +63,6 @@ public class ChunkPos {
 
 	public BlockPos toBlockPos(int offsetX, int y, int offsetZ) {
 		return new BlockPos((this.x << 4) + offsetX, y, (this.z << 4) + offsetZ);
-	}
-
-	public BlockPos toBlockPos(int y) {
-		return new BlockPos(this.getCenterX(), y, this.getCenterZ());
 	}
 
 	public String toString() {

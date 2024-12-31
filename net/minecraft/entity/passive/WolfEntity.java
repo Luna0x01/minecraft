@@ -3,13 +3,18 @@ package net.minecraft.entity.passive;
 import com.google.common.base.Predicate;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.class_3133;
+import net.minecraft.class_3146;
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.datafixer.DataFixerUpper;
+import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.LlamaEntity;
 import net.minecraft.entity.ai.goal.AttackWithOwnerGoal;
 import net.minecraft.entity.ai.goal.BreedGoal;
+import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.FollowTargetIfTamedGoal;
@@ -21,7 +26,6 @@ import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SitGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TrackOwnerAttackerGoal;
-import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.goal.WolfBegGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -31,7 +35,6 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.GhastEntity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.SkeletonEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.item.FoodItem;
@@ -70,14 +73,15 @@ public class WolfEntity extends TameableEntity {
 		this.sitGoal = new SitGoal(this);
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, this.sitGoal);
-		this.goals.add(3, new PounceAtTargetGoal(this, 0.4F));
-		this.goals.add(4, new MeleeAttackGoal(this, 1.0, true));
-		this.goals.add(5, new FollowOwnerGoal(this, 1.0, 10.0F, 2.0F));
-		this.goals.add(6, new BreedGoal(this, 1.0));
-		this.goals.add(7, new WanderAroundGoal(this, 1.0));
-		this.goals.add(8, new WolfBegGoal(this, 8.0F));
-		this.goals.add(9, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
-		this.goals.add(9, new LookAroundGoal(this));
+		this.goals.add(3, new WolfEntity.class_3134(this, LlamaEntity.class, 24.0F, 1.5, 1.5));
+		this.goals.add(4, new PounceAtTargetGoal(this, 0.4F));
+		this.goals.add(5, new MeleeAttackGoal(this, 1.0, true));
+		this.goals.add(6, new FollowOwnerGoal(this, 1.0, 10.0F, 2.0F));
+		this.goals.add(7, new BreedGoal(this, 1.0));
+		this.goals.add(8, new class_3133(this, 1.0));
+		this.goals.add(9, new WolfBegGoal(this, 8.0F));
+		this.goals.add(10, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
+		this.goals.add(10, new LookAroundGoal(this));
 		this.attackGoals.add(1, new TrackOwnerAttackerGoal(this));
 		this.attackGoals.add(2, new AttackWithOwnerGoal(this));
 		this.attackGoals.add(3, new RevengeGoal(this, true));
@@ -86,7 +90,7 @@ public class WolfEntity extends TameableEntity {
 				return entity instanceof SheepEntity || entity instanceof RabbitEntity;
 			}
 		}));
-		this.attackGoals.add(5, new FollowTargetGoal(this, SkeletonEntity.class, false));
+		this.attackGoals.add(5, new FollowTargetGoal(this, class_3146.class, false));
 	}
 
 	@Override
@@ -131,7 +135,7 @@ public class WolfEntity extends TameableEntity {
 	}
 
 	public static void registerDataFixes(DataFixerUpper dataFixer) {
-		MobEntity.method_13496(dataFixer, "Wolf");
+		MobEntity.registerDataFixes(dataFixer, WolfEntity.class);
 	}
 
 	@Override
@@ -313,14 +317,15 @@ public class WolfEntity extends TameableEntity {
 	}
 
 	@Override
-	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
+	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack = playerEntity.getStackInHand(hand);
 		if (this.isTamed()) {
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				if (itemStack.getItem() instanceof FoodItem) {
 					FoodItem foodItem = (FoodItem)itemStack.getItem();
 					if (foodItem.isMeat() && this.dataTracker.get(field_14625) < 20.0F) {
 						if (!playerEntity.abilities.creativeMode) {
-							itemStack.count--;
+							itemStack.decrement(1);
 						}
 
 						this.heal((float)foodItem.getHungerPoints(itemStack));
@@ -331,7 +336,7 @@ public class WolfEntity extends TameableEntity {
 					if (dyeColor != this.getCollarColor()) {
 						this.setCollarColor(dyeColor);
 						if (!playerEntity.abilities.creativeMode) {
-							itemStack.count--;
+							itemStack.decrement(1);
 						}
 
 						return true;
@@ -345,9 +350,9 @@ public class WolfEntity extends TameableEntity {
 				this.navigation.stop();
 				this.setTarget(null);
 			}
-		} else if (itemStack != null && itemStack.getItem() == Items.BONE && !this.isAngry()) {
+		} else if (itemStack.getItem() == Items.BONE && !this.isAngry()) {
 			if (!playerEntity.abilities.creativeMode) {
-				itemStack.count--;
+				itemStack.decrement(1);
 			}
 
 			if (!this.world.isClient) {
@@ -369,7 +374,7 @@ public class WolfEntity extends TameableEntity {
 			return true;
 		}
 
-		return super.method_13079(playerEntity, hand, itemStack);
+		return super.interactMob(playerEntity, hand);
 	}
 
 	@Override
@@ -392,12 +397,8 @@ public class WolfEntity extends TameableEntity {
 	}
 
 	@Override
-	public boolean isBreedingItem(@Nullable ItemStack stack) {
-		if (stack == null) {
-			return false;
-		} else {
-			return !(stack.getItem() instanceof FoodItem) ? false : ((FoodItem)stack.getItem()).isMeat();
-		}
+	public boolean isBreedingItem(ItemStack stack) {
+		return stack.getItem() instanceof FoodItem && ((FoodItem)stack.getItem()).isMeat();
 	}
 
 	@Override
@@ -475,7 +476,7 @@ public class WolfEntity extends TameableEntity {
 
 			return target instanceof PlayerEntity && owner instanceof PlayerEntity && !((PlayerEntity)owner).shouldDamagePlayer((PlayerEntity)target)
 				? false
-				: !(target instanceof HorseBaseEntity) || !((HorseBaseEntity)target).isTame();
+				: !(target instanceof AbstractHorseEntity) || !((AbstractHorseEntity)target).method_13990();
 		} else {
 			return false;
 		}
@@ -484,5 +485,37 @@ public class WolfEntity extends TameableEntity {
 	@Override
 	public boolean method_2537(PlayerEntity playerEntity) {
 		return !this.isAngry() && super.method_2537(playerEntity);
+	}
+
+	class class_3134<T extends Entity> extends FleeEntityGoal<T> {
+		private final WolfEntity field_15487;
+
+		public class_3134(WolfEntity wolfEntity2, Class<T> class_, float f, double d, double e) {
+			super(wolfEntity2, class_, f, d, e);
+			this.field_15487 = wolfEntity2;
+		}
+
+		@Override
+		public boolean canStart() {
+			return super.canStart() && this.targetEntity instanceof LlamaEntity
+				? !this.field_15487.isTamed() && this.method_13961((LlamaEntity)this.targetEntity)
+				: false;
+		}
+
+		private boolean method_13961(LlamaEntity llamaEntity) {
+			return llamaEntity.getStrength() >= WolfEntity.this.random.nextInt(5);
+		}
+
+		@Override
+		public void start() {
+			WolfEntity.this.setTarget(null);
+			super.start();
+		}
+
+		@Override
+		public void tick() {
+			WolfEntity.this.setTarget(null);
+			super.tick();
+		}
 	}
 }

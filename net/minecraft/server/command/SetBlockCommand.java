@@ -44,9 +44,11 @@ public class SetBlockCommand extends AbstractCommand {
 			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
 			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
 			Block block = AbstractCommand.getBlock(commandSource, args[3]);
-			int i = 0;
+			BlockState blockState;
 			if (args.length >= 5) {
-				i = parseClampedInt(args[4], 0, 15);
+				blockState = method_13901(block, args[4]);
+			} else {
+				blockState = block.getDefaultState();
 			}
 
 			World world = commandSource.getWorld();
@@ -61,8 +63,8 @@ public class SetBlockCommand extends AbstractCommand {
 					try {
 						nbtCompound = StringNbtReader.parse(string);
 						bl = true;
-					} catch (NbtException var13) {
-						throw new CommandException("commands.setblock.tagError", var13.getMessage());
+					} catch (NbtException var12) {
+						throw new CommandException("commands.setblock.tagError", var12.getMessage());
 					}
 				}
 
@@ -87,7 +89,6 @@ public class SetBlockCommand extends AbstractCommand {
 					world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), block == Blocks.AIR ? 2 : 4);
 				}
 
-				BlockState blockState = block.stateFromData(i);
 				if (!world.setBlockState(blockPos, blockState, 2)) {
 					throw new CommandException("commands.setblock.noChange");
 				} else {
@@ -101,7 +102,7 @@ public class SetBlockCommand extends AbstractCommand {
 						}
 					}
 
-					world.updateNeighbors(blockPos, blockState.getBlock());
+					world.method_8531(blockPos, blockState.getBlock(), false);
 					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 1);
 					run(commandSource, this, "commands.setblock.success", new Object[0]);
 				}

@@ -38,9 +38,9 @@ public class PlantBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		super.method_8641(blockState, world, blockPos, block);
-		this.plantAt(world, blockPos, blockState);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		super.neighborUpdate(state, world, pos, block, neighborPos);
+		this.plantAt(world, pos, state);
 	}
 
 	@Override
@@ -66,7 +66,7 @@ public class PlantBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 

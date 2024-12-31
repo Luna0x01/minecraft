@@ -81,14 +81,14 @@ public class CommandStats {
 			String string2;
 			try {
 				string2 = AbstractCommand.method_12706(minecraftServer, commandSource2, string);
-			} catch (EntityNotFoundException var12) {
+			} catch (CommandException var12) {
 				return;
 			}
 
-			String string3 = this.objectives[type.getIndex()];
-			if (string3 != null) {
+			String string4 = this.objectives[type.getIndex()];
+			if (string4 != null) {
 				Scoreboard scoreboard = commandSource.getWorld().getScoreboard();
-				ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(string3);
+				ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(string4);
 				if (scoreboardObjective != null) {
 					if (scoreboard.playerHasObjective(string2, scoreboardObjective)) {
 						ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(string2, scoreboardObjective);

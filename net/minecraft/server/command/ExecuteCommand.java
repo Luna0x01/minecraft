@@ -50,14 +50,17 @@ public class ExecuteCommand extends AbstractCommand {
 				double h = parseDouble(e, args[6], false);
 				double j = parseDouble(f, args[7], false);
 				Block block = getBlock(commandSource, args[8]);
-				int k = parseClampedInt(args[9], -1, 15);
 				BlockPos blockPos2 = new BlockPos(g, h, j);
 				if (!world.blockExists(blockPos2)) {
 					throw new CommandException("commands.execute.failed", "detect", entity.getTranslationKey());
 				}
 
 				BlockState blockState = world.getBlockState(blockPos2);
-				if (blockState.getBlock() != block || k >= 0 && blockState.getBlock().getData(blockState) != k) {
+				if (blockState.getBlock() != block) {
+					throw new CommandException("commands.execute.failed", "detect", entity.getTranslationKey());
+				}
+
+				if (!AbstractCommand.method_13904(block, args[9]).apply(blockState)) {
 					throw new CommandException("commands.execute.failed", "detect", entity.getTranslationKey());
 				}
 
@@ -124,11 +127,11 @@ public class ExecuteCommand extends AbstractCommand {
 			CommandRegistryProvider commandRegistryProvider = minecraftServer.getCommandManager();
 
 			try {
-				int l = commandRegistryProvider.execute(commandSource2, string);
-				if (l < 1) {
+				int k = commandRegistryProvider.execute(commandSource2, string);
+				if (k < 1) {
 					throw new CommandException("commands.execute.allInvocationsFailed", string);
 				}
-			} catch (Throwable var24) {
+			} catch (Throwable var23) {
 				throw new CommandException("commands.execute.failed", string, entity.getTranslationKey());
 			}
 		}

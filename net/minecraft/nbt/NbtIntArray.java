@@ -19,8 +19,8 @@ public class NbtIntArray extends NbtElement {
 	void write(DataOutput output) throws IOException {
 		output.writeInt(this.value.length);
 
-		for (int k : this.value) {
-			output.writeInt(k);
+		for (int i : this.value) {
+			output.writeInt(i);
 		}
 	}
 
@@ -45,8 +45,8 @@ public class NbtIntArray extends NbtElement {
 	public String toString() {
 		String string = "[";
 
-		for (int k : this.value) {
-			string = string + k + ",";
+		for (int i : this.value) {
+			string = string + i + ",";
 		}
 
 		return string + "]";

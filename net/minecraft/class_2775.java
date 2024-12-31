@@ -30,16 +30,16 @@ public class class_2775 extends class_2778 {
 			}
 		}
 
-		if (itemStack.count > 0) {
-			if (itemStack.count < this.field_13176.getMaxCount()) {
+		if (!itemStack.isEmpty()) {
+			if (itemStack.getCount() < this.field_13176.getMaxCount()) {
 				collection.add(itemStack);
 			} else {
-				int k = itemStack.count;
+				int i = itemStack.getCount();
 
-				while (k > 0) {
+				while (i > 0) {
 					ItemStack itemStack2 = itemStack.copy();
-					itemStack2.count = Math.min(itemStack.getMaxCount(), k);
-					k -= itemStack2.count;
+					itemStack2.setCount(Math.min(itemStack.getMaxCount(), i));
+					i -= itemStack2.getCount();
 					collection.add(itemStack2);
 				}
 			}

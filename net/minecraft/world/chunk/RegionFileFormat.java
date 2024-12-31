@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
+import javax.annotation.Nullable;
 import net.minecraft.server.MinecraftServer;
 
 public class RegionFileFormat {
@@ -78,6 +79,7 @@ public class RegionFileFormat {
 		}
 	}
 
+	@Nullable
 	public synchronized DataInputStream getChunkInputStream(int chunkX, int chunkZ) {
 		if (this.isOutsideRange(chunkX, chunkZ)) {
 			return null;
@@ -120,6 +122,7 @@ public class RegionFileFormat {
 		}
 	}
 
+	@Nullable
 	public DataOutputStream getChunkOutputStream(int chunkX, int chunkZ) {
 		return this.isOutsideRange(chunkX, chunkZ)
 			? null

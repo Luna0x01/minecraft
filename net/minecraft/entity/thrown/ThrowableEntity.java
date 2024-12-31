@@ -163,7 +163,7 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 			if (entity2.collides()) {
 				if (entity2 == this.field_14820) {
 					bl = true;
-				} else if (this.ticksAlive < 2 && this.field_14820 == null) {
+				} else if (this.field_6932 != null && this.ticksAlive < 2 && this.field_14820 == null) {
 					this.field_14820 = entity2;
 					bl = true;
 				} else {

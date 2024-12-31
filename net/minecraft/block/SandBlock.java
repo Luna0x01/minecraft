@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import java.util.List;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -8,6 +7,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.collection.DefaultedList;
 
 public class SandBlock extends FallingBlock {
 	public static final EnumProperty<SandBlock.SandType> sandType = EnumProperty.of("variant", SandBlock.SandType.class);
@@ -22,9 +22,9 @@ public class SandBlock extends FallingBlock {
 	}
 
 	@Override
-	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
+	public void method_13700(Item item, ItemGroup itemGroup, DefaultedList<ItemStack> defaultedList) {
 		for (SandBlock.SandType sandType : SandBlock.SandType.values()) {
-			stacks.add(new ItemStack(item, 1, sandType.getId()));
+			defaultedList.add(new ItemStack(item, 1, sandType.getId()));
 		}
 	}
 

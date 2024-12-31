@@ -62,14 +62,14 @@ public class SpreadPlayersCommand extends AbstractCommand {
 				if (PlayerSelector.method_4091(string)) {
 					List<Entity> list2 = PlayerSelector.method_10866(commandSource, string, Entity.class);
 					if (list2.isEmpty()) {
-						throw new EntityNotFoundException();
+						throw new EntityNotFoundException("commands.generic.selector.notFound", string);
 					}
 
 					list.addAll(list2);
 				} else {
 					PlayerEntity playerEntity = minecraftServer.getPlayerManager().getPlayer(string);
 					if (playerEntity == null) {
-						throw new PlayerNotFoundException();
+						throw new PlayerNotFoundException("commands.generic.player.notFound", string);
 					}
 
 					list.add(playerEntity);
@@ -78,7 +78,7 @@ public class SpreadPlayersCommand extends AbstractCommand {
 
 			commandSource.setStat(CommandStats.Type.AFFECTED_ENTITIES, list.size());
 			if (list.isEmpty()) {
-				throw new EntityNotFoundException();
+				throw new EntityNotFoundException("commands.spreadplayers.noop");
 			} else {
 				commandSource.sendMessage(new TranslatableText("commands.spreadplayers.spreading." + (bl ? "teams" : "players"), list.size(), g, d, e, f));
 				this.method_5549(commandSource, list, new SpreadPlayersCommand.Pile(d, e), f, g, ((Entity)list.get(0)).world, bl);
@@ -106,7 +106,7 @@ public class SpreadPlayersCommand extends AbstractCommand {
 
 		for (Entity entity : list) {
 			if (entity instanceof PlayerEntity) {
-				set.add(((PlayerEntity)entity).getScoreboardTeam());
+				set.add(entity.getScoreboardTeam());
 			} else {
 				set.add(null);
 			}
@@ -189,7 +189,7 @@ public class SpreadPlayersCommand extends AbstractCommand {
 			Entity entity = (Entity)list.get(j);
 			SpreadPlayersCommand.Pile pile;
 			if (bl) {
-				AbstractTeam abstractTeam = entity instanceof PlayerEntity ? ((PlayerEntity)entity).getScoreboardTeam() : null;
+				AbstractTeam abstractTeam = entity instanceof PlayerEntity ? entity.getScoreboardTeam() : null;
 				if (!map.containsKey(abstractTeam)) {
 					map.put(abstractTeam, piles[i++]);
 				}

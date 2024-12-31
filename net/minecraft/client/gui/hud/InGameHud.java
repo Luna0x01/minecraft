@@ -67,7 +67,7 @@ public class InGameHud extends DrawableHelper {
 	private boolean overlayTinted;
 	public float vignetteDarkness = 1.0F;
 	private int heldItemTooltipFade;
-	private ItemStack heldItem;
+	private ItemStack heldItem = ItemStack.EMPTY;
 	private final DebugHud debugHud;
 	private final class_2841 field_13302;
 	private final SpectatorHud spectatorHud;
@@ -107,7 +107,6 @@ public class InGameHud extends DrawableHelper {
 		int i = window.getWidth();
 		int j = window.getHeight();
 		TextRenderer textRenderer = this.getFontRenderer();
-		this.client.gameRenderer.setupHudMatrixMode();
 		GlStateManager.enableBlend();
 		if (MinecraftClient.isFancyGraphicsEnabled()) {
 			this.renderVignetteOverlay(this.client.player.getBrightnessAtEyes(tickDelta), window);
@@ -119,7 +118,7 @@ public class InGameHud extends DrawableHelper {
 		}
 
 		ItemStack itemStack = this.client.player.inventory.getArmor(3);
-		if (this.client.options.perspective == 0 && itemStack != null && itemStack.getItem() == Item.fromBlock(Blocks.PUMPKIN)) {
+		if (this.client.options.perspective == 0 && itemStack.getItem() == Item.fromBlock(Blocks.PUMPKIN)) {
 			this.renderPumpkinBlur(window);
 		}
 
@@ -337,9 +336,17 @@ public class InGameHud extends DrawableHelper {
 				this.drawTexture(i / 2 - 7, j / 2 - 7, 0, 0, 16, 16);
 				if (this.client.options.field_13290 == 1) {
 					float g = this.client.player.method_13275(0.0F);
-					if (g < 1.0F) {
-						int k = j / 2 - 7 + 16;
-						int l = i / 2 - 7;
+					boolean bl = false;
+					if (this.client.targetedEntity != null && this.client.targetedEntity instanceof LivingEntity && g >= 1.0F) {
+						bl = this.client.player.method_13268() > 5.0F;
+						bl &= ((LivingEntity)this.client.targetedEntity).isAlive();
+					}
+
+					int k = j / 2 - 7 + 16;
+					int l = i / 2 - 8;
+					if (bl) {
+						this.drawTexture(l, k, 68, 94, 16, 16);
+					} else if (g < 1.0F) {
 						int m = (int)(g * 17.0F);
 						this.drawTexture(l, k, 36, 94, 16, 4);
 						this.drawTexture(l, k, 52, 94, m, 4);
@@ -362,6 +369,10 @@ public class InGameHud extends DrawableHelper {
 				if (statusEffect.hasIcon() && statusEffectInstance.shouldShowParticles()) {
 					int k = window.getWidth();
 					int l = 1;
+					if (this.client.isDemo()) {
+						l += 15;
+					}
+
 					int m = statusEffect.getIconLevel();
 					if (statusEffect.method_2448()) {
 						i++;
@@ -406,7 +417,7 @@ public class InGameHud extends DrawableHelper {
 			this.zOffset = -90.0F;
 			this.drawTexture(i - 91, window.getHeight() - 22, 0, 0, 182, 22);
 			this.drawTexture(i - 91 - 1 + playerEntity.inventory.selectedSlot * 20, window.getHeight() - 22 - 1, 0, 22, 24, 22);
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				if (handOption == HandOption.LEFT) {
 					this.drawTexture(i - 91 - 29, window.getHeight() - 23, 24, 22, 29, 24);
 				} else {
@@ -425,10 +436,10 @@ public class InGameHud extends DrawableHelper {
 			for (int l = 0; l < 9; l++) {
 				int m = i - 90 + l * 20 + 2;
 				int n = window.getHeight() - 16 - 3;
-				this.method_9422(m, n, tickDelta, playerEntity, playerEntity.inventory.main[l]);
+				this.method_9422(m, n, tickDelta, playerEntity, playerEntity.inventory.field_15082.get(l));
 			}
 
-			if (itemStack != null) {
+			if (!itemStack.isEmpty()) {
 				int o = window.getHeight() - 16 - 3;
 				if (handOption == HandOption.LEFT) {
 					this.method_9422(i - 91 - 26, o, tickDelta, playerEntity, itemStack);
@@ -506,7 +517,7 @@ public class InGameHud extends DrawableHelper {
 
 	public void renderHeldItemName(Window window) {
 		this.client.profiler.push("selectedItemName");
-		if (this.heldItemTooltipFade > 0 && this.heldItem != null) {
+		if (this.heldItemTooltipFade > 0 && !this.heldItem.isEmpty()) {
 			String string = this.heldItem.getCustomName();
 			if (this.heldItem.hasCustomName()) {
 				string = Formatting.ITALIC + string;
@@ -721,7 +732,7 @@ public class InGameHud extends DrawableHelper {
 			}
 
 			Entity entity = playerEntity.getVehicle();
-			if (entity == null) {
+			if (entity == null || !(entity instanceof LivingEntity)) {
 				this.client.profiler.swap("food");
 
 				for (int af = 0; af < 10; af++) {
@@ -912,9 +923,9 @@ public class InGameHud extends DrawableHelper {
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 	}
 
-	private void method_9422(int i, int j, float f, PlayerEntity playerEntity, @Nullable ItemStack itemStack) {
-		if (itemStack != null) {
-			float g = (float)itemStack.pickupTick - f;
+	private void method_9422(int i, int j, float f, PlayerEntity playerEntity, ItemStack itemStack) {
+		if (!itemStack.isEmpty()) {
+			float g = (float)itemStack.getPickupTick() - f;
 			if (g > 0.0F) {
 				GlStateManager.pushMatrix();
 				float h = 1.0F + g / 5.0F;
@@ -948,9 +959,9 @@ public class InGameHud extends DrawableHelper {
 		this.ticks++;
 		if (this.client.player != null) {
 			ItemStack itemStack = this.client.player.inventory.getMainHandStack();
-			if (itemStack == null) {
+			if (itemStack.isEmpty()) {
 				this.heldItemTooltipFade = 0;
-			} else if (this.heldItem != null
+			} else if (!this.heldItem.isEmpty()
 				&& itemStack.getItem() == this.heldItem.getItem()
 				&& ItemStack.equalsIgnoreDamage(itemStack, this.heldItem)
 				&& (itemStack.isDamageable() || itemStack.getData() == this.heldItem.getData())) {

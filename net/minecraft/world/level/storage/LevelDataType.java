@@ -9,5 +9,6 @@ public enum LevelDataType implements DataFixType {
 	BLOCK_ENTITY,
 	ENTITY,
 	ITEM_INSTANCE,
-	OPTIONS;
+	OPTIONS,
+	STRUCTURE;
 }

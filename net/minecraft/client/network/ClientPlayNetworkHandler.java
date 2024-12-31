@@ -1,5 +1,6 @@
 package net.minecraft.client.network;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -7,8 +8,11 @@ import com.mojang.authlib.GameProfile;
 import io.netty.buffer.Unpooled;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +30,14 @@ import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.block.entity.FlowerPotBlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.block.entity.StructureBlockEntity;
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.class_2844;
+import net.minecraft.client.gui.MapRenderer;
 import net.minecraft.client.gui.StatsListener;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.CreditsScreen;
@@ -52,6 +58,7 @@ import net.minecraft.client.option.ServerList;
 import net.minecraft.client.particle.ItemPickupParticle;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.realms.RealmsScreenProxy;
+import net.minecraft.client.render.debug.BlockUpdateDebugRenderer;
 import net.minecraft.client.render.debug.class_2891;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.GuardianAttackSoundInstance;
@@ -60,6 +67,7 @@ import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.client.world.BlockCommunicationNameable;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.AbstractHorseEntity;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.EndCrystalEntity;
 import net.minecraft.entity.Entity;
@@ -87,9 +95,9 @@ import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.mob.EvokerFangsEntity;
 import net.minecraft.entity.mob.GuardianEntity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.player.OtherClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -99,6 +107,7 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.DragonFireballEntity;
 import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
+import net.minecraft.entity.projectile.LlamaSpitEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
 import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
@@ -293,7 +302,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		} else if (packet.getEntityData() == 90) {
 			Entity entity2 = this.world.getEntityById(packet.getDataId());
 			if (entity2 instanceof PlayerEntity) {
-				entity = new FishingBobberEntity(this.world, d, e, f, (PlayerEntity)entity2);
+				entity = new FishingBobberEntity(this.world, (PlayerEntity)entity2, d, e, f);
 			}
 
 			packet.setDataId(0);
@@ -303,6 +312,10 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			entity = new SpectralArrowEntity(this.world, d, e, f);
 		} else if (packet.getEntityData() == 61) {
 			entity = new SnowballEntity(this.world, d, e, f);
+		} else if (packet.getEntityData() == 68) {
+			entity = new LlamaSpitEntity(
+				this.world, d, e, f, (double)packet.getVelocityX() / 8000.0, (double)packet.getVelocityY() / 8000.0, (double)packet.getVelocityZ() / 8000.0
+			);
 		} else if (packet.getEntityData() == 71) {
 			entity = new ItemFrameEntity(this.world, new BlockPos(d, e, f), Direction.fromHorizontal(packet.getDataId()));
 			packet.setDataId(0);
@@ -314,7 +327,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		} else if (packet.getEntityData() == 72) {
 			entity = new EyeOfEnderEntity(this.world, d, e, f);
 		} else if (packet.getEntityData() == 76) {
-			entity = new FireworkRocketEntity(this.world, d, e, f, null);
+			entity = new FireworkRocketEntity(this.world, d, e, f, ItemStack.EMPTY);
 		} else if (packet.getEntityData() == 63) {
 			entity = new FireballEntity(
 				this.world, d, e, f, (double)packet.getVelocityX() / 8000.0, (double)packet.getVelocityY() / 8000.0, (double)packet.getVelocityZ() / 8000.0
@@ -342,8 +355,10 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			packet.setDataId(0);
 		} else if (packet.getEntityData() == 62) {
 			entity = new EggEntity(this.world, d, e, f);
+		} else if (packet.getEntityData() == 79) {
+			entity = new EvokerFangsEntity(this.world, d, e, f, 0.0F, 0, null);
 		} else if (packet.getEntityData() == 73) {
-			entity = new PotionEntity(this.world, d, e, f, null);
+			entity = new PotionEntity(this.world, d, e, f, ItemStack.EMPTY);
 			packet.setDataId(0);
 		} else if (packet.getEntityData() == 75) {
 			entity = new ExperienceBottleEntity(this.world, d, e, f);
@@ -682,8 +697,8 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 						entity.z,
 						Sounds.ENTITY_EXPERIENCE_ORB_PICKUP,
 						SoundCategory.PLAYERS,
-						0.2F,
-						((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.0F) * 2.0F,
+						0.1F,
+						(this.random.nextFloat() - this.random.nextFloat()) * 0.35F + 0.9F,
 						false
 					);
 			} else {
@@ -695,9 +710,13 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 						Sounds.ENTITY_ITEM_PICKUP,
 						SoundCategory.PLAYERS,
 						0.2F,
-						((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.0F) * 2.0F,
+						(this.random.nextFloat() - this.random.nextFloat()) * 1.4F + 2.0F,
 						false
 					);
+			}
+
+			if (entity instanceof ItemEntity) {
+				((ItemEntity)entity).getItemStack().setCount(packet.method_13900());
 			}
 
 			this.client.particleManager.method_12256(new ItemPickupParticle(this.world, entity, livingEntity, 0.5F));
@@ -754,28 +773,32 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		float g = (float)(packet.getYaw() * 360) / 256.0F;
 		float h = (float)(packet.getPitch() * 360) / 256.0F;
 		LivingEntity livingEntity = (LivingEntity)EntityType.createInstanceFromRawId(packet.getEntityTypeId(), this.client.world);
-		EntityTracker.method_12766(livingEntity, d, e, f);
-		livingEntity.bodyYaw = (float)(packet.getHeadYaw() * 360) / 256.0F;
-		livingEntity.headYaw = (float)(packet.getHeadYaw() * 360) / 256.0F;
-		Entity[] entitys = livingEntity.getParts();
-		if (entitys != null) {
-			int i = packet.getId() - livingEntity.getEntityId();
+		if (livingEntity != null) {
+			EntityTracker.method_12766(livingEntity, d, e, f);
+			livingEntity.bodyYaw = (float)(packet.getHeadYaw() * 360) / 256.0F;
+			livingEntity.headYaw = (float)(packet.getHeadYaw() * 360) / 256.0F;
+			Entity[] entitys = livingEntity.getParts();
+			if (entitys != null) {
+				int i = packet.getId() - livingEntity.getEntityId();
 
-			for (Entity entity : entitys) {
-				entity.setEntityId(entity.getEntityId() + i);
+				for (Entity entity : entitys) {
+					entity.setEntityId(entity.getEntityId() + i);
+				}
 			}
-		}
 
-		livingEntity.setEntityId(packet.getId());
-		livingEntity.setUuid(packet.getUuid());
-		livingEntity.updatePositionAndAngles(d, e, f, g, h);
-		livingEntity.velocityX = (double)((float)packet.getVelocityX() / 8000.0F);
-		livingEntity.velocityY = (double)((float)packet.getVelocityY() / 8000.0F);
-		livingEntity.velocityZ = (double)((float)packet.getVelocityZ() / 8000.0F);
-		this.world.addEntity(packet.getId(), livingEntity);
-		List<DataTracker.DataEntry<?>> list = packet.getEntries();
-		if (list != null) {
-			livingEntity.getDataTracker().writeUpdatedEntries(list);
+			livingEntity.setEntityId(packet.getId());
+			livingEntity.setUuid(packet.getUuid());
+			livingEntity.updatePositionAndAngles(d, e, f, g, h);
+			livingEntity.velocityX = (double)((float)packet.getVelocityX() / 8000.0F);
+			livingEntity.velocityY = (double)((float)packet.getVelocityY() / 8000.0F);
+			livingEntity.velocityZ = (double)((float)packet.getVelocityZ() / 8000.0F);
+			this.world.addEntity(packet.getId(), livingEntity);
+			List<DataTracker.DataEntry<?>> list = packet.getEntries();
+			if (list != null) {
+				livingEntity.getDataTracker().writeUpdatedEntries(list);
+			}
+		} else {
+			LOGGER.warn("Skipping Entity with id {}", new Object[]{packet.getEntityTypeId()});
 		}
 	}
 
@@ -803,11 +826,9 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			boolean bl = entity.hasPassengerDeep(this.client.player);
 			entity.removeAllPassengers();
 
-			for (int k : packet.getPassengerIds()) {
-				Entity entity2 = this.world.getEntityById(k);
-				if (entity2 == null) {
-					LOGGER.warn("Received unknown passenger for {}", new Object[]{entity});
-				} else {
+			for (int i : packet.getPassengerIds()) {
+				Entity entity2 = this.world.getEntityById(i);
+				if (entity2 != null) {
 					entity2.startRiding(entity, true);
 					if (entity2 == this.client.player && !bl) {
 						this.client
@@ -840,6 +861,13 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		if (entity != null) {
 			if (packet.getStatus() == 21) {
 				this.client.getSoundManager().play(new GuardianAttackSoundInstance((GuardianEntity)entity));
+			} else if (packet.getStatus() == 35) {
+				int i = 40;
+				this.client.particleManager.method_13843(entity, ParticleType.TOTEM, 30);
+				this.world.playSound(entity.x, entity.y, entity.z, Sounds.ITEM_TOTEM_USE, entity.getSoundCategory(), 1.0F, 1.0F, false);
+				if (entity == this.client.player) {
+					this.client.gameRenderer.method_13846(new ItemStack(Items.TOTEM_OF_UNDYING));
+				}
 			} else {
 				entity.handleStatus(packet.getStatus());
 			}
@@ -905,8 +933,8 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			clientPlayerEntity.openScreenHandler.syncId = packet.getId();
 		} else if ("EntityHorse".equals(packet.getName())) {
 			Entity entity = this.world.getEntityById(packet.getEntityId());
-			if (entity instanceof HorseBaseEntity) {
-				clientPlayerEntity.openHorseInventory((HorseBaseEntity)entity, new AnimalInventory(packet.getText(), packet.getSlotCount()));
+			if (entity instanceof AbstractHorseEntity) {
+				clientPlayerEntity.method_6317((AbstractHorseEntity)entity, new AnimalInventory(packet.getText(), packet.getSlotCount()));
 				clientPlayerEntity.openScreenHandler.syncId = packet.getId();
 			}
 		} else if (!packet.hasSlots()) {
@@ -923,10 +951,12 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 	public void onScreenHandlerSlotUpdate(ScreenHandlerSlotUpdateS2CPacket packet) {
 		NetworkThreadUtils.forceMainThread(packet, this, this.client);
 		PlayerEntity playerEntity = this.client.player;
+		ItemStack itemStack = packet.getItemStack();
+		int i = packet.getSlot();
 		if (packet.getSyncId() == -1) {
-			playerEntity.inventory.setCursorStack(packet.getItemStack());
+			playerEntity.inventory.setCursorStack(itemStack);
 		} else if (packet.getSyncId() == -2) {
-			playerEntity.inventory.setInvStack(packet.getSlot(), packet.getItemStack());
+			playerEntity.inventory.setInvStack(i, itemStack);
 		} else {
 			boolean bl = false;
 			if (this.client.currentScreen instanceof CreativeInventoryScreen) {
@@ -934,15 +964,17 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 				bl = creativeInventoryScreen.getSelectedTab() != ItemGroup.INVENTORY.getIndex();
 			}
 
-			if (packet.getSyncId() == 0 && packet.getSlot() >= 36 && packet.getSlot() < 45) {
-				ItemStack itemStack = playerEntity.playerScreenHandler.getSlot(packet.getSlot()).getStack();
-				if (packet.getItemStack() != null && (itemStack == null || itemStack.count < packet.getItemStack().count)) {
-					packet.getItemStack().pickupTick = 5;
+			if (packet.getSyncId() == 0 && packet.getSlot() >= 36 && i < 45) {
+				if (!itemStack.isEmpty()) {
+					ItemStack itemStack2 = playerEntity.playerScreenHandler.getSlot(i).getStack();
+					if (itemStack2.isEmpty() || itemStack2.getCount() < itemStack.getCount()) {
+						itemStack.setPickupTick(5);
+					}
 				}
 
-				playerEntity.playerScreenHandler.setStackInSlot(packet.getSlot(), packet.getItemStack());
+				playerEntity.playerScreenHandler.setStackInSlot(i, itemStack);
 			} else if (packet.getSyncId() == playerEntity.openScreenHandler.syncId && (packet.getSyncId() != 0 || !bl)) {
-				playerEntity.openScreenHandler.setStackInSlot(packet.getSlot(), packet.getItemStack());
+				playerEntity.openScreenHandler.setStackInSlot(i, itemStack);
 			}
 		}
 	}
@@ -968,9 +1000,9 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		NetworkThreadUtils.forceMainThread(packet, this, this.client);
 		PlayerEntity playerEntity = this.client.player;
 		if (packet.getScreenId() == 0) {
-			playerEntity.playerScreenHandler.updateSlotStacks(packet.getSlotStacks());
+			playerEntity.playerScreenHandler.method_13642(packet.method_13899());
 		} else if (packet.getScreenId() == playerEntity.openScreenHandler.syncId) {
-			playerEntity.openScreenHandler.updateSlotStacks(packet.getSlotStacks());
+			playerEntity.openScreenHandler.method_13642(packet.method_13899());
 		}
 	}
 
@@ -1002,7 +1034,8 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 				|| i == 6 && blockEntity instanceof BannerBlockEntity
 				|| i == 7 && blockEntity instanceof StructureBlockEntity
 				|| i == 8 && blockEntity instanceof EndGatewayBlockEntity
-				|| i == 9 && blockEntity instanceof SignBlockEntity) {
+				|| i == 9 && blockEntity instanceof SignBlockEntity
+				|| i == 10 && blockEntity instanceof ShulkerBoxBlockEntity) {
 				blockEntity.fromNbt(packet.getNbt());
 			}
 
@@ -1056,7 +1089,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		float f = packet.getValue();
 		int j = MathHelper.floor(f + 0.5F);
 		if (i >= 0 && i < GameStateChangeS2CPacket.REASON_MESSAGES.length && GameStateChangeS2CPacket.REASON_MESSAGES[i] != null) {
-			playerEntity.addMessage(new TranslatableText(GameStateChangeS2CPacket.REASON_MESSAGES[i]));
+			playerEntity.sendMessage(new TranslatableText(GameStateChangeS2CPacket.REASON_MESSAGES[i]), false);
 		}
 
 		if (i == 1) {
@@ -1127,9 +1160,23 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 	@Override
 	public void onMapUpdate(MapUpdateS2CPacket packet) {
 		NetworkThreadUtils.forceMainThread(packet, this, this.client);
+		MapRenderer mapRenderer = this.client.gameRenderer.getMapRenderer();
 		MapState mapState = FilledMapItem.getMapState(packet.getId(), this.client.world);
+		if (mapState == null) {
+			String string = "map_" + packet.getId();
+			mapState = new MapState(string);
+			if (mapRenderer.method_13835(string) != null) {
+				MapState mapState2 = mapRenderer.method_13834(mapRenderer.method_13835(string));
+				if (mapState2 != null) {
+					mapState = mapState2;
+				}
+			}
+
+			this.client.world.replaceState(string, mapState);
+		}
+
 		packet.apply(mapState);
-		this.client.gameRenderer.getMapRenderer().updateTexture(mapState);
+		mapRenderer.updateTexture(mapState);
 	}
 
 	@Override
@@ -1239,6 +1286,9 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			case SUBTITLE:
 				string2 = string3;
 				break;
+			case ACTIONBAR:
+				this.client.inGameHud.setOverlayMessage(string3, false);
+				return;
 			case RESET:
 				this.client.inGameHud.setTitles("", "", -1, -1, -1);
 				this.client.inGameHud.setDefaultTitleFade();
@@ -1318,6 +1368,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 	public void onCommandSuggestions(CommandSuggestionsS2CPacket packet) {
 		NetworkThreadUtils.forceMainThread(packet, this, this.client);
 		String[] strings = packet.getSuggestions();
+		Arrays.sort(strings);
 		if (this.client.currentScreen instanceof class_2844) {
 			((class_2844)this.client.currentScreen).method_12182(strings);
 		}
@@ -1358,15 +1409,19 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		final String string2 = packet.getHash();
 		if (this.method_12229(string)) {
 			if (string.startsWith("level://")) {
-				String string3 = string.substring("level://".length());
-				File file = new File(this.client.runDirectory, "saves");
-				File file2 = new File(file, string3);
-				if (file2.isFile()) {
-					this.connection.send(new ResourcePackStatusC2SPacket(ResourcePackStatusC2SPacket.Status.ACCEPTED));
-					Futures.addCallback(this.client.getResourcePackLoader().loadServerPack(file2), this.method_13423());
-				} else {
-					this.connection.send(new ResourcePackStatusC2SPacket(ResourcePackStatusC2SPacket.Status.FAILED_DOWNLOAD));
+				try {
+					String string3 = URLDecoder.decode(string.substring("level://".length()), Charsets.UTF_8.toString());
+					File file = new File(this.client.runDirectory, "saves");
+					File file2 = new File(file, string3);
+					if (file2.isFile()) {
+						this.connection.send(new ResourcePackStatusC2SPacket(ResourcePackStatusC2SPacket.Status.ACCEPTED));
+						Futures.addCallback(this.client.getResourcePackLoader().loadServerPack(file2), this.method_13423());
+						return;
+					}
+				} catch (UnsupportedEncodingException var7) {
 				}
+
+				this.connection.send(new ResourcePackStatusC2SPacket(ResourcePackStatusC2SPacket.Status.FAILED_DOWNLOAD));
 			} else {
 				ServerInfo serverInfo = this.client.getCurrentServerEntry();
 				if (serverInfo != null && serverInfo.getResourcePack() == ServerInfo.ResourcePackState.ENABLED) {
@@ -1424,7 +1479,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 
 	private boolean method_12229(String string) {
 		try {
-			URI uRI = new URI(string.replace(' ', '+'));
+			URI uRI = new URI(string);
 			String string2 = uRI.getScheme();
 			boolean bl = "level".equals(string2);
 			if (!"http".equals(string2) && !"https".equals(string2) && !bl) {
@@ -1502,7 +1557,7 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 		} else if ("MC|BOpen".equals(packet.getChannel())) {
 			Hand hand = packet.getPayload().readEnumConstant(Hand.class);
 			ItemStack itemStack = hand == Hand.OFF_HAND ? this.client.player.getOffHandStack() : this.client.player.getMainHandStack();
-			if (itemStack != null && itemStack.getItem() == Items.WRITTEN_BOOK) {
+			if (itemStack.getItem() == Items.WRITTEN_BOOK) {
 				this.client.setScreen(new BookEditScreen(this.client.player, itemStack, false));
 			}
 		} else if ("MC|DebugPath".equals(packet.getChannel())) {
@@ -1511,10 +1566,15 @@ public class ClientPlayNetworkHandler implements ClientPlayPacketListener {
 			float f = packetByteBuf2.readFloat();
 			PathMinHeap pathMinHeap = PathMinHeap.read(packetByteBuf2);
 			((class_2891)this.client.debugRenderer.field_14968).method_12434(j, pathMinHeap, f);
-		} else if ("MC|StopSound".equals(packet.getChannel())) {
+		} else if ("MC|DebugNeighborsUpdate".equals(packet.getChannel())) {
 			PacketByteBuf packetByteBuf3 = packet.getPayload();
-			String string = packetByteBuf3.readString(32767);
-			String string2 = packetByteBuf3.readString(256);
+			long l = packetByteBuf3.readVarLong();
+			BlockPos blockPos = packetByteBuf3.readBlockPos();
+			((BlockUpdateDebugRenderer)this.client.debugRenderer.blockUpdates).addBlockUpdate(l, blockPos);
+		} else if ("MC|StopSound".equals(packet.getChannel())) {
+			PacketByteBuf packetByteBuf4 = packet.getPayload();
+			String string = packetByteBuf4.readString(32767);
+			String string2 = packetByteBuf4.readString(256);
 			this.client.getSoundManager().stopSound(string2, SoundCategory.byName(string));
 		}
 	}

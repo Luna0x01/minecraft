@@ -9,6 +9,8 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.BlazeEntity;
 import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockBox;
@@ -98,7 +100,7 @@ public class NetherFortressPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
 		}
 
 		@Override
@@ -192,6 +194,7 @@ public class NetherFortressPieces {
 			}
 		}
 
+		@Nullable
 		protected StructurePiece fillForwardOpening(
 			NetherFortressPieces.StartPiece start, List<StructurePiece> pieces, Random random, int leftRightOffset, int heightOffset, boolean inside
 		) {
@@ -252,6 +255,7 @@ public class NetherFortressPieces {
 			return null;
 		}
 
+		@Nullable
 		protected StructurePiece fillNWOpening(
 			NetherFortressPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset, boolean inside
 		) {
@@ -312,6 +316,7 @@ public class NetherFortressPieces {
 			return null;
 		}
 
+		@Nullable
 		protected StructurePiece fillSEOpening(
 			NetherFortressPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset, boolean inside
 		) {
@@ -476,9 +481,9 @@ public class NetherFortressPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.seed = structureNbt.getInt("Seed");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.seed = nbtCompound.getInt("Seed");
 		}
 
 		@Override
@@ -584,9 +589,9 @@ public class NetherFortressPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.hasBlazeSpawner = structureNbt.getBoolean("Mob");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.hasBlazeSpawner = nbtCompound.getBoolean("Mob");
 		}
 
 		@Override
@@ -631,7 +636,7 @@ public class NetherFortressPieces {
 					world.setBlockState(blockPos, Blocks.SPAWNER.getDefaultState(), 2);
 					BlockEntity blockEntity = world.getBlockEntity(blockPos);
 					if (blockEntity instanceof MobSpawnerBlockEntity) {
-						((MobSpawnerBlockEntity)blockEntity).getLogic().setEntityId("Blaze");
+						((MobSpawnerBlockEntity)blockEntity).getLogic().setSpawnedEntity(EntityType.getId(BlazeEntity.class));
 					}
 				}
 			}
@@ -991,9 +996,9 @@ public class NetherFortressPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.containsChest = structureNbt.getBoolean("Chest");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.containsChest = nbtCompound.getBoolean("Chest");
 		}
 
 		@Override
@@ -1204,9 +1209,9 @@ public class NetherFortressPieces {
 		}
 
 		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-			this.containsChest = structureNbt.getBoolean("Chest");
+		protected void method_5530(NbtCompound nbtCompound, class_2763 arg) {
+			super.method_5530(nbtCompound, arg);
+			this.containsChest = nbtCompound.getBoolean("Chest");
 		}
 
 		@Override
@@ -1415,16 +1420,6 @@ public class NetherFortressPieces {
 				pieceData2.generatedCount = 0;
 				this.corridorPieces.add(pieceData2);
 			}
-		}
-
-		@Override
-		protected void deserialize(NbtCompound structureNbt) {
-			super.deserialize(structureNbt);
-		}
-
-		@Override
-		protected void serialize(NbtCompound structureNbt) {
-			super.serialize(structureNbt);
 		}
 	}
 }

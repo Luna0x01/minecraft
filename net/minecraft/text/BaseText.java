@@ -73,9 +73,12 @@ public abstract class BaseText implements Text {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		for (Text text : this) {
-			stringBuilder.append(text.getStyle().asString());
-			stringBuilder.append(text.computeValue());
-			stringBuilder.append(Formatting.RESET);
+			String string = text.computeValue();
+			if (!string.isEmpty()) {
+				stringBuilder.append(text.getStyle().asString());
+				stringBuilder.append(string);
+				stringBuilder.append(Formatting.RESET);
+			}
 		}
 
 		return stringBuilder.toString();

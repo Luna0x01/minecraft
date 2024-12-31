@@ -30,19 +30,18 @@ public class CompassItem extends Item {
 					double f;
 					if (world.dimension.canPlayersSleep()) {
 						double d = bl ? (double)entity2.yaw : this.method_11369((ItemFrameEntity)entity2);
-						d %= 360.0;
-						double e = this.method_11368(world, entity2);
-						f = (float) Math.PI - ((d - 90.0) * (float) (Math.PI / 180.0) - e);
+						d = MathHelper.floorMod(d / 360.0, 1.0);
+						double e = this.method_11368(world, entity2) / (float) (Math.PI * 2);
+						f = 0.5 - (d - 0.25 - e);
 					} else {
-						f = Math.random() * (float) (Math.PI * 2);
+						f = Math.random();
 					}
 
 					if (bl) {
 						f = this.method_11367(world, f);
 					}
 
-					float h = (float)(f / (float) (Math.PI * 2));
-					return MathHelper.floorMod(h, 1.0F);
+					return MathHelper.floorMod((float)f, 1.0F);
 				}
 			}
 
@@ -50,11 +49,10 @@ public class CompassItem extends Item {
 				if (world.getLastUpdateTime() != this.field_12292) {
 					this.field_12292 = world.getLastUpdateTime();
 					double e = d - this.field_12290;
-					e %= (float) (Math.PI * 2);
-					e = MathHelper.clamp(e, -1.0, 1.0);
+					e = MathHelper.floorMod(e + 0.5, 1.0) - 0.5;
 					this.field_12291 += e * 0.1;
 					this.field_12291 *= 0.8;
-					this.field_12290 = this.field_12290 + this.field_12291;
+					this.field_12290 = MathHelper.floorMod(this.field_12290 + this.field_12291, 1.0);
 				}
 
 				return this.field_12290;

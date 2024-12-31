@@ -18,6 +18,7 @@ public class EntityTrackerUpdateS2CPacket implements Packet<ClientPlayPacketList
 		this.id = i;
 		if (bl) {
 			this.trackedValues = dataTracker.getEntries();
+			dataTracker.clearDirty();
 		} else {
 			this.trackedValues = dataTracker.getChangedEntries();
 		}

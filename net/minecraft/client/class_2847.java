@@ -213,8 +213,10 @@ public class class_2847 implements EntryListWidget.Entry {
 		SaveHandler saveHandler = this.field_13363.getCurrentSave().createSaveHandler(this.field_13365.getFileName(), false);
 		LevelProperties levelProperties = saveHandler.getLevelProperties();
 		saveHandler.clear();
-		createWorldScreen.copyWorld(levelProperties);
-		this.field_13363.setScreen(createWorldScreen);
+		if (levelProperties != null) {
+			createWorldScreen.copyWorld(levelProperties);
+			this.field_13363.setScreen(createWorldScreen);
+		}
 	}
 
 	private void method_12210() {

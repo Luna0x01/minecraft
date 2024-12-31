@@ -41,7 +41,7 @@ public abstract class AbstractPressurePlateBlock extends Block {
 
 	@Nullable
 	@Override
-	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+	public Box method_8640(BlockState state, BlockView view, BlockPos pos) {
 		return EMPTY_BOX;
 	}
 
@@ -71,10 +71,10 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	}
 
 	@Override
-	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
-		if (!this.canBePlacedOnBlockBelow(world, blockPos.down())) {
-			this.dropAsItem(world, blockPos, blockState, 0);
-			world.setAir(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos) {
+		if (!this.canBePlacedOnBlockBelow(world, pos.down())) {
+			this.dropAsItem(world, pos, state, 0);
+			world.setAir(pos);
 		}
 	}
 
@@ -142,8 +142,8 @@ public abstract class AbstractPressurePlateBlock extends Block {
 	}
 
 	protected void updateNeighbours(World world, BlockPos pos) {
-		world.updateNeighborsAlways(pos, this);
-		world.updateNeighborsAlways(pos.down(), this);
+		world.method_13692(pos, this, false);
+		world.method_13692(pos.down(), this, false);
 	}
 
 	@Override

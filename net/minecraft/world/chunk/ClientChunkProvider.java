@@ -3,6 +3,7 @@ package net.minecraft.world.chunk;
 import com.google.common.base.Objects;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import javax.annotation.Nullable;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
@@ -56,8 +57,10 @@ public class ClientChunkProvider implements ChunkProvider {
 	@Override
 	public boolean tickChunks() {
 		long l = System.currentTimeMillis();
+		ObjectIterator var3 = this.chunkMap.values().iterator();
 
-		for (Chunk chunk : this.chunkMap.values()) {
+		while (var3.hasNext()) {
+			Chunk chunk = (Chunk)var3.next();
 			chunk.populateBlockEntities(System.currentTimeMillis() - l > 5L);
 		}
 
@@ -71,5 +74,10 @@ public class ClientChunkProvider implements ChunkProvider {
 	@Override
 	public String getChunkProviderName() {
 		return "MultiplayerChunkCache: " + this.chunkMap.size() + ", " + this.chunkMap.size();
+	}
+
+	@Override
+	public boolean isChunkGenerated(int x, int z) {
+		return this.chunkMap.containsKey(ChunkPos.getIdFromCoords(x, z));
 	}
 }

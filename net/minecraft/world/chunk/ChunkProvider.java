@@ -11,4 +11,6 @@ public interface ChunkProvider {
 	boolean tickChunks();
 
 	String getChunkProviderName();
+
+	boolean isChunkGenerated(int x, int z);
 }

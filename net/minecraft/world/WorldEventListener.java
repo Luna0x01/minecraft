@@ -21,6 +21,8 @@ public interface WorldEventListener {
 
 	void addParticle(int id, boolean bl, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... args);
 
+	void method_13696(int i, boolean bl, boolean bl2, double d, double e, double f, double g, double h, double j, int... is);
+
 	void onEntitySpawned(Entity entity);
 
 	void onEntityRemoved(Entity entity);

@@ -22,6 +22,7 @@ public class LootTables {
 	public static final Identifier JUNGLE_TEMPLE_CHEST = register("chests/jungle_temple");
 	public static final Identifier JUNGLE_TEMPLE_DISPENSER_CHEST = register("chests/jungle_temple_dispenser");
 	public static final Identifier IGLOO_CHEST_CHEST = register("chests/igloo_chest");
+	public static final Identifier WOODLAND_MANSION_CHEST = register("chests/woodland_mansion");
 	public static final Identifier WITCH_ENTITIE = register("entities/witch");
 	public static final Identifier BLAZE_ENTITIE = register("entities/blaze");
 	public static final Identifier CREEPER_ENTITIE = register("entities/creeper");
@@ -40,6 +41,8 @@ public class LootTables {
 	public static final Identifier PIG_ENTITIE = register("entities/pig");
 	public static final Identifier POLAR_BEAR_ENTITIE = register("entities/polar_bear");
 	public static final Identifier HORSE_ENTITIE = register("entities/horse");
+	public static final Identifier DONKEY_ENTITIE = register("entities/donkey");
+	public static final Identifier MULE_ENTITIE = register("entities/mule");
 	public static final Identifier ZOMBIE_HORSE_ENTITIE = register("entities/zombie_horse");
 	public static final Identifier SKELETON_HORSE_ENTITIE = register("entities/skeleton_horse");
 	public static final Identifier COW_ENTITIE = register("entities/cow");
@@ -74,6 +77,14 @@ public class LootTables {
 	public static final Identifier SKELETON_ENTITIE = register("entities/skeleton");
 	public static final Identifier WITHER_SKELETON_ENTITIE = register("entities/wither_skeleton");
 	public static final Identifier STRAY_ENTITIE = register("entities/stray");
+	public static final Identifier HUSK_ENTITIE = register("entities/husk");
+	public static final Identifier ZOMBIE_VILLAGER_ENTITIE = register("entities/zombie_villager");
+	public static final Identifier VILLAGER_ENTITIE = register("entities/villager");
+	public static final Identifier EVOCATION_ILLAGER_ENTITIE = register("entities/evocation_illager");
+	public static final Identifier VINDICATION_ILLAGER_ENTITIE = register("entities/vindication_illager");
+	public static final Identifier LLAMA_ENTITIE = register("entities/llama");
+	public static final Identifier VEX_ENTITIE = register("entities/vex");
+	public static final Identifier ENDER_DRAGON_ENTITIE = register("entities/ender_dragon");
 	public static final Identifier FISHING_GAMEPLAY = register("gameplay/fishing");
 	public static final Identifier FISHING_JUNK_GAMEPLAY = register("gameplay/fishing/junk");
 	public static final Identifier FISHING_TREASURE_GAMEPLAY = register("gameplay/fishing/treasure");
