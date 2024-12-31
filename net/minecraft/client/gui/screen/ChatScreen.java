@@ -1,56 +1,59 @@
 package net.minecraft.client.gui.screen;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.NarratorManager;
-import net.minecraft.text.Text;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.MathHelper;
 
 public class ChatScreen extends Screen {
-	private String field_2389 = "";
+	private String chatLastMessage = "";
 	private int messageHistorySize = -1;
 	protected TextFieldWidget chatField;
 	private String originalChatText = "";
 	private CommandSuggestor commandSuggestor;
 
-	public ChatScreen(String string) {
+	public ChatScreen(String originalChatText) {
 		super(NarratorManager.EMPTY);
-		this.originalChatText = string;
+		this.originalChatText = originalChatText;
 	}
 
 	@Override
 	protected void init() {
-		this.minecraft.keyboard.enableRepeatEvents(true);
-		this.messageHistorySize = this.minecraft.inGameHud.getChatHud().getMessageHistory().size();
-		this.chatField = new TextFieldWidget(this.font, 4, this.height - 12, this.width - 4, 12, I18n.translate("chat.editBox")) {
+		this.client.keyboard.setRepeatEvents(true);
+		this.messageHistorySize = this.client.inGameHud.getChatHud().getMessageHistory().size();
+		this.chatField = new TextFieldWidget(this.textRenderer, 4, this.height - 12, this.width - 4, 12, new TranslatableText("chat.editBox")) {
 			@Override
-			protected String getNarrationMessage() {
-				return super.getNarrationMessage() + ChatScreen.this.commandSuggestor.method_23958();
+			protected MutableText getNarrationMessage() {
+				return super.getNarrationMessage().append(ChatScreen.this.commandSuggestor.getNarration());
 			}
 		};
 		this.chatField.setMaxLength(256);
-		this.chatField.setHasBorder(false);
+		this.chatField.setDrawsBackground(false);
 		this.chatField.setText(this.originalChatText);
 		this.chatField.setChangedListener(this::onChatFieldUpdate);
 		this.children.add(this.chatField);
-		this.commandSuggestor = new CommandSuggestor(this.minecraft, this, this.chatField, this.font, false, false, 1, 10, true, -805306368);
+		this.commandSuggestor = new CommandSuggestor(this.client, this, this.chatField, this.textRenderer, false, false, 1, 10, true, -805306368);
 		this.commandSuggestor.refresh();
 		this.setInitialFocus(this.chatField);
 	}
 
 	@Override
-	public void resize(MinecraftClient minecraftClient, int i, int j) {
+	public void resize(MinecraftClient client, int width, int height) {
 		String string = this.chatField.getText();
-		this.init(minecraftClient, i, j);
+		this.init(client, width, height);
 		this.setText(string);
 		this.commandSuggestor.refresh();
 	}
 
 	@Override
 	public void removed() {
-		this.minecraft.keyboard.enableRepeatEvents(false);
-		this.minecraft.inGameHud.getChatHud().resetScroll();
+		this.client.keyboard.setRepeatEvents(false);
+		this.client.inGameHud.getChatHud().resetScroll();
 	}
 
 	@Override
@@ -58,40 +61,40 @@ public class ChatScreen extends Screen {
 		this.chatField.tick();
 	}
 
-	private void onChatFieldUpdate(String string) {
-		String string2 = this.chatField.getText();
-		this.commandSuggestor.setWindowActive(!string2.equals(this.originalChatText));
+	private void onChatFieldUpdate(String chatText) {
+		String string = this.chatField.getText();
+		this.commandSuggestor.setWindowActive(!string.equals(this.originalChatText));
 		this.commandSuggestor.refresh();
 	}
 
 	@Override
-	public boolean keyPressed(int i, int j, int k) {
-		if (this.commandSuggestor.keyPressed(i, j, k)) {
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		if (this.commandSuggestor.keyPressed(keyCode, scanCode, modifiers)) {
 			return true;
-		} else if (super.keyPressed(i, j, k)) {
+		} else if (super.keyPressed(keyCode, scanCode, modifiers)) {
 			return true;
-		} else if (i == 256) {
-			this.minecraft.openScreen(null);
+		} else if (keyCode == 256) {
+			this.client.openScreen(null);
 			return true;
-		} else if (i == 257 || i == 335) {
+		} else if (keyCode == 257 || keyCode == 335) {
 			String string = this.chatField.getText().trim();
 			if (!string.isEmpty()) {
 				this.sendMessage(string);
 			}
 
-			this.minecraft.openScreen(null);
+			this.client.openScreen(null);
 			return true;
-		} else if (i == 265) {
+		} else if (keyCode == 265) {
 			this.setChatFromHistory(-1);
 			return true;
-		} else if (i == 264) {
+		} else if (keyCode == 264) {
 			this.setChatFromHistory(1);
 			return true;
-		} else if (i == 266) {
-			this.minecraft.inGameHud.getChatHud().scroll((double)(this.minecraft.inGameHud.getChatHud().getVisibleLineCount() - 1));
+		} else if (keyCode == 266) {
+			this.client.inGameHud.getChatHud().scroll((double)(this.client.inGameHud.getChatHud().getVisibleLineCount() - 1));
 			return true;
-		} else if (i == 267) {
-			this.minecraft.inGameHud.getChatHud().scroll((double)(-this.minecraft.inGameHud.getChatHud().getVisibleLineCount() + 1));
+		} else if (keyCode == 267) {
+			this.client.inGameHud.getChatHud().scroll((double)(-this.client.inGameHud.getChatHud().getVisibleLineCount() + 1));
 			return true;
 		} else {
 			return false;
@@ -99,66 +102,71 @@ public class ChatScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseScrolled(double d, double e, double f) {
-		if (f > 1.0) {
-			f = 1.0;
+	public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+		if (amount > 1.0) {
+			amount = 1.0;
 		}
 
-		if (f < -1.0) {
-			f = -1.0;
+		if (amount < -1.0) {
+			amount = -1.0;
 		}
 
-		if (this.commandSuggestor.mouseScrolled(f)) {
+		if (this.commandSuggestor.mouseScrolled(amount)) {
 			return true;
 		} else {
 			if (!hasShiftDown()) {
-				f *= 7.0;
+				amount *= 7.0;
 			}
 
-			this.minecraft.inGameHud.getChatHud().scroll(f);
+			this.client.inGameHud.getChatHud().scroll(amount);
 			return true;
 		}
 	}
 
 	@Override
-	public boolean mouseClicked(double d, double e, int i) {
-		if (this.commandSuggestor.mouseClicked((double)((int)d), (double)((int)e), i)) {
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (this.commandSuggestor.mouseClicked((double)((int)mouseX), (double)((int)mouseY), button)) {
 			return true;
 		} else {
-			if (i == 0) {
-				Text text = this.minecraft.inGameHud.getChatHud().getText(d, e);
-				if (text != null && this.handleComponentClicked(text)) {
+			if (button == 0) {
+				ChatHud chatHud = this.client.inGameHud.getChatHud();
+				if (chatHud.mouseClicked(mouseX, mouseY)) {
+					return true;
+				}
+
+				Style style = chatHud.getText(mouseX, mouseY);
+				if (style != null && this.handleTextClick(style)) {
 					return true;
 				}
 			}
 
-			return this.chatField.mouseClicked(d, e, i) ? true : super.mouseClicked(d, e, i);
+			return this.chatField.mouseClicked(mouseX, mouseY, button) ? true : super.mouseClicked(mouseX, mouseY, button);
 		}
 	}
 
 	@Override
-	protected void insertText(String string, boolean bl) {
-		if (bl) {
-			this.chatField.setText(string);
+	protected void insertText(String text, boolean override) {
+		if (override) {
+			this.chatField.setText(text);
 		} else {
-			this.chatField.write(string);
+			this.chatField.write(text);
 		}
 	}
 
 	public void setChatFromHistory(int i) {
 		int j = this.messageHistorySize + i;
-		int k = this.minecraft.inGameHud.getChatHud().getMessageHistory().size();
+		int k = this.client.inGameHud.getChatHud().getMessageHistory().size();
 		j = MathHelper.clamp(j, 0, k);
 		if (j != this.messageHistorySize) {
 			if (j == k) {
 				this.messageHistorySize = k;
-				this.chatField.setText(this.field_2389);
+				this.chatField.setText(this.chatLastMessage);
 			} else {
 				if (this.messageHistorySize == k) {
-					this.field_2389 = this.chatField.getText();
+					this.chatLastMessage = this.chatField.getText();
 				}
 
-				this.chatField.setText((String)this.minecraft.inGameHud.getChatHud().getMessageHistory().get(j));
+				this.chatField.setText((String)this.client.inGameHud.getChatHud().getMessageHistory().get(j));
 				this.commandSuggestor.setWindowActive(false);
 				this.messageHistorySize = j;
 			}
@@ -166,18 +174,18 @@ public class ChatScreen extends Screen {
 	}
 
 	@Override
-	public void render(int i, int j, float f) {
+	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
 		this.setFocused(this.chatField);
-		this.chatField.setSelected(true);
-		fill(2, this.height - 14, this.width - 2, this.height - 2, this.minecraft.options.getTextBackgroundColor(Integer.MIN_VALUE));
-		this.chatField.render(i, j, f);
-		this.commandSuggestor.render(i, j);
-		Text text = this.minecraft.inGameHud.getChatHud().getText((double)i, (double)j);
-		if (text != null && text.getStyle().getHoverEvent() != null) {
-			this.renderComponentHoverEffect(text, i, j);
+		this.chatField.setTextFieldFocused(true);
+		fill(matrices, 2, this.height - 14, this.width - 2, this.height - 2, this.client.options.getTextBackgroundColor(Integer.MIN_VALUE));
+		this.chatField.render(matrices, mouseX, mouseY, delta);
+		this.commandSuggestor.render(matrices, mouseX, mouseY);
+		Style style = this.client.inGameHud.getChatHud().getText((double)mouseX, (double)mouseY);
+		if (style != null && style.getHoverEvent() != null) {
+			this.renderTextHoverEffect(matrices, style, mouseX, mouseY);
 		}
 
-		super.render(i, j, f);
+		super.render(matrices, mouseX, mouseY, delta);
 	}
 
 	@Override
@@ -185,7 +193,7 @@ public class ChatScreen extends Screen {
 		return false;
 	}
 
-	private void setText(String string) {
-		this.chatField.setText(string);
+	private void setText(String text) {
+		this.chatField.setText(text);
 	}
 }

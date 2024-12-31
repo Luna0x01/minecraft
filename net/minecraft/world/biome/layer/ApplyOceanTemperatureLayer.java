@@ -6,52 +6,52 @@ import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
 import net.minecraft.world.biome.layer.util.LayerSampler;
 
 public enum ApplyOceanTemperatureLayer implements MergingLayer, IdentityCoordinateTransformer {
-	field_16121;
+	INSTANCE;
 
 	@Override
-	public int sample(LayerRandomnessSource layerRandomnessSource, LayerSampler layerSampler, LayerSampler layerSampler2, int i, int j) {
-		int k = layerSampler.sample(this.transformX(i), this.transformZ(j));
-		int l = layerSampler2.sample(this.transformX(i), this.transformZ(j));
-		if (!BiomeLayers.isOcean(k)) {
-			return k;
+	public int sample(LayerRandomnessSource context, LayerSampler sampler1, LayerSampler sampler2, int x, int z) {
+		int i = sampler1.sample(this.transformX(x), this.transformZ(z));
+		int j = sampler2.sample(this.transformX(x), this.transformZ(z));
+		if (!BiomeLayers.isOcean(i)) {
+			return i;
 		} else {
-			int m = 8;
-			int n = 4;
+			int k = 8;
+			int l = 4;
 
-			for (int o = -8; o <= 8; o += 4) {
-				for (int p = -8; p <= 8; p += 4) {
-					int q = layerSampler.sample(this.transformX(i + o), this.transformZ(j + p));
-					if (!BiomeLayers.isOcean(q)) {
-						if (l == BiomeLayers.WARM_OCEAN_ID) {
-							return BiomeLayers.LUKEWARM_OCEAN_ID;
+			for (int m = -8; m <= 8; m += 4) {
+				for (int n = -8; n <= 8; n += 4) {
+					int o = sampler1.sample(this.transformX(x + m), this.transformZ(z + n));
+					if (!BiomeLayers.isOcean(o)) {
+						if (j == 44) {
+							return 45;
 						}
 
-						if (l == BiomeLayers.FROZEN_OCEAN_ID) {
-							return BiomeLayers.COLD_OCEAN_ID;
+						if (j == 10) {
+							return 46;
 						}
 					}
 				}
 			}
 
-			if (k == BiomeLayers.DEEP_OCEAN_ID) {
-				if (l == BiomeLayers.LUKEWARM_OCEAN_ID) {
-					return BiomeLayers.DEEP_LUKEWARM_OCEAN_ID;
+			if (i == 24) {
+				if (j == 45) {
+					return 48;
 				}
 
-				if (l == BiomeLayers.OCEAN_ID) {
-					return BiomeLayers.DEEP_OCEAN_ID;
+				if (j == 0) {
+					return 24;
 				}
 
-				if (l == BiomeLayers.COLD_OCEAN_ID) {
-					return BiomeLayers.DEEP_COLD_OCEAN_ID;
+				if (j == 46) {
+					return 49;
 				}
 
-				if (l == BiomeLayers.FROZEN_OCEAN_ID) {
-					return BiomeLayers.DEEP_FROZEN_OCEAN_ID;
+				if (j == 10) {
+					return 50;
 				}
 			}
 
-			return l;
+			return j;
 		}
 	}
 }

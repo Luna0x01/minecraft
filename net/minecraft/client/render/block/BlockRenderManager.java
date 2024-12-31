@@ -10,6 +10,7 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.BuiltinModelItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
@@ -28,8 +29,8 @@ public class BlockRenderManager implements SynchronousResourceReloadListener {
 	private final Random random = new Random();
 	private final BlockColors blockColors;
 
-	public BlockRenderManager(BlockModels blockModels, BlockColors blockColors) {
-		this.models = blockModels;
+	public BlockRenderManager(BlockModels models, BlockColors blockColors) {
+		this.models = models;
 		this.blockColors = blockColors;
 		this.blockModelRenderer = new BlockModelRenderer(this.blockColors);
 		this.fluidRenderer = new FluidRenderer();
@@ -39,50 +40,38 @@ public class BlockRenderManager implements SynchronousResourceReloadListener {
 		return this.models;
 	}
 
-	public void renderDamage(BlockState blockState, BlockPos blockPos, BlockRenderView blockRenderView, MatrixStack matrixStack, VertexConsumer vertexConsumer) {
-		if (blockState.getRenderType() == BlockRenderType.field_11458) {
-			BakedModel bakedModel = this.models.getModel(blockState);
-			long l = blockState.getRenderingSeed(blockPos);
-			this.blockModelRenderer
-				.render(blockRenderView, bakedModel, blockState, blockPos, matrixStack, vertexConsumer, true, this.random, l, OverlayTexture.DEFAULT_UV);
+	public void renderDamage(BlockState state, BlockPos pos, BlockRenderView world, MatrixStack matrix, VertexConsumer vertexConsumer) {
+		if (state.getRenderType() == BlockRenderType.MODEL) {
+			BakedModel bakedModel = this.models.getModel(state);
+			long l = state.getRenderingSeed(pos);
+			this.blockModelRenderer.render(world, bakedModel, state, pos, matrix, vertexConsumer, true, this.random, l, OverlayTexture.DEFAULT_UV);
 		}
 	}
 
 	public boolean renderBlock(
-		BlockState blockState, BlockPos blockPos, BlockRenderView blockRenderView, MatrixStack matrixStack, VertexConsumer vertexConsumer, boolean bl, Random random
+		BlockState state, BlockPos pos, BlockRenderView world, MatrixStack matrix, VertexConsumer vertexConsumer, boolean cull, Random random
 	) {
 		try {
-			BlockRenderType blockRenderType = blockState.getRenderType();
-			return blockRenderType != BlockRenderType.field_11458
+			BlockRenderType blockRenderType = state.getRenderType();
+			return blockRenderType != BlockRenderType.MODEL
 				? false
 				: this.blockModelRenderer
-					.render(
-						blockRenderView,
-						this.getModel(blockState),
-						blockState,
-						blockPos,
-						matrixStack,
-						vertexConsumer,
-						bl,
-						random,
-						blockState.getRenderingSeed(blockPos),
-						OverlayTexture.DEFAULT_UV
-					);
+					.render(world, this.getModel(state), state, pos, matrix, vertexConsumer, cull, random, state.getRenderingSeed(pos), OverlayTexture.DEFAULT_UV);
 		} catch (Throwable var11) {
 			CrashReport crashReport = CrashReport.create(var11, "Tesselating block in world");
 			CrashReportSection crashReportSection = crashReport.addElement("Block being tesselated");
-			CrashReportSection.addBlockInfo(crashReportSection, blockPos, blockState);
+			CrashReportSection.addBlockInfo(crashReportSection, pos, state);
 			throw new CrashException(crashReport);
 		}
 	}
 
-	public boolean renderFluid(BlockPos blockPos, BlockRenderView blockRenderView, VertexConsumer vertexConsumer, FluidState fluidState) {
+	public boolean renderFluid(BlockPos pos, BlockRenderView blockRenderView, VertexConsumer vertexConsumer, FluidState fluidState) {
 		try {
-			return this.fluidRenderer.render(blockRenderView, blockPos, vertexConsumer, fluidState);
+			return this.fluidRenderer.render(blockRenderView, pos, vertexConsumer, fluidState);
 		} catch (Throwable var8) {
 			CrashReport crashReport = CrashReport.create(var8, "Tesselating liquid in world");
 			CrashReportSection crashReportSection = crashReport.addElement("Block being tesselated");
-			CrashReportSection.addBlockInfo(crashReportSection, blockPos, null);
+			CrashReportSection.addBlockInfo(crashReportSection, pos, null);
 			throw new CrashException(crashReport);
 		}
 	}
@@ -91,31 +80,31 @@ public class BlockRenderManager implements SynchronousResourceReloadListener {
 		return this.blockModelRenderer;
 	}
 
-	public BakedModel getModel(BlockState blockState) {
-		return this.models.getModel(blockState);
+	public BakedModel getModel(BlockState state) {
+		return this.models.getModel(state);
 	}
 
-	public void renderBlockAsEntity(BlockState blockState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
-		BlockRenderType blockRenderType = blockState.getRenderType();
-		if (blockRenderType != BlockRenderType.field_11455) {
+	public void renderBlockAsEntity(BlockState state, MatrixStack matrices, VertexConsumerProvider vertexConsumer, int light, int overlay) {
+		BlockRenderType blockRenderType = state.getRenderType();
+		if (blockRenderType != BlockRenderType.INVISIBLE) {
 			switch (blockRenderType) {
-				case field_11458:
-					BakedModel bakedModel = this.getModel(blockState);
-					int k = this.blockColors.getColor(blockState, null, null, 0);
-					float f = (float)(k >> 16 & 0xFF) / 255.0F;
-					float g = (float)(k >> 8 & 0xFF) / 255.0F;
-					float h = (float)(k & 0xFF) / 255.0F;
+				case MODEL:
+					BakedModel bakedModel = this.getModel(state);
+					int i = this.blockColors.getColor(state, null, null, 0);
+					float f = (float)(i >> 16 & 0xFF) / 255.0F;
+					float g = (float)(i >> 8 & 0xFF) / 255.0F;
+					float h = (float)(i & 0xFF) / 255.0F;
 					this.blockModelRenderer
-						.render(matrixStack.peek(), vertexConsumerProvider.getBuffer(RenderLayers.getEntityBlockLayer(blockState)), blockState, bakedModel, f, g, h, i, j);
+						.render(matrices.peek(), vertexConsumer.getBuffer(RenderLayers.getEntityBlockLayer(state, false)), state, bakedModel, f, g, h, light, overlay);
 					break;
-				case field_11456:
-					BuiltinModelItemRenderer.INSTANCE.render(new ItemStack(blockState.getBlock()), matrixStack, vertexConsumerProvider, i, j);
+				case ENTITYBLOCK_ANIMATED:
+					BuiltinModelItemRenderer.INSTANCE.render(new ItemStack(state.getBlock()), ModelTransformation.Mode.NONE, matrices, vertexConsumer, light, overlay);
 			}
 		}
 	}
 
 	@Override
-	public void apply(ResourceManager resourceManager) {
+	public void apply(ResourceManager manager) {
 		this.fluidRenderer.onResourceReload();
 	}
 }

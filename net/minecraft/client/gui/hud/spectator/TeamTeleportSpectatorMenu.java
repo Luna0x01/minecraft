@@ -10,6 +10,7 @@ import net.minecraft.client.gui.hud.SpectatorHud;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.DefaultSkinHelper;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -17,6 +18,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, SpectatorMenuCommand {
+	private static final Text TEAM_TELEPORT_TEXT = new TranslatableText("spectatorMenu.team_teleport");
+	private static final Text PROMPT_TEXT = new TranslatableText("spectatorMenu.team_teleport.prompt");
 	private final List<SpectatorMenuCommand> commands = Lists.newArrayList();
 
 	public TeamTeleportSpectatorMenu() {
@@ -34,23 +37,23 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 
 	@Override
 	public Text getPrompt() {
-		return new TranslatableText("spectatorMenu.team_teleport.prompt");
+		return PROMPT_TEXT;
 	}
 
 	@Override
-	public void use(SpectatorMenu spectatorMenu) {
-		spectatorMenu.selectElement(this);
+	public void use(SpectatorMenu menu) {
+		menu.selectElement(this);
 	}
 
 	@Override
 	public Text getName() {
-		return new TranslatableText("spectatorMenu.team_teleport");
+		return TEAM_TELEPORT_TEXT;
 	}
 
 	@Override
-	public void renderIcon(float f, int i) {
-		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEX);
-		DrawableHelper.blit(0, 0, 16.0F, 0.0F, 16, 16, 256, 256);
+	public void renderIcon(MatrixStack matrices, float f, int i) {
+		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEXTURE);
+		DrawableHelper.drawTexture(matrices, 0, 0, 16.0F, 0.0F, 16, 16, 256, 256);
 	}
 
 	@Override
@@ -90,8 +93,8 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 		}
 
 		@Override
-		public void use(SpectatorMenu spectatorMenu) {
-			spectatorMenu.selectElement(new TeleportSpectatorMenu(this.scoreboardEntries));
+		public void use(SpectatorMenu menu) {
+			menu.selectElement(new TeleportSpectatorMenu(this.scoreboardEntries));
 		}
 
 		@Override
@@ -100,19 +103,19 @@ public class TeamTeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spe
 		}
 
 		@Override
-		public void renderIcon(float f, int i) {
+		public void renderIcon(MatrixStack matrices, float f, int i) {
 			Integer integer = this.team.getColor().getColorValue();
 			if (integer != null) {
 				float g = (float)(integer >> 16 & 0xFF) / 255.0F;
 				float h = (float)(integer >> 8 & 0xFF) / 255.0F;
 				float j = (float)(integer & 0xFF) / 255.0F;
-				DrawableHelper.fill(1, 1, 15, 15, MathHelper.packRgb(g * f, h * f, j * f) | i << 24);
+				DrawableHelper.fill(matrices, 1, 1, 15, 15, MathHelper.packRgb(g * f, h * f, j * f) | i << 24);
 			}
 
 			MinecraftClient.getInstance().getTextureManager().bindTexture(this.skinId);
 			RenderSystem.color4f(f, f, f, (float)i / 255.0F);
-			DrawableHelper.blit(2, 2, 12, 12, 8.0F, 8.0F, 8, 8, 64, 64);
-			DrawableHelper.blit(2, 2, 12, 12, 40.0F, 8.0F, 8, 8, 64, 64);
+			DrawableHelper.drawTexture(matrices, 2, 2, 12, 12, 8.0F, 8.0F, 8, 8, 64, 64);
+			DrawableHelper.drawTexture(matrices, 2, 2, 12, 12, 40.0F, 8.0F, 8, 8, 64, 64);
 		}
 
 		@Override

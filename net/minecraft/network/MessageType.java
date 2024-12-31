@@ -1,30 +1,30 @@
 package net.minecraft.network;
 
 public enum MessageType {
-	field_11737((byte)0, false),
-	field_11735((byte)1, true),
-	field_11733((byte)2, true);
+	CHAT((byte)0, false),
+	SYSTEM((byte)1, true),
+	GAME_INFO((byte)2, true);
 
 	private final byte id;
 	private final boolean interruptsNarration;
 
-	private MessageType(byte b, boolean bl) {
-		this.id = b;
-		this.interruptsNarration = bl;
+	private MessageType(byte id, boolean interruptsNarration) {
+		this.id = id;
+		this.interruptsNarration = interruptsNarration;
 	}
 
 	public byte getId() {
 		return this.id;
 	}
 
-	public static MessageType byId(byte b) {
+	public static MessageType byId(byte id) {
 		for (MessageType messageType : values()) {
-			if (b == messageType.id) {
+			if (id == messageType.id) {
 				return messageType;
 			}
 		}
 
-		return field_11737;
+		return CHAT;
 	}
 
 	public boolean interruptsNarration() {

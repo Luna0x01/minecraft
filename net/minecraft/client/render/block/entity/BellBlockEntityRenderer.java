@@ -13,7 +13,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
 public class BellBlockEntityRenderer extends BlockEntityRenderer<BellBlockEntity> {
-	public static final SpriteIdentifier BELL_BODY_TEXTURE = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("entity/bell/bell_body"));
+	public static final SpriteIdentifier BELL_BODY_TEXTURE = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier("entity/bell/bell_body"));
 	private final ModelPart field_20816 = new ModelPart(32, 32, 0, 0);
 
 	public BellBlockEntityRenderer(BlockEntityRenderDispatcher blockEntityRenderDispatcher) {
@@ -30,15 +30,15 @@ public class BellBlockEntityRenderer extends BlockEntityRenderer<BellBlockEntity
 		float g = (float)bellBlockEntity.ringTicks + f;
 		float h = 0.0F;
 		float k = 0.0F;
-		if (bellBlockEntity.isRinging) {
+		if (bellBlockEntity.ringing) {
 			float l = MathHelper.sin(g / (float) Math.PI) / (4.0F + g / 3.0F);
-			if (bellBlockEntity.lastSideHit == Direction.field_11043) {
+			if (bellBlockEntity.lastSideHit == Direction.NORTH) {
 				h = -l;
-			} else if (bellBlockEntity.lastSideHit == Direction.field_11035) {
+			} else if (bellBlockEntity.lastSideHit == Direction.SOUTH) {
 				h = l;
-			} else if (bellBlockEntity.lastSideHit == Direction.field_11034) {
+			} else if (bellBlockEntity.lastSideHit == Direction.EAST) {
 				k = -l;
-			} else if (bellBlockEntity.lastSideHit == Direction.field_11039) {
+			} else if (bellBlockEntity.lastSideHit == Direction.WEST) {
 				k = l;
 			}
 		}

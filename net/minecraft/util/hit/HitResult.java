@@ -1,12 +1,20 @@
 package net.minecraft.util.hit;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 
 public abstract class HitResult {
 	protected final Vec3d pos;
 
-	protected HitResult(Vec3d vec3d) {
-		this.pos = vec3d;
+	protected HitResult(Vec3d pos) {
+		this.pos = pos;
+	}
+
+	public double squaredDistanceTo(Entity entity) {
+		double d = this.pos.x - entity.getX();
+		double e = this.pos.y - entity.getY();
+		double f = this.pos.z - entity.getZ();
+		return d * d + e * e + f * f;
 	}
 
 	public abstract HitResult.Type getType();
@@ -16,8 +24,8 @@ public abstract class HitResult {
 	}
 
 	public static enum Type {
-		field_1333,
-		field_1332,
-		field_1331;
+		MISS,
+		BLOCK,
+		ENTITY;
 	}
 }

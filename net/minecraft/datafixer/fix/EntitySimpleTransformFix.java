@@ -1,10 +1,10 @@
 package net.minecraft.datafixer.fix;
 
 import com.mojang.datafixers.DSL;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.Typed;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Dynamic;
 
 public abstract class EntitySimpleTransformFix extends EntityTransformFix {
 	public EntitySimpleTransformFix(String string, Schema schema, boolean bl) {
@@ -12,10 +12,10 @@ public abstract class EntitySimpleTransformFix extends EntityTransformFix {
 	}
 
 	@Override
-	protected Pair<String, Typed<?>> transform(String string, Typed<?> typed) {
-		Pair<String, Dynamic<?>> pair = this.transform(string, (Dynamic<?>)typed.getOrCreate(DSL.remainderFinder()));
+	protected Pair<String, Typed<?>> transform(String choice, Typed<?> typed) {
+		Pair<String, Dynamic<?>> pair = this.transform(choice, (Dynamic<?>)typed.getOrCreate(DSL.remainderFinder()));
 		return Pair.of(pair.getFirst(), typed.set(DSL.remainderFinder(), pair.getSecond()));
 	}
 
-	protected abstract Pair<String, Dynamic<?>> transform(String string, Dynamic<?> dynamic);
+	protected abstract Pair<String, Dynamic<?>> transform(String choice, Dynamic<?> dynamic);
 }

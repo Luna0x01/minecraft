@@ -1,7 +1,7 @@
 package net.minecraft.block.entity;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.client.gui.hud.BackgroundHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -16,102 +16,103 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public class BellBlockEntity extends BlockEntity implements Tickable {
-	private long field_19155;
+	private long lastRingTime;
 	public int ringTicks;
-	public boolean isRinging;
+	public boolean ringing;
 	public Direction lastSideHit;
-	private List<LivingEntity> field_19156;
-	private boolean field_19157;
-	private int field_19158;
+	private List<LivingEntity> hearingEntities;
+	private boolean resonating;
+	private int resonateTime;
 
 	public BellBlockEntity() {
-		super(BlockEntityType.field_16413);
+		super(BlockEntityType.BELL);
 	}
 
 	@Override
-	public boolean onBlockAction(int i, int j) {
-		if (i == 1) {
-			this.method_20219();
-			this.field_19158 = 0;
-			this.lastSideHit = Direction.byId(j);
+	public boolean onSyncedBlockEvent(int type, int data) {
+		if (type == 1) {
+			this.notifyMemoriesOfBell();
+			this.resonateTime = 0;
+			this.lastSideHit = Direction.byId(data);
 			this.ringTicks = 0;
-			this.isRinging = true;
+			this.ringing = true;
 			return true;
 		} else {
-			return super.onBlockAction(i, j);
+			return super.onSyncedBlockEvent(type, data);
 		}
 	}
 
 	@Override
 	public void tick() {
-		if (this.isRinging) {
+		if (this.ringing) {
 			this.ringTicks++;
 		}
 
 		if (this.ringTicks >= 50) {
-			this.isRinging = false;
+			this.ringing = false;
 			this.ringTicks = 0;
 		}
 
-		if (this.ringTicks >= 5 && this.field_19158 == 0 && this.method_20523()) {
-			this.field_19157 = true;
+		if (this.ringTicks >= 5 && this.resonateTime == 0 && this.raidersHearBell()) {
+			this.resonating = true;
 			this.playResonateSound();
 		}
 
-		if (this.field_19157) {
-			if (this.field_19158 < 40) {
-				this.field_19158++;
+		if (this.resonating) {
+			if (this.resonateTime < 40) {
+				this.resonateTime++;
 			} else {
-				this.method_20521(this.world);
-				this.method_20218(this.world);
-				this.field_19157 = false;
+				this.applyGlowToRaiders(this.world);
+				this.applyParticlesToRaiders(this.world);
+				this.resonating = false;
 			}
 		}
 	}
 
 	private void playResonateSound() {
-		this.world.playSound(null, this.getPos(), SoundEvents.field_19167, SoundCategory.field_15245, 1.0F, 1.0F);
+		this.world.playSound(null, this.getPos(), SoundEvents.BLOCK_BELL_RESONATE, SoundCategory.BLOCKS, 1.0F, 1.0F);
 	}
 
 	public void activate(Direction direction) {
 		BlockPos blockPos = this.getPos();
 		this.lastSideHit = direction;
-		if (this.isRinging) {
+		if (this.ringing) {
 			this.ringTicks = 0;
 		} else {
-			this.isRinging = true;
+			this.ringing = true;
 		}
 
-		this.world.addBlockAction(blockPos, this.getCachedState().getBlock(), 1, direction.getId());
+		this.world.addSyncedBlockEvent(blockPos, this.getCachedState().getBlock(), 1, direction.getId());
 	}
 
-	private void method_20219() {
+	private void notifyMemoriesOfBell() {
 		BlockPos blockPos = this.getPos();
-		if (this.world.getTime() > this.field_19155 + 60L || this.field_19156 == null) {
-			this.field_19155 = this.world.getTime();
+		if (this.world.getTime() > this.lastRingTime + 60L || this.hearingEntities == null) {
+			this.lastRingTime = this.world.getTime();
 			Box box = new Box(blockPos).expand(48.0);
-			this.field_19156 = this.world.getNonSpectatingEntities(LivingEntity.class, box);
+			this.hearingEntities = this.world.getNonSpectatingEntities(LivingEntity.class, box);
 		}
 
 		if (!this.world.isClient) {
-			for (LivingEntity livingEntity : this.field_19156) {
+			for (LivingEntity livingEntity : this.hearingEntities) {
 				if (livingEntity.isAlive() && !livingEntity.removed && blockPos.isWithinDistance(livingEntity.getPos(), 32.0)) {
-					livingEntity.getBrain().putMemory(MemoryModuleType.field_19009, this.world.getTime());
+					livingEntity.getBrain().remember(MemoryModuleType.HEARD_BELL_TIME, this.world.getTime());
 				}
 			}
 		}
 	}
 
-	private boolean method_20523() {
+	private boolean raidersHearBell() {
 		BlockPos blockPos = this.getPos();
 
-		for (LivingEntity livingEntity : this.field_19156) {
+		for (LivingEntity livingEntity : this.hearingEntities) {
 			if (livingEntity.isAlive()
 				&& !livingEntity.removed
 				&& blockPos.isWithinDistance(livingEntity.getPos(), 32.0)
-				&& livingEntity.getType().isTaggedWith(EntityTypeTags.field_19168)) {
+				&& livingEntity.getType().isIn(EntityTypeTags.RAIDERS)) {
 				return true;
 			}
 		}
@@ -119,20 +120,20 @@ public class BellBlockEntity extends BlockEntity implements Tickable {
 		return false;
 	}
 
-	private void method_20521(World world) {
+	private void applyGlowToRaiders(World world) {
 		if (!world.isClient) {
-			this.field_19156.stream().filter(this::method_20518).forEach(this::method_20520);
+			this.hearingEntities.stream().filter(this::isRaiderEntity).forEach(this::applyGlowToEntity);
 		}
 	}
 
-	private void method_20218(World world) {
+	private void applyParticlesToRaiders(World world) {
 		if (world.isClient) {
 			BlockPos blockPos = this.getPos();
-			AtomicInteger atomicInteger = new AtomicInteger(16700985);
-			int i = (int)this.field_19156.stream().filter(livingEntity -> blockPos.isWithinDistance(livingEntity.getPos(), 48.0)).count();
-			this.field_19156
+			MutableInt mutableInt = new MutableInt(16700985);
+			int i = (int)this.hearingEntities.stream().filter(livingEntity -> blockPos.isWithinDistance(livingEntity.getPos(), 48.0)).count();
+			this.hearingEntities
 				.stream()
-				.filter(this::method_20518)
+				.filter(this::isRaiderEntity)
 				.forEach(
 					livingEntity -> {
 						float f = 1.0F;
@@ -145,25 +146,22 @@ public class BellBlockEntity extends BlockEntity implements Tickable {
 						int j = MathHelper.clamp((i - 21) / -2, 3, 15);
 
 						for (int k = 0; k < j; k++) {
-							atomicInteger.addAndGet(5);
-							double h = (double)(atomicInteger.get() >> 16 & 0xFF) / 255.0;
-							double l = (double)(atomicInteger.get() >> 8 & 0xFF) / 255.0;
-							double m = (double)(atomicInteger.get() & 0xFF) / 255.0;
-							world.addParticle(ParticleTypes.field_11226, d, (double)((float)blockPos.getY() + 0.5F), e, h, l, m);
+							int l = mutableInt.addAndGet(5);
+							double h = (double)BackgroundHelper.ColorMixer.getRed(l) / 255.0;
+							double m = (double)BackgroundHelper.ColorMixer.getGreen(l) / 255.0;
+							double n = (double)BackgroundHelper.ColorMixer.getBlue(l) / 255.0;
+							world.addParticle(ParticleTypes.ENTITY_EFFECT, d, (double)((float)blockPos.getY() + 0.5F), e, h, m, n);
 						}
 					}
 				);
 		}
 	}
 
-	private boolean method_20518(LivingEntity livingEntity) {
-		return livingEntity.isAlive()
-			&& !livingEntity.removed
-			&& this.getPos().isWithinDistance(livingEntity.getPos(), 48.0)
-			&& livingEntity.getType().isTaggedWith(EntityTypeTags.field_19168);
+	private boolean isRaiderEntity(LivingEntity entity) {
+		return entity.isAlive() && !entity.removed && this.getPos().isWithinDistance(entity.getPos(), 48.0) && entity.getType().isIn(EntityTypeTags.RAIDERS);
 	}
 
-	private void method_20520(LivingEntity livingEntity) {
-		livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5912, 60));
+	private void applyGlowToEntity(LivingEntity entity) {
+		entity.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 60));
 	}
 }

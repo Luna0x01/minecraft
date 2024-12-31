@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.entity.ai.TargetFinder;
-import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -12,8 +12,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class FlyOntoTreeGoal extends WanderAroundFarGoal {
-	public FlyOntoTreeGoal(MobEntityWithAi mobEntityWithAi, double d) {
-		super(mobEntityWithAi, d);
+	public FlyOntoTreeGoal(PathAwareEntity pathAwareEntity, double d) {
+		super(pathAwareEntity, d);
 	}
 
 	@Nullable
@@ -33,7 +33,7 @@ public class FlyOntoTreeGoal extends WanderAroundFarGoal {
 
 	@Nullable
 	private Vec3d getTreeTarget() {
-		BlockPos blockPos = new BlockPos(this.mob);
+		BlockPos blockPos = this.mob.getBlockPos();
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 		BlockPos.Mutable mutable2 = new BlockPos.Mutable();
 
@@ -46,10 +46,10 @@ public class FlyOntoTreeGoal extends WanderAroundFarGoal {
 			MathHelper.floor(this.mob.getZ() + 3.0)
 		)) {
 			if (!blockPos.equals(blockPos2)) {
-				Block block = this.mob.world.getBlockState(mutable2.set(blockPos2).setOffset(Direction.field_11033)).getBlock();
-				boolean bl = block instanceof LeavesBlock || block.matches(BlockTags.field_15475);
-				if (bl && this.mob.world.isAir(blockPos2) && this.mob.world.isAir(mutable.set(blockPos2).setOffset(Direction.field_11036))) {
-					return new Vec3d(blockPos2);
+				Block block = this.mob.world.getBlockState(mutable2.set(blockPos2, Direction.DOWN)).getBlock();
+				boolean bl = block instanceof LeavesBlock || block.isIn(BlockTags.LOGS);
+				if (bl && this.mob.world.isAir(blockPos2) && this.mob.world.isAir(mutable.set(blockPos2, Direction.UP))) {
+					return Vec3d.ofBottomCenter(blockPos2);
 				}
 			}
 		}

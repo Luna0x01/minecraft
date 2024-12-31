@@ -1,28 +1,28 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.container.Container;
-import net.minecraft.container.ContainerListener;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerListener;
+import net.minecraft.util.collection.DefaultedList;
 
-public class CreativeInventoryListener implements ContainerListener {
+public class CreativeInventoryListener implements ScreenHandlerListener {
 	private final MinecraftClient client;
 
-	public CreativeInventoryListener(MinecraftClient minecraftClient) {
-		this.client = minecraftClient;
+	public CreativeInventoryListener(MinecraftClient client) {
+		this.client = client;
 	}
 
 	@Override
-	public void onContainerRegistered(Container container, DefaultedList<ItemStack> defaultedList) {
+	public void onHandlerRegistered(ScreenHandler handler, DefaultedList<ItemStack> stacks) {
 	}
 
 	@Override
-	public void onContainerSlotUpdate(Container container, int i, ItemStack itemStack) {
-		this.client.interactionManager.clickCreativeStack(itemStack, i);
+	public void onSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
+		this.client.interactionManager.clickCreativeStack(stack, slotId);
 	}
 
 	@Override
-	public void onContainerPropertyUpdate(Container container, int i, int j) {
+	public void onPropertyUpdate(ScreenHandler handler, int property, int value) {
 	}
 }

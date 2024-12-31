@@ -83,7 +83,7 @@ public class LargePufferfishEntityModel<T extends Entity> extends CompositeEntit
 			this.field_3496,
 			this.field_3495,
 			this.field_3489,
-			this.field_3488,
+			this.field_3497,
 			this.field_3491,
 			this.field_3492,
 			this.field_3487,
@@ -93,8 +93,8 @@ public class LargePufferfishEntityModel<T extends Entity> extends CompositeEntit
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		this.field_3499.roll = -0.2F + 0.4F * MathHelper.sin(h * 0.2F);
-		this.field_3494.roll = 0.2F - 0.4F * MathHelper.sin(h * 0.2F);
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		this.field_3499.roll = -0.2F + 0.4F * MathHelper.sin(animationProgress * 0.2F);
+		this.field_3494.roll = 0.2F - 0.4F * MathHelper.sin(animationProgress * 0.2F);
 	}
 }

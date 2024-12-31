@@ -9,11 +9,11 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import javax.annotation.Nullable;
-import net.minecraft.util.SectionDistanceLevelPropagator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.LightType;
+import net.minecraft.world.SectionDistanceLevelPropagator;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkProvider;
 import net.minecraft.world.chunk.ChunkToNibbleArrayMap;
@@ -23,158 +23,159 @@ public abstract class LightStorage<M extends ChunkToNibbleArrayMap<M>> extends S
 	private static final Direction[] DIRECTIONS = Direction.values();
 	private final LightType lightType;
 	private final ChunkProvider chunkProvider;
-	protected final LongSet nonEmptySections = new LongOpenHashSet();
-	protected final LongSet field_15797 = new LongOpenHashSet();
-	protected final LongSet field_15804 = new LongOpenHashSet();
-	protected volatile M uncachedLightArrays;
-	protected final M lightArrays;
-	protected final LongSet field_15802 = new LongOpenHashSet();
+	protected final LongSet readySections = new LongOpenHashSet();
+	protected final LongSet markedNotReadySections = new LongOpenHashSet();
+	protected final LongSet markedReadySections = new LongOpenHashSet();
+	protected volatile M uncachedStorage;
+	protected final M storage;
 	protected final LongSet dirtySections = new LongOpenHashSet();
-	protected final Long2ObjectMap<ChunkNibbleArray> lightArraysToAdd = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap());
-	private final LongSet field_19342 = new LongOpenHashSet();
-	private final LongSet lightArraysToRemove = new LongOpenHashSet();
+	protected final LongSet notifySections = new LongOpenHashSet();
+	protected final Long2ObjectMap<ChunkNibbleArray> queuedSections = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap());
+	private final LongSet queuedEdgeSections = new LongOpenHashSet();
+	private final LongSet columnsToRetain = new LongOpenHashSet();
+	private final LongSet sectionsToRemove = new LongOpenHashSet();
 	protected volatile boolean hasLightUpdates;
 
-	protected LightStorage(LightType lightType, ChunkProvider chunkProvider, M chunkToNibbleArrayMap) {
+	protected LightStorage(LightType lightType, ChunkProvider chunkProvider, M lightData) {
 		super(3, 16, 256);
 		this.lightType = lightType;
 		this.chunkProvider = chunkProvider;
-		this.lightArrays = chunkToNibbleArrayMap;
-		this.uncachedLightArrays = chunkToNibbleArrayMap.copy();
-		this.uncachedLightArrays.disableCache();
+		this.storage = lightData;
+		this.uncachedStorage = lightData.copy();
+		this.uncachedStorage.disableCache();
 	}
 
-	protected boolean hasLight(long l) {
-		return this.getLightArray(l, true) != null;
-	}
-
-	@Nullable
-	protected ChunkNibbleArray getLightArray(long l, boolean bl) {
-		return this.getLightArray(bl ? this.lightArrays : this.uncachedLightArrays, l);
+	protected boolean hasSection(long sectionPos) {
+		return this.getLightSection(sectionPos, true) != null;
 	}
 
 	@Nullable
-	protected ChunkNibbleArray getLightArray(M chunkToNibbleArrayMap, long l) {
-		return chunkToNibbleArrayMap.get(l);
+	protected ChunkNibbleArray getLightSection(long sectionPos, boolean cached) {
+		return this.getLightSection(cached ? this.storage : this.uncachedStorage, sectionPos);
 	}
 
 	@Nullable
-	public ChunkNibbleArray getLightArray(long l) {
-		ChunkNibbleArray chunkNibbleArray = (ChunkNibbleArray)this.lightArraysToAdd.get(l);
-		return chunkNibbleArray != null ? chunkNibbleArray : this.getLightArray(l, false);
+	protected ChunkNibbleArray getLightSection(M storage, long sectionPos) {
+		return storage.get(sectionPos);
 	}
 
-	protected abstract int getLight(long l);
+	@Nullable
+	public ChunkNibbleArray getLightSection(long sectionPos) {
+		ChunkNibbleArray chunkNibbleArray = (ChunkNibbleArray)this.queuedSections.get(sectionPos);
+		return chunkNibbleArray != null ? chunkNibbleArray : this.getLightSection(sectionPos, false);
+	}
 
-	protected int get(long l) {
-		long m = ChunkSectionPos.fromGlobalPos(l);
-		ChunkNibbleArray chunkNibbleArray = this.getLightArray(m, true);
+	protected abstract int getLight(long blockPos);
+
+	protected int get(long blockPos) {
+		long l = ChunkSectionPos.fromBlockPos(blockPos);
+		ChunkNibbleArray chunkNibbleArray = this.getLightSection(l, true);
 		return chunkNibbleArray.get(
-			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongX(l)),
-			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongY(l)),
-			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongZ(l))
+			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongX(blockPos)),
+			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongY(blockPos)),
+			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongZ(blockPos))
 		);
 	}
 
-	protected void set(long l, int i) {
-		long m = ChunkSectionPos.fromGlobalPos(l);
-		if (this.field_15802.add(m)) {
-			this.lightArrays.replaceWithCopy(m);
+	protected void set(long blockPos, int value) {
+		long l = ChunkSectionPos.fromBlockPos(blockPos);
+		if (this.dirtySections.add(l)) {
+			this.storage.replaceWithCopy(l);
 		}
 
-		ChunkNibbleArray chunkNibbleArray = this.getLightArray(m, true);
+		ChunkNibbleArray chunkNibbleArray = this.getLightSection(l, true);
 		chunkNibbleArray.set(
-			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongX(l)),
-			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongY(l)),
-			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongZ(l)),
-			i
+			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongX(blockPos)),
+			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongY(blockPos)),
+			ChunkSectionPos.getLocalCoord(BlockPos.unpackLongZ(blockPos)),
+			value
 		);
 
-		for (int j = -1; j <= 1; j++) {
-			for (int k = -1; k <= 1; k++) {
-				for (int n = -1; n <= 1; n++) {
-					this.dirtySections.add(ChunkSectionPos.fromGlobalPos(BlockPos.add(l, k, n, j)));
+		for (int i = -1; i <= 1; i++) {
+			for (int j = -1; j <= 1; j++) {
+				for (int k = -1; k <= 1; k++) {
+					this.notifySections.add(ChunkSectionPos.fromBlockPos(BlockPos.add(blockPos, j, k, i)));
 				}
 			}
 		}
 	}
 
 	@Override
-	protected int getLevel(long l) {
-		if (l == Long.MAX_VALUE) {
+	protected int getLevel(long id) {
+		if (id == Long.MAX_VALUE) {
 			return 2;
-		} else if (this.nonEmptySections.contains(l)) {
+		} else if (this.readySections.contains(id)) {
 			return 0;
 		} else {
-			return !this.lightArraysToRemove.contains(l) && this.lightArrays.containsKey(l) ? 1 : 2;
+			return !this.sectionsToRemove.contains(id) && this.storage.containsKey(id) ? 1 : 2;
 		}
 	}
 
 	@Override
-	protected int getInitialLevel(long l) {
-		if (this.field_15797.contains(l)) {
+	protected int getInitialLevel(long id) {
+		if (this.markedNotReadySections.contains(id)) {
 			return 2;
 		} else {
-			return !this.nonEmptySections.contains(l) && !this.field_15804.contains(l) ? 2 : 0;
+			return !this.readySections.contains(id) && !this.markedReadySections.contains(id) ? 2 : 0;
 		}
 	}
 
 	@Override
-	protected void setLevel(long l, int i) {
-		int j = this.getLevel(l);
-		if (j != 0 && i == 0) {
-			this.nonEmptySections.add(l);
-			this.field_15804.remove(l);
+	protected void setLevel(long id, int level) {
+		int i = this.getLevel(id);
+		if (i != 0 && level == 0) {
+			this.readySections.add(id);
+			this.markedReadySections.remove(id);
 		}
 
-		if (j == 0 && i != 0) {
-			this.nonEmptySections.remove(l);
-			this.field_15797.remove(l);
+		if (i == 0 && level != 0) {
+			this.readySections.remove(id);
+			this.markedNotReadySections.remove(id);
 		}
 
-		if (j >= 2 && i != 2) {
-			if (this.lightArraysToRemove.contains(l)) {
-				this.lightArraysToRemove.remove(l);
+		if (i >= 2 && level != 2) {
+			if (this.sectionsToRemove.contains(id)) {
+				this.sectionsToRemove.remove(id);
 			} else {
-				this.lightArrays.put(l, this.createLightArray(l));
-				this.field_15802.add(l);
-				this.onLightArrayCreated(l);
+				this.storage.put(id, this.createSection(id));
+				this.dirtySections.add(id);
+				this.onLoadSection(id);
 
-				for (int k = -1; k <= 1; k++) {
-					for (int m = -1; m <= 1; m++) {
-						for (int n = -1; n <= 1; n++) {
-							this.dirtySections.add(ChunkSectionPos.fromGlobalPos(BlockPos.add(l, m, n, k)));
+				for (int j = -1; j <= 1; j++) {
+					for (int k = -1; k <= 1; k++) {
+						for (int l = -1; l <= 1; l++) {
+							this.notifySections.add(ChunkSectionPos.fromBlockPos(BlockPos.add(id, k, l, j)));
 						}
 					}
 				}
 			}
 		}
 
-		if (j != 2 && i >= 2) {
-			this.lightArraysToRemove.add(l);
+		if (i != 2 && level >= 2) {
+			this.sectionsToRemove.add(id);
 		}
 
-		this.hasLightUpdates = !this.lightArraysToRemove.isEmpty();
+		this.hasLightUpdates = !this.sectionsToRemove.isEmpty();
 	}
 
-	protected ChunkNibbleArray createLightArray(long l) {
-		ChunkNibbleArray chunkNibbleArray = (ChunkNibbleArray)this.lightArraysToAdd.get(l);
+	protected ChunkNibbleArray createSection(long sectionPos) {
+		ChunkNibbleArray chunkNibbleArray = (ChunkNibbleArray)this.queuedSections.get(sectionPos);
 		return chunkNibbleArray != null ? chunkNibbleArray : new ChunkNibbleArray();
 	}
 
-	protected void removeChunkData(ChunkLightProvider<?, ?> chunkLightProvider, long l) {
-		if (chunkLightProvider.method_24208() < 8192) {
-			chunkLightProvider.method_24206(mx -> ChunkSectionPos.fromGlobalPos(mx) == l);
+	protected void removeSection(ChunkLightProvider<?, ?> storage, long sectionPos) {
+		if (storage.getPendingUpdateCount() < 8192) {
+			storage.removePendingUpdateIf(mx -> ChunkSectionPos.fromBlockPos(mx) == sectionPos);
 		} else {
-			int i = ChunkSectionPos.getWorldCoord(ChunkSectionPos.getX(l));
-			int j = ChunkSectionPos.getWorldCoord(ChunkSectionPos.getY(l));
-			int k = ChunkSectionPos.getWorldCoord(ChunkSectionPos.getZ(l));
+			int i = ChunkSectionPos.getBlockCoord(ChunkSectionPos.unpackX(sectionPos));
+			int j = ChunkSectionPos.getBlockCoord(ChunkSectionPos.unpackY(sectionPos));
+			int k = ChunkSectionPos.getBlockCoord(ChunkSectionPos.unpackZ(sectionPos));
 
-			for (int m = 0; m < 16; m++) {
-				for (int n = 0; n < 16; n++) {
-					for (int o = 0; o < 16; o++) {
-						long p = BlockPos.asLong(i + m, j + n, k + o);
-						chunkLightProvider.removePendingUpdate(p);
+			for (int l = 0; l < 16; l++) {
+				for (int m = 0; m < 16; m++) {
+					for (int n = 0; n < 16; n++) {
+						long o = BlockPos.asLong(i + l, j + m, k + n);
+						storage.removePendingUpdate(o);
 					}
 				}
 			}
@@ -185,150 +186,165 @@ public abstract class LightStorage<M extends ChunkToNibbleArrayMap<M>> extends S
 		return this.hasLightUpdates;
 	}
 
-	protected void updateLightArrays(ChunkLightProvider<M, ?> chunkLightProvider, boolean bl, boolean bl2) {
-		if (this.hasLightUpdates() || !this.lightArraysToAdd.isEmpty()) {
-			LongIterator objectIterator = this.lightArraysToRemove.iterator();
+	protected void updateLight(ChunkLightProvider<M, ?> lightProvider, boolean doSkylight, boolean skipEdgeLightPropagation) {
+		if (this.hasLightUpdates() || !this.queuedSections.isEmpty()) {
+			LongIterator objectIterator = this.sectionsToRemove.iterator();
 
 			while (objectIterator.hasNext()) {
 				long l = (Long)objectIterator.next();
-				this.removeChunkData(chunkLightProvider, l);
-				ChunkNibbleArray chunkNibbleArray = (ChunkNibbleArray)this.lightArraysToAdd.remove(l);
-				ChunkNibbleArray chunkNibbleArray2 = this.lightArrays.removeChunk(l);
-				if (this.field_19342.contains(ChunkSectionPos.withZeroZ(l))) {
+				this.removeSection(lightProvider, l);
+				ChunkNibbleArray chunkNibbleArray = (ChunkNibbleArray)this.queuedSections.remove(l);
+				ChunkNibbleArray chunkNibbleArray2 = this.storage.removeChunk(l);
+				if (this.columnsToRetain.contains(ChunkSectionPos.withZeroY(l))) {
 					if (chunkNibbleArray != null) {
-						this.lightArraysToAdd.put(l, chunkNibbleArray);
+						this.queuedSections.put(l, chunkNibbleArray);
 					} else if (chunkNibbleArray2 != null) {
-						this.lightArraysToAdd.put(l, chunkNibbleArray2);
+						this.queuedSections.put(l, chunkNibbleArray2);
 					}
 				}
 			}
 
-			this.lightArrays.clearCache();
-			objectIterator = this.lightArraysToRemove.iterator();
+			this.storage.clearCache();
+			objectIterator = this.sectionsToRemove.iterator();
 
 			while (objectIterator.hasNext()) {
 				long m = (Long)objectIterator.next();
-				this.onChunkRemoved(m);
+				this.onUnloadSection(m);
 			}
 
-			this.lightArraysToRemove.clear();
+			this.sectionsToRemove.clear();
 			this.hasLightUpdates = false;
-			ObjectIterator var23 = this.lightArraysToAdd.long2ObjectEntrySet().iterator();
+			ObjectIterator var10 = this.queuedSections.long2ObjectEntrySet().iterator();
 
-			while (var23.hasNext()) {
-				Entry<ChunkNibbleArray> entry = (Entry<ChunkNibbleArray>)var23.next();
+			while (var10.hasNext()) {
+				Entry<ChunkNibbleArray> entry = (Entry<ChunkNibbleArray>)var10.next();
 				long n = entry.getLongKey();
-				if (this.hasLight(n)) {
+				if (this.hasSection(n)) {
 					ChunkNibbleArray chunkNibbleArray3 = (ChunkNibbleArray)entry.getValue();
-					if (this.lightArrays.get(n) != chunkNibbleArray3) {
-						this.removeChunkData(chunkLightProvider, n);
-						this.lightArrays.put(n, chunkNibbleArray3);
-						this.field_15802.add(n);
+					if (this.storage.get(n) != chunkNibbleArray3) {
+						this.removeSection(lightProvider, n);
+						this.storage.put(n, chunkNibbleArray3);
+						this.dirtySections.add(n);
 					}
 				}
 			}
 
-			this.lightArrays.clearCache();
-			if (!bl2) {
-				objectIterator = this.lightArraysToAdd.keySet().iterator();
+			this.storage.clearCache();
+			if (!skipEdgeLightPropagation) {
+				objectIterator = this.queuedSections.keySet().iterator();
 
 				while (objectIterator.hasNext()) {
 					long o = (Long)objectIterator.next();
-					if (this.hasLight(o)) {
-						int i = ChunkSectionPos.getWorldCoord(ChunkSectionPos.getX(o));
-						int j = ChunkSectionPos.getWorldCoord(ChunkSectionPos.getY(o));
-						int k = ChunkSectionPos.getWorldCoord(ChunkSectionPos.getZ(o));
+					this.updateSection(lightProvider, o);
+				}
+			} else {
+				objectIterator = this.queuedEdgeSections.iterator();
 
-						for (Direction direction : DIRECTIONS) {
-							long p = ChunkSectionPos.offset(o, direction);
-							if (!this.lightArraysToAdd.containsKey(p) && this.hasLight(p)) {
-								for (int q = 0; q < 16; q++) {
-									for (int r = 0; r < 16; r++) {
-										long s;
-										long t;
-										switch (direction) {
-											case field_11033:
-												s = BlockPos.asLong(i + r, j, k + q);
-												t = BlockPos.asLong(i + r, j - 1, k + q);
-												break;
-											case field_11036:
-												s = BlockPos.asLong(i + r, j + 16 - 1, k + q);
-												t = BlockPos.asLong(i + r, j + 16, k + q);
-												break;
-											case field_11043:
-												s = BlockPos.asLong(i + q, j + r, k);
-												t = BlockPos.asLong(i + q, j + r, k - 1);
-												break;
-											case field_11035:
-												s = BlockPos.asLong(i + q, j + r, k + 16 - 1);
-												t = BlockPos.asLong(i + q, j + r, k + 16);
-												break;
-											case field_11039:
-												s = BlockPos.asLong(i, j + q, k + r);
-												t = BlockPos.asLong(i - 1, j + q, k + r);
-												break;
-											default:
-												s = BlockPos.asLong(i + 16 - 1, j + q, k + r);
-												t = BlockPos.asLong(i + 16, j + q, k + r);
-										}
-
-										chunkLightProvider.updateLevel(s, t, chunkLightProvider.getPropagatedLevel(s, t, chunkLightProvider.getLevel(s)), false);
-										chunkLightProvider.updateLevel(t, s, chunkLightProvider.getPropagatedLevel(t, s, chunkLightProvider.getLevel(t)), false);
-									}
-								}
-							}
-						}
-					}
+				while (objectIterator.hasNext()) {
+					long p = (Long)objectIterator.next();
+					this.updateSection(lightProvider, p);
 				}
 			}
 
-			ObjectIterator<Entry<ChunkNibbleArray>> objectIteratorx = this.lightArraysToAdd.long2ObjectEntrySet().iterator();
+			this.queuedEdgeSections.clear();
+			ObjectIterator<Entry<ChunkNibbleArray>> objectIteratorx = this.queuedSections.long2ObjectEntrySet().iterator();
 
 			while (objectIteratorx.hasNext()) {
 				Entry<ChunkNibbleArray> entry2 = (Entry<ChunkNibbleArray>)objectIteratorx.next();
-				long ae = entry2.getLongKey();
-				if (this.hasLight(ae)) {
+				long q = entry2.getLongKey();
+				if (this.hasSection(q)) {
 					objectIteratorx.remove();
 				}
 			}
 		}
 	}
 
-	protected void onLightArrayCreated(long l) {
+	private void updateSection(ChunkLightProvider<M, ?> lightProvider, long sectionPos) {
+		if (this.hasSection(sectionPos)) {
+			int i = ChunkSectionPos.getBlockCoord(ChunkSectionPos.unpackX(sectionPos));
+			int j = ChunkSectionPos.getBlockCoord(ChunkSectionPos.unpackY(sectionPos));
+			int k = ChunkSectionPos.getBlockCoord(ChunkSectionPos.unpackZ(sectionPos));
+
+			for (Direction direction : DIRECTIONS) {
+				long l = ChunkSectionPos.offset(sectionPos, direction);
+				if (!this.queuedSections.containsKey(l) && this.hasSection(l)) {
+					for (int m = 0; m < 16; m++) {
+						for (int n = 0; n < 16; n++) {
+							long o;
+							long p;
+							switch (direction) {
+								case DOWN:
+									o = BlockPos.asLong(i + n, j, k + m);
+									p = BlockPos.asLong(i + n, j - 1, k + m);
+									break;
+								case UP:
+									o = BlockPos.asLong(i + n, j + 16 - 1, k + m);
+									p = BlockPos.asLong(i + n, j + 16, k + m);
+									break;
+								case NORTH:
+									o = BlockPos.asLong(i + m, j + n, k);
+									p = BlockPos.asLong(i + m, j + n, k - 1);
+									break;
+								case SOUTH:
+									o = BlockPos.asLong(i + m, j + n, k + 16 - 1);
+									p = BlockPos.asLong(i + m, j + n, k + 16);
+									break;
+								case WEST:
+									o = BlockPos.asLong(i, j + m, k + n);
+									p = BlockPos.asLong(i - 1, j + m, k + n);
+									break;
+								default:
+									o = BlockPos.asLong(i + 16 - 1, j + m, k + n);
+									p = BlockPos.asLong(i + 16, j + m, k + n);
+							}
+
+							lightProvider.updateLevel(o, p, lightProvider.getPropagatedLevel(o, p, lightProvider.getLevel(o)), false);
+							lightProvider.updateLevel(p, o, lightProvider.getPropagatedLevel(p, o, lightProvider.getLevel(p)), false);
+						}
+					}
+				}
+			}
+		}
 	}
 
-	protected void onChunkRemoved(long l) {
+	protected void onLoadSection(long sectionPos) {
 	}
 
-	protected void setLightEnabled(long l, boolean bl) {
+	protected void onUnloadSection(long sectionPos) {
 	}
 
-	public void setRetainData(long l, boolean bl) {
-		if (bl) {
-			this.field_19342.add(l);
+	protected void setColumnEnabled(long columnPos, boolean enabled) {
+	}
+
+	public void setRetainColumn(long sectionPos, boolean retain) {
+		if (retain) {
+			this.columnsToRetain.add(sectionPos);
 		} else {
-			this.field_19342.remove(l);
+			this.columnsToRetain.remove(sectionPos);
 		}
 	}
 
-	protected void setLightArray(long l, @Nullable ChunkNibbleArray chunkNibbleArray) {
-		if (chunkNibbleArray != null) {
-			this.lightArraysToAdd.put(l, chunkNibbleArray);
+	protected void enqueueSectionData(long sectionPos, @Nullable ChunkNibbleArray array, boolean bl) {
+		if (array != null) {
+			this.queuedSections.put(sectionPos, array);
+			if (!bl) {
+				this.queuedEdgeSections.add(sectionPos);
+			}
 		} else {
-			this.lightArraysToAdd.remove(l);
+			this.queuedSections.remove(sectionPos);
 		}
 	}
 
-	protected void updateSectionStatus(long l, boolean bl) {
-		boolean bl2 = this.nonEmptySections.contains(l);
-		if (!bl2 && !bl) {
-			this.field_15804.add(l);
-			this.updateLevel(Long.MAX_VALUE, l, 0, true);
+	protected void setSectionStatus(long sectionPos, boolean notReady) {
+		boolean bl = this.readySections.contains(sectionPos);
+		if (!bl && !notReady) {
+			this.markedReadySections.add(sectionPos);
+			this.updateLevel(Long.MAX_VALUE, sectionPos, 0, true);
 		}
 
-		if (bl2 && bl) {
-			this.field_15797.add(l);
-			this.updateLevel(Long.MAX_VALUE, l, 2, false);
+		if (bl && notReady) {
+			this.markedNotReadySections.add(sectionPos);
+			this.updateLevel(Long.MAX_VALUE, sectionPos, 2, false);
 		}
 	}
 
@@ -338,23 +354,23 @@ public abstract class LightStorage<M extends ChunkToNibbleArrayMap<M>> extends S
 		}
 	}
 
-	protected void notifyChunkProvider() {
-		if (!this.field_15802.isEmpty()) {
-			M chunkToNibbleArrayMap = this.lightArrays.copy();
+	protected void notifyChanges() {
+		if (!this.dirtySections.isEmpty()) {
+			M chunkToNibbleArrayMap = this.storage.copy();
 			chunkToNibbleArrayMap.disableCache();
-			this.uncachedLightArrays = chunkToNibbleArrayMap;
-			this.field_15802.clear();
+			this.uncachedStorage = chunkToNibbleArrayMap;
+			this.dirtySections.clear();
 		}
 
-		if (!this.dirtySections.isEmpty()) {
-			LongIterator longIterator = this.dirtySections.iterator();
+		if (!this.notifySections.isEmpty()) {
+			LongIterator longIterator = this.notifySections.iterator();
 
 			while (longIterator.hasNext()) {
 				long l = longIterator.nextLong();
 				this.chunkProvider.onLightUpdate(this.lightType, ChunkSectionPos.from(l));
 			}
 
-			this.dirtySections.clear();
+			this.notifySections.clear();
 		}
 	}
 }

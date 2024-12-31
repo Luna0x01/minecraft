@@ -6,34 +6,37 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.command.EntitySelector;
 import net.minecraft.command.EntitySelectorReader;
-import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.util.ChatUtil;
 
 public class ScoreText extends BaseText implements ParsableText {
 	private final String name;
 	@Nullable
 	private final EntitySelector selector;
 	private final String objective;
-	private String score = "";
 
-	public ScoreText(String string, String string2) {
-		this.name = string;
-		this.objective = string2;
-		EntitySelector entitySelector = null;
-
+	@Nullable
+	private static EntitySelector parseEntitySelector(String name) {
 		try {
-			EntitySelectorReader entitySelectorReader = new EntitySelectorReader(new StringReader(string));
-			entitySelector = entitySelectorReader.read();
-		} catch (CommandSyntaxException var5) {
+			return new EntitySelectorReader(new StringReader(name)).read();
+		} catch (CommandSyntaxException var2) {
+			return null;
 		}
+	}
 
-		this.selector = entitySelector;
+	public ScoreText(String name, String objective) {
+		this(name, parseEntitySelector(name), objective);
+	}
+
+	private ScoreText(String name, @Nullable EntitySelector selector, String objective) {
+		this.name = name;
+		this.selector = selector;
+		this.objective = objective;
 	}
 
 	public String getName() {
@@ -44,61 +47,47 @@ public class ScoreText extends BaseText implements ParsableText {
 		return this.objective;
 	}
 
-	public void setScore(String string) {
-		this.score = string;
-	}
+	private String getPlayerName(ServerCommandSource source) throws CommandSyntaxException {
+		if (this.selector != null) {
+			List<? extends Entity> list = this.selector.getEntities(source);
+			if (!list.isEmpty()) {
+				if (list.size() != 1) {
+					throw EntityArgumentType.TOO_MANY_ENTITIES_EXCEPTION.create();
+				}
 
-	@Override
-	public String asString() {
-		return this.score;
-	}
-
-	private void parse(ServerCommandSource serverCommandSource) {
-		MinecraftServer minecraftServer = serverCommandSource.getMinecraftServer();
-		if (minecraftServer != null && minecraftServer.hasGameDir() && ChatUtil.isEmpty(this.score)) {
-			Scoreboard scoreboard = minecraftServer.getScoreboard();
-			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(this.objective);
-			if (scoreboard.playerHasObjective(this.name, scoreboardObjective)) {
-				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(this.name, scoreboardObjective);
-				this.setScore(String.format("%d", scoreboardPlayerScore.getScore()));
-			} else {
-				this.score = "";
+				return ((Entity)list.get(0)).getEntityName();
 			}
 		}
+
+		return this.name;
+	}
+
+	private String getScore(String playerName, ServerCommandSource source) {
+		MinecraftServer minecraftServer = source.getMinecraftServer();
+		if (minecraftServer != null) {
+			Scoreboard scoreboard = minecraftServer.getScoreboard();
+			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(this.objective);
+			if (scoreboard.playerHasObjective(playerName, scoreboardObjective)) {
+				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(playerName, scoreboardObjective);
+				return Integer.toString(scoreboardPlayerScore.getScore());
+			}
+		}
+
+		return "";
 	}
 
 	public ScoreText copy() {
-		ScoreText scoreText = new ScoreText(this.name, this.objective);
-		scoreText.setScore(this.score);
-		return scoreText;
+		return new ScoreText(this.name, this.selector, this.objective);
 	}
 
 	@Override
-	public Text parse(@Nullable ServerCommandSource serverCommandSource, @Nullable Entity entity, int i) throws CommandSyntaxException {
-		if (serverCommandSource == null) {
-			return this.copy();
+	public MutableText parse(@Nullable ServerCommandSource source, @Nullable Entity sender, int depth) throws CommandSyntaxException {
+		if (source == null) {
+			return new LiteralText("");
 		} else {
-			String string;
-			if (this.selector != null) {
-				List<? extends Entity> list = this.selector.getEntities(serverCommandSource);
-				if (list.isEmpty()) {
-					string = this.name;
-				} else {
-					if (list.size() != 1) {
-						throw EntityArgumentType.TOO_MANY_ENTITIES_EXCEPTION.create();
-					}
-
-					string = ((Entity)list.get(0)).getEntityName();
-				}
-			} else {
-				string = this.name;
-			}
-
-			String string5 = entity != null && string.equals("*") ? entity.getEntityName() : string;
-			ScoreText scoreText = new ScoreText(string5, this.objective);
-			scoreText.setScore(this.score);
-			scoreText.parse(serverCommandSource);
-			return scoreText;
+			String string = this.getPlayerName(source);
+			String string2 = sender != null && string.equals("*") ? sender.getEntityName() : string;
+			return new LiteralText(this.getScore(string2, source));
 		}
 	}
 

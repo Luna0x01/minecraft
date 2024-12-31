@@ -1,18 +1,26 @@
 package net.minecraft.world.gen.surfacebuilder;
 
-import com.mojang.datafixers.Dynamic;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 
 public class TernarySurfaceConfig implements SurfaceConfig {
+	public static final Codec<TernarySurfaceConfig> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(
+					BlockState.CODEC.fieldOf("top_material").forGetter(config -> config.topMaterial),
+					BlockState.CODEC.fieldOf("under_material").forGetter(config -> config.underMaterial),
+					BlockState.CODEC.fieldOf("underwater_material").forGetter(config -> config.underwaterMaterial)
+				)
+				.apply(instance, TernarySurfaceConfig::new)
+	);
 	private final BlockState topMaterial;
 	private final BlockState underMaterial;
 	private final BlockState underwaterMaterial;
 
-	public TernarySurfaceConfig(BlockState blockState, BlockState blockState2, BlockState blockState3) {
-		this.topMaterial = blockState;
-		this.underMaterial = blockState2;
-		this.underwaterMaterial = blockState3;
+	public TernarySurfaceConfig(BlockState topMaterial, BlockState underMaterial, BlockState underwaterMaterial) {
+		this.topMaterial = topMaterial;
+		this.underMaterial = underMaterial;
+		this.underwaterMaterial = underwaterMaterial;
 	}
 
 	@Override
@@ -27,12 +35,5 @@ public class TernarySurfaceConfig implements SurfaceConfig {
 
 	public BlockState getUnderwaterMaterial() {
 		return this.underwaterMaterial;
-	}
-
-	public static TernarySurfaceConfig deserialize(Dynamic<?> dynamic) {
-		BlockState blockState = (BlockState)dynamic.get("top_material").map(BlockState::deserialize).orElse(Blocks.field_10124.getDefaultState());
-		BlockState blockState2 = (BlockState)dynamic.get("under_material").map(BlockState::deserialize).orElse(Blocks.field_10124.getDefaultState());
-		BlockState blockState3 = (BlockState)dynamic.get("underwater_material").map(BlockState::deserialize).orElse(Blocks.field_10124.getDefaultState());
-		return new TernarySurfaceConfig(blockState, blockState2, blockState3);
 	}
 }

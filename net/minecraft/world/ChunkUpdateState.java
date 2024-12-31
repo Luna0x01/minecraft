@@ -13,16 +13,16 @@ public class ChunkUpdateState extends PersistentState {
 	}
 
 	@Override
-	public void fromTag(CompoundTag compoundTag) {
-		this.all = new LongOpenHashSet(compoundTag.getLongArray("All"));
-		this.remaining = new LongOpenHashSet(compoundTag.getLongArray("Remaining"));
+	public void fromTag(CompoundTag tag) {
+		this.all = new LongOpenHashSet(tag.getLongArray("All"));
+		this.remaining = new LongOpenHashSet(tag.getLongArray("Remaining"));
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag compoundTag) {
-		compoundTag.putLongArray("All", this.all.toLongArray());
-		compoundTag.putLongArray("Remaining", this.remaining.toLongArray());
-		return compoundTag;
+	public CompoundTag toTag(CompoundTag tag) {
+		tag.putLongArray("All", this.all.toLongArray());
+		tag.putLongArray("Remaining", this.remaining.toLongArray());
+		return tag;
 	}
 
 	public void add(long l) {

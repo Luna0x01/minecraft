@@ -14,44 +14,44 @@ public class WorldGenerationProgressTracker implements WorldGenerationProgressLi
 	private final int centerSize;
 	private final int radius;
 	private final int size;
-	private boolean isRunning;
+	private boolean running;
 
-	public WorldGenerationProgressTracker(int i) {
-		this.progressLogger = new WorldGenerationProgressLogger(i);
-		this.centerSize = i * 2 + 1;
-		this.radius = i + ChunkStatus.getMaxTargetGenerationRadius();
+	public WorldGenerationProgressTracker(int radius) {
+		this.progressLogger = new WorldGenerationProgressLogger(radius);
+		this.centerSize = radius * 2 + 1;
+		this.radius = radius + ChunkStatus.getMaxDistanceFromFull();
 		this.size = this.radius * 2 + 1;
 		this.chunkStatuses = new Long2ObjectOpenHashMap();
 	}
 
 	@Override
-	public void start(ChunkPos chunkPos) {
-		if (this.isRunning) {
-			this.progressLogger.start(chunkPos);
-			this.spawnPos = chunkPos;
+	public void start(ChunkPos spawnPos) {
+		if (this.running) {
+			this.progressLogger.start(spawnPos);
+			this.spawnPos = spawnPos;
 		}
 	}
 
 	@Override
-	public void setChunkStatus(ChunkPos chunkPos, @Nullable ChunkStatus chunkStatus) {
-		if (this.isRunning) {
-			this.progressLogger.setChunkStatus(chunkPos, chunkStatus);
-			if (chunkStatus == null) {
-				this.chunkStatuses.remove(chunkPos.toLong());
+	public void setChunkStatus(ChunkPos pos, @Nullable ChunkStatus status) {
+		if (this.running) {
+			this.progressLogger.setChunkStatus(pos, status);
+			if (status == null) {
+				this.chunkStatuses.remove(pos.toLong());
 			} else {
-				this.chunkStatuses.put(chunkPos.toLong(), chunkStatus);
+				this.chunkStatuses.put(pos.toLong(), status);
 			}
 		}
 	}
 
 	public void start() {
-		this.isRunning = true;
+		this.running = true;
 		this.chunkStatuses.clear();
 	}
 
 	@Override
 	public void stop() {
-		this.isRunning = false;
+		this.running = false;
 		this.progressLogger.stop();
 	}
 
@@ -68,7 +68,7 @@ public class WorldGenerationProgressTracker implements WorldGenerationProgressLi
 	}
 
 	@Nullable
-	public ChunkStatus getChunkStatus(int i, int j) {
-		return (ChunkStatus)this.chunkStatuses.get(ChunkPos.toLong(i + this.spawnPos.x - this.radius, j + this.spawnPos.z - this.radius));
+	public ChunkStatus getChunkStatus(int x, int z) {
+		return (ChunkStatus)this.chunkStatuses.get(ChunkPos.toLong(x + this.spawnPos.x - this.radius, z + this.spawnPos.z - this.radius));
 	}
 }

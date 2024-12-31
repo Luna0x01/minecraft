@@ -8,8 +8,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.texture.PaintingManager;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.math.Matrix3f;
-import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
@@ -18,6 +16,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix3f;
+import net.minecraft.util.math.Matrix4f;
 
 public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
 	public PaintingEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
@@ -83,19 +83,19 @@ public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
 				int af = MathHelper.floor(paintingEntity.getY() + (double)((ac + ad) / 2.0F / 16.0F));
 				int ag = MathHelper.floor(paintingEntity.getZ());
 				Direction direction = paintingEntity.getHorizontalFacing();
-				if (direction == Direction.field_11043) {
+				if (direction == Direction.NORTH) {
 					ae = MathHelper.floor(paintingEntity.getX() + (double)((aa + ab) / 2.0F / 16.0F));
 				}
 
-				if (direction == Direction.field_11039) {
+				if (direction == Direction.WEST) {
 					ag = MathHelper.floor(paintingEntity.getZ() - (double)((aa + ab) / 2.0F / 16.0F));
 				}
 
-				if (direction == Direction.field_11035) {
+				if (direction == Direction.SOUTH) {
 					ae = MathHelper.floor(paintingEntity.getX() - (double)((aa + ab) / 2.0F / 16.0F));
 				}
 
-				if (direction == Direction.field_11034) {
+				if (direction == Direction.EAST) {
 					ag = MathHelper.floor(paintingEntity.getZ() + (double)((aa + ab) / 2.0F / 16.0F));
 				}
 

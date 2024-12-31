@@ -1,7 +1,6 @@
 package net.minecraft.entity.ai.goal;
 
 import net.minecraft.block.BedBlock;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
@@ -15,9 +14,9 @@ import net.minecraft.world.WorldView;
 public class CatSitOnBlockGoal extends MoveToTargetPosGoal {
 	private final CatEntity cat;
 
-	public CatSitOnBlockGoal(CatEntity catEntity, double d) {
-		super(catEntity, d, 8);
-		this.cat = catEntity;
+	public CatSitOnBlockGoal(CatEntity cat, double speed) {
+		super(cat, speed, 8);
+		this.cat = cat;
 	}
 
 	@Override
@@ -28,39 +27,35 @@ public class CatSitOnBlockGoal extends MoveToTargetPosGoal {
 	@Override
 	public void start() {
 		super.start();
-		this.cat.getSitGoal().setEnabledWithOwner(false);
+		this.cat.setInSittingPose(false);
 	}
 
 	@Override
 	public void stop() {
 		super.stop();
-		this.cat.setSitting(false);
+		this.cat.setInSittingPose(false);
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		this.cat.getSitGoal().setEnabledWithOwner(false);
-		if (!this.hasReached()) {
-			this.cat.setSitting(false);
-		} else if (!this.cat.isSitting()) {
-			this.cat.setSitting(true);
-		}
+		this.cat.setInSittingPose(this.hasReached());
 	}
 
 	@Override
-	protected boolean isTargetPos(WorldView worldView, BlockPos blockPos) {
-		if (!worldView.isAir(blockPos.up())) {
+	protected boolean isTargetPos(WorldView world, BlockPos pos) {
+		if (!world.isAir(pos.up())) {
 			return false;
 		} else {
-			BlockState blockState = worldView.getBlockState(blockPos);
-			Block block = blockState.getBlock();
-			if (block == Blocks.field_10034) {
-				return ChestBlockEntity.getPlayersLookingInChestCount(worldView, blockPos) < 1;
+			BlockState blockState = world.getBlockState(pos);
+			if (blockState.isOf(Blocks.CHEST)) {
+				return ChestBlockEntity.getPlayersLookingInChestCount(world, pos) < 1;
 			} else {
-				return block == Blocks.field_10181 && blockState.get(FurnaceBlock.LIT)
+				return blockState.isOf(Blocks.FURNACE) && blockState.get(FurnaceBlock.LIT)
 					? true
-					: block.matches(BlockTags.field_16443) && blockState.get(BedBlock.PART) != BedPart.field_12560;
+					: blockState.method_27851(
+						BlockTags.BEDS, abstractBlockState -> (Boolean)abstractBlockState.method_28500(BedBlock.PART).map(bedPart -> bedPart != BedPart.HEAD).orElse(true)
+					);
 			}
 		}
 	}

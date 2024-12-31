@@ -12,11 +12,12 @@ public class WeightedSoundSet implements SoundContainer<Sound> {
 	private final List<SoundContainer<Sound>> sounds = Lists.newArrayList();
 	private final Random random = new Random();
 	private final Identifier id;
+	@Nullable
 	private final Text subtitle;
 
-	public WeightedSoundSet(Identifier identifier, @Nullable String string) {
-		this.id = identifier;
-		this.subtitle = string == null ? null : new TranslatableText(string);
+	public WeightedSoundSet(Identifier id, @Nullable String subtitle) {
+		this.id = id;
+		this.subtitle = subtitle == null ? null : new TranslatableText(subtitle);
 	}
 
 	@Override

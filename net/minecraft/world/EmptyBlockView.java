@@ -9,21 +9,21 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 
 public enum EmptyBlockView implements BlockView {
-	field_12294;
+	INSTANCE;
 
 	@Nullable
 	@Override
-	public BlockEntity getBlockEntity(BlockPos blockPos) {
+	public BlockEntity getBlockEntity(BlockPos pos) {
 		return null;
 	}
 
 	@Override
-	public BlockState getBlockState(BlockPos blockPos) {
-		return Blocks.field_10124.getDefaultState();
+	public BlockState getBlockState(BlockPos pos) {
+		return Blocks.AIR.getDefaultState();
 	}
 
 	@Override
-	public FluidState getFluidState(BlockPos blockPos) {
-		return Fluids.field_15906.getDefaultState();
+	public FluidState getFluidState(BlockPos pos) {
+		return Fluids.EMPTY.getDefaultState();
 	}
 }

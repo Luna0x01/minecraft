@@ -3,17 +3,17 @@ package net.minecraft.entity.passive;
 import javax.annotation.Nullable;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.world.World;
 
-public abstract class GolemEntity extends MobEntityWithAi {
+public abstract class GolemEntity extends PathAwareEntity {
 	protected GolemEntity(EntityType<? extends GolemEntity> entityType, World world) {
 		super(entityType, world);
 	}
 
 	@Override
-	public boolean handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
 		return false;
 	}
 
@@ -25,7 +25,7 @@ public abstract class GolemEntity extends MobEntityWithAi {
 
 	@Nullable
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
+	protected SoundEvent getHurtSound(DamageSource source) {
 		return null;
 	}
 
@@ -41,7 +41,7 @@ public abstract class GolemEntity extends MobEntityWithAi {
 	}
 
 	@Override
-	public boolean canImmediatelyDespawn(double d) {
+	public boolean canImmediatelyDespawn(double distanceSquared) {
 		return false;
 	}
 }

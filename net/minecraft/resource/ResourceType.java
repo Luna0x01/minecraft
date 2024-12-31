@@ -1,13 +1,13 @@
 package net.minecraft.resource;
 
 public enum ResourceType {
-	field_14188("assets"),
-	field_14190("data");
+	CLIENT_RESOURCES("assets"),
+	SERVER_DATA("data");
 
 	private final String directory;
 
-	private ResourceType(String string2) {
-		this.directory = string2;
+	private ResourceType(String name) {
+		this.directory = name;
 	}
 
 	public String getDirectory() {

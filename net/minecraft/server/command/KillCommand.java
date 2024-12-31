@@ -4,13 +4,13 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import java.util.Collection;
-import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.text.TranslatableText;
 
 public class KillCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("kill")
 						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.executes(
@@ -25,17 +25,17 @@ public class KillCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, Collection<? extends Entity> collection) {
-		for (Entity entity : collection) {
+	private static int execute(ServerCommandSource source, Collection<? extends Entity> targets) {
+		for (Entity entity : targets) {
 			entity.kill();
 		}
 
-		if (collection.size() == 1) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.kill.success.single", ((Entity)collection.iterator().next()).getDisplayName()), true);
+		if (targets.size() == 1) {
+			source.sendFeedback(new TranslatableText("commands.kill.success.single", ((Entity)targets.iterator().next()).getDisplayName()), true);
 		} else {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.kill.success.multiple", collection.size()), true);
+			source.sendFeedback(new TranslatableText("commands.kill.success.multiple", targets.size()), true);
 		}
 
-		return collection.size();
+		return targets.size();
 	}
 }

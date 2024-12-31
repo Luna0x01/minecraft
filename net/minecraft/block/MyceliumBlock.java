@@ -6,22 +6,16 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class MyceliumBlock extends SpreadableBlock {
-	public MyceliumBlock(Block.Settings settings) {
+	public MyceliumBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		super.randomDisplayTick(blockState, world, blockPos, random);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		super.randomDisplayTick(state, world, pos, random);
 		if (random.nextInt(10) == 0) {
 			world.addParticle(
-				ParticleTypes.field_11219,
-				(double)blockPos.getX() + (double)random.nextFloat(),
-				(double)blockPos.getY() + 1.1,
-				(double)blockPos.getZ() + (double)random.nextFloat(),
-				0.0,
-				0.0,
-				0.0
+				ParticleTypes.MYCELIUM, (double)pos.getX() + random.nextDouble(), (double)pos.getY() + 1.1, (double)pos.getZ() + random.nextDouble(), 0.0, 0.0, 0.0
 			);
 		}
 	}

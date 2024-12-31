@@ -7,7 +7,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -16,6 +16,7 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TrackTargetGoal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -31,8 +32,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class VexEntity extends HostileEntity {
@@ -50,8 +51,8 @@ public class VexEntity extends HostileEntity {
 	}
 
 	@Override
-	public void move(MovementType movementType, Vec3d vec3d) {
-		super.move(movementType, vec3d);
+	public void move(MovementType type, Vec3d movement) {
+		super.move(type, movement);
 		this.checkBlockCollision();
 	}
 
@@ -80,11 +81,8 @@ public class VexEntity extends HostileEntity {
 		this.targetSelector.add(3, new FollowTargetGoal(this, PlayerEntity.class, true));
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(14.0);
-		this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).setBaseValue(4.0);
+	public static DefaultAttributeContainer.Builder createVexAttributes() {
+		return HostileEntity.createHostileAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 14.0).add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 4.0);
 	}
 
 	@Override
@@ -94,28 +92,28 @@ public class VexEntity extends HostileEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.contains("BoundX")) {
-			this.bounds = new BlockPos(compoundTag.getInt("BoundX"), compoundTag.getInt("BoundY"), compoundTag.getInt("BoundZ"));
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("BoundX")) {
+			this.bounds = new BlockPos(tag.getInt("BoundX"), tag.getInt("BoundY"), tag.getInt("BoundZ"));
 		}
 
-		if (compoundTag.contains("LifeTicks")) {
-			this.setLifeTicks(compoundTag.getInt("LifeTicks"));
+		if (tag.contains("LifeTicks")) {
+			this.setLifeTicks(tag.getInt("LifeTicks"));
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
 		if (this.bounds != null) {
-			compoundTag.putInt("BoundX", this.bounds.getX());
-			compoundTag.putInt("BoundY", this.bounds.getY());
-			compoundTag.putInt("BoundZ", this.bounds.getZ());
+			tag.putInt("BoundX", this.bounds.getX());
+			tag.putInt("BoundY", this.bounds.getY());
+			tag.putInt("BoundZ", this.bounds.getZ());
 		}
 
 		if (this.alive) {
-			compoundTag.putInt("LifeTicks", this.lifeTicks);
+			tag.putInt("LifeTicks", this.lifeTicks);
 		}
 	}
 
@@ -128,56 +126,56 @@ public class VexEntity extends HostileEntity {
 		return this.bounds;
 	}
 
-	public void setBounds(@Nullable BlockPos blockPos) {
-		this.bounds = blockPos;
+	public void setBounds(@Nullable BlockPos pos) {
+		this.bounds = pos;
 	}
 
-	private boolean areFlagsSet(int i) {
-		int j = this.dataTracker.get(VEX_FLAGS);
-		return (j & i) != 0;
+	private boolean areFlagsSet(int mask) {
+		int i = this.dataTracker.get(VEX_FLAGS);
+		return (i & mask) != 0;
 	}
 
-	private void setVexFlag(int i, boolean bl) {
-		int j = this.dataTracker.get(VEX_FLAGS);
-		if (bl) {
-			j |= i;
+	private void setVexFlag(int mask, boolean value) {
+		int i = this.dataTracker.get(VEX_FLAGS);
+		if (value) {
+			i |= mask;
 		} else {
-			j &= ~i;
+			i &= ~mask;
 		}
 
-		this.dataTracker.set(VEX_FLAGS, (byte)(j & 0xFF));
+		this.dataTracker.set(VEX_FLAGS, (byte)(i & 0xFF));
 	}
 
 	public boolean isCharging() {
 		return this.areFlagsSet(1);
 	}
 
-	public void setCharging(boolean bl) {
-		this.setVexFlag(1, bl);
+	public void setCharging(boolean charging) {
+		this.setVexFlag(1, charging);
 	}
 
-	public void setOwner(MobEntity mobEntity) {
-		this.owner = mobEntity;
+	public void setOwner(MobEntity owner) {
+		this.owner = owner;
 	}
 
-	public void setLifeTicks(int i) {
+	public void setLifeTicks(int lifeTicks) {
 		this.alive = true;
-		this.lifeTicks = i;
+		this.lifeTicks = lifeTicks;
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_14812;
+		return SoundEvents.ENTITY_VEX_AMBIENT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_14964;
+		return SoundEvents.ENTITY_VEX_DEATH;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_15072;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_VEX_HURT;
 	}
 
 	@Override
@@ -188,22 +186,22 @@ public class VexEntity extends HostileEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
-		this.initEquipment(localDifficulty);
-		this.updateEnchantments(localDifficulty);
-		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
+		this.initEquipment(difficulty);
+		this.updateEnchantments(difficulty);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
 	}
 
 	@Override
-	protected void initEquipment(LocalDifficulty localDifficulty) {
-		this.equipStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8371));
-		this.setEquipmentDropChance(EquipmentSlot.field_6173, 0.0F);
+	protected void initEquipment(LocalDifficulty difficulty) {
+		this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+		this.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0F);
 	}
 
 	class ChargeTargetGoal extends Goal {
 		public ChargeTargetGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -227,7 +225,7 @@ public class VexEntity extends HostileEntity {
 			Vec3d vec3d = livingEntity.getCameraPosVec(1.0F);
 			VexEntity.this.moveControl.moveTo(vec3d.x, vec3d.y, vec3d.z, 1.0);
 			VexEntity.this.setCharging(true);
-			VexEntity.this.playSound(SoundEvents.field_14898, 1.0F, 1.0F);
+			VexEntity.this.playSound(SoundEvents.ENTITY_VEX_CHARGE, 1.0F, 1.0F);
 		}
 
 		@Override
@@ -253,7 +251,7 @@ public class VexEntity extends HostileEntity {
 
 	class LookAtTargetGoal extends Goal {
 		public LookAtTargetGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -270,7 +268,7 @@ public class VexEntity extends HostileEntity {
 		public void tick() {
 			BlockPos blockPos = VexEntity.this.getBounds();
 			if (blockPos == null) {
-				blockPos = new BlockPos(VexEntity.this);
+				blockPos = VexEntity.this.getBlockPos();
 			}
 
 			for (int i = 0; i < 3; i++) {
@@ -289,8 +287,8 @@ public class VexEntity extends HostileEntity {
 	class TrackOwnerTargetGoal extends TrackTargetGoal {
 		private final TargetPredicate TRACK_OWNER_PREDICATE = new TargetPredicate().includeHidden().ignoreDistanceScalingFactor();
 
-		public TrackOwnerTargetGoal(MobEntityWithAi mobEntityWithAi) {
-			super(mobEntityWithAi, false);
+		public TrackOwnerTargetGoal(PathAwareEntity mob) {
+			super(mob, false);
 		}
 
 		@Override
@@ -308,17 +306,17 @@ public class VexEntity extends HostileEntity {
 	}
 
 	class VexMoveControl extends MoveControl {
-		public VexMoveControl(VexEntity vexEntity2) {
-			super(vexEntity2);
+		public VexMoveControl(VexEntity owner) {
+			super(owner);
 		}
 
 		@Override
 		public void tick() {
-			if (this.state == MoveControl.State.field_6378) {
+			if (this.state == MoveControl.State.MOVE_TO) {
 				Vec3d vec3d = new Vec3d(this.targetX - VexEntity.this.getX(), this.targetY - VexEntity.this.getY(), this.targetZ - VexEntity.this.getZ());
 				double d = vec3d.length();
 				if (d < VexEntity.this.getBoundingBox().getAverageSideLength()) {
-					this.state = MoveControl.State.field_6377;
+					this.state = MoveControl.State.WAIT;
 					VexEntity.this.setVelocity(VexEntity.this.getVelocity().multiply(0.5));
 				} else {
 					VexEntity.this.setVelocity(VexEntity.this.getVelocity().add(vec3d.multiply(this.speed * 0.05 / d)));

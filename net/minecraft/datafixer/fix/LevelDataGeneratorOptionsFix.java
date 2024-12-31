@@ -6,14 +6,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonElement;
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.Typed;
 import com.mojang.datafixers.schemas.Schema;
-import com.mojang.datafixers.types.DynamicOps;
-import com.mojang.datafixers.types.JsonOps;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.JsonOps;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -103,54 +103,55 @@ public class LevelDataGeneratorOptionsFix extends DataFix {
 		hashMap.put("167", "minecraft:modified_badlands_plateau");
 	});
 
-	public LevelDataGeneratorOptionsFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public LevelDataGeneratorOptionsFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	protected TypeRewriteRule makeRule() {
 		Type<?> type = this.getOutputSchema().getType(TypeReferences.LEVEL);
-		return this.fixTypeEverywhereTyped("LevelDataGeneratorOptionsFix", this.getInputSchema().getType(TypeReferences.LEVEL), type, typed -> {
-			Dynamic<?> dynamic = typed.write();
-			Optional<String> optional = dynamic.get("generatorOptions").asString();
-			Dynamic<?> dynamic2;
-			if ("flat".equalsIgnoreCase(dynamic.get("generatorName").asString(""))) {
-				String string = (String)optional.orElse("");
-				dynamic2 = dynamic.set("generatorOptions", fixGeneratorOptions(string, dynamic.getOps()));
-			} else if ("buffet".equalsIgnoreCase(dynamic.get("generatorName").asString("")) && optional.isPresent()) {
-				Dynamic<JsonElement> dynamic3 = new Dynamic(JsonOps.INSTANCE, JsonHelper.deserialize((String)optional.get(), true));
-				dynamic2 = dynamic.set("generatorOptions", dynamic3.convert(dynamic.getOps()));
-			} else {
-				dynamic2 = dynamic;
-			}
+		return this.fixTypeEverywhereTyped(
+			"LevelDataGeneratorOptionsFix", this.getInputSchema().getType(TypeReferences.LEVEL), type, typed -> (Typed)typed.write().flatMap(dynamic -> {
+					Optional<String> optional = dynamic.get("generatorOptions").asString().result();
+					Dynamic<?> dynamic2;
+					if ("flat".equalsIgnoreCase(dynamic.get("generatorName").asString(""))) {
+						String string = (String)optional.orElse("");
+						dynamic2 = dynamic.set("generatorOptions", fixGeneratorOptions(string, dynamic.getOps()));
+					} else if ("buffet".equalsIgnoreCase(dynamic.get("generatorName").asString("")) && optional.isPresent()) {
+						Dynamic<JsonElement> dynamic3 = new Dynamic(JsonOps.INSTANCE, JsonHelper.deserialize((String)optional.get(), true));
+						dynamic2 = dynamic.set("generatorOptions", dynamic3.convert(dynamic.getOps()));
+					} else {
+						dynamic2 = dynamic;
+					}
 
-			return (Typed)((Optional)type.readTyped(dynamic2).getSecond()).orElseThrow(() -> new IllegalStateException("Could not read new level type."));
-		});
+					return type.readTyped(dynamic2);
+				}).map(Pair::getFirst).result().orElseThrow(() -> new IllegalStateException("Could not read new level type."))
+		);
 	}
 
-	private static <T> Dynamic<T> fixGeneratorOptions(String string, DynamicOps<T> dynamicOps) {
-		Iterator<String> iterator = Splitter.on(';').split(string).iterator();
-		String string2 = "minecraft:plains";
+	private static <T> Dynamic<T> fixGeneratorOptions(String generatorOptions, DynamicOps<T> dynamicOps) {
+		Iterator<String> iterator = Splitter.on(';').split(generatorOptions).iterator();
+		String string = "minecraft:plains";
 		Map<String, Map<String, String>> map = Maps.newHashMap();
 		List<Pair<Integer, String>> list;
-		if (!string.isEmpty() && iterator.hasNext()) {
+		if (!generatorOptions.isEmpty() && iterator.hasNext()) {
 			list = parseFlatLayers((String)iterator.next());
 			if (!list.isEmpty()) {
 				if (iterator.hasNext()) {
-					string2 = (String)NUMERICAL_IDS_TO_BIOME_IDS.getOrDefault(iterator.next(), "minecraft:plains");
+					string = (String)NUMERICAL_IDS_TO_BIOME_IDS.getOrDefault(iterator.next(), "minecraft:plains");
 				}
 
 				if (iterator.hasNext()) {
 					String[] strings = ((String)iterator.next()).toLowerCase(Locale.ROOT).split(",");
 
-					for (String string3 : strings) {
-						String[] strings2 = string3.split("\\(", 2);
+					for (String string2 : strings) {
+						String[] strings2 = string2.split("\\(", 2);
 						if (!strings2[0].isEmpty()) {
 							map.put(strings2[0], Maps.newHashMap());
 							if (strings2.length > 1 && strings2[1].endsWith(")") && strings2[1].length() > 1) {
 								String[] strings3 = strings2[1].substring(0, strings2[1].length() - 1).split(" ");
 
-								for (String string4 : strings3) {
-									String[] strings4 = string4.split("=", 2);
+								for (String string3 : strings3) {
+									String[] strings4 = string3.split("=", 2);
 									if (strings4.length == 2) {
 										((Map)map.get(strings2[0])).put(strings4[0], strings4[1]);
 									}
@@ -207,7 +208,7 @@ public class LevelDataGeneratorOptionsFix extends DataFix {
 					dynamicOps.createString("layers"),
 					object,
 					dynamicOps.createString("biome"),
-					dynamicOps.createString(string2),
+					dynamicOps.createString(string),
 					dynamicOps.createString("structures"),
 					object2
 				)
@@ -216,8 +217,8 @@ public class LevelDataGeneratorOptionsFix extends DataFix {
 	}
 
 	@Nullable
-	private static Pair<Integer, String> parseFlatLayer(String string) {
-		String[] strings = string.split("\\*", 2);
+	private static Pair<Integer, String> parseFlatLayer(String layer) {
+		String[] strings = layer.split("\\*", 2);
 		int i;
 		if (strings.length == 2) {
 			try {
@@ -229,16 +230,16 @@ public class LevelDataGeneratorOptionsFix extends DataFix {
 			i = 1;
 		}
 
-		String string2 = strings[strings.length - 1];
-		return Pair.of(i, string2);
+		String string = strings[strings.length - 1];
+		return Pair.of(i, string);
 	}
 
-	private static List<Pair<Integer, String>> parseFlatLayers(String string) {
+	private static List<Pair<Integer, String>> parseFlatLayers(String layers) {
 		List<Pair<Integer, String>> list = Lists.newArrayList();
-		String[] strings = string.split(",");
+		String[] strings = layers.split(",");
 
-		for (String string2 : strings) {
-			Pair<Integer, String> pair = parseFlatLayer(string2);
+		for (String string : strings) {
+			Pair<Integer, String> pair = parseFlatLayer(string);
 			if (pair == null) {
 				return Collections.emptyList();
 			}

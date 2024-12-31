@@ -1,59 +1,40 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class SpringFeatureConfig implements FeatureConfig {
+	public static final Codec<SpringFeatureConfig> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(
+					FluidState.CODEC.fieldOf("state").forGetter(springFeatureConfig -> springFeatureConfig.state),
+					Codec.BOOL.fieldOf("requires_block_below").orElse(true).forGetter(springFeatureConfig -> springFeatureConfig.requiresBlockBelow),
+					Codec.INT.fieldOf("rock_count").orElse(4).forGetter(springFeatureConfig -> springFeatureConfig.rockCount),
+					Codec.INT.fieldOf("hole_count").orElse(1).forGetter(springFeatureConfig -> springFeatureConfig.holeCount),
+					Registry.BLOCK
+						.listOf()
+						.fieldOf("valid_blocks")
+						.xmap(ImmutableSet::copyOf, ImmutableList::copyOf)
+						.forGetter(springFeatureConfig -> springFeatureConfig.validBlocks)
+				)
+				.apply(instance, SpringFeatureConfig::new)
+	);
 	public final FluidState state;
 	public final boolean requiresBlockBelow;
 	public final int rockCount;
 	public final int holeCount;
 	public final Set<Block> validBlocks;
 
-	public SpringFeatureConfig(FluidState fluidState, boolean bl, int i, int j, Set<Block> set) {
-		this.state = fluidState;
-		this.requiresBlockBelow = bl;
-		this.rockCount = i;
-		this.holeCount = j;
-		this.validBlocks = set;
-	}
-
-	@Override
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		return new Dynamic(
-			dynamicOps,
-			dynamicOps.createMap(
-				ImmutableMap.of(
-					dynamicOps.createString("state"),
-					FluidState.serialize(dynamicOps, this.state).getValue(),
-					dynamicOps.createString("requires_block_below"),
-					dynamicOps.createBoolean(this.requiresBlockBelow),
-					dynamicOps.createString("rock_count"),
-					dynamicOps.createInt(this.rockCount),
-					dynamicOps.createString("hole_count"),
-					dynamicOps.createInt(this.holeCount),
-					dynamicOps.createString("valid_blocks"),
-					dynamicOps.createList(this.validBlocks.stream().map(Registry.field_11146::getId).map(Identifier::toString).map(dynamicOps::createString))
-				)
-			)
-		);
-	}
-
-	public static <T> SpringFeatureConfig deserialize(Dynamic<T> dynamic) {
-		return new SpringFeatureConfig(
-			(FluidState)dynamic.get("state").map(FluidState::deserialize).orElse(Fluids.field_15906.getDefaultState()),
-			dynamic.get("requires_block_below").asBoolean(true),
-			dynamic.get("rock_count").asInt(4),
-			dynamic.get("hole_count").asInt(1),
-			ImmutableSet.copyOf(dynamic.get("valid_blocks").asList(dynamicx -> Registry.field_11146.get(new Identifier(dynamicx.asString("minecraft:air")))))
-		);
+	public SpringFeatureConfig(FluidState state, boolean requiresBlockBelow, int rockCount, int holeCount, Set<Block> validBlocks) {
+		this.state = state;
+		this.requiresBlockBelow = requiresBlockBelow;
+		this.rockCount = rockCount;
+		this.holeCount = holeCount;
+		this.validBlocks = validBlocks;
 	}
 }

@@ -6,71 +6,79 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 public class PositionedSoundInstance extends AbstractSoundInstance {
-	public PositionedSoundInstance(SoundEvent soundEvent, SoundCategory soundCategory, float f, float g, BlockPos blockPos) {
-		this(soundEvent, soundCategory, f, g, (float)blockPos.getX() + 0.5F, (float)blockPos.getY() + 0.5F, (float)blockPos.getZ() + 0.5F);
+	public PositionedSoundInstance(SoundEvent sound, SoundCategory category, float volume, float pitch, BlockPos pos) {
+		this(sound, category, volume, pitch, (double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5);
 	}
 
-	public static PositionedSoundInstance master(SoundEvent soundEvent, float f) {
-		return master(soundEvent, f, 0.25F);
+	public static PositionedSoundInstance master(SoundEvent sound, float pitch) {
+		return master(sound, pitch, 0.25F);
 	}
 
-	public static PositionedSoundInstance master(SoundEvent soundEvent, float f, float g) {
-		return new PositionedSoundInstance(
-			soundEvent.getId(), SoundCategory.field_15250, g, f, false, 0, SoundInstance.AttenuationType.field_5478, 0.0F, 0.0F, 0.0F, true
-		);
+	public static PositionedSoundInstance master(SoundEvent sound, float pitch, float volume) {
+		return new PositionedSoundInstance(sound.getId(), SoundCategory.MASTER, volume, pitch, false, 0, SoundInstance.AttenuationType.NONE, 0.0, 0.0, 0.0, true);
 	}
 
-	public static PositionedSoundInstance music(SoundEvent soundEvent) {
-		return new PositionedSoundInstance(
-			soundEvent.getId(), SoundCategory.field_15253, 1.0F, 1.0F, false, 0, SoundInstance.AttenuationType.field_5478, 0.0F, 0.0F, 0.0F, true
-		);
+	public static PositionedSoundInstance music(SoundEvent sound) {
+		return new PositionedSoundInstance(sound.getId(), SoundCategory.MUSIC, 1.0F, 1.0F, false, 0, SoundInstance.AttenuationType.NONE, 0.0, 0.0, 0.0, true);
 	}
 
-	public static PositionedSoundInstance record(SoundEvent soundEvent, float f, float g, float h) {
-		return new PositionedSoundInstance(soundEvent, SoundCategory.field_15247, 4.0F, 1.0F, false, 0, SoundInstance.AttenuationType.field_5476, f, g, h);
+	public static PositionedSoundInstance record(SoundEvent sound, double d, double e, double f) {
+		return new PositionedSoundInstance(sound, SoundCategory.RECORDS, 4.0F, 1.0F, false, 0, SoundInstance.AttenuationType.LINEAR, d, e, f);
 	}
 
-	public PositionedSoundInstance(SoundEvent soundEvent, SoundCategory soundCategory, float f, float g, float h, float i, float j) {
-		this(soundEvent, soundCategory, f, g, false, 0, SoundInstance.AttenuationType.field_5476, h, i, j);
+	public static PositionedSoundInstance ambient(SoundEvent sound, float pitch, float volume) {
+		return new PositionedSoundInstance(sound.getId(), SoundCategory.AMBIENT, volume, pitch, false, 0, SoundInstance.AttenuationType.NONE, 0.0, 0.0, 0.0, true);
+	}
+
+	public static PositionedSoundInstance ambient(SoundEvent sound) {
+		return ambient(sound, 1.0F, 1.0F);
+	}
+
+	public static PositionedSoundInstance ambient(SoundEvent sound, double d, double e, double f) {
+		return new PositionedSoundInstance(sound, SoundCategory.AMBIENT, 1.0F, 1.0F, false, 0, SoundInstance.AttenuationType.LINEAR, d, e, f);
+	}
+
+	public PositionedSoundInstance(SoundEvent sound, SoundCategory category, float volume, float pitch, double d, double e, double f) {
+		this(sound, category, volume, pitch, false, 0, SoundInstance.AttenuationType.LINEAR, d, e, f);
 	}
 
 	private PositionedSoundInstance(
-		SoundEvent soundEvent,
-		SoundCategory soundCategory,
-		float f,
-		float g,
-		boolean bl,
-		int i,
+		SoundEvent sound,
+		SoundCategory category,
+		float volume,
+		float pitch,
+		boolean repeat,
+		int repeatDelay,
 		SoundInstance.AttenuationType attenuationType,
-		float h,
-		float j,
-		float k
+		double d,
+		double e,
+		double f
 	) {
-		this(soundEvent.getId(), soundCategory, f, g, bl, i, attenuationType, h, j, k, false);
+		this(sound.getId(), category, volume, pitch, repeat, repeatDelay, attenuationType, d, e, f, false);
 	}
 
 	public PositionedSoundInstance(
-		Identifier identifier,
-		SoundCategory soundCategory,
-		float f,
-		float g,
-		boolean bl,
-		int i,
+		Identifier id,
+		SoundCategory category,
+		float volume,
+		float pitch,
+		boolean repeat,
+		int repeatDelay,
 		SoundInstance.AttenuationType attenuationType,
-		float h,
-		float j,
-		float k,
-		boolean bl2
+		double d,
+		double e,
+		double f,
+		boolean bl
 	) {
-		super(identifier, soundCategory);
-		this.volume = f;
-		this.pitch = g;
-		this.x = h;
-		this.y = j;
-		this.z = k;
-		this.repeat = bl;
-		this.repeatDelay = i;
+		super(id, category);
+		this.volume = volume;
+		this.pitch = pitch;
+		this.x = d;
+		this.y = e;
+		this.z = f;
+		this.repeat = repeat;
+		this.repeatDelay = repeatDelay;
 		this.attenuationType = attenuationType;
-		this.looping = bl2;
+		this.looping = bl;
 	}
 }

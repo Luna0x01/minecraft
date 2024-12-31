@@ -6,7 +6,7 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -14,6 +14,7 @@ import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,8 +23,8 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class EndermiteEntity extends HostileEntity {
 	private int lifeTime;
@@ -46,16 +47,15 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		return 0.1F;
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
+		return 0.13F;
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(8.0);
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.25);
-		this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).setBaseValue(2.0);
+	public static DefaultAttributeContainer.Builder createEndermiteAttributes() {
+		return HostileEntity.createHostileAttributes()
+			.add(EntityAttributes.GENERIC_MAX_HEALTH, 8.0)
+			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25)
+			.add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 2.0);
 	}
 
 	@Override
@@ -65,36 +65,36 @@ public class EndermiteEntity extends HostileEntity {
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_15137;
+		return SoundEvents.ENTITY_ENDERMITE_AMBIENT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_14582;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_ENDERMITE_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_15230;
+		return SoundEvents.ENTITY_ENDERMITE_DEATH;
 	}
 
 	@Override
-	protected void playStepSound(BlockPos blockPos, BlockState blockState) {
-		this.playSound(SoundEvents.field_14678, 0.15F, 1.0F);
+	protected void playStepSound(BlockPos pos, BlockState state) {
+		this.playSound(SoundEvents.ENTITY_ENDERMITE_STEP, 0.15F, 1.0F);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.lifeTime = compoundTag.getInt("Lifetime");
-		this.playerSpawned = compoundTag.getBoolean("PlayerSpawned");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.lifeTime = tag.getInt("Lifetime");
+		this.playerSpawned = tag.getBoolean("PlayerSpawned");
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("Lifetime", this.lifeTime);
-		compoundTag.putBoolean("PlayerSpawned", this.playerSpawned);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("Lifetime", this.lifeTime);
+		tag.putBoolean("PlayerSpawned", this.playerSpawned);
 	}
 
 	@Override
@@ -104,9 +104,9 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	public void setYaw(float f) {
-		this.yaw = f;
-		super.setYaw(f);
+	public void setYaw(float yaw) {
+		this.yaw = yaw;
+		super.setYaw(yaw);
 	}
 
 	@Override
@@ -118,8 +118,8 @@ public class EndermiteEntity extends HostileEntity {
 		return this.playerSpawned;
 	}
 
-	public void setPlayerSpawned(boolean bl) {
-		this.playerSpawned = bl;
+	public void setPlayerSpawned(boolean playerSpawned) {
+		this.playerSpawned = playerSpawned;
 	}
 
 	@Override
@@ -129,7 +129,7 @@ public class EndermiteEntity extends HostileEntity {
 			for (int i = 0; i < 2; i++) {
 				this.world
 					.addParticle(
-						ParticleTypes.field_11214,
+						ParticleTypes.PORTAL,
 						this.getParticleX(0.5),
 						this.getRandomBodyY(),
 						this.getParticleZ(0.5),
@@ -149,9 +149,9 @@ public class EndermiteEntity extends HostileEntity {
 		}
 	}
 
-	public static boolean canSpawn(EntityType<EndermiteEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		if (canSpawnIgnoreLightLevel(entityType, iWorld, spawnType, blockPos, random)) {
-			PlayerEntity playerEntity = iWorld.getClosestPlayer((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, 5.0, true);
+	public static boolean canSpawn(EntityType<EndermiteEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
+		if (canSpawnIgnoreLightLevel(type, world, spawnReason, pos, random)) {
+			PlayerEntity playerEntity = world.getClosestPlayer((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, 5.0, true);
 			return playerEntity == null;
 		} else {
 			return false;

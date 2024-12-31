@@ -54,36 +54,36 @@ public final class Window implements AutoCloseable {
 	private int framerateLimit;
 	private boolean vsync;
 
-	public Window(WindowEventHandler windowEventHandler, MonitorTracker monitorTracker, WindowSettings windowSettings, @Nullable String string, String string2) {
+	public Window(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings, @Nullable String videoMode, String title) {
 		RenderSystem.assertThread(RenderSystem::isInInitPhase);
 		this.monitorTracker = monitorTracker;
 		this.throwOnGlError();
 		this.setPhase("Pre startup");
-		this.eventHandler = windowEventHandler;
-		Optional<VideoMode> optional = VideoMode.fromString(string);
+		this.eventHandler = eventHandler;
+		Optional<VideoMode> optional = VideoMode.fromString(videoMode);
 		if (optional.isPresent()) {
 			this.videoMode = optional;
-		} else if (windowSettings.fullscreenWidth.isPresent() && windowSettings.fullscreenHeight.isPresent()) {
-			this.videoMode = Optional.of(new VideoMode(windowSettings.fullscreenWidth.getAsInt(), windowSettings.fullscreenHeight.getAsInt(), 8, 8, 8, 60));
+		} else if (settings.fullscreenWidth.isPresent() && settings.fullscreenHeight.isPresent()) {
+			this.videoMode = Optional.of(new VideoMode(settings.fullscreenWidth.getAsInt(), settings.fullscreenHeight.getAsInt(), 8, 8, 8, 60));
 		} else {
 			this.videoMode = Optional.empty();
 		}
 
-		this.currentFullscreen = this.fullscreen = windowSettings.fullscreen;
+		this.currentFullscreen = this.fullscreen = settings.fullscreen;
 		Monitor monitor = monitorTracker.getMonitor(GLFW.glfwGetPrimaryMonitor());
-		this.windowedWidth = this.width = windowSettings.width > 0 ? windowSettings.width : 1;
-		this.windowedHeight = this.height = windowSettings.height > 0 ? windowSettings.height : 1;
+		this.windowedWidth = this.width = settings.width > 0 ? settings.width : 1;
+		this.windowedHeight = this.height = settings.height > 0 ? settings.height : 1;
 		GLFW.glfwDefaultWindowHints();
 		GLFW.glfwWindowHint(139265, 196609);
 		GLFW.glfwWindowHint(139275, 221185);
 		GLFW.glfwWindowHint(139266, 2);
 		GLFW.glfwWindowHint(139267, 0);
 		GLFW.glfwWindowHint(139272, 0);
-		this.handle = GLFW.glfwCreateWindow(this.width, this.height, string2, this.fullscreen && monitor != null ? monitor.getHandle() : 0L, 0L);
+		this.handle = GLFW.glfwCreateWindow(this.width, this.height, title, this.fullscreen && monitor != null ? monitor.getHandle() : 0L, 0L);
 		if (monitor != null) {
-			VideoMode videoMode = monitor.findClosestVideoMode(this.fullscreen ? this.videoMode : Optional.empty());
-			this.windowedX = this.x = monitor.getViewportX() + videoMode.getWidth() / 2 - this.width / 2;
-			this.windowedY = this.y = monitor.getViewportY() + videoMode.getHeight() / 2 - this.height / 2;
+			VideoMode videoMode2 = monitor.findClosestVideoMode(this.fullscreen ? this.videoMode : Optional.empty());
+			this.windowedX = this.x = monitor.getViewportX() + videoMode2.getWidth() / 2 - this.width / 2;
+			this.windowedY = this.y = monitor.getViewportY() + videoMode2.getHeight() / 2 - this.height / 2;
 		} else {
 			int[] is = new int[1];
 			int[] js = new int[1];
@@ -100,6 +100,7 @@ public final class Window implements AutoCloseable {
 		GLFW.glfwSetWindowPosCallback(this.handle, this::onWindowPosChanged);
 		GLFW.glfwSetWindowSizeCallback(this.handle, this::onWindowSizeChanged);
 		GLFW.glfwSetWindowFocusCallback(this.handle, this::onWindowFocusChanged);
+		GLFW.glfwSetCursorEnterCallback(this.handle, this::onCursorEnterChanged);
 	}
 
 	public int getRefreshRate() {
@@ -111,7 +112,7 @@ public final class Window implements AutoCloseable {
 		return GLX._shouldClose(this);
 	}
 
-	public static void acceptError(BiConsumer<Integer, String> biConsumer) {
+	public static void acceptError(BiConsumer<Integer, String> consumer) {
 		RenderSystem.assertThread(RenderSystem::isInInitPhase);
 		MemoryStack memoryStack = MemoryStack.stackPush();
 		Throwable var2 = null;
@@ -122,7 +123,7 @@ public final class Window implements AutoCloseable {
 			if (i != 0) {
 				long l = pointerBuffer.get();
 				String string = l == 0L ? "" : MemoryUtil.memUTF8(l);
-				biConsumer.accept(i, string);
+				consumer.accept(i, string);
 			}
 		} catch (Throwable var15) {
 			var2 = var15;
@@ -142,7 +143,7 @@ public final class Window implements AutoCloseable {
 		}
 	}
 
-	public void setIcon(InputStream inputStream, InputStream inputStream2) {
+	public void setIcon(InputStream icon16, InputStream icon32) {
 		RenderSystem.assertThread(RenderSystem::isInInitPhase);
 
 		try {
@@ -150,11 +151,11 @@ public final class Window implements AutoCloseable {
 			Throwable var4 = null;
 
 			try {
-				if (inputStream == null) {
+				if (icon16 == null) {
 					throw new FileNotFoundException("icons/icon_16x16.png");
 				}
 
-				if (inputStream2 == null) {
+				if (icon32 == null) {
 					throw new FileNotFoundException("icons/icon_32x32.png");
 				}
 
@@ -162,7 +163,7 @@ public final class Window implements AutoCloseable {
 				IntBuffer intBuffer2 = memoryStack.mallocInt(1);
 				IntBuffer intBuffer3 = memoryStack.mallocInt(1);
 				Buffer buffer = GLFWImage.mallocStack(2, memoryStack);
-				ByteBuffer byteBuffer = this.readImage(inputStream, intBuffer, intBuffer2, intBuffer3);
+				ByteBuffer byteBuffer = this.readImage(icon16, intBuffer, intBuffer2, intBuffer3);
 				if (byteBuffer == null) {
 					throw new IllegalStateException("Could not load icon: " + STBImage.stbi_failure_reason());
 				}
@@ -171,7 +172,7 @@ public final class Window implements AutoCloseable {
 				buffer.width(intBuffer.get(0));
 				buffer.height(intBuffer2.get(0));
 				buffer.pixels(byteBuffer);
-				ByteBuffer byteBuffer2 = this.readImage(inputStream2, intBuffer, intBuffer2, intBuffer3);
+				ByteBuffer byteBuffer2 = this.readImage(icon32, intBuffer, intBuffer2, intBuffer3);
 				if (byteBuffer2 == null) {
 					throw new IllegalStateException("Could not load icon: " + STBImage.stbi_failure_reason());
 				}
@@ -206,15 +207,15 @@ public final class Window implements AutoCloseable {
 	}
 
 	@Nullable
-	private ByteBuffer readImage(InputStream inputStream, IntBuffer intBuffer, IntBuffer intBuffer2, IntBuffer intBuffer3) throws IOException {
+	private ByteBuffer readImage(InputStream in, IntBuffer x, IntBuffer y, IntBuffer channels) throws IOException {
 		RenderSystem.assertThread(RenderSystem::isInInitPhase);
 		ByteBuffer byteBuffer = null;
 
 		ByteBuffer var6;
 		try {
-			byteBuffer = TextureUtil.readResource(inputStream);
+			byteBuffer = TextureUtil.readAllToByteBuffer(in);
 			byteBuffer.rewind();
-			var6 = STBImage.stbi_load_from_memory(byteBuffer, intBuffer, intBuffer2, intBuffer3, 0);
+			var6 = STBImage.stbi_load_from_memory(byteBuffer, x, y, channels, 0);
 		} finally {
 			if (byteBuffer != null) {
 				MemoryUtil.memFree(byteBuffer);
@@ -224,8 +225,8 @@ public final class Window implements AutoCloseable {
 		return var6;
 	}
 
-	public void setPhase(String string) {
-		this.phase = string;
+	public void setPhase(String phase) {
+		this.phase = phase;
 	}
 
 	private void throwOnGlError() {
@@ -233,21 +234,21 @@ public final class Window implements AutoCloseable {
 		GLFW.glfwSetErrorCallback(Window::throwGlError);
 	}
 
-	private static void throwGlError(int i, long l) {
+	private static void throwGlError(int error, long description) {
 		RenderSystem.assertThread(RenderSystem::isInInitPhase);
-		String string = "GLFW error " + i + ": " + MemoryUtil.memUTF8(l);
+		String string = "GLFW error " + error + ": " + MemoryUtil.memUTF8(description);
 		TinyFileDialogs.tinyfd_messageBox(
 			"Minecraft", string + ".\n\nPlease make sure you have up-to-date drivers (see aka.ms/mcdriver for instructions).", "ok", "error", false
 		);
 		throw new Window.GlErroredException(string);
 	}
 
-	public void logGlError(int i, long l) {
+	public void logGlError(int error, long description) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
-		String string = MemoryUtil.memUTF8(l);
+		String string = MemoryUtil.memUTF8(description);
 		LOGGER.error("########## GL ERROR ##########");
 		LOGGER.error("@ {}", this.phase);
-		LOGGER.error("{}: {}", i, string);
+		LOGGER.error("{}: {}", error, string);
 	}
 
 	public void logOnGlError() {
@@ -257,10 +258,10 @@ public final class Window implements AutoCloseable {
 		}
 	}
 
-	public void setVsync(boolean bl) {
+	public void setVsync(boolean vsync) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
-		this.vsync = bl;
-		GLFW.glfwSwapInterval(bl ? 1 : 0);
+		this.vsync = vsync;
+		GLFW.glfwSwapInterval(vsync ? 1 : 0);
 	}
 
 	public void close() {
@@ -271,19 +272,19 @@ public final class Window implements AutoCloseable {
 		GLFW.glfwTerminate();
 	}
 
-	private void onWindowPosChanged(long l, int i, int j) {
-		this.x = i;
-		this.y = j;
+	private void onWindowPosChanged(long window, int x, int y) {
+		this.x = x;
+		this.y = y;
 	}
 
-	private void onFramebufferSizeChanged(long l, int i, int j) {
-		if (l == this.handle) {
-			int k = this.getFramebufferWidth();
-			int m = this.getFramebufferHeight();
-			if (i != 0 && j != 0) {
-				this.framebufferWidth = i;
-				this.framebufferHeight = j;
-				if (this.getFramebufferWidth() != k || this.getFramebufferHeight() != m) {
+	private void onFramebufferSizeChanged(long window, int width, int height) {
+		if (window == this.handle) {
+			int i = this.getFramebufferWidth();
+			int j = this.getFramebufferHeight();
+			if (width != 0 && height != 0) {
+				this.framebufferWidth = width;
+				this.framebufferHeight = height;
+				if (this.getFramebufferWidth() != i || this.getFramebufferHeight() != j) {
 					this.eventHandler.onResolutionChanged();
 				}
 			}
@@ -299,19 +300,25 @@ public final class Window implements AutoCloseable {
 		this.framebufferHeight = js[0];
 	}
 
-	private void onWindowSizeChanged(long l, int i, int j) {
-		this.width = i;
-		this.height = j;
+	private void onWindowSizeChanged(long window, int width, int height) {
+		this.width = width;
+		this.height = height;
 	}
 
-	private void onWindowFocusChanged(long l, boolean bl) {
-		if (l == this.handle) {
-			this.eventHandler.onWindowFocusChanged(bl);
+	private void onWindowFocusChanged(long window, boolean focused) {
+		if (window == this.handle) {
+			this.eventHandler.onWindowFocusChanged(focused);
 		}
 	}
 
-	public void setFramerateLimit(int i) {
-		this.framerateLimit = i;
+	private void onCursorEnterChanged(long window, boolean entered) {
+		if (entered) {
+			this.eventHandler.onCursorEnterChanged();
+		}
+	}
+
+	public void setFramerateLimit(int framerateLimit) {
+		this.framerateLimit = framerateLimit;
 	}
 
 	public int getFramerateLimit() {
@@ -330,9 +337,9 @@ public final class Window implements AutoCloseable {
 		return this.videoMode;
 	}
 
-	public void setVideoMode(Optional<VideoMode> optional) {
-		boolean bl = !optional.equals(this.videoMode);
-		this.videoMode = optional;
+	public void setVideoMode(Optional<VideoMode> videoMode) {
+		boolean bl = !videoMode.equals(this.videoMode);
+		this.videoMode = videoMode;
 		if (bl) {
 			this.videoModeDirty = true;
 		}
@@ -382,43 +389,49 @@ public final class Window implements AutoCloseable {
 		this.fullscreen = !this.fullscreen;
 	}
 
-	private void updateFullscreen(boolean bl) {
+	private void updateFullscreen(boolean vsync) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
 
 		try {
 			this.updateWindowRegion();
 			this.eventHandler.onResolutionChanged();
-			this.setVsync(bl);
+			this.setVsync(vsync);
 			this.swapBuffers();
 		} catch (Exception var3) {
 			LOGGER.error("Couldn't toggle fullscreen", var3);
 		}
 	}
 
-	public int calculateScaleFactor(int i, boolean bl) {
-		int j = 1;
+	public int calculateScaleFactor(int guiScale, boolean forceUnicodeFont) {
+		int i = 1;
 
-		while (j != i && j < this.framebufferWidth && j < this.framebufferHeight && this.framebufferWidth / (j + 1) >= 320 && this.framebufferHeight / (j + 1) >= 240) {
-			j++;
+		while (
+			i != guiScale
+				&& i < this.framebufferWidth
+				&& i < this.framebufferHeight
+				&& this.framebufferWidth / (i + 1) >= 320
+				&& this.framebufferHeight / (i + 1) >= 240
+		) {
+			i++;
 		}
 
-		if (bl && j % 2 != 0) {
-			j++;
+		if (forceUnicodeFont && i % 2 != 0) {
+			i++;
 		}
 
-		return j;
+		return i;
 	}
 
-	public void setScaleFactor(double d) {
-		this.scaleFactor = d;
-		int i = (int)((double)this.framebufferWidth / d);
-		this.scaledWidth = (double)this.framebufferWidth / d > (double)i ? i + 1 : i;
-		int j = (int)((double)this.framebufferHeight / d);
-		this.scaledHeight = (double)this.framebufferHeight / d > (double)j ? j + 1 : j;
+	public void setScaleFactor(double scaleFactor) {
+		this.scaleFactor = scaleFactor;
+		int i = (int)((double)this.framebufferWidth / scaleFactor);
+		this.scaledWidth = (double)this.framebufferWidth / scaleFactor > (double)i ? i + 1 : i;
+		int j = (int)((double)this.framebufferHeight / scaleFactor);
+		this.scaledHeight = (double)this.framebufferHeight / scaleFactor > (double)j ? j + 1 : j;
 	}
 
-	public void setTitle(String string) {
-		GLFW.glfwSetWindowTitle(this.handle, string);
+	public void setTitle(String title) {
+		GLFW.glfwSetWindowTitle(this.handle, title);
 	}
 
 	public long getHandle() {
@@ -470,8 +483,8 @@ public final class Window implements AutoCloseable {
 		return this.monitorTracker.getMonitor(this);
 	}
 
-	public void setRawMouseMotion(boolean bl) {
-		InputUtil.setRawMouseMotionMode(this.handle, bl);
+	public void setRawMouseMotion(boolean rawMouseMotion) {
+		InputUtil.setRawMouseMotionMode(this.handle, rawMouseMotion);
 	}
 
 	public static class GlErroredException extends GlException {

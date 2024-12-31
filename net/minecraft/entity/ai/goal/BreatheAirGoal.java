@@ -1,22 +1,22 @@
 package net.minecraft.entity.ai.goal;
 
 import java.util.EnumSet;
-import net.minecraft.block.BlockPlacementEnvironment;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.MovementType;
-import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.WorldView;
 
 public class BreatheAirGoal extends Goal {
-	private final MobEntityWithAi mob;
+	private final PathAwareEntity mob;
 
-	public BreatheAirGoal(MobEntityWithAi mobEntityWithAi) {
-		this.mob = mobEntityWithAi;
-		this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
+	public BreatheAirGoal(PathAwareEntity mob) {
+		this.mob = mob;
+		this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
 	}
 
 	@Override
@@ -68,12 +68,11 @@ public class BreatheAirGoal extends Goal {
 	public void tick() {
 		this.moveToAir();
 		this.mob.updateVelocity(0.02F, new Vec3d((double)this.mob.sidewaysSpeed, (double)this.mob.upwardSpeed, (double)this.mob.forwardSpeed));
-		this.mob.move(MovementType.field_6308, this.mob.getVelocity());
+		this.mob.move(MovementType.SELF, this.mob.getVelocity());
 	}
 
-	private boolean isAirPos(WorldView worldView, BlockPos blockPos) {
-		BlockState blockState = worldView.getBlockState(blockPos);
-		return (worldView.getFluidState(blockPos).isEmpty() || blockState.getBlock() == Blocks.field_10422)
-			&& blockState.canPlaceAtSide(worldView, blockPos, BlockPlacementEnvironment.field_50);
+	private boolean isAirPos(WorldView world, BlockPos pos) {
+		BlockState blockState = world.getBlockState(pos);
+		return (world.getFluidState(pos).isEmpty() || blockState.isOf(Blocks.BUBBLE_COLUMN)) && blockState.canPathfindThrough(world, pos, NavigationType.LAND);
 	}
 }

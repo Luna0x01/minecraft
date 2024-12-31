@@ -7,14 +7,19 @@ import java.util.Set;
 import net.minecraft.loot.LootTableReporter;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
+import net.minecraft.util.JsonSerializer;
 
 public class InvertedLootCondition implements LootCondition {
 	private final LootCondition term;
 
-	private InvertedLootCondition(LootCondition lootCondition) {
-		this.term = lootCondition;
+	private InvertedLootCondition(LootCondition term) {
+		this.term = term;
+	}
+
+	@Override
+	public LootConditionType getType() {
+		return LootConditionTypes.INVERTED;
 	}
 
 	public final boolean test(LootContext lootContext) {
@@ -27,21 +32,17 @@ public class InvertedLootCondition implements LootCondition {
 	}
 
 	@Override
-	public void check(LootTableReporter lootTableReporter) {
-		LootCondition.super.check(lootTableReporter);
-		this.term.check(lootTableReporter);
+	public void validate(LootTableReporter reporter) {
+		LootCondition.super.validate(reporter);
+		this.term.validate(reporter);
 	}
 
-	public static LootCondition.Builder builder(LootCondition.Builder builder) {
-		InvertedLootCondition invertedLootCondition = new InvertedLootCondition(builder.build());
+	public static LootCondition.Builder builder(LootCondition.Builder term) {
+		InvertedLootCondition invertedLootCondition = new InvertedLootCondition(term.build());
 		return () -> invertedLootCondition;
 	}
 
-	public static class Factory extends LootCondition.Factory<InvertedLootCondition> {
-		public Factory() {
-			super(new Identifier("inverted"), InvertedLootCondition.class);
-		}
-
+	public static class Serializer implements JsonSerializer<InvertedLootCondition> {
 		public void toJson(JsonObject jsonObject, InvertedLootCondition invertedLootCondition, JsonSerializationContext jsonSerializationContext) {
 			jsonObject.add("term", jsonSerializationContext.serialize(invertedLootCondition.term));
 		}

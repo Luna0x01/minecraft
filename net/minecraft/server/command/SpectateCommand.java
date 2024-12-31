@@ -7,7 +7,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import javax.annotation.Nullable;
-import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.TranslatableText;
@@ -19,8 +19,8 @@ public class SpectateCommand {
 		object -> new TranslatableText("commands.spectate.not_spectator", object)
 	);
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("spectate")
 						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), null, ((ServerCommandSource)commandContext.getSource()).getPlayer())))
@@ -47,17 +47,17 @@ public class SpectateCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, @Nullable Entity entity, ServerPlayerEntity serverPlayerEntity) throws CommandSyntaxException {
-		if (serverPlayerEntity == entity) {
+	private static int execute(ServerCommandSource source, @Nullable Entity entity, ServerPlayerEntity player) throws CommandSyntaxException {
+		if (player == entity) {
 			throw SPECTATE_SELF_EXCEPTION.create();
-		} else if (serverPlayerEntity.interactionManager.getGameMode() != GameMode.field_9219) {
-			throw NOT_SPECTATOR_EXCEPTION.create(serverPlayerEntity.getDisplayName());
+		} else if (player.interactionManager.getGameMode() != GameMode.SPECTATOR) {
+			throw NOT_SPECTATOR_EXCEPTION.create(player.getDisplayName());
 		} else {
-			serverPlayerEntity.setCameraEntity(entity);
+			player.setCameraEntity(entity);
 			if (entity != null) {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.spectate.success.started", entity.getDisplayName()), false);
+				source.sendFeedback(new TranslatableText("commands.spectate.success.started", entity.getDisplayName()), false);
 			} else {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.spectate.success.stopped"), false);
+				source.sendFeedback(new TranslatableText("commands.spectate.success.stopped"), false);
 			}
 
 			return 1;

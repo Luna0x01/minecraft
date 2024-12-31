@@ -5,26 +5,25 @@ import com.mojang.authlib.GameProfile;
 import java.util.UUID;
 
 public class WhitelistEntry extends ServerConfigEntry<GameProfile> {
-	public WhitelistEntry(GameProfile gameProfile) {
-		super(gameProfile);
+	public WhitelistEntry(GameProfile profile) {
+		super(profile);
 	}
 
-	public WhitelistEntry(JsonObject jsonObject) {
-		super(deserializeProfile(jsonObject), jsonObject);
+	public WhitelistEntry(JsonObject json) {
+		super(profileFromJson(json));
 	}
 
 	@Override
-	protected void serialize(JsonObject jsonObject) {
+	protected void fromJson(JsonObject json) {
 		if (this.getKey() != null) {
-			jsonObject.addProperty("uuid", this.getKey().getId() == null ? "" : this.getKey().getId().toString());
-			jsonObject.addProperty("name", this.getKey().getName());
-			super.serialize(jsonObject);
+			json.addProperty("uuid", this.getKey().getId() == null ? "" : this.getKey().getId().toString());
+			json.addProperty("name", this.getKey().getName());
 		}
 	}
 
-	private static GameProfile deserializeProfile(JsonObject jsonObject) {
-		if (jsonObject.has("uuid") && jsonObject.has("name")) {
-			String string = jsonObject.get("uuid").getAsString();
+	private static GameProfile profileFromJson(JsonObject json) {
+		if (json.has("uuid") && json.has("name")) {
+			String string = json.get("uuid").getAsString();
 
 			UUID uUID;
 			try {
@@ -33,7 +32,7 @@ public class WhitelistEntry extends ServerConfigEntry<GameProfile> {
 				return null;
 			}
 
-			return new GameProfile(uUID, jsonObject.get("name").getAsString());
+			return new GameProfile(uUID, json.get("name").getAsString());
 		} else {
 			return null;
 		}

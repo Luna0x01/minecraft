@@ -2,13 +2,15 @@ package net.minecraft.entity.damage;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
@@ -23,28 +25,37 @@ public class DamageTracker {
 	private boolean hasDamage;
 	private String fallDeathSuffix;
 
-	public DamageTracker(LivingEntity livingEntity) {
-		this.entity = livingEntity;
+	public DamageTracker(LivingEntity entity) {
+		this.entity = entity;
 	}
 
 	public void setFallDeathSuffix() {
 		this.clearFallDeathSuffix();
-		if (this.entity.isClimbing()) {
-			Block block = this.entity.world.getBlockState(new BlockPos(this.entity)).getBlock();
-			if (block == Blocks.field_9983) {
+		Optional<BlockPos> optional = this.entity.getClimbingPos();
+		if (optional.isPresent()) {
+			BlockState blockState = this.entity.world.getBlockState((BlockPos)optional.get());
+			if (blockState.isOf(Blocks.LADDER) || blockState.isIn(BlockTags.TRAPDOORS)) {
 				this.fallDeathSuffix = "ladder";
-			} else if (block == Blocks.field_10597) {
+			} else if (blockState.isOf(Blocks.VINE)) {
 				this.fallDeathSuffix = "vines";
+			} else if (blockState.isOf(Blocks.WEEPING_VINES) || blockState.isOf(Blocks.WEEPING_VINES_PLANT)) {
+				this.fallDeathSuffix = "weeping_vines";
+			} else if (blockState.isOf(Blocks.TWISTING_VINES) || blockState.isOf(Blocks.TWISTING_VINES_PLANT)) {
+				this.fallDeathSuffix = "twisting_vines";
+			} else if (blockState.isOf(Blocks.SCAFFOLDING)) {
+				this.fallDeathSuffix = "scaffolding";
+			} else {
+				this.fallDeathSuffix = "other_climbable";
 			}
 		} else if (this.entity.isTouchingWater()) {
 			this.fallDeathSuffix = "water";
 		}
 	}
 
-	public void onDamage(DamageSource damageSource, float f, float g) {
+	public void onDamage(DamageSource damageSource, float originalHealth, float f) {
 		this.update();
 		this.setFallDeathSuffix();
-		DamageRecord damageRecord = new DamageRecord(damageSource, this.entity.age, f, g, this.fallDeathSuffix, this.entity.fallDistance);
+		DamageRecord damageRecord = new DamageRecord(damageSource, this.entity.age, originalHealth, f, this.fallDeathSuffix, this.entity.fallDistance);
 		this.recentDamage.add(damageRecord);
 		this.ageOnLastDamage = this.entity.age;
 		this.hasDamage = true;

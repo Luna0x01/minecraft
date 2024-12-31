@@ -30,9 +30,9 @@ public class MultipartUnbakedModel implements UnbakedModel {
 	private final StateManager<Block, BlockState> stateFactory;
 	private final List<MultipartModelComponent> components;
 
-	public MultipartUnbakedModel(StateManager<Block, BlockState> stateManager, List<MultipartModelComponent> list) {
-		this.stateFactory = stateManager;
-		this.components = list;
+	public MultipartUnbakedModel(StateManager<Block, BlockState> stateFactory, List<MultipartModelComponent> components) {
+		this.stateFactory = stateFactory;
+		this.components = components;
 	}
 
 	public List<MultipartModelComponent> getComponents() {
@@ -49,13 +49,13 @@ public class MultipartUnbakedModel implements UnbakedModel {
 		return set;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (!(object instanceof MultipartUnbakedModel)) {
+		} else if (!(o instanceof MultipartUnbakedModel)) {
 			return false;
 		} else {
-			MultipartUnbakedModel multipartUnbakedModel = (MultipartUnbakedModel)object;
+			MultipartUnbakedModel multipartUnbakedModel = (MultipartUnbakedModel)o;
 			return Objects.equals(this.stateFactory, multipartUnbakedModel.stateFactory) && Objects.equals(this.components, multipartUnbakedModel.components);
 		}
 	}
@@ -73,20 +73,22 @@ public class MultipartUnbakedModel implements UnbakedModel {
 	}
 
 	@Override
-	public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> function, Set<Pair<String, String>> set) {
+	public Collection<SpriteIdentifier> getTextureDependencies(
+		Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences
+	) {
 		return (Collection<SpriteIdentifier>)this.getComponents()
 			.stream()
-			.flatMap(multipartModelComponent -> multipartModelComponent.getModel().getTextureDependencies(function, set).stream())
+			.flatMap(multipartModelComponent -> multipartModelComponent.getModel().getTextureDependencies(unbakedModelGetter, unresolvedTextureReferences).stream())
 			.collect(Collectors.toSet());
 	}
 
 	@Nullable
 	@Override
-	public BakedModel bake(ModelLoader modelLoader, Function<SpriteIdentifier, Sprite> function, ModelBakeSettings modelBakeSettings, Identifier identifier) {
+	public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
 		MultipartBakedModel.Builder builder = new MultipartBakedModel.Builder();
 
 		for (MultipartModelComponent multipartModelComponent : this.getComponents()) {
-			BakedModel bakedModel = multipartModelComponent.getModel().bake(modelLoader, function, modelBakeSettings, identifier);
+			BakedModel bakedModel = multipartModelComponent.getModel().bake(loader, textureGetter, rotationContainer, modelId);
 			if (bakedModel != null) {
 				builder.addComponent(multipartModelComponent.getPredicate(this.stateFactory), bakedModel);
 			}
@@ -98,19 +100,19 @@ public class MultipartUnbakedModel implements UnbakedModel {
 	public static class Deserializer implements JsonDeserializer<MultipartUnbakedModel> {
 		private final ModelVariantMap.DeserializationContext context;
 
-		public Deserializer(ModelVariantMap.DeserializationContext deserializationContext) {
-			this.context = deserializationContext;
+		public Deserializer(ModelVariantMap.DeserializationContext context) {
+			this.context = context;
 		}
 
 		public MultipartUnbakedModel deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			return new MultipartUnbakedModel(this.context.getStateFactory(), this.deserializeComponents(jsonDeserializationContext, jsonElement.getAsJsonArray()));
 		}
 
-		private List<MultipartModelComponent> deserializeComponents(JsonDeserializationContext jsonDeserializationContext, JsonArray jsonArray) {
+		private List<MultipartModelComponent> deserializeComponents(JsonDeserializationContext context, JsonArray array) {
 			List<MultipartModelComponent> list = Lists.newArrayList();
 
-			for (JsonElement jsonElement : jsonArray) {
-				list.add(jsonDeserializationContext.deserialize(jsonElement, MultipartModelComponent.class));
+			for (JsonElement jsonElement : array) {
+				list.add(context.deserialize(jsonElement, MultipartModelComponent.class));
 			}
 
 			return list;

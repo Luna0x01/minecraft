@@ -10,7 +10,7 @@ import java.util.Random;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
+import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.Util;
@@ -21,40 +21,40 @@ public class MultipartBakedModel implements BakedModel {
 	private final List<Pair<Predicate<BlockState>, BakedModel>> components;
 	protected final boolean ambientOcclusion;
 	protected final boolean depthGui;
-	protected final boolean field_21863;
+	protected final boolean sideLit;
 	protected final Sprite sprite;
 	protected final ModelTransformation transformations;
-	protected final ModelItemPropertyOverrideList itemPropertyOverrides;
+	protected final ModelOverrideList itemPropertyOverrides;
 	private final Map<BlockState, BitSet> stateCache = new Object2ObjectOpenCustomHashMap(Util.identityHashStrategy());
 
-	public MultipartBakedModel(List<Pair<Predicate<BlockState>, BakedModel>> list) {
-		this.components = list;
-		BakedModel bakedModel = (BakedModel)((Pair)list.iterator().next()).getRight();
+	public MultipartBakedModel(List<Pair<Predicate<BlockState>, BakedModel>> components) {
+		this.components = components;
+		BakedModel bakedModel = (BakedModel)((Pair)components.iterator().next()).getRight();
 		this.ambientOcclusion = bakedModel.useAmbientOcclusion();
 		this.depthGui = bakedModel.hasDepth();
-		this.field_21863 = bakedModel.isSideLit();
+		this.sideLit = bakedModel.isSideLit();
 		this.sprite = bakedModel.getSprite();
 		this.transformations = bakedModel.getTransformation();
-		this.itemPropertyOverrides = bakedModel.getItemPropertyOverrides();
+		this.itemPropertyOverrides = bakedModel.getOverrides();
 	}
 
 	@Override
-	public List<BakedQuad> getQuads(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
-		if (blockState == null) {
+	public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction face, Random random) {
+		if (state == null) {
 			return Collections.emptyList();
 		} else {
-			BitSet bitSet = (BitSet)this.stateCache.get(blockState);
+			BitSet bitSet = (BitSet)this.stateCache.get(state);
 			if (bitSet == null) {
 				bitSet = new BitSet();
 
 				for (int i = 0; i < this.components.size(); i++) {
 					Pair<Predicate<BlockState>, BakedModel> pair = (Pair<Predicate<BlockState>, BakedModel>)this.components.get(i);
-					if (((Predicate)pair.getLeft()).test(blockState)) {
+					if (((Predicate)pair.getLeft()).test(state)) {
 						bitSet.set(i);
 					}
 				}
 
-				this.stateCache.put(blockState, bitSet);
+				this.stateCache.put(state, bitSet);
 			}
 
 			List<BakedQuad> list = Lists.newArrayList();
@@ -62,7 +62,7 @@ public class MultipartBakedModel implements BakedModel {
 
 			for (int j = 0; j < bitSet.length(); j++) {
 				if (bitSet.get(j)) {
-					list.addAll(((BakedModel)((Pair)this.components.get(j)).getRight()).getQuads(blockState, direction, new Random(l)));
+					list.addAll(((BakedModel)((Pair)this.components.get(j)).getRight()).getQuads(state, face, new Random(l)));
 				}
 			}
 
@@ -82,7 +82,7 @@ public class MultipartBakedModel implements BakedModel {
 
 	@Override
 	public boolean isSideLit() {
-		return this.field_21863;
+		return this.sideLit;
 	}
 
 	@Override
@@ -101,15 +101,15 @@ public class MultipartBakedModel implements BakedModel {
 	}
 
 	@Override
-	public ModelItemPropertyOverrideList getItemPropertyOverrides() {
+	public ModelOverrideList getOverrides() {
 		return this.itemPropertyOverrides;
 	}
 
 	public static class Builder {
 		private final List<Pair<Predicate<BlockState>, BakedModel>> components = Lists.newArrayList();
 
-		public void addComponent(Predicate<BlockState> predicate, BakedModel bakedModel) {
-			this.components.add(Pair.of(predicate, bakedModel));
+		public void addComponent(Predicate<BlockState> predicate, BakedModel model) {
+			this.components.add(Pair.of(predicate, model));
 		}
 
 		public BakedModel build() {

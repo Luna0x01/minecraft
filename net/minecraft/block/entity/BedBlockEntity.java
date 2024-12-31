@@ -1,19 +1,19 @@
 package net.minecraft.block.entity;
 
 import net.minecraft.block.BedBlock;
-import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.DyeColor;
 
 public class BedBlockEntity extends BlockEntity {
 	private DyeColor color;
 
 	public BedBlockEntity() {
-		super(BlockEntityType.field_11910);
+		super(BlockEntityType.BED);
 	}
 
-	public BedBlockEntity(DyeColor dyeColor) {
+	public BedBlockEntity(DyeColor color) {
 		this();
-		this.setColor(dyeColor);
+		this.setColor(color);
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class BedBlockEntity extends BlockEntity {
 		return this.color;
 	}
 
-	public void setColor(DyeColor dyeColor) {
-		this.color = dyeColor;
+	public void setColor(DyeColor color) {
+		this.color = color;
 	}
 }

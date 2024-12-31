@@ -15,65 +15,69 @@ import net.minecraft.world.World;
 public class FrostedIceBlock extends IceBlock {
 	public static final IntProperty AGE = Properties.AGE_3;
 
-	public FrostedIceBlock(Block.Settings settings) {
+	public FrostedIceBlock(AbstractBlock.Settings settings) {
 		super(settings);
 		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
-		if ((random.nextInt(3) == 0 || this.canMelt(serverWorld, blockPos, 4))
-			&& serverWorld.getLightLevel(blockPos) > 11 - (Integer)blockState.get(AGE) - blockState.getOpacity(serverWorld, blockPos)
-			&& this.increaseAge(blockState, serverWorld, blockPos)) {
-			try (BlockPos.PooledMutable pooledMutable = BlockPos.PooledMutable.get()) {
-				for (Direction direction : Direction.values()) {
-					pooledMutable.set(blockPos).setOffset(direction);
-					BlockState blockState2 = serverWorld.getBlockState(pooledMutable);
-					if (blockState2.getBlock() == this && !this.increaseAge(blockState2, serverWorld, pooledMutable)) {
-						serverWorld.getBlockTickScheduler().schedule(pooledMutable, this, MathHelper.nextInt(random, 20, 40));
-					}
+	public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+		this.scheduledTick(state, world, pos, random);
+	}
+
+	@Override
+	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+		if ((random.nextInt(3) == 0 || this.canMelt(world, pos, 4))
+			&& world.getLightLevel(pos) > 11 - (Integer)state.get(AGE) - state.getOpacity(world, pos)
+			&& this.increaseAge(state, world, pos)) {
+			BlockPos.Mutable mutable = new BlockPos.Mutable();
+
+			for (Direction direction : Direction.values()) {
+				mutable.set(pos, direction);
+				BlockState blockState = world.getBlockState(mutable);
+				if (blockState.isOf(this) && !this.increaseAge(blockState, world, mutable)) {
+					world.getBlockTickScheduler().schedule(mutable, this, MathHelper.nextInt(random, 20, 40));
 				}
 			}
 		} else {
-			serverWorld.getBlockTickScheduler().schedule(blockPos, this, MathHelper.nextInt(random, 20, 40));
+			world.getBlockTickScheduler().schedule(pos, this, MathHelper.nextInt(random, 20, 40));
 		}
 	}
 
-	private boolean increaseAge(BlockState blockState, World world, BlockPos blockPos) {
-		int i = (Integer)blockState.get(AGE);
+	private boolean increaseAge(BlockState state, World world, BlockPos pos) {
+		int i = (Integer)state.get(AGE);
 		if (i < 3) {
-			world.setBlockState(blockPos, blockState.with(AGE, Integer.valueOf(i + 1)), 2);
+			world.setBlockState(pos, state.with(AGE, Integer.valueOf(i + 1)), 2);
 			return false;
 		} else {
-			this.melt(blockState, world, blockPos);
+			this.melt(state, world, pos);
 			return true;
 		}
 	}
 
 	@Override
-	public void neighborUpdate(BlockState blockState, World world, BlockPos blockPos, Block block, BlockPos blockPos2, boolean bl) {
-		if (block == this && this.canMelt(world, blockPos, 2)) {
-			this.melt(blockState, world, blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
+		if (block == this && this.canMelt(world, pos, 2)) {
+			this.melt(state, world, pos);
 		}
 
-		super.neighborUpdate(blockState, world, blockPos, block, blockPos2, bl);
+		super.neighborUpdate(state, world, pos, block, fromPos, notify);
 	}
 
-	private boolean canMelt(BlockView blockView, BlockPos blockPos, int i) {
-		int j = 0;
+	private boolean canMelt(BlockView world, BlockPos pos, int maxNeighbors) {
+		int i = 0;
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		try (BlockPos.PooledMutable pooledMutable = BlockPos.PooledMutable.get()) {
-			for (Direction direction : Direction.values()) {
-				pooledMutable.set(blockPos).setOffset(direction);
-				if (blockView.getBlockState(pooledMutable).getBlock() == this) {
-					if (++j >= i) {
-						return false;
-					}
+		for (Direction direction : Direction.values()) {
+			mutable.set(pos, direction);
+			if (world.getBlockState(mutable).isOf(this)) {
+				if (++i >= maxNeighbors) {
+					return false;
 				}
 			}
-
-			return true;
 		}
+
+		return true;
 	}
 
 	@Override
@@ -82,7 +86,7 @@ public class FrostedIceBlock extends IceBlock {
 	}
 
 	@Override
-	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
 	}
 }

@@ -9,11 +9,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.text.Text;
-import net.minecraft.util.Int2ObjectBiMap;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.collection.Int2ObjectBiMap;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.EulerAngle;
@@ -84,7 +84,7 @@ public class TrackedDataHandlerRegistry {
 		}
 
 		public Text copy(Text text) {
-			return text.deepCopy();
+			return text;
 		}
 	};
 	public static final TrackedDataHandler<Optional<Text>> OPTIONAL_TEXT_COMPONENT = new TrackedDataHandler<Optional<Text>>() {
@@ -102,7 +102,7 @@ public class TrackedDataHandlerRegistry {
 		}
 
 		public Optional<Text> copy(Optional<Text> optional) {
-			return optional.isPresent() ? Optional.of(((Text)optional.get()).deepCopy()) : Optional.empty();
+			return optional;
 		}
 	};
 	public static final TrackedDataHandler<ItemStack> ITEM_STACK = new TrackedDataHandler<ItemStack>() {
@@ -151,12 +151,12 @@ public class TrackedDataHandlerRegistry {
 	};
 	public static final TrackedDataHandler<ParticleEffect> PARTICLE = new TrackedDataHandler<ParticleEffect>() {
 		public void write(PacketByteBuf packetByteBuf, ParticleEffect particleEffect) {
-			packetByteBuf.writeVarInt(Registry.field_11141.getRawId((ParticleType<? extends ParticleEffect>)particleEffect.getType()));
+			packetByteBuf.writeVarInt(Registry.PARTICLE_TYPE.getRawId(particleEffect.getType()));
 			particleEffect.write(packetByteBuf);
 		}
 
 		public ParticleEffect read(PacketByteBuf packetByteBuf) {
-			return this.method_12744(packetByteBuf, Registry.field_11141.get(packetByteBuf.readVarInt()));
+			return this.method_12744(packetByteBuf, (ParticleType<ParticleEffect>)Registry.PARTICLE_TYPE.get(packetByteBuf.readVarInt()));
 		}
 
 		private <T extends ParticleEffect> T method_12744(PacketByteBuf packetByteBuf, ParticleType<T> particleType) {
@@ -195,7 +195,7 @@ public class TrackedDataHandlerRegistry {
 			return blockPos;
 		}
 	};
-	public static final TrackedDataHandler<Optional<BlockPos>> OPTIONA_BLOCK_POS = new TrackedDataHandler<Optional<BlockPos>>() {
+	public static final TrackedDataHandler<Optional<BlockPos>> OPTIONAL_BLOCK_POS = new TrackedDataHandler<Optional<BlockPos>>() {
 		public void write(PacketByteBuf packetByteBuf, Optional<BlockPos> optional) {
 			packetByteBuf.writeBoolean(optional.isPresent());
 			if (optional.isPresent()) {
@@ -255,14 +255,14 @@ public class TrackedDataHandlerRegistry {
 	};
 	public static final TrackedDataHandler<VillagerData> VILLAGER_DATA = new TrackedDataHandler<VillagerData>() {
 		public void write(PacketByteBuf packetByteBuf, VillagerData villagerData) {
-			packetByteBuf.writeVarInt(Registry.field_17166.getRawId(villagerData.getType()));
-			packetByteBuf.writeVarInt(Registry.field_17167.getRawId(villagerData.getProfession()));
+			packetByteBuf.writeVarInt(Registry.VILLAGER_TYPE.getRawId(villagerData.getType()));
+			packetByteBuf.writeVarInt(Registry.VILLAGER_PROFESSION.getRawId(villagerData.getProfession()));
 			packetByteBuf.writeVarInt(villagerData.getLevel());
 		}
 
 		public VillagerData read(PacketByteBuf packetByteBuf) {
 			return new VillagerData(
-				Registry.field_17166.get(packetByteBuf.readVarInt()), Registry.field_17167.get(packetByteBuf.readVarInt()), packetByteBuf.readVarInt()
+				Registry.VILLAGER_TYPE.get(packetByteBuf.readVarInt()), Registry.VILLAGER_PROFESSION.get(packetByteBuf.readVarInt()), packetByteBuf.readVarInt()
 			);
 		}
 
@@ -270,7 +270,7 @@ public class TrackedDataHandlerRegistry {
 			return villagerData;
 		}
 	};
-	public static final TrackedDataHandler<OptionalInt> field_17910 = new TrackedDataHandler<OptionalInt>() {
+	public static final TrackedDataHandler<OptionalInt> FIREWORK_DATA = new TrackedDataHandler<OptionalInt>() {
 		public void write(PacketByteBuf packetByteBuf, OptionalInt optionalInt) {
 			packetByteBuf.writeVarInt(optionalInt.orElse(-1) + 1);
 		}
@@ -298,17 +298,17 @@ public class TrackedDataHandlerRegistry {
 		}
 	};
 
-	public static void register(TrackedDataHandler<?> trackedDataHandler) {
-		field_13328.add(trackedDataHandler);
+	public static void register(TrackedDataHandler<?> handler) {
+		field_13328.add(handler);
 	}
 
 	@Nullable
-	public static TrackedDataHandler<?> get(int i) {
-		return field_13328.get(i);
+	public static TrackedDataHandler<?> get(int id) {
+		return field_13328.get(id);
 	}
 
-	public static int getId(TrackedDataHandler<?> trackedDataHandler) {
-		return field_13328.getId(trackedDataHandler);
+	public static int getId(TrackedDataHandler<?> handler) {
+		return field_13328.getRawId(handler);
 	}
 
 	static {
@@ -322,14 +322,14 @@ public class TrackedDataHandlerRegistry {
 		register(BOOLEAN);
 		register(ROTATION);
 		register(BLOCK_POS);
-		register(OPTIONA_BLOCK_POS);
+		register(OPTIONAL_BLOCK_POS);
 		register(FACING);
 		register(OPTIONAL_UUID);
 		register(OPTIONAL_BLOCK_STATE);
 		register(TAG_COMPOUND);
 		register(PARTICLE);
 		register(VILLAGER_DATA);
-		register(field_17910);
+		register(FIREWORK_DATA);
 		register(ENTITY_POSE);
 	}
 }

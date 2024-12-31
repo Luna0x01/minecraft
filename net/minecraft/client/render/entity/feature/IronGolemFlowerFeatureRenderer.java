@@ -39,7 +39,7 @@ public class IronGolemFlowerFeatureRenderer extends FeatureRenderer<IronGolemEnt
 			matrixStack.translate(-0.5, -0.5, -0.5);
 			MinecraftClient.getInstance()
 				.getBlockRenderManager()
-				.renderBlockAsEntity(Blocks.field_10449.getDefaultState(), matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV);
+				.renderBlockAsEntity(Blocks.POPPY.getDefaultState(), matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV);
 			matrixStack.pop();
 		}
 	}

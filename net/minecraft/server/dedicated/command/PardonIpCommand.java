@@ -6,9 +6,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.regex.Matcher;
+import net.minecraft.command.CommandSource;
 import net.minecraft.server.BannedIpList;
 import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 
@@ -16,13 +16,10 @@ public class PardonIpCommand {
 	private static final SimpleCommandExceptionType INVALID_IP_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.pardonip.invalid"));
 	private static final SimpleCommandExceptionType ALREADY_UNBANNED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.pardonip.failed"));
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("pardon-ip")
-					.requires(
-						serverCommandSource -> serverCommandSource.getMinecraftServer().getPlayerManager().getIpBanList().isEnabled()
-								&& serverCommandSource.hasPermissionLevel(3)
-					))
+					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
 				.then(
 					CommandManager.argument("target", StringArgumentType.word())
 						.suggests(
@@ -35,17 +32,17 @@ public class PardonIpCommand {
 		);
 	}
 
-	private static int pardonIp(ServerCommandSource serverCommandSource, String string) throws CommandSyntaxException {
-		Matcher matcher = BanIpCommand.field_13466.matcher(string);
+	private static int pardonIp(ServerCommandSource source, String target) throws CommandSyntaxException {
+		Matcher matcher = BanIpCommand.PATTERN.matcher(target);
 		if (!matcher.matches()) {
 			throw INVALID_IP_EXCEPTION.create();
 		} else {
-			BannedIpList bannedIpList = serverCommandSource.getMinecraftServer().getPlayerManager().getIpBanList();
-			if (!bannedIpList.isBanned(string)) {
+			BannedIpList bannedIpList = source.getMinecraftServer().getPlayerManager().getIpBanList();
+			if (!bannedIpList.isBanned(target)) {
 				throw ALREADY_UNBANNED_EXCEPTION.create();
 			} else {
-				bannedIpList.remove(string);
-				serverCommandSource.sendFeedback(new TranslatableText("commands.pardonip.success", string), true);
+				bannedIpList.remove(target);
+				source.sendFeedback(new TranslatableText("commands.pardonip.success", target), true);
 				return 1;
 			}
 		}

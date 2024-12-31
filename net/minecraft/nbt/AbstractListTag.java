@@ -9,7 +9,9 @@ public abstract class AbstractListTag<T extends Tag> extends AbstractList<T> imp
 
 	public abstract T remove(int i);
 
-	public abstract boolean setTag(int i, Tag tag);
+	public abstract boolean setTag(int index, Tag tag);
 
-	public abstract boolean addTag(int i, Tag tag);
+	public abstract boolean addTag(int index, Tag tag);
+
+	public abstract byte getElementType();
 }

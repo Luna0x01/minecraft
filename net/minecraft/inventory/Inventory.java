@@ -7,41 +7,41 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Clearable;
 
 public interface Inventory extends Clearable {
-	int getInvSize();
+	int size();
 
-	boolean isInvEmpty();
+	boolean isEmpty();
 
-	ItemStack getInvStack(int i);
+	ItemStack getStack(int slot);
 
-	ItemStack takeInvStack(int i, int j);
+	ItemStack removeStack(int slot, int amount);
 
-	ItemStack removeInvStack(int i);
+	ItemStack removeStack(int slot);
 
-	void setInvStack(int i, ItemStack itemStack);
+	void setStack(int slot, ItemStack stack);
 
-	default int getInvMaxStackAmount() {
+	default int getMaxCountPerStack() {
 		return 64;
 	}
 
 	void markDirty();
 
-	boolean canPlayerUseInv(PlayerEntity playerEntity);
+	boolean canPlayerUse(PlayerEntity player);
 
-	default void onInvOpen(PlayerEntity playerEntity) {
+	default void onOpen(PlayerEntity player) {
 	}
 
-	default void onInvClose(PlayerEntity playerEntity) {
+	default void onClose(PlayerEntity player) {
 	}
 
-	default boolean isValidInvStack(int i, ItemStack itemStack) {
+	default boolean isValid(int slot, ItemStack stack) {
 		return true;
 	}
 
-	default int countInInv(Item item) {
+	default int count(Item item) {
 		int i = 0;
 
-		for (int j = 0; j < this.getInvSize(); j++) {
-			ItemStack itemStack = this.getInvStack(j);
+		for (int j = 0; j < this.size(); j++) {
+			ItemStack itemStack = this.getStack(j);
 			if (itemStack.getItem().equals(item)) {
 				i += itemStack.getCount();
 			}
@@ -50,10 +50,10 @@ public interface Inventory extends Clearable {
 		return i;
 	}
 
-	default boolean containsAnyInInv(Set<Item> set) {
-		for (int i = 0; i < this.getInvSize(); i++) {
-			ItemStack itemStack = this.getInvStack(i);
-			if (set.contains(itemStack.getItem()) && itemStack.getCount() > 0) {
+	default boolean containsAny(Set<Item> items) {
+		for (int i = 0; i < this.size(); i++) {
+			ItemStack itemStack = this.getStack(i);
+			if (items.contains(itemStack.getItem()) && itemStack.getCount() > 0) {
 				return true;
 			}
 		}

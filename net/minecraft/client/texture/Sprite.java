@@ -33,62 +33,62 @@ public class Sprite implements AutoCloseable {
 	private int frameIndex;
 	private int frameTicks;
 
-	protected Sprite(SpriteAtlasTexture spriteAtlasTexture, Sprite.Info info, int i, int j, int k, int l, int m, NativeImage nativeImage) {
+	protected Sprite(SpriteAtlasTexture spriteAtlasTexture, Sprite.Info info, int maxLevel, int atlasWidth, int atlasHeight, int x, int y, NativeImage nativeImage) {
 		this.atlas = spriteAtlasTexture;
 		AnimationResourceMetadata animationResourceMetadata = info.animationData;
-		int n = info.width;
-		int o = info.height;
-		this.x = l;
-		this.y = m;
-		this.uMin = (float)l / (float)j;
-		this.uMax = (float)(l + n) / (float)j;
-		this.vMin = (float)m / (float)k;
-		this.vMax = (float)(m + o) / (float)k;
-		int p = nativeImage.getWidth() / animationResourceMetadata.getWidth(n);
-		int q = nativeImage.getHeight() / animationResourceMetadata.getHeight(o);
+		int i = info.width;
+		int j = info.height;
+		this.x = x;
+		this.y = y;
+		this.uMin = (float)x / (float)atlasWidth;
+		this.uMax = (float)(x + i) / (float)atlasWidth;
+		this.vMin = (float)y / (float)atlasHeight;
+		this.vMax = (float)(y + j) / (float)atlasHeight;
+		int k = nativeImage.getWidth() / animationResourceMetadata.getWidth(i);
+		int l = nativeImage.getHeight() / animationResourceMetadata.getHeight(j);
 		if (animationResourceMetadata.getFrameCount() > 0) {
-			int r = (Integer)animationResourceMetadata.getFrameIndexSet().stream().max(Integer::compareTo).get() + 1;
-			this.frameXs = new int[r];
-			this.frameYs = new int[r];
+			int m = (Integer)animationResourceMetadata.getFrameIndexSet().stream().max(Integer::compareTo).get() + 1;
+			this.frameXs = new int[m];
+			this.frameYs = new int[m];
 			Arrays.fill(this.frameXs, -1);
 			Arrays.fill(this.frameYs, -1);
 
-			for (int s : animationResourceMetadata.getFrameIndexSet()) {
-				if (s >= p * q) {
-					throw new RuntimeException("invalid frameindex " + s);
+			for (int n : animationResourceMetadata.getFrameIndexSet()) {
+				if (n >= k * l) {
+					throw new RuntimeException("invalid frameindex " + n);
 				}
 
-				int t = s / p;
-				int u = s % p;
-				this.frameXs[s] = u;
-				this.frameYs[s] = t;
+				int o = n / k;
+				int p = n % k;
+				this.frameXs[n] = p;
+				this.frameYs[n] = o;
 			}
 		} else {
 			List<AnimationFrameResourceMetadata> list = Lists.newArrayList();
-			int v = p * q;
-			this.frameXs = new int[v];
-			this.frameYs = new int[v];
+			int q = k * l;
+			this.frameXs = new int[q];
+			this.frameYs = new int[q];
 
-			for (int w = 0; w < q; w++) {
-				for (int x = 0; x < p; x++) {
-					int y = w * p + x;
-					this.frameXs[y] = x;
-					this.frameYs[y] = w;
-					list.add(new AnimationFrameResourceMetadata(y, -1));
+			for (int r = 0; r < l; r++) {
+				for (int s = 0; s < k; s++) {
+					int t = r * k + s;
+					this.frameXs[t] = s;
+					this.frameYs[t] = r;
+					list.add(new AnimationFrameResourceMetadata(t, -1));
 				}
 			}
 
 			animationResourceMetadata = new AnimationResourceMetadata(
-				list, n, o, animationResourceMetadata.getDefaultFrameTime(), animationResourceMetadata.shouldInterpolate()
+				list, i, j, animationResourceMetadata.getDefaultFrameTime(), animationResourceMetadata.shouldInterpolate()
 			);
 		}
 
-		this.info = new Sprite.Info(info.id, n, o, animationResourceMetadata);
+		this.info = new Sprite.Info(info.id, i, j, animationResourceMetadata);
 		this.animationMetadata = animationResourceMetadata;
 
 		try {
 			try {
-				this.images = MipmapHelper.getMipmapLevelsImages(nativeImage, i);
+				this.images = MipmapHelper.getMipmapLevelsImages(nativeImage, maxLevel);
 			} catch (Throwable var19) {
 				CrashReport crashReport = CrashReport.create(var19, "Generating mipmaps for frame");
 				CrashReportSection crashReportSection = crashReport.addElement("Frame being iterated");
@@ -109,26 +109,26 @@ public class Sprite implements AutoCloseable {
 			crashReportSection2.add("Sprite name", (CrashCallable<String>)(() -> this.getId().toString()));
 			crashReportSection2.add("Sprite size", (CrashCallable<String>)(() -> this.getWidth() + " x " + this.getHeight()));
 			crashReportSection2.add("Sprite frames", (CrashCallable<String>)(() -> this.getFrameCount() + " frames"));
-			crashReportSection2.add("Mipmap levels", i);
+			crashReportSection2.add("Mipmap levels", maxLevel);
 			throw new CrashException(crashReport2);
 		}
 
 		if (animationResourceMetadata.shouldInterpolate()) {
-			this.interpolation = new Sprite.Interpolation(info, i);
+			this.interpolation = new Sprite.Interpolation(info, maxLevel);
 		} else {
 			this.interpolation = null;
 		}
 	}
 
-	private void upload(int i) {
-		int j = this.frameXs[i] * this.info.width;
-		int k = this.frameYs[i] * this.info.height;
-		this.upload(j, k, this.images);
+	private void upload(int frame) {
+		int i = this.frameXs[frame] * this.info.width;
+		int j = this.frameYs[frame] * this.info.height;
+		this.upload(i, j, this.images);
 	}
 
-	private void upload(int i, int j, NativeImage[] nativeImages) {
-		for (int k = 0; k < this.images.length; k++) {
-			nativeImages[k].upload(k, this.x >> k, this.y >> k, i >> k, j >> k, this.info.width >> k, this.info.height >> k, this.images.length > 1, false);
+	private void upload(int frameX, int frameY, NativeImage[] output) {
+		for (int i = 0; i < this.images.length; i++) {
+			output[i].upload(i, this.x >> i, this.y >> i, frameX >> i, frameY >> i, this.info.width >> i, this.info.height >> i, this.images.length > 1, false);
 		}
 	}
 
@@ -148,9 +148,9 @@ public class Sprite implements AutoCloseable {
 		return this.uMax;
 	}
 
-	public float getFrameU(double d) {
+	public float getFrameU(double frame) {
 		float f = this.uMax - this.uMin;
-		return this.uMin + f * (float)d / 16.0F;
+		return this.uMin + f * (float)frame / 16.0F;
 	}
 
 	public float getMinV() {
@@ -161,9 +161,9 @@ public class Sprite implements AutoCloseable {
 		return this.vMax;
 	}
 
-	public float getFrameV(double d) {
+	public float getFrameV(double frame) {
 		float f = this.vMax - this.vMin;
-		return this.vMin + f * (float)d / 16.0F;
+		return this.vMin + f * (float)frame / 16.0F;
 	}
 
 	public Identifier getId() {
@@ -216,8 +216,8 @@ public class Sprite implements AutoCloseable {
 			+ '}';
 	}
 
-	public boolean isPixelTransparent(int i, int j, int k) {
-		return (this.images[0].getPixelRgba(j + this.frameXs[i] * this.info.width, k + this.frameYs[i] * this.info.height) >> 24 & 0xFF) == 0;
+	public boolean isPixelTransparent(int frame, int x, int y) {
+		return (this.images[0].getPixelColor(x + this.frameXs[frame] * this.info.width, y + this.frameYs[frame] * this.info.height) >> 24 & 0xFF) == 0;
 	}
 
 	public void upload() {
@@ -247,9 +247,9 @@ public class Sprite implements AutoCloseable {
 			}
 		} else if (this.interpolation != null) {
 			if (!RenderSystem.isOnRenderThread()) {
-				RenderSystem.recordRenderCall(() -> interpolation.method_24128());
+				RenderSystem.recordRenderCall(() -> interpolation.apply());
 			} else {
-				this.interpolation.method_24128();
+				this.interpolation.apply();
 			}
 		}
 	}
@@ -268,11 +268,11 @@ public class Sprite implements AutoCloseable {
 		private final int height;
 		private final AnimationResourceMetadata animationData;
 
-		public Info(Identifier identifier, int i, int j, AnimationResourceMetadata animationResourceMetadata) {
-			this.id = identifier;
-			this.width = i;
-			this.height = j;
-			this.animationData = animationResourceMetadata;
+		public Info(Identifier id, int width, int height, AnimationResourceMetadata animationData) {
+			this.id = id;
+			this.width = width;
+			this.height = height;
+			this.animationData = animationData;
 		}
 
 		public Identifier getId() {
@@ -291,19 +291,19 @@ public class Sprite implements AutoCloseable {
 	final class Interpolation implements AutoCloseable {
 		private final NativeImage[] images;
 
-		private Interpolation(Sprite.Info info, int i) {
-			this.images = new NativeImage[i + 1];
+		private Interpolation(Sprite.Info info, int mipmap) {
+			this.images = new NativeImage[mipmap + 1];
 
-			for (int j = 0; j < this.images.length; j++) {
-				int k = info.width >> j;
-				int l = info.height >> j;
-				if (this.images[j] == null) {
-					this.images[j] = new NativeImage(k, l, false);
+			for (int i = 0; i < this.images.length; i++) {
+				int j = info.width >> i;
+				int k = info.height >> i;
+				if (this.images[i] == null) {
+					this.images[i] = new NativeImage(j, k, false);
 				}
 			}
 		}
 
-		private void method_24128() {
+		private void apply() {
 			double d = 1.0 - (double)Sprite.this.frameTicks / (double)Sprite.this.animationMetadata.getFrameTime(Sprite.this.frameIndex);
 			int i = Sprite.this.animationMetadata.getFrameIndex(Sprite.this.frameIndex);
 			int j = Sprite.this.animationMetadata.getFrameCount() == 0 ? Sprite.this.getFrameCount() : Sprite.this.animationMetadata.getFrameCount();
@@ -315,12 +315,12 @@ public class Sprite implements AutoCloseable {
 
 					for (int o = 0; o < n; o++) {
 						for (int p = 0; p < m; p++) {
-							int q = this.method_24130(i, l, p, o);
-							int r = this.method_24130(k, l, p, o);
-							int s = this.method_24129(d, q >> 16 & 0xFF, r >> 16 & 0xFF);
-							int t = this.method_24129(d, q >> 8 & 0xFF, r >> 8 & 0xFF);
-							int u = this.method_24129(d, q & 0xFF, r & 0xFF);
-							this.images[l].setPixelRgba(p, o, q & 0xFF000000 | s << 16 | t << 8 | u);
+							int q = this.getPixelColor(i, l, p, o);
+							int r = this.getPixelColor(k, l, p, o);
+							int s = this.lerp(d, q >> 16 & 0xFF, r >> 16 & 0xFF);
+							int t = this.lerp(d, q >> 8 & 0xFF, r >> 8 & 0xFF);
+							int u = this.lerp(d, q & 0xFF, r & 0xFF);
+							this.images[l].setPixelColor(p, o, q & 0xFF000000 | s << 16 | t << 8 | u);
 						}
 					}
 				}
@@ -329,13 +329,15 @@ public class Sprite implements AutoCloseable {
 			}
 		}
 
-		private int method_24130(int i, int j, int k, int l) {
-			return Sprite.this.images[j]
-				.getPixelRgba(k + (Sprite.this.frameXs[i] * Sprite.this.info.width >> j), l + (Sprite.this.frameYs[i] * Sprite.this.info.height >> j));
+		private int getPixelColor(int frameIndex, int layer, int x, int y) {
+			return Sprite.this.images[layer]
+				.getPixelColor(
+					x + (Sprite.this.frameXs[frameIndex] * Sprite.this.info.width >> layer), y + (Sprite.this.frameYs[frameIndex] * Sprite.this.info.height >> layer)
+				);
 		}
 
-		private int method_24129(double d, int i, int j) {
-			return (int)(d * (double)i + (1.0 - d) * (double)j);
+		private int lerp(double delta, int to, int from) {
+			return (int)(delta * (double)to + (1.0 - delta) * (double)from);
 		}
 
 		public void close() {

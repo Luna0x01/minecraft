@@ -35,27 +35,27 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 	}
 
 	@Override
-	protected InputStream openFile(String string) throws IOException {
+	protected InputStream openFile(String name) throws IOException {
 		ZipFile zipFile = this.getZipFile();
-		ZipEntry zipEntry = zipFile.getEntry(string);
+		ZipEntry zipEntry = zipFile.getEntry(name);
 		if (zipEntry == null) {
-			throw new ResourceNotFoundException(this.base, string);
+			throw new ResourceNotFoundException(this.base, name);
 		} else {
 			return zipFile.getInputStream(zipEntry);
 		}
 	}
 
 	@Override
-	public boolean containsFile(String string) {
+	public boolean containsFile(String name) {
 		try {
-			return this.getZipFile().getEntry(string) != null;
+			return this.getZipFile().getEntry(name) != null;
 		} catch (IOException var3) {
 			return false;
 		}
 	}
 
 	@Override
-	public Set<String> getNamespaces(ResourceType resourceType) {
+	public Set<String> getNamespaces(ResourceType type) {
 		ZipFile zipFile;
 		try {
 			zipFile = this.getZipFile();
@@ -69,14 +69,14 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 		while (enumeration.hasMoreElements()) {
 			ZipEntry zipEntry = (ZipEntry)enumeration.nextElement();
 			String string = zipEntry.getName();
-			if (string.startsWith(resourceType.getDirectory() + "/")) {
+			if (string.startsWith(type.getDirectory() + "/")) {
 				List<String> list = Lists.newArrayList(TYPE_NAMESPACE_SPLITTER.split(string));
 				if (list.size() > 1) {
 					String string2 = (String)list.get(1);
 					if (string2.equals(string2.toLowerCase(Locale.ROOT))) {
 						set.add(string2);
 					} else {
-						this.warnNonLowercaseNamespace(string2);
+						this.warnNonLowerCaseNamespace(string2);
 					}
 				}
 			}
@@ -90,6 +90,7 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 		super.finalize();
 	}
 
+	@Override
 	public void close() {
 		if (this.file != null) {
 			IOUtils.closeQuietly(this.file);
@@ -98,7 +99,7 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 	}
 
 	@Override
-	public Collection<Identifier> findResources(ResourceType resourceType, String string, String string2, int i, Predicate<String> predicate) {
+	public Collection<Identifier> findResources(ResourceType type, String namespace, String prefix, int maxDepth, Predicate<String> pathFilter) {
 		ZipFile zipFile;
 		try {
 			zipFile = this.getZipFile();
@@ -108,18 +109,18 @@ public class ZipResourcePack extends AbstractFileResourcePack {
 
 		Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
 		List<Identifier> list = Lists.newArrayList();
-		String string3 = resourceType.getDirectory() + "/" + string + "/";
-		String string4 = string3 + string2 + "/";
+		String string = type.getDirectory() + "/" + namespace + "/";
+		String string2 = string + prefix + "/";
 
 		while (enumeration.hasMoreElements()) {
 			ZipEntry zipEntry = (ZipEntry)enumeration.nextElement();
 			if (!zipEntry.isDirectory()) {
-				String string5 = zipEntry.getName();
-				if (!string5.endsWith(".mcmeta") && string5.startsWith(string4)) {
-					String string6 = string5.substring(string3.length());
-					String[] strings = string6.split("/");
-					if (strings.length >= i + 1 && predicate.test(strings[strings.length - 1])) {
-						list.add(new Identifier(string, string6));
+				String string3 = zipEntry.getName();
+				if (!string3.endsWith(".mcmeta") && string3.startsWith(string2)) {
+					String string4 = string3.substring(string.length());
+					String[] strings = string4.split("/");
+					if (strings.length >= maxDepth + 1 && pathFilter.test(strings[strings.length - 1])) {
+						list.add(new Identifier(namespace, string4));
 					}
 				}
 			}

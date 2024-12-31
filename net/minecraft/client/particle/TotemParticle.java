@@ -1,14 +1,14 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.DefaultParticleType;
-import net.minecraft.world.World;
 
 public class TotemParticle extends AnimatedParticle {
-	private TotemParticle(World world, double d, double e, double f, double g, double h, double i, SpriteProvider spriteProvider) {
-		super(world, d, e, f, spriteProvider, -0.05F);
-		this.velocityX = g;
-		this.velocityY = h;
-		this.velocityZ = i;
+	private TotemParticle(ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, SpriteProvider spriteProvider) {
+		super(world, x, y, z, spriteProvider, -0.05F);
+		this.velocityX = velocityX;
+		this.velocityY = velocityY;
+		this.velocityZ = velocityZ;
 		this.scale *= 0.75F;
 		this.maxAge = 60 + this.random.nextInt(12);
 		this.setSpriteForAge(spriteProvider);
@@ -28,8 +28,8 @@ public class TotemParticle extends AnimatedParticle {
 			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			return new TotemParticle(world, d, e, f, g, h, i, this.spriteProvider);
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			return new TotemParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider);
 		}
 	}
 }

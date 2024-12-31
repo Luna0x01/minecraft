@@ -1,15 +1,15 @@
 package net.minecraft.datafixer.fix;
 
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
+import com.mojang.serialization.Dynamic;
 import java.util.stream.Stream;
 import net.minecraft.datafixer.TypeReferences;
 
 public class SavedDataVillageCropFix extends DataFix {
-	public SavedDataVillageCropFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public SavedDataVillageCropFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public TypeRewriteRule makeRule() {
@@ -26,11 +26,11 @@ public class SavedDataVillageCropFix extends DataFix {
 	}
 
 	private static <T> Dynamic<T> method_5157(Dynamic<T> dynamic) {
-		return (Dynamic<T>)dynamic.asStreamOpt().map(SavedDataVillageCropFix::fixVillageChildren).map(dynamic::createList).orElse(dynamic);
+		return (Dynamic<T>)dynamic.asStreamOpt().map(SavedDataVillageCropFix::fixVillageChildren).map(dynamic::createList).result().orElse(dynamic);
 	}
 
-	private static Stream<? extends Dynamic<?>> fixVillageChildren(Stream<? extends Dynamic<?>> stream) {
-		return stream.map(dynamic -> {
+	private static Stream<? extends Dynamic<?>> fixVillageChildren(Stream<? extends Dynamic<?>> villageChildren) {
+		return villageChildren.map(dynamic -> {
 			String string = dynamic.get("id").asString("");
 			if ("ViF".equals(string)) {
 				return fixSmallPlotCropIds(dynamic);
@@ -52,7 +52,9 @@ public class SavedDataVillageCropFix extends DataFix {
 		return fixCropId(dynamic, "CD");
 	}
 
-	private static <T> Dynamic<T> fixCropId(Dynamic<T> dynamic, String string) {
-		return dynamic.get(string).asNumber().isPresent() ? dynamic.set(string, BlockStateFlattening.lookupState(dynamic.get(string).asInt(0) << 4)) : dynamic;
+	private static <T> Dynamic<T> fixCropId(Dynamic<T> dynamic, String cropId) {
+		return dynamic.get(cropId).asNumber().result().isPresent()
+			? dynamic.set(cropId, BlockStateFlattening.lookupState(dynamic.get(cropId).asInt(0) << 4))
+			: dynamic;
 	}
 }

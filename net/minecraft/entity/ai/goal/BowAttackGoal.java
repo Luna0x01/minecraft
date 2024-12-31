@@ -2,9 +2,9 @@ package net.minecraft.entity.ai.goal;
 
 import java.util.EnumSet;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ProjectileUtil;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.Items;
 
@@ -19,16 +19,16 @@ public class BowAttackGoal<T extends HostileEntity & RangedAttackMob> extends Go
 	private boolean backward;
 	private int combatTicks = -1;
 
-	public BowAttackGoal(T hostileEntity, double d, int i, float f) {
-		this.actor = hostileEntity;
-		this.speed = d;
-		this.attackInterval = i;
-		this.squaredRange = f * f;
-		this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
+	public BowAttackGoal(T actor, double speed, int attackInterval, float range) {
+		this.actor = actor;
+		this.speed = speed;
+		this.attackInterval = attackInterval;
+		this.squaredRange = range * range;
+		this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
 	}
 
-	public void setAttackInterval(int i) {
-		this.attackInterval = i;
+	public void setAttackInterval(int attackInterval) {
+		this.attackInterval = attackInterval;
 	}
 
 	@Override
@@ -37,7 +37,7 @@ public class BowAttackGoal<T extends HostileEntity & RangedAttackMob> extends Go
 	}
 
 	protected boolean isHoldingBow() {
-		return this.actor.isHolding(Items.field_8102);
+		return this.actor.isHolding(Items.BOW);
 	}
 
 	@Override
@@ -122,7 +122,7 @@ public class BowAttackGoal<T extends HostileEntity & RangedAttackMob> extends Go
 					}
 				}
 			} else if (--this.cooldown <= 0 && this.targetSeeingTicker >= -60) {
-				this.actor.setCurrentHand(ProjectileUtil.getHandPossiblyHolding(this.actor, Items.field_8102));
+				this.actor.setCurrentHand(ProjectileUtil.getHandPossiblyHolding(this.actor, Items.BOW));
 			}
 		}
 	}

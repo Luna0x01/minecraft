@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -36,12 +37,12 @@ public class IntArrayTag extends AbstractListTag<IntTag> {
 	};
 	private int[] value;
 
-	public IntArrayTag(int[] is) {
-		this.value = is;
+	public IntArrayTag(int[] value) {
+		this.value = value;
 	}
 
-	public IntArrayTag(List<Integer> list) {
-		this(toArray(list));
+	public IntArrayTag(List<Integer> value) {
+		this(toArray(value));
 	}
 
 	private static int[] toArray(List<Integer> list) {
@@ -56,11 +57,11 @@ public class IntArrayTag extends AbstractListTag<IntTag> {
 	}
 
 	@Override
-	public void write(DataOutput dataOutput) throws IOException {
-		dataOutput.writeInt(this.value.length);
+	public void write(DataOutput output) throws IOException {
+		output.writeInt(this.value.length);
 
 		for (int i : this.value) {
-			dataOutput.writeInt(i);
+			output.writeInt(i);
 		}
 	}
 
@@ -95,8 +96,8 @@ public class IntArrayTag extends AbstractListTag<IntTag> {
 		return new IntArrayTag(is);
 	}
 
-	public boolean equals(Object object) {
-		return this == object ? true : object instanceof IntArrayTag && Arrays.equals(this.value, ((IntArrayTag)object).value);
+	public boolean equals(Object o) {
+		return this == o ? true : o instanceof IntArrayTag && Arrays.equals(this.value, ((IntArrayTag)o).value);
 	}
 
 	public int hashCode() {
@@ -108,19 +109,19 @@ public class IntArrayTag extends AbstractListTag<IntTag> {
 	}
 
 	@Override
-	public Text toText(String string, int i) {
+	public Text toText(String indent, int depth) {
 		Text text = new LiteralText("I").formatted(RED);
-		Text text2 = new LiteralText("[").append(text).append(";");
+		MutableText mutableText = new LiteralText("[").append(text).append(";");
 
-		for (int j = 0; j < this.value.length; j++) {
-			text2.append(" ").append(new LiteralText(String.valueOf(this.value[j])).formatted(GOLD));
-			if (j != this.value.length - 1) {
-				text2.append(",");
+		for (int i = 0; i < this.value.length; i++) {
+			mutableText.append(" ").append(new LiteralText(String.valueOf(this.value[i])).formatted(GOLD));
+			if (i != this.value.length - 1) {
+				mutableText.append(",");
 			}
 		}
 
-		text2.append("]");
-		return text2;
+		mutableText.append("]");
+		return mutableText;
 	}
 
 	public int size() {
@@ -137,14 +138,14 @@ public class IntArrayTag extends AbstractListTag<IntTag> {
 		return IntTag.of(j);
 	}
 
-	public void method_10531(int i, IntTag intTag) {
+	public void add(int i, IntTag intTag) {
 		this.value = ArrayUtils.add(this.value, i, intTag.getInt());
 	}
 
 	@Override
-	public boolean setTag(int i, Tag tag) {
+	public boolean setTag(int index, Tag tag) {
 		if (tag instanceof AbstractNumberTag) {
-			this.value[i] = ((AbstractNumberTag)tag).getInt();
+			this.value[index] = ((AbstractNumberTag)tag).getInt();
 			return true;
 		} else {
 			return false;
@@ -152,19 +153,24 @@ public class IntArrayTag extends AbstractListTag<IntTag> {
 	}
 
 	@Override
-	public boolean addTag(int i, Tag tag) {
+	public boolean addTag(int index, Tag tag) {
 		if (tag instanceof AbstractNumberTag) {
-			this.value = ArrayUtils.add(this.value, i, ((AbstractNumberTag)tag).getInt());
+			this.value = ArrayUtils.add(this.value, index, ((AbstractNumberTag)tag).getInt());
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public IntTag method_10536(int i) {
+	public IntTag remove(int i) {
 		int j = this.value[i];
 		this.value = ArrayUtils.remove(this.value, i);
 		return IntTag.of(j);
+	}
+
+	@Override
+	public byte getElementType() {
+		return 3;
 	}
 
 	public void clear() {

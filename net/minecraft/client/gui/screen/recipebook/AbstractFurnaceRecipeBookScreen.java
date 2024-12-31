@@ -7,13 +7,13 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.resource.language.I18n;
-import net.minecraft.container.Slot;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.util.collection.DefaultedList;
 
 public abstract class AbstractFurnaceRecipeBookScreen extends RecipeBookWidget {
 	private Iterator<Item> fuelIterator;
@@ -23,62 +23,25 @@ public abstract class AbstractFurnaceRecipeBookScreen extends RecipeBookWidget {
 	private float frameTime;
 
 	@Override
-	protected boolean toggleFilteringCraftable() {
-		boolean bl = !this.isFilteringCraftable();
-		this.setFilteringCraftable(bl);
-		return bl;
-	}
-
-	protected abstract boolean isFilteringCraftable();
-
-	protected abstract void setFilteringCraftable(boolean bl);
-
-	@Override
-	public boolean isOpen() {
-		return this.isGuiOpen();
-	}
-
-	protected abstract boolean isGuiOpen();
-
-	@Override
-	protected void setOpen(boolean bl) {
-		this.setGuiOpen(bl);
-		if (!bl) {
-			this.recipesArea.hideAlternates();
-		}
-
-		this.sendBookDataPacket();
-	}
-
-	protected abstract void setGuiOpen(boolean bl);
-
-	@Override
 	protected void setBookButtonTexture() {
 		this.toggleCraftableButton.setTextureUV(152, 182, 28, 18, TEXTURE);
 	}
 
 	@Override
-	protected String getCraftableButtonText() {
-		return I18n.translate(this.toggleCraftableButton.isToggled() ? this.getToggleCraftableButtonText() : "gui.recipebook.toggleRecipes.all");
-	}
-
-	protected abstract String getToggleCraftableButtonText();
-
-	@Override
 	public void slotClicked(@Nullable Slot slot) {
 		super.slotClicked(slot);
-		if (slot != null && slot.id < this.craftingContainer.getCraftingSlotCount()) {
+		if (slot != null && slot.id < this.craftingScreenHandler.getCraftingSlotCount()) {
 			this.outputSlot = null;
 		}
 	}
 
 	@Override
-	public void showGhostRecipe(Recipe<?> recipe, List<Slot> list) {
+	public void showGhostRecipe(Recipe<?> recipe, List<Slot> slots) {
 		ItemStack itemStack = recipe.getOutput();
 		this.ghostSlots.setRecipe(recipe);
-		this.ghostSlots.addSlot(Ingredient.ofStacks(itemStack), ((Slot)list.get(2)).xPosition, ((Slot)list.get(2)).yPosition);
+		this.ghostSlots.addSlot(Ingredient.ofStacks(itemStack), ((Slot)slots.get(2)).x, ((Slot)slots.get(2)).y);
 		DefaultedList<Ingredient> defaultedList = recipe.getPreviewInputs();
-		this.outputSlot = (Slot)list.get(1);
+		this.outputSlot = (Slot)slots.get(1);
 		if (this.fuels == null) {
 			this.fuels = this.getAllowedFuels();
 		}
@@ -94,8 +57,8 @@ public abstract class AbstractFurnaceRecipeBookScreen extends RecipeBookWidget {
 
 			Ingredient ingredient = (Ingredient)iterator.next();
 			if (!ingredient.isEmpty()) {
-				Slot slot = (Slot)list.get(i);
-				this.ghostSlots.addSlot(ingredient, slot.xPosition, slot.yPosition);
+				Slot slot = (Slot)slots.get(i);
+				this.ghostSlots.addSlot(ingredient, slot.x, slot.y);
 			}
 		}
 	}
@@ -103,19 +66,19 @@ public abstract class AbstractFurnaceRecipeBookScreen extends RecipeBookWidget {
 	protected abstract Set<Item> getAllowedFuels();
 
 	@Override
-	public void drawGhostSlots(int i, int j, boolean bl, float f) {
-		super.drawGhostSlots(i, j, bl, f);
+	public void drawGhostSlots(MatrixStack matrices, int i, int j, boolean bl, float f) {
+		super.drawGhostSlots(matrices, i, j, bl, f);
 		if (this.outputSlot != null) {
 			if (!Screen.hasControlDown()) {
 				this.frameTime += f;
 			}
 
-			int k = this.outputSlot.xPosition + i;
-			int l = this.outputSlot.yPosition + j;
-			DrawableHelper.fill(k, l, k + 16, l + 16, 822018048);
-			this.client.getItemRenderer().renderGuiItem(this.client.player, this.getItem().getStackForRender(), k, l);
+			int k = this.outputSlot.x + i;
+			int l = this.outputSlot.y + j;
+			DrawableHelper.fill(matrices, k, l, k + 16, l + 16, 822018048);
+			this.client.getItemRenderer().renderInGuiWithOverrides(this.client.player, this.getItem().getDefaultStack(), k, l);
 			RenderSystem.depthFunc(516);
-			DrawableHelper.fill(k, l, k + 16, l + 16, 822083583);
+			DrawableHelper.fill(matrices, k, l, k + 16, l + 16, 822083583);
 			RenderSystem.depthFunc(515);
 		}
 	}

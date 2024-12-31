@@ -9,13 +9,13 @@ import java.util.Map;
 import java.util.function.Supplier;
 import net.minecraft.datafixer.TypeReferences;
 
-public class Schema1460 extends SchemaIdentifierNormalize {
+public class Schema1460 extends IdentifierNormalizingSchema {
 	public Schema1460(int i, Schema schema) {
 		super(i, schema);
 	}
 
 	protected static void method_5232(Schema schema, Map<String, Supplier<TypeTemplate>> map, String string) {
-		schema.register(map, string, () -> Schema100.method_5196(schema));
+		schema.register(map, string, () -> Schema100.targetItems(schema));
 	}
 
 	protected static void method_5273(Schema schema, Map<String, Supplier<TypeTemplate>> map, String string) {
@@ -44,7 +44,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 			map,
 			"minecraft:donkey",
 			string -> DSL.optionalFields(
-					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)
+					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)
 				)
 		);
 		schema.registerSimple(map, "minecraft:dragon_fireball");
@@ -53,7 +53,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 		schema.registerSimple(map, "minecraft:ender_crystal");
 		method_5232(schema, map, "minecraft:ender_dragon");
 		schema.register(
-			map, "minecraft:enderman", string -> DSL.optionalFields("carriedBlockState", TypeReferences.BLOCK_STATE.in(schema), Schema100.method_5196(schema))
+			map, "minecraft:enderman", string -> DSL.optionalFields("carriedBlockState", TypeReferences.BLOCK_STATE.in(schema), Schema100.targetItems(schema))
 		);
 		method_5232(schema, map, "minecraft:endermite");
 		schema.registerSimple(map, "minecraft:ender_pearl");
@@ -80,7 +80,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 			map,
 			"minecraft:horse",
 			string -> DSL.optionalFields(
-					"ArmorItem", TypeReferences.ITEM_STACK.in(schema), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)
+					"ArmorItem", TypeReferences.ITEM_STACK.in(schema), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)
 				)
 		);
 		method_5232(schema, map, "minecraft:husk");
@@ -98,7 +98,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 					TypeReferences.ITEM_STACK.in(schema),
 					"DecorItem",
 					TypeReferences.ITEM_STACK.in(schema),
-					Schema100.method_5196(schema)
+					Schema100.targetItems(schema)
 				)
 		);
 		schema.registerSimple(map, "minecraft:llama_spit");
@@ -109,7 +109,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 			map,
 			"minecraft:mule",
 			string -> DSL.optionalFields(
-					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)
+					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)
 				)
 		);
 		method_5232(schema, map, "minecraft:ocelot");
@@ -125,7 +125,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 		method_5232(schema, map, "minecraft:silverfish");
 		method_5232(schema, map, "minecraft:skeleton");
 		schema.register(
-			map, "minecraft:skeleton_horse", string -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema))
+			map, "minecraft:skeleton_horse", string -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema))
 		);
 		method_5232(schema, map, "minecraft:slime");
 		schema.registerSimple(map, "minecraft:small_fireball");
@@ -158,7 +158,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 							)
 						)
 					),
-					Schema100.method_5196(schema)
+					Schema100.targetItems(schema)
 				)
 		);
 		method_5232(schema, map, "minecraft:villager_golem");
@@ -172,7 +172,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 		schema.registerSimple(map, "minecraft:xp_orb");
 		method_5232(schema, map, "minecraft:zombie");
 		schema.register(
-			map, "minecraft:zombie_horse", string -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema))
+			map, "minecraft:zombie_horse", string -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema))
 		);
 		method_5232(schema, map, "minecraft:zombie_pigman");
 		method_5232(schema, map, "minecraft:zombie_villager");
@@ -208,9 +208,9 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 		return map;
 	}
 
-	public void registerTypes(Schema schema, Map<String, Supplier<TypeTemplate>> map, Map<String, Supplier<TypeTemplate>> map2) {
+	public void registerTypes(Schema schema, Map<String, Supplier<TypeTemplate>> entityTypes, Map<String, Supplier<TypeTemplate>> blockEntityTypes) {
 		schema.registerType(false, TypeReferences.LEVEL, DSL::remainder);
-		schema.registerType(false, TypeReferences.RECIPE, () -> DSL.constType(DSL.namespacedString()));
+		schema.registerType(false, TypeReferences.RECIPE, () -> DSL.constType(getIdentifierType()));
 		schema.registerType(
 			false,
 			TypeReferences.PLAYER,
@@ -248,11 +248,11 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 					)
 				)
 		);
-		schema.registerType(true, TypeReferences.BLOCK_ENTITY, () -> DSL.taggedChoiceLazy("id", DSL.namespacedString(), map2));
+		schema.registerType(true, TypeReferences.BLOCK_ENTITY, () -> DSL.taggedChoiceLazy("id", getIdentifierType(), blockEntityTypes));
 		schema.registerType(
 			true, TypeReferences.ENTITY_TREE, () -> DSL.optionalFields("Passengers", DSL.list(TypeReferences.ENTITY_TREE.in(schema)), TypeReferences.ENTITY.in(schema))
 		);
-		schema.registerType(true, TypeReferences.ENTITY, () -> DSL.taggedChoiceLazy("id", DSL.namespacedString(), map));
+		schema.registerType(true, TypeReferences.ENTITY, () -> DSL.taggedChoiceLazy("id", getIdentifierType(), entityTypes));
 		schema.registerType(
 			true,
 			TypeReferences.ITEM_STACK,
@@ -290,8 +290,8 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 					DSL.list(TypeReferences.BLOCK_STATE.in(schema))
 				)
 		);
-		schema.registerType(false, TypeReferences.BLOCK_NAME, () -> DSL.constType(DSL.namespacedString()));
-		schema.registerType(false, TypeReferences.ITEM_NAME, () -> DSL.constType(DSL.namespacedString()));
+		schema.registerType(false, TypeReferences.BLOCK_NAME, () -> DSL.constType(getIdentifierType()));
+		schema.registerType(false, TypeReferences.ITEM_NAME, () -> DSL.constType(getIdentifierType()));
 		schema.registerType(false, TypeReferences.BLOCK_STATE, DSL::remainder);
 		Supplier<TypeTemplate> supplier = () -> DSL.compoundList(TypeReferences.ITEM_NAME.in(schema), DSL.constType(DSL.intType()));
 		schema.registerType(
@@ -318,7 +318,7 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 							"minecraft:killed_by",
 							DSL.compoundList(TypeReferences.ENTITY_NAME.in(schema), DSL.constType(DSL.intType())),
 							"minecraft:custom",
-							DSL.compoundList(DSL.constType(DSL.namespacedString()), DSL.constType(DSL.intType()))
+							DSL.compoundList(DSL.constType(getIdentifierType()), DSL.constType(DSL.intType()))
 						)
 					)
 				)
@@ -380,8 +380,9 @@ public class Schema1460 extends SchemaIdentifierNormalize {
 					DSL.optionalFields("criteria", DSL.compoundList(TypeReferences.ENTITY_NAME.in(schema), DSL.constType(DSL.string())))
 				)
 		);
-		schema.registerType(false, TypeReferences.BIOME, () -> DSL.constType(DSL.namespacedString()));
-		schema.registerType(false, TypeReferences.ENTITY_NAME, () -> DSL.constType(DSL.namespacedString()));
+		schema.registerType(false, TypeReferences.BIOME, () -> DSL.constType(getIdentifierType()));
+		schema.registerType(false, TypeReferences.ENTITY_NAME, () -> DSL.constType(getIdentifierType()));
 		schema.registerType(false, TypeReferences.POI_CHUNK, DSL::remainder);
+		schema.registerType(true, TypeReferences.CHUNK_GENERATOR_SETTINGS, DSL::remainder);
 	}
 }

@@ -1,25 +1,12 @@
 package net.minecraft.item;
 
-import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.Material;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.RayTraceContext;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 public class LilyPadItem extends BlockItem {
@@ -28,46 +15,15 @@ public class LilyPadItem extends BlockItem {
 	}
 
 	@Override
-	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
-		return ActionResult.field_5811;
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		return ActionResult.PASS;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1345);
-		if (hitResult.getType() == HitResult.Type.field_1333) {
-			return TypedActionResult.pass(itemStack);
-		} else {
-			if (hitResult.getType() == HitResult.Type.field_1332) {
-				BlockHitResult blockHitResult = (BlockHitResult)hitResult;
-				BlockPos blockPos = blockHitResult.getBlockPos();
-				Direction direction = blockHitResult.getSide();
-				if (!world.canPlayerModifyAt(playerEntity, blockPos) || !playerEntity.canPlaceOn(blockPos.offset(direction), direction, itemStack)) {
-					return TypedActionResult.fail(itemStack);
-				}
-
-				BlockPos blockPos2 = blockPos.up();
-				BlockState blockState = world.getBlockState(blockPos);
-				Material material = blockState.getMaterial();
-				FluidState fluidState = world.getFluidState(blockPos);
-				if ((fluidState.getFluid() == Fluids.WATER || material == Material.ICE) && world.isAir(blockPos2)) {
-					world.setBlockState(blockPos2, Blocks.field_10588.getDefaultState(), 11);
-					if (playerEntity instanceof ServerPlayerEntity) {
-						Criterions.PLACED_BLOCK.trigger((ServerPlayerEntity)playerEntity, blockPos2, itemStack);
-					}
-
-					if (!playerEntity.abilities.creativeMode) {
-						itemStack.decrement(1);
-					}
-
-					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-					world.playSound(playerEntity, blockPos, SoundEvents.field_15173, SoundCategory.field_15245, 1.0F, 1.0F);
-					return TypedActionResult.success(itemStack);
-				}
-			}
-
-			return TypedActionResult.fail(itemStack);
-		}
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+		BlockHitResult blockHitResult = raycast(world, user, RaycastContext.FluidHandling.SOURCE_ONLY);
+		BlockHitResult blockHitResult2 = blockHitResult.withBlockPos(blockHitResult.getBlockPos().up());
+		ActionResult actionResult = super.useOnBlock(new ItemUsageContext(user, hand, blockHitResult2));
+		return new TypedActionResult<>(actionResult, user.getStackInHand(hand));
 	}
 }

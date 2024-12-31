@@ -4,9 +4,11 @@ import com.google.common.collect.Sets;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 public class Channel {
 	private final Set<Channel.SourceManager> sources = Sets.newIdentityHashSet();
@@ -18,16 +20,19 @@ public class Channel {
 		this.executor = executor;
 	}
 
-	public Channel.SourceManager createSource(SoundEngine.RunMode runMode) {
-		Channel.SourceManager sourceManager = new Channel.SourceManager();
+	public CompletableFuture<Channel.SourceManager> createSource(SoundEngine.RunMode mode) {
+		CompletableFuture<Channel.SourceManager> completableFuture = new CompletableFuture();
 		this.executor.execute(() -> {
-			Source source = this.soundEngine.createSource(runMode);
+			Source source = this.soundEngine.createSource(mode);
 			if (source != null) {
-				sourceManager.source = source;
+				Channel.SourceManager sourceManager = new Channel.SourceManager(source);
 				this.sources.add(sourceManager);
+				completableFuture.complete(sourceManager);
+			} else {
+				completableFuture.complete(null);
 			}
 		});
-		return sourceManager;
+		return completableFuture;
 	}
 
 	public void execute(Consumer<Stream<Source>> consumer) {
@@ -55,6 +60,7 @@ public class Channel {
 	}
 
 	public class SourceManager {
+		@Nullable
 		private Source source;
 		private boolean stopped;
 
@@ -62,10 +68,14 @@ public class Channel {
 			return this.stopped;
 		}
 
-		public void run(Consumer<Source> consumer) {
+		public SourceManager(Source source) {
+			this.source = source;
+		}
+
+		public void run(Consumer<Source> action) {
 			Channel.this.executor.execute(() -> {
 				if (this.source != null) {
-					consumer.accept(this.source);
+					action.accept(this.source);
 				}
 			});
 		}

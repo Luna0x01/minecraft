@@ -1,50 +1,42 @@
 package net.minecraft.client.gui.screen;
 
-import com.google.common.collect.Lists;
-import java.util.List;
+import net.minecraft.client.font.MultilineText;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
 public class NoticeScreen extends Screen {
 	private final Runnable actionHandler;
 	protected final Text notice;
-	private final List<String> noticeLines = Lists.newArrayList();
-	protected final String buttonString;
+	private MultilineText noticeLines = MultilineText.EMPTY;
+	protected final Text buttonString;
 	private int field_2347;
 
-	public NoticeScreen(Runnable runnable, Text text, Text text2) {
-		this(runnable, text, text2, "gui.back");
+	public NoticeScreen(Runnable actionHandler, Text title, Text notice) {
+		this(actionHandler, title, notice, ScreenTexts.BACK);
 	}
 
-	public NoticeScreen(Runnable runnable, Text text, Text text2, String string) {
-		super(text);
-		this.actionHandler = runnable;
-		this.notice = text2;
-		this.buttonString = I18n.translate(string);
+	public NoticeScreen(Runnable actionHandler, Text title, Text notice, Text text) {
+		super(title);
+		this.actionHandler = actionHandler;
+		this.notice = notice;
+		this.buttonString = text;
 	}
 
 	@Override
 	protected void init() {
 		super.init();
 		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 6 + 168, 200, 20, this.buttonString, buttonWidget -> this.actionHandler.run()));
-		this.noticeLines.clear();
-		this.noticeLines.addAll(this.font.wrapStringToWidthAsList(this.notice.asFormattedString(), this.width - 50));
+		this.noticeLines = MultilineText.create(this.textRenderer, this.notice, this.width - 50);
 	}
 
 	@Override
-	public void render(int i, int j, float f) {
-		this.renderBackground();
-		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 70, 16777215);
-		int k = 90;
-
-		for (String string : this.noticeLines) {
-			this.drawCenteredString(this.font, string, this.width / 2, k, 16777215);
-			k += 9;
-		}
-
-		super.render(i, j, f);
+	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		this.renderBackground(matrices);
+		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 70, 16777215);
+		this.noticeLines.drawCenterWithShadow(matrices, this.width / 2, 90);
+		super.render(matrices, mouseX, mouseY, delta);
 	}
 
 	@Override

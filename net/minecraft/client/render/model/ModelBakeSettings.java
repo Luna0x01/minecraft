@@ -1,10 +1,10 @@
 package net.minecraft.client.render.model;
 
-import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.client.util.math.AffineTransformation;
 
 public interface ModelBakeSettings {
-	default Rotation3 getRotation() {
-		return Rotation3.identity();
+	default AffineTransformation getRotation() {
+		return AffineTransformation.identity();
 	}
 
 	default boolean isShaded() {

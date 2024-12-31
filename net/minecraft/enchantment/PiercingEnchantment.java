@@ -3,27 +3,27 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class PiercingEnchantment extends Enchantment {
-	public PiercingEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
-		super(weight, EnchantmentTarget.field_9081, equipmentSlots);
+	public PiercingEnchantment(Enchantment.Rarity weight, EquipmentSlot... slotTypes) {
+		super(weight, EnchantmentTarget.CROSSBOW, slotTypes);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
-		return 1 + (i - 1) * 10;
+	public int getMinPower(int level) {
+		return 1 + (level - 1) * 10;
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
+	public int getMaxPower(int level) {
 		return 50;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 4;
 	}
 
 	@Override
-	public boolean differs(Enchantment enchantment) {
-		return super.differs(enchantment) && enchantment != Enchantments.field_9108;
+	public boolean canAccept(Enchantment other) {
+		return super.canAccept(other) && other != Enchantments.MULTISHOT;
 	}
 }

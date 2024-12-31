@@ -20,6 +20,7 @@ import java.util.Map.Entry;
 import net.minecraft.SharedConstants;
 import net.minecraft.util.Util;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,38 +54,38 @@ public class ProfileResultImpl implements ProfileResult {
 	private final int endTick;
 	private final int tickDuration;
 
-	public ProfileResultImpl(Map<String, ? extends ProfileLocationInfo> map, long l, int i, long m, int j) {
-		this.locationInfos = map;
-		this.startTime = l;
-		this.startTick = i;
-		this.endTime = m;
-		this.endTick = j;
-		this.tickDuration = j - i;
+	public ProfileResultImpl(Map<String, ? extends ProfileLocationInfo> locationInfos, long startTime, int startTick, long endTime, int endTick) {
+		this.locationInfos = locationInfos;
+		this.startTime = startTime;
+		this.startTick = startTick;
+		this.endTime = endTime;
+		this.endTick = endTick;
+		this.tickDuration = endTick - startTick;
 	}
 
-	private ProfileLocationInfo getInfo(String string) {
-		ProfileLocationInfo profileLocationInfo = (ProfileLocationInfo)this.locationInfos.get(string);
+	private ProfileLocationInfo getInfo(String path) {
+		ProfileLocationInfo profileLocationInfo = (ProfileLocationInfo)this.locationInfos.get(path);
 		return profileLocationInfo != null ? profileLocationInfo : EMPTY_INFO;
 	}
 
 	@Override
-	public List<ProfilerTiming> getTimings(String string) {
-		String string2 = string;
+	public List<ProfilerTiming> getTimings(String parentPath) {
+		String string = parentPath;
 		ProfileLocationInfo profileLocationInfo = this.getInfo("root");
 		long l = profileLocationInfo.getTotalTime();
-		ProfileLocationInfo profileLocationInfo2 = this.getInfo(string);
+		ProfileLocationInfo profileLocationInfo2 = this.getInfo(parentPath);
 		long m = profileLocationInfo2.getTotalTime();
 		long n = profileLocationInfo2.getVisitCount();
 		List<ProfilerTiming> list = Lists.newArrayList();
-		if (!string.isEmpty()) {
-			string = string + '\u001e';
+		if (!parentPath.isEmpty()) {
+			parentPath = parentPath + '\u001e';
 		}
 
 		long o = 0L;
 
-		for (String string3 : this.locationInfos.keySet()) {
-			if (isSubpath(string, string3)) {
-				o += this.getInfo(string3).getTotalTime();
+		for (String string2 : this.locationInfos.keySet()) {
+			if (isSubpath(parentPath, string2)) {
+				o += this.getInfo(string2).getTotalTime();
 			}
 		}
 
@@ -97,14 +98,14 @@ public class ProfileResultImpl implements ProfileResult {
 			l = o;
 		}
 
-		for (String string4 : this.locationInfos.keySet()) {
-			if (isSubpath(string, string4)) {
-				ProfileLocationInfo profileLocationInfo3 = this.getInfo(string4);
+		for (String string3 : this.locationInfos.keySet()) {
+			if (isSubpath(parentPath, string3)) {
+				ProfileLocationInfo profileLocationInfo3 = this.getInfo(string3);
 				long p = profileLocationInfo3.getTotalTime();
 				double d = (double)p * 100.0 / (double)o;
 				double e = (double)p * 100.0 / (double)l;
-				String string5 = string4.substring(string.length());
-				list.add(new ProfilerTiming(string5, d, e, profileLocationInfo3.getVisitCount()));
+				String string4 = string3.substring(parentPath.length());
+				list.add(new ProfilerTiming(string4, d, e, profileLocationInfo3.getVisitCount()));
 			}
 		}
 
@@ -113,12 +114,12 @@ public class ProfileResultImpl implements ProfileResult {
 		}
 
 		Collections.sort(list);
-		list.add(0, new ProfilerTiming(string2, 100.0, (double)o * 100.0 / (double)l, n));
+		list.add(0, new ProfilerTiming(string, 100.0, (double)o * 100.0 / (double)l, n));
 		return list;
 	}
 
-	private static boolean isSubpath(String string, String string2) {
-		return string2.length() > string.length() && string2.startsWith(string) && string2.indexOf(30, string.length() + 1) < 0;
+	private static boolean isSubpath(String parent, String path) {
+		return path.length() > parent.length() && path.startsWith(parent) && path.indexOf(30, parent.length() + 1) < 0;
 	}
 
 	private Map<String, ProfileResultImpl.CounterInfo> setupCounters() {
@@ -179,17 +180,17 @@ public class ProfileResultImpl implements ProfileResult {
 		return var4;
 	}
 
-	protected String asString(long l, int i) {
+	protected String asString(long timeSpan, int tickSpan) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("---- Minecraft Profiler Results ----\n");
 		stringBuilder.append("// ");
 		stringBuilder.append(generateWittyComment());
 		stringBuilder.append("\n\n");
 		stringBuilder.append("Version: ").append(SharedConstants.getGameVersion().getId()).append('\n');
-		stringBuilder.append("Time span: ").append(l / 1000000L).append(" ms\n");
-		stringBuilder.append("Tick span: ").append(i).append(" ticks\n");
+		stringBuilder.append("Time span: ").append(timeSpan / 1000000L).append(" ms\n");
+		stringBuilder.append("Tick span: ").append(tickSpan).append(" ticks\n");
 		stringBuilder.append("// This is approximately ")
-			.append(String.format(Locale.ROOT, "%.2f", (float)i / ((float)l / 1.0E9F)))
+			.append(String.format(Locale.ROOT, "%.2f", (float)tickSpan / ((float)timeSpan / 1.0E9F)))
 			.append(" ticks per second. It should be ")
 			.append(20)
 			.append(" ticks per second\n\n");
@@ -199,40 +200,36 @@ public class ProfileResultImpl implements ProfileResult {
 		Map<String, ProfileResultImpl.CounterInfo> map = this.setupCounters();
 		if (!map.isEmpty()) {
 			stringBuilder.append("--- BEGIN COUNTER DUMP ---\n\n");
-			this.appendCounterDump(map, stringBuilder, i);
+			this.appendCounterDump(map, stringBuilder, tickSpan);
 			stringBuilder.append("--- END COUNTER DUMP ---\n\n");
 		}
 
 		return stringBuilder.toString();
 	}
 
-	private static StringBuilder indent(StringBuilder stringBuilder, int i) {
-		stringBuilder.append(String.format("[%02d] ", i));
+	private static StringBuilder indent(StringBuilder sb, int size) {
+		sb.append(String.format("[%02d] ", size));
 
-		for (int j = 0; j < i; j++) {
-			stringBuilder.append("|   ");
+		for (int i = 0; i < size; i++) {
+			sb.append("|   ");
 		}
 
-		return stringBuilder;
+		return sb;
 	}
 
-	private void appendTiming(int i, String string, StringBuilder stringBuilder) {
-		List<ProfilerTiming> list = this.getTimings(string);
-		Object2LongMap<String> object2LongMap = ((ProfileLocationInfo)this.locationInfos.get(string)).getCounts();
+	private void appendTiming(int level, String name, StringBuilder sb) {
+		List<ProfilerTiming> list = this.getTimings(name);
+		Object2LongMap<String> object2LongMap = ((ProfileLocationInfo)ObjectUtils.firstNonNull(
+				new ProfileLocationInfo[]{(ProfileLocationInfo)this.locationInfos.get(name), EMPTY_INFO}
+			))
+			.getCounts();
 		object2LongMap.forEach(
-			(stringx, long_) -> indent(stringBuilder, i)
-					.append('#')
-					.append(stringx)
-					.append(' ')
-					.append(long_)
-					.append('/')
-					.append(long_ / (long)this.tickDuration)
-					.append('\n')
+			(string, long_) -> indent(sb, level).append('#').append(string).append(' ').append(long_).append('/').append(long_ / (long)this.tickDuration).append('\n')
 		);
 		if (list.size() >= 3) {
-			for (int j = 1; j < list.size(); j++) {
-				ProfilerTiming profilerTiming = (ProfilerTiming)list.get(j);
-				indent(stringBuilder, i)
+			for (int i = 1; i < list.size(); i++) {
+				ProfilerTiming profilerTiming = (ProfilerTiming)list.get(i);
+				indent(sb, level)
 					.append(profilerTiming.name)
 					.append('(')
 					.append(profilerTiming.visitCount)
@@ -246,39 +243,39 @@ public class ProfileResultImpl implements ProfileResult {
 					.append("%\n");
 				if (!"unspecified".equals(profilerTiming.name)) {
 					try {
-						this.appendTiming(i + 1, string + '\u001e' + profilerTiming.name, stringBuilder);
+						this.appendTiming(level + 1, name + '\u001e' + profilerTiming.name, sb);
 					} catch (Exception var9) {
-						stringBuilder.append("[[ EXCEPTION ").append(var9).append(" ]]");
+						sb.append("[[ EXCEPTION ").append(var9).append(" ]]");
 					}
 				}
 			}
 		}
 	}
 
-	private void appendCounter(int i, String string, ProfileResultImpl.CounterInfo counterInfo, int j, StringBuilder stringBuilder) {
-		indent(stringBuilder, i)
-			.append(string)
+	private void appendCounter(int depth, String name, ProfileResultImpl.CounterInfo info, int tickSpan, StringBuilder sb) {
+		indent(sb, depth)
+			.append(name)
 			.append(" total:")
-			.append(counterInfo.selfTime)
+			.append(info.selfTime)
 			.append('/')
-			.append(counterInfo.totalTime)
+			.append(info.totalTime)
 			.append(" average: ")
-			.append(counterInfo.selfTime / (long)j)
+			.append(info.selfTime / (long)tickSpan)
 			.append('/')
-			.append(counterInfo.totalTime / (long)j)
+			.append(info.totalTime / (long)tickSpan)
 			.append('\n');
-		counterInfo.subCounters
+		info.subCounters
 			.entrySet()
 			.stream()
 			.sorted(COMPARATOR)
-			.forEach(entry -> this.appendCounter(i + 1, (String)entry.getKey(), (ProfileResultImpl.CounterInfo)entry.getValue(), j, stringBuilder));
+			.forEach(entry -> this.appendCounter(depth + 1, (String)entry.getKey(), (ProfileResultImpl.CounterInfo)entry.getValue(), tickSpan, sb));
 	}
 
-	private void appendCounterDump(Map<String, ProfileResultImpl.CounterInfo> map, StringBuilder stringBuilder, int i) {
-		map.forEach((string, counterInfo) -> {
-			stringBuilder.append("-- Counter: ").append(string).append(" --\n");
-			this.appendCounter(0, "root", (ProfileResultImpl.CounterInfo)counterInfo.subCounters.get("root"), i, stringBuilder);
-			stringBuilder.append("\n\n");
+	private void appendCounterDump(Map<String, ProfileResultImpl.CounterInfo> counters, StringBuilder sb, int tickSpan) {
+		counters.forEach((string, counterInfo) -> {
+			sb.append("-- Counter: ").append(string).append(" --\n");
+			this.appendCounter(0, "root", (ProfileResultImpl.CounterInfo)counterInfo.subCounters.get("root"), tickSpan, sb);
+			sb.append("\n\n");
 		});
 	}
 
@@ -320,12 +317,13 @@ public class ProfileResultImpl implements ProfileResult {
 		private CounterInfo() {
 		}
 
-		public void add(Iterator<String> iterator, long l) {
-			this.totalTime += l;
-			if (!iterator.hasNext()) {
-				this.selfTime += l;
+		public void add(Iterator<String> pathIterator, long time) {
+			this.totalTime += time;
+			if (!pathIterator.hasNext()) {
+				this.selfTime += time;
 			} else {
-				((ProfileResultImpl.CounterInfo)this.subCounters.computeIfAbsent(iterator.next(), string -> new ProfileResultImpl.CounterInfo())).add(iterator, l);
+				((ProfileResultImpl.CounterInfo)this.subCounters.computeIfAbsent(pathIterator.next(), string -> new ProfileResultImpl.CounterInfo()))
+					.add(pathIterator, time);
 			}
 		}
 	}

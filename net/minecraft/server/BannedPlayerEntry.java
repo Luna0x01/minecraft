@@ -10,24 +10,24 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 
 public class BannedPlayerEntry extends BanEntry<GameProfile> {
-	public BannedPlayerEntry(GameProfile gameProfile) {
-		this(gameProfile, null, null, null, null);
+	public BannedPlayerEntry(GameProfile profile) {
+		this(profile, null, null, null, null);
 	}
 
-	public BannedPlayerEntry(GameProfile gameProfile, @Nullable Date date, @Nullable String string, @Nullable Date date2, @Nullable String string2) {
-		super(gameProfile, date, string, date2, string2);
+	public BannedPlayerEntry(GameProfile profile, @Nullable Date created, @Nullable String source, @Nullable Date expiry, @Nullable String reason) {
+		super(profile, created, source, expiry, reason);
 	}
 
-	public BannedPlayerEntry(JsonObject jsonObject) {
-		super(getProfileFromJson(jsonObject), jsonObject);
+	public BannedPlayerEntry(JsonObject json) {
+		super(profileFromJson(json), json);
 	}
 
 	@Override
-	protected void serialize(JsonObject jsonObject) {
+	protected void fromJson(JsonObject json) {
 		if (this.getKey() != null) {
-			jsonObject.addProperty("uuid", this.getKey().getId() == null ? "" : this.getKey().getId().toString());
-			jsonObject.addProperty("name", this.getKey().getName());
-			super.serialize(jsonObject);
+			json.addProperty("uuid", this.getKey().getId() == null ? "" : this.getKey().getId().toString());
+			json.addProperty("name", this.getKey().getName());
+			super.fromJson(json);
 		}
 	}
 
@@ -37,9 +37,9 @@ public class BannedPlayerEntry extends BanEntry<GameProfile> {
 		return new LiteralText(gameProfile.getName() != null ? gameProfile.getName() : Objects.toString(gameProfile.getId(), "(Unknown)"));
 	}
 
-	private static GameProfile getProfileFromJson(JsonObject jsonObject) {
-		if (jsonObject.has("uuid") && jsonObject.has("name")) {
-			String string = jsonObject.get("uuid").getAsString();
+	private static GameProfile profileFromJson(JsonObject json) {
+		if (json.has("uuid") && json.has("name")) {
+			String string = json.get("uuid").getAsString();
 
 			UUID uUID;
 			try {
@@ -48,7 +48,7 @@ public class BannedPlayerEntry extends BanEntry<GameProfile> {
 				return null;
 			}
 
-			return new GameProfile(uUID, jsonObject.get("name").getAsString());
+			return new GameProfile(uUID, json.get("name").getAsString());
 		} else {
 			return null;
 		}

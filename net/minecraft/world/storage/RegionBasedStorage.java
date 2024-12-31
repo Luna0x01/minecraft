@@ -9,18 +9,21 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.util.ThrowableDeliverer;
 import net.minecraft.util.math.ChunkPos;
 
 public final class RegionBasedStorage implements AutoCloseable {
 	private final Long2ObjectLinkedOpenHashMap<RegionFile> cachedRegionFiles = new Long2ObjectLinkedOpenHashMap();
 	private final File directory;
+	private final boolean dsync;
 
-	RegionBasedStorage(File file) {
-		this.directory = file;
+	RegionBasedStorage(File directory, boolean dsync) {
+		this.directory = directory;
+		this.dsync = dsync;
 	}
 
-	private RegionFile getRegionFile(ChunkPos chunkPos) throws IOException {
-		long l = ChunkPos.toLong(chunkPos.getRegionX(), chunkPos.getRegionZ());
+	private RegionFile getRegionFile(ChunkPos pos) throws IOException {
+		long l = ChunkPos.toLong(pos.getRegionX(), pos.getRegionZ());
 		RegionFile regionFile = (RegionFile)this.cachedRegionFiles.getAndMoveToFirst(l);
 		if (regionFile != null) {
 			return regionFile;
@@ -33,17 +36,17 @@ public final class RegionBasedStorage implements AutoCloseable {
 				this.directory.mkdirs();
 			}
 
-			File file = new File(this.directory, "r." + chunkPos.getRegionX() + "." + chunkPos.getRegionZ() + ".mca");
-			RegionFile regionFile2 = new RegionFile(file, this.directory);
+			File file = new File(this.directory, "r." + pos.getRegionX() + "." + pos.getRegionZ() + ".mca");
+			RegionFile regionFile2 = new RegionFile(file, this.directory, this.dsync);
 			this.cachedRegionFiles.putAndMoveToFirst(l, regionFile2);
 			return regionFile2;
 		}
 	}
 
 	@Nullable
-	public CompoundTag getTagAt(ChunkPos chunkPos) throws IOException {
-		RegionFile regionFile = this.getRegionFile(chunkPos);
-		DataInputStream dataInputStream = regionFile.getChunkInputStream(chunkPos);
+	public CompoundTag getTagAt(ChunkPos pos) throws IOException {
+		RegionFile regionFile = this.getRegionFile(pos);
+		DataInputStream dataInputStream = regionFile.getChunkInputStream(pos);
 		Throwable var4 = null;
 
 		Object var5;
@@ -73,13 +76,13 @@ public final class RegionBasedStorage implements AutoCloseable {
 		return (CompoundTag)var5;
 	}
 
-	protected void write(ChunkPos chunkPos, CompoundTag compoundTag) throws IOException {
-		RegionFile regionFile = this.getRegionFile(chunkPos);
-		DataOutputStream dataOutputStream = regionFile.getChunkOutputStream(chunkPos);
+	protected void write(ChunkPos pos, CompoundTag tag) throws IOException {
+		RegionFile regionFile = this.getRegionFile(pos);
+		DataOutputStream dataOutputStream = regionFile.getChunkOutputStream(pos);
 		Throwable var5 = null;
 
 		try {
-			NbtIo.write(compoundTag, dataOutputStream);
+			NbtIo.write(tag, dataOutputStream);
 		} catch (Throwable var14) {
 			var5 = var14;
 			throw var14;
@@ -99,11 +102,28 @@ public final class RegionBasedStorage implements AutoCloseable {
 	}
 
 	public void close() throws IOException {
+		ThrowableDeliverer<IOException> throwableDeliverer = new ThrowableDeliverer();
+		ObjectIterator var2 = this.cachedRegionFiles.values().iterator();
+
+		while (var2.hasNext()) {
+			RegionFile regionFile = (RegionFile)var2.next();
+
+			try {
+				regionFile.close();
+			} catch (IOException var5) {
+				throwableDeliverer.add(var5);
+			}
+		}
+
+		throwableDeliverer.deliver();
+	}
+
+	public void method_26982() throws IOException {
 		ObjectIterator var1 = this.cachedRegionFiles.values().iterator();
 
 		while (var1.hasNext()) {
 			RegionFile regionFile = (RegionFile)var1.next();
-			regionFile.close();
+			regionFile.method_26981();
 		}
 	}
 }

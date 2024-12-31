@@ -10,8 +10,8 @@ public class BlockBufferBuilderStorage {
 		.stream()
 		.collect(Collectors.toMap(renderLayer -> renderLayer, renderLayer -> new BufferBuilder(renderLayer.getExpectedBufferSize())));
 
-	public BufferBuilder get(RenderLayer renderLayer) {
-		return (BufferBuilder)this.builders.get(renderLayer);
+	public BufferBuilder get(RenderLayer layer) {
+		return (BufferBuilder)this.builders.get(layer);
 	}
 
 	public void clear() {

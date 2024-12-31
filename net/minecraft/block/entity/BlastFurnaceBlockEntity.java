@@ -1,16 +1,16 @@
 package net.minecraft.block.entity;
 
-import net.minecraft.container.BlastFurnaceContainer;
-import net.minecraft.container.Container;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeType;
+import net.minecraft.screen.BlastFurnaceScreenHandler;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public class BlastFurnaceBlockEntity extends AbstractFurnaceBlockEntity {
 	public BlastFurnaceBlockEntity() {
-		super(BlockEntityType.field_16415, RecipeType.BLASTING);
+		super(BlockEntityType.BLAST_FURNACE, RecipeType.BLASTING);
 	}
 
 	@Override
@@ -19,12 +19,12 @@ public class BlastFurnaceBlockEntity extends AbstractFurnaceBlockEntity {
 	}
 
 	@Override
-	protected int getFuelTime(ItemStack itemStack) {
-		return super.getFuelTime(itemStack) / 2;
+	protected int getFuelTime(ItemStack fuel) {
+		return super.getFuelTime(fuel) / 2;
 	}
 
 	@Override
-	protected Container createContainer(int i, PlayerInventory playerInventory) {
-		return new BlastFurnaceContainer(i, playerInventory, this, this.propertyDelegate);
+	protected ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
+		return new BlastFurnaceScreenHandler(syncId, playerInventory, this, this.propertyDelegate);
 	}
 }

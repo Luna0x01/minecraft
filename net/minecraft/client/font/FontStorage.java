@@ -2,23 +2,20 @@ package net.minecraft.client.font;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
-import it.unimi.dsi.fastutil.chars.Char2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.chars.CharArrayList;
-import it.unimi.dsi.fastutil.chars.CharList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class FontStorage implements AutoCloseable {
-	private static final Logger LOGGER = LogManager.getLogger();
 	private static final EmptyGlyphRenderer EMPTY_GLYPH_RENDERER = new EmptyGlyphRenderer();
 	private static final Glyph SPACE = () -> 4.0F;
 	private static final Random RANDOM = new Random();
@@ -27,48 +24,52 @@ public class FontStorage implements AutoCloseable {
 	private GlyphRenderer blankGlyphRenderer;
 	private GlyphRenderer whiteRectangleGlyphRenderer;
 	private final List<Font> fonts = Lists.newArrayList();
-	private final Char2ObjectMap<GlyphRenderer> glyphRendererCache = new Char2ObjectOpenHashMap();
-	private final Char2ObjectMap<Glyph> glyphCache = new Char2ObjectOpenHashMap();
-	private final Int2ObjectMap<CharList> charactersByWidth = new Int2ObjectOpenHashMap();
+	private final Int2ObjectMap<GlyphRenderer> glyphRendererCache = new Int2ObjectOpenHashMap();
+	private final Int2ObjectMap<Glyph> glyphCache = new Int2ObjectOpenHashMap();
+	private final Int2ObjectMap<IntList> charactersByWidth = new Int2ObjectOpenHashMap();
 	private final List<GlyphAtlasTexture> glyphAtlases = Lists.newArrayList();
 
-	public FontStorage(TextureManager textureManager, Identifier identifier) {
+	public FontStorage(TextureManager textureManager, Identifier id) {
 		this.textureManager = textureManager;
-		this.id = identifier;
+		this.id = id;
 	}
 
-	public void setFonts(List<Font> list) {
-		this.method_24290();
+	public void setFonts(List<Font> fonts) {
+		this.closeFonts();
 		this.closeGlyphAtlases();
 		this.glyphRendererCache.clear();
 		this.glyphCache.clear();
 		this.charactersByWidth.clear();
-		this.blankGlyphRenderer = this.getGlyphRenderer(BlankGlyph.field_2283);
-		this.whiteRectangleGlyphRenderer = this.getGlyphRenderer(WhiteRectangleGlyph.field_20912);
-		Set<Font> set = Sets.newHashSet();
+		this.blankGlyphRenderer = this.getGlyphRenderer(BlankGlyph.INSTANCE);
+		this.whiteRectangleGlyphRenderer = this.getGlyphRenderer(WhiteRectangleGlyph.INSTANCE);
+		IntSet intSet = new IntOpenHashSet();
 
-		for (char c = 0; c < '\uffff'; c++) {
-			for (Font font : list) {
-				Glyph glyph = (Glyph)(c == ' ' ? SPACE : font.getGlyph(c));
+		for (Font font : fonts) {
+			intSet.addAll(font.getProvidedGlyphs());
+		}
+
+		Set<Font> set = Sets.newHashSet();
+		intSet.forEach(i -> {
+			for (Font fontx : fonts) {
+				Glyph glyph = (Glyph)(i == 32 ? SPACE : fontx.getGlyph(i));
 				if (glyph != null) {
-					set.add(font);
-					if (glyph != BlankGlyph.field_2283) {
-						((CharList)this.charactersByWidth.computeIfAbsent(MathHelper.ceil(glyph.getAdvance(false)), i -> new CharArrayList())).add(c);
+					set.add(fontx);
+					if (glyph != BlankGlyph.INSTANCE) {
+						((IntList)this.charactersByWidth.computeIfAbsent(MathHelper.ceil(glyph.getAdvance(false)), ix -> new IntArrayList())).add(i);
 					}
 					break;
 				}
 			}
-		}
-
-		list.stream().filter(set::contains).forEach(this.fonts::add);
+		});
+		fonts.stream().filter(set::contains).forEach(this.fonts::add);
 	}
 
 	public void close() {
-		this.method_24290();
+		this.closeFonts();
 		this.closeGlyphAtlases();
 	}
 
-	private void method_24290() {
+	private void closeFonts() {
 		for (Font font : this.fonts) {
 			font.close();
 		}
@@ -84,46 +85,46 @@ public class FontStorage implements AutoCloseable {
 		this.glyphAtlases.clear();
 	}
 
-	public Glyph getGlyph(char c) {
-		return (Glyph)this.glyphCache.computeIfAbsent(c, i -> (Glyph)(i == 32 ? SPACE : this.getRenderableGlyph((char)i)));
+	public Glyph getGlyph(int i) {
+		return (Glyph)this.glyphCache.computeIfAbsent(i, ix -> (Glyph)(ix == 32 ? SPACE : this.getRenderableGlyph(ix)));
 	}
 
-	private RenderableGlyph getRenderableGlyph(char c) {
+	private RenderableGlyph getRenderableGlyph(int i) {
 		for (Font font : this.fonts) {
-			RenderableGlyph renderableGlyph = font.getGlyph(c);
+			RenderableGlyph renderableGlyph = font.getGlyph(i);
 			if (renderableGlyph != null) {
 				return renderableGlyph;
 			}
 		}
 
-		return BlankGlyph.field_2283;
+		return BlankGlyph.INSTANCE;
 	}
 
-	public GlyphRenderer getGlyphRenderer(char c) {
+	public GlyphRenderer getGlyphRenderer(int i) {
 		return (GlyphRenderer)this.glyphRendererCache
-			.computeIfAbsent(c, i -> (GlyphRenderer)(i == 32 ? EMPTY_GLYPH_RENDERER : this.getGlyphRenderer(this.getRenderableGlyph((char)i))));
+			.computeIfAbsent(i, ix -> (GlyphRenderer)(ix == 32 ? EMPTY_GLYPH_RENDERER : this.getGlyphRenderer(this.getRenderableGlyph(ix))));
 	}
 
-	private GlyphRenderer getGlyphRenderer(RenderableGlyph renderableGlyph) {
+	private GlyphRenderer getGlyphRenderer(RenderableGlyph c) {
 		for (GlyphAtlasTexture glyphAtlasTexture : this.glyphAtlases) {
-			GlyphRenderer glyphRenderer = glyphAtlasTexture.getGlyphRenderer(renderableGlyph);
+			GlyphRenderer glyphRenderer = glyphAtlasTexture.getGlyphRenderer(c);
 			if (glyphRenderer != null) {
 				return glyphRenderer;
 			}
 		}
 
 		GlyphAtlasTexture glyphAtlasTexture2 = new GlyphAtlasTexture(
-			new Identifier(this.id.getNamespace(), this.id.getPath() + "/" + this.glyphAtlases.size()), renderableGlyph.hasColor()
+			new Identifier(this.id.getNamespace(), this.id.getPath() + "/" + this.glyphAtlases.size()), c.hasColor()
 		);
 		this.glyphAtlases.add(glyphAtlasTexture2);
 		this.textureManager.registerTexture(glyphAtlasTexture2.getId(), glyphAtlasTexture2);
-		GlyphRenderer glyphRenderer2 = glyphAtlasTexture2.getGlyphRenderer(renderableGlyph);
+		GlyphRenderer glyphRenderer2 = glyphAtlasTexture2.getGlyphRenderer(c);
 		return glyphRenderer2 == null ? this.blankGlyphRenderer : glyphRenderer2;
 	}
 
 	public GlyphRenderer getObfuscatedGlyphRenderer(Glyph glyph) {
-		CharList charList = (CharList)this.charactersByWidth.get(MathHelper.ceil(glyph.getAdvance(false)));
-		return charList != null && !charList.isEmpty() ? this.getGlyphRenderer(charList.get(RANDOM.nextInt(charList.size()))) : this.blankGlyphRenderer;
+		IntList intList = (IntList)this.charactersByWidth.get(MathHelper.ceil(glyph.getAdvance(false)));
+		return intList != null && !intList.isEmpty() ? this.getGlyphRenderer(intList.getInt(RANDOM.nextInt(intList.size()))) : this.blankGlyphRenderer;
 	}
 
 	public GlyphRenderer getRectangleRenderer() {

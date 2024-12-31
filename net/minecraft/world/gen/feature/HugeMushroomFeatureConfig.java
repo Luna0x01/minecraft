@@ -1,43 +1,25 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.gen.stateprovider.StateProvider;
-import net.minecraft.world.gen.stateprovider.StateProviderType;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 
 public class HugeMushroomFeatureConfig implements FeatureConfig {
-	public final StateProvider capProvider;
-	public final StateProvider stemProvider;
-	public final int capSize;
+	public static final Codec<HugeMushroomFeatureConfig> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(
+					BlockStateProvider.TYPE_CODEC.fieldOf("cap_provider").forGetter(hugeMushroomFeatureConfig -> hugeMushroomFeatureConfig.capProvider),
+					BlockStateProvider.TYPE_CODEC.fieldOf("stem_provider").forGetter(hugeMushroomFeatureConfig -> hugeMushroomFeatureConfig.stemProvider),
+					Codec.INT.fieldOf("foliage_radius").orElse(2).forGetter(hugeMushroomFeatureConfig -> hugeMushroomFeatureConfig.foliageRadius)
+				)
+				.apply(instance, HugeMushroomFeatureConfig::new)
+	);
+	public final BlockStateProvider capProvider;
+	public final BlockStateProvider stemProvider;
+	public final int foliageRadius;
 
-	public HugeMushroomFeatureConfig(StateProvider stateProvider, StateProvider stateProvider2, int i) {
-		this.capProvider = stateProvider;
-		this.stemProvider = stateProvider2;
-		this.capSize = i;
-	}
-
-	@Override
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		Builder<T, T> builder = ImmutableMap.builder();
-		builder.put(dynamicOps.createString("cap_provider"), this.capProvider.serialize(dynamicOps))
-			.put(dynamicOps.createString("stem_provider"), this.stemProvider.serialize(dynamicOps))
-			.put(dynamicOps.createString("foliage_radius"), dynamicOps.createInt(this.capSize));
-		return new Dynamic(dynamicOps, dynamicOps.createMap(builder.build()));
-	}
-
-	public static <T> HugeMushroomFeatureConfig deserialize(Dynamic<T> dynamic) {
-		StateProviderType<?> stateProviderType = Registry.field_21445
-			.get(new Identifier((String)dynamic.get("cap_provider").get("type").asString().orElseThrow(RuntimeException::new)));
-		StateProviderType<?> stateProviderType2 = Registry.field_21445
-			.get(new Identifier((String)dynamic.get("stem_provider").get("type").asString().orElseThrow(RuntimeException::new)));
-		return new HugeMushroomFeatureConfig(
-			stateProviderType.deserialize(dynamic.get("cap_provider").orElseEmptyMap()),
-			stateProviderType2.deserialize(dynamic.get("stem_provider").orElseEmptyMap()),
-			dynamic.get("foliage_radius").asInt(2)
-		);
+	public HugeMushroomFeatureConfig(BlockStateProvider capProvider, BlockStateProvider stemProvider, int foliageRadius) {
+		this.capProvider = capProvider;
+		this.stemProvider = stemProvider;
+		this.foliageRadius = foliageRadius;
 	}
 }

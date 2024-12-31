@@ -18,15 +18,15 @@ public class Snooper {
 	private final long startTime;
 	private boolean active;
 
-	public Snooper(String string, SnooperListener snooperListener, long l) {
+	public Snooper(String urlPath, SnooperListener listener, long startTime) {
 		try {
-			this.snooperUrl = new URL("http://snoop.minecraft.net/" + string + "?version=" + 2);
+			this.snooperUrl = new URL("http://snoop.minecraft.net/" + urlPath + "?version=" + 2);
 		} catch (MalformedURLException var6) {
 			throw new IllegalArgumentException();
 		}
 
-		this.listener = snooperListener;
-		this.startTime = l;
+		this.listener = listener;
+		this.startTime = startTime;
 	}
 
 	public void method_5482() {
@@ -42,15 +42,15 @@ public class Snooper {
 		this.listener.addSnooperInfo(this);
 	}
 
-	public void addInfo(String string, Object object) {
+	public void addInfo(String key, Object value) {
 		synchronized (this.syncObject) {
-			this.info.put(string, object);
+			this.info.put(key, value);
 		}
 	}
 
-	public void addInitialInfo(String string, Object object) {
+	public void addInitialInfo(String key, Object value) {
 		synchronized (this.syncObject) {
-			this.initialInfo.put(string, object);
+			this.initialInfo.put(key, value);
 		}
 	}
 

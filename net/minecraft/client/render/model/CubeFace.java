@@ -4,37 +4,37 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.Direction;
 
 public enum CubeFace {
-	field_3965(
+	DOWN(
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.SOUTH)
 	),
-	field_3960(
+	UP(
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.NORTH)
 	),
-	field_3962(
+	NORTH(
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.NORTH)
 	),
-	field_3963(
+	SOUTH(
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.SOUTH)
 	),
-	field_3966(
+	WEST(
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.NORTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.WEST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.SOUTH)
 	),
-	field_3961(
+	EAST(
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.UP, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.SOUTH),
 		new CubeFace.Corner(CubeFace.DirectionIds.EAST, CubeFace.DirectionIds.DOWN, CubeFace.DirectionIds.NORTH),
@@ -42,12 +42,12 @@ public enum CubeFace {
 	);
 
 	private static final CubeFace[] DIRECTION_LOOKUP = Util.make(new CubeFace[6], cubeFaces -> {
-		cubeFaces[CubeFace.DirectionIds.DOWN] = field_3965;
-		cubeFaces[CubeFace.DirectionIds.UP] = field_3960;
-		cubeFaces[CubeFace.DirectionIds.NORTH] = field_3962;
-		cubeFaces[CubeFace.DirectionIds.SOUTH] = field_3963;
-		cubeFaces[CubeFace.DirectionIds.WEST] = field_3966;
-		cubeFaces[CubeFace.DirectionIds.EAST] = field_3961;
+		cubeFaces[CubeFace.DirectionIds.DOWN] = DOWN;
+		cubeFaces[CubeFace.DirectionIds.UP] = UP;
+		cubeFaces[CubeFace.DirectionIds.NORTH] = NORTH;
+		cubeFaces[CubeFace.DirectionIds.SOUTH] = SOUTH;
+		cubeFaces[CubeFace.DirectionIds.WEST] = WEST;
+		cubeFaces[CubeFace.DirectionIds.EAST] = EAST;
 	});
 	private final CubeFace.Corner[] corners;
 
@@ -59,8 +59,8 @@ public enum CubeFace {
 		this.corners = corners;
 	}
 
-	public CubeFace.Corner getCorner(int i) {
-		return this.corners[i];
+	public CubeFace.Corner getCorner(int corner) {
+		return this.corners[corner];
 	}
 
 	public static class Corner {
@@ -68,19 +68,19 @@ public enum CubeFace {
 		public final int ySide;
 		public final int zSide;
 
-		private Corner(int i, int j, int k) {
-			this.xSide = i;
-			this.ySide = j;
-			this.zSide = k;
+		private Corner(int x, int y, int z) {
+			this.xSide = x;
+			this.ySide = y;
+			this.zSide = z;
 		}
 	}
 
 	public static final class DirectionIds {
-		public static final int SOUTH = Direction.field_11035.getId();
-		public static final int UP = Direction.field_11036.getId();
-		public static final int EAST = Direction.field_11034.getId();
-		public static final int NORTH = Direction.field_11043.getId();
-		public static final int DOWN = Direction.field_11033.getId();
-		public static final int WEST = Direction.field_11039.getId();
+		public static final int SOUTH = Direction.SOUTH.getId();
+		public static final int UP = Direction.UP.getId();
+		public static final int EAST = Direction.EAST.getId();
+		public static final int NORTH = Direction.NORTH.getId();
+		public static final int DOWN = Direction.DOWN.getId();
+		public static final int WEST = Direction.WEST.getId();
 	}
 }

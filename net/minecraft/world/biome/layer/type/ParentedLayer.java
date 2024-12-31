@@ -6,15 +6,15 @@ import net.minecraft.world.biome.layer.util.LayerSampleContext;
 import net.minecraft.world.biome.layer.util.LayerSampler;
 
 public interface ParentedLayer extends CoordinateTransformer {
-	default <R extends LayerSampler> LayerFactory<R> create(LayerSampleContext<R> layerSampleContext, LayerFactory<R> layerFactory) {
+	default <R extends LayerSampler> LayerFactory<R> create(LayerSampleContext<R> context, LayerFactory<R> parent) {
 		return () -> {
-			R layerSampler = layerFactory.make();
-			return layerSampleContext.createSampler((i, j) -> {
-				layerSampleContext.initSeed((long)i, (long)j);
-				return this.sample(layerSampleContext, layerSampler, i, j);
+			R layerSampler = parent.make();
+			return context.createSampler((i, j) -> {
+				context.initSeed((long)i, (long)j);
+				return this.sample(context, layerSampler, i, j);
 			}, layerSampler);
 		};
 	}
 
-	int sample(LayerSampleContext<?> layerSampleContext, LayerSampler layerSampler, int i, int j);
+	int sample(LayerSampleContext<?> context, LayerSampler parent, int x, int z);
 }

@@ -16,12 +16,12 @@ public class SpriteAtlasManager implements AutoCloseable {
 		this.atlases = (Map<Identifier, SpriteAtlasTexture>)collection.stream().collect(Collectors.toMap(SpriteAtlasTexture::getId, Function.identity()));
 	}
 
-	public SpriteAtlasTexture getAtlas(Identifier identifier) {
-		return (SpriteAtlasTexture)this.atlases.get(identifier);
+	public SpriteAtlasTexture getAtlas(Identifier id) {
+		return (SpriteAtlasTexture)this.atlases.get(id);
 	}
 
-	public Sprite getSprite(SpriteIdentifier spriteIdentifier) {
-		return ((SpriteAtlasTexture)this.atlases.get(spriteIdentifier.getAtlasId())).getSprite(spriteIdentifier.getTextureId());
+	public Sprite getSprite(SpriteIdentifier id) {
+		return ((SpriteAtlasTexture)this.atlases.get(id.getAtlasId())).getSprite(id.getTextureId());
 	}
 
 	public void close() {

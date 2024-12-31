@@ -2,11 +2,12 @@ package net.minecraft.entity.mob;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -14,19 +15,23 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.passive.AbstractTraderEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
+import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.raid.RaiderEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
@@ -52,16 +57,15 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 		this.goalSelector.add(10, new LookAtEntityGoal(this, MobEntity.class, 8.0F));
 		this.targetSelector.add(1, new RevengeGoal(this, RaiderEntity.class).setGroupRevenge());
 		this.targetSelector.add(2, new FollowTargetGoal(this, PlayerEntity.class, true).setMaxTimeWithoutVisibility(300));
-		this.targetSelector.add(3, new FollowTargetGoal(this, AbstractTraderEntity.class, false).setMaxTimeWithoutVisibility(300));
+		this.targetSelector.add(3, new FollowTargetGoal(this, MerchantEntity.class, false).setMaxTimeWithoutVisibility(300));
 		this.targetSelector.add(3, new FollowTargetGoal(this, IronGolemEntity.class, false));
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.5);
-		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(12.0);
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(24.0);
+	public static DefaultAttributeContainer.Builder createEvokerAttributes() {
+		return HostileEntity.createHostileAttributes()
+			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.5)
+			.add(EntityAttributes.GENERIC_FOLLOW_RANGE, 12.0)
+			.add(EntityAttributes.GENERIC_MAX_HEALTH, 24.0);
 	}
 
 	@Override
@@ -70,18 +74,18 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
 	}
 
 	@Override
 	public SoundEvent getCelebratingSound() {
-		return SoundEvents.field_19147;
+		return SoundEvents.ENTITY_EVOKER_CELEBRATE;
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
 	}
 
 	@Override
@@ -90,39 +94,39 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 	}
 
 	@Override
-	public boolean isTeammate(Entity entity) {
-		if (entity == null) {
+	public boolean isTeammate(Entity other) {
+		if (other == null) {
 			return false;
-		} else if (entity == this) {
+		} else if (other == this) {
 			return true;
-		} else if (super.isTeammate(entity)) {
+		} else if (super.isTeammate(other)) {
 			return true;
-		} else if (entity instanceof VexEntity) {
-			return this.isTeammate(((VexEntity)entity).getOwner());
+		} else if (other instanceof VexEntity) {
+			return this.isTeammate(((VexEntity)other).getOwner());
 		} else {
-			return entity instanceof LivingEntity && ((LivingEntity)entity).getGroup() == EntityGroup.ILLAGER
-				? this.getScoreboardTeam() == null && entity.getScoreboardTeam() == null
+			return other instanceof LivingEntity && ((LivingEntity)other).getGroup() == EntityGroup.ILLAGER
+				? this.getScoreboardTeam() == null && other.getScoreboardTeam() == null
 				: false;
 		}
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_14782;
+		return SoundEvents.ENTITY_EVOKER_AMBIENT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_14599;
+		return SoundEvents.ENTITY_EVOKER_DEATH;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_15111;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_EVOKER_HURT;
 	}
 
-	private void setWololoTarget(@Nullable SheepEntity sheepEntity) {
-		this.wololoTarget = sheepEntity;
+	private void setWololoTarget(@Nullable SheepEntity sheep) {
+		this.wololoTarget = sheep;
 	}
 
 	@Nullable
@@ -132,11 +136,11 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 
 	@Override
 	protected SoundEvent getCastSpellSound() {
-		return SoundEvents.field_14858;
+		return SoundEvents.ENTITY_EVOKER_CAST_SPELL;
 	}
 
 	@Override
-	public void addBonusForWave(int i, boolean bl) {
+	public void addBonusForWave(int wave, boolean unused) {
 	}
 
 	class ConjureFangsGoal extends SpellcastingIllagerEntity.CastSpellGoal {
@@ -178,113 +182,43 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 			}
 		}
 
-		private void conjureFangs(double d, double e, double f, double g, float h, int i) {
-			// $VF: Couldn't be decompiled
-			// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
-			//
-			// Bytecode:
-			// 00: new net/minecraft/util/math/BlockPos
-			// 03: dup
-			// 04: dload 1
-			// 05: dload 7
-			// 07: dload 3
-			// 08: invokespecial net/minecraft/util/math/BlockPos.<init> (DDD)V
-			// 0b: astore 11
-			// 0d: bipush 0
-			// 0e: istore 12
-			// 10: dconst_0
-			// 11: dstore 13
-			// 13: aload 11
-			// 15: invokevirtual net/minecraft/util/math/BlockPos.down ()Lnet/minecraft/util/math/BlockPos;
-			// 18: astore 15
-			// 1a: aload 0
-			// 1b: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// 1e: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
-			// 21: aload 15
-			// 23: invokevirtual net/minecraft/world/World.getBlockState (Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;
-			// 26: astore 16
-			// 28: aload 16
-			// 2a: aload 0
-			// 2b: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// 2e: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
-			// 31: aload 15
-			// 33: getstatic net/minecraft/util/math/Direction.field_11036 Lnet/minecraft/util/math/Direction;
-			// 36: invokevirtual net/minecraft/block/BlockState.isSideSolidFullSquare (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z
-			// 39: ifeq 81
-			// 3c: aload 0
-			// 3d: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// 40: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
-			// 43: aload 11
-			// 45: invokevirtual net/minecraft/world/World.isAir (Lnet/minecraft/util/math/BlockPos;)Z
-			// 48: ifne 7b
-			// 4b: aload 0
-			// 4c: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// 4f: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
-			// 52: aload 11
-			// 54: invokevirtual net/minecraft/world/World.getBlockState (Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;
-			// 57: astore 17
-			// 59: aload 17
-			// 5b: aload 0
-			// 5c: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// 5f: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
-			// 62: aload 11
-			// 64: invokevirtual net/minecraft/block/BlockState.getCollisionShape (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/util/shape/VoxelShape;
-			// 67: astore 18
-			// 69: aload 18
-			// 6b: invokevirtual net/minecraft/util/shape/VoxelShape.isEmpty ()Z
-			// 6e: ifne 7b
-			// 71: aload 18
-			// 73: getstatic net/minecraft/util/math/Direction$Axis.field_11052 Lnet/minecraft/util/math/Direction$Axis;
-			// 76: invokevirtual net/minecraft/util/shape/VoxelShape.getMaximum (Lnet/minecraft/util/math/Direction$Axis;)D
-			// 79: dstore 13
-			// 7b: bipush 1
-			// 7c: istore 12
-			// 7e: goto 97
-			// 81: aload 11
-			// 83: invokevirtual net/minecraft/util/math/BlockPos.down ()Lnet/minecraft/util/math/BlockPos;
-			// 86: astore 11
-			// 88: aload 11
-			// 8a: invokevirtual net/minecraft/util/math/BlockPos.getY ()I
-			// 8d: dload 5
-			// 8f: invokestatic net/minecraft/util/math/MathHelper.floor (D)I
-			// 92: bipush 1
-			// 93: isub
-			// 94: if_icmpge 13
-			// 97: iload 12
-			// 99: ifeq c8
-			// 9c: aload 0
-			// 9d: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// a0: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
-			// a3: new net/minecraft/entity/mob/EvokerFangsEntity
-			// a6: dup
-			// a7: aload 0
-			// a8: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// ab: getfield net/minecraft/entity/mob/EvokerEntity.world Lnet/minecraft/world/World;
-			// ae: dload 1
-			// af: aload 11
-			// b1: invokevirtual net/minecraft/util/math/BlockPos.getY ()I
-			// b4: i2d
-			// b5: dload 13
-			// b7: dadd
-			// b8: dload 3
-			// b9: fload 9
-			// bb: iload 10
-			// bd: aload 0
-			// be: getfield net/minecraft/entity/mob/EvokerEntity$ConjureFangsGoal.field_7265 Lnet/minecraft/entity/mob/EvokerEntity;
-			// c1: invokespecial net/minecraft/entity/mob/EvokerFangsEntity.<init> (Lnet/minecraft/world/World;DDDFILnet/minecraft/entity/LivingEntity;)V
-			// c4: invokevirtual net/minecraft/world/World.spawnEntity (Lnet/minecraft/entity/Entity;)Z
-			// c7: pop
-			// c8: return
+		private void conjureFangs(double x, double z, double maxY, double y, float yaw, int warmup) {
+			BlockPos blockPos = new BlockPos(x, y, z);
+			boolean bl = false;
+			double d = 0.0;
+
+			do {
+				BlockPos blockPos2 = blockPos.down();
+				BlockState blockState = EvokerEntity.this.world.getBlockState(blockPos2);
+				if (blockState.isSideSolidFullSquare(EvokerEntity.this.world, blockPos2, Direction.UP)) {
+					if (!EvokerEntity.this.world.isAir(blockPos)) {
+						BlockState blockState2 = EvokerEntity.this.world.getBlockState(blockPos);
+						VoxelShape voxelShape = blockState2.getCollisionShape(EvokerEntity.this.world, blockPos);
+						if (!voxelShape.isEmpty()) {
+							d = voxelShape.getMax(Direction.Axis.Y);
+						}
+					}
+
+					bl = true;
+					break;
+				}
+
+				blockPos = blockPos.down();
+			} while (blockPos.getY() >= MathHelper.floor(maxY) - 1);
+
+			if (bl) {
+				EvokerEntity.this.world.spawnEntity(new EvokerFangsEntity(EvokerEntity.this.world, x, (double)blockPos.getY() + d, z, yaw, warmup, EvokerEntity.this));
+			}
 		}
 
 		@Override
 		protected SoundEvent getSoundPrepare() {
-			return SoundEvents.field_14908;
+			return SoundEvents.ENTITY_EVOKER_PREPARE_ATTACK;
 		}
 
 		@Override
 		protected SpellcastingIllagerEntity.Spell getSpell() {
-			return SpellcastingIllagerEntity.Spell.field_7380;
+			return SpellcastingIllagerEntity.Spell.FANGS;
 		}
 	}
 
@@ -339,34 +273,36 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 
 		@Override
 		protected void castSpell() {
+			ServerWorld serverWorld = (ServerWorld)EvokerEntity.this.world;
+
 			for (int i = 0; i < 3; i++) {
-				BlockPos blockPos = new BlockPos(EvokerEntity.this).add(-2 + EvokerEntity.this.random.nextInt(5), 1, -2 + EvokerEntity.this.random.nextInt(5));
-				VexEntity vexEntity = EntityType.field_6059.create(EvokerEntity.this.world);
+				BlockPos blockPos = EvokerEntity.this.getBlockPos().add(-2 + EvokerEntity.this.random.nextInt(5), 1, -2 + EvokerEntity.this.random.nextInt(5));
+				VexEntity vexEntity = EntityType.VEX.create(EvokerEntity.this.world);
 				vexEntity.refreshPositionAndAngles(blockPos, 0.0F, 0.0F);
-				vexEntity.initialize(EvokerEntity.this.world, EvokerEntity.this.world.getLocalDifficulty(blockPos), SpawnType.field_16471, null, null);
+				vexEntity.initialize(serverWorld, EvokerEntity.this.world.getLocalDifficulty(blockPos), SpawnReason.MOB_SUMMONED, null, null);
 				vexEntity.setOwner(EvokerEntity.this);
 				vexEntity.setBounds(blockPos);
 				vexEntity.setLifeTicks(20 * (30 + EvokerEntity.this.random.nextInt(90)));
-				EvokerEntity.this.world.spawnEntity(vexEntity);
+				serverWorld.spawnEntityAndPassengers(vexEntity);
 			}
 		}
 
 		@Override
 		protected SoundEvent getSoundPrepare() {
-			return SoundEvents.field_15193;
+			return SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON;
 		}
 
 		@Override
 		protected SpellcastingIllagerEntity.Spell getSpell() {
-			return SpellcastingIllagerEntity.Spell.field_7379;
+			return SpellcastingIllagerEntity.Spell.SUMMON_VEX;
 		}
 	}
 
 	public class WololoGoal extends SpellcastingIllagerEntity.CastSpellGoal {
-		private final TargetPredicate purpleSheepPredicate = new TargetPredicate()
+		private final TargetPredicate convertibleSheepPredicate = new TargetPredicate()
 			.setBaseMaxDistance(16.0)
 			.includeInvulnerable()
-			.setPredicate(livingEntity -> ((SheepEntity)livingEntity).getColor() == DyeColor.field_7966);
+			.setPredicate(livingEntity -> ((SheepEntity)livingEntity).getColor() == DyeColor.BLUE);
 
 		@Override
 		public boolean canStart() {
@@ -376,11 +312,11 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 				return false;
 			} else if (EvokerEntity.this.age < this.startTime) {
 				return false;
-			} else if (!EvokerEntity.this.world.getGameRules().getBoolean(GameRules.field_19388)) {
+			} else if (!EvokerEntity.this.world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
 				return false;
 			} else {
 				List<SheepEntity> list = EvokerEntity.this.world
-					.getTargets(SheepEntity.class, this.purpleSheepPredicate, EvokerEntity.this, EvokerEntity.this.getBoundingBox().expand(16.0, 4.0, 16.0));
+					.getTargets(SheepEntity.class, this.convertibleSheepPredicate, EvokerEntity.this, EvokerEntity.this.getBoundingBox().expand(16.0, 4.0, 16.0));
 				if (list.isEmpty()) {
 					return false;
 				} else {
@@ -405,7 +341,7 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 		protected void castSpell() {
 			SheepEntity sheepEntity = EvokerEntity.this.getWololoTarget();
 			if (sheepEntity != null && sheepEntity.isAlive()) {
-				sheepEntity.setColor(DyeColor.field_7964);
+				sheepEntity.setColor(DyeColor.RED);
 			}
 		}
 
@@ -426,12 +362,12 @@ public class EvokerEntity extends SpellcastingIllagerEntity {
 
 		@Override
 		protected SoundEvent getSoundPrepare() {
-			return SoundEvents.field_15058;
+			return SoundEvents.ENTITY_EVOKER_PREPARE_WOLOLO;
 		}
 
 		@Override
 		protected SpellcastingIllagerEntity.Spell getSpell() {
-			return SpellcastingIllagerEntity.Spell.field_7381;
+			return SpellcastingIllagerEntity.Spell.WOLOLO;
 		}
 	}
 }

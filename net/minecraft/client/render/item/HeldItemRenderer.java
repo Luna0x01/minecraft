@@ -1,7 +1,6 @@
 package net.minecraft.client.render.item;
 
 import com.google.common.base.MoreObjects;
-import java.util.Objects;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -12,7 +11,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.render.model.json.ModelTransformation;
-import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.LivingEntity;
@@ -25,6 +23,7 @@ import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix4f;
 
 public class HeldItemRenderer {
 	private static final RenderLayer MAP_BACKGROUND = RenderLayer.getText(new Identifier("textures/map/map_background.png"));
@@ -39,323 +38,350 @@ public class HeldItemRenderer {
 	private final EntityRenderDispatcher renderManager;
 	private final ItemRenderer itemRenderer;
 
-	public HeldItemRenderer(MinecraftClient minecraftClient) {
-		this.client = minecraftClient;
-		this.renderManager = minecraftClient.getEntityRenderManager();
-		this.itemRenderer = minecraftClient.getItemRenderer();
+	public HeldItemRenderer(MinecraftClient client) {
+		this.client = client;
+		this.renderManager = client.getEntityRenderDispatcher();
+		this.itemRenderer = client.getItemRenderer();
 	}
 
 	public void renderItem(
-		LivingEntity livingEntity,
-		ItemStack itemStack,
-		ModelTransformation.Mode mode,
-		boolean bl,
-		MatrixStack matrixStack,
-		VertexConsumerProvider vertexConsumerProvider,
-		int i
+		LivingEntity entity,
+		ItemStack stack,
+		ModelTransformation.Mode renderMode,
+		boolean leftHanded,
+		MatrixStack matrices,
+		VertexConsumerProvider vertexConsumers,
+		int light
 	) {
-		if (!itemStack.isEmpty()) {
-			this.itemRenderer.renderItem(livingEntity, itemStack, mode, bl, matrixStack, vertexConsumerProvider, livingEntity.world, i, OverlayTexture.DEFAULT_UV);
+		if (!stack.isEmpty()) {
+			this.itemRenderer.renderItem(entity, stack, renderMode, leftHanded, matrices, vertexConsumers, entity.world, light, OverlayTexture.DEFAULT_UV);
 		}
 	}
 
-	private float getMapAngle(float f) {
-		float g = 1.0F - f / 45.0F + 0.1F;
-		g = MathHelper.clamp(g, 0.0F, 1.0F);
-		return -MathHelper.cos(g * (float) Math.PI) * 0.5F + 0.5F;
+	private float getMapAngle(float tickDelta) {
+		float f = 1.0F - tickDelta / 45.0F + 0.1F;
+		f = MathHelper.clamp(f, 0.0F, 1.0F);
+		return -MathHelper.cos(f * (float) Math.PI) * 0.5F + 0.5F;
 	}
 
-	private void renderArm(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, Arm arm) {
+	private void renderArm(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, Arm arm) {
 		this.client.getTextureManager().bindTexture(this.client.player.getSkinTexture());
 		PlayerEntityRenderer playerEntityRenderer = (PlayerEntityRenderer)this.renderManager.<AbstractClientPlayerEntity>getRenderer(this.client.player);
-		matrixStack.push();
-		float f = arm == Arm.field_6183 ? 1.0F : -1.0F;
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(92.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(45.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(f * -41.0F));
-		matrixStack.translate((double)(f * 0.3F), -1.1F, 0.45F);
-		if (arm == Arm.field_6183) {
-			playerEntityRenderer.renderRightArm(matrixStack, vertexConsumerProvider, i, this.client.player);
+		matrices.push();
+		float f = arm == Arm.RIGHT ? 1.0F : -1.0F;
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(92.0F));
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(45.0F));
+		matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(f * -41.0F));
+		matrices.translate((double)(f * 0.3F), -1.1F, 0.45F);
+		if (arm == Arm.RIGHT) {
+			playerEntityRenderer.renderRightArm(matrices, vertexConsumers, light, this.client.player);
 		} else {
-			playerEntityRenderer.renderLeftArm(matrixStack, vertexConsumerProvider, i, this.client.player);
+			playerEntityRenderer.renderLeftArm(matrices, vertexConsumers, light, this.client.player);
 		}
 
-		matrixStack.pop();
+		matrices.pop();
 	}
 
-	private void renderMapInOneHand(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, float f, Arm arm, float g, ItemStack itemStack) {
-		float h = arm == Arm.field_6183 ? 1.0F : -1.0F;
-		matrixStack.translate((double)(h * 0.125F), -0.125, 0.0);
+	private void renderMapInOneHand(
+		MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, float equipProgress, Arm arm, float swingProgress, ItemStack stack
+	) {
+		float f = arm == Arm.RIGHT ? 1.0F : -1.0F;
+		matrices.translate((double)(f * 0.125F), -0.125, 0.0);
 		if (!this.client.player.isInvisible()) {
-			matrixStack.push();
-			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(h * 10.0F));
-			this.renderArmHoldingItem(matrixStack, vertexConsumerProvider, i, f, g, arm);
-			matrixStack.pop();
+			matrices.push();
+			matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(f * 10.0F));
+			this.renderArmHoldingItem(matrices, vertexConsumers, light, equipProgress, swingProgress, arm);
+			matrices.pop();
 		}
 
-		matrixStack.push();
-		matrixStack.translate((double)(h * 0.51F), (double)(-0.08F + f * -1.2F), -0.75);
-		float j = MathHelper.sqrt(g);
-		float k = MathHelper.sin(j * (float) Math.PI);
-		float l = -0.5F * k;
-		float m = 0.4F * MathHelper.sin(j * (float) (Math.PI * 2));
-		float n = -0.3F * MathHelper.sin(g * (float) Math.PI);
-		matrixStack.translate((double)(h * l), (double)(m - 0.3F * k), (double)n);
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(k * -45.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(h * k * -30.0F));
-		this.renderFirstPersonMap(matrixStack, vertexConsumerProvider, i, itemStack);
-		matrixStack.pop();
+		matrices.push();
+		matrices.translate((double)(f * 0.51F), (double)(-0.08F + equipProgress * -1.2F), -0.75);
+		float g = MathHelper.sqrt(swingProgress);
+		float h = MathHelper.sin(g * (float) Math.PI);
+		float i = -0.5F * h;
+		float j = 0.4F * MathHelper.sin(g * (float) (Math.PI * 2));
+		float k = -0.3F * MathHelper.sin(swingProgress * (float) Math.PI);
+		matrices.translate((double)(f * i), (double)(j - 0.3F * h), (double)k);
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(h * -45.0F));
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(f * h * -30.0F));
+		this.renderFirstPersonMap(matrices, vertexConsumers, light, stack);
+		matrices.pop();
 	}
 
-	private void renderMapInBothHands(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, float f, float g, float h) {
-		float j = MathHelper.sqrt(h);
-		float k = -0.2F * MathHelper.sin(h * (float) Math.PI);
-		float l = -0.4F * MathHelper.sin(j * (float) Math.PI);
-		matrixStack.translate(0.0, (double)(-k / 2.0F), (double)l);
-		float m = this.getMapAngle(f);
-		matrixStack.translate(0.0, (double)(0.04F + g * -1.2F + m * -0.5F), -0.72F);
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(m * -85.0F));
+	private void renderMapInBothHands(
+		MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, float pitch, float equipProgress, float swingProgress
+	) {
+		float f = MathHelper.sqrt(swingProgress);
+		float g = -0.2F * MathHelper.sin(swingProgress * (float) Math.PI);
+		float h = -0.4F * MathHelper.sin(f * (float) Math.PI);
+		matrices.translate(0.0, (double)(-g / 2.0F), (double)h);
+		float i = this.getMapAngle(pitch);
+		matrices.translate(0.0, (double)(0.04F + equipProgress * -1.2F + i * -0.5F), -0.72F);
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(i * -85.0F));
 		if (!this.client.player.isInvisible()) {
-			matrixStack.push();
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(90.0F));
-			this.renderArm(matrixStack, vertexConsumerProvider, i, Arm.field_6183);
-			this.renderArm(matrixStack, vertexConsumerProvider, i, Arm.field_6182);
-			matrixStack.pop();
+			matrices.push();
+			matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(90.0F));
+			this.renderArm(matrices, vertexConsumers, light, Arm.RIGHT);
+			this.renderArm(matrices, vertexConsumers, light, Arm.LEFT);
+			matrices.pop();
 		}
 
-		float n = MathHelper.sin(j * (float) Math.PI);
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(n * 20.0F));
-		matrixStack.scale(2.0F, 2.0F, 2.0F);
-		this.renderFirstPersonMap(matrixStack, vertexConsumerProvider, i, this.mainHand);
+		float j = MathHelper.sin(f * (float) Math.PI);
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(j * 20.0F));
+		matrices.scale(2.0F, 2.0F, 2.0F);
+		this.renderFirstPersonMap(matrices, vertexConsumers, light, this.mainHand);
 	}
 
-	private void renderFirstPersonMap(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, ItemStack itemStack) {
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
-		matrixStack.scale(0.38F, 0.38F, 0.38F);
-		matrixStack.translate(-0.5, -0.5, 0.0);
-		matrixStack.scale(0.0078125F, 0.0078125F, 0.0078125F);
-		MapState mapState = FilledMapItem.getOrCreateMapState(itemStack, this.client.world);
-		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(mapState == null ? MAP_BACKGROUND : MAP_BACKGROUND_CHECKERBOARD);
-		Matrix4f matrix4f = matrixStack.peek().getModel();
-		vertexConsumer.vertex(matrix4f, -7.0F, 135.0F, 0.0F).color(255, 255, 255, 255).texture(0.0F, 1.0F).light(i).next();
-		vertexConsumer.vertex(matrix4f, 135.0F, 135.0F, 0.0F).color(255, 255, 255, 255).texture(1.0F, 1.0F).light(i).next();
-		vertexConsumer.vertex(matrix4f, 135.0F, -7.0F, 0.0F).color(255, 255, 255, 255).texture(1.0F, 0.0F).light(i).next();
-		vertexConsumer.vertex(matrix4f, -7.0F, -7.0F, 0.0F).color(255, 255, 255, 255).texture(0.0F, 0.0F).light(i).next();
+	private void renderFirstPersonMap(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int swingProgress, ItemStack stack) {
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F));
+		matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
+		matrices.scale(0.38F, 0.38F, 0.38F);
+		matrices.translate(-0.5, -0.5, 0.0);
+		matrices.scale(0.0078125F, 0.0078125F, 0.0078125F);
+		MapState mapState = FilledMapItem.getOrCreateMapState(stack, this.client.world);
+		VertexConsumer vertexConsumer = vertexConsumers.getBuffer(mapState == null ? MAP_BACKGROUND : MAP_BACKGROUND_CHECKERBOARD);
+		Matrix4f matrix4f = matrices.peek().getModel();
+		vertexConsumer.vertex(matrix4f, -7.0F, 135.0F, 0.0F).color(255, 255, 255, 255).texture(0.0F, 1.0F).light(swingProgress).next();
+		vertexConsumer.vertex(matrix4f, 135.0F, 135.0F, 0.0F).color(255, 255, 255, 255).texture(1.0F, 1.0F).light(swingProgress).next();
+		vertexConsumer.vertex(matrix4f, 135.0F, -7.0F, 0.0F).color(255, 255, 255, 255).texture(1.0F, 0.0F).light(swingProgress).next();
+		vertexConsumer.vertex(matrix4f, -7.0F, -7.0F, 0.0F).color(255, 255, 255, 255).texture(0.0F, 0.0F).light(swingProgress).next();
 		if (mapState != null) {
-			this.client.gameRenderer.getMapRenderer().draw(matrixStack, vertexConsumerProvider, mapState, false, i);
+			this.client.gameRenderer.getMapRenderer().draw(matrices, vertexConsumers, mapState, false, swingProgress);
 		}
 	}
 
-	private void renderArmHoldingItem(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, float f, float g, Arm arm) {
-		boolean bl = arm != Arm.field_6182;
-		float h = bl ? 1.0F : -1.0F;
-		float j = MathHelper.sqrt(g);
-		float k = -0.3F * MathHelper.sin(j * (float) Math.PI);
-		float l = 0.4F * MathHelper.sin(j * (float) (Math.PI * 2));
-		float m = -0.4F * MathHelper.sin(g * (float) Math.PI);
-		matrixStack.translate((double)(h * (k + 0.64000005F)), (double)(l + -0.6F + f * -0.6F), (double)(m + -0.71999997F));
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(h * 45.0F));
-		float n = MathHelper.sin(g * g * (float) Math.PI);
-		float o = MathHelper.sin(j * (float) Math.PI);
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(h * o * 70.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(h * n * -20.0F));
+	private void renderArmHoldingItem(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, float equipProgress, float swingProgress, Arm arm) {
+		boolean bl = arm != Arm.LEFT;
+		float f = bl ? 1.0F : -1.0F;
+		float g = MathHelper.sqrt(swingProgress);
+		float h = -0.3F * MathHelper.sin(g * (float) Math.PI);
+		float i = 0.4F * MathHelper.sin(g * (float) (Math.PI * 2));
+		float j = -0.4F * MathHelper.sin(swingProgress * (float) Math.PI);
+		matrices.translate((double)(f * (h + 0.64000005F)), (double)(i + -0.6F + equipProgress * -0.6F), (double)(j + -0.71999997F));
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(f * 45.0F));
+		float k = MathHelper.sin(swingProgress * swingProgress * (float) Math.PI);
+		float l = MathHelper.sin(g * (float) Math.PI);
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(f * l * 70.0F));
+		matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(f * k * -20.0F));
 		AbstractClientPlayerEntity abstractClientPlayerEntity = this.client.player;
 		this.client.getTextureManager().bindTexture(abstractClientPlayerEntity.getSkinTexture());
-		matrixStack.translate((double)(h * -1.0F), 3.6F, 3.5);
-		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(h * 120.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(200.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(h * -135.0F));
-		matrixStack.translate((double)(h * 5.6F), 0.0, 0.0);
+		matrices.translate((double)(f * -1.0F), 3.6F, 3.5);
+		matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(f * 120.0F));
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(200.0F));
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(f * -135.0F));
+		matrices.translate((double)(f * 5.6F), 0.0, 0.0);
 		PlayerEntityRenderer playerEntityRenderer = (PlayerEntityRenderer)this.renderManager.<AbstractClientPlayerEntity>getRenderer(abstractClientPlayerEntity);
 		if (bl) {
-			playerEntityRenderer.renderRightArm(matrixStack, vertexConsumerProvider, i, abstractClientPlayerEntity);
+			playerEntityRenderer.renderRightArm(matrices, vertexConsumers, light, abstractClientPlayerEntity);
 		} else {
-			playerEntityRenderer.renderLeftArm(matrixStack, vertexConsumerProvider, i, abstractClientPlayerEntity);
+			playerEntityRenderer.renderLeftArm(matrices, vertexConsumers, light, abstractClientPlayerEntity);
 		}
 	}
 
-	private void applyEatOrDrinkTransformation(MatrixStack matrixStack, float f, Arm arm, ItemStack itemStack) {
-		float g = (float)this.client.player.getItemUseTimeLeft() - f + 1.0F;
-		float h = g / (float)itemStack.getMaxUseTime();
-		if (h < 0.8F) {
-			float i = MathHelper.abs(MathHelper.cos(g / 4.0F * (float) Math.PI) * 0.1F);
-			matrixStack.translate(0.0, (double)i, 0.0);
+	private void applyEatOrDrinkTransformation(MatrixStack matrices, float tickDelta, Arm arm, ItemStack stack) {
+		float f = (float)this.client.player.getItemUseTimeLeft() - tickDelta + 1.0F;
+		float g = f / (float)stack.getMaxUseTime();
+		if (g < 0.8F) {
+			float h = MathHelper.abs(MathHelper.cos(f / 4.0F * (float) Math.PI) * 0.1F);
+			matrices.translate(0.0, (double)h, 0.0);
 		}
 
-		float j = 1.0F - (float)Math.pow((double)h, 27.0);
-		int k = arm == Arm.field_6183 ? 1 : -1;
-		matrixStack.translate((double)(j * 0.6F * (float)k), (double)(j * -0.5F), (double)(j * 0.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)k * j * 90.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(j * 10.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)k * j * 30.0F));
+		float i = 1.0F - (float)Math.pow((double)g, 27.0);
+		int j = arm == Arm.RIGHT ? 1 : -1;
+		matrices.translate((double)(i * 0.6F * (float)j), (double)(i * -0.5F), (double)(i * 0.0F));
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)j * i * 90.0F));
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(i * 10.0F));
+		matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)j * i * 30.0F));
 	}
 
-	private void applySwingOffset(MatrixStack matrixStack, Arm arm, float f) {
-		int i = arm == Arm.field_6183 ? 1 : -1;
-		float g = MathHelper.sin(f * f * (float) Math.PI);
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)i * (45.0F + g * -20.0F)));
-		float h = MathHelper.sin(MathHelper.sqrt(f) * (float) Math.PI);
-		matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)i * h * -20.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(h * -80.0F));
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)i * -45.0F));
+	private void applySwingOffset(MatrixStack matrices, Arm arm, float swingProgress) {
+		int i = arm == Arm.RIGHT ? 1 : -1;
+		float f = MathHelper.sin(swingProgress * swingProgress * (float) Math.PI);
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)i * (45.0F + f * -20.0F)));
+		float g = MathHelper.sin(MathHelper.sqrt(swingProgress) * (float) Math.PI);
+		matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)i * g * -20.0F));
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(g * -80.0F));
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)i * -45.0F));
 	}
 
-	private void applyEquipOffset(MatrixStack matrixStack, Arm arm, float f) {
-		int i = arm == Arm.field_6183 ? 1 : -1;
-		matrixStack.translate((double)((float)i * 0.56F), (double)(-0.52F + f * -0.6F), -0.72F);
+	private void applyEquipOffset(MatrixStack matrices, Arm arm, float equipProgress) {
+		int i = arm == Arm.RIGHT ? 1 : -1;
+		matrices.translate((double)((float)i * 0.56F), (double)(-0.52F + equipProgress * -0.6F), -0.72F);
 	}
 
-	public void renderItem(float f, MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, ClientPlayerEntity clientPlayerEntity, int i) {
-		float g = clientPlayerEntity.getHandSwingProgress(f);
-		Hand hand = (Hand)MoreObjects.firstNonNull(clientPlayerEntity.preferredHand, Hand.field_5808);
-		float h = MathHelper.lerp(f, clientPlayerEntity.prevPitch, clientPlayerEntity.pitch);
+	public void renderItem(float tickDelta, MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers, ClientPlayerEntity player, int light) {
+		float f = player.getHandSwingProgress(tickDelta);
+		Hand hand = (Hand)MoreObjects.firstNonNull(player.preferredHand, Hand.MAIN_HAND);
+		float g = MathHelper.lerp(tickDelta, player.prevPitch, player.pitch);
 		boolean bl = true;
 		boolean bl2 = true;
-		if (clientPlayerEntity.isUsingItem()) {
-			ItemStack itemStack = clientPlayerEntity.getActiveItem();
-			if (itemStack.getItem() == Items.field_8102 || itemStack.getItem() == Items.field_8399) {
-				bl = clientPlayerEntity.getActiveHand() == Hand.field_5808;
+		if (player.isUsingItem()) {
+			ItemStack itemStack = player.getActiveItem();
+			if (itemStack.getItem() == Items.BOW || itemStack.getItem() == Items.CROSSBOW) {
+				bl = player.getActiveHand() == Hand.MAIN_HAND;
 				bl2 = !bl;
 			}
 
-			Hand hand2 = clientPlayerEntity.getActiveHand();
-			if (hand2 == Hand.field_5808) {
-				ItemStack itemStack2 = clientPlayerEntity.getOffHandStack();
-				if (itemStack2.getItem() == Items.field_8399 && CrossbowItem.isCharged(itemStack2)) {
+			Hand hand2 = player.getActiveHand();
+			if (hand2 == Hand.MAIN_HAND) {
+				ItemStack itemStack2 = player.getOffHandStack();
+				if (itemStack2.getItem() == Items.CROSSBOW && CrossbowItem.isCharged(itemStack2)) {
 					bl2 = false;
 				}
 			}
 		} else {
-			ItemStack itemStack3 = clientPlayerEntity.getMainHandStack();
-			ItemStack itemStack4 = clientPlayerEntity.getOffHandStack();
-			if (itemStack3.getItem() == Items.field_8399 && CrossbowItem.isCharged(itemStack3)) {
+			ItemStack itemStack3 = player.getMainHandStack();
+			ItemStack itemStack4 = player.getOffHandStack();
+			if (itemStack3.getItem() == Items.CROSSBOW && CrossbowItem.isCharged(itemStack3)) {
 				bl2 = !bl;
 			}
 
-			if (itemStack4.getItem() == Items.field_8399 && CrossbowItem.isCharged(itemStack4)) {
+			if (itemStack4.getItem() == Items.CROSSBOW && CrossbowItem.isCharged(itemStack4)) {
 				bl = !itemStack3.isEmpty();
 				bl2 = !bl;
 			}
 		}
 
-		float j = MathHelper.lerp(f, clientPlayerEntity.lastRenderPitch, clientPlayerEntity.renderPitch);
-		float k = MathHelper.lerp(f, clientPlayerEntity.lastRenderYaw, clientPlayerEntity.renderYaw);
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion((clientPlayerEntity.getPitch(f) - j) * 0.1F));
-		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((clientPlayerEntity.getYaw(f) - k) * 0.1F));
+		float h = MathHelper.lerp(tickDelta, player.lastRenderPitch, player.renderPitch);
+		float i = MathHelper.lerp(tickDelta, player.lastRenderYaw, player.renderYaw);
+		matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion((player.getPitch(tickDelta) - h) * 0.1F));
+		matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((player.getYaw(tickDelta) - i) * 0.1F));
 		if (bl) {
-			float l = hand == Hand.field_5808 ? g : 0.0F;
-			float m = 1.0F - MathHelper.lerp(f, this.prevEquipProgressMainHand, this.equipProgressMainHand);
-			this.renderFirstPersonItem(clientPlayerEntity, f, h, Hand.field_5808, l, this.mainHand, m, matrixStack, immediate, i);
+			float j = hand == Hand.MAIN_HAND ? f : 0.0F;
+			float k = 1.0F - MathHelper.lerp(tickDelta, this.prevEquipProgressMainHand, this.equipProgressMainHand);
+			this.renderFirstPersonItem(player, tickDelta, g, Hand.MAIN_HAND, j, this.mainHand, k, matrices, vertexConsumers, light);
 		}
 
 		if (bl2) {
-			float n = hand == Hand.field_5810 ? g : 0.0F;
-			float o = 1.0F - MathHelper.lerp(f, this.prevEquipProgressOffHand, this.equipProgressOffHand);
-			this.renderFirstPersonItem(clientPlayerEntity, f, h, Hand.field_5810, n, this.offHand, o, matrixStack, immediate, i);
+			float l = hand == Hand.OFF_HAND ? f : 0.0F;
+			float m = 1.0F - MathHelper.lerp(tickDelta, this.prevEquipProgressOffHand, this.equipProgressOffHand);
+			this.renderFirstPersonItem(player, tickDelta, g, Hand.OFF_HAND, l, this.offHand, m, matrices, vertexConsumers, light);
 		}
 
-		immediate.draw();
+		vertexConsumers.draw();
 	}
 
 	private void renderFirstPersonItem(
-		AbstractClientPlayerEntity abstractClientPlayerEntity,
-		float f,
-		float g,
+		AbstractClientPlayerEntity player,
+		float tickDelta,
+		float pitch,
 		Hand hand,
-		float h,
-		ItemStack itemStack,
-		float i,
-		MatrixStack matrixStack,
-		VertexConsumerProvider vertexConsumerProvider,
-		int j
+		float swingProgress,
+		ItemStack item,
+		float equipProgress,
+		MatrixStack matrices,
+		VertexConsumerProvider vertexConsumers,
+		int light
 	) {
-		boolean bl = hand == Hand.field_5808;
-		Arm arm = bl ? abstractClientPlayerEntity.getMainArm() : abstractClientPlayerEntity.getMainArm().getOpposite();
-		matrixStack.push();
-		if (itemStack.isEmpty()) {
-			if (bl && !abstractClientPlayerEntity.isInvisible()) {
-				this.renderArmHoldingItem(matrixStack, vertexConsumerProvider, j, i, h, arm);
+		boolean bl = hand == Hand.MAIN_HAND;
+		Arm arm = bl ? player.getMainArm() : player.getMainArm().getOpposite();
+		matrices.push();
+		if (item.isEmpty()) {
+			if (bl && !player.isInvisible()) {
+				this.renderArmHoldingItem(matrices, vertexConsumers, light, equipProgress, swingProgress, arm);
 			}
-		} else if (itemStack.getItem() == Items.field_8204) {
+		} else if (item.getItem() == Items.FILLED_MAP) {
 			if (bl && this.offHand.isEmpty()) {
-				this.renderMapInBothHands(matrixStack, vertexConsumerProvider, j, g, i, h);
+				this.renderMapInBothHands(matrices, vertexConsumers, light, pitch, equipProgress, swingProgress);
 			} else {
-				this.renderMapInOneHand(matrixStack, vertexConsumerProvider, j, i, arm, h, itemStack);
+				this.renderMapInOneHand(matrices, vertexConsumers, light, equipProgress, arm, swingProgress, item);
 			}
-		} else if (itemStack.getItem() == Items.field_8399) {
-			boolean bl2 = CrossbowItem.isCharged(itemStack);
-			boolean bl3 = arm == Arm.field_6183;
-			int k = bl3 ? 1 : -1;
-			if (abstractClientPlayerEntity.isUsingItem() && abstractClientPlayerEntity.getItemUseTimeLeft() > 0 && abstractClientPlayerEntity.getActiveHand() == hand) {
-				this.applyEquipOffset(matrixStack, arm, i);
-				matrixStack.translate((double)((float)k * -0.4785682F), -0.094387F, 0.05731531F);
-				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-11.935F));
-				matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)k * 65.3F));
-				matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)k * -9.785F));
-				float l = (float)itemStack.getMaxUseTime() - ((float)this.client.player.getItemUseTimeLeft() - f + 1.0F);
-				float m = l / (float)CrossbowItem.getPullTime(itemStack);
-				if (m > 1.0F) {
-					m = 1.0F;
+		} else if (item.getItem() == Items.CROSSBOW) {
+			boolean bl2 = CrossbowItem.isCharged(item);
+			boolean bl3 = arm == Arm.RIGHT;
+			int i = bl3 ? 1 : -1;
+			if (player.isUsingItem() && player.getItemUseTimeLeft() > 0 && player.getActiveHand() == hand) {
+				this.applyEquipOffset(matrices, arm, equipProgress);
+				matrices.translate((double)((float)i * -0.4785682F), -0.094387F, 0.05731531F);
+				matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-11.935F));
+				matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)i * 65.3F));
+				matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)i * -9.785F));
+				float f = (float)item.getMaxUseTime() - ((float)this.client.player.getItemUseTimeLeft() - tickDelta + 1.0F);
+				float g = f / (float)CrossbowItem.getPullTime(item);
+				if (g > 1.0F) {
+					g = 1.0F;
 				}
 
-				if (m > 0.1F) {
-					float n = MathHelper.sin((l - 0.1F) * 1.3F);
-					float o = m - 0.1F;
-					float p = n * o;
-					matrixStack.translate((double)(p * 0.0F), (double)(p * 0.004F), (double)(p * 0.0F));
+				if (g > 0.1F) {
+					float h = MathHelper.sin((f - 0.1F) * 1.3F);
+					float j = g - 0.1F;
+					float k = h * j;
+					matrices.translate((double)(k * 0.0F), (double)(k * 0.004F), (double)(k * 0.0F));
 				}
 
-				matrixStack.translate((double)(m * 0.0F), (double)(m * 0.0F), (double)(m * 0.04F));
-				matrixStack.scale(1.0F, 1.0F, 1.0F + m * 0.2F);
-				matrixStack.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion((float)k * 45.0F));
+				matrices.translate((double)(g * 0.0F), (double)(g * 0.0F), (double)(g * 0.04F));
+				matrices.scale(1.0F, 1.0F, 1.0F + g * 0.2F);
+				matrices.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion((float)i * 45.0F));
 			} else {
-				float q = -0.4F * MathHelper.sin(MathHelper.sqrt(h) * (float) Math.PI);
-				float r = 0.2F * MathHelper.sin(MathHelper.sqrt(h) * (float) (Math.PI * 2));
-				float s = -0.2F * MathHelper.sin(h * (float) Math.PI);
-				matrixStack.translate((double)((float)k * q), (double)r, (double)s);
-				this.applyEquipOffset(matrixStack, arm, i);
-				this.applySwingOffset(matrixStack, arm, h);
-				if (bl2 && h < 0.001F) {
-					matrixStack.translate((double)((float)k * -0.641864F), 0.0, 0.0);
-					matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)k * 10.0F));
+				float l = -0.4F * MathHelper.sin(MathHelper.sqrt(swingProgress) * (float) Math.PI);
+				float m = 0.2F * MathHelper.sin(MathHelper.sqrt(swingProgress) * (float) (Math.PI * 2));
+				float n = -0.2F * MathHelper.sin(swingProgress * (float) Math.PI);
+				matrices.translate((double)((float)i * l), (double)m, (double)n);
+				this.applyEquipOffset(matrices, arm, equipProgress);
+				this.applySwingOffset(matrices, arm, swingProgress);
+				if (bl2 && swingProgress < 0.001F) {
+					matrices.translate((double)((float)i * -0.641864F), 0.0, 0.0);
+					matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)i * 10.0F));
 				}
 			}
 
 			this.renderItem(
-				abstractClientPlayerEntity,
-				itemStack,
-				bl3 ? ModelTransformation.Mode.field_4322 : ModelTransformation.Mode.field_4321,
+				player,
+				item,
+				bl3 ? ModelTransformation.Mode.FIRST_PERSON_RIGHT_HAND : ModelTransformation.Mode.FIRST_PERSON_LEFT_HAND,
 				!bl3,
-				matrixStack,
-				vertexConsumerProvider,
-				j
+				matrices,
+				vertexConsumers,
+				light
 			);
 		} else {
-			boolean bl4 = arm == Arm.field_6183;
-			if (abstractClientPlayerEntity.isUsingItem() && abstractClientPlayerEntity.getItemUseTimeLeft() > 0 && abstractClientPlayerEntity.getActiveHand() == hand) {
-				int t = bl4 ? 1 : -1;
-				switch (itemStack.getUseAction()) {
-					case field_8952:
-						this.applyEquipOffset(matrixStack, arm, i);
+			boolean bl4 = arm == Arm.RIGHT;
+			if (player.isUsingItem() && player.getItemUseTimeLeft() > 0 && player.getActiveHand() == hand) {
+				int o = bl4 ? 1 : -1;
+				switch (item.getUseAction()) {
+					case NONE:
+						this.applyEquipOffset(matrices, arm, equipProgress);
 						break;
-					case field_8950:
-					case field_8946:
-						this.applyEatOrDrinkTransformation(matrixStack, f, arm, itemStack);
-						this.applyEquipOffset(matrixStack, arm, i);
+					case EAT:
+					case DRINK:
+						this.applyEatOrDrinkTransformation(matrices, tickDelta, arm, item);
+						this.applyEquipOffset(matrices, arm, equipProgress);
 						break;
-					case field_8949:
-						this.applyEquipOffset(matrixStack, arm, i);
+					case BLOCK:
+						this.applyEquipOffset(matrices, arm, equipProgress);
 						break;
-					case field_8953:
-						this.applyEquipOffset(matrixStack, arm, i);
-						matrixStack.translate((double)((float)t * -0.2785682F), 0.18344387F, 0.15731531F);
-						matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-13.935F));
-						matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)t * 35.3F));
-						matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)t * -9.785F));
-						float u = (float)itemStack.getMaxUseTime() - ((float)this.client.player.getItemUseTimeLeft() - f + 1.0F);
-						float v = u / 20.0F;
-						v = (v * v + v * 2.0F) / 3.0F;
+					case BOW:
+						this.applyEquipOffset(matrices, arm, equipProgress);
+						matrices.translate((double)((float)o * -0.2785682F), 0.18344387F, 0.15731531F);
+						matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-13.935F));
+						matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)o * 35.3F));
+						matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)o * -9.785F));
+						float p = (float)item.getMaxUseTime() - ((float)this.client.player.getItemUseTimeLeft() - tickDelta + 1.0F);
+						float q = p / 20.0F;
+						q = (q * q + q * 2.0F) / 3.0F;
+						if (q > 1.0F) {
+							q = 1.0F;
+						}
+
+						if (q > 0.1F) {
+							float r = MathHelper.sin((p - 0.1F) * 1.3F);
+							float s = q - 0.1F;
+							float t = r * s;
+							matrices.translate((double)(t * 0.0F), (double)(t * 0.004F), (double)(t * 0.0F));
+						}
+
+						matrices.translate((double)(q * 0.0F), (double)(q * 0.0F), (double)(q * 0.04F));
+						matrices.scale(1.0F, 1.0F, 1.0F + q * 0.2F);
+						matrices.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion((float)o * 45.0F));
+						break;
+					case SPEAR:
+						this.applyEquipOffset(matrices, arm, equipProgress);
+						matrices.translate((double)((float)o * -0.5F), 0.7F, 0.1F);
+						matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-55.0F));
+						matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)o * 35.3F));
+						matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)o * -9.785F));
+						float u = (float)item.getMaxUseTime() - ((float)this.client.player.getItemUseTimeLeft() - tickDelta + 1.0F);
+						float v = u / 10.0F;
 						if (v > 1.0F) {
 							v = 1.0F;
 						}
@@ -364,64 +390,41 @@ public class HeldItemRenderer {
 							float w = MathHelper.sin((u - 0.1F) * 1.3F);
 							float x = v - 0.1F;
 							float y = w * x;
-							matrixStack.translate((double)(y * 0.0F), (double)(y * 0.004F), (double)(y * 0.0F));
+							matrices.translate((double)(y * 0.0F), (double)(y * 0.004F), (double)(y * 0.0F));
 						}
 
-						matrixStack.translate((double)(v * 0.0F), (double)(v * 0.0F), (double)(v * 0.04F));
-						matrixStack.scale(1.0F, 1.0F, 1.0F + v * 0.2F);
-						matrixStack.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion((float)t * 45.0F));
-						break;
-					case field_8951:
-						this.applyEquipOffset(matrixStack, arm, i);
-						matrixStack.translate((double)((float)t * -0.5F), 0.7F, 0.1F);
-						matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-55.0F));
-						matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)t * 35.3F));
-						matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)t * -9.785F));
-						float z = (float)itemStack.getMaxUseTime() - ((float)this.client.player.getItemUseTimeLeft() - f + 1.0F);
-						float aa = z / 10.0F;
-						if (aa > 1.0F) {
-							aa = 1.0F;
-						}
-
-						if (aa > 0.1F) {
-							float ab = MathHelper.sin((z - 0.1F) * 1.3F);
-							float ac = aa - 0.1F;
-							float ad = ab * ac;
-							matrixStack.translate((double)(ad * 0.0F), (double)(ad * 0.004F), (double)(ad * 0.0F));
-						}
-
-						matrixStack.translate(0.0, 0.0, (double)(aa * 0.2F));
-						matrixStack.scale(1.0F, 1.0F, 1.0F + aa * 0.2F);
-						matrixStack.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion((float)t * 45.0F));
+						matrices.translate(0.0, 0.0, (double)(v * 0.2F));
+						matrices.scale(1.0F, 1.0F, 1.0F + v * 0.2F);
+						matrices.multiply(Vector3f.NEGATIVE_Y.getDegreesQuaternion((float)o * 45.0F));
 				}
-			} else if (abstractClientPlayerEntity.isUsingRiptide()) {
-				this.applyEquipOffset(matrixStack, arm, i);
-				int ae = bl4 ? 1 : -1;
-				matrixStack.translate((double)((float)ae * -0.4F), 0.8F, 0.3F);
-				matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)ae * 65.0F));
-				matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)ae * -85.0F));
+			} else if (player.isUsingRiptide()) {
+				this.applyEquipOffset(matrices, arm, equipProgress);
+				int z = bl4 ? 1 : -1;
+				matrices.translate((double)((float)z * -0.4F), 0.8F, 0.3F);
+				matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion((float)z * 65.0F));
+				matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion((float)z * -85.0F));
 			} else {
-				float af = -0.4F * MathHelper.sin(MathHelper.sqrt(h) * (float) Math.PI);
-				float ag = 0.2F * MathHelper.sin(MathHelper.sqrt(h) * (float) (Math.PI * 2));
-				float ah = -0.2F * MathHelper.sin(h * (float) Math.PI);
-				int ai = bl4 ? 1 : -1;
-				matrixStack.translate((double)((float)ai * af), (double)ag, (double)ah);
-				this.applyEquipOffset(matrixStack, arm, i);
-				this.applySwingOffset(matrixStack, arm, h);
+				float aa = -0.4F * MathHelper.sin(MathHelper.sqrt(swingProgress) * (float) Math.PI);
+				float ab = 0.2F * MathHelper.sin(MathHelper.sqrt(swingProgress) * (float) (Math.PI * 2));
+				float ac = -0.2F * MathHelper.sin(swingProgress * (float) Math.PI);
+				int ad = bl4 ? 1 : -1;
+				matrices.translate((double)((float)ad * aa), (double)ab, (double)ac);
+				this.applyEquipOffset(matrices, arm, equipProgress);
+				this.applySwingOffset(matrices, arm, swingProgress);
 			}
 
 			this.renderItem(
-				abstractClientPlayerEntity,
-				itemStack,
-				bl4 ? ModelTransformation.Mode.field_4322 : ModelTransformation.Mode.field_4321,
+				player,
+				item,
+				bl4 ? ModelTransformation.Mode.FIRST_PERSON_RIGHT_HAND : ModelTransformation.Mode.FIRST_PERSON_LEFT_HAND,
 				!bl4,
-				matrixStack,
-				vertexConsumerProvider,
-				j
+				matrices,
+				vertexConsumers,
+				light
 			);
 		}
 
-		matrixStack.pop();
+		matrices.pop();
 	}
 
 	public void updateHeldItems() {
@@ -430,15 +433,23 @@ public class HeldItemRenderer {
 		ClientPlayerEntity clientPlayerEntity = this.client.player;
 		ItemStack itemStack = clientPlayerEntity.getMainHandStack();
 		ItemStack itemStack2 = clientPlayerEntity.getOffHandStack();
+		if (ItemStack.areEqual(this.mainHand, itemStack)) {
+			this.mainHand = itemStack;
+		}
+
+		if (ItemStack.areEqual(this.offHand, itemStack2)) {
+			this.offHand = itemStack2;
+		}
+
 		if (clientPlayerEntity.isRiding()) {
 			this.equipProgressMainHand = MathHelper.clamp(this.equipProgressMainHand - 0.4F, 0.0F, 1.0F);
 			this.equipProgressOffHand = MathHelper.clamp(this.equipProgressOffHand - 0.4F, 0.0F, 1.0F);
 		} else {
 			float f = clientPlayerEntity.getAttackCooldownProgress(1.0F);
 			this.equipProgressMainHand = this.equipProgressMainHand
-				+ MathHelper.clamp((Objects.equals(this.mainHand, itemStack) ? f * f * f : 0.0F) - this.equipProgressMainHand, -0.4F, 0.4F);
+				+ MathHelper.clamp((this.mainHand == itemStack ? f * f * f : 0.0F) - this.equipProgressMainHand, -0.4F, 0.4F);
 			this.equipProgressOffHand = this.equipProgressOffHand
-				+ MathHelper.clamp((float)(Objects.equals(this.offHand, itemStack2) ? 1 : 0) - this.equipProgressOffHand, -0.4F, 0.4F);
+				+ MathHelper.clamp((float)(this.offHand == itemStack2 ? 1 : 0) - this.equipProgressOffHand, -0.4F, 0.4F);
 		}
 
 		if (this.equipProgressMainHand < 0.1F) {
@@ -451,7 +462,7 @@ public class HeldItemRenderer {
 	}
 
 	public void resetEquipProgress(Hand hand) {
-		if (hand == Hand.field_5808) {
+		if (hand == Hand.MAIN_HAND) {
 			this.equipProgressMainHand = 0.0F;
 		} else {
 			this.equipProgressOffHand = 0.0F;

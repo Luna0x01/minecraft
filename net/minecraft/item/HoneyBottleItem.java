@@ -1,6 +1,6 @@
 package net.minecraft.item;
 
-import net.minecraft.advancement.criterion.Criterions;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
@@ -19,56 +19,55 @@ public class HoneyBottleItem extends Item {
 	}
 
 	@Override
-	public ItemStack finishUsing(ItemStack itemStack, World world, LivingEntity livingEntity) {
-		super.finishUsing(itemStack, world, livingEntity);
-		if (livingEntity instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)livingEntity;
-			Criterions.CONSUME_ITEM.trigger(serverPlayerEntity, itemStack);
-			serverPlayerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+	public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
+		super.finishUsing(stack, world, user);
+		if (user instanceof ServerPlayerEntity) {
+			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)user;
+			Criteria.CONSUME_ITEM.trigger(serverPlayerEntity, stack);
+			serverPlayerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
 		}
 
 		if (!world.isClient) {
-			livingEntity.removeStatusEffect(StatusEffects.field_5899);
+			user.removeStatusEffect(StatusEffects.POISON);
 		}
 
-		if (itemStack.isEmpty()) {
-			return new ItemStack(Items.field_8469);
+		if (stack.isEmpty()) {
+			return new ItemStack(Items.GLASS_BOTTLE);
 		} else {
-			if (livingEntity instanceof PlayerEntity && !((PlayerEntity)livingEntity).abilities.creativeMode) {
-				ItemStack itemStack2 = new ItemStack(Items.field_8469);
-				PlayerEntity playerEntity = (PlayerEntity)livingEntity;
-				if (!playerEntity.inventory.insertStack(itemStack2)) {
-					playerEntity.dropItem(itemStack2, false);
+			if (user instanceof PlayerEntity && !((PlayerEntity)user).abilities.creativeMode) {
+				ItemStack itemStack = new ItemStack(Items.GLASS_BOTTLE);
+				PlayerEntity playerEntity = (PlayerEntity)user;
+				if (!playerEntity.inventory.insertStack(itemStack)) {
+					playerEntity.dropItem(itemStack, false);
 				}
 			}
 
-			return itemStack;
+			return stack;
 		}
 	}
 
 	@Override
-	public int getMaxUseTime(ItemStack itemStack) {
+	public int getMaxUseTime(ItemStack stack) {
 		return 40;
 	}
 
 	@Override
-	public UseAction getUseAction(ItemStack itemStack) {
-		return UseAction.field_8946;
+	public UseAction getUseAction(ItemStack stack) {
+		return UseAction.DRINK;
 	}
 
 	@Override
 	public SoundEvent getDrinkSound() {
-		return SoundEvents.field_20615;
+		return SoundEvents.ITEM_HONEY_BOTTLE_DRINK;
 	}
 
 	@Override
 	public SoundEvent getEatSound() {
-		return SoundEvents.field_20615;
+		return SoundEvents.ITEM_HONEY_BOTTLE_DRINK;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-		playerEntity.setCurrentHand(hand);
-		return TypedActionResult.success(playerEntity.getStackInHand(hand));
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+		return ItemUsage.consumeHeldItem(world, user, hand);
 	}
 }

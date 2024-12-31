@@ -6,10 +6,11 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -26,8 +27,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class GhastEntity extends FlyingEntity implements Monster {
 	private static final TrackedData<Boolean> SHOOTING = DataTracker.registerData(GhastEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
@@ -52,8 +53,8 @@ public class GhastEntity extends FlyingEntity implements Monster {
 		return this.dataTracker.get(SHOOTING);
 	}
 
-	public void setShooting(boolean bl) {
-		this.dataTracker.set(SHOOTING, bl);
+	public void setShooting(boolean shooting) {
+		this.dataTracker.set(SHOOTING, shooting);
 	}
 
 	public int getFireballStrength() {
@@ -61,19 +62,19 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	}
 
 	@Override
-	protected boolean method_23734() {
+	protected boolean isDisallowedInPeaceful() {
 		return true;
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
-		} else if (damageSource.getSource() instanceof FireballEntity && damageSource.getAttacker() instanceof PlayerEntity) {
-			super.damage(damageSource, 1000.0F);
+		} else if (source.getSource() instanceof FireballEntity && source.getAttacker() instanceof PlayerEntity) {
+			super.damage(source, 1000.0F);
 			return true;
 		} else {
-			return super.damage(damageSource, f);
+			return super.damage(source, amount);
 		}
 	}
 
@@ -83,40 +84,37 @@ public class GhastEntity extends FlyingEntity implements Monster {
 		this.dataTracker.startTracking(SHOOTING, false);
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(10.0);
-		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(100.0);
+	public static DefaultAttributeContainer.Builder createGhastAttributes() {
+		return MobEntity.createMobAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 10.0).add(EntityAttributes.GENERIC_FOLLOW_RANGE, 100.0);
 	}
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return SoundCategory.field_15251;
+		return SoundCategory.HOSTILE;
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_14566;
+		return SoundEvents.ENTITY_GHAST_AMBIENT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_15054;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_GHAST_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_14648;
+		return SoundEvents.ENTITY_GHAST_DEATH;
 	}
 
 	@Override
 	protected float getSoundVolume() {
-		return 10.0F;
+		return 5.0F;
 	}
 
-	public static boolean canSpawn(EntityType<GhastEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		return iWorld.getDifficulty() != Difficulty.field_5801 && random.nextInt(20) == 0 && canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
+	public static boolean canSpawn(EntityType<GhastEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
+		return world.getDifficulty() != Difficulty.PEACEFUL && random.nextInt(20) == 0 && canMobSpawn(type, world, spawnReason, pos, random);
 	}
 
 	@Override
@@ -125,30 +123,30 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("ExplosionPower", this.fireballStrength);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("ExplosionPower", this.fireballStrength);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.contains("ExplosionPower", 99)) {
-			this.fireballStrength = compoundTag.getInt("ExplosionPower");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("ExplosionPower", 99)) {
+			this.fireballStrength = tag.getInt("ExplosionPower");
 		}
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
 		return 2.6F;
 	}
 
 	static class FlyRandomlyGoal extends Goal {
 		private final GhastEntity ghast;
 
-		public FlyRandomlyGoal(GhastEntity ghastEntity) {
-			this.ghast = ghastEntity;
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+		public FlyRandomlyGoal(GhastEntity ghast) {
+			this.ghast = ghast;
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -182,36 +180,36 @@ public class GhastEntity extends FlyingEntity implements Monster {
 
 	static class GhastMoveControl extends MoveControl {
 		private final GhastEntity ghast;
-		private int field_7276;
+		private int collisionCheckCooldown;
 
-		public GhastMoveControl(GhastEntity ghastEntity) {
-			super(ghastEntity);
-			this.ghast = ghastEntity;
+		public GhastMoveControl(GhastEntity ghast) {
+			super(ghast);
+			this.ghast = ghast;
 		}
 
 		@Override
 		public void tick() {
-			if (this.state == MoveControl.State.field_6378) {
-				if (this.field_7276-- <= 0) {
-					this.field_7276 = this.field_7276 + this.ghast.getRandom().nextInt(5) + 2;
+			if (this.state == MoveControl.State.MOVE_TO) {
+				if (this.collisionCheckCooldown-- <= 0) {
+					this.collisionCheckCooldown = this.collisionCheckCooldown + this.ghast.getRandom().nextInt(5) + 2;
 					Vec3d vec3d = new Vec3d(this.targetX - this.ghast.getX(), this.targetY - this.ghast.getY(), this.targetZ - this.ghast.getZ());
 					double d = vec3d.length();
 					vec3d = vec3d.normalize();
-					if (this.method_7051(vec3d, MathHelper.ceil(d))) {
+					if (this.willCollide(vec3d, MathHelper.ceil(d))) {
 						this.ghast.setVelocity(this.ghast.getVelocity().add(vec3d.multiply(0.1)));
 					} else {
-						this.state = MoveControl.State.field_6377;
+						this.state = MoveControl.State.WAIT;
 					}
 				}
 			}
 		}
 
-		private boolean method_7051(Vec3d vec3d, int i) {
+		private boolean willCollide(Vec3d direction, int steps) {
 			Box box = this.ghast.getBoundingBox();
 
-			for (int j = 1; j < i; j++) {
-				box = box.offset(vec3d);
-				if (!this.ghast.world.doesNotCollide(this.ghast, box)) {
+			for (int i = 1; i < steps; i++) {
+				box = box.offset(direction);
+				if (!this.ghast.world.isSpaceEmpty(this.ghast, box)) {
 					return false;
 				}
 			}
@@ -223,9 +221,9 @@ public class GhastEntity extends FlyingEntity implements Monster {
 	static class LookAtTargetGoal extends Goal {
 		private final GhastEntity ghast;
 
-		public LookAtTargetGoal(GhastEntity ghastEntity) {
-			this.ghast = ghastEntity;
-			this.setControls(EnumSet.of(Goal.Control.field_18406));
+		public LookAtTargetGoal(GhastEntity ghast) {
+			this.ghast = ghast;
+			this.setControls(EnumSet.of(Goal.Control.LOOK));
 		}
 
 		@Override
@@ -256,8 +254,8 @@ public class GhastEntity extends FlyingEntity implements Monster {
 		private final GhastEntity ghast;
 		public int cooldown;
 
-		public ShootFireballGoal(GhastEntity ghastEntity) {
-			this.ghast = ghastEntity;
+		public ShootFireballGoal(GhastEntity ghast) {
+			this.ghast = ghast;
 		}
 
 		@Override
@@ -282,8 +280,8 @@ public class GhastEntity extends FlyingEntity implements Monster {
 			if (livingEntity.squaredDistanceTo(this.ghast) < 4096.0 && this.ghast.canSee(livingEntity)) {
 				World world = this.ghast.world;
 				this.cooldown++;
-				if (this.cooldown == 10) {
-					world.playLevelEvent(null, 1015, new BlockPos(this.ghast), 0);
+				if (this.cooldown == 10 && !this.ghast.isSilent()) {
+					world.syncWorldEvent(null, 1015, this.ghast.getBlockPos(), 0);
 				}
 
 				if (this.cooldown == 20) {
@@ -292,7 +290,10 @@ public class GhastEntity extends FlyingEntity implements Monster {
 					double f = livingEntity.getX() - (this.ghast.getX() + vec3d.x * 4.0);
 					double g = livingEntity.getBodyY(0.5) - (0.5 + this.ghast.getBodyY(0.5));
 					double h = livingEntity.getZ() - (this.ghast.getZ() + vec3d.z * 4.0);
-					world.playLevelEvent(null, 1016, new BlockPos(this.ghast), 0);
+					if (!this.ghast.isSilent()) {
+						world.syncWorldEvent(null, 1016, this.ghast.getBlockPos(), 0);
+					}
+
 					FireballEntity fireballEntity = new FireballEntity(world, this.ghast, f, g, h);
 					fireballEntity.explosionPower = this.ghast.getFireballStrength();
 					fireballEntity.updatePosition(this.ghast.getX() + vec3d.x * 4.0, this.ghast.getBodyY(0.5) + 0.5, fireballEntity.getZ() + vec3d.z * 4.0);

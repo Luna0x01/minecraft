@@ -3,7 +3,6 @@ package net.minecraft.block;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
@@ -14,27 +13,27 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class WallBannerBlock extends AbstractBannerBlock {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 	private static final Map<Direction, VoxelShape> FACING_TO_SHAPE = Maps.newEnumMap(
 		ImmutableMap.of(
-			Direction.field_11043,
+			Direction.NORTH,
 			Block.createCuboidShape(0.0, 0.0, 14.0, 16.0, 12.5, 16.0),
-			Direction.field_11035,
+			Direction.SOUTH,
 			Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 12.5, 2.0),
-			Direction.field_11039,
+			Direction.WEST,
 			Block.createCuboidShape(14.0, 0.0, 0.0, 16.0, 12.5, 16.0),
-			Direction.field_11034,
+			Direction.EAST,
 			Block.createCuboidShape(0.0, 0.0, 0.0, 2.0, 12.5, 16.0)
 		)
 	);
 
-	public WallBannerBlock(DyeColor dyeColor, Block.Settings settings) {
+	public WallBannerBlock(DyeColor dyeColor, AbstractBlock.Settings settings) {
 		super(dyeColor, settings);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
 	}
 
 	@Override
@@ -43,30 +42,28 @@ public class WallBannerBlock extends AbstractBannerBlock {
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
-		return worldView.getBlockState(blockPos.offset(((Direction)blockState.get(FACING)).getOpposite())).getMaterial().isSolid();
+	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+		return world.getBlockState(pos.offset(((Direction)state.get(FACING)).getOpposite())).getMaterial().isSolid();
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		return direction == ((Direction)blockState.get(FACING)).getOpposite() && !blockState.canPlaceAt(iWorld, blockPos)
-			? Blocks.field_10124.getDefaultState()
-			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		return direction == ((Direction)state.get(FACING)).getOpposite() && !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		return (VoxelShape)FACING_TO_SHAPE.get(blockState.get(FACING));
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return (VoxelShape)FACING_TO_SHAPE.get(state.get(FACING));
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
 		BlockState blockState = this.getDefaultState();
-		WorldView worldView = itemPlacementContext.getWorld();
-		BlockPos blockPos = itemPlacementContext.getBlockPos();
-		Direction[] directions = itemPlacementContext.getPlacementDirections();
+		WorldView worldView = ctx.getWorld();
+		BlockPos blockPos = ctx.getBlockPos();
+		Direction[] directions = ctx.getPlacementDirections();
 
 		for (Direction direction : directions) {
 			if (direction.getAxis().isHorizontal()) {
@@ -82,13 +79,13 @@ public class WallBannerBlock extends AbstractBannerBlock {
 	}
 
 	@Override
-	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
-		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
 	}
 
 	@Override
-	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
-		return blockState.rotate(blockMirror.getRotation(blockState.get(FACING)));
+	public BlockState mirror(BlockState state, BlockMirror mirror) {
+		return state.rotate(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

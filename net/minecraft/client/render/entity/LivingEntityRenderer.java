@@ -30,14 +30,14 @@ public abstract class LivingEntityRenderer<T extends LivingEntity, M extends Ent
 	protected M model;
 	protected final List<FeatureRenderer<T, M>> features = Lists.newArrayList();
 
-	public LivingEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, M entityModel, float f) {
-		super(entityRenderDispatcher);
-		this.model = entityModel;
-		this.shadowSize = f;
+	public LivingEntityRenderer(EntityRenderDispatcher dispatcher, M model, float shadowRadius) {
+		super(dispatcher);
+		this.model = model;
+		this.shadowRadius = shadowRadius;
 	}
 
-	protected final boolean addFeature(FeatureRenderer<T, M> featureRenderer) {
-		return this.features.add(featureRenderer);
+	protected final boolean addFeature(FeatureRenderer<T, M> feature) {
+		return this.features.add(feature);
 	}
 
 	@Override
@@ -75,15 +75,15 @@ public abstract class LivingEntityRenderer<T extends LivingEntity, M extends Ent
 		}
 
 		float m = MathHelper.lerp(g, livingEntity.prevPitch, livingEntity.pitch);
-		if (livingEntity.getPose() == EntityPose.field_18078) {
+		if (livingEntity.getPose() == EntityPose.SLEEPING) {
 			Direction direction = livingEntity.getSleepingDirection();
 			if (direction != null) {
-				float n = livingEntity.getEyeHeight(EntityPose.field_18076) - 0.1F;
+				float n = livingEntity.getEyeHeight(EntityPose.STANDING) - 0.1F;
 				matrixStack.translate((double)((float)(-direction.getOffsetX()) * n), 0.0, (double)((float)(-direction.getOffsetZ()) * n));
 			}
 		}
 
-		float o = this.getCustomAngle(livingEntity, g);
+		float o = this.getAnimationProgress(livingEntity, g);
 		this.setupTransforms(livingEntity, matrixStack, o, h, g);
 		matrixStack.scale(-1.0F, -1.0F, 1.0F);
 		this.scale(livingEntity, matrixStack, g);
@@ -104,12 +104,14 @@ public abstract class LivingEntityRenderer<T extends LivingEntity, M extends Ent
 
 		this.model.animateModel(livingEntity, q, p, g);
 		this.model.setAngles(livingEntity, q, p, o, k, m);
-		boolean bl = this.isFullyVisible(livingEntity);
-		boolean bl2 = !bl && !livingEntity.isInvisibleTo(MinecraftClient.getInstance().player);
-		RenderLayer renderLayer = this.method_24302(livingEntity, bl, bl2);
+		MinecraftClient minecraftClient = MinecraftClient.getInstance();
+		boolean bl = this.isVisible(livingEntity);
+		boolean bl2 = !bl && !livingEntity.isInvisibleTo(minecraftClient.player);
+		boolean bl3 = minecraftClient.hasOutline(livingEntity);
+		RenderLayer renderLayer = this.getRenderLayer(livingEntity, bl, bl2, bl3);
 		if (renderLayer != null) {
 			VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(renderLayer);
-			int r = getOverlay(livingEntity, this.getWhiteOverlayProgress(livingEntity, g));
+			int r = getOverlay(livingEntity, this.getAnimationCounter(livingEntity, g));
 			this.model.render(matrixStack, vertexConsumer, i, r, 1.0F, 1.0F, 1.0F, bl2 ? 0.15F : 1.0F);
 		}
 
@@ -124,94 +126,102 @@ public abstract class LivingEntityRenderer<T extends LivingEntity, M extends Ent
 	}
 
 	@Nullable
-	protected RenderLayer method_24302(T livingEntity, boolean bl, boolean bl2) {
-		Identifier identifier = this.getTexture(livingEntity);
-		if (bl2) {
-			return RenderLayer.getEntityTranslucent(identifier);
-		} else if (bl) {
+	protected RenderLayer getRenderLayer(T entity, boolean showBody, boolean translucent, boolean showOutline) {
+		Identifier identifier = this.getTexture(entity);
+		if (translucent) {
+			return RenderLayer.getItemEntityTranslucentCull(identifier);
+		} else if (showBody) {
 			return this.model.getLayer(identifier);
 		} else {
-			return livingEntity.isGlowing() ? RenderLayer.getOutline(identifier) : null;
+			return showOutline ? RenderLayer.getOutline(identifier) : null;
 		}
 	}
 
-	public static int getOverlay(LivingEntity livingEntity, float f) {
-		return OverlayTexture.packUv(OverlayTexture.getU(f), OverlayTexture.getV(livingEntity.hurtTime > 0 || livingEntity.deathTime > 0));
+	public static int getOverlay(LivingEntity entity, float whiteOverlayProgress) {
+		return OverlayTexture.packUv(OverlayTexture.getU(whiteOverlayProgress), OverlayTexture.getV(entity.hurtTime > 0 || entity.deathTime > 0));
 	}
 
-	protected boolean isFullyVisible(T livingEntity) {
-		return !livingEntity.isInvisible();
+	protected boolean isVisible(T entity) {
+		return !entity.isInvisible();
 	}
 
 	private static float getYaw(Direction direction) {
 		switch (direction) {
-			case field_11035:
+			case SOUTH:
 				return 90.0F;
-			case field_11039:
+			case WEST:
 				return 0.0F;
-			case field_11043:
+			case NORTH:
 				return 270.0F;
-			case field_11034:
+			case EAST:
 				return 180.0F;
 			default:
 				return 0.0F;
 		}
 	}
 
-	protected void setupTransforms(T livingEntity, MatrixStack matrixStack, float f, float g, float h) {
-		EntityPose entityPose = livingEntity.getPose();
-		if (entityPose != EntityPose.field_18078) {
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F - g));
+	protected boolean isShaking(T entity) {
+		return false;
+	}
+
+	protected void setupTransforms(T entity, MatrixStack matrices, float animationProgress, float bodyYaw, float tickDelta) {
+		if (this.isShaking(entity)) {
+			bodyYaw += (float)(Math.cos((double)entity.age * 3.25) * Math.PI * 0.4F);
 		}
 
-		if (livingEntity.deathTime > 0) {
-			float i = ((float)livingEntity.deathTime + h - 1.0F) / 20.0F * 1.6F;
-			i = MathHelper.sqrt(i);
-			if (i > 1.0F) {
-				i = 1.0F;
+		EntityPose entityPose = entity.getPose();
+		if (entityPose != EntityPose.SLEEPING) {
+			matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180.0F - bodyYaw));
+		}
+
+		if (entity.deathTime > 0) {
+			float f = ((float)entity.deathTime + tickDelta - 1.0F) / 20.0F * 1.6F;
+			f = MathHelper.sqrt(f);
+			if (f > 1.0F) {
+				f = 1.0F;
 			}
 
-			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(i * this.getLyingAngle(livingEntity)));
-		} else if (livingEntity.isUsingRiptide()) {
-			matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-90.0F - livingEntity.pitch));
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(((float)livingEntity.age + h) * -75.0F));
-		} else if (entityPose == EntityPose.field_18078) {
-			Direction direction = livingEntity.getSleepingDirection();
-			float j = direction != null ? getYaw(direction) : g;
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(j));
-			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(this.getLyingAngle(livingEntity)));
-			matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(270.0F));
-		} else if (livingEntity.hasCustomName() || livingEntity instanceof PlayerEntity) {
-			String string = Formatting.strip(livingEntity.getName().getString());
+			matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(f * this.getLyingAngle(entity)));
+		} else if (entity.isUsingRiptide()) {
+			matrices.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-90.0F - entity.pitch));
+			matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(((float)entity.age + tickDelta) * -75.0F));
+		} else if (entityPose == EntityPose.SLEEPING) {
+			Direction direction = entity.getSleepingDirection();
+			float g = direction != null ? getYaw(direction) : bodyYaw;
+			matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(g));
+			matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(this.getLyingAngle(entity)));
+			matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(270.0F));
+		} else if (entity.hasCustomName() || entity instanceof PlayerEntity) {
+			String string = Formatting.strip(entity.getName().getString());
 			if (("Dinnerbone".equals(string) || "Grumm".equals(string))
-				&& (!(livingEntity instanceof PlayerEntity) || ((PlayerEntity)livingEntity).isPartVisible(PlayerModelPart.field_7559))) {
-				matrixStack.translate(0.0, (double)(livingEntity.getHeight() + 0.1F), 0.0);
-				matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
+				&& (!(entity instanceof PlayerEntity) || ((PlayerEntity)entity).isPartVisible(PlayerModelPart.CAPE))) {
+				matrices.translate(0.0, (double)(entity.getHeight() + 0.1F), 0.0);
+				matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(180.0F));
 			}
 		}
 	}
 
-	protected float getHandSwingProgress(T livingEntity, float f) {
-		return livingEntity.getHandSwingProgress(f);
+	protected float getHandSwingProgress(T entity, float tickDelta) {
+		return entity.getHandSwingProgress(tickDelta);
 	}
 
-	protected float getCustomAngle(T livingEntity, float f) {
-		return (float)livingEntity.age + f;
+	protected float getAnimationProgress(T entity, float tickDelta) {
+		return (float)entity.age + tickDelta;
 	}
 
-	protected float getLyingAngle(T livingEntity) {
+	protected float getLyingAngle(T entity) {
 		return 90.0F;
 	}
 
-	protected float getWhiteOverlayProgress(T livingEntity, float f) {
+	protected float getAnimationCounter(T entity, float tickDelta) {
 		return 0.0F;
 	}
 
-	protected void scale(T livingEntity, MatrixStack matrixStack, float f) {
+	protected void scale(T entity, MatrixStack matrices, float amount) {
 	}
 
 	protected boolean hasLabel(T livingEntity) {
-		double d = this.renderManager.getSquaredDistanceToCamera(livingEntity);
+		double d = this.dispatcher.getSquaredDistanceToCamera(livingEntity);
 		float f = livingEntity.isSneaky() ? 32.0F : 64.0F;
 		if (d >= (double)(f * f)) {
 			return false;
@@ -225,13 +235,13 @@ public abstract class LivingEntityRenderer<T extends LivingEntity, M extends Ent
 				if (abstractTeam != null) {
 					AbstractTeam.VisibilityRule visibilityRule = abstractTeam.getNameTagVisibilityRule();
 					switch (visibilityRule) {
-						case field_1442:
+						case ALWAYS:
 							return bl;
-						case field_1443:
+						case NEVER:
 							return false;
-						case field_1444:
+						case HIDE_FOR_OTHER_TEAMS:
 							return abstractTeam2 == null ? bl : abstractTeam.isEqual(abstractTeam2) && (abstractTeam.shouldShowFriendlyInvisibles() || bl);
-						case field_1446:
+						case HIDE_FOR_OWN_TEAM:
 							return abstractTeam2 == null ? bl : !abstractTeam.isEqual(abstractTeam2) && bl;
 						default:
 							return true;

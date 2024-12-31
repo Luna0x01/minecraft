@@ -1,13 +1,15 @@
 package net.minecraft.structure.pool;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JigsawBlock;
+import net.minecraft.block.entity.JigsawBlockEntity;
+import net.minecraft.block.enums.JigsawOrientation;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructureManager;
@@ -16,90 +18,78 @@ import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
 
 public class FeaturePoolElement extends StructurePoolElement {
-	private final ConfiguredFeature<?, ?> feature;
+	public static final Codec<FeaturePoolElement> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(ConfiguredFeature.REGISTRY_CODEC.fieldOf("feature").forGetter(featurePoolElement -> featurePoolElement.feature), method_28883())
+				.apply(instance, FeaturePoolElement::new)
+	);
+	private final Supplier<ConfiguredFeature<?, ?>> feature;
 	private final CompoundTag tag;
 
-	@Deprecated
-	public FeaturePoolElement(ConfiguredFeature<?, ?> configuredFeature) {
-		this(configuredFeature, StructurePool.Projection.field_16687);
-	}
-
-	public FeaturePoolElement(ConfiguredFeature<?, ?> configuredFeature, StructurePool.Projection projection) {
+	protected FeaturePoolElement(Supplier<ConfiguredFeature<?, ?>> feature, StructurePool.Projection projection) {
 		super(projection);
-		this.feature = configuredFeature;
-		this.tag = this.method_19299();
+		this.feature = feature;
+		this.tag = this.createDefaultJigsawTag();
 	}
 
-	public <T> FeaturePoolElement(Dynamic<T> dynamic) {
-		super(dynamic);
-		this.feature = ConfiguredFeature.deserialize(dynamic.get("feature").orElseEmptyMap());
-		this.tag = this.method_19299();
-	}
-
-	public CompoundTag method_19299() {
+	private CompoundTag createDefaultJigsawTag() {
 		CompoundTag compoundTag = new CompoundTag();
-		compoundTag.putString("target_pool", "minecraft:empty");
-		compoundTag.putString("attachement_type", "minecraft:bottom");
+		compoundTag.putString("name", "minecraft:bottom");
 		compoundTag.putString("final_state", "minecraft:air");
+		compoundTag.putString("pool", "minecraft:empty");
+		compoundTag.putString("target", "minecraft:empty");
+		compoundTag.putString("joint", JigsawBlockEntity.Joint.ROLLABLE.asString());
 		return compoundTag;
 	}
 
-	public BlockPos method_16601(StructureManager structureManager, BlockRotation blockRotation) {
+	public BlockPos getStart(StructureManager structureManager, BlockRotation blockRotation) {
 		return BlockPos.ORIGIN;
 	}
 
 	@Override
-	public List<Structure.StructureBlockInfo> getStructureBlockInfos(
-		StructureManager structureManager, BlockPos blockPos, BlockRotation blockRotation, Random random
-	) {
+	public List<Structure.StructureBlockInfo> getStructureBlockInfos(StructureManager structureManager, BlockPos pos, BlockRotation rotation, Random random) {
 		List<Structure.StructureBlockInfo> list = Lists.newArrayList();
-		list.add(new Structure.StructureBlockInfo(blockPos, Blocks.field_16540.getDefaultState().with(JigsawBlock.FACING, Direction.field_11033), this.tag));
+		list.add(
+			new Structure.StructureBlockInfo(
+				pos, Blocks.JIGSAW.getDefaultState().with(JigsawBlock.ORIENTATION, JigsawOrientation.byDirections(Direction.DOWN, Direction.SOUTH)), this.tag
+			)
+		);
 		return list;
 	}
 
 	@Override
-	public BlockBox getBoundingBox(StructureManager structureManager, BlockPos blockPos, BlockRotation blockRotation) {
-		BlockPos blockPos2 = this.method_16601(structureManager, blockRotation);
-		return new BlockBox(
-			blockPos.getX(),
-			blockPos.getY(),
-			blockPos.getZ(),
-			blockPos.getX() + blockPos2.getX(),
-			blockPos.getY() + blockPos2.getY(),
-			blockPos.getZ() + blockPos2.getZ()
-		);
+	public BlockBox getBoundingBox(StructureManager structureManager, BlockPos pos, BlockRotation rotation) {
+		BlockPos blockPos = this.getStart(structureManager, rotation);
+		return new BlockBox(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + blockPos.getX(), pos.getY() + blockPos.getY(), pos.getZ() + blockPos.getZ());
 	}
 
 	@Override
 	public boolean generate(
 		StructureManager structureManager,
-		IWorld iWorld,
-		ChunkGenerator<?> chunkGenerator,
+		StructureWorldAccess structureWorldAccess,
+		StructureAccessor structureAccessor,
+		ChunkGenerator chunkGenerator,
 		BlockPos blockPos,
+		BlockPos blockPos2,
 		BlockRotation blockRotation,
 		BlockBox blockBox,
-		Random random
+		Random random,
+		boolean keepJigsaws
 	) {
-		return this.feature.generate(iWorld, (ChunkGenerator<? extends ChunkGeneratorConfig>)chunkGenerator, random, blockPos);
+		return ((ConfiguredFeature)this.feature.get()).generate(structureWorldAccess, chunkGenerator, random, blockPos);
 	}
 
 	@Override
-	public <T> Dynamic<T> method_16625(DynamicOps<T> dynamicOps) {
-		return new Dynamic(dynamicOps, dynamicOps.createMap(ImmutableMap.of(dynamicOps.createString("feature"), this.feature.serialize(dynamicOps).getValue())));
-	}
-
-	@Override
-	public StructurePoolElementType getType() {
-		return StructurePoolElementType.field_16971;
+	public StructurePoolElementType<?> getType() {
+		return StructurePoolElementType.FEATURE_POOL_ELEMENT;
 	}
 
 	public String toString() {
-		return "Feature[" + Registry.field_11138.getId(this.feature.feature) + "]";
+		return "Feature[" + Registry.FEATURE.getId(((ConfiguredFeature)this.feature.get()).getFeature()) + "]";
 	}
 }

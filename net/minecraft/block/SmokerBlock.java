@@ -3,9 +3,9 @@ package net.minecraft.block;
 import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SmokerBlockEntity;
-import net.minecraft.container.NameableContainerFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
@@ -14,35 +14,35 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class SmokerBlock extends AbstractFurnaceBlock {
-	protected SmokerBlock(Block.Settings settings) {
+	protected SmokerBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView blockView) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new SmokerBlockEntity();
 	}
 
 	@Override
-	protected void openContainer(World world, BlockPos blockPos, PlayerEntity playerEntity) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	protected void openScreen(World world, BlockPos pos, PlayerEntity player) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof SmokerBlockEntity) {
-			playerEntity.openContainer((NameableContainerFactory)blockEntity);
-			playerEntity.incrementStat(Stats.field_17273);
+			player.openHandledScreen((NamedScreenHandlerFactory)blockEntity);
+			player.incrementStat(Stats.INTERACT_WITH_SMOKER);
 		}
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		if ((Boolean)blockState.get(LIT)) {
-			double d = (double)blockPos.getX() + 0.5;
-			double e = (double)blockPos.getY();
-			double f = (double)blockPos.getZ() + 0.5;
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		if ((Boolean)state.get(LIT)) {
+			double d = (double)pos.getX() + 0.5;
+			double e = (double)pos.getY();
+			double f = (double)pos.getZ() + 0.5;
 			if (random.nextDouble() < 0.1) {
-				world.playSound(d, e, f, SoundEvents.field_17618, SoundCategory.field_15245, 1.0F, 1.0F, false);
+				world.playSound(d, e, f, SoundEvents.BLOCK_SMOKER_SMOKE, SoundCategory.BLOCKS, 1.0F, 1.0F, false);
 			}
 
-			world.addParticle(ParticleTypes.field_11251, d, e + 1.1, f, 0.0, 0.0, 0.0);
+			world.addParticle(ParticleTypes.SMOKE, d, e + 1.1, f, 0.0, 0.0, 0.0);
 		}
 	}
 }

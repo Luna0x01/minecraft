@@ -7,61 +7,61 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.ConfiguredFeature;
-import net.minecraft.world.gen.feature.DecoratedFeatureConfig;
 import net.minecraft.world.gen.feature.FlowerFeature;
 
 public class GrassBlock extends SpreadableBlock implements Fertilizable {
-	public GrassBlock(Block.Settings settings) {
+	public GrassBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public boolean isFertilizable(BlockView blockView, BlockPos blockPos, BlockState blockState, boolean bl) {
-		return blockView.getBlockState(blockPos.up()).isAir();
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
+		return world.getBlockState(pos.up()).isAir();
 	}
 
 	@Override
-	public boolean canGrow(World world, Random random, BlockPos blockPos, BlockState blockState) {
+	public boolean canGrow(World world, Random random, BlockPos pos, BlockState state) {
 		return true;
 	}
 
 	@Override
-	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
-		BlockPos blockPos2 = blockPos.up();
-		BlockState blockState2 = Blocks.field_10479.getDefaultState();
+	public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
+		BlockPos blockPos = pos.up();
+		BlockState blockState = Blocks.GRASS.getDefaultState();
 
 		label48:
 		for (int i = 0; i < 128; i++) {
-			BlockPos blockPos3 = blockPos2;
+			BlockPos blockPos2 = blockPos;
 
 			for (int j = 0; j < i / 16; j++) {
-				blockPos3 = blockPos3.add(random.nextInt(3) - 1, (random.nextInt(3) - 1) * random.nextInt(3) / 2, random.nextInt(3) - 1);
-				if (serverWorld.getBlockState(blockPos3.down()).getBlock() != this || serverWorld.getBlockState(blockPos3).isFullCube(serverWorld, blockPos3)) {
+				blockPos2 = blockPos2.add(random.nextInt(3) - 1, (random.nextInt(3) - 1) * random.nextInt(3) / 2, random.nextInt(3) - 1);
+				if (!world.getBlockState(blockPos2.down()).isOf(this) || world.getBlockState(blockPos2).isFullCube(world, blockPos2)) {
 					continue label48;
 				}
 			}
 
-			BlockState blockState3 = serverWorld.getBlockState(blockPos3);
-			if (blockState3.getBlock() == blockState2.getBlock() && random.nextInt(10) == 0) {
-				((Fertilizable)blockState2.getBlock()).grow(serverWorld, random, blockPos3, blockState3);
+			BlockState blockState2 = world.getBlockState(blockPos2);
+			if (blockState2.isOf(blockState.getBlock()) && random.nextInt(10) == 0) {
+				((Fertilizable)blockState.getBlock()).grow(world, random, blockPos2, blockState2);
 			}
 
-			if (blockState3.isAir()) {
-				BlockState blockState4;
+			if (blockState2.isAir()) {
+				BlockState blockState3;
 				if (random.nextInt(8) == 0) {
-					List<ConfiguredFeature<?, ?>> list = serverWorld.getBiome(blockPos3).getFlowerFeatures();
+					List<ConfiguredFeature<?, ?>> list = world.getBiome(blockPos2).getGenerationSettings().getFlowerFeatures();
 					if (list.isEmpty()) {
 						continue;
 					}
 
-					ConfiguredFeature<?, ?> configuredFeature = ((DecoratedFeatureConfig)((ConfiguredFeature)list.get(0)).config).feature;
-					blockState4 = ((FlowerFeature)configuredFeature.feature).getFlowerToPlace(random, blockPos3, configuredFeature.config);
+					ConfiguredFeature<?, ?> configuredFeature = (ConfiguredFeature<?, ?>)list.get(0);
+					FlowerFeature flowerFeature = (FlowerFeature)configuredFeature.feature;
+					blockState3 = flowerFeature.getFlowerState(random, blockPos2, configuredFeature.getConfig());
 				} else {
-					blockState4 = blockState2;
+					blockState3 = blockState;
 				}
 
-				if (blockState4.canPlaceAt(serverWorld, blockPos3)) {
-					serverWorld.setBlockState(blockPos3, blockState4, 3);
+				if (blockState3.canPlaceAt(world, blockPos2)) {
+					world.setBlockState(blockPos2, blockState3, 3);
 				}
 			}
 		}

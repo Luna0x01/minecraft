@@ -5,9 +5,9 @@ import java.util.Comparator;
 import net.minecraft.util.math.MathHelper;
 
 public enum AttackIndicator {
-	field_18151(0, "options.off"),
-	field_18152(1, "options.attack.crosshair"),
-	field_18153(2, "options.attack.hotbar");
+	OFF(0, "options.off"),
+	CROSSHAIR(1, "options.attack.crosshair"),
+	HOTBAR(2, "options.attack.hotbar");
 
 	private static final AttackIndicator[] VALUES = (AttackIndicator[])Arrays.stream(values())
 		.sorted(Comparator.comparingInt(AttackIndicator::getId))
@@ -15,9 +15,9 @@ public enum AttackIndicator {
 	private final int id;
 	private final String translationKey;
 
-	private AttackIndicator(int j, String string2) {
-		this.id = j;
-		this.translationKey = string2;
+	private AttackIndicator(int id, String translationKey) {
+		this.id = id;
+		this.translationKey = translationKey;
 	}
 
 	public int getId() {
@@ -28,7 +28,7 @@ public enum AttackIndicator {
 		return this.translationKey;
 	}
 
-	public static AttackIndicator byId(int i) {
-		return VALUES[MathHelper.floorMod(i, VALUES.length)];
+	public static AttackIndicator byId(int id) {
+		return VALUES[MathHelper.floorMod(id, VALUES.length)];
 	}
 }

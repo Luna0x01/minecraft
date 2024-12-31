@@ -2,7 +2,7 @@ package net.minecraft.block;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
-import net.minecraft.entity.EntityContext;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
@@ -15,76 +15,79 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class FlowerPotBlock extends Block {
 	private static final Map<Block, Block> CONTENT_TO_POTTED = Maps.newHashMap();
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 6.0, 11.0);
 	private final Block content;
 
-	public FlowerPotBlock(Block block, Block.Settings settings) {
+	public FlowerPotBlock(Block content, AbstractBlock.Settings settings) {
 		super(settings);
-		this.content = block;
-		CONTENT_TO_POTTED.put(block, this);
+		this.content = content;
+		CONTENT_TO_POTTED.put(content, this);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return SHAPE;
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState blockState) {
-		return BlockRenderType.field_11458;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		Item item = itemStack.getItem();
-		Block block = item instanceof BlockItem ? (Block)CONTENT_TO_POTTED.getOrDefault(((BlockItem)item).getBlock(), Blocks.field_10124) : Blocks.field_10124;
-		boolean bl = block == Blocks.field_10124;
-		boolean bl2 = this.content == Blocks.field_10124;
+		Block block = item instanceof BlockItem ? (Block)CONTENT_TO_POTTED.getOrDefault(((BlockItem)item).getBlock(), Blocks.AIR) : Blocks.AIR;
+		boolean bl = block == Blocks.AIR;
+		boolean bl2 = this.content == Blocks.AIR;
 		if (bl != bl2) {
 			if (bl2) {
-				world.setBlockState(blockPos, block.getDefaultState(), 3);
-				playerEntity.incrementStat(Stats.field_15412);
-				if (!playerEntity.abilities.creativeMode) {
+				world.setBlockState(pos, block.getDefaultState(), 3);
+				player.incrementStat(Stats.POT_FLOWER);
+				if (!player.abilities.creativeMode) {
 					itemStack.decrement(1);
 				}
 			} else {
 				ItemStack itemStack2 = new ItemStack(this.content);
 				if (itemStack.isEmpty()) {
-					playerEntity.setStackInHand(hand, itemStack2);
-				} else if (!playerEntity.giveItemStack(itemStack2)) {
-					playerEntity.dropItem(itemStack2, false);
+					player.setStackInHand(hand, itemStack2);
+				} else if (!player.giveItemStack(itemStack2)) {
+					player.dropItem(itemStack2, false);
 				}
 
-				world.setBlockState(blockPos, Blocks.field_10495.getDefaultState(), 3);
+				world.setBlockState(pos, Blocks.FLOWER_POT.getDefaultState(), 3);
 			}
 
-			return ActionResult.field_5812;
+			return ActionResult.success(world.isClient);
 		} else {
-			return ActionResult.field_21466;
+			return ActionResult.CONSUME;
 		}
 	}
 
 	@Override
-	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
-		return this.content == Blocks.field_10124 ? super.getPickStack(blockView, blockPos, blockState) : new ItemStack(this.content);
+	public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state) {
+		return this.content == Blocks.AIR ? super.getPickStack(world, pos, state) : new ItemStack(this.content);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		return direction == Direction.field_11033 && !blockState.canPlaceAt(iWorld, blockPos)
-			? Blocks.field_10124.getDefaultState()
-			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		return direction == Direction.DOWN && !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 	}
 
 	public Block getContent() {
 		return this.content;
+	}
+
+	@Override
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
+		return false;
 	}
 }

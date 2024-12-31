@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
 import com.mojang.datafixers.DataFixUtils;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.Typed;
 import com.mojang.datafixers.schemas.Schema;
@@ -12,10 +11,12 @@ import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.datafixers.util.Unit;
+import com.mojang.serialization.Dynamic;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public class EntityBlockStateFix extends DataFix {
 	private static final Map<String, Integer> BLOCK_NAME_TO_ID = (Map<String, Integer>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
@@ -275,12 +276,12 @@ public class EntityBlockStateFix extends DataFix {
 		hashMap.put("minecraft:structure_block", 255);
 	});
 
-	public EntityBlockStateFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public EntityBlockStateFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
-	public static int getNumericalBlockId(String string) {
-		Integer integer = (Integer)BLOCK_NAME_TO_ID.get(string);
+	public static int getNumericalBlockId(String blockId) {
+		Integer integer = (Integer)BLOCK_NAME_TO_ID.get(blockId);
 		return integer == null ? 0 : integer;
 	}
 
@@ -290,7 +291,8 @@ public class EntityBlockStateFix extends DataFix {
 		Function<Typed<?>, Typed<?>> function = typed -> this.mergeIdAndData(typed, "DisplayTile", "DisplayData", "DisplayState");
 		Function<Typed<?>, Typed<?>> function2 = typed -> this.mergeIdAndData(typed, "inTile", "inData", "inBlockState");
 		Type<Pair<Either<Pair<String, Either<Integer, String>>, Unit>, Dynamic<?>>> type = DSL.and(
-			DSL.optional(DSL.field("inTile", DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), DSL.namespacedString())))), DSL.remainderType()
+			DSL.optional(DSL.field("inTile", DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), IdentifierNormalizingSchema.getIdentifierType())))),
+			DSL.remainderType()
 		);
 		Function<Typed<?>, Typed<?>> function3 = typed -> typed.update(type.finder(), DSL.remainderType(), Pair::getSecond);
 		return this.fixTypeEverywhereTyped("EntityBlockStateFix", schema.getType(TypeReferences.ENTITY), schema2.getType(TypeReferences.ENTITY), typed -> {
@@ -318,7 +320,7 @@ public class EntityBlockStateFix extends DataFix {
 
 	private Typed<?> method_15695(Typed<?> typed) {
 		Type<Either<Pair<String, Either<Integer, String>>, Unit>> type = DSL.optional(
-			DSL.field("Block", DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), DSL.namespacedString())))
+			DSL.field("Block", DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), IdentifierNormalizingSchema.getIdentifierType())))
 		);
 		Type<Either<Pair<String, Dynamic<?>>, Unit>> type2 = DSL.optional(
 			DSL.field("BlockState", DSL.named(TypeReferences.BLOCK_STATE.typeName(), DSL.remainderType()))
@@ -326,7 +328,7 @@ public class EntityBlockStateFix extends DataFix {
 		Dynamic<?> dynamic = (Dynamic<?>)typed.get(DSL.remainderFinder());
 		return typed.update(type.finder(), type2, either -> {
 			int i = (Integer)either.map(pair -> (Integer)((Either)pair.getSecond()).map(integer -> integer, EntityBlockStateFix::getNumericalBlockId), unit -> {
-				Optional<Number> optional = dynamic.get("TileID").asNumber();
+				Optional<Number> optional = dynamic.get("TileID").asNumber().result();
 				return (Integer)optional.map(Number::intValue).orElseGet(() -> dynamic.get("Tile").asByte((byte)0) & 0xFF);
 			});
 			int j = dynamic.get("Data").asInt(0) & 15;
@@ -334,22 +336,22 @@ public class EntityBlockStateFix extends DataFix {
 		}).set(DSL.remainderFinder(), dynamic.remove("Data").remove("TileID").remove("Tile"));
 	}
 
-	private Typed<?> mergeIdAndData(Typed<?> typed, String string, String string2, String string3) {
+	private Typed<?> mergeIdAndData(Typed<?> typed, String oldIdKey, String oldDataKey, String newStateKey) {
 		Type<Pair<String, Either<Integer, String>>> type = DSL.field(
-			string, DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), DSL.namespacedString()))
+			oldIdKey, DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), IdentifierNormalizingSchema.getIdentifierType()))
 		);
-		Type<Pair<String, Dynamic<?>>> type2 = DSL.field(string3, DSL.named(TypeReferences.BLOCK_STATE.typeName(), DSL.remainderType()));
+		Type<Pair<String, Dynamic<?>>> type2 = DSL.field(newStateKey, DSL.named(TypeReferences.BLOCK_STATE.typeName(), DSL.remainderType()));
 		Dynamic<?> dynamic = (Dynamic<?>)typed.getOrCreate(DSL.remainderFinder());
 		return typed.update(type.finder(), type2, pair -> {
 			int i = (Integer)((Either)pair.getSecond()).map(integer -> integer, EntityBlockStateFix::getNumericalBlockId);
-			int j = dynamic.get(string2).asInt(0) & 15;
+			int j = dynamic.get(oldDataKey).asInt(0) & 15;
 			return Pair.of(TypeReferences.BLOCK_STATE.typeName(), BlockStateFlattening.lookupState(i << 4 | j));
-		}).set(DSL.remainderFinder(), dynamic.remove(string2));
+		}).set(DSL.remainderFinder(), dynamic.remove(oldDataKey));
 	}
 
-	private Typed<?> useFunction(Typed<?> typed, String string, Function<Typed<?>, Typed<?>> function) {
-		Type<?> type = this.getInputSchema().getChoiceType(TypeReferences.ENTITY, string);
-		Type<?> type2 = this.getOutputSchema().getChoiceType(TypeReferences.ENTITY, string);
-		return typed.updateTyped(DSL.namedChoice(string, type), type2, function);
+	private Typed<?> useFunction(Typed<?> typed, String entityId, Function<Typed<?>, Typed<?>> function) {
+		Type<?> type = this.getInputSchema().getChoiceType(TypeReferences.ENTITY, entityId);
+		Type<?> type2 = this.getOutputSchema().getChoiceType(TypeReferences.ENTITY, entityId);
+		return typed.updateTyped(DSL.namedChoice(entityId, type), type2, function);
 	}
 }

@@ -6,18 +6,19 @@ import java.util.Collection;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.StatusEffectSpriteManager;
-import net.minecraft.container.Container;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 
-public abstract class AbstractInventoryScreen<T extends Container> extends ContainerScreen<T> {
-	protected boolean offsetGuiForEffects;
+public abstract class AbstractInventoryScreen<T extends ScreenHandler> extends HandledScreen<T> {
+	protected boolean drawStatusEffects;
 
-	public AbstractInventoryScreen(T container, PlayerInventory playerInventory, Text text) {
-		super(container, playerInventory, text);
+	public AbstractInventoryScreen(T screenHandler, PlayerInventory playerInventory, Text text) {
+		super(screenHandler, playerInventory, text);
 	}
 
 	@Override
@@ -27,26 +28,26 @@ public abstract class AbstractInventoryScreen<T extends Container> extends Conta
 	}
 
 	protected void applyStatusEffectOffset() {
-		if (this.minecraft.player.getStatusEffects().isEmpty()) {
-			this.x = (this.width - this.containerWidth) / 2;
-			this.offsetGuiForEffects = false;
+		if (this.client.player.getStatusEffects().isEmpty()) {
+			this.x = (this.width - this.backgroundWidth) / 2;
+			this.drawStatusEffects = false;
 		} else {
-			this.x = 160 + (this.width - this.containerWidth - 200) / 2;
-			this.offsetGuiForEffects = true;
+			this.x = 160 + (this.width - this.backgroundWidth - 200) / 2;
+			this.drawStatusEffects = true;
 		}
 	}
 
 	@Override
-	public void render(int i, int j, float f) {
-		super.render(i, j, f);
-		if (this.offsetGuiForEffects) {
-			this.drawStatusEffects();
+	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		super.render(matrices, mouseX, mouseY, delta);
+		if (this.drawStatusEffects) {
+			this.drawStatusEffects(matrices);
 		}
 	}
 
-	private void drawStatusEffects() {
+	private void drawStatusEffects(MatrixStack matrixStack) {
 		int i = this.x - 124;
-		Collection<StatusEffectInstance> collection = this.minecraft.player.getStatusEffects();
+		Collection<StatusEffectInstance> collection = this.client.player.getStatusEffects();
 		if (!collection.isEmpty()) {
 			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			int j = 33;
@@ -55,37 +56,37 @@ public abstract class AbstractInventoryScreen<T extends Container> extends Conta
 			}
 
 			Iterable<StatusEffectInstance> iterable = Ordering.natural().sortedCopy(collection);
-			this.drawStatusEffectBackgrounds(i, j, iterable);
-			this.drawStatusEffectSprites(i, j, iterable);
-			this.drawStatusEffectDescriptions(i, j, iterable);
+			this.drawStatusEffectBackgrounds(matrixStack, i, j, iterable);
+			this.drawStatusEffectSprites(matrixStack, i, j, iterable);
+			this.drawStatusEffectDescriptions(matrixStack, i, j, iterable);
 		}
 	}
 
-	private void drawStatusEffectBackgrounds(int i, int j, Iterable<StatusEffectInstance> iterable) {
-		this.minecraft.getTextureManager().bindTexture(BACKGROUND_TEXTURE);
+	private void drawStatusEffectBackgrounds(MatrixStack matrixStack, int i, int j, Iterable<StatusEffectInstance> iterable) {
+		this.client.getTextureManager().bindTexture(BACKGROUND_TEXTURE);
 		int k = this.y;
 
 		for (StatusEffectInstance statusEffectInstance : iterable) {
 			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			this.blit(i, k, 0, 166, 140, 32);
+			this.drawTexture(matrixStack, i, k, 0, 166, 140, 32);
 			k += j;
 		}
 	}
 
-	private void drawStatusEffectSprites(int i, int j, Iterable<StatusEffectInstance> iterable) {
-		StatusEffectSpriteManager statusEffectSpriteManager = this.minecraft.getStatusEffectSpriteManager();
+	private void drawStatusEffectSprites(MatrixStack matrixStack, int i, int j, Iterable<StatusEffectInstance> iterable) {
+		StatusEffectSpriteManager statusEffectSpriteManager = this.client.getStatusEffectSpriteManager();
 		int k = this.y;
 
 		for (StatusEffectInstance statusEffectInstance : iterable) {
 			StatusEffect statusEffect = statusEffectInstance.getEffectType();
 			Sprite sprite = statusEffectSpriteManager.getSprite(statusEffect);
-			this.minecraft.getTextureManager().bindTexture(sprite.getAtlas().getId());
-			blit(i + 6, k + 7, this.getBlitOffset(), 18, 18, sprite);
+			this.client.getTextureManager().bindTexture(sprite.getAtlas().getId());
+			drawSprite(matrixStack, i + 6, k + 7, this.getZOffset(), 18, 18, sprite);
 			k += j;
 		}
 	}
 
-	private void drawStatusEffectDescriptions(int i, int j, Iterable<StatusEffectInstance> iterable) {
+	private void drawStatusEffectDescriptions(MatrixStack matrixStack, int i, int j, Iterable<StatusEffectInstance> iterable) {
 		int k = this.y;
 
 		for (StatusEffectInstance statusEffectInstance : iterable) {
@@ -94,9 +95,9 @@ public abstract class AbstractInventoryScreen<T extends Container> extends Conta
 				string = string + ' ' + I18n.translate("enchantment.level." + (statusEffectInstance.getAmplifier() + 1));
 			}
 
-			this.font.drawWithShadow(string, (float)(i + 10 + 18), (float)(k + 6), 16777215);
+			this.textRenderer.drawWithShadow(matrixStack, string, (float)(i + 10 + 18), (float)(k + 6), 16777215);
 			String string2 = StatusEffectUtil.durationToString(statusEffectInstance, 1.0F);
-			this.font.drawWithShadow(string2, (float)(i + 10 + 18), (float)(k + 6 + 10), 8355711);
+			this.textRenderer.drawWithShadow(matrixStack, string2, (float)(i + 10 + 18), (float)(k + 6 + 10), 8355711);
 			k += j;
 		}
 	}

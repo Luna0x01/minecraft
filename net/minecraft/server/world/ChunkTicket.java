@@ -8,10 +8,10 @@ public final class ChunkTicket<T> implements Comparable<ChunkTicket<?>> {
 	private final T argument;
 	private long tickCreated;
 
-	protected ChunkTicket(ChunkTicketType<T> chunkTicketType, int i, T object) {
-		this.type = chunkTicketType;
-		this.level = i;
-		this.argument = object;
+	protected ChunkTicket(ChunkTicketType<T> type, int level, T argument) {
+		this.type = type;
+		this.level = level;
+		this.argument = argument;
 	}
 
 	public int compareTo(ChunkTicket<?> chunkTicket) {
@@ -24,13 +24,13 @@ public final class ChunkTicket<T> implements Comparable<ChunkTicket<?>> {
 		}
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
-		} else if (!(object instanceof ChunkTicket)) {
+		} else if (!(obj instanceof ChunkTicket)) {
 			return false;
 		} else {
-			ChunkTicket<?> chunkTicket = (ChunkTicket<?>)object;
+			ChunkTicket<?> chunkTicket = (ChunkTicket<?>)obj;
 			return this.level == chunkTicket.level && Objects.equals(this.type, chunkTicket.type) && Objects.equals(this.argument, chunkTicket.argument);
 		}
 	}
@@ -51,12 +51,12 @@ public final class ChunkTicket<T> implements Comparable<ChunkTicket<?>> {
 		return this.level;
 	}
 
-	protected void setTickCreated(long l) {
-		this.tickCreated = l;
+	protected void setTickCreated(long tickCreated) {
+		this.tickCreated = tickCreated;
 	}
 
-	protected boolean isExpired(long l) {
-		long m = this.type.getExpiryTicks();
-		return m != 0L && l - this.tickCreated > m;
+	protected boolean isExpired(long currentTick) {
+		long l = this.type.getExpiryTicks();
+		return l != 0L && currentTick - this.tickCreated > l;
 	}
 }

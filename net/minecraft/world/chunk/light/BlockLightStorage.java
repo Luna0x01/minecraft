@@ -10,19 +10,19 @@ import net.minecraft.world.chunk.ChunkToNibbleArrayMap;
 
 public class BlockLightStorage extends LightStorage<BlockLightStorage.Data> {
 	protected BlockLightStorage(ChunkProvider chunkProvider) {
-		super(LightType.field_9282, chunkProvider, new BlockLightStorage.Data(new Long2ObjectOpenHashMap()));
+		super(LightType.BLOCK, chunkProvider, new BlockLightStorage.Data(new Long2ObjectOpenHashMap()));
 	}
 
 	@Override
-	protected int getLight(long l) {
-		long m = ChunkSectionPos.fromGlobalPos(l);
-		ChunkNibbleArray chunkNibbleArray = this.getLightArray(m, false);
+	protected int getLight(long blockPos) {
+		long l = ChunkSectionPos.fromBlockPos(blockPos);
+		ChunkNibbleArray chunkNibbleArray = this.getLightSection(l, false);
 		return chunkNibbleArray == null
 			? 0
 			: chunkNibbleArray.get(
-				ChunkSectionPos.getLocalCoord(BlockPos.unpackLongX(l)),
-				ChunkSectionPos.getLocalCoord(BlockPos.unpackLongY(l)),
-				ChunkSectionPos.getLocalCoord(BlockPos.unpackLongZ(l))
+				ChunkSectionPos.getLocalCoord(BlockPos.unpackLongX(blockPos)),
+				ChunkSectionPos.getLocalCoord(BlockPos.unpackLongY(blockPos)),
+				ChunkSectionPos.getLocalCoord(BlockPos.unpackLongZ(blockPos))
 			);
 	}
 

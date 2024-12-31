@@ -4,16 +4,24 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class CheckboxWidget extends AbstractPressableButtonWidget {
 	private static final Identifier TEXTURE = new Identifier("textures/gui/checkbox.png");
-	boolean checked;
+	private boolean checked;
+	private final boolean showMessage;
 
-	public CheckboxWidget(int i, int j, int k, int l, String string, boolean bl) {
-		super(i, j, k, l, string);
-		this.checked = bl;
+	public CheckboxWidget(int x, int y, int width, int height, Text message, boolean checked) {
+		this(x, y, width, height, message, checked, true);
+	}
+
+	public CheckboxWidget(int x, int y, int width, int height, Text message, boolean checked, boolean showMessage) {
+		super(x, y, width, height, message);
+		this.checked = checked;
+		this.showMessage = showMessage;
 	}
 
 	@Override
@@ -26,7 +34,7 @@ public class CheckboxWidget extends AbstractPressableButtonWidget {
 	}
 
 	@Override
-	public void renderButton(int i, int j, float f) {
+	public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
 		MinecraftClient minecraftClient = MinecraftClient.getInstance();
 		minecraftClient.getTextureManager().bindTexture(TEXTURE);
 		RenderSystem.enableDepthTest();
@@ -35,9 +43,12 @@ public class CheckboxWidget extends AbstractPressableButtonWidget {
 		RenderSystem.enableBlend();
 		RenderSystem.defaultBlendFunc();
 		RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
-		blit(this.x, this.y, 0.0F, this.checked ? 20.0F : 0.0F, 20, this.height, 32, 64);
-		this.renderBg(minecraftClient, i, j);
-		int k = 14737632;
-		this.drawString(textRenderer, this.getMessage(), this.x + 24, this.y + (this.height - 8) / 2, 14737632 | MathHelper.ceil(this.alpha * 255.0F) << 24);
+		drawTexture(matrices, this.x, this.y, this.isFocused() ? 20.0F : 0.0F, this.checked ? 20.0F : 0.0F, 20, this.height, 64, 64);
+		this.renderBg(matrices, minecraftClient, mouseX, mouseY);
+		if (this.showMessage) {
+			drawTextWithShadow(
+				matrices, textRenderer, this.getMessage(), this.x + 24, this.y + (this.height - 8) / 2, 14737632 | MathHelper.ceil(this.alpha * 255.0F) << 24
+			);
+		}
 	}
 }

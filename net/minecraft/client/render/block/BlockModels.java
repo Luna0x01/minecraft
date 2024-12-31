@@ -41,7 +41,7 @@ public class BlockModels {
 	public void reload() {
 		this.models.clear();
 
-		for (Block block : Registry.field_11146) {
+		for (Block block : Registry.BLOCK) {
 			block.getStateManager().getStates().forEach(blockState -> {
 				BakedModel var10000 = (BakedModel)this.models.put(blockState, this.modelManager.getModel(getModelId(blockState)));
 			});
@@ -49,7 +49,7 @@ public class BlockModels {
 	}
 
 	public static ModelIdentifier getModelId(BlockState blockState) {
-		return getModelId(Registry.field_11146.getId(blockState.getBlock()), blockState);
+		return getModelId(Registry.BLOCK.getId(blockState.getBlock()), blockState);
 	}
 
 	public static ModelIdentifier getModelId(Identifier identifier, BlockState blockState) {

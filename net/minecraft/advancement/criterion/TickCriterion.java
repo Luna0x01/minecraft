@@ -1,7 +1,8 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
+import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
@@ -13,17 +14,19 @@ public class TickCriterion extends AbstractCriterion<TickCriterion.Conditions> {
 		return ID;
 	}
 
-	public TickCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		return new TickCriterion.Conditions();
+	public TickCriterion.Conditions conditionsFromJson(
+		JsonObject jsonObject, EntityPredicate.Extended extended, AdvancementEntityPredicateDeserializer advancementEntityPredicateDeserializer
+	) {
+		return new TickCriterion.Conditions(extended);
 	}
 
-	public void trigger(ServerPlayerEntity serverPlayerEntity) {
-		this.grant(serverPlayerEntity.getAdvancementTracker());
+	public void trigger(ServerPlayerEntity player) {
+		this.test(player, conditions -> true);
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
-		public Conditions() {
-			super(TickCriterion.ID);
+		public Conditions(EntityPredicate.Extended player) {
+			super(TickCriterion.ID, player);
 		}
 	}
 }

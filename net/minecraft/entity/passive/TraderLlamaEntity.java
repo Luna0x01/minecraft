@@ -3,17 +3,18 @@ package net.minecraft.entity.passive;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.TrackTargetGoal;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class TraderLlamaEntity extends LlamaEntity {
@@ -30,20 +31,20 @@ public class TraderLlamaEntity extends LlamaEntity {
 
 	@Override
 	protected LlamaEntity createChild() {
-		return EntityType.field_17714.create(this.world);
+		return EntityType.TRADER_LLAMA.create(this.world);
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("DespawnDelay", this.despawnDelay);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("DespawnDelay", this.despawnDelay);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.contains("DespawnDelay", 99)) {
-			this.despawnDelay = compoundTag.getInt("DespawnDelay");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("DespawnDelay", 99)) {
+			this.despawnDelay = tag.getInt("DespawnDelay");
 		}
 	}
 
@@ -55,10 +56,10 @@ public class TraderLlamaEntity extends LlamaEntity {
 	}
 
 	@Override
-	protected void putPlayerOnBack(PlayerEntity playerEntity) {
+	protected void putPlayerOnBack(PlayerEntity player) {
 		Entity entity = this.getHoldingEntity();
 		if (!(entity instanceof WanderingTraderEntity)) {
-			super.putPlayerOnBack(playerEntity);
+			super.putPlayerOnBack(player);
 		}
 	}
 
@@ -66,12 +67,12 @@ public class TraderLlamaEntity extends LlamaEntity {
 	public void tickMovement() {
 		super.tickMovement();
 		if (!this.world.isClient) {
-			this.method_20501();
+			this.tryDespawn();
 		}
 	}
 
-	private void method_20501() {
-		if (this.method_20502()) {
+	private void tryDespawn() {
+		if (this.canDespawn()) {
 			this.despawnDelay = this.heldByTrader() ? ((WanderingTraderEntity)this.getHoldingEntity()).getDespawnDelay() - 1 : this.despawnDelay - 1;
 			if (this.despawnDelay <= 0) {
 				this.detachLeash(true, false);
@@ -80,7 +81,7 @@ public class TraderLlamaEntity extends LlamaEntity {
 		}
 	}
 
-	private boolean method_20502() {
+	private boolean canDespawn() {
 		return !this.isTame() && !this.leashedByPlayer() && !this.hasPlayerRider();
 	}
 
@@ -94,19 +95,18 @@ public class TraderLlamaEntity extends LlamaEntity {
 
 	@Nullable
 	@Override
-	public net.minecraft.entity.EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
+	public EntityData initialize(
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
-		if (spawnType == SpawnType.field_16467) {
+		if (spawnReason == SpawnReason.EVENT) {
 			this.setBreedingAge(0);
 		}
 
 		if (entityData == null) {
-			entityData = new PassiveEntity.EntityData();
-			((PassiveEntity.EntityData)entityData).setBabyAllowed(false);
+			entityData = new PassiveEntity.PassiveData(false);
 		}
 
-		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
 	}
 
 	public class DefendTraderGoal extends TrackTargetGoal {
@@ -114,10 +114,10 @@ public class TraderLlamaEntity extends LlamaEntity {
 		private LivingEntity offender;
 		private int traderLastAttackedTime;
 
-		public DefendTraderGoal(LlamaEntity llamaEntity) {
-			super(llamaEntity, false);
-			this.llama = llamaEntity;
-			this.setControls(EnumSet.of(Goal.Control.field_18408));
+		public DefendTraderGoal(LlamaEntity llama) {
+			super(llama, false);
+			this.llama = llama;
+			this.setControls(EnumSet.of(Goal.Control.TARGET));
 		}
 
 		@Override

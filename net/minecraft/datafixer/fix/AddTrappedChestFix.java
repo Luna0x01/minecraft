@@ -2,7 +2,6 @@ package net.minecraft.datafixer.fix;
 
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.Typed;
@@ -10,6 +9,7 @@ import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.types.templates.List.ListType;
 import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
+import com.mojang.serialization.Dynamic;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.List;
@@ -23,8 +23,8 @@ import org.apache.logging.log4j.Logger;
 public class AddTrappedChestFix extends DataFix {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	public AddTrappedChestFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public AddTrappedChestFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public TypeRewriteRule makeRule() {
@@ -57,9 +57,9 @@ public class AddTrappedChestFix extends DataFix {
 
 								for (Typed<?> typed2 : list) {
 									AddTrappedChestFix.ListFixer listFixer = new AddTrappedChestFix.ListFixer(typed2, this.getInputSchema());
-									if (!listFixer.method_5079()) {
+									if (!listFixer.isFixed()) {
 										for (int i = 0; i < 4096; i++) {
-											int j = listFixer.method_5075(i);
+											int j = listFixer.needsFix(i);
 											if (listFixer.isTarget(j)) {
 												intSet.add(listFixer.method_5077() << 12 | i);
 											}
@@ -103,8 +103,8 @@ public class AddTrappedChestFix extends DataFix {
 		protected boolean needsFix() {
 			this.targets = new IntOpenHashSet();
 
-			for (int i = 0; i < this.data.size(); i++) {
-				Dynamic<?> dynamic = (Dynamic<?>)this.data.get(i);
+			for (int i = 0; i < this.properties.size(); i++) {
+				Dynamic<?> dynamic = (Dynamic<?>)this.properties.get(i);
 				String string = dynamic.get("Name").asString("");
 				if (Objects.equals(string, "minecraft:trapped_chest")) {
 					this.targets.add(i);
@@ -114,8 +114,8 @@ public class AddTrappedChestFix extends DataFix {
 			return this.targets.isEmpty();
 		}
 
-		public boolean isTarget(int i) {
-			return this.targets.contains(i);
+		public boolean isTarget(int index) {
+			return this.targets.contains(index);
 		}
 	}
 }

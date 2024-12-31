@@ -5,18 +5,19 @@ import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.decoration.EnderCrystalEntity;
+import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.gen.feature.EndPortalFeature;
 
 public class HoldingPatternPhase extends AbstractPhase {
 	private static final TargetPredicate PLAYERS_IN_RANGE_PREDICATE = new TargetPredicate().setBaseMaxDistance(64.0);
 	private Path field_7043;
-	private Vec3d field_7045;
+	private Vec3d target;
 	private boolean field_7044;
 
 	public HoldingPatternPhase(EnderDragonEntity enderDragonEntity) {
@@ -25,12 +26,12 @@ public class HoldingPatternPhase extends AbstractPhase {
 
 	@Override
 	public PhaseType<HoldingPatternPhase> getType() {
-		return PhaseType.field_7069;
+		return PhaseType.HOLDING_PATTERN;
 	}
 
 	@Override
 	public void serverTick() {
-		double d = this.field_7045 == null ? 0.0 : this.field_7045.squaredDistanceTo(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ());
+		double d = this.target == null ? 0.0 : this.target.squaredDistanceTo(this.dragon.getX(), this.dragon.getY(), this.dragon.getZ());
 		if (d < 100.0 || d > 22500.0 || this.dragon.horizontalCollision || this.dragon.verticalCollision) {
 			this.method_6841();
 		}
@@ -39,21 +40,21 @@ public class HoldingPatternPhase extends AbstractPhase {
 	@Override
 	public void beginPhase() {
 		this.field_7043 = null;
-		this.field_7045 = null;
+		this.target = null;
 	}
 
 	@Nullable
 	@Override
 	public Vec3d getTarget() {
-		return this.field_7045;
+		return this.target;
 	}
 
 	private void method_6841() {
 		if (this.field_7043 != null && this.field_7043.isFinished()) {
-			BlockPos blockPos = this.dragon.world.getTopPosition(Heightmap.Type.field_13203, new BlockPos(EndPortalFeature.ORIGIN));
+			BlockPos blockPos = this.dragon.world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, new BlockPos(EndPortalFeature.ORIGIN));
 			int i = this.dragon.getFight() == null ? 0 : this.dragon.getFight().getAliveEndCrystals();
 			if (this.dragon.getRandom().nextInt(i + 3) == 0) {
-				this.dragon.getPhaseManager().setPhase(PhaseType.field_7071);
+				this.dragon.getPhaseManager().setPhase(PhaseType.LANDING_APPROACH);
 				return;
 			}
 
@@ -74,7 +75,7 @@ public class HoldingPatternPhase extends AbstractPhase {
 		}
 
 		if (this.field_7043 == null || this.field_7043.isFinished()) {
-			int j = this.dragon.method_6818();
+			int j = this.dragon.getNearestPathNodeIndex();
 			int k = j;
 			if (this.dragon.getRandom().nextInt(8) == 0) {
 				this.field_7044 = !this.field_7044;
@@ -98,7 +99,7 @@ public class HoldingPatternPhase extends AbstractPhase {
 				k += 12;
 			}
 
-			this.field_7043 = this.dragon.method_6833(j, k, null);
+			this.field_7043 = this.dragon.findPath(j, k, null);
 			if (this.field_7043 != null) {
 				this.field_7043.next();
 			}
@@ -108,30 +109,30 @@ public class HoldingPatternPhase extends AbstractPhase {
 	}
 
 	private void method_6843(PlayerEntity playerEntity) {
-		this.dragon.getPhaseManager().setPhase(PhaseType.field_7076);
-		this.dragon.getPhaseManager().create(PhaseType.field_7076).method_6862(playerEntity);
+		this.dragon.getPhaseManager().setPhase(PhaseType.STRAFE_PLAYER);
+		this.dragon.getPhaseManager().create(PhaseType.STRAFE_PLAYER).method_6862(playerEntity);
 	}
 
 	private void method_6842() {
 		if (this.field_7043 != null && !this.field_7043.isFinished()) {
-			Vec3d vec3d = this.field_7043.getCurrentPosition();
+			Vec3i vec3i = this.field_7043.method_31032();
 			this.field_7043.next();
-			double d = vec3d.x;
-			double e = vec3d.z;
+			double d = (double)vec3i.getX();
+			double e = (double)vec3i.getZ();
 
 			double f;
 			do {
-				f = vec3d.y + (double)(this.dragon.getRandom().nextFloat() * 20.0F);
-			} while (f < vec3d.y);
+				f = (double)((float)vec3i.getY() + this.dragon.getRandom().nextFloat() * 20.0F);
+			} while (f < (double)vec3i.getY());
 
-			this.field_7045 = new Vec3d(d, f, e);
+			this.target = new Vec3d(d, f, e);
 		}
 	}
 
 	@Override
-	public void crystalDestroyed(EnderCrystalEntity enderCrystalEntity, BlockPos blockPos, DamageSource damageSource, @Nullable PlayerEntity playerEntity) {
-		if (playerEntity != null && !playerEntity.abilities.invulnerable) {
-			this.method_6843(playerEntity);
+	public void crystalDestroyed(EndCrystalEntity crystal, BlockPos pos, DamageSource source, @Nullable PlayerEntity player) {
+		if (player != null && !player.abilities.invulnerable) {
+			this.method_6843(player);
 		}
 	}
 }

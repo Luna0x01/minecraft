@@ -1,22 +1,23 @@
 package net.minecraft.world.chunk;
 
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.network.PacketByteBuf;
 
 public interface Palette<T> {
 	int getIndex(T object);
 
-	boolean accepts(T object);
+	boolean accepts(Predicate<T> predicate);
 
 	@Nullable
-	T getByIndex(int i);
+	T getByIndex(int index);
 
-	void fromPacket(PacketByteBuf packetByteBuf);
+	void fromPacket(PacketByteBuf buf);
 
-	void toPacket(PacketByteBuf packetByteBuf);
+	void toPacket(PacketByteBuf buf);
 
 	int getPacketSize();
 
-	void fromTag(ListTag listTag);
+	void fromTag(ListTag tag);
 }

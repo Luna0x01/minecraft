@@ -7,19 +7,20 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
-import net.minecraft.entity.raid.Raid;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.village.raid.Raid;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LightType;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public abstract class PatrolEntity extends HostileEntity {
 	private BlockPos patrolTarget;
@@ -37,25 +38,25 @@ public abstract class PatrolEntity extends HostileEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
 		if (this.patrolTarget != null) {
-			compoundTag.put("PatrolTarget", NbtHelper.fromBlockPos(this.patrolTarget));
+			tag.put("PatrolTarget", NbtHelper.fromBlockPos(this.patrolTarget));
 		}
 
-		compoundTag.putBoolean("PatrolLeader", this.patrolLeader);
-		compoundTag.putBoolean("Patrolling", this.patrolling);
+		tag.putBoolean("PatrolLeader", this.patrolLeader);
+		tag.putBoolean("Patrolling", this.patrolling);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.contains("PatrolTarget")) {
-			this.patrolTarget = NbtHelper.toBlockPos(compoundTag.getCompound("PatrolTarget"));
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("PatrolTarget")) {
+			this.patrolTarget = NbtHelper.toBlockPos(tag.getCompound("PatrolTarget"));
 		}
 
-		this.patrolLeader = compoundTag.getBoolean("PatrolLeader");
-		this.patrolling = compoundTag.getBoolean("Patrolling");
+		this.patrolLeader = tag.getBoolean("PatrolLeader");
+		this.patrolling = tag.getBoolean("Patrolling");
 	}
 
 	@Override
@@ -70,39 +71,39 @@ public abstract class PatrolEntity extends HostileEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
-		if (spawnType != SpawnType.field_16527
-			&& spawnType != SpawnType.field_16467
-			&& spawnType != SpawnType.field_16474
+		if (spawnReason != SpawnReason.PATROL
+			&& spawnReason != SpawnReason.EVENT
+			&& spawnReason != SpawnReason.STRUCTURE
 			&& this.random.nextFloat() < 0.06F
 			&& this.canLead()) {
 			this.patrolLeader = true;
 		}
 
 		if (this.isPatrolLeader()) {
-			this.equipStack(EquipmentSlot.field_6169, Raid.getOminousBanner());
-			this.setEquipmentDropChance(EquipmentSlot.field_6169, 2.0F);
+			this.equipStack(EquipmentSlot.HEAD, Raid.getOminousBanner());
+			this.setEquipmentDropChance(EquipmentSlot.HEAD, 2.0F);
 		}
 
-		if (spawnType == SpawnType.field_16527) {
+		if (spawnReason == SpawnReason.PATROL) {
 			this.patrolling = true;
 		}
 
-		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
 	}
 
-	public static boolean canSpawn(EntityType<? extends PatrolEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		return iWorld.getLightLevel(LightType.field_9282, blockPos) > 8 ? false : canSpawnIgnoreLightLevel(entityType, iWorld, spawnType, blockPos, random);
+	public static boolean canSpawn(EntityType<? extends PatrolEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
+		return world.getLightLevel(LightType.BLOCK, pos) > 8 ? false : canSpawnIgnoreLightLevel(type, world, spawnReason, pos, random);
 	}
 
 	@Override
-	public boolean canImmediatelyDespawn(double d) {
-		return !this.patrolling || d > 16384.0;
+	public boolean canImmediatelyDespawn(double distanceSquared) {
+		return !this.patrolling || distanceSquared > 16384.0;
 	}
 
-	public void setPatrolTarget(BlockPos blockPos) {
-		this.patrolTarget = blockPos;
+	public void setPatrolTarget(BlockPos targetPos) {
+		this.patrolTarget = targetPos;
 		this.patrolling = true;
 	}
 
@@ -114,8 +115,8 @@ public abstract class PatrolEntity extends HostileEntity {
 		return this.patrolTarget != null;
 	}
 
-	public void setPatrolLeader(boolean bl) {
-		this.patrolLeader = bl;
+	public void setPatrolLeader(boolean patrolLeader) {
+		this.patrolLeader = patrolLeader;
 		this.patrolling = true;
 	}
 
@@ -128,7 +129,7 @@ public abstract class PatrolEntity extends HostileEntity {
 	}
 
 	public void setRandomPatrolTarget() {
-		this.patrolTarget = new BlockPos(this).add(-500 + this.random.nextInt(1000), 0, -500 + this.random.nextInt(1000));
+		this.patrolTarget = this.getBlockPos().add(-500 + this.random.nextInt(1000), 0, -500 + this.random.nextInt(1000));
 		this.patrolling = true;
 	}
 
@@ -136,28 +137,28 @@ public abstract class PatrolEntity extends HostileEntity {
 		return this.patrolling;
 	}
 
-	protected void method_22332(boolean bl) {
-		this.patrolling = bl;
+	protected void setPatrolling(boolean patrolling) {
+		this.patrolling = patrolling;
 	}
 
 	public static class PatrolGoal<T extends PatrolEntity> extends Goal {
-		private final T actor;
+		private final T entity;
 		private final double leaderSpeed;
-		private final double fellowSpeed;
-		private long field_20701;
+		private final double followSpeed;
+		private long nextPatrolSearchTime;
 
-		public PatrolGoal(T patrolEntity, double d, double e) {
-			this.actor = patrolEntity;
-			this.leaderSpeed = d;
-			this.fellowSpeed = e;
-			this.field_20701 = -1L;
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+		public PatrolGoal(T entity, double leaderSpeed, double followSpeed) {
+			this.entity = entity;
+			this.leaderSpeed = leaderSpeed;
+			this.followSpeed = followSpeed;
+			this.nextPatrolSearchTime = -1L;
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
 		public boolean canStart() {
-			boolean bl = this.actor.world.getTime() < this.field_20701;
-			return this.actor.isRaidCenterSet() && this.actor.getTarget() == null && !this.actor.hasPassengers() && this.actor.hasPatrolTarget() && !bl;
+			boolean bl = this.entity.world.getTime() < this.nextPatrolSearchTime;
+			return this.entity.isRaidCenterSet() && this.entity.getTarget() == null && !this.entity.hasPassengers() && this.entity.hasPatrolTarget() && !bl;
 		}
 
 		@Override
@@ -170,25 +171,25 @@ public abstract class PatrolEntity extends HostileEntity {
 
 		@Override
 		public void tick() {
-			boolean bl = this.actor.isPatrolLeader();
-			EntityNavigation entityNavigation = this.actor.getNavigation();
+			boolean bl = this.entity.isPatrolLeader();
+			EntityNavigation entityNavigation = this.entity.getNavigation();
 			if (entityNavigation.isIdle()) {
-				List<PatrolEntity> list = this.method_22333();
-				if (this.actor.isRaidCenterSet() && list.isEmpty()) {
-					this.actor.method_22332(false);
-				} else if (bl && this.actor.getPatrolTarget().isWithinDistance(this.actor.getPos(), 10.0)) {
-					this.actor.setRandomPatrolTarget();
+				List<PatrolEntity> list = this.findPatrolTargets();
+				if (this.entity.isRaidCenterSet() && list.isEmpty()) {
+					this.entity.setPatrolling(false);
+				} else if (bl && this.entity.getPatrolTarget().isWithinDistance(this.entity.getPos(), 10.0)) {
+					this.entity.setRandomPatrolTarget();
 				} else {
-					Vec3d vec3d = new Vec3d(this.actor.getPatrolTarget());
-					Vec3d vec3d2 = this.actor.getPos();
+					Vec3d vec3d = Vec3d.ofBottomCenter(this.entity.getPatrolTarget());
+					Vec3d vec3d2 = this.entity.getPos();
 					Vec3d vec3d3 = vec3d2.subtract(vec3d);
 					vec3d = vec3d3.rotateY(90.0F).multiply(0.4).add(vec3d);
 					Vec3d vec3d4 = vec3d.subtract(vec3d2).normalize().multiply(10.0).add(vec3d2);
 					BlockPos blockPos = new BlockPos(vec3d4);
-					blockPos = this.actor.world.getTopPosition(Heightmap.Type.field_13203, blockPos);
-					if (!entityNavigation.startMovingTo((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), bl ? this.fellowSpeed : this.leaderSpeed)) {
+					blockPos = this.entity.world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, blockPos);
+					if (!entityNavigation.startMovingTo((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), bl ? this.followSpeed : this.leaderSpeed)) {
 						this.wander();
-						this.field_20701 = this.actor.world.getTime() + 200L;
+						this.nextPatrolSearchTime = this.entity.world.getTime() + 200L;
 					} else if (bl) {
 						for (PatrolEntity patrolEntity : list) {
 							patrolEntity.setPatrolTarget(blockPos);
@@ -198,18 +199,20 @@ public abstract class PatrolEntity extends HostileEntity {
 			}
 		}
 
-		private List<PatrolEntity> method_22333() {
-			return this.actor
+		private List<PatrolEntity> findPatrolTargets() {
+			return this.entity
 				.world
-				.getEntities(PatrolEntity.class, this.actor.getBoundingBox().expand(16.0), patrolEntity -> patrolEntity.hasNoRaid() && !patrolEntity.isPartOf(this.actor));
+				.getEntitiesByClass(
+					PatrolEntity.class, this.entity.getBoundingBox().expand(16.0), patrolEntity -> patrolEntity.hasNoRaid() && !patrolEntity.isPartOf(this.entity)
+				);
 		}
 
 		private boolean wander() {
-			Random random = this.actor.getRandom();
-			BlockPos blockPos = this.actor
+			Random random = this.entity.getRandom();
+			BlockPos blockPos = this.entity
 				.world
-				.getTopPosition(Heightmap.Type.field_13203, new BlockPos(this.actor).add(-8 + random.nextInt(16), 0, -8 + random.nextInt(16)));
-			return this.actor.getNavigation().startMovingTo((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), this.leaderSpeed);
+				.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, this.entity.getBlockPos().add(-8 + random.nextInt(16), 0, -8 + random.nextInt(16)));
+			return this.entity.getNavigation().startMovingTo((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), this.leaderSpeed);
 		}
 	}
 }

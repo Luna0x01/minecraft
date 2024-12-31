@@ -4,9 +4,9 @@ public class TypedActionResult<T> {
 	private final ActionResult result;
 	private final T value;
 
-	public TypedActionResult(ActionResult actionResult, T object) {
-		this.result = actionResult;
-		this.value = object;
+	public TypedActionResult(ActionResult result, T value) {
+		this.result = result;
+		this.value = value;
 	}
 
 	public ActionResult getResult() {
@@ -17,19 +17,23 @@ public class TypedActionResult<T> {
 		return this.value;
 	}
 
-	public static <T> TypedActionResult<T> success(T object) {
-		return new TypedActionResult<>(ActionResult.field_5812, object);
+	public static <T> TypedActionResult<T> success(T data) {
+		return new TypedActionResult<>(ActionResult.SUCCESS, data);
 	}
 
-	public static <T> TypedActionResult<T> consume(T object) {
-		return new TypedActionResult<>(ActionResult.field_21466, object);
+	public static <T> TypedActionResult<T> consume(T data) {
+		return new TypedActionResult<>(ActionResult.CONSUME, data);
 	}
 
-	public static <T> TypedActionResult<T> pass(T object) {
-		return new TypedActionResult<>(ActionResult.field_5811, object);
+	public static <T> TypedActionResult<T> pass(T data) {
+		return new TypedActionResult<>(ActionResult.PASS, data);
 	}
 
-	public static <T> TypedActionResult<T> fail(T object) {
-		return new TypedActionResult<>(ActionResult.field_5814, object);
+	public static <T> TypedActionResult<T> fail(T data) {
+		return new TypedActionResult<>(ActionResult.FAIL, data);
+	}
+
+	public static <T> TypedActionResult<T> success(T data, boolean swingHand) {
+		return swingHand ? success(data) : consume(data);
 	}
 }

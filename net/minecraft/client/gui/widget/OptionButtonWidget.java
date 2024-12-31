@@ -1,12 +1,26 @@
 package net.minecraft.client.gui.widget;
 
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.client.options.Option;
+import net.minecraft.client.util.OrderableTooltip;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.Text;
 
-public class OptionButtonWidget extends ButtonWidget {
+public class OptionButtonWidget extends ButtonWidget implements OrderableTooltip {
 	private final Option option;
 
-	public OptionButtonWidget(int i, int j, int k, int l, Option option, String string, ButtonWidget.PressAction pressAction) {
-		super(i, j, k, l, string, pressAction);
+	public OptionButtonWidget(int x, int y, int width, int height, Option option, Text text, ButtonWidget.PressAction pressAction) {
+		super(x, y, width, height, text, pressAction);
 		this.option = option;
+	}
+
+	public Option getOption() {
+		return this.option;
+	}
+
+	@Override
+	public Optional<List<OrderedText>> getOrderedTooltip() {
+		return this.option.getTooltip();
 	}
 }

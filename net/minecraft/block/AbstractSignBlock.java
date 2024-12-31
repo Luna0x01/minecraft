@@ -2,7 +2,6 @@ package net.minecraft.block;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -18,32 +17,30 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public abstract class AbstractSignBlock extends BlockWithEntity implements Waterloggable {
 	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(4.0, 0.0, 4.0, 12.0, 16.0, 12.0);
 	private final SignType type;
 
-	protected AbstractSignBlock(Block.Settings settings, SignType signType) {
+	protected AbstractSignBlock(AbstractBlock.Settings settings, SignType type) {
 		super(settings);
-		this.type = signType;
+		this.type = type;
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if ((Boolean)blockState.get(WATERLOGGED)) {
-			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if ((Boolean)state.get(WATERLOGGED)) {
+			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
-		return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return SHAPE;
 	}
 
@@ -53,37 +50,37 @@ public abstract class AbstractSignBlock extends BlockWithEntity implements Water
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView blockView) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new SignBlockEntity();
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		boolean bl = itemStack.getItem() instanceof DyeItem && playerEntity.abilities.allowModifyWorld;
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		boolean bl = itemStack.getItem() instanceof DyeItem && player.abilities.allowModifyWorld;
 		if (world.isClient) {
-			return bl ? ActionResult.field_5812 : ActionResult.field_21466;
+			return bl ? ActionResult.SUCCESS : ActionResult.CONSUME;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof SignBlockEntity) {
 				SignBlockEntity signBlockEntity = (SignBlockEntity)blockEntity;
 				if (bl) {
 					boolean bl2 = signBlockEntity.setTextColor(((DyeItem)itemStack.getItem()).getColor());
-					if (bl2 && !playerEntity.isCreative()) {
+					if (bl2 && !player.isCreative()) {
 						itemStack.decrement(1);
 					}
 				}
 
-				return signBlockEntity.onActivate(playerEntity) ? ActionResult.field_5812 : ActionResult.field_5811;
+				return signBlockEntity.onActivate(player) ? ActionResult.SUCCESS : ActionResult.PASS;
 			} else {
-				return ActionResult.field_5811;
+				return ActionResult.PASS;
 			}
 		}
 	}
 
 	@Override
-	public FluidState getFluidState(BlockState blockState) {
-		return blockState.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(blockState);
+	public FluidState getFluidState(BlockState state) {
+		return state.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
 	}
 
 	public SignType getSignType() {

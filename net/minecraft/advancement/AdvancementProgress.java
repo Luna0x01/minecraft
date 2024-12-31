@@ -18,15 +18,15 @@ import java.util.Set;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import net.minecraft.advancement.criterion.CriterionProgress;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.PacketByteBuf;
 
 public class AdvancementProgress implements Comparable<AdvancementProgress> {
 	private final Map<String, CriterionProgress> criteriaProgresses = Maps.newHashMap();
 	private String[][] requirements = new String[0][];
 
-	public void init(Map<String, AdvancementCriterion> map, String[][] strings) {
-		Set<String> set = map.keySet();
+	public void init(Map<String, AdvancementCriterion> criteria, String[][] requirements) {
+		Set<String> set = criteria.keySet();
 		this.criteriaProgresses.entrySet().removeIf(entry -> !set.contains(entry.getKey()));
 
 		for (String string : set) {
@@ -35,7 +35,7 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 			}
 		}
 
-		this.requirements = strings;
+		this.requirements = requirements;
 	}
 
 	public boolean isDone() {
@@ -72,8 +72,8 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 		return false;
 	}
 
-	public boolean obtain(String string) {
-		CriterionProgress criterionProgress = (CriterionProgress)this.criteriaProgresses.get(string);
+	public boolean obtain(String name) {
+		CriterionProgress criterionProgress = (CriterionProgress)this.criteriaProgresses.get(name);
 		if (criterionProgress != null && !criterionProgress.isObtained()) {
 			criterionProgress.obtain();
 			return true;
@@ -82,8 +82,8 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 		}
 	}
 
-	public boolean reset(String string) {
-		CriterionProgress criterionProgress = (CriterionProgress)this.criteriaProgresses.get(string);
+	public boolean reset(String name) {
+		CriterionProgress criterionProgress = (CriterionProgress)this.criteriaProgresses.get(name);
 		if (criterionProgress != null && criterionProgress.isObtained()) {
 			criterionProgress.reset();
 			return true;
@@ -96,29 +96,29 @@ public class AdvancementProgress implements Comparable<AdvancementProgress> {
 		return "AdvancementProgress{criteria=" + this.criteriaProgresses + ", requirements=" + Arrays.deepToString(this.requirements) + '}';
 	}
 
-	public void toPacket(PacketByteBuf packetByteBuf) {
-		packetByteBuf.writeVarInt(this.criteriaProgresses.size());
+	public void toPacket(PacketByteBuf buf) {
+		buf.writeVarInt(this.criteriaProgresses.size());
 
 		for (Entry<String, CriterionProgress> entry : this.criteriaProgresses.entrySet()) {
-			packetByteBuf.writeString((String)entry.getKey());
-			((CriterionProgress)entry.getValue()).toPacket(packetByteBuf);
+			buf.writeString((String)entry.getKey());
+			((CriterionProgress)entry.getValue()).toPacket(buf);
 		}
 	}
 
-	public static AdvancementProgress fromPacket(PacketByteBuf packetByteBuf) {
+	public static AdvancementProgress fromPacket(PacketByteBuf buf) {
 		AdvancementProgress advancementProgress = new AdvancementProgress();
-		int i = packetByteBuf.readVarInt();
+		int i = buf.readVarInt();
 
 		for (int j = 0; j < i; j++) {
-			advancementProgress.criteriaProgresses.put(packetByteBuf.readString(32767), CriterionProgress.fromPacket(packetByteBuf));
+			advancementProgress.criteriaProgresses.put(buf.readString(32767), CriterionProgress.fromPacket(buf));
 		}
 
 		return advancementProgress;
 	}
 
 	@Nullable
-	public CriterionProgress getCriterionProgress(String string) {
-		return (CriterionProgress)this.criteriaProgresses.get(string);
+	public CriterionProgress getCriterionProgress(String name) {
+		return (CriterionProgress)this.criteriaProgresses.get(name);
 	}
 
 	public float getProgressBarPercentage() {

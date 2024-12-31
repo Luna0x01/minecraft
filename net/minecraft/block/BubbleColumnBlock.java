@@ -2,7 +2,6 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -18,32 +17,32 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class BubbleColumnBlock extends Block implements FluidDrainable {
 	public static final BooleanProperty DRAG = Properties.DRAG;
 
-	public BubbleColumnBlock(Block.Settings settings) {
+	public BubbleColumnBlock(AbstractBlock.Settings settings) {
 		super(settings);
 		this.setDefaultState(this.stateManager.getDefaultState().with(DRAG, Boolean.valueOf(true)));
 	}
 
 	@Override
-	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
-		BlockState blockState2 = world.getBlockState(blockPos.up());
-		if (blockState2.isAir()) {
-			entity.onBubbleColumnSurfaceCollision((Boolean)blockState.get(DRAG));
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		BlockState blockState = world.getBlockState(pos.up());
+		if (blockState.isAir()) {
+			entity.onBubbleColumnSurfaceCollision((Boolean)state.get(DRAG));
 			if (!world.isClient) {
 				ServerWorld serverWorld = (ServerWorld)world;
 
 				for (int i = 0; i < 2; i++) {
 					serverWorld.spawnParticles(
-						ParticleTypes.field_11202,
-						(double)((float)blockPos.getX() + world.random.nextFloat()),
-						(double)(blockPos.getY() + 1),
-						(double)((float)blockPos.getZ() + world.random.nextFloat()),
+						ParticleTypes.SPLASH,
+						(double)pos.getX() + world.random.nextDouble(),
+						(double)(pos.getY() + 1),
+						(double)pos.getZ() + world.random.nextDouble(),
 						1,
 						0.0,
 						0.0,
@@ -51,10 +50,10 @@ public class BubbleColumnBlock extends Block implements FluidDrainable {
 						1.0
 					);
 					serverWorld.spawnParticles(
-						ParticleTypes.field_11247,
-						(double)((float)blockPos.getX() + world.random.nextFloat()),
-						(double)(blockPos.getY() + 1),
-						(double)((float)blockPos.getZ() + world.random.nextFloat()),
+						ParticleTypes.BUBBLE,
+						(double)pos.getX() + world.random.nextDouble(),
+						(double)(pos.getY() + 1),
+						(double)pos.getZ() + world.random.nextDouble(),
 						1,
 						0.0,
 						0.01,
@@ -64,100 +63,103 @@ public class BubbleColumnBlock extends Block implements FluidDrainable {
 				}
 			}
 		} else {
-			entity.onBubbleColumnCollision((Boolean)blockState.get(DRAG));
+			entity.onBubbleColumnCollision((Boolean)state.get(DRAG));
 		}
 	}
 
 	@Override
-	public void onBlockAdded(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
-		update(world, blockPos.up(), calculateDrag(world, blockPos.down()));
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+		update(world, pos.up(), calculateDrag(world, pos.down()));
 	}
 
 	@Override
-	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
-		update(serverWorld, blockPos.up(), calculateDrag(serverWorld, blockPos));
+	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+		update(world, pos.up(), calculateDrag(world, pos));
 	}
 
 	@Override
-	public FluidState getFluidState(BlockState blockState) {
+	public FluidState getFluidState(BlockState state) {
 		return Fluids.WATER.getStill(false);
 	}
 
-	public static void update(IWorld iWorld, BlockPos blockPos, boolean bl) {
-		if (isStillWater(iWorld, blockPos)) {
-			iWorld.setBlockState(blockPos, Blocks.field_10422.getDefaultState().with(DRAG, Boolean.valueOf(bl)), 2);
+	public static void update(WorldAccess world, BlockPos pos, boolean drag) {
+		if (isStillWater(world, pos)) {
+			world.setBlockState(pos, Blocks.BUBBLE_COLUMN.getDefaultState().with(DRAG, Boolean.valueOf(drag)), 2);
 		}
 	}
 
-	public static boolean isStillWater(IWorld iWorld, BlockPos blockPos) {
-		FluidState fluidState = iWorld.getFluidState(blockPos);
-		return iWorld.getBlockState(blockPos).getBlock() == Blocks.field_10382 && fluidState.getLevel() >= 8 && fluidState.isStill();
+	public static boolean isStillWater(WorldAccess world, BlockPos pos) {
+		FluidState fluidState = world.getFluidState(pos);
+		return world.getBlockState(pos).isOf(Blocks.WATER) && fluidState.getLevel() >= 8 && fluidState.isStill();
 	}
 
-	private static boolean calculateDrag(BlockView blockView, BlockPos blockPos) {
-		BlockState blockState = blockView.getBlockState(blockPos);
-		Block block = blockState.getBlock();
-		return block == Blocks.field_10422 ? (Boolean)blockState.get(DRAG) : block != Blocks.field_10114;
-	}
-
-	@Override
-	public int getTickRate(WorldView worldView) {
-		return 5;
+	private static boolean calculateDrag(BlockView world, BlockPos pos) {
+		BlockState blockState = world.getBlockState(pos);
+		return blockState.isOf(Blocks.BUBBLE_COLUMN) ? (Boolean)blockState.get(DRAG) : !blockState.isOf(Blocks.SOUL_SAND);
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		double d = (double)blockPos.getX();
-		double e = (double)blockPos.getY();
-		double f = (double)blockPos.getZ();
-		if ((Boolean)blockState.get(DRAG)) {
-			world.addImportantParticle(ParticleTypes.field_11243, d + 0.5, e + 0.8, f, 0.0, 0.0, 0.0);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		double d = (double)pos.getX();
+		double e = (double)pos.getY();
+		double f = (double)pos.getZ();
+		if ((Boolean)state.get(DRAG)) {
+			world.addImportantParticle(ParticleTypes.CURRENT_DOWN, d + 0.5, e + 0.8, f, 0.0, 0.0, 0.0);
 			if (random.nextInt(200) == 0) {
-				world.playSound(d, e, f, SoundEvents.field_14650, SoundCategory.field_15245, 0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
+				world.playSound(
+					d,
+					e,
+					f,
+					SoundEvents.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_AMBIENT,
+					SoundCategory.BLOCKS,
+					0.2F + random.nextFloat() * 0.2F,
+					0.9F + random.nextFloat() * 0.15F,
+					false
+				);
 			}
 		} else {
-			world.addImportantParticle(ParticleTypes.field_11238, d + 0.5, e, f + 0.5, 0.0, 0.04, 0.0);
+			world.addImportantParticle(ParticleTypes.BUBBLE_COLUMN_UP, d + 0.5, e, f + 0.5, 0.0, 0.04, 0.0);
 			world.addImportantParticle(
-				ParticleTypes.field_11238, d + (double)random.nextFloat(), e + (double)random.nextFloat(), f + (double)random.nextFloat(), 0.0, 0.04, 0.0
+				ParticleTypes.BUBBLE_COLUMN_UP, d + (double)random.nextFloat(), e + (double)random.nextFloat(), f + (double)random.nextFloat(), 0.0, 0.04, 0.0
 			);
 			if (random.nextInt(200) == 0) {
-				world.playSound(d, e, f, SoundEvents.field_15161, SoundCategory.field_15245, 0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
+				world.playSound(
+					d, e, f, SoundEvents.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, SoundCategory.BLOCKS, 0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false
+				);
 			}
 		}
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if (!blockState.canPlaceAt(iWorld, blockPos)) {
-			return Blocks.field_10382.getDefaultState();
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if (!state.canPlaceAt(world, pos)) {
+			return Blocks.WATER.getDefaultState();
 		} else {
-			if (direction == Direction.field_11033) {
-				iWorld.setBlockState(blockPos, Blocks.field_10422.getDefaultState().with(DRAG, Boolean.valueOf(calculateDrag(iWorld, blockPos2))), 2);
-			} else if (direction == Direction.field_11036 && blockState2.getBlock() != Blocks.field_10422 && isStillWater(iWorld, blockPos2)) {
-				iWorld.getBlockTickScheduler().schedule(blockPos, this, this.getTickRate(iWorld));
+			if (direction == Direction.DOWN) {
+				world.setBlockState(pos, Blocks.BUBBLE_COLUMN.getDefaultState().with(DRAG, Boolean.valueOf(calculateDrag(world, posFrom))), 2);
+			} else if (direction == Direction.UP && !newState.isOf(Blocks.BUBBLE_COLUMN) && isStillWater(world, posFrom)) {
+				world.getBlockTickScheduler().schedule(pos, this, 5);
 			}
 
-			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
-			return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 		}
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
-		Block block = worldView.getBlockState(blockPos.down()).getBlock();
-		return block == Blocks.field_10422 || block == Blocks.field_10092 || block == Blocks.field_10114;
+	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+		BlockState blockState = world.getBlockState(pos.down());
+		return blockState.isOf(Blocks.BUBBLE_COLUMN) || blockState.isOf(Blocks.MAGMA_BLOCK) || blockState.isOf(Blocks.SOUL_SAND);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return VoxelShapes.empty();
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState blockState) {
-		return BlockRenderType.field_11455;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.INVISIBLE;
 	}
 
 	@Override
@@ -166,8 +168,8 @@ public class BubbleColumnBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public Fluid tryDrainFluid(IWorld iWorld, BlockPos blockPos, BlockState blockState) {
-		iWorld.setBlockState(blockPos, Blocks.field_10124.getDefaultState(), 11);
+	public Fluid tryDrainFluid(WorldAccess world, BlockPos pos, BlockState state) {
+		world.setBlockState(pos, Blocks.AIR.getDefaultState(), 11);
 		return Fluids.WATER;
 	}
 }

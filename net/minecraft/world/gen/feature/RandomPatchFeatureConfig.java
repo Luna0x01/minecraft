@@ -1,23 +1,39 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.gen.placer.BlockPlacer;
-import net.minecraft.world.gen.placer.BlockPlacerType;
-import net.minecraft.world.gen.stateprovider.StateProvider;
-import net.minecraft.world.gen.stateprovider.StateProviderType;
+import net.minecraft.world.gen.stateprovider.BlockStateProvider;
 
 public class RandomPatchFeatureConfig implements FeatureConfig {
-	public final StateProvider stateProvider;
+	public static final Codec<RandomPatchFeatureConfig> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(
+					BlockStateProvider.TYPE_CODEC.fieldOf("state_provider").forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.stateProvider),
+					BlockPlacer.TYPE_CODEC.fieldOf("block_placer").forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.blockPlacer),
+					BlockState.CODEC
+						.listOf()
+						.fieldOf("whitelist")
+						.forGetter(randomPatchFeatureConfig -> (List)randomPatchFeatureConfig.whitelist.stream().map(Block::getDefaultState).collect(Collectors.toList())),
+					BlockState.CODEC.listOf().fieldOf("blacklist").forGetter(randomPatchFeatureConfig -> ImmutableList.copyOf(randomPatchFeatureConfig.blacklist)),
+					Codec.INT.fieldOf("tries").orElse(128).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.tries),
+					Codec.INT.fieldOf("xspread").orElse(7).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadX),
+					Codec.INT.fieldOf("yspread").orElse(3).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadY),
+					Codec.INT.fieldOf("zspread").orElse(7).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.spreadZ),
+					Codec.BOOL.fieldOf("can_replace").orElse(false).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.canReplace),
+					Codec.BOOL.fieldOf("project").orElse(true).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.project),
+					Codec.BOOL.fieldOf("need_water").orElse(false).forGetter(randomPatchFeatureConfig -> randomPatchFeatureConfig.needsWater)
+				)
+				.apply(instance, RandomPatchFeatureConfig::new)
+	);
+	public final BlockStateProvider stateProvider;
 	public final BlockPlacer blockPlacer;
 	public final Set<Block> whitelist;
 	public final Set<BlockState> blacklist;
@@ -30,66 +46,61 @@ public class RandomPatchFeatureConfig implements FeatureConfig {
 	public final boolean needsWater;
 
 	private RandomPatchFeatureConfig(
-		StateProvider stateProvider, BlockPlacer blockPlacer, Set<Block> set, Set<BlockState> set2, int i, int j, int k, int l, boolean bl, boolean bl2, boolean bl3
+		BlockStateProvider stateProvider,
+		BlockPlacer blockPlacer,
+		List<BlockState> whitelist,
+		List<BlockState> blacklist,
+		int tries,
+		int spreadX,
+		int spreadY,
+		int spreadZ,
+		boolean canReplace,
+		boolean project,
+		boolean needsWater
 	) {
-		this.stateProvider = stateProvider;
-		this.blockPlacer = blockPlacer;
-		this.whitelist = set;
-		this.blacklist = set2;
-		this.tries = i;
-		this.spreadX = j;
-		this.spreadY = k;
-		this.spreadZ = l;
-		this.canReplace = bl;
-		this.project = bl2;
-		this.needsWater = bl3;
-	}
-
-	@Override
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		com.google.common.collect.ImmutableMap.Builder<T, T> builder = ImmutableMap.builder();
-		builder.put(dynamicOps.createString("state_provider"), this.stateProvider.serialize(dynamicOps))
-			.put(dynamicOps.createString("block_placer"), this.blockPlacer.serialize(dynamicOps))
-			.put(
-				dynamicOps.createString("whitelist"),
-				dynamicOps.createList(this.whitelist.stream().map(block -> BlockState.serialize(dynamicOps, block.getDefaultState()).getValue()))
-			)
-			.put(
-				dynamicOps.createString("blacklist"),
-				dynamicOps.createList(this.blacklist.stream().map(blockState -> BlockState.serialize(dynamicOps, blockState).getValue()))
-			)
-			.put(dynamicOps.createString("tries"), dynamicOps.createInt(this.tries))
-			.put(dynamicOps.createString("xspread"), dynamicOps.createInt(this.spreadX))
-			.put(dynamicOps.createString("yspread"), dynamicOps.createInt(this.spreadY))
-			.put(dynamicOps.createString("zspread"), dynamicOps.createInt(this.spreadZ))
-			.put(dynamicOps.createString("can_replace"), dynamicOps.createBoolean(this.canReplace))
-			.put(dynamicOps.createString("project"), dynamicOps.createBoolean(this.project))
-			.put(dynamicOps.createString("need_water"), dynamicOps.createBoolean(this.needsWater));
-		return new Dynamic(dynamicOps, dynamicOps.createMap(builder.build()));
-	}
-
-	public static <T> RandomPatchFeatureConfig deserialize(Dynamic<T> dynamic) {
-		StateProviderType<?> stateProviderType = Registry.field_21445
-			.get(new Identifier((String)dynamic.get("state_provider").get("type").asString().orElseThrow(RuntimeException::new)));
-		BlockPlacerType<?> blockPlacerType = Registry.field_21446
-			.get(new Identifier((String)dynamic.get("block_placer").get("type").asString().orElseThrow(RuntimeException::new)));
-		return new RandomPatchFeatureConfig(
-			stateProviderType.deserialize(dynamic.get("state_provider").orElseEmptyMap()),
-			blockPlacerType.deserialize(dynamic.get("block_placer").orElseEmptyMap()),
-			(Set<Block>)dynamic.get("whitelist").asList(BlockState::deserialize).stream().map(BlockState::getBlock).collect(Collectors.toSet()),
-			Sets.newHashSet(dynamic.get("blacklist").asList(BlockState::deserialize)),
-			dynamic.get("tries").asInt(128),
-			dynamic.get("xspread").asInt(7),
-			dynamic.get("yspread").asInt(3),
-			dynamic.get("zspread").asInt(7),
-			dynamic.get("can_replace").asBoolean(false),
-			dynamic.get("project").asBoolean(true),
-			dynamic.get("need_water").asBoolean(false)
+		this(
+			stateProvider,
+			blockPlacer,
+			(Set<Block>)whitelist.stream().map(AbstractBlock.AbstractBlockState::getBlock).collect(Collectors.toSet()),
+			ImmutableSet.copyOf(blacklist),
+			tries,
+			spreadX,
+			spreadY,
+			spreadZ,
+			canReplace,
+			project,
+			needsWater
 		);
 	}
 
+	private RandomPatchFeatureConfig(
+		BlockStateProvider stateProvider,
+		BlockPlacer blockPlacer,
+		Set<Block> whitelist,
+		Set<BlockState> blacklist,
+		int tries,
+		int spreadX,
+		int spreadY,
+		int spreadZ,
+		boolean canReplace,
+		boolean project,
+		boolean needsWater
+	) {
+		this.stateProvider = stateProvider;
+		this.blockPlacer = blockPlacer;
+		this.whitelist = whitelist;
+		this.blacklist = blacklist;
+		this.tries = tries;
+		this.spreadX = spreadX;
+		this.spreadY = spreadY;
+		this.spreadZ = spreadZ;
+		this.canReplace = canReplace;
+		this.project = project;
+		this.needsWater = needsWater;
+	}
+
 	public static class Builder {
-		private final StateProvider stateProvider;
+		private final BlockStateProvider stateProvider;
 		private final BlockPlacer blockPlacer;
 		private Set<Block> whitelist = ImmutableSet.of();
 		private Set<BlockState> blacklist = ImmutableSet.of();
@@ -101,38 +112,38 @@ public class RandomPatchFeatureConfig implements FeatureConfig {
 		private boolean project = true;
 		private boolean needsWater = false;
 
-		public Builder(StateProvider stateProvider, BlockPlacer blockPlacer) {
+		public Builder(BlockStateProvider stateProvider, BlockPlacer blockPlacer) {
 			this.stateProvider = stateProvider;
 			this.blockPlacer = blockPlacer;
 		}
 
-		public RandomPatchFeatureConfig.Builder whitelist(Set<Block> set) {
-			this.whitelist = set;
+		public RandomPatchFeatureConfig.Builder whitelist(Set<Block> whitelist) {
+			this.whitelist = whitelist;
 			return this;
 		}
 
-		public RandomPatchFeatureConfig.Builder blacklist(Set<BlockState> set) {
-			this.blacklist = set;
+		public RandomPatchFeatureConfig.Builder blacklist(Set<BlockState> blacklist) {
+			this.blacklist = blacklist;
 			return this;
 		}
 
-		public RandomPatchFeatureConfig.Builder tries(int i) {
-			this.tries = i;
+		public RandomPatchFeatureConfig.Builder tries(int tries) {
+			this.tries = tries;
 			return this;
 		}
 
-		public RandomPatchFeatureConfig.Builder spreadX(int i) {
-			this.spreadX = i;
+		public RandomPatchFeatureConfig.Builder spreadX(int spreadX) {
+			this.spreadX = spreadX;
 			return this;
 		}
 
-		public RandomPatchFeatureConfig.Builder spreadY(int i) {
-			this.spreadY = i;
+		public RandomPatchFeatureConfig.Builder spreadY(int spreadY) {
+			this.spreadY = spreadY;
 			return this;
 		}
 
-		public RandomPatchFeatureConfig.Builder spreadZ(int i) {
-			this.spreadZ = i;
+		public RandomPatchFeatureConfig.Builder spreadZ(int spreadZ) {
+			this.spreadZ = spreadZ;
 			return this;
 		}
 

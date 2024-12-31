@@ -20,17 +20,17 @@ public class PistonHandler {
 	private final List<BlockPos> brokenBlocks = Lists.newArrayList();
 	private final Direction pistonDirection;
 
-	public PistonHandler(World world, BlockPos blockPos, Direction direction, boolean bl) {
+	public PistonHandler(World world, BlockPos pos, Direction dir, boolean retracted) {
 		this.world = world;
-		this.posFrom = blockPos;
-		this.pistonDirection = direction;
-		this.retracted = bl;
-		if (bl) {
-			this.motionDirection = direction;
-			this.posTo = blockPos.offset(direction);
+		this.posFrom = pos;
+		this.pistonDirection = dir;
+		this.retracted = retracted;
+		if (retracted) {
+			this.motionDirection = dir;
+			this.posTo = pos.offset(dir);
 		} else {
-			this.motionDirection = direction.getOpposite();
-			this.posTo = blockPos.offset(direction, 2);
+			this.motionDirection = dir.getOpposite();
+			this.posTo = pos.offset(dir, 2);
 		}
 	}
 
@@ -39,7 +39,7 @@ public class PistonHandler {
 		this.brokenBlocks.clear();
 		BlockState blockState = this.world.getBlockState(this.posTo);
 		if (!PistonBlock.isMovable(blockState, this.world, this.posTo, this.motionDirection, false, this.pistonDirection)) {
-			if (this.retracted && blockState.getPistonBehavior() == PistonBehavior.field_15971) {
+			if (this.retracted && blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
 				this.brokenBlocks.add(this.posTo);
 				return true;
 			} else {
@@ -60,27 +60,27 @@ public class PistonHandler {
 	}
 
 	private static boolean isBlockSticky(Block block) {
-		return block == Blocks.field_10030 || block == Blocks.field_21211;
+		return block == Blocks.SLIME_BLOCK || block == Blocks.HONEY_BLOCK;
 	}
 
 	private static boolean isAdjacentBlockStuck(Block block, Block block2) {
-		if (block == Blocks.field_21211 && block2 == Blocks.field_10030) {
+		if (block == Blocks.HONEY_BLOCK && block2 == Blocks.SLIME_BLOCK) {
 			return false;
 		} else {
-			return block == Blocks.field_10030 && block2 == Blocks.field_21211 ? false : isBlockSticky(block) || isBlockSticky(block2);
+			return block == Blocks.SLIME_BLOCK && block2 == Blocks.HONEY_BLOCK ? false : isBlockSticky(block) || isBlockSticky(block2);
 		}
 	}
 
-	private boolean tryMove(BlockPos blockPos, Direction direction) {
-		BlockState blockState = this.world.getBlockState(blockPos);
+	private boolean tryMove(BlockPos pos, Direction dir) {
+		BlockState blockState = this.world.getBlockState(pos);
 		Block block = blockState.getBlock();
 		if (blockState.isAir()) {
 			return true;
-		} else if (!PistonBlock.isMovable(blockState, this.world, blockPos, this.motionDirection, false, direction)) {
+		} else if (!PistonBlock.isMovable(blockState, this.world, pos, this.motionDirection, false, dir)) {
 			return true;
-		} else if (blockPos.equals(this.posFrom)) {
+		} else if (pos.equals(this.posFrom)) {
 			return true;
-		} else if (this.movedBlocks.contains(blockPos)) {
+		} else if (this.movedBlocks.contains(pos)) {
 			return true;
 		} else {
 			int i = 1;
@@ -88,14 +88,14 @@ public class PistonHandler {
 				return false;
 			} else {
 				while (isBlockSticky(block)) {
-					BlockPos blockPos2 = blockPos.offset(this.motionDirection.getOpposite(), i);
+					BlockPos blockPos = pos.offset(this.motionDirection.getOpposite(), i);
 					Block block2 = block;
-					blockState = this.world.getBlockState(blockPos2);
+					blockState = this.world.getBlockState(blockPos);
 					block = blockState.getBlock();
 					if (blockState.isAir()
 						|| !isAdjacentBlockStuck(block2, block)
-						|| !PistonBlock.isMovable(blockState, this.world, blockPos2, this.motionDirection, false, this.motionDirection.getOpposite())
-						|| blockPos2.equals(this.posFrom)) {
+						|| !PistonBlock.isMovable(blockState, this.world, blockPos, this.motionDirection, false, this.motionDirection.getOpposite())
+						|| blockPos.equals(this.posFrom)) {
 						break;
 					}
 
@@ -107,21 +107,21 @@ public class PistonHandler {
 				int j = 0;
 
 				for (int k = i - 1; k >= 0; k--) {
-					this.movedBlocks.add(blockPos.offset(this.motionDirection.getOpposite(), k));
+					this.movedBlocks.add(pos.offset(this.motionDirection.getOpposite(), k));
 					j++;
 				}
 
 				int l = 1;
 
 				while (true) {
-					BlockPos blockPos3 = blockPos.offset(this.motionDirection, l);
-					int m = this.movedBlocks.indexOf(blockPos3);
+					BlockPos blockPos2 = pos.offset(this.motionDirection, l);
+					int m = this.movedBlocks.indexOf(blockPos2);
 					if (m > -1) {
 						this.setMovedBlocks(j, m);
 
 						for (int n = 0; n <= m + j; n++) {
-							BlockPos blockPos4 = (BlockPos)this.movedBlocks.get(n);
-							if (isBlockSticky(this.world.getBlockState(blockPos4).getBlock()) && !this.canMoveAdjacentBlock(blockPos4)) {
+							BlockPos blockPos3 = (BlockPos)this.movedBlocks.get(n);
+							if (isBlockSticky(this.world.getBlockState(blockPos3).getBlock()) && !this.canMoveAdjacentBlock(blockPos3)) {
 								return false;
 							}
 						}
@@ -129,17 +129,17 @@ public class PistonHandler {
 						return true;
 					}
 
-					blockState = this.world.getBlockState(blockPos3);
+					blockState = this.world.getBlockState(blockPos2);
 					if (blockState.isAir()) {
 						return true;
 					}
 
-					if (!PistonBlock.isMovable(blockState, this.world, blockPos3, this.motionDirection, true, this.motionDirection) || blockPos3.equals(this.posFrom)) {
+					if (!PistonBlock.isMovable(blockState, this.world, blockPos2, this.motionDirection, true, this.motionDirection) || blockPos2.equals(this.posFrom)) {
 						return false;
 					}
 
-					if (blockState.getPistonBehavior() == PistonBehavior.field_15971) {
-						this.brokenBlocks.add(blockPos3);
+					if (blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
+						this.brokenBlocks.add(blockPos2);
 						return true;
 					}
 
@@ -147,7 +147,7 @@ public class PistonHandler {
 						return false;
 					}
 
-					this.movedBlocks.add(blockPos3);
+					this.movedBlocks.add(blockPos2);
 					j++;
 					l++;
 				}
@@ -155,27 +155,27 @@ public class PistonHandler {
 		}
 	}
 
-	private void setMovedBlocks(int i, int j) {
+	private void setMovedBlocks(int from, int to) {
 		List<BlockPos> list = Lists.newArrayList();
 		List<BlockPos> list2 = Lists.newArrayList();
 		List<BlockPos> list3 = Lists.newArrayList();
-		list.addAll(this.movedBlocks.subList(0, j));
-		list2.addAll(this.movedBlocks.subList(this.movedBlocks.size() - i, this.movedBlocks.size()));
-		list3.addAll(this.movedBlocks.subList(j, this.movedBlocks.size() - i));
+		list.addAll(this.movedBlocks.subList(0, to));
+		list2.addAll(this.movedBlocks.subList(this.movedBlocks.size() - from, this.movedBlocks.size()));
+		list3.addAll(this.movedBlocks.subList(to, this.movedBlocks.size() - from));
 		this.movedBlocks.clear();
 		this.movedBlocks.addAll(list);
 		this.movedBlocks.addAll(list2);
 		this.movedBlocks.addAll(list3);
 	}
 
-	private boolean canMoveAdjacentBlock(BlockPos blockPos) {
-		BlockState blockState = this.world.getBlockState(blockPos);
+	private boolean canMoveAdjacentBlock(BlockPos pos) {
+		BlockState blockState = this.world.getBlockState(pos);
 
 		for (Direction direction : Direction.values()) {
 			if (direction.getAxis() != this.motionDirection.getAxis()) {
-				BlockPos blockPos2 = blockPos.offset(direction);
-				BlockState blockState2 = this.world.getBlockState(blockPos2);
-				if (isAdjacentBlockStuck(blockState2.getBlock(), blockState.getBlock()) && !this.tryMove(blockPos2, direction)) {
+				BlockPos blockPos = pos.offset(direction);
+				BlockState blockState2 = this.world.getBlockState(blockPos);
+				if (isAdjacentBlockStuck(blockState2.getBlock(), blockState.getBlock()) && !this.tryMove(blockPos, direction)) {
 					return false;
 				}
 			}

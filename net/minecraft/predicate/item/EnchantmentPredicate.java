@@ -24,9 +24,9 @@ public class EnchantmentPredicate {
 		this.levels = NumberRange.IntRange.ANY;
 	}
 
-	public EnchantmentPredicate(@Nullable Enchantment enchantment, NumberRange.IntRange intRange) {
+	public EnchantmentPredicate(@Nullable Enchantment enchantment, NumberRange.IntRange levels) {
 		this.enchantment = enchantment;
-		this.levels = intRange;
+		this.levels = levels;
 	}
 
 	public boolean test(Map<Enchantment, Integer> map) {
@@ -58,7 +58,7 @@ public class EnchantmentPredicate {
 		} else {
 			JsonObject jsonObject = new JsonObject();
 			if (this.enchantment != null) {
-				jsonObject.addProperty("enchantment", Registry.field_11160.getId(this.enchantment).toString());
+				jsonObject.addProperty("enchantment", Registry.ENCHANTMENT.getId(this.enchantment).toString());
 			}
 
 			jsonObject.add("levels", this.levels.toJson());
@@ -66,13 +66,13 @@ public class EnchantmentPredicate {
 		}
 	}
 
-	public static EnchantmentPredicate deserialize(@Nullable JsonElement jsonElement) {
-		if (jsonElement != null && !jsonElement.isJsonNull()) {
-			JsonObject jsonObject = JsonHelper.asObject(jsonElement, "enchantment");
+	public static EnchantmentPredicate deserialize(@Nullable JsonElement el) {
+		if (el != null && !el.isJsonNull()) {
+			JsonObject jsonObject = JsonHelper.asObject(el, "enchantment");
 			Enchantment enchantment = null;
 			if (jsonObject.has("enchantment")) {
 				Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "enchantment"));
-				enchantment = (Enchantment)Registry.field_11160
+				enchantment = (Enchantment)Registry.ENCHANTMENT
 					.getOrEmpty(identifier)
 					.orElseThrow(() -> new JsonSyntaxException("Unknown enchantment '" + identifier + "'"));
 			}
@@ -84,9 +84,9 @@ public class EnchantmentPredicate {
 		}
 	}
 
-	public static EnchantmentPredicate[] deserializeAll(@Nullable JsonElement jsonElement) {
-		if (jsonElement != null && !jsonElement.isJsonNull()) {
-			JsonArray jsonArray = JsonHelper.asArray(jsonElement, "enchantments");
+	public static EnchantmentPredicate[] deserializeAll(@Nullable JsonElement el) {
+		if (el != null && !el.isJsonNull()) {
+			JsonArray jsonArray = JsonHelper.asArray(el, "enchantments");
 			EnchantmentPredicate[] enchantmentPredicates = new EnchantmentPredicate[jsonArray.size()];
 
 			for (int i = 0; i < enchantmentPredicates.length; i++) {

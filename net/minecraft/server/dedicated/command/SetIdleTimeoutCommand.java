@@ -8,8 +8,8 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 
 public class SetIdleTimeoutCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("setidletimeout")
 					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
 				.then(
@@ -19,9 +19,9 @@ public class SetIdleTimeoutCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, int i) {
-		serverCommandSource.getMinecraftServer().setPlayerIdleTimeout(i);
-		serverCommandSource.sendFeedback(new TranslatableText("commands.setidletimeout.success", i), true);
-		return i;
+	private static int execute(ServerCommandSource source, int minutes) {
+		source.getMinecraftServer().setPlayerIdleTimeout(minutes);
+		source.sendFeedback(new TranslatableText("commands.setidletimeout.success", minutes), true);
+		return minutes;
 	}
 }

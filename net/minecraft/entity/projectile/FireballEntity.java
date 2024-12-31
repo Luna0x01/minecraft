@@ -18,50 +18,51 @@ public class FireballEntity extends AbstractFireballEntity {
 		super(entityType, world);
 	}
 
-	public FireballEntity(World world, double d, double e, double f, double g, double h, double i) {
-		super(EntityType.field_6066, d, e, f, g, h, i, world);
+	public FireballEntity(World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ) {
+		super(EntityType.FIREBALL, x, y, z, velocityX, velocityY, velocityZ, world);
 	}
 
-	public FireballEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
-		super(EntityType.field_6066, livingEntity, d, e, f, world);
+	public FireballEntity(World world, LivingEntity owner, double velocityX, double velocityY, double velocityZ) {
+		super(EntityType.FIREBALL, owner, velocityX, velocityY, velocityZ, world);
 	}
 
 	@Override
 	protected void onCollision(HitResult hitResult) {
 		super.onCollision(hitResult);
 		if (!this.world.isClient) {
-			if (hitResult.getType() == HitResult.Type.field_1331) {
-				Entity entity = ((EntityHitResult)hitResult).getEntity();
-				entity.damage(DamageSource.explosiveProjectile(this, this.owner), 6.0F);
-				this.dealDamage(this.owner, entity);
-			}
-
-			boolean bl = this.world.getGameRules().getBoolean(GameRules.field_19388);
+			boolean bl = this.world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING);
 			this.world
 				.createExplosion(
-					null,
-					this.getX(),
-					this.getY(),
-					this.getZ(),
-					(float)this.explosionPower,
-					bl,
-					bl ? Explosion.DestructionType.field_18687 : Explosion.DestructionType.field_18685
+					null, this.getX(), this.getY(), this.getZ(), (float)this.explosionPower, bl, bl ? Explosion.DestructionType.DESTROY : Explosion.DestructionType.NONE
 				);
 			this.remove();
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("ExplosionPower", this.explosionPower);
+	protected void onEntityHit(EntityHitResult entityHitResult) {
+		super.onEntityHit(entityHitResult);
+		if (!this.world.isClient) {
+			Entity entity = entityHitResult.getEntity();
+			Entity entity2 = this.getOwner();
+			entity.damage(DamageSource.fireball(this, entity2), 6.0F);
+			if (entity2 instanceof LivingEntity) {
+				this.dealDamage((LivingEntity)entity2, entity);
+			}
+		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.contains("ExplosionPower", 99)) {
-			this.explosionPower = compoundTag.getInt("ExplosionPower");
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("ExplosionPower", this.explosionPower);
+	}
+
+	@Override
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("ExplosionPower", 99)) {
+			this.explosionPower = tag.getInt("ExplosionPower");
 		}
 	}
 }

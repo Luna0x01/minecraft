@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
@@ -19,17 +18,17 @@ public class PotatoesBlock extends CropBlock {
 		Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 9.0, 16.0)
 	};
 
-	public PotatoesBlock(Block.Settings settings) {
+	public PotatoesBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
 	protected ItemConvertible getSeedsItem() {
-		return Items.field_8567;
+		return Items.POTATO;
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		return AGE_TO_SHAPE[blockState.get(this.getAgeProperty())];
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return AGE_TO_SHAPE[state.get(this.getAgeProperty())];
 	}
 }

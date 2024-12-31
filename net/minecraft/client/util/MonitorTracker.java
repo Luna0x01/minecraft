@@ -26,12 +26,12 @@ public class MonitorTracker {
 		}
 	}
 
-	private void handleMonitorEvent(long l, int i) {
+	private void handleMonitorEvent(long monitor, int event) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
-		if (i == 262145) {
-			this.pointerToMonitorMap.put(l, this.monitorFactory.createMonitor(l));
-		} else if (i == 262146) {
-			this.pointerToMonitorMap.remove(l);
+		if (event == 262145) {
+			this.pointerToMonitorMap.put(monitor, this.monitorFactory.createMonitor(monitor));
+		} else if (event == 262146) {
+			this.pointerToMonitorMap.remove(monitor);
 		}
 	}
 
@@ -78,11 +78,11 @@ public class MonitorTracker {
 		}
 	}
 
-	public static int clamp(int i, int j, int k) {
-		if (i < j) {
-			return j;
+	public static int clamp(int value, int min, int max) {
+		if (value < min) {
+			return min;
 		} else {
-			return i > k ? k : i;
+			return value > max ? max : value;
 		}
 	}
 

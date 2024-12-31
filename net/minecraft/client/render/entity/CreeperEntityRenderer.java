@@ -8,7 +8,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class CreeperEntityRenderer extends MobEntityRenderer<CreeperEntity, CreeperEntityModel<CreeperEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/creeper/creeper.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/creeper/creeper.png");
 
 	public CreeperEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new CreeperEntityModel<>(), 0.5F);
@@ -26,12 +26,12 @@ public class CreeperEntityRenderer extends MobEntityRenderer<CreeperEntity, Cree
 		matrixStack.scale(i, j, i);
 	}
 
-	protected float getWhiteOverlayProgress(CreeperEntity creeperEntity, float f) {
+	protected float getAnimationCounter(CreeperEntity creeperEntity, float f) {
 		float g = creeperEntity.getClientFuseTime(f);
 		return (int)(g * 10.0F) % 2 == 0 ? 0.0F : MathHelper.clamp(g, 0.5F, 1.0F);
 	}
 
 	public Identifier getTexture(CreeperEntity creeperEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

@@ -4,16 +4,20 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import java.util.Collection;
-import net.minecraft.command.arguments.EntityArgumentType;
-import net.minecraft.command.arguments.MessageArgumentType;
+import java.util.UUID;
+import java.util.function.Consumer;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.MessageArgumentType;
+import net.minecraft.entity.Entity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 
 public class MessageCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		LiteralCommandNode<ServerCommandSource> literalCommandNode = commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		LiteralCommandNode<ServerCommandSource> literalCommandNode = dispatcher.register(
 			(LiteralArgumentBuilder)CommandManager.literal("msg")
 				.then(
 					CommandManager.argument("targets", EntityArgumentType.players())
@@ -29,23 +33,34 @@ public class MessageCommand {
 						)
 				)
 		);
-		commandDispatcher.register((LiteralArgumentBuilder)CommandManager.literal("tell").redirect(literalCommandNode));
-		commandDispatcher.register((LiteralArgumentBuilder)CommandManager.literal("w").redirect(literalCommandNode));
+		dispatcher.register((LiteralArgumentBuilder)CommandManager.literal("tell").redirect(literalCommandNode));
+		dispatcher.register((LiteralArgumentBuilder)CommandManager.literal("w").redirect(literalCommandNode));
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection, Text text) {
-		for (ServerPlayerEntity serverPlayerEntity : collection) {
-			serverPlayerEntity.sendMessage(
-				new TranslatableText("commands.message.display.incoming", serverCommandSource.getDisplayName(), text.deepCopy())
-					.formatted(new Formatting[]{Formatting.field_1080, Formatting.field_1056})
-			);
-			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.message.display.outgoing", serverPlayerEntity.getDisplayName(), text.deepCopy())
-					.formatted(new Formatting[]{Formatting.field_1080, Formatting.field_1056}),
-				false
+	private static int execute(ServerCommandSource source, Collection<ServerPlayerEntity> targets, Text message) {
+		UUID uUID = source.getEntity() == null ? Util.NIL_UUID : source.getEntity().getUuid();
+		Entity entity = source.getEntity();
+		Consumer<Text> consumer;
+		if (entity instanceof ServerPlayerEntity) {
+			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
+			consumer = text2 -> serverPlayerEntity.sendSystemMessage(
+					new TranslatableText("commands.message.display.outgoing", text2, message).formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}),
+					serverPlayerEntity.getUuid()
+				);
+		} else {
+			consumer = text2 -> source.sendFeedback(
+					new TranslatableText("commands.message.display.outgoing", text2, message).formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}), false
+				);
+		}
+
+		for (ServerPlayerEntity serverPlayerEntity2 : targets) {
+			consumer.accept(serverPlayerEntity2.getDisplayName());
+			serverPlayerEntity2.sendSystemMessage(
+				new TranslatableText("commands.message.display.incoming", source.getDisplayName(), message).formatted(new Formatting[]{Formatting.GRAY, Formatting.ITALIC}),
+				uUID
 			);
 		}
 
-		return collection.size();
+		return targets.size();
 	}
 }

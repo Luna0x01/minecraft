@@ -1,31 +1,30 @@
 package net.minecraft.client.gui.screen;
 
-import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
-import java.util.List;
+import net.minecraft.client.font.MultilineText;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
 public class ConfirmScreen extends Screen {
 	private final Text message;
-	private final List<String> messageSplit = Lists.newArrayList();
-	protected String yesTranslated;
-	protected String noTranslated;
+	private MultilineText messageSplit = MultilineText.EMPTY;
+	protected Text yesTranslated;
+	protected Text noTranslated;
 	private int buttonEnableTimer;
 	protected final BooleanConsumer callback;
 
-	public ConfirmScreen(BooleanConsumer booleanConsumer, Text text, Text text2) {
-		this(booleanConsumer, text, text2, I18n.translate("gui.yes"), I18n.translate("gui.no"));
+	public ConfirmScreen(BooleanConsumer callback, Text title, Text message) {
+		this(callback, title, message, ScreenTexts.YES, ScreenTexts.NO);
 	}
 
-	public ConfirmScreen(BooleanConsumer booleanConsumer, Text text, Text text2, String string, String string2) {
-		super(text);
-		this.callback = booleanConsumer;
-		this.message = text2;
-		this.yesTranslated = string;
-		this.noTranslated = string2;
+	public ConfirmScreen(BooleanConsumer callback, Text title, Text message, Text text, Text text2) {
+		super(title);
+		this.callback = callback;
+		this.message = message;
+		this.yesTranslated = text;
+		this.noTranslated = text2;
 	}
 
 	@Override
@@ -38,22 +37,15 @@ public class ConfirmScreen extends Screen {
 		super.init();
 		this.addButton(new ButtonWidget(this.width / 2 - 155, this.height / 6 + 96, 150, 20, this.yesTranslated, buttonWidget -> this.callback.accept(true)));
 		this.addButton(new ButtonWidget(this.width / 2 - 155 + 160, this.height / 6 + 96, 150, 20, this.noTranslated, buttonWidget -> this.callback.accept(false)));
-		this.messageSplit.clear();
-		this.messageSplit.addAll(this.font.wrapStringToWidthAsList(this.message.asFormattedString(), this.width - 50));
+		this.messageSplit = MultilineText.create(this.textRenderer, this.message, this.width - 50);
 	}
 
 	@Override
-	public void render(int i, int j, float f) {
-		this.renderBackground();
-		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 70, 16777215);
-		int k = 90;
-
-		for (String string : this.messageSplit) {
-			this.drawCenteredString(this.font, string, this.width / 2, k, 16777215);
-			k += 9;
-		}
-
-		super.render(i, j, f);
+	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		this.renderBackground(matrices);
+		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 70, 16777215);
+		this.messageSplit.drawCenterWithShadow(matrices, this.width / 2, 90);
+		super.render(matrices, mouseX, mouseY, delta);
 	}
 
 	public void disableButtons(int i) {
@@ -80,12 +72,12 @@ public class ConfirmScreen extends Screen {
 	}
 
 	@Override
-	public boolean keyPressed(int i, int j, int k) {
-		if (i == 256) {
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		if (keyCode == 256) {
 			this.callback.accept(false);
 			return true;
 		} else {
-			return super.keyPressed(i, j, k);
+			return super.keyPressed(keyCode, scanCode, modifiers);
 		}
 	}
 }

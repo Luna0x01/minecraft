@@ -1,31 +1,25 @@
 package net.minecraft.block;
 
-import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 
 public class BarrierBlock extends Block {
-	protected BarrierBlock(Block.Settings settings) {
+	protected BarrierBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public boolean isTranslucent(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public boolean isTranslucent(BlockState state, BlockView world, BlockPos pos) {
 		return true;
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState blockState) {
-		return BlockRenderType.field_11455;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.INVISIBLE;
 	}
 
 	@Override
-	public float getAmbientOcclusionLightLevel(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public float getAmbientOcclusionLightLevel(BlockState state, BlockView world, BlockPos pos) {
 		return 1.0F;
-	}
-
-	@Override
-	public boolean allowsSpawning(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityType<?> entityType) {
-		return false;
 	}
 }

@@ -2,27 +2,28 @@ package net.minecraft.datafixer.fix;
 
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.Typed;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Dynamic;
 import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public class OminousBannerItemRenameFix extends DataFix {
-	public OminousBannerItemRenameFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public OminousBannerItemRenameFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	private Dynamic<?> fixBannerName(Dynamic<?> dynamic) {
-		Optional<? extends Dynamic<?>> optional = dynamic.get("display").get();
+		Optional<? extends Dynamic<?>> optional = dynamic.get("display").result();
 		if (optional.isPresent()) {
 			Dynamic<?> dynamic2 = (Dynamic<?>)optional.get();
-			Optional<String> optional2 = dynamic2.get("Name").asString();
+			Optional<String> optional2 = dynamic2.get("Name").asString().result();
 			if (optional2.isPresent()) {
 				String string = (String)optional2.get();
 				string = string.replace("\"translate\":\"block.minecraft.illager_banner\"", "\"translate\":\"block.minecraft.ominous_banner\"");
@@ -37,7 +38,9 @@ public class OminousBannerItemRenameFix extends DataFix {
 
 	public TypeRewriteRule makeRule() {
 		Type<?> type = this.getInputSchema().getType(TypeReferences.ITEM_STACK);
-		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder("id", DSL.named(TypeReferences.ITEM_NAME.typeName(), DSL.namespacedString()));
+		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder(
+			"id", DSL.named(TypeReferences.ITEM_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType())
+		);
 		OpticFinder<?> opticFinder2 = type.findField("tag");
 		return this.fixTypeEverywhereTyped("OminousBannerRenameFix", type, typed -> {
 			Optional<Pair<String, String>> optional = typed.getOptional(opticFinder);

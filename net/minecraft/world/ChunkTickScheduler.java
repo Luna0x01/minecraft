@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.shorts.ShortList;
 import it.unimi.dsi.fastutil.shorts.ShortListIterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -16,19 +15,19 @@ public class ChunkTickScheduler<T> implements TickScheduler<T> {
 	private final ChunkPos pos;
 	private final ShortList[] scheduledPositions = new ShortList[16];
 
-	public ChunkTickScheduler(Predicate<T> predicate, ChunkPos chunkPos) {
-		this(predicate, chunkPos, new ListTag());
+	public ChunkTickScheduler(Predicate<T> shouldExclude, ChunkPos pos) {
+		this(shouldExclude, pos, new ListTag());
 	}
 
-	public ChunkTickScheduler(Predicate<T> predicate, ChunkPos chunkPos, ListTag listTag) {
-		this.shouldExclude = predicate;
-		this.pos = chunkPos;
+	public ChunkTickScheduler(Predicate<T> shouldExclude, ChunkPos pos, ListTag tag) {
+		this.shouldExclude = shouldExclude;
+		this.pos = pos;
 
-		for (int i = 0; i < listTag.size(); i++) {
-			ListTag listTag2 = listTag.getList(i);
+		for (int i = 0; i < tag.size(); i++) {
+			ListTag listTag = tag.getList(i);
 
-			for (int j = 0; j < listTag2.size(); j++) {
-				Chunk.getList(this.scheduledPositions, i).add(listTag2.getShort(j));
+			for (int j = 0; j < listTag.size(); j++) {
+				Chunk.getList(this.scheduledPositions, i).add(listTag.getShort(j));
 			}
 		}
 	}
@@ -37,7 +36,7 @@ public class ChunkTickScheduler<T> implements TickScheduler<T> {
 		return ChunkSerializer.toNbt(this.scheduledPositions);
 	}
 
-	public void tick(TickScheduler<T> tickScheduler, Function<BlockPos, T> function) {
+	public void tick(TickScheduler<T> scheduler, Function<BlockPos, T> dataMapper) {
 		for (int i = 0; i < this.scheduledPositions.length; i++) {
 			if (this.scheduledPositions[i] != null) {
 				ShortListIterator var4 = this.scheduledPositions[i].iterator();
@@ -45,7 +44,7 @@ public class ChunkTickScheduler<T> implements TickScheduler<T> {
 				while (var4.hasNext()) {
 					Short short_ = (Short)var4.next();
 					BlockPos blockPos = ProtoChunk.joinBlockPos(short_, i, this.pos);
-					tickScheduler.schedule(blockPos, (T)function.apply(blockPos), 0);
+					scheduler.schedule(blockPos, (T)dataMapper.apply(blockPos), 0);
 				}
 
 				this.scheduledPositions[i].clear();
@@ -54,22 +53,17 @@ public class ChunkTickScheduler<T> implements TickScheduler<T> {
 	}
 
 	@Override
-	public boolean isScheduled(BlockPos blockPos, T object) {
+	public boolean isScheduled(BlockPos pos, T object) {
 		return false;
 	}
 
 	@Override
-	public void schedule(BlockPos blockPos, T object, int i, TickPriority tickPriority) {
-		Chunk.getList(this.scheduledPositions, blockPos.getY() >> 4).add(ProtoChunk.getPackedSectionRelative(blockPos));
+	public void schedule(BlockPos pos, T object, int delay, TickPriority priority) {
+		Chunk.getList(this.scheduledPositions, pos.getY() >> 4).add(ProtoChunk.getPackedSectionRelative(pos));
 	}
 
 	@Override
-	public boolean isTicking(BlockPos blockPos, T object) {
+	public boolean isTicking(BlockPos pos, T object) {
 		return false;
-	}
-
-	@Override
-	public void scheduleAll(Stream<ScheduledTick<T>> stream) {
-		stream.forEach(scheduledTick -> this.schedule(scheduledTick.pos, (T)scheduledTick.getObject(), 0, scheduledTick.priority));
 	}
 }

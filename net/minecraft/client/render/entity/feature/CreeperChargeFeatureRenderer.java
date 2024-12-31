@@ -14,8 +14,8 @@ public class CreeperChargeFeatureRenderer extends EnergySwirlOverlayFeatureRende
 	}
 
 	@Override
-	protected float getEnergySwirlX(float f) {
-		return f * 0.01F;
+	protected float getEnergySwirlX(float partialAge) {
+		return partialAge * 0.01F;
 	}
 
 	@Override

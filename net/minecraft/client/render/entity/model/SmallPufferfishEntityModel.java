@@ -43,8 +43,8 @@ public class SmallPufferfishEntityModel<T extends Entity> extends CompositeEntit
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		this.field_3504.roll = -0.2F + 0.4F * MathHelper.sin(h * 0.2F);
-		this.field_3503.roll = 0.2F - 0.4F * MathHelper.sin(h * 0.2F);
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		this.field_3504.roll = -0.2F + 0.4F * MathHelper.sin(animationProgress * 0.2F);
+		this.field_3503.roll = 0.2F - 0.4F * MathHelper.sin(animationProgress * 0.2F);
 	}
 }

@@ -13,9 +13,9 @@ import net.minecraft.world.World;
 public abstract class AbstractBannerBlock extends BlockWithEntity {
 	private final DyeColor color;
 
-	protected AbstractBannerBlock(DyeColor dyeColor, Block.Settings settings) {
+	protected AbstractBannerBlock(DyeColor color, AbstractBlock.Settings settings) {
 		super(settings);
-		this.color = dyeColor;
+		this.color = color;
 	}
 
 	@Override
@@ -24,14 +24,14 @@ public abstract class AbstractBannerBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView blockView) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new BannerBlockEntity(this.color);
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, @Nullable LivingEntity livingEntity, ItemStack itemStack) {
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
 		if (itemStack.hasCustomName()) {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BannerBlockEntity) {
 				((BannerBlockEntity)blockEntity).setCustomName(itemStack.getName());
 			}
@@ -39,11 +39,9 @@ public abstract class AbstractBannerBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
-		BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
-		return blockEntity instanceof BannerBlockEntity
-			? ((BannerBlockEntity)blockEntity).getPickStack(blockState)
-			: super.getPickStack(blockView, blockPos, blockState);
+	public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
+		return blockEntity instanceof BannerBlockEntity ? ((BannerBlockEntity)blockEntity).getPickStack(state) : super.getPickStack(world, pos, state);
 	}
 
 	public DyeColor getColor() {

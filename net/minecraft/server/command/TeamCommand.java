@@ -11,10 +11,10 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
 import java.util.Collections;
-import net.minecraft.command.arguments.ColorArgumentType;
-import net.minecraft.command.arguments.ScoreHolderArgumentType;
-import net.minecraft.command.arguments.TeamArgumentType;
-import net.minecraft.command.arguments.TextArgumentType;
+import net.minecraft.command.argument.ColorArgumentType;
+import net.minecraft.command.argument.ScoreHolderArgumentType;
+import net.minecraft.command.argument.TeamArgumentType;
+import net.minecraft.command.argument.TextArgumentType;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
@@ -26,7 +26,7 @@ import net.minecraft.util.Formatting;
 
 public class TeamCommand {
 	private static final SimpleCommandExceptionType ADD_DUPLICATE_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.team.add.duplicate"));
-	private static final DynamicCommandExceptionType ADD_LONGNAME_EXCEPTION = new DynamicCommandExceptionType(
+	private static final DynamicCommandExceptionType ADD_LONG_NAME_EXCEPTION = new DynamicCommandExceptionType(
 		object -> new TranslatableText("commands.team.add.longName", object)
 	);
 	private static final SimpleCommandExceptionType EMPTY_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
@@ -38,30 +38,30 @@ public class TeamCommand {
 	private static final SimpleCommandExceptionType OPTION_COLOR_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.color.unchanged")
 	);
-	private static final SimpleCommandExceptionType OPTION_FRIENDLYFIRE_ALREADYENABLED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OPTION_FRIENDLY_FIRE_ALREADY_ENABLED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.friendlyfire.alreadyEnabled")
 	);
-	private static final SimpleCommandExceptionType OPTION_FRIENDLYFIRE_ALREADYDISABLED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OPTION_FRIENDLY_FIRE_ALREADY_DISABLED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.friendlyfire.alreadyDisabled")
 	);
-	private static final SimpleCommandExceptionType OPTION_SEEFRIENDLYINVISIBLES_ALREADYENABLED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OPTION_SEE_FRIENDLY_INVISIBLES_ALREADY_ENABLED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.seeFriendlyInvisibles.alreadyEnabled")
 	);
-	private static final SimpleCommandExceptionType SEEFRIENDLYINVISIBLES_ALREADYDSISABLED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OPTION_SEE_FRIENDLY_INVISIBLES_ALREADY_DISABLED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.seeFriendlyInvisibles.alreadyDisabled")
 	);
-	private static final SimpleCommandExceptionType OPTION_NAMETAGEVISIBILITY_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OPTION_NAMETAG_VISIBILITY_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.nametagVisibility.unchanged")
 	);
-	private static final SimpleCommandExceptionType OPTION_DEATHMESSAGEVISIBILITY_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OPTION_DEATH_MESSAGE_VISIBILITY_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.deathMessageVisibility.unchanged")
 	);
-	private static final SimpleCommandExceptionType OPTION_COLLISIONRULE_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType OPTION_COLLISION_RULE_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.team.option.collisionRule.unchanged")
 	);
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal(
 												"team"
 											)
@@ -205,7 +205,7 @@ public class TeamCommand {
 																		CommandManager.literal("never")
 																			.executes(
 																				commandContext -> executeModifyNametagVisibility(
-																						(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1443
+																						(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.NEVER
 																					)
 																			)
 																	))
@@ -213,7 +213,9 @@ public class TeamCommand {
 																	CommandManager.literal("hideForOtherTeams")
 																		.executes(
 																			commandContext -> executeModifyNametagVisibility(
-																					(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1444
+																					(ServerCommandSource)commandContext.getSource(),
+																					TeamArgumentType.getTeam(commandContext, "team"),
+																					AbstractTeam.VisibilityRule.HIDE_FOR_OTHER_TEAMS
 																				)
 																		)
 																))
@@ -221,7 +223,9 @@ public class TeamCommand {
 																CommandManager.literal("hideForOwnTeam")
 																	.executes(
 																		commandContext -> executeModifyNametagVisibility(
-																				(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1446
+																				(ServerCommandSource)commandContext.getSource(),
+																				TeamArgumentType.getTeam(commandContext, "team"),
+																				AbstractTeam.VisibilityRule.HIDE_FOR_OWN_TEAM
 																			)
 																	)
 															))
@@ -229,7 +233,7 @@ public class TeamCommand {
 															CommandManager.literal("always")
 																.executes(
 																	commandContext -> executeModifyNametagVisibility(
-																			(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1442
+																			(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.ALWAYS
 																		)
 																)
 														)
@@ -240,7 +244,7 @@ public class TeamCommand {
 																	CommandManager.literal("never")
 																		.executes(
 																			commandContext -> executeModifyDeathMessageVisibility(
-																					(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1443
+																					(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.NEVER
 																				)
 																		)
 																))
@@ -248,7 +252,9 @@ public class TeamCommand {
 																CommandManager.literal("hideForOtherTeams")
 																	.executes(
 																		commandContext -> executeModifyDeathMessageVisibility(
-																				(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1444
+																				(ServerCommandSource)commandContext.getSource(),
+																				TeamArgumentType.getTeam(commandContext, "team"),
+																				AbstractTeam.VisibilityRule.HIDE_FOR_OTHER_TEAMS
 																			)
 																	)
 															))
@@ -256,7 +262,9 @@ public class TeamCommand {
 															CommandManager.literal("hideForOwnTeam")
 																.executes(
 																	commandContext -> executeModifyDeathMessageVisibility(
-																			(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1446
+																			(ServerCommandSource)commandContext.getSource(),
+																			TeamArgumentType.getTeam(commandContext, "team"),
+																			AbstractTeam.VisibilityRule.HIDE_FOR_OWN_TEAM
 																		)
 																)
 														))
@@ -264,7 +272,7 @@ public class TeamCommand {
 														CommandManager.literal("always")
 															.executes(
 																commandContext -> executeModifyDeathMessageVisibility(
-																		(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.field_1442
+																		(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.VisibilityRule.ALWAYS
 																	)
 															)
 													)
@@ -275,7 +283,7 @@ public class TeamCommand {
 																CommandManager.literal("never")
 																	.executes(
 																		commandContext -> executeModifyCollisionRule(
-																				(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.CollisionRule.field_1435
+																				(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.CollisionRule.NEVER
 																			)
 																	)
 															))
@@ -283,7 +291,7 @@ public class TeamCommand {
 															CommandManager.literal("pushOwnTeam")
 																.executes(
 																	commandContext -> executeModifyCollisionRule(
-																			(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.CollisionRule.field_1440
+																			(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.CollisionRule.PUSH_OWN_TEAM
 																		)
 																)
 														))
@@ -291,7 +299,9 @@ public class TeamCommand {
 														CommandManager.literal("pushOtherTeams")
 															.executes(
 																commandContext -> executeModifyCollisionRule(
-																		(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.CollisionRule.field_1434
+																		(ServerCommandSource)commandContext.getSource(),
+																		TeamArgumentType.getTeam(commandContext, "team"),
+																		AbstractTeam.CollisionRule.PUSH_OTHER_TEAMS
 																	)
 															)
 													))
@@ -299,7 +309,7 @@ public class TeamCommand {
 													CommandManager.literal("always")
 														.executes(
 															commandContext -> executeModifyCollisionRule(
-																	(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.CollisionRule.field_1437
+																	(ServerCommandSource)commandContext.getSource(), TeamArgumentType.getTeam(commandContext, "team"), AbstractTeam.CollisionRule.ALWAYS
 																)
 														)
 												)
@@ -335,126 +345,120 @@ public class TeamCommand {
 		);
 	}
 
-	private static int executeLeave(ServerCommandSource serverCommandSource, Collection<String> collection) {
-		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
+	private static int executeLeave(ServerCommandSource source, Collection<String> members) {
+		Scoreboard scoreboard = source.getMinecraftServer().getScoreboard();
 
-		for (String string : collection) {
+		for (String string : members) {
 			scoreboard.clearPlayerTeam(string);
 		}
 
-		if (collection.size() == 1) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.leave.success.single", collection.iterator().next()), true);
+		if (members.size() == 1) {
+			source.sendFeedback(new TranslatableText("commands.team.leave.success.single", members.iterator().next()), true);
 		} else {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.leave.success.multiple", collection.size()), true);
+			source.sendFeedback(new TranslatableText("commands.team.leave.success.multiple", members.size()), true);
 		}
 
-		return collection.size();
+		return members.size();
 	}
 
-	private static int executeJoin(ServerCommandSource serverCommandSource, Team team, Collection<String> collection) {
-		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
+	private static int executeJoin(ServerCommandSource source, Team team, Collection<String> members) {
+		Scoreboard scoreboard = source.getMinecraftServer().getScoreboard();
 
-		for (String string : collection) {
+		for (String string : members) {
 			scoreboard.addPlayerToTeam(string, team);
 		}
 
-		if (collection.size() == 1) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.join.success.single", collection.iterator().next(), team.getFormattedName()), true);
+		if (members.size() == 1) {
+			source.sendFeedback(new TranslatableText("commands.team.join.success.single", members.iterator().next(), team.getFormattedName()), true);
 		} else {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.join.success.multiple", collection.size(), team.getFormattedName()), true);
+			source.sendFeedback(new TranslatableText("commands.team.join.success.multiple", members.size(), team.getFormattedName()), true);
 		}
 
-		return collection.size();
+		return members.size();
 	}
 
-	private static int executeModifyNametagVisibility(ServerCommandSource serverCommandSource, Team team, AbstractTeam.VisibilityRule visibilityRule) throws CommandSyntaxException {
-		if (team.getNameTagVisibilityRule() == visibilityRule) {
-			throw OPTION_NAMETAGEVISIBILITY_UNCHANGED_EXCEPTION.create();
+	private static int executeModifyNametagVisibility(ServerCommandSource source, Team team, AbstractTeam.VisibilityRule visibility) throws CommandSyntaxException {
+		if (team.getNameTagVisibilityRule() == visibility) {
+			throw OPTION_NAMETAG_VISIBILITY_UNCHANGED_EXCEPTION.create();
 		} else {
-			team.setNameTagVisibilityRule(visibilityRule);
-			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.team.option.nametagVisibility.success", team.getFormattedName(), visibilityRule.getTranslationKey()), true
+			team.setNameTagVisibilityRule(visibility);
+			source.sendFeedback(new TranslatableText("commands.team.option.nametagVisibility.success", team.getFormattedName(), visibility.getTranslationKey()), true);
+			return 0;
+		}
+	}
+
+	private static int executeModifyDeathMessageVisibility(ServerCommandSource source, Team team, AbstractTeam.VisibilityRule visibility) throws CommandSyntaxException {
+		if (team.getDeathMessageVisibilityRule() == visibility) {
+			throw OPTION_DEATH_MESSAGE_VISIBILITY_UNCHANGED_EXCEPTION.create();
+		} else {
+			team.setDeathMessageVisibilityRule(visibility);
+			source.sendFeedback(
+				new TranslatableText("commands.team.option.deathMessageVisibility.success", team.getFormattedName(), visibility.getTranslationKey()), true
 			);
 			return 0;
 		}
 	}
 
-	private static int executeModifyDeathMessageVisibility(ServerCommandSource serverCommandSource, Team team, AbstractTeam.VisibilityRule visibilityRule) throws CommandSyntaxException {
-		if (team.getDeathMessageVisibilityRule() == visibilityRule) {
-			throw OPTION_DEATHMESSAGEVISIBILITY_UNCHANGED_EXCEPTION.create();
-		} else {
-			team.setDeathMessageVisibilityRule(visibilityRule);
-			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.team.option.deathMessageVisibility.success", team.getFormattedName(), visibilityRule.getTranslationKey()), true
-			);
-			return 0;
-		}
-	}
-
-	private static int executeModifyCollisionRule(ServerCommandSource serverCommandSource, Team team, AbstractTeam.CollisionRule collisionRule) throws CommandSyntaxException {
+	private static int executeModifyCollisionRule(ServerCommandSource source, Team team, AbstractTeam.CollisionRule collisionRule) throws CommandSyntaxException {
 		if (team.getCollisionRule() == collisionRule) {
-			throw OPTION_COLLISIONRULE_UNCHANGED_EXCEPTION.create();
+			throw OPTION_COLLISION_RULE_UNCHANGED_EXCEPTION.create();
 		} else {
 			team.setCollisionRule(collisionRule);
-			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.team.option.collisionRule.success", team.getFormattedName(), collisionRule.getTranslationKey()), true
-			);
+			source.sendFeedback(new TranslatableText("commands.team.option.collisionRule.success", team.getFormattedName(), collisionRule.getTranslationKey()), true);
 			return 0;
 		}
 	}
 
-	private static int executeModifySeeFriendlyInvisibles(ServerCommandSource serverCommandSource, Team team, boolean bl) throws CommandSyntaxException {
-		if (team.shouldShowFriendlyInvisibles() == bl) {
-			if (bl) {
-				throw OPTION_SEEFRIENDLYINVISIBLES_ALREADYENABLED_EXCEPTION.create();
+	private static int executeModifySeeFriendlyInvisibles(ServerCommandSource source, Team team, boolean allowed) throws CommandSyntaxException {
+		if (team.shouldShowFriendlyInvisibles() == allowed) {
+			if (allowed) {
+				throw OPTION_SEE_FRIENDLY_INVISIBLES_ALREADY_ENABLED_EXCEPTION.create();
 			} else {
-				throw SEEFRIENDLYINVISIBLES_ALREADYDSISABLED_EXCEPTION.create();
+				throw OPTION_SEE_FRIENDLY_INVISIBLES_ALREADY_DISABLED_EXCEPTION.create();
 			}
 		} else {
-			team.setShowFriendlyInvisibles(bl);
-			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.team.option.seeFriendlyInvisibles." + (bl ? "enabled" : "disabled"), team.getFormattedName()), true
-			);
+			team.setShowFriendlyInvisibles(allowed);
+			source.sendFeedback(new TranslatableText("commands.team.option.seeFriendlyInvisibles." + (allowed ? "enabled" : "disabled"), team.getFormattedName()), true);
 			return 0;
 		}
 	}
 
-	private static int executeModifyFriendlyFire(ServerCommandSource serverCommandSource, Team team, boolean bl) throws CommandSyntaxException {
-		if (team.isFriendlyFireAllowed() == bl) {
-			if (bl) {
-				throw OPTION_FRIENDLYFIRE_ALREADYENABLED_EXCEPTION.create();
+	private static int executeModifyFriendlyFire(ServerCommandSource source, Team team, boolean allowed) throws CommandSyntaxException {
+		if (team.isFriendlyFireAllowed() == allowed) {
+			if (allowed) {
+				throw OPTION_FRIENDLY_FIRE_ALREADY_ENABLED_EXCEPTION.create();
 			} else {
-				throw OPTION_FRIENDLYFIRE_ALREADYDISABLED_EXCEPTION.create();
+				throw OPTION_FRIENDLY_FIRE_ALREADY_DISABLED_EXCEPTION.create();
 			}
 		} else {
-			team.setFriendlyFireAllowed(bl);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.option.friendlyfire." + (bl ? "enabled" : "disabled"), team.getFormattedName()), true);
+			team.setFriendlyFireAllowed(allowed);
+			source.sendFeedback(new TranslatableText("commands.team.option.friendlyfire." + (allowed ? "enabled" : "disabled"), team.getFormattedName()), true);
 			return 0;
 		}
 	}
 
-	private static int executeModifyDisplayName(ServerCommandSource serverCommandSource, Team team, Text text) throws CommandSyntaxException {
-		if (team.getDisplayName().equals(text)) {
+	private static int executeModifyDisplayName(ServerCommandSource source, Team team, Text displayName) throws CommandSyntaxException {
+		if (team.getDisplayName().equals(displayName)) {
 			throw OPTION_NAME_UNCHANGED_EXCEPTION.create();
 		} else {
-			team.setDisplayName(text);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.option.name.success", team.getFormattedName()), true);
+			team.setDisplayName(displayName);
+			source.sendFeedback(new TranslatableText("commands.team.option.name.success", team.getFormattedName()), true);
 			return 0;
 		}
 	}
 
-	private static int executeModifyColor(ServerCommandSource serverCommandSource, Team team, Formatting formatting) throws CommandSyntaxException {
-		if (team.getColor() == formatting) {
+	private static int executeModifyColor(ServerCommandSource source, Team team, Formatting color) throws CommandSyntaxException {
+		if (team.getColor() == color) {
 			throw OPTION_COLOR_UNCHANGED_EXCEPTION.create();
 		} else {
-			team.setColor(formatting);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.option.color.success", team.getFormattedName(), formatting.getName()), true);
+			team.setColor(color);
+			source.sendFeedback(new TranslatableText("commands.team.option.color.success", team.getFormattedName(), color.getName()), true);
 			return 0;
 		}
 	}
 
-	private static int executeEmpty(ServerCommandSource serverCommandSource, Team team) throws CommandSyntaxException {
-		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
+	private static int executeEmpty(ServerCommandSource source, Team team) throws CommandSyntaxException {
+		Scoreboard scoreboard = source.getMinecraftServer().getScoreboard();
 		Collection<String> collection = Lists.newArrayList(team.getPlayerList());
 		if (collection.isEmpty()) {
 			throw EMPTY_UNCHANGED_EXCEPTION.create();
@@ -463,42 +467,42 @@ public class TeamCommand {
 				scoreboard.removePlayerFromTeam(string, team);
 			}
 
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.empty.success", collection.size(), team.getFormattedName()), true);
+			source.sendFeedback(new TranslatableText("commands.team.empty.success", collection.size(), team.getFormattedName()), true);
 			return collection.size();
 		}
 	}
 
-	private static int executeRemove(ServerCommandSource serverCommandSource, Team team) {
-		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
+	private static int executeRemove(ServerCommandSource source, Team team) {
+		Scoreboard scoreboard = source.getMinecraftServer().getScoreboard();
 		scoreboard.removeTeam(team);
-		serverCommandSource.sendFeedback(new TranslatableText("commands.team.remove.success", team.getFormattedName()), true);
+		source.sendFeedback(new TranslatableText("commands.team.remove.success", team.getFormattedName()), true);
 		return scoreboard.getTeams().size();
 	}
 
-	private static int executeAdd(ServerCommandSource serverCommandSource, String string) throws CommandSyntaxException {
-		return executeAdd(serverCommandSource, string, new LiteralText(string));
+	private static int executeAdd(ServerCommandSource source, String team) throws CommandSyntaxException {
+		return executeAdd(source, team, new LiteralText(team));
 	}
 
-	private static int executeAdd(ServerCommandSource serverCommandSource, String string, Text text) throws CommandSyntaxException {
-		Scoreboard scoreboard = serverCommandSource.getMinecraftServer().getScoreboard();
-		if (scoreboard.getTeam(string) != null) {
+	private static int executeAdd(ServerCommandSource source, String team, Text displayName) throws CommandSyntaxException {
+		Scoreboard scoreboard = source.getMinecraftServer().getScoreboard();
+		if (scoreboard.getTeam(team) != null) {
 			throw ADD_DUPLICATE_EXCEPTION.create();
-		} else if (string.length() > 16) {
-			throw ADD_LONGNAME_EXCEPTION.create(16);
+		} else if (team.length() > 16) {
+			throw ADD_LONG_NAME_EXCEPTION.create(16);
 		} else {
-			Team team = scoreboard.addTeam(string);
-			team.setDisplayName(text);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.add.success", team.getFormattedName()), true);
+			Team team2 = scoreboard.addTeam(team);
+			team2.setDisplayName(displayName);
+			source.sendFeedback(new TranslatableText("commands.team.add.success", team2.getFormattedName()), true);
 			return scoreboard.getTeams().size();
 		}
 	}
 
-	private static int executeListMembers(ServerCommandSource serverCommandSource, Team team) {
+	private static int executeListMembers(ServerCommandSource source, Team team) {
 		Collection<String> collection = team.getPlayerList();
 		if (collection.isEmpty()) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.list.members.empty", team.getFormattedName()), false);
+			source.sendFeedback(new TranslatableText("commands.team.list.members.empty", team.getFormattedName()), false);
 		} else {
-			serverCommandSource.sendFeedback(
+			source.sendFeedback(
 				new TranslatableText("commands.team.list.members.success", team.getFormattedName(), collection.size(), Texts.joinOrdered(collection)), false
 			);
 		}
@@ -506,28 +510,26 @@ public class TeamCommand {
 		return collection.size();
 	}
 
-	private static int executeListTeams(ServerCommandSource serverCommandSource) {
-		Collection<Team> collection = serverCommandSource.getMinecraftServer().getScoreboard().getTeams();
+	private static int executeListTeams(ServerCommandSource source) {
+		Collection<Team> collection = source.getMinecraftServer().getScoreboard().getTeams();
 		if (collection.isEmpty()) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.team.list.teams.empty"), false);
+			source.sendFeedback(new TranslatableText("commands.team.list.teams.empty"), false);
 		} else {
-			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.team.list.teams.success", collection.size(), Texts.join(collection, Team::getFormattedName)), false
-			);
+			source.sendFeedback(new TranslatableText("commands.team.list.teams.success", collection.size(), Texts.join(collection, Team::getFormattedName)), false);
 		}
 
 		return collection.size();
 	}
 
-	private static int executeModifyPrefix(ServerCommandSource serverCommandSource, Team team, Text text) {
-		team.setPrefix(text);
-		serverCommandSource.sendFeedback(new TranslatableText("commands.team.option.prefix.success", text), false);
+	private static int executeModifyPrefix(ServerCommandSource source, Team team, Text prefix) {
+		team.setPrefix(prefix);
+		source.sendFeedback(new TranslatableText("commands.team.option.prefix.success", prefix), false);
 		return 1;
 	}
 
-	private static int executeModifySuffix(ServerCommandSource serverCommandSource, Team team, Text text) {
-		team.setSuffix(text);
-		serverCommandSource.sendFeedback(new TranslatableText("commands.team.option.suffix.success", text), false);
+	private static int executeModifySuffix(ServerCommandSource source, Team team, Text suffix) {
+		team.setSuffix(suffix);
+		source.sendFeedback(new TranslatableText("commands.team.option.suffix.success", suffix), false);
 		return 1;
 	}
 }

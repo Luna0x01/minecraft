@@ -8,35 +8,35 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.world.GameMode;
 
 public class DefaultGameModeCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		LiteralArgumentBuilder<ServerCommandSource> literalArgumentBuilder = (LiteralArgumentBuilder<ServerCommandSource>)CommandManager.literal("defaultgamemode")
 			.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2));
 
 		for (GameMode gameMode : GameMode.values()) {
-			if (gameMode != GameMode.field_9218) {
+			if (gameMode != GameMode.NOT_SET) {
 				literalArgumentBuilder.then(
 					CommandManager.literal(gameMode.getName()).executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), gameMode))
 				);
 			}
 		}
 
-		commandDispatcher.register(literalArgumentBuilder);
+		dispatcher.register(literalArgumentBuilder);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, GameMode gameMode) {
+	private static int execute(ServerCommandSource source, GameMode defaultGameMode) {
 		int i = 0;
-		MinecraftServer minecraftServer = serverCommandSource.getMinecraftServer();
-		minecraftServer.setDefaultGameMode(gameMode);
+		MinecraftServer minecraftServer = source.getMinecraftServer();
+		minecraftServer.setDefaultGameMode(defaultGameMode);
 		if (minecraftServer.shouldForceGameMode()) {
 			for (ServerPlayerEntity serverPlayerEntity : minecraftServer.getPlayerManager().getPlayerList()) {
-				if (serverPlayerEntity.interactionManager.getGameMode() != gameMode) {
-					serverPlayerEntity.setGameMode(gameMode);
+				if (serverPlayerEntity.interactionManager.getGameMode() != defaultGameMode) {
+					serverPlayerEntity.setGameMode(defaultGameMode);
 					i++;
 				}
 			}
 		}
 
-		serverCommandSource.sendFeedback(new TranslatableText("commands.defaultgamemode.success", gameMode.getTranslatableName()), true);
+		source.sendFeedback(new TranslatableText("commands.defaultgamemode.success", defaultGameMode.getTranslatableName()), true);
 		return i;
 	}
 }

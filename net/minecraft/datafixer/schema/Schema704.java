@@ -3,20 +3,20 @@ package net.minecraft.datafixer.schema;
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFixUtils;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.DSL.TypeReference;
 import com.mojang.datafixers.schemas.Schema;
-import com.mojang.datafixers.types.DynamicOps;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.types.templates.TypeTemplate;
 import com.mojang.datafixers.types.templates.Hook.HookFunction;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.DynamicOps;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import net.minecraft.datafixer.TypeReferences;
 
 public class Schema704 extends Schema {
-	protected static final Map<String, String> field_5744 = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+	protected static final Map<String, String> BLOCK_RENAMES = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
 		hashMap.put("minecraft:furnace", "minecraft:furnace");
 		hashMap.put("minecraft:lit_furnace", "minecraft:furnace");
 		hashMap.put("minecraft:chest", "minecraft:chest");
@@ -91,12 +91,12 @@ public class Schema704 extends Schema {
 	});
 	protected static final HookFunction field_5745 = new HookFunction() {
 		public <T> T apply(DynamicOps<T> dynamicOps, T object) {
-			return Schema99.method_5359(new Dynamic(dynamicOps, object), Schema704.field_5744, "ArmorStand");
+			return Schema99.method_5359(new Dynamic(dynamicOps, object), Schema704.BLOCK_RENAMES, "ArmorStand");
 		}
 	};
 
-	public Schema704(int i, Schema schema) {
-		super(i, schema);
+	public Schema704(int versionKey, Schema parent) {
+		super(versionKey, parent);
 	}
 
 	protected static void method_5296(Schema schema, Map<String, Supplier<TypeTemplate>> map, String string) {
@@ -105,7 +105,7 @@ public class Schema704 extends Schema {
 
 	public Type<?> getChoiceType(TypeReference typeReference, String string) {
 		return Objects.equals(typeReference.typeName(), TypeReferences.BLOCK_ENTITY.typeName())
-			? super.getChoiceType(typeReference, SchemaIdentifierNormalize.normalize(string))
+			? super.getChoiceType(typeReference, IdentifierNormalizingSchema.normalize(string))
 			: super.getChoiceType(typeReference, string);
 	}
 
@@ -137,9 +137,9 @@ public class Schema704 extends Schema {
 		return map;
 	}
 
-	public void registerTypes(Schema schema, Map<String, Supplier<TypeTemplate>> map, Map<String, Supplier<TypeTemplate>> map2) {
-		super.registerTypes(schema, map, map2);
-		schema.registerType(false, TypeReferences.BLOCK_ENTITY, () -> DSL.taggedChoiceLazy("id", DSL.namespacedString(), map2));
+	public void registerTypes(Schema schema, Map<String, Supplier<TypeTemplate>> entityTypes, Map<String, Supplier<TypeTemplate>> blockEntityTypes) {
+		super.registerTypes(schema, entityTypes, blockEntityTypes);
+		schema.registerType(false, TypeReferences.BLOCK_ENTITY, () -> DSL.taggedChoiceLazy("id", IdentifierNormalizingSchema.getIdentifierType(), blockEntityTypes));
 		schema.registerType(
 			true,
 			TypeReferences.ITEM_STACK,

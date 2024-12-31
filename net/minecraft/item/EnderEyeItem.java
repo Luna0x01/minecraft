@@ -1,12 +1,12 @@
 package net.minecraft.item;
 
-import net.minecraft.advancement.criterion.Criterions;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.EndPortalFrameBlock;
 import net.minecraft.block.pattern.BlockPattern;
-import net.minecraft.entity.EnderEyeEntity;
+import net.minecraft.entity.EyeOfEnderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -19,8 +19,9 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.RayTraceContext;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import net.minecraft.world.gen.feature.StructureFeature;
 
 public class EnderEyeItem extends Item {
 	public EnderEyeItem(Item.Settings settings) {
@@ -28,74 +29,70 @@ public class EnderEyeItem extends Item {
 	}
 
 	@Override
-	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
-		World world = itemUsageContext.getWorld();
-		BlockPos blockPos = itemUsageContext.getBlockPos();
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
 		BlockState blockState = world.getBlockState(blockPos);
-		if (blockState.getBlock() != Blocks.field_10398 || (Boolean)blockState.get(EndPortalFrameBlock.EYE)) {
-			return ActionResult.field_5811;
+		if (!blockState.isOf(Blocks.END_PORTAL_FRAME) || (Boolean)blockState.get(EndPortalFrameBlock.EYE)) {
+			return ActionResult.PASS;
 		} else if (world.isClient) {
-			return ActionResult.field_5812;
+			return ActionResult.SUCCESS;
 		} else {
 			BlockState blockState2 = blockState.with(EndPortalFrameBlock.EYE, Boolean.valueOf(true));
 			Block.pushEntitiesUpBeforeBlockChange(blockState, blockState2, world, blockPos);
 			world.setBlockState(blockPos, blockState2, 2);
-			world.updateHorizontalAdjacent(blockPos, Blocks.field_10398);
-			itemUsageContext.getStack().decrement(1);
-			world.playLevelEvent(1503, blockPos, 0);
+			world.updateComparators(blockPos, Blocks.END_PORTAL_FRAME);
+			context.getStack().decrement(1);
+			world.syncWorldEvent(1503, blockPos, 0);
 			BlockPattern.Result result = EndPortalFrameBlock.getCompletedFramePattern().searchAround(world, blockPos);
 			if (result != null) {
 				BlockPos blockPos2 = result.getFrontTopLeft().add(-3, 0, -3);
 
 				for (int i = 0; i < 3; i++) {
 					for (int j = 0; j < 3; j++) {
-						world.setBlockState(blockPos2.add(i, 0, j), Blocks.field_10027.getDefaultState(), 2);
+						world.setBlockState(blockPos2.add(i, 0, j), Blocks.END_PORTAL.getDefaultState(), 2);
 					}
 				}
 
-				world.playGlobalEvent(1038, blockPos2.add(1, 0, 1), 0);
+				world.syncGlobalEvent(1038, blockPos2.add(1, 0, 1), 0);
 			}
 
-			return ActionResult.field_5812;
+			return ActionResult.CONSUME;
 		}
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1348);
-		if (hitResult.getType() == HitResult.Type.field_1332 && world.getBlockState(((BlockHitResult)hitResult).getBlockPos()).getBlock() == Blocks.field_10398) {
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+		ItemStack itemStack = user.getStackInHand(hand);
+		HitResult hitResult = raycast(world, user, RaycastContext.FluidHandling.NONE);
+		if (hitResult.getType() == HitResult.Type.BLOCK && world.getBlockState(((BlockHitResult)hitResult).getBlockPos()).isOf(Blocks.END_PORTAL_FRAME)) {
 			return TypedActionResult.pass(itemStack);
 		} else {
-			playerEntity.setCurrentHand(hand);
+			user.setCurrentHand(hand);
 			if (world instanceof ServerWorld) {
-				BlockPos blockPos = ((ServerWorld)world).getChunkManager().getChunkGenerator().locateStructure(world, "Stronghold", new BlockPos(playerEntity), 100, false);
+				BlockPos blockPos = ((ServerWorld)world)
+					.getChunkManager()
+					.getChunkGenerator()
+					.locateStructure((ServerWorld)world, StructureFeature.STRONGHOLD, user.getBlockPos(), 100, false);
 				if (blockPos != null) {
-					EnderEyeEntity enderEyeEntity = new EnderEyeEntity(world, playerEntity.getX(), playerEntity.getBodyY(0.5), playerEntity.getZ());
-					enderEyeEntity.setItem(itemStack);
-					enderEyeEntity.moveTowards(blockPos);
-					world.spawnEntity(enderEyeEntity);
-					if (playerEntity instanceof ServerPlayerEntity) {
-						Criterions.USED_ENDER_EYE.trigger((ServerPlayerEntity)playerEntity, blockPos);
+					EyeOfEnderEntity eyeOfEnderEntity = new EyeOfEnderEntity(world, user.getX(), user.getBodyY(0.5), user.getZ());
+					eyeOfEnderEntity.setItem(itemStack);
+					eyeOfEnderEntity.initTargetPos(blockPos);
+					world.spawnEntity(eyeOfEnderEntity);
+					if (user instanceof ServerPlayerEntity) {
+						Criteria.USED_ENDER_EYE.trigger((ServerPlayerEntity)user, blockPos);
 					}
 
 					world.playSound(
-						null,
-						playerEntity.getX(),
-						playerEntity.getY(),
-						playerEntity.getZ(),
-						SoundEvents.field_15155,
-						SoundCategory.field_15254,
-						0.5F,
-						0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+						null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENTITY_ENDER_EYE_LAUNCH, SoundCategory.NEUTRAL, 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 					);
-					world.playLevelEvent(null, 1003, new BlockPos(playerEntity), 0);
-					if (!playerEntity.abilities.creativeMode) {
+					world.syncWorldEvent(null, 1003, user.getBlockPos(), 0);
+					if (!user.abilities.creativeMode) {
 						itemStack.decrement(1);
 					}
 
-					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-					playerEntity.swingHand(hand, true);
+					user.incrementStat(Stats.USED.getOrCreateStat(this));
+					user.swingHand(hand, true);
 					return TypedActionResult.success(itemStack);
 				}
 			}

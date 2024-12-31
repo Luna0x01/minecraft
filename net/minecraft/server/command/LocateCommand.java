@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import java.util.Map.Entry;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
@@ -12,62 +13,50 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.gen.feature.StructureFeature;
 
 public class LocateCommand {
 	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.locate.failed"));
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
-			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal(
-																				"locate"
-																			)
-																			.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
-																		.then(
-																			CommandManager.literal("Pillager_Outpost")
-																				.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Pillager_Outpost"))
-																		))
-																	.then(CommandManager.literal("Mineshaft").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Mineshaft"))))
-																.then(CommandManager.literal("Mansion").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Mansion"))))
-															.then(CommandManager.literal("Igloo").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Igloo"))))
-														.then(
-															CommandManager.literal("Desert_Pyramid").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Desert_Pyramid"))
-														))
-													.then(
-														CommandManager.literal("Jungle_Pyramid").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Jungle_Pyramid"))
-													))
-												.then(CommandManager.literal("Swamp_Hut").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Swamp_Hut"))))
-											.then(CommandManager.literal("Stronghold").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Stronghold"))))
-										.then(CommandManager.literal("Monument").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Monument"))))
-									.then(CommandManager.literal("Fortress").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Fortress"))))
-								.then(CommandManager.literal("EndCity").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "EndCity"))))
-							.then(CommandManager.literal("Ocean_Ruin").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Ocean_Ruin"))))
-						.then(CommandManager.literal("Buried_Treasure").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Buried_Treasure"))))
-					.then(CommandManager.literal("Shipwreck").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Shipwreck"))))
-				.then(CommandManager.literal("Village").executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), "Village")))
-		);
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		LiteralArgumentBuilder<ServerCommandSource> literalArgumentBuilder = (LiteralArgumentBuilder<ServerCommandSource>)CommandManager.literal("locate")
+			.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2));
+
+		for (Entry<String, StructureFeature<?>> entry : StructureFeature.STRUCTURES.entrySet()) {
+			literalArgumentBuilder = (LiteralArgumentBuilder<ServerCommandSource>)literalArgumentBuilder.then(
+				CommandManager.literal((String)entry.getKey())
+					.executes(commandContext -> execute((ServerCommandSource)commandContext.getSource(), (StructureFeature<?>)entry.getValue()))
+			);
+		}
+
+		dispatcher.register(literalArgumentBuilder);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, String string) throws CommandSyntaxException {
-		BlockPos blockPos = new BlockPos(serverCommandSource.getPosition());
-		BlockPos blockPos2 = serverCommandSource.getWorld().locateStructure(string, blockPos, 100, false);
+	private static int execute(ServerCommandSource source, StructureFeature<?> structureFeature) throws CommandSyntaxException {
+		BlockPos blockPos = new BlockPos(source.getPosition());
+		BlockPos blockPos2 = source.getWorld().locateStructure(structureFeature, blockPos, 100, false);
 		if (blockPos2 == null) {
 			throw FAILED_EXCEPTION.create();
 		} else {
-			int i = MathHelper.floor(getDistance(blockPos.getX(), blockPos.getZ(), blockPos2.getX(), blockPos2.getZ()));
-			Text text = Texts.bracketed(new TranslatableText("chat.coordinates", blockPos2.getX(), "~", blockPos2.getZ()))
-				.styled(
-					style -> style.setColor(Formatting.field_1060)
-							.setClickEvent(new ClickEvent(ClickEvent.Action.field_11745, "/tp @s " + blockPos2.getX() + " ~ " + blockPos2.getZ()))
-							.setHoverEvent(new HoverEvent(HoverEvent.Action.field_11762, new TranslatableText("chat.coordinates.tooltip")))
-				);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.locate.success", string, text, i), false);
-			return i;
+			return sendCoordinates(source, structureFeature.getName(), blockPos, blockPos2, "commands.locate.success");
 		}
 	}
 
-	private static float getDistance(int i, int j, int k, int l) {
-		int m = k - i;
-		int n = l - j;
-		return MathHelper.sqrt((float)(m * m + n * n));
+	public static int sendCoordinates(ServerCommandSource source, String structure, BlockPos sourcePos, BlockPos structurePos, String successMessage) {
+		int i = MathHelper.floor(getDistance(sourcePos.getX(), sourcePos.getZ(), structurePos.getX(), structurePos.getZ()));
+		Text text = Texts.bracketed(new TranslatableText("chat.coordinates", structurePos.getX(), "~", structurePos.getZ()))
+			.styled(
+				style -> style.withColor(Formatting.GREEN)
+						.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + structurePos.getX() + " ~ " + structurePos.getZ()))
+						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TranslatableText("chat.coordinates.tooltip")))
+			);
+		source.sendFeedback(new TranslatableText(successMessage, structure, text, i), false);
+		return i;
+	}
+
+	private static float getDistance(int x1, int y1, int x2, int y2) {
+		int i = x2 - x1;
+		int j = y2 - y1;
+		return MathHelper.sqrt((float)(i * i + j * j));
 	}
 }

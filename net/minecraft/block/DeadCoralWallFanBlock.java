@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import javax.annotation.Nullable;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
@@ -15,42 +14,42 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class DeadCoralWallFanBlock extends DeadCoralFanBlock {
 	public static final DirectionProperty FACING = HorizontalFacingBlock.FACING;
 	private static final Map<Direction, VoxelShape> FACING_TO_SHAPE = Maps.newEnumMap(
 		ImmutableMap.of(
-			Direction.field_11043,
+			Direction.NORTH,
 			Block.createCuboidShape(0.0, 4.0, 5.0, 16.0, 12.0, 16.0),
-			Direction.field_11035,
+			Direction.SOUTH,
 			Block.createCuboidShape(0.0, 4.0, 0.0, 16.0, 12.0, 11.0),
-			Direction.field_11039,
+			Direction.WEST,
 			Block.createCuboidShape(5.0, 4.0, 0.0, 16.0, 12.0, 16.0),
-			Direction.field_11034,
+			Direction.EAST,
 			Block.createCuboidShape(0.0, 4.0, 0.0, 11.0, 12.0, 16.0)
 		)
 	);
 
-	protected DeadCoralWallFanBlock(Block.Settings settings) {
+	protected DeadCoralWallFanBlock(AbstractBlock.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(WATERLOGGED, Boolean.valueOf(true)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(WATERLOGGED, Boolean.valueOf(true)));
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		return (VoxelShape)FACING_TO_SHAPE.get(blockState.get(FACING));
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return (VoxelShape)FACING_TO_SHAPE.get(state.get(FACING));
 	}
 
 	@Override
-	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
-		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
 	}
 
 	@Override
-	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
-		return blockState.rotate(blockMirror.getRotation(blockState.get(FACING)));
+	public BlockState mirror(BlockState state, BlockMirror mirror) {
+		return state.rotate(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override
@@ -59,31 +58,29 @@ public class DeadCoralWallFanBlock extends DeadCoralFanBlock {
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if ((Boolean)blockState.get(WATERLOGGED)) {
-			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if ((Boolean)state.get(WATERLOGGED)) {
+			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
-		return direction.getOpposite() == blockState.get(FACING) && !blockState.canPlaceAt(iWorld, blockPos) ? Blocks.field_10124.getDefaultState() : blockState;
+		return direction.getOpposite() == state.get(FACING) && !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() : state;
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
-		Direction direction = blockState.get(FACING);
-		BlockPos blockPos2 = blockPos.offset(direction.getOpposite());
-		BlockState blockState2 = worldView.getBlockState(blockPos2);
-		return blockState2.isSideSolidFullSquare(worldView, blockPos2, direction);
+	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+		Direction direction = state.get(FACING);
+		BlockPos blockPos = pos.offset(direction.getOpposite());
+		BlockState blockState = world.getBlockState(blockPos);
+		return blockState.isSideSolidFullSquare(world, blockPos, direction);
 	}
 
 	@Nullable
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		BlockState blockState = super.getPlacementState(itemPlacementContext);
-		WorldView worldView = itemPlacementContext.getWorld();
-		BlockPos blockPos = itemPlacementContext.getBlockPos();
-		Direction[] directions = itemPlacementContext.getPlacementDirections();
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		BlockState blockState = super.getPlacementState(ctx);
+		WorldView worldView = ctx.getWorld();
+		BlockPos blockPos = ctx.getBlockPos();
+		Direction[] directions = ctx.getPlacementDirections();
 
 		for (Direction direction : directions) {
 			if (direction.getAxis().isHorizontal()) {

@@ -4,8 +4,8 @@ public class PathMinHeap {
 	private PathNode[] pathNodes = new PathNode[128];
 	private int count;
 
-	public PathNode push(PathNode pathNode) {
-		if (pathNode.heapIndex >= 0) {
+	public PathNode push(PathNode node) {
+		if (node.heapIndex >= 0) {
 			throw new IllegalStateException("OW KNOWS!");
 		} else {
 			if (this.count == this.pathNodes.length) {
@@ -14,10 +14,10 @@ public class PathMinHeap {
 				this.pathNodes = pathNodes;
 			}
 
-			this.pathNodes[this.count] = pathNode;
-			pathNode.heapIndex = this.count;
+			this.pathNodes[this.count] = node;
+			node.heapIndex = this.count;
 			this.shiftUp(this.count++);
-			return pathNode;
+			return node;
 		}
 	}
 
@@ -37,56 +37,56 @@ public class PathMinHeap {
 		return pathNode;
 	}
 
-	public void setNodeWeight(PathNode pathNode, float f) {
-		float g = pathNode.heapWeight;
-		pathNode.heapWeight = f;
-		if (f < g) {
-			this.shiftUp(pathNode.heapIndex);
+	public void setNodeWeight(PathNode node, float weight) {
+		float f = node.heapWeight;
+		node.heapWeight = weight;
+		if (weight < f) {
+			this.shiftUp(node.heapIndex);
 		} else {
-			this.shiftDown(pathNode.heapIndex);
+			this.shiftDown(node.heapIndex);
 		}
 	}
 
-	private void shiftUp(int i) {
-		PathNode pathNode = this.pathNodes[i];
+	private void shiftUp(int index) {
+		PathNode pathNode = this.pathNodes[index];
 		float f = pathNode.heapWeight;
 
-		while (i > 0) {
-			int j = i - 1 >> 1;
-			PathNode pathNode2 = this.pathNodes[j];
+		while (index > 0) {
+			int i = index - 1 >> 1;
+			PathNode pathNode2 = this.pathNodes[i];
 			if (!(f < pathNode2.heapWeight)) {
 				break;
 			}
 
-			this.pathNodes[i] = pathNode2;
-			pathNode2.heapIndex = i;
-			i = j;
+			this.pathNodes[index] = pathNode2;
+			pathNode2.heapIndex = index;
+			index = i;
 		}
 
-		this.pathNodes[i] = pathNode;
-		pathNode.heapIndex = i;
+		this.pathNodes[index] = pathNode;
+		pathNode.heapIndex = index;
 	}
 
-	private void shiftDown(int i) {
-		PathNode pathNode = this.pathNodes[i];
+	private void shiftDown(int index) {
+		PathNode pathNode = this.pathNodes[index];
 		float f = pathNode.heapWeight;
 
 		while (true) {
-			int j = 1 + (i << 1);
-			int k = j + 1;
-			if (j >= this.count) {
+			int i = 1 + (index << 1);
+			int j = i + 1;
+			if (i >= this.count) {
 				break;
 			}
 
-			PathNode pathNode2 = this.pathNodes[j];
+			PathNode pathNode2 = this.pathNodes[i];
 			float g = pathNode2.heapWeight;
 			PathNode pathNode3;
 			float h;
-			if (k >= this.count) {
+			if (j >= this.count) {
 				pathNode3 = null;
 				h = Float.POSITIVE_INFINITY;
 			} else {
-				pathNode3 = this.pathNodes[k];
+				pathNode3 = this.pathNodes[j];
 				h = pathNode3.heapWeight;
 			}
 
@@ -95,22 +95,22 @@ public class PathMinHeap {
 					break;
 				}
 
-				this.pathNodes[i] = pathNode2;
-				pathNode2.heapIndex = i;
-				i = j;
+				this.pathNodes[index] = pathNode2;
+				pathNode2.heapIndex = index;
+				index = i;
 			} else {
 				if (!(h < f)) {
 					break;
 				}
 
-				this.pathNodes[i] = pathNode3;
-				pathNode3.heapIndex = i;
-				i = k;
+				this.pathNodes[index] = pathNode3;
+				pathNode3.heapIndex = index;
+				index = j;
 			}
 		}
 
-		this.pathNodes[i] = pathNode;
-		pathNode.heapIndex = i;
+		this.pathNodes[index] = pathNode;
+		pathNode.heapIndex = index;
 	}
 
 	public boolean isEmpty() {

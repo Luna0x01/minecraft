@@ -31,62 +31,62 @@ public class ModelTransformation {
 		);
 	}
 
-	public ModelTransformation(ModelTransformation modelTransformation) {
-		this.thirdPersonLeftHand = modelTransformation.thirdPersonLeftHand;
-		this.thirdPersonRightHand = modelTransformation.thirdPersonRightHand;
-		this.firstPersonLeftHand = modelTransformation.firstPersonLeftHand;
-		this.firstPersonRightHand = modelTransformation.firstPersonRightHand;
-		this.head = modelTransformation.head;
-		this.gui = modelTransformation.gui;
-		this.ground = modelTransformation.ground;
-		this.fixed = modelTransformation.fixed;
+	public ModelTransformation(ModelTransformation other) {
+		this.thirdPersonLeftHand = other.thirdPersonLeftHand;
+		this.thirdPersonRightHand = other.thirdPersonRightHand;
+		this.firstPersonLeftHand = other.firstPersonLeftHand;
+		this.firstPersonRightHand = other.firstPersonRightHand;
+		this.head = other.head;
+		this.gui = other.gui;
+		this.ground = other.ground;
+		this.fixed = other.fixed;
 	}
 
 	public ModelTransformation(
-		Transformation transformation,
-		Transformation transformation2,
-		Transformation transformation3,
-		Transformation transformation4,
-		Transformation transformation5,
-		Transformation transformation6,
-		Transformation transformation7,
-		Transformation transformation8
+		Transformation thirdPersonLeftHand,
+		Transformation thirdPersonRightHand,
+		Transformation firstPersonLeftHand,
+		Transformation firstPersonRightHand,
+		Transformation head,
+		Transformation gui,
+		Transformation ground,
+		Transformation fixed
 	) {
-		this.thirdPersonLeftHand = transformation;
-		this.thirdPersonRightHand = transformation2;
-		this.firstPersonLeftHand = transformation3;
-		this.firstPersonRightHand = transformation4;
-		this.head = transformation5;
-		this.gui = transformation6;
-		this.ground = transformation7;
-		this.fixed = transformation8;
+		this.thirdPersonLeftHand = thirdPersonLeftHand;
+		this.thirdPersonRightHand = thirdPersonRightHand;
+		this.firstPersonLeftHand = firstPersonLeftHand;
+		this.firstPersonRightHand = firstPersonRightHand;
+		this.head = head;
+		this.gui = gui;
+		this.ground = ground;
+		this.fixed = fixed;
 	}
 
-	public Transformation getTransformation(ModelTransformation.Mode mode) {
-		switch (mode) {
-			case field_4323:
+	public Transformation getTransformation(ModelTransformation.Mode renderMode) {
+		switch (renderMode) {
+			case THIRD_PERSON_LEFT_HAND:
 				return this.thirdPersonLeftHand;
-			case field_4320:
+			case THIRD_PERSON_RIGHT_HAND:
 				return this.thirdPersonRightHand;
-			case field_4321:
+			case FIRST_PERSON_LEFT_HAND:
 				return this.firstPersonLeftHand;
-			case field_4322:
+			case FIRST_PERSON_RIGHT_HAND:
 				return this.firstPersonRightHand;
-			case field_4316:
+			case HEAD:
 				return this.head;
-			case field_4317:
+			case GUI:
 				return this.gui;
-			case field_4318:
+			case GROUND:
 				return this.ground;
-			case field_4319:
+			case FIXED:
 				return this.fixed;
 			default:
 				return Transformation.IDENTITY;
 		}
 	}
 
-	public boolean isTransformationDefined(ModelTransformation.Mode mode) {
-		return this.getTransformation(mode) != Transformation.IDENTITY;
+	public boolean isTransformationDefined(ModelTransformation.Mode renderMode) {
+		return this.getTransformation(renderMode) != Transformation.IDENTITY;
 	}
 
 	public static class Deserializer implements JsonDeserializer<ModelTransformation> {
@@ -116,22 +116,24 @@ public class ModelTransformation {
 			);
 		}
 
-		private Transformation parseModelTransformation(JsonDeserializationContext jsonDeserializationContext, JsonObject jsonObject, String string) {
-			return jsonObject.has(string)
-				? (Transformation)jsonDeserializationContext.deserialize(jsonObject.get(string), Transformation.class)
-				: Transformation.IDENTITY;
+		private Transformation parseModelTransformation(JsonDeserializationContext ctx, JsonObject json, String key) {
+			return json.has(key) ? (Transformation)ctx.deserialize(json.get(key), Transformation.class) : Transformation.IDENTITY;
 		}
 	}
 
 	public static enum Mode {
-		field_4315,
-		field_4323,
-		field_4320,
-		field_4321,
-		field_4322,
-		field_4316,
-		field_4317,
-		field_4318,
-		field_4319;
+		NONE,
+		THIRD_PERSON_LEFT_HAND,
+		THIRD_PERSON_RIGHT_HAND,
+		FIRST_PERSON_LEFT_HAND,
+		FIRST_PERSON_RIGHT_HAND,
+		HEAD,
+		GUI,
+		GROUND,
+		FIXED;
+
+		public boolean isFirstPerson() {
+			return this == FIRST_PERSON_LEFT_HAND || this == FIRST_PERSON_RIGHT_HAND;
+		}
 	}
 }

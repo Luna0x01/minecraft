@@ -15,15 +15,19 @@ import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class FillPlayerHeadLootFunction extends ConditionalLootFunction {
 	private final LootContext.EntityTarget entity;
 
-	public FillPlayerHeadLootFunction(LootCondition[] lootConditions, LootContext.EntityTarget entityTarget) {
-		super(lootConditions);
-		this.entity = entityTarget;
+	public FillPlayerHeadLootFunction(LootCondition[] conditions, LootContext.EntityTarget entity) {
+		super(conditions);
+		this.entity = entity;
+	}
+
+	@Override
+	public LootFunctionType getType() {
+		return LootFunctionTypes.FILL_PLAYER_HEAD;
 	}
 
 	@Override
@@ -32,23 +36,19 @@ public class FillPlayerHeadLootFunction extends ConditionalLootFunction {
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		if (itemStack.getItem() == Items.PLAYER_HEAD) {
-			Entity entity = lootContext.get(this.entity.getParameter());
+	public ItemStack process(ItemStack stack, LootContext context) {
+		if (stack.getItem() == Items.PLAYER_HEAD) {
+			Entity entity = context.get(this.entity.getParameter());
 			if (entity instanceof PlayerEntity) {
 				GameProfile gameProfile = ((PlayerEntity)entity).getGameProfile();
-				itemStack.getOrCreateTag().put("SkullOwner", NbtHelper.fromGameProfile(new CompoundTag(), gameProfile));
+				stack.getOrCreateTag().put("SkullOwner", NbtHelper.fromGameProfile(new CompoundTag(), gameProfile));
 			}
 		}
 
-		return itemStack;
+		return stack;
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<FillPlayerHeadLootFunction> {
-		public Factory() {
-			super(new Identifier("fill_player_head"), FillPlayerHeadLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<FillPlayerHeadLootFunction> {
 		public void toJson(JsonObject jsonObject, FillPlayerHeadLootFunction fillPlayerHeadLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, fillPlayerHeadLootFunction, jsonSerializationContext);
 			jsonObject.add("entity", jsonSerializationContext.serialize(fillPlayerHeadLootFunction.entity));

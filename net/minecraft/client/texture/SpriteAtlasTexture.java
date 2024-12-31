@@ -17,9 +17,9 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.minecraft.client.resource.metadata.AnimationResourceMetadata;
 import net.minecraft.client.util.PngFile;
-import net.minecraft.container.PlayerContainer;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashException;
@@ -33,9 +33,9 @@ import org.apache.logging.log4j.Logger;
 public class SpriteAtlasTexture extends AbstractTexture implements TextureTickListener {
 	private static final Logger LOGGER = LogManager.getLogger();
 	@Deprecated
-	public static final Identifier BLOCK_ATLAS_TEX = PlayerContainer.BLOCK_ATLAS_TEXTURE;
+	public static final Identifier BLOCK_ATLAS_TEXTURE = PlayerScreenHandler.BLOCK_ATLAS_TEXTURE;
 	@Deprecated
-	public static final Identifier PARTICLE_ATLAS_TEX = new Identifier("textures/atlas/particles.png");
+	public static final Identifier PARTICLE_ATLAS_TEXTURE = new Identifier("textures/atlas/particles.png");
 	private final List<Sprite> animatedSprites = Lists.newArrayList();
 	private final Set<Identifier> spritesToLoad = Sets.newHashSet();
 	private final Map<Identifier, Sprite> sprites = Maps.newHashMap();
@@ -48,14 +48,14 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 	}
 
 	@Override
-	public void load(ResourceManager resourceManager) throws IOException {
+	public void load(ResourceManager manager) throws IOException {
 	}
 
 	public void upload(SpriteAtlasTexture.Data data) {
 		this.spritesToLoad.clear();
 		this.spritesToLoad.addAll(data.spriteIds);
-		LOGGER.info("Created: {}x{}x{} {}-atlas", data.width, data.height, data.field_21795, this.id);
-		TextureUtil.prepareImage(this.getGlId(), data.field_21795, data.width, data.height);
+		LOGGER.info("Created: {}x{}x{} {}-atlas", data.width, data.height, data.maxLevel, this.id);
+		TextureUtil.allocate(this.getGlId(), data.maxLevel, data.width, data.height);
 		this.clear();
 
 		for (Sprite sprite : data.sprites) {
@@ -77,40 +77,40 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 		}
 	}
 
-	public SpriteAtlasTexture.Data stitch(ResourceManager resourceManager, Stream<Identifier> stream, Profiler profiler, int i) {
+	public SpriteAtlasTexture.Data stitch(ResourceManager resourceManager, Stream<Identifier> idStream, Profiler profiler, int mipmapLevel) {
 		profiler.push("preparing");
-		Set<Identifier> set = (Set<Identifier>)stream.peek(identifier -> {
+		Set<Identifier> set = (Set<Identifier>)idStream.peek(identifier -> {
 			if (identifier == null) {
 				throw new IllegalArgumentException("Location cannot be null!");
 			}
 		}).collect(Collectors.toSet());
-		int j = this.maxTextureSize;
-		TextureStitcher textureStitcher = new TextureStitcher(j, j, i);
-		int k = Integer.MAX_VALUE;
-		int l = 1 << i;
+		int i = this.maxTextureSize;
+		TextureStitcher textureStitcher = new TextureStitcher(i, i, mipmapLevel);
+		int j = Integer.MAX_VALUE;
+		int k = 1 << mipmapLevel;
 		profiler.swap("extracting_frames");
 
 		for (Sprite.Info info : this.loadSprites(resourceManager, set)) {
-			k = Math.min(k, Math.min(info.getWidth(), info.getHeight()));
-			int m = Math.min(Integer.lowestOneBit(info.getWidth()), Integer.lowestOneBit(info.getHeight()));
-			if (m < l) {
+			j = Math.min(j, Math.min(info.getWidth(), info.getHeight()));
+			int l = Math.min(Integer.lowestOneBit(info.getWidth()), Integer.lowestOneBit(info.getHeight()));
+			if (l < k) {
 				LOGGER.warn(
-					"Texture {} with size {}x{} limits mip level from {} to {}", info.getId(), info.getWidth(), info.getHeight(), MathHelper.log2(l), MathHelper.log2(m)
+					"Texture {} with size {}x{} limits mip level from {} to {}", info.getId(), info.getWidth(), info.getHeight(), MathHelper.log2(k), MathHelper.log2(l)
 				);
-				l = m;
+				k = l;
 			}
 
 			textureStitcher.add(info);
 		}
 
-		int n = Math.min(k, l);
-		int o = MathHelper.log2(n);
-		int p;
-		if (o < i) {
-			LOGGER.warn("{}: dropping miplevel from {} to {}, because of minimum power of two: {}", this.id, i, o, n);
-			p = o;
+		int m = Math.min(j, k);
+		int n = MathHelper.log2(m);
+		int o;
+		if (n < mipmapLevel) {
+			LOGGER.warn("{}: dropping miplevel from {} to {}, because of minimum power of two: {}", this.id, mipmapLevel, n, m);
+			o = n;
 		} else {
-			p = i;
+			o = mipmapLevel;
 		}
 
 		profiler.swap("register");
@@ -126,21 +126,21 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 				"Sprites",
 				var16.getSprites().stream().map(info -> String.format("%s[%dx%d]", info.getId(), info.getWidth(), info.getHeight())).collect(Collectors.joining(","))
 			);
-			crashReportSection.add("Max Texture Size", j);
+			crashReportSection.add("Max Texture Size", i);
 			throw new CrashException(crashReport);
 		}
 
 		profiler.swap("loading");
-		List<Sprite> list = this.method_18161(resourceManager, textureStitcher, p);
+		List<Sprite> list = this.loadSprites(resourceManager, textureStitcher, o);
 		profiler.pop();
-		return new SpriteAtlasTexture.Data(set, textureStitcher.getWidth(), textureStitcher.getHeight(), p, list);
+		return new SpriteAtlasTexture.Data(set, textureStitcher.getWidth(), textureStitcher.getHeight(), o, list);
 	}
 
-	private Collection<Sprite.Info> loadSprites(ResourceManager resourceManager, Set<Identifier> set) {
+	private Collection<Sprite.Info> loadSprites(ResourceManager resourceManager, Set<Identifier> ids) {
 		List<CompletableFuture<?>> list = Lists.newArrayList();
 		ConcurrentLinkedQueue<Sprite.Info> concurrentLinkedQueue = new ConcurrentLinkedQueue();
 
-		for (Identifier identifier : set) {
+		for (Identifier identifier : ids) {
 			if (!MissingSprite.getMissingSpriteId().equals(identifier)) {
 				list.add(CompletableFuture.runAsync(() -> {
 					Identifier identifier2 = this.getTexturePath(identifier);
@@ -184,7 +184,7 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 					}
 
 					concurrentLinkedQueue.add(info);
-				}, Util.getServerWorkerExecutor()));
+				}, Util.getMainWorkerExecutor()));
 			}
 		}
 
@@ -192,20 +192,20 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 		return concurrentLinkedQueue;
 	}
 
-	private List<Sprite> method_18161(ResourceManager resourceManager, TextureStitcher textureStitcher, int i) {
+	private List<Sprite> loadSprites(ResourceManager resourceManager, TextureStitcher textureStitcher, int maxLevel) {
 		ConcurrentLinkedQueue<Sprite> concurrentLinkedQueue = new ConcurrentLinkedQueue();
 		List<CompletableFuture<?>> list = Lists.newArrayList();
-		textureStitcher.getStitchedSprites((info, j, k, l, m) -> {
+		textureStitcher.getStitchedSprites((info, atlasWidth, atlasHeight, x, y) -> {
 			if (info == MissingSprite.getMissingInfo()) {
-				MissingSprite missingSprite = MissingSprite.getMissingSprite(this, i, j, k, l, m);
+				MissingSprite missingSprite = MissingSprite.getMissingSprite(this, maxLevel, atlasWidth, atlasHeight, x, y);
 				concurrentLinkedQueue.add(missingSprite);
 			} else {
 				list.add(CompletableFuture.runAsync(() -> {
-					Sprite sprite = this.loadSprite(resourceManager, info, j, k, i, l, m);
+					Sprite sprite = this.loadSprite(resourceManager, info, atlasWidth, atlasHeight, maxLevel, x, y);
 					if (sprite != null) {
 						concurrentLinkedQueue.add(sprite);
 					}
-				}, Util.getServerWorkerExecutor()));
+				}, Util.getMainWorkerExecutor()));
 			}
 		});
 		CompletableFuture.allOf((CompletableFuture[])list.toArray(new CompletableFuture[0])).join();
@@ -213,17 +213,17 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 	}
 
 	@Nullable
-	private Sprite loadSprite(ResourceManager resourceManager, Sprite.Info info, int i, int j, int k, int l, int m) {
+	private Sprite loadSprite(ResourceManager container, Sprite.Info info, int atlasWidth, int atlasHeight, int maxLevel, int x, int y) {
 		Identifier identifier = this.getTexturePath(info.getId());
 
 		try {
-			Resource resource = resourceManager.getResource(identifier);
+			Resource resource = container.getResource(identifier);
 			Throwable var10 = null;
 
 			Sprite var12;
 			try {
 				NativeImage nativeImage = NativeImage.read(resource.getInputStream());
-				var12 = new Sprite(this, info, k, i, j, l, m, nativeImage);
+				var12 = new Sprite(this, info, maxLevel, atlasWidth, atlasHeight, x, y, nativeImage);
 			} catch (Throwable var23) {
 				var10 = var23;
 				throw var23;
@@ -272,8 +272,8 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 		}
 	}
 
-	public Sprite getSprite(Identifier identifier) {
-		Sprite sprite = (Sprite)this.sprites.get(identifier);
+	public Sprite getSprite(Identifier id) {
+		Sprite sprite = (Sprite)this.sprites.get(id);
 		return sprite == null ? (Sprite)this.sprites.get(MissingSprite.getMissingSpriteId()) : sprite;
 	}
 
@@ -290,23 +290,23 @@ public class SpriteAtlasTexture extends AbstractTexture implements TextureTickLi
 		return this.id;
 	}
 
-	public void method_24198(SpriteAtlasTexture.Data data) {
-		this.setFilter(false, data.field_21795 > 0);
+	public void applyTextureFilter(SpriteAtlasTexture.Data data) {
+		this.setFilter(false, data.maxLevel > 0);
 	}
 
 	public static class Data {
 		final Set<Identifier> spriteIds;
 		final int width;
 		final int height;
-		final int field_21795;
+		final int maxLevel;
 		final List<Sprite> sprites;
 
-		public Data(Set<Identifier> set, int i, int j, int k, List<Sprite> list) {
-			this.spriteIds = set;
-			this.width = i;
-			this.height = j;
-			this.field_21795 = k;
-			this.sprites = list;
+		public Data(Set<Identifier> spriteIds, int width, int height, int maxLevel, List<Sprite> sprites) {
+			this.spriteIds = spriteIds;
+			this.width = width;
+			this.height = height;
+			this.maxLevel = maxLevel;
+			this.sprites = sprites;
 		}
 	}
 }

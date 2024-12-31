@@ -11,7 +11,7 @@ public class EmptyProfileResult implements ProfileResult {
 	}
 
 	@Override
-	public List<ProfilerTiming> getTimings(String string) {
+	public List<ProfilerTiming> getTimings(String parentPath) {
 		return Collections.emptyList();
 	}
 

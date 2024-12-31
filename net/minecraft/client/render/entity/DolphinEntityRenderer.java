@@ -6,7 +6,7 @@ import net.minecraft.entity.passive.DolphinEntity;
 import net.minecraft.util.Identifier;
 
 public class DolphinEntityRenderer extends MobEntityRenderer<DolphinEntity, DolphinEntityModel<DolphinEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/dolphin.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/dolphin.png");
 
 	public DolphinEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new DolphinEntityModel<>(), 0.7F);
@@ -14,6 +14,6 @@ public class DolphinEntityRenderer extends MobEntityRenderer<DolphinEntity, Dolp
 	}
 
 	public Identifier getTexture(DolphinEntity dolphinEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

@@ -1,12 +1,15 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.Collection;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.projectile.FishingBobberEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer;
 import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.predicate.item.ItemPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -20,50 +23,56 @@ public class FishingRodHookedCriterion extends AbstractCriterion<FishingRodHooke
 		return ID;
 	}
 
-	public FishingRodHookedCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+	public FishingRodHookedCriterion.Conditions conditionsFromJson(
+		JsonObject jsonObject, EntityPredicate.Extended extended, AdvancementEntityPredicateDeserializer advancementEntityPredicateDeserializer
+	) {
 		ItemPredicate itemPredicate = ItemPredicate.fromJson(jsonObject.get("rod"));
-		EntityPredicate entityPredicate = EntityPredicate.fromJson(jsonObject.get("entity"));
+		EntityPredicate.Extended extended2 = EntityPredicate.Extended.getInJson(jsonObject, "entity", advancementEntityPredicateDeserializer);
 		ItemPredicate itemPredicate2 = ItemPredicate.fromJson(jsonObject.get("item"));
-		return new FishingRodHookedCriterion.Conditions(itemPredicate, entityPredicate, itemPredicate2);
+		return new FishingRodHookedCriterion.Conditions(extended, itemPredicate, extended2, itemPredicate2);
 	}
 
-	public void trigger(ServerPlayerEntity serverPlayerEntity, ItemStack itemStack, FishingBobberEntity fishingBobberEntity, Collection<ItemStack> collection) {
-		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(serverPlayerEntity, itemStack, fishingBobberEntity, collection));
+	public void trigger(ServerPlayerEntity player, ItemStack rod, FishingBobberEntity bobber, Collection<ItemStack> fishingLoots) {
+		LootContext lootContext = EntityPredicate.createAdvancementEntityLootContext(
+			player, (Entity)(bobber.getHookedEntity() != null ? bobber.getHookedEntity() : bobber)
+		);
+		this.test(player, conditions -> conditions.test(rod, lootContext, fishingLoots));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
 		private final ItemPredicate rod;
-		private final EntityPredicate hookedEntity;
+		private final EntityPredicate.Extended hookedEntity;
 		private final ItemPredicate caughtItem;
 
-		public Conditions(ItemPredicate itemPredicate, EntityPredicate entityPredicate, ItemPredicate itemPredicate2) {
-			super(FishingRodHookedCriterion.ID);
-			this.rod = itemPredicate;
-			this.hookedEntity = entityPredicate;
-			this.caughtItem = itemPredicate2;
+		public Conditions(EntityPredicate.Extended player, ItemPredicate rod, EntityPredicate.Extended hookedEntity, ItemPredicate caughtItem) {
+			super(FishingRodHookedCriterion.ID, player);
+			this.rod = rod;
+			this.hookedEntity = hookedEntity;
+			this.caughtItem = caughtItem;
 		}
 
-		public static FishingRodHookedCriterion.Conditions create(ItemPredicate itemPredicate, EntityPredicate entityPredicate, ItemPredicate itemPredicate2) {
-			return new FishingRodHookedCriterion.Conditions(itemPredicate, entityPredicate, itemPredicate2);
+		public static FishingRodHookedCriterion.Conditions create(ItemPredicate rod, EntityPredicate bobber, ItemPredicate item) {
+			return new FishingRodHookedCriterion.Conditions(EntityPredicate.Extended.EMPTY, rod, EntityPredicate.Extended.ofLegacy(bobber), item);
 		}
 
-		public boolean matches(ServerPlayerEntity serverPlayerEntity, ItemStack itemStack, FishingBobberEntity fishingBobberEntity, Collection<ItemStack> collection) {
-			if (!this.rod.test(itemStack)) {
+		public boolean test(ItemStack rod, LootContext hookedEntityContext, Collection<ItemStack> fishingLoots) {
+			if (!this.rod.test(rod)) {
 				return false;
-			} else if (!this.hookedEntity.test(serverPlayerEntity, fishingBobberEntity.hookedEntity)) {
+			} else if (!this.hookedEntity.test(hookedEntityContext)) {
 				return false;
 			} else {
 				if (this.caughtItem != ItemPredicate.ANY) {
 					boolean bl = false;
-					if (fishingBobberEntity.hookedEntity instanceof ItemEntity) {
-						ItemEntity itemEntity = (ItemEntity)fishingBobberEntity.hookedEntity;
+					Entity entity = hookedEntityContext.get(LootContextParameters.THIS_ENTITY);
+					if (entity instanceof ItemEntity) {
+						ItemEntity itemEntity = (ItemEntity)entity;
 						if (this.caughtItem.test(itemEntity.getStack())) {
 							bl = true;
 						}
 					}
 
-					for (ItemStack itemStack2 : collection) {
-						if (this.caughtItem.test(itemStack2)) {
+					for (ItemStack itemStack : fishingLoots) {
+						if (this.caughtItem.test(itemStack)) {
 							bl = true;
 							break;
 						}
@@ -79,10 +88,10 @@ public class FishingRodHookedCriterion extends AbstractCriterion<FishingRodHooke
 		}
 
 		@Override
-		public JsonElement toJson() {
-			JsonObject jsonObject = new JsonObject();
+		public JsonObject toJson(AdvancementEntityPredicateSerializer predicateSerializer) {
+			JsonObject jsonObject = super.toJson(predicateSerializer);
 			jsonObject.add("rod", this.rod.toJson());
-			jsonObject.add("entity", this.hookedEntity.serialize());
+			jsonObject.add("entity", this.hookedEntity.toJson(predicateSerializer));
 			jsonObject.add("item", this.caughtItem.toJson());
 			return jsonObject;
 		}

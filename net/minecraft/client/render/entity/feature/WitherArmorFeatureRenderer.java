@@ -15,8 +15,8 @@ public class WitherArmorFeatureRenderer extends EnergySwirlOverlayFeatureRendere
 	}
 
 	@Override
-	protected float getEnergySwirlX(float f) {
-		return MathHelper.cos(f * 0.02F) * 3.0F;
+	protected float getEnergySwirlX(float partialAge) {
+		return MathHelper.cos(partialAge * 0.02F) * 3.0F;
 	}
 
 	@Override

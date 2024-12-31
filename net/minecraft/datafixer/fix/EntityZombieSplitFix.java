@@ -1,19 +1,19 @@
 package net.minecraft.datafixer.fix;
 
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Dynamic;
 import java.util.Objects;
 
 public class EntityZombieSplitFix extends EntitySimpleTransformFix {
-	public EntityZombieSplitFix(Schema schema, boolean bl) {
-		super("EntityZombieSplitFix", schema, bl);
+	public EntityZombieSplitFix(Schema outputSchema, boolean changesType) {
+		super("EntityZombieSplitFix", outputSchema, changesType);
 	}
 
 	@Override
-	protected Pair<String, Dynamic<?>> transform(String string, Dynamic<?> dynamic) {
-		if (Objects.equals("Zombie", string)) {
-			String string2 = "Zombie";
+	protected Pair<String, Dynamic<?>> transform(String choice, Dynamic<?> dynamic) {
+		if (Objects.equals("Zombie", choice)) {
+			String string = "Zombie";
 			int i = dynamic.get("ZombieType").asInt(0);
 			switch (i) {
 				case 0:
@@ -24,17 +24,17 @@ public class EntityZombieSplitFix extends EntitySimpleTransformFix {
 				case 3:
 				case 4:
 				case 5:
-					string2 = "ZombieVillager";
+					string = "ZombieVillager";
 					dynamic = dynamic.set("Profession", dynamic.createInt(i - 1));
 					break;
 				case 6:
-					string2 = "Husk";
+					string = "Husk";
 			}
 
 			dynamic = dynamic.remove("ZombieType");
-			return Pair.of(string2, dynamic);
-		} else {
 			return Pair.of(string, dynamic);
+		} else {
+			return Pair.of(choice, dynamic);
 		}
 	}
 }

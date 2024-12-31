@@ -11,14 +11,14 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 
 public abstract class StuckObjectsFeatureRenderer<T extends LivingEntity, M extends PlayerEntityModel<T>> extends FeatureRenderer<T, M> {
-	public StuckObjectsFeatureRenderer(LivingEntityRenderer<T, M> livingEntityRenderer) {
-		super(livingEntityRenderer);
+	public StuckObjectsFeatureRenderer(LivingEntityRenderer<T, M> entityRenderer) {
+		super(entityRenderer);
 	}
 
-	protected abstract int getObjectCount(T livingEntity);
+	protected abstract int getObjectCount(T entity);
 
 	protected abstract void renderObject(
-		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, Entity entity, float f, float g, float h, float j
+		MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, Entity entity, float directionX, float directionY, float directionZ, float tickDelta
 	);
 
 	public void render(

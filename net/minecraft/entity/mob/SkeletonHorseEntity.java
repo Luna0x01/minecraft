@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.SkeletonHorseTrapTriggerGoal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.HorseBaseEntity;
@@ -11,16 +12,17 @@ import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.SpawnEggItem;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.FluidTags;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
 public class SkeletonHorseEntity extends HorseBaseEntity {
-	private final SkeletonHorseTrapTriggerGoal field_7003 = new SkeletonHorseTrapTriggerGoal(this);
+	private final SkeletonHorseTrapTriggerGoal trapTriggerGoal = new SkeletonHorseTrapTriggerGoal(this);
 	private boolean trapped;
 	private int trapTime;
 
@@ -28,12 +30,13 @@ public class SkeletonHorseEntity extends HorseBaseEntity {
 		super(entityType, world);
 	}
 
+	public static DefaultAttributeContainer.Builder createSkeletonHorseAttributes() {
+		return createBaseHorseAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 15.0).add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.2F);
+	}
+
 	@Override
 	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(15.0);
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.2F);
-		this.getAttributeInstance(JUMP_STRENGTH).setBaseValue(this.getChildJumpStrengthBonus());
+		this.getAttributeInstance(EntityAttributes.HORSE_JUMP_STRENGTH).setBaseValue(this.getChildJumpStrengthBonus());
 	}
 
 	@Override
@@ -43,54 +46,54 @@ public class SkeletonHorseEntity extends HorseBaseEntity {
 	@Override
 	protected SoundEvent getAmbientSound() {
 		super.getAmbientSound();
-		return this.isInFluid(FluidTags.field_15517) ? SoundEvents.field_14686 : SoundEvents.field_14984;
+		return this.isSubmergedIn(FluidTags.WATER) ? SoundEvents.ENTITY_SKELETON_HORSE_AMBIENT_WATER : SoundEvents.ENTITY_SKELETON_HORSE_AMBIENT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
 		super.getDeathSound();
-		return SoundEvents.field_14721;
+		return SoundEvents.ENTITY_SKELETON_HORSE_DEATH;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		super.getHurtSound(damageSource);
-		return SoundEvents.field_14855;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		super.getHurtSound(source);
+		return SoundEvents.ENTITY_SKELETON_HORSE_HURT;
 	}
 
 	@Override
 	protected SoundEvent getSwimSound() {
 		if (this.onGround) {
 			if (!this.hasPassengers()) {
-				return SoundEvents.field_15182;
+				return SoundEvents.ENTITY_SKELETON_HORSE_STEP_WATER;
 			}
 
 			this.soundTicks++;
 			if (this.soundTicks > 5 && this.soundTicks % 3 == 0) {
-				return SoundEvents.field_15108;
+				return SoundEvents.ENTITY_SKELETON_HORSE_GALLOP_WATER;
 			}
 
 			if (this.soundTicks <= 5) {
-				return SoundEvents.field_15182;
+				return SoundEvents.ENTITY_SKELETON_HORSE_STEP_WATER;
 			}
 		}
 
-		return SoundEvents.field_14617;
+		return SoundEvents.ENTITY_SKELETON_HORSE_SWIM;
 	}
 
 	@Override
-	protected void playSwimSound(float f) {
+	protected void playSwimSound(float volume) {
 		if (this.onGround) {
 			super.playSwimSound(0.3F);
 		} else {
-			super.playSwimSound(Math.min(0.1F, f * 25.0F));
+			super.playSwimSound(Math.min(0.1F, volume * 25.0F));
 		}
 	}
 
 	@Override
 	protected void playJumpSound() {
 		if (this.isTouchingWater()) {
-			this.playSound(SoundEvents.field_14901, 0.4F, 1.0F);
+			this.playSound(SoundEvents.ENTITY_SKELETON_HORSE_JUMP_WATER, 0.4F, 1.0F);
 		} else {
 			super.playJumpSound();
 		}
@@ -115,17 +118,17 @@ public class SkeletonHorseEntity extends HorseBaseEntity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putBoolean("SkeletonTrap", this.isTrapped());
-		compoundTag.putInt("SkeletonTrapTime", this.trapTime);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putBoolean("SkeletonTrap", this.isTrapped());
+		tag.putInt("SkeletonTrapTime", this.trapTime);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.setTrapped(compoundTag.getBoolean("SkeletonTrap"));
-		this.trapTime = compoundTag.getInt("SkeletonTrapTime");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.setTrapped(tag.getBoolean("SkeletonTrap"));
+		this.trapTime = tag.getInt("SkeletonTrapTime");
 	}
 
 	@Override
@@ -142,51 +145,50 @@ public class SkeletonHorseEntity extends HorseBaseEntity {
 		return this.trapped;
 	}
 
-	public void setTrapped(boolean bl) {
-		if (bl != this.trapped) {
-			this.trapped = bl;
-			if (bl) {
-				this.goalSelector.add(1, this.field_7003);
+	public void setTrapped(boolean trapped) {
+		if (trapped != this.trapped) {
+			this.trapped = trapped;
+			if (trapped) {
+				this.goalSelector.add(1, this.trapTriggerGoal);
 			} else {
-				this.goalSelector.remove(this.field_7003);
+				this.goalSelector.remove(this.trapTriggerGoal);
 			}
 		}
 	}
 
 	@Nullable
 	@Override
-	public PassiveEntity createChild(PassiveEntity passiveEntity) {
-		return EntityType.field_6075.create(this.world);
+	public PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
+		return EntityType.SKELETON_HORSE.create(world);
 	}
 
 	@Override
-	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		if (itemStack.getItem() instanceof SpawnEggItem) {
-			return super.interactMob(playerEntity, hand);
-		} else if (!this.isTame()) {
-			return false;
+	public ActionResult interactMob(PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
+		if (!this.isTame()) {
+			return ActionResult.PASS;
 		} else if (this.isBaby()) {
-			return super.interactMob(playerEntity, hand);
-		} else if (playerEntity.shouldCancelInteraction()) {
-			this.openInventory(playerEntity);
-			return true;
+			return super.interactMob(player, hand);
+		} else if (player.shouldCancelInteraction()) {
+			this.openInventory(player);
+			return ActionResult.success(this.world.isClient);
 		} else if (this.hasPassengers()) {
-			return super.interactMob(playerEntity, hand);
+			return super.interactMob(player, hand);
 		} else {
 			if (!itemStack.isEmpty()) {
-				if (itemStack.getItem() == Items.field_8175 && !this.isSaddled()) {
-					this.openInventory(playerEntity);
-					return true;
+				if (itemStack.getItem() == Items.SADDLE && !this.isSaddled()) {
+					this.openInventory(player);
+					return ActionResult.success(this.world.isClient);
 				}
 
-				if (itemStack.useOnEntity(playerEntity, this, hand)) {
-					return true;
+				ActionResult actionResult = itemStack.useOnEntity(player, this, hand);
+				if (actionResult.isAccepted()) {
+					return actionResult;
 				}
 			}
 
-			this.putPlayerOnBack(playerEntity);
-			return true;
+			this.putPlayerOnBack(player);
+			return ActionResult.success(this.world.isClient);
 		}
 	}
 }

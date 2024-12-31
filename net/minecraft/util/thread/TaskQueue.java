@@ -12,15 +12,15 @@ public interface TaskQueue<T, F> {
 	@Nullable
 	F poll();
 
-	boolean add(T object);
+	boolean add(T message);
 
 	boolean isEmpty();
 
 	public static final class Prioritized implements TaskQueue<TaskQueue.PrioritizedTask, Runnable> {
 		private final List<Queue<Runnable>> queues;
 
-		public Prioritized(int i) {
-			this.queues = (List<Queue<Runnable>>)IntStream.range(0, i).mapToObj(ix -> Queues.newConcurrentLinkedQueue()).collect(Collectors.toList());
+		public Prioritized(int priorityCount) {
+			this.queues = (List<Queue<Runnable>>)IntStream.range(0, priorityCount).mapToObj(i -> Queues.newConcurrentLinkedQueue()).collect(Collectors.toList());
 		}
 
 		@Nullable
@@ -51,8 +51,8 @@ public interface TaskQueue<T, F> {
 		private final int priority;
 		private final Runnable runnable;
 
-		public PrioritizedTask(int i, Runnable runnable) {
-			this.priority = i;
+		public PrioritizedTask(int priority, Runnable runnable) {
+			this.priority = priority;
 			this.runnable = runnable;
 		}
 
@@ -79,8 +79,8 @@ public interface TaskQueue<T, F> {
 		}
 
 		@Override
-		public boolean add(T object) {
-			return this.queue.add(object);
+		public boolean add(T message) {
+			return this.queue.add(message);
 		}
 
 		@Override

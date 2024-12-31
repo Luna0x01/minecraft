@@ -4,17 +4,17 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.registry.Registry;
 
 public class CookingRecipeSerializer<T extends AbstractCookingRecipe> implements RecipeSerializer<T> {
 	private final int cookingTime;
 	private final CookingRecipeSerializer.RecipeFactory<T> recipeFactory;
 
-	public CookingRecipeSerializer(CookingRecipeSerializer.RecipeFactory<T> recipeFactory, int i) {
-		this.cookingTime = i;
+	public CookingRecipeSerializer(CookingRecipeSerializer.RecipeFactory<T> recipeFactory, int cookingTime) {
+		this.cookingTime = cookingTime;
 		this.recipeFactory = recipeFactory;
 	}
 
@@ -27,7 +27,7 @@ public class CookingRecipeSerializer<T extends AbstractCookingRecipe> implements
 		String string2 = JsonHelper.getString(jsonObject, "result");
 		Identifier identifier2 = new Identifier(string2);
 		ItemStack itemStack = new ItemStack(
-			(ItemConvertible)Registry.field_11142.getOrEmpty(identifier2).orElseThrow(() -> new IllegalStateException("Item: " + string2 + " does not exist"))
+			(ItemConvertible)Registry.ITEM.getOrEmpty(identifier2).orElseThrow(() -> new IllegalStateException("Item: " + string2 + " does not exist"))
 		);
 		float f = JsonHelper.getFloat(jsonObject, "experience", 0.0F);
 		int i = JsonHelper.getInt(jsonObject, "cookingtime", this.cookingTime);
@@ -52,6 +52,6 @@ public class CookingRecipeSerializer<T extends AbstractCookingRecipe> implements
 	}
 
 	interface RecipeFactory<T extends AbstractCookingRecipe> {
-		T create(Identifier identifier, String string, Ingredient ingredient, ItemStack itemStack, float f, int i);
+		T create(Identifier id, String group, Ingredient input, ItemStack output, float experience, int cookTime);
 	}
 }

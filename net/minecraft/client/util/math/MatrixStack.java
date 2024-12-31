@@ -4,6 +4,8 @@ import com.google.common.collect.Queues;
 import java.util.Deque;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix3f;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
 
 public class MatrixStack {
@@ -15,27 +17,27 @@ public class MatrixStack {
 		arrayDeque.add(new MatrixStack.Entry(matrix4f, matrix3f));
 	});
 
-	public void translate(double d, double e, double f) {
+	public void translate(double x, double y, double z) {
 		MatrixStack.Entry entry = (MatrixStack.Entry)this.stack.getLast();
-		entry.modelMatrix.multiply(Matrix4f.translate((float)d, (float)e, (float)f));
+		entry.modelMatrix.multiply(Matrix4f.translate((float)x, (float)y, (float)z));
 	}
 
-	public void scale(float f, float g, float h) {
+	public void scale(float x, float y, float z) {
 		MatrixStack.Entry entry = (MatrixStack.Entry)this.stack.getLast();
-		entry.modelMatrix.multiply(Matrix4f.scale(f, g, h));
-		if (f == g && g == h) {
-			if (f > 0.0F) {
+		entry.modelMatrix.multiply(Matrix4f.scale(x, y, z));
+		if (x == y && y == z) {
+			if (x > 0.0F) {
 				return;
 			}
 
 			entry.normalMatrix.multiply(-1.0F);
 		}
 
-		float i = 1.0F / f;
-		float j = 1.0F / g;
-		float k = 1.0F / h;
-		float l = MathHelper.fastInverseCbrt(i * j * k);
-		entry.normalMatrix.multiply(Matrix3f.scale(l * i, l * j, l * k));
+		float f = 1.0F / x;
+		float g = 1.0F / y;
+		float h = 1.0F / z;
+		float i = MathHelper.fastInverseCbrt(f * g * h);
+		entry.normalMatrix.multiply(Matrix3f.scale(i * f, i * g, i * h));
 	}
 
 	public void multiply(Quaternion quaternion) {

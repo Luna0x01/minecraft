@@ -1,6 +1,6 @@
 package net.minecraft.block;
 
-import net.minecraft.entity.EntityContext;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
@@ -15,8 +15,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class FenceGateBlock extends HorizontalFacingBlock {
 	public static final BooleanProperty OPEN = Properties.OPEN;
@@ -41,7 +41,7 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 		Block.createCuboidShape(7.0, 2.0, 0.0, 9.0, 13.0, 2.0), Block.createCuboidShape(7.0, 2.0, 14.0, 9.0, 13.0, 16.0)
 	);
 
-	public FenceGateBlock(Block.Settings settings) {
+	public FenceGateBlock(AbstractBlock.Settings settings) {
 		super(settings);
 		this.setDefaultState(
 			this.stateManager.getDefaultState().with(OPEN, Boolean.valueOf(false)).with(POWERED, Boolean.valueOf(false)).with(IN_WALL, Boolean.valueOf(false))
@@ -49,102 +49,100 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		if ((Boolean)blockState.get(IN_WALL)) {
-			return ((Direction)blockState.get(FACING)).getAxis() == Direction.Axis.field_11048 ? IN_WALL_X_AXIS_SHAPE : IN_WALL_Z_AXIS_SHAPE;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		if ((Boolean)state.get(IN_WALL)) {
+			return ((Direction)state.get(FACING)).getAxis() == Direction.Axis.X ? IN_WALL_X_AXIS_SHAPE : IN_WALL_Z_AXIS_SHAPE;
 		} else {
-			return ((Direction)blockState.get(FACING)).getAxis() == Direction.Axis.field_11048 ? X_AXIS_SHAPE : Z_AXIS_SHAPE;
+			return ((Direction)state.get(FACING)).getAxis() == Direction.Axis.X ? X_AXIS_SHAPE : Z_AXIS_SHAPE;
 		}
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
 		Direction.Axis axis = direction.getAxis();
-		if (((Direction)blockState.get(FACING)).rotateYClockwise().getAxis() != axis) {
-			return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+		if (((Direction)state.get(FACING)).rotateYClockwise().getAxis() != axis) {
+			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 		} else {
-			boolean bl = this.isWall(blockState2) || this.isWall(iWorld.getBlockState(blockPos.offset(direction.getOpposite())));
-			return blockState.with(IN_WALL, Boolean.valueOf(bl));
+			boolean bl = this.isWall(newState) || this.isWall(world.getBlockState(pos.offset(direction.getOpposite())));
+			return state.with(IN_WALL, Boolean.valueOf(bl));
 		}
 	}
 
 	@Override
-	public VoxelShape getCollisionShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		if ((Boolean)blockState.get(OPEN)) {
+	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		if ((Boolean)state.get(OPEN)) {
 			return VoxelShapes.empty();
 		} else {
-			return ((Direction)blockState.get(FACING)).getAxis() == Direction.Axis.field_11051 ? Z_AXIS_COLLISION_SHAPE : X_AXIS_COLLISION_SHAPE;
+			return ((Direction)state.get(FACING)).getAxis() == Direction.Axis.Z ? Z_AXIS_COLLISION_SHAPE : X_AXIS_COLLISION_SHAPE;
 		}
 	}
 
 	@Override
-	public VoxelShape getCullingShape(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		if ((Boolean)blockState.get(IN_WALL)) {
-			return ((Direction)blockState.get(FACING)).getAxis() == Direction.Axis.field_11048 ? IN_WALL_X_AXIS_CULL_SHAPE : IN_WALL_Z_AXIS_CULL_SHAPE;
+	public VoxelShape getCullingShape(BlockState state, BlockView world, BlockPos pos) {
+		if ((Boolean)state.get(IN_WALL)) {
+			return ((Direction)state.get(FACING)).getAxis() == Direction.Axis.X ? IN_WALL_X_AXIS_CULL_SHAPE : IN_WALL_Z_AXIS_CULL_SHAPE;
 		} else {
-			return ((Direction)blockState.get(FACING)).getAxis() == Direction.Axis.field_11048 ? X_AXIS_CULL_SHAPE : Z_AXIS_CULL_SHAPE;
+			return ((Direction)state.get(FACING)).getAxis() == Direction.Axis.X ? X_AXIS_CULL_SHAPE : Z_AXIS_CULL_SHAPE;
 		}
 	}
 
 	@Override
-	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
-		switch (blockPlacementEnvironment) {
-			case field_50:
-				return (Boolean)blockState.get(OPEN);
-			case field_48:
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
+		switch (type) {
+			case LAND:
+				return (Boolean)state.get(OPEN);
+			case WATER:
 				return false;
-			case field_51:
-				return (Boolean)blockState.get(OPEN);
+			case AIR:
+				return (Boolean)state.get(OPEN);
 			default:
 				return false;
 		}
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		World world = itemPlacementContext.getWorld();
-		BlockPos blockPos = itemPlacementContext.getBlockPos();
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		World world = ctx.getWorld();
+		BlockPos blockPos = ctx.getBlockPos();
 		boolean bl = world.isReceivingRedstonePower(blockPos);
-		Direction direction = itemPlacementContext.getPlayerFacing();
+		Direction direction = ctx.getPlayerFacing();
 		Direction.Axis axis = direction.getAxis();
-		boolean bl2 = axis == Direction.Axis.field_11051 && (this.isWall(world.getBlockState(blockPos.west())) || this.isWall(world.getBlockState(blockPos.east())))
-			|| axis == Direction.Axis.field_11048 && (this.isWall(world.getBlockState(blockPos.north())) || this.isWall(world.getBlockState(blockPos.south())));
+		boolean bl2 = axis == Direction.Axis.Z && (this.isWall(world.getBlockState(blockPos.west())) || this.isWall(world.getBlockState(blockPos.east())))
+			|| axis == Direction.Axis.X && (this.isWall(world.getBlockState(blockPos.north())) || this.isWall(world.getBlockState(blockPos.south())));
 		return this.getDefaultState().with(FACING, direction).with(OPEN, Boolean.valueOf(bl)).with(POWERED, Boolean.valueOf(bl)).with(IN_WALL, Boolean.valueOf(bl2));
 	}
 
-	private boolean isWall(BlockState blockState) {
-		return blockState.getBlock().matches(BlockTags.field_15504);
+	private boolean isWall(BlockState state) {
+		return state.getBlock().isIn(BlockTags.WALLS);
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		if ((Boolean)blockState.get(OPEN)) {
-			blockState = blockState.with(OPEN, Boolean.valueOf(false));
-			world.setBlockState(blockPos, blockState, 10);
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+		if ((Boolean)state.get(OPEN)) {
+			state = state.with(OPEN, Boolean.valueOf(false));
+			world.setBlockState(pos, state, 10);
 		} else {
-			Direction direction = playerEntity.getHorizontalFacing();
-			if (blockState.get(FACING) == direction.getOpposite()) {
-				blockState = blockState.with(FACING, direction);
+			Direction direction = player.getHorizontalFacing();
+			if (state.get(FACING) == direction.getOpposite()) {
+				state = state.with(FACING, direction);
 			}
 
-			blockState = blockState.with(OPEN, Boolean.valueOf(true));
-			world.setBlockState(blockPos, blockState, 10);
+			state = state.with(OPEN, Boolean.valueOf(true));
+			world.setBlockState(pos, state, 10);
 		}
 
-		world.playLevelEvent(playerEntity, blockState.get(OPEN) ? 1008 : 1014, blockPos, 0);
-		return ActionResult.field_5812;
+		world.syncWorldEvent(player, state.get(OPEN) ? 1008 : 1014, pos, 0);
+		return ActionResult.success(world.isClient);
 	}
 
 	@Override
-	public void neighborUpdate(BlockState blockState, World world, BlockPos blockPos, Block block, BlockPos blockPos2, boolean bl) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
 		if (!world.isClient) {
-			boolean bl2 = world.isReceivingRedstonePower(blockPos);
-			if ((Boolean)blockState.get(POWERED) != bl2) {
-				world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(bl2)).with(OPEN, Boolean.valueOf(bl2)), 2);
-				if ((Boolean)blockState.get(OPEN) != bl2) {
-					world.playLevelEvent(null, bl2 ? 1008 : 1014, blockPos, 0);
+			boolean bl = world.isReceivingRedstonePower(pos);
+			if ((Boolean)state.get(POWERED) != bl) {
+				world.setBlockState(pos, state.with(POWERED, Boolean.valueOf(bl)).with(OPEN, Boolean.valueOf(bl)), 2);
+				if ((Boolean)state.get(OPEN) != bl) {
+					world.syncWorldEvent(null, bl ? 1008 : 1014, pos, 0);
 				}
 			}
 		}
@@ -155,7 +153,7 @@ public class FenceGateBlock extends HorizontalFacingBlock {
 		builder.add(FACING, OPEN, POWERED, IN_WALL);
 	}
 
-	public static boolean canWallConnect(BlockState blockState, Direction direction) {
-		return ((Direction)blockState.get(FACING)).getAxis() == direction.rotateYClockwise().getAxis();
+	public static boolean canWallConnect(BlockState state, Direction side) {
+		return ((Direction)state.get(FACING)).getAxis() == side.rotateYClockwise().getAxis();
 	}
 }

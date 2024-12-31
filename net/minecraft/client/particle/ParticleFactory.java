@@ -1,10 +1,10 @@
 package net.minecraft.client.particle;
 
 import javax.annotation.Nullable;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.world.World;
 
 public interface ParticleFactory<T extends ParticleEffect> {
 	@Nullable
-	Particle createParticle(T particleEffect, World world, double d, double e, double f, double g, double h, double i);
+	Particle createParticle(T parameters, ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ);
 }

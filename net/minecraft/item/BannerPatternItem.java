@@ -4,6 +4,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.client.item.TooltipContext;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
@@ -12,9 +13,9 @@ import net.minecraft.world.World;
 public class BannerPatternItem extends Item {
 	private final BannerPattern pattern;
 
-	public BannerPatternItem(BannerPattern bannerPattern, Item.Settings settings) {
+	public BannerPatternItem(BannerPattern pattern, Item.Settings settings) {
 		super(settings);
-		this.pattern = bannerPattern;
+		this.pattern = pattern;
 	}
 
 	public BannerPattern getPattern() {
@@ -22,11 +23,11 @@ public class BannerPatternItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
-		list.add(this.getDescription().formatted(Formatting.field_1080));
+	public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+		tooltip.add(this.getDescription().formatted(Formatting.GRAY));
 	}
 
-	public Text getDescription() {
+	public MutableText getDescription() {
 		return new TranslatableText(this.getTranslationKey() + ".desc");
 	}
 }

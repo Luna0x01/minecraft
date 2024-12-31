@@ -5,7 +5,7 @@ import net.minecraft.entity.mob.SilverfishEntity;
 import net.minecraft.util.Identifier;
 
 public class SilverfishEntityRenderer extends MobEntityRenderer<SilverfishEntity, SilverfishEntityModel<SilverfishEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/silverfish.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/silverfish.png");
 
 	public SilverfishEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new SilverfishEntityModel<>(), 0.3F);
@@ -16,6 +16,6 @@ public class SilverfishEntityRenderer extends MobEntityRenderer<SilverfishEntity
 	}
 
 	public Identifier getTexture(SilverfishEntity silverfishEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

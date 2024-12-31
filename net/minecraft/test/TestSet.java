@@ -2,30 +2,42 @@ package net.minecraft.test;
 
 import com.google.common.collect.Lists;
 import java.util.Collection;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 public class TestSet {
 	private final Collection<GameTest> tests = Lists.newArrayList();
 	@Nullable
-	private TestListener listener;
+	private Collection<TestListener> field_25303 = Lists.newArrayList();
 
 	public TestSet() {
 	}
 
-	public TestSet(Collection<GameTest> collection) {
-		this.tests.addAll(collection);
+	public TestSet(Collection<GameTest> tests) {
+		this.tests.addAll(tests);
 	}
 
-	public void add(GameTest gameTest) {
-		this.tests.add(gameTest);
-		if (this.listener != null) {
-			gameTest.addListener(this.listener);
-		}
+	public void add(GameTest test) {
+		this.tests.add(test);
+		this.field_25303.forEach(test::addListener);
 	}
 
-	public void addListener(TestListener testListener) {
-		this.listener = testListener;
-		this.tests.forEach(gameTest -> gameTest.addListener(testListener));
+	public void addListener(TestListener listener) {
+		this.field_25303.add(listener);
+		this.tests.forEach(gameTest -> gameTest.addListener(listener));
+	}
+
+	public void method_29407(Consumer<GameTest> consumer) {
+		this.addListener(new TestListener() {
+			@Override
+			public void onStarted(GameTest test) {
+			}
+
+			@Override
+			public void onFailed(GameTest test) {
+				consumer.accept(test);
+			}
+		});
 	}
 
 	public int getFailedRequiredTestCount() {

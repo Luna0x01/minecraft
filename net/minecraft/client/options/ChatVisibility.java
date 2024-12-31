@@ -5,19 +5,19 @@ import java.util.Comparator;
 import net.minecraft.util.math.MathHelper;
 
 public enum ChatVisibility {
-	field_7538(0, "options.chat.visibility.full"),
-	field_7539(1, "options.chat.visibility.system"),
-	field_7536(2, "options.chat.visibility.hidden");
+	FULL(0, "options.chat.visibility.full"),
+	SYSTEM(1, "options.chat.visibility.system"),
+	HIDDEN(2, "options.chat.visibility.hidden");
 
-	private static final ChatVisibility[] field_7534 = (ChatVisibility[])Arrays.stream(values())
+	private static final ChatVisibility[] VALUES = (ChatVisibility[])Arrays.stream(values())
 		.sorted(Comparator.comparingInt(ChatVisibility::getId))
 		.toArray(ChatVisibility[]::new);
 	private final int id;
-	private final String key;
+	private final String translationKey;
 
-	private ChatVisibility(int j, String string2) {
-		this.id = j;
-		this.key = string2;
+	private ChatVisibility(int id, String translationKey) {
+		this.id = id;
+		this.translationKey = translationKey;
 	}
 
 	public int getId() {
@@ -25,10 +25,10 @@ public enum ChatVisibility {
 	}
 
 	public String getTranslationKey() {
-		return this.key;
+		return this.translationKey;
 	}
 
-	public static ChatVisibility byId(int i) {
-		return field_7534[MathHelper.floorMod(i, field_7534.length)];
+	public static ChatVisibility byId(int id) {
+		return VALUES[MathHelper.floorMod(id, VALUES.length)];
 	}
 }

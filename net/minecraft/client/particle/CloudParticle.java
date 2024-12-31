@@ -1,30 +1,30 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
 
 public class CloudParticle extends SpriteBillboardParticle {
-	private final SpriteProvider field_17862;
+	private final SpriteProvider spriteProvider;
 
-	private CloudParticle(World world, double d, double e, double f, double g, double h, double i, SpriteProvider spriteProvider) {
-		super(world, d, e, f, 0.0, 0.0, 0.0);
-		this.field_17862 = spriteProvider;
-		float j = 2.5F;
+	private CloudParticle(ClientWorld world, double x, double y, double z, double d, double e, double f, SpriteProvider spriteProvider) {
+		super(world, x, y, z, 0.0, 0.0, 0.0);
+		this.spriteProvider = spriteProvider;
+		float g = 2.5F;
 		this.velocityX *= 0.1F;
 		this.velocityY *= 0.1F;
 		this.velocityZ *= 0.1F;
-		this.velocityX += g;
-		this.velocityY += h;
-		this.velocityZ += i;
-		float k = 1.0F - (float)(Math.random() * 0.3F);
-		this.colorRed = k;
-		this.colorGreen = k;
-		this.colorBlue = k;
+		this.velocityX += d;
+		this.velocityY += e;
+		this.velocityZ += f;
+		float h = 1.0F - (float)(Math.random() * 0.3F);
+		this.colorRed = h;
+		this.colorGreen = h;
+		this.colorBlue = h;
 		this.scale *= 1.875F;
-		int l = (int)(8.0 / (Math.random() * 0.8 + 0.3));
-		this.maxAge = (int)Math.max((float)l * 2.5F, 1.0F);
+		int i = (int)(8.0 / (Math.random() * 0.8 + 0.3));
+		this.maxAge = (int)Math.max((float)i * 2.5F, 1.0F);
 		this.collidesWithWorld = false;
 		this.setSpriteForAge(spriteProvider);
 	}
@@ -35,8 +35,8 @@ public class CloudParticle extends SpriteBillboardParticle {
 	}
 
 	@Override
-	public float getSize(float f) {
-		return this.scale * MathHelper.clamp(((float)this.age + f) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
+	public float getSize(float tickDelta) {
+		return this.scale * MathHelper.clamp(((float)this.age + tickDelta) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class CloudParticle extends SpriteBillboardParticle {
 		if (this.age++ >= this.maxAge) {
 			this.markDead();
 		} else {
-			this.setSpriteForAge(this.field_17862);
+			this.setSpriteForAge(this.spriteProvider);
 			this.move(this.velocityX, this.velocityY, this.velocityZ);
 			this.velocityX *= 0.96F;
 			this.velocityY *= 0.96F;
@@ -70,26 +70,26 @@ public class CloudParticle extends SpriteBillboardParticle {
 	}
 
 	public static class CloudFactory implements ParticleFactory<DefaultParticleType> {
-		private final SpriteProvider field_17863;
+		private final SpriteProvider spriteProvider;
 
 		public CloudFactory(SpriteProvider spriteProvider) {
-			this.field_17863 = spriteProvider;
+			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			return new CloudParticle(world, d, e, f, g, h, i, this.field_17863);
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			return new CloudParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider);
 		}
 	}
 
 	public static class SneezeFactory implements ParticleFactory<DefaultParticleType> {
-		private final SpriteProvider field_17864;
+		private final SpriteProvider spriteProvider;
 
 		public SneezeFactory(SpriteProvider spriteProvider) {
-			this.field_17864 = spriteProvider;
+			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			Particle particle = new CloudParticle(world, d, e, f, g, h, i, this.field_17864);
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			Particle particle = new CloudParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider);
 			particle.setColor(200.0F, 50.0F, 120.0F);
 			particle.setColorAlpha(0.4F);
 			return particle;

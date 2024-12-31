@@ -8,7 +8,7 @@ import net.minecraft.entity.mob.PhantomEntity;
 import net.minecraft.util.Identifier;
 
 public class PhantomEntityRenderer extends MobEntityRenderer<PhantomEntity, PhantomEntityModel<PhantomEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/phantom.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/phantom.png");
 
 	public PhantomEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new PhantomEntityModel<>(), 0.75F);
@@ -16,7 +16,7 @@ public class PhantomEntityRenderer extends MobEntityRenderer<PhantomEntity, Phan
 	}
 
 	public Identifier getTexture(PhantomEntity phantomEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 
 	protected void scale(PhantomEntity phantomEntity, MatrixStack matrixStack, float f) {

@@ -11,9 +11,9 @@ import net.minecraft.util.Identifier;
 public class ZombieHorseEntityRenderer extends HorseBaseEntityRenderer<HorseBaseEntity, HorseEntityModel<HorseBaseEntity>> {
 	private static final Map<EntityType<?>, Identifier> TEXTURES = Maps.newHashMap(
 		ImmutableMap.of(
-			EntityType.field_6048,
+			EntityType.ZOMBIE_HORSE,
 			new Identifier("textures/entity/horse/horse_zombie.png"),
-			EntityType.field_6075,
+			EntityType.SKELETON_HORSE,
 			new Identifier("textures/entity/horse/horse_skeleton.png")
 		)
 	);

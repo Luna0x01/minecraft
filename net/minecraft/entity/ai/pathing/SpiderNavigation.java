@@ -6,32 +6,32 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class SpiderNavigation extends MobNavigation {
-	private BlockPos field_6687;
+	private BlockPos targetPos;
 
 	public SpiderNavigation(MobEntity mobEntity, World world) {
 		super(mobEntity, world);
 	}
 
 	@Override
-	public Path findPathTo(BlockPos blockPos, int i) {
-		this.field_6687 = blockPos;
-		return super.findPathTo(blockPos, i);
+	public Path findPathTo(BlockPos target, int distance) {
+		this.targetPos = target;
+		return super.findPathTo(target, distance);
 	}
 
 	@Override
-	public Path findPathTo(Entity entity, int i) {
-		this.field_6687 = new BlockPos(entity);
-		return super.findPathTo(entity, i);
+	public Path findPathTo(Entity entity, int distance) {
+		this.targetPos = entity.getBlockPos();
+		return super.findPathTo(entity, distance);
 	}
 
 	@Override
-	public boolean startMovingTo(Entity entity, double d) {
+	public boolean startMovingTo(Entity entity, double speed) {
 		Path path = this.findPathTo(entity, 0);
 		if (path != null) {
-			return this.startMovingAlong(path, d);
+			return this.startMovingAlong(path, speed);
 		} else {
-			this.field_6687 = new BlockPos(entity);
-			this.speed = d;
+			this.targetPos = entity.getBlockPos();
+			this.speed = speed;
 			return true;
 		}
 	}
@@ -41,16 +41,16 @@ public class SpiderNavigation extends MobNavigation {
 		if (!this.isIdle()) {
 			super.tick();
 		} else {
-			if (this.field_6687 != null) {
-				if (!this.field_6687.isWithinDistance(this.entity.getPos(), (double)this.entity.getWidth())
+			if (this.targetPos != null) {
+				if (!this.targetPos.isWithinDistance(this.entity.getPos(), (double)this.entity.getWidth())
 					&& (
-						!(this.entity.getY() > (double)this.field_6687.getY())
-							|| !new BlockPos((double)this.field_6687.getX(), this.entity.getY(), (double)this.field_6687.getZ())
+						!(this.entity.getY() > (double)this.targetPos.getY())
+							|| !new BlockPos((double)this.targetPos.getX(), this.entity.getY(), (double)this.targetPos.getZ())
 								.isWithinDistance(this.entity.getPos(), (double)this.entity.getWidth())
 					)) {
-					this.entity.getMoveControl().moveTo((double)this.field_6687.getX(), (double)this.field_6687.getY(), (double)this.field_6687.getZ(), this.speed);
+					this.entity.getMoveControl().moveTo((double)this.targetPos.getX(), (double)this.targetPos.getY(), (double)this.targetPos.getZ(), this.speed);
 				} else {
-					this.field_6687 = null;
+					this.targetPos = null;
 				}
 			}
 		}

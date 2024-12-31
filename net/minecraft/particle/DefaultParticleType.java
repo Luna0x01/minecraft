@@ -2,7 +2,8 @@ package net.minecraft.particle;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.util.PacketByteBuf;
+import com.mojang.serialization.Codec;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.registry.Registry;
 
 public class DefaultParticleType extends ParticleType<DefaultParticleType> implements ParticleEffect {
@@ -15,22 +16,27 @@ public class DefaultParticleType extends ParticleType<DefaultParticleType> imple
 			return (DefaultParticleType)particleType;
 		}
 	};
+	private final Codec<DefaultParticleType> codec = Codec.unit(this::getType);
 
-	protected DefaultParticleType(boolean bl) {
-		super(bl, PARAMETER_FACTORY);
+	protected DefaultParticleType(boolean alwaysShow) {
+		super(alwaysShow, PARAMETER_FACTORY);
 	}
 
-	@Override
-	public ParticleType<DefaultParticleType> getType() {
+	public DefaultParticleType getType() {
 		return this;
 	}
 
 	@Override
-	public void write(PacketByteBuf packetByteBuf) {
+	public Codec<DefaultParticleType> getCodec() {
+		return this.codec;
+	}
+
+	@Override
+	public void write(PacketByteBuf buf) {
 	}
 
 	@Override
 	public String asString() {
-		return Registry.field_11141.getId(this).toString();
+		return Registry.PARTICLE_TYPE.getId(this).toString();
 	}
 }

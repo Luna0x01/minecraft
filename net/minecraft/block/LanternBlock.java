@@ -2,7 +2,9 @@ package net.minecraft.block;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.entity.EntityContext;
+import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -12,11 +14,12 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
-public class LanternBlock extends Block {
+public class LanternBlock extends Block implements Waterloggable {
 	public static final BooleanProperty HANGING = Properties.HANGING;
+	public static final BooleanProperty field_26441 = Properties.WATERLOGGED;
 	protected static final VoxelShape STANDING_SHAPE = VoxelShapes.union(
 		Block.createCuboidShape(5.0, 0.0, 5.0, 11.0, 7.0, 11.0), Block.createCuboidShape(6.0, 7.0, 6.0, 10.0, 9.0, 10.0)
 	);
@@ -24,19 +27,21 @@ public class LanternBlock extends Block {
 		Block.createCuboidShape(5.0, 1.0, 5.0, 11.0, 8.0, 11.0), Block.createCuboidShape(6.0, 8.0, 6.0, 10.0, 10.0, 10.0)
 	);
 
-	public LanternBlock(Block.Settings settings) {
+	public LanternBlock(AbstractBlock.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateManager.getDefaultState().with(HANGING, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(HANGING, Boolean.valueOf(false)).with(field_26441, Boolean.valueOf(false)));
 	}
 
 	@Nullable
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		for (Direction direction : itemPlacementContext.getPlacementDirections()) {
-			if (direction.getAxis() == Direction.Axis.field_11052) {
-				BlockState blockState = this.getDefaultState().with(HANGING, Boolean.valueOf(direction == Direction.field_11036));
-				if (blockState.canPlaceAt(itemPlacementContext.getWorld(), itemPlacementContext.getBlockPos())) {
-					return blockState;
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		FluidState fluidState = ctx.getWorld().getFluidState(ctx.getBlockPos());
+
+		for (Direction direction : ctx.getPlacementDirections()) {
+			if (direction.getAxis() == Direction.Axis.Y) {
+				BlockState blockState = this.getDefaultState().with(HANGING, Boolean.valueOf(direction == Direction.UP));
+				if (blockState.canPlaceAt(ctx.getWorld(), ctx.getBlockPos())) {
+					return blockState.with(field_26441, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
 				}
 			}
 		}
@@ -45,41 +50,48 @@ public class LanternBlock extends Block {
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		return blockState.get(HANGING) ? HANGING_SHAPE : STANDING_SHAPE;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return state.get(HANGING) ? HANGING_SHAPE : STANDING_SHAPE;
 	}
 
 	@Override
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.add(HANGING);
+		builder.add(HANGING, field_26441);
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
-		Direction direction = attachedDirection(blockState).getOpposite();
-		return Block.sideCoversSmallSquare(worldView, blockPos.offset(direction), direction.getOpposite());
+	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+		Direction direction = attachedDirection(state).getOpposite();
+		return Block.sideCoversSmallSquare(world, pos.offset(direction), direction.getOpposite());
 	}
 
-	protected static Direction attachedDirection(BlockState blockState) {
-		return blockState.get(HANGING) ? Direction.field_11033 : Direction.field_11036;
-	}
-
-	@Override
-	public PistonBehavior getPistonBehavior(BlockState blockState) {
-		return PistonBehavior.field_15971;
+	protected static Direction attachedDirection(BlockState state) {
+		return state.get(HANGING) ? Direction.DOWN : Direction.UP;
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		return attachedDirection(blockState).getOpposite() == direction && !blockState.canPlaceAt(iWorld, blockPos)
-			? Blocks.field_10124.getDefaultState()
-			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.DESTROY;
 	}
 
 	@Override
-	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if ((Boolean)state.get(field_26441)) {
+			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+		}
+
+		return attachedDirection(state).getOpposite() == direction && !state.canPlaceAt(world, pos)
+			? Blocks.AIR.getDefaultState()
+			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+	}
+
+	@Override
+	public FluidState getFluidState(BlockState state) {
+		return state.get(field_26441) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+	}
+
+	@Override
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
 		return false;
 	}
 }

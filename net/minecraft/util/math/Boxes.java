@@ -1,24 +1,24 @@
 package net.minecraft.util.math;
 
 public class Boxes {
-	public static Box stretch(Box box, Direction direction, double d) {
-		double e = d * (double)direction.getDirection().offset();
-		double f = Math.min(e, 0.0);
-		double g = Math.max(e, 0.0);
+	public static Box stretch(Box box, Direction direction, double length) {
+		double d = length * (double)direction.getDirection().offset();
+		double e = Math.min(d, 0.0);
+		double f = Math.max(d, 0.0);
 		switch (direction) {
-			case field_11039:
-				return new Box(box.x1 + f, box.y1, box.z1, box.x1 + g, box.y2, box.z2);
-			case field_11034:
-				return new Box(box.x2 + f, box.y1, box.z1, box.x2 + g, box.y2, box.z2);
-			case field_11033:
-				return new Box(box.x1, box.y1 + f, box.z1, box.x2, box.y1 + g, box.z2);
-			case field_11036:
+			case WEST:
+				return new Box(box.minX + e, box.minY, box.minZ, box.minX + f, box.maxY, box.maxZ);
+			case EAST:
+				return new Box(box.maxX + e, box.minY, box.minZ, box.maxX + f, box.maxY, box.maxZ);
+			case DOWN:
+				return new Box(box.minX, box.minY + e, box.minZ, box.maxX, box.minY + f, box.maxZ);
+			case UP:
 			default:
-				return new Box(box.x1, box.y2 + f, box.z1, box.x2, box.y2 + g, box.z2);
-			case field_11043:
-				return new Box(box.x1, box.y1, box.z1 + f, box.x2, box.y2, box.z1 + g);
-			case field_11035:
-				return new Box(box.x1, box.y1, box.z2 + f, box.x2, box.y2, box.z2 + g);
+				return new Box(box.minX, box.maxY + e, box.minZ, box.maxX, box.maxY + f, box.maxZ);
+			case NORTH:
+				return new Box(box.minX, box.minY, box.minZ + e, box.maxX, box.maxY, box.minZ + f);
+			case SOUTH:
+				return new Box(box.minX, box.minY, box.maxZ + e, box.maxX, box.maxY, box.maxZ + f);
 		}
 	}
 }

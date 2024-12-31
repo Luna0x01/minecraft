@@ -9,8 +9,8 @@ import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
-import net.minecraft.command.arguments.EntityArgumentType;
-import net.minecraft.command.arguments.ItemEnchantmentArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.ItemEnchantmentArgumentType;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
@@ -33,8 +33,8 @@ public class EnchantCommand {
 	);
 	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.enchant.failed"));
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("enchant")
 					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
@@ -65,43 +65,43 @@ public class EnchantCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, Collection<? extends Entity> collection, Enchantment enchantment, int i) throws CommandSyntaxException {
-		if (i > enchantment.getMaximumLevel()) {
-			throw FAILED_LEVEL_EXCEPTION.create(i, enchantment.getMaximumLevel());
+	private static int execute(ServerCommandSource source, Collection<? extends Entity> targets, Enchantment enchantment, int level) throws CommandSyntaxException {
+		if (level > enchantment.getMaxLevel()) {
+			throw FAILED_LEVEL_EXCEPTION.create(level, enchantment.getMaxLevel());
 		} else {
-			int j = 0;
+			int i = 0;
 
-			for (Entity entity : collection) {
+			for (Entity entity : targets) {
 				if (entity instanceof LivingEntity) {
 					LivingEntity livingEntity = (LivingEntity)entity;
 					ItemStack itemStack = livingEntity.getMainHandStack();
 					if (!itemStack.isEmpty()) {
-						if (enchantment.isAcceptableItem(itemStack) && EnchantmentHelper.contains(EnchantmentHelper.getEnchantments(itemStack).keySet(), enchantment)) {
-							itemStack.addEnchantment(enchantment, i);
-							j++;
-						} else if (collection.size() == 1) {
+						if (enchantment.isAcceptableItem(itemStack) && EnchantmentHelper.isCompatible(EnchantmentHelper.get(itemStack).keySet(), enchantment)) {
+							itemStack.addEnchantment(enchantment, level);
+							i++;
+						} else if (targets.size() == 1) {
 							throw FAILED_INCOMPATIBLE_EXCEPTION.create(itemStack.getItem().getName(itemStack).getString());
 						}
-					} else if (collection.size() == 1) {
+					} else if (targets.size() == 1) {
 						throw FAILED_ITEMLESS_EXCEPTION.create(livingEntity.getName().getString());
 					}
-				} else if (collection.size() == 1) {
+				} else if (targets.size() == 1) {
 					throw FAILED_ENTITY_EXCEPTION.create(entity.getName().getString());
 				}
 			}
 
-			if (j == 0) {
+			if (i == 0) {
 				throw FAILED_EXCEPTION.create();
 			} else {
-				if (collection.size() == 1) {
-					serverCommandSource.sendFeedback(
-						new TranslatableText("commands.enchant.success.single", enchantment.getName(i), ((Entity)collection.iterator().next()).getDisplayName()), true
+				if (targets.size() == 1) {
+					source.sendFeedback(
+						new TranslatableText("commands.enchant.success.single", enchantment.getName(level), ((Entity)targets.iterator().next()).getDisplayName()), true
 					);
 				} else {
-					serverCommandSource.sendFeedback(new TranslatableText("commands.enchant.success.multiple", enchantment.getName(i), collection.size()), true);
+					source.sendFeedback(new TranslatableText("commands.enchant.success.multiple", enchantment.getName(level), targets.size()), true);
 				}
 
-				return j;
+				return i;
 			}
 		}
 	}

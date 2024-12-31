@@ -17,8 +17,8 @@ public class ShieldDecorationRecipe extends SpecialCraftingRecipe {
 		ItemStack itemStack = ItemStack.EMPTY;
 		ItemStack itemStack2 = ItemStack.EMPTY;
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack3 = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack3 = craftingInventory.getStack(i);
 			if (!itemStack3.isEmpty()) {
 				if (itemStack3.getItem() instanceof BannerItem) {
 					if (!itemStack2.isEmpty()) {
@@ -27,7 +27,7 @@ public class ShieldDecorationRecipe extends SpecialCraftingRecipe {
 
 					itemStack2 = itemStack3;
 				} else {
-					if (itemStack3.getItem() != Items.field_8255) {
+					if (itemStack3.getItem() != Items.SHIELD) {
 						return false;
 					}
 
@@ -51,12 +51,12 @@ public class ShieldDecorationRecipe extends SpecialCraftingRecipe {
 		ItemStack itemStack = ItemStack.EMPTY;
 		ItemStack itemStack2 = ItemStack.EMPTY;
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack3 = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack3 = craftingInventory.getStack(i);
 			if (!itemStack3.isEmpty()) {
 				if (itemStack3.getItem() instanceof BannerItem) {
 					itemStack = itemStack3;
-				} else if (itemStack3.getItem() == Items.field_8255) {
+				} else if (itemStack3.getItem() == Items.SHIELD) {
 					itemStack2 = itemStack3.copy();
 				}
 			}
@@ -74,8 +74,8 @@ public class ShieldDecorationRecipe extends SpecialCraftingRecipe {
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
-		return i * j >= 2;
+	public boolean fits(int width, int height) {
+		return width * height >= 2;
 	}
 
 	@Override

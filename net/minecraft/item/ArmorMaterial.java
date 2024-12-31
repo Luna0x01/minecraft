@@ -5,9 +5,9 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.sound.SoundEvent;
 
 public interface ArmorMaterial {
-	int getDurability(EquipmentSlot equipmentSlot);
+	int getDurability(EquipmentSlot slot);
 
-	int getProtectionAmount(EquipmentSlot equipmentSlot);
+	int getProtectionAmount(EquipmentSlot slot);
 
 	int getEnchantability();
 
@@ -18,4 +18,6 @@ public interface ArmorMaterial {
 	String getName();
 
 	float getToughness();
+
+	float getKnockbackResistance();
 }

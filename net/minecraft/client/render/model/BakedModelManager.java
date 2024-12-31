@@ -2,6 +2,7 @@ package net.minecraft.client.render.model;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.block.BlockModels;
@@ -16,6 +17,7 @@ import net.minecraft.util.profiler.Profiler;
 
 public class BakedModelManager extends SinglePreparationResourceReloadListener<ModelLoader> implements AutoCloseable {
 	private Map<Identifier, BakedModel> models;
+	@Nullable
 	private SpriteAtlasManager atlasManager;
 	private final BlockModels blockModelCache;
 	private final TextureManager textureManager;
@@ -24,15 +26,15 @@ public class BakedModelManager extends SinglePreparationResourceReloadListener<M
 	private BakedModel missingModel;
 	private Object2IntMap<BlockState> stateLookup;
 
-	public BakedModelManager(TextureManager textureManager, BlockColors blockColors, int i) {
+	public BakedModelManager(TextureManager textureManager, BlockColors colorMap, int mipmap) {
 		this.textureManager = textureManager;
-		this.colorMap = blockColors;
-		this.mipmap = i;
+		this.colorMap = colorMap;
+		this.mipmap = mipmap;
 		this.blockModelCache = new BlockModels(this);
 	}
 
-	public BakedModel getModel(ModelIdentifier modelIdentifier) {
-		return (BakedModel)this.models.getOrDefault(modelIdentifier, this.missingModel);
+	public BakedModel getModel(ModelIdentifier id) {
+		return (BakedModel)this.models.getOrDefault(id, this.missingModel);
 	}
 
 	public BakedModel getMissingModel() {
@@ -67,16 +69,16 @@ public class BakedModelManager extends SinglePreparationResourceReloadListener<M
 		profiler.endTick();
 	}
 
-	public boolean shouldRerender(BlockState blockState, BlockState blockState2) {
-		if (blockState == blockState2) {
+	public boolean shouldRerender(BlockState from, BlockState to) {
+		if (from == to) {
 			return false;
 		} else {
-			int i = this.stateLookup.getInt(blockState);
+			int i = this.stateLookup.getInt(from);
 			if (i != -1) {
-				int j = this.stateLookup.getInt(blockState2);
+				int j = this.stateLookup.getInt(to);
 				if (i == j) {
-					FluidState fluidState = blockState.getFluidState();
-					FluidState fluidState2 = blockState2.getFluidState();
+					FluidState fluidState = from.getFluidState();
+					FluidState fluidState2 = to.getFluidState();
 					return fluidState != fluidState2;
 				}
 			}
@@ -90,7 +92,9 @@ public class BakedModelManager extends SinglePreparationResourceReloadListener<M
 	}
 
 	public void close() {
-		this.atlasManager.close();
+		if (this.atlasManager != null) {
+			this.atlasManager.close();
+		}
 	}
 
 	public void resetMipmapLevels(int i) {

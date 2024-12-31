@@ -6,39 +6,39 @@ public class SpriteTexturedVertexConsumer implements VertexConsumer {
 	private final VertexConsumer parent;
 	private final Sprite sprite;
 
-	public SpriteTexturedVertexConsumer(VertexConsumer vertexConsumer, Sprite sprite) {
-		this.parent = vertexConsumer;
+	public SpriteTexturedVertexConsumer(VertexConsumer parent, Sprite sprite) {
+		this.parent = parent;
 		this.sprite = sprite;
 	}
 
 	@Override
-	public VertexConsumer vertex(double d, double e, double f) {
-		return this.parent.vertex(d, e, f);
+	public VertexConsumer vertex(double x, double y, double z) {
+		return this.parent.vertex(x, y, z);
 	}
 
 	@Override
-	public VertexConsumer color(int i, int j, int k, int l) {
-		return this.parent.color(i, j, k, l);
+	public VertexConsumer color(int red, int green, int blue, int alpha) {
+		return this.parent.color(red, green, blue, alpha);
 	}
 
 	@Override
-	public VertexConsumer texture(float f, float g) {
-		return this.parent.texture(this.sprite.getFrameU((double)(f * 16.0F)), this.sprite.getFrameV((double)(g * 16.0F)));
+	public VertexConsumer texture(float u, float v) {
+		return this.parent.texture(this.sprite.getFrameU((double)(u * 16.0F)), this.sprite.getFrameV((double)(v * 16.0F)));
 	}
 
 	@Override
-	public VertexConsumer overlay(int i, int j) {
-		return this.parent.overlay(i, j);
+	public VertexConsumer overlay(int u, int v) {
+		return this.parent.overlay(u, v);
 	}
 
 	@Override
-	public VertexConsumer light(int i, int j) {
-		return this.parent.light(i, j);
+	public VertexConsumer light(int u, int v) {
+		return this.parent.light(u, v);
 	}
 
 	@Override
-	public VertexConsumer normal(float f, float g, float h) {
-		return this.parent.normal(f, g, h);
+	public VertexConsumer normal(float x, float y, float z) {
+		return this.parent.normal(x, y, z);
 	}
 
 	@Override
@@ -47,7 +47,38 @@ public class SpriteTexturedVertexConsumer implements VertexConsumer {
 	}
 
 	@Override
-	public void vertex(float f, float g, float h, float i, float j, float k, float l, float m, float n, int o, int p, float q, float r, float s) {
-		this.parent.vertex(f, g, h, i, j, k, l, this.sprite.getFrameU((double)(m * 16.0F)), this.sprite.getFrameV((double)(n * 16.0F)), o, p, q, r, s);
+	public void vertex(
+		float x,
+		float y,
+		float z,
+		float red,
+		float green,
+		float blue,
+		float alpha,
+		float u,
+		float v,
+		int overlay,
+		int light,
+		float normalX,
+		float normalY,
+		float normalZ
+	) {
+		this.parent
+			.vertex(
+				x,
+				y,
+				z,
+				red,
+				green,
+				blue,
+				alpha,
+				this.sprite.getFrameU((double)(u * 16.0F)),
+				this.sprite.getFrameV((double)(v * 16.0F)),
+				overlay,
+				light,
+				normalX,
+				normalY,
+				normalZ
+			);
 	}
 }

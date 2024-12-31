@@ -6,23 +6,25 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import java.lang.reflect.Type;
 import javax.annotation.Nullable;
 import net.minecraft.text.TranslatableText;
 import org.apache.commons.lang3.StringUtils;
 
 public class Identifier implements Comparable<Identifier> {
+	public static final Codec<Identifier> CODEC = Codec.STRING.comapFlatMap(Identifier::method_29186, Identifier::toString).stable();
 	private static final SimpleCommandExceptionType COMMAND_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("argument.id.invalid"));
 	protected final String namespace;
 	protected final String path;
 
-	protected Identifier(String[] strings) {
-		this.namespace = StringUtils.isEmpty(strings[0]) ? "minecraft" : strings[0];
-		this.path = strings[1];
+	protected Identifier(String[] id) {
+		this.namespace = StringUtils.isEmpty(id[0]) ? "minecraft" : id[0];
+		this.path = id[1];
 		if (!isNamespaceValid(this.namespace)) {
 			throw new InvalidIdentifierException("Non [a-z0-9_.-] character in namespace of location: " + this.namespace + ':' + this.path);
 		} else if (!isPathValid(this.path)) {
@@ -30,38 +32,46 @@ public class Identifier implements Comparable<Identifier> {
 		}
 	}
 
-	public Identifier(String string) {
-		this(split(string, ':'));
+	public Identifier(String id) {
+		this(split(id, ':'));
 	}
 
-	public Identifier(String string, String string2) {
-		this(new String[]{string, string2});
+	public Identifier(String namespace, String path) {
+		this(new String[]{namespace, path});
 	}
 
-	public static Identifier splitOn(String string, char c) {
-		return new Identifier(split(string, c));
+	public static Identifier splitOn(String id, char delimiter) {
+		return new Identifier(split(id, delimiter));
 	}
 
 	@Nullable
-	public static Identifier tryParse(String string) {
+	public static Identifier tryParse(String id) {
 		try {
-			return new Identifier(string);
+			return new Identifier(id);
 		} catch (InvalidIdentifierException var2) {
 			return null;
 		}
 	}
 
-	protected static String[] split(String string, char c) {
-		String[] strings = new String[]{"minecraft", string};
-		int i = string.indexOf(c);
+	protected static String[] split(String id, char delimiter) {
+		String[] strings = new String[]{"minecraft", id};
+		int i = id.indexOf(delimiter);
 		if (i >= 0) {
-			strings[1] = string.substring(i + 1, string.length());
+			strings[1] = id.substring(i + 1, id.length());
 			if (i >= 1) {
-				strings[0] = string.substring(0, i);
+				strings[0] = id.substring(0, i);
 			}
 		}
 
 		return strings;
+	}
+
+	private static DataResult<Identifier> method_29186(String string) {
+		try {
+			return DataResult.success(new Identifier(string));
+		} catch (InvalidIdentifierException var2) {
+			return DataResult.error("Not a valid resource location: " + string + " " + var2.getMessage());
+		}
 	}
 
 	public String getPath() {
@@ -100,20 +110,20 @@ public class Identifier implements Comparable<Identifier> {
 		return i;
 	}
 
-	public static Identifier fromCommandInput(StringReader stringReader) throws CommandSyntaxException {
-		int i = stringReader.getCursor();
+	public static Identifier fromCommandInput(StringReader reader) throws CommandSyntaxException {
+		int i = reader.getCursor();
 
-		while (stringReader.canRead() && isCharValid(stringReader.peek())) {
-			stringReader.skip();
+		while (reader.canRead() && isCharValid(reader.peek())) {
+			reader.skip();
 		}
 
-		String string = stringReader.getString().substring(i, stringReader.getCursor());
+		String string = reader.getString().substring(i, reader.getCursor());
 
 		try {
 			return new Identifier(string);
 		} catch (InvalidIdentifierException var4) {
-			stringReader.setCursor(i);
-			throw COMMAND_EXCEPTION.createWithContext(stringReader);
+			reader.setCursor(i);
+			throw COMMAND_EXCEPTION.createWithContext(reader);
 		}
 	}
 
@@ -121,20 +131,40 @@ public class Identifier implements Comparable<Identifier> {
 		return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c == '_' || c == ':' || c == '/' || c == '.' || c == '-';
 	}
 
-	private static boolean isPathValid(String string) {
-		return string.chars().allMatch(i -> i == 95 || i == 45 || i >= 97 && i <= 122 || i >= 48 && i <= 57 || i == 47 || i == 46);
+	private static boolean isPathValid(String path) {
+		for (int i = 0; i < path.length(); i++) {
+			if (!isPathCharacterValid(path.charAt(i))) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
-	private static boolean isNamespaceValid(String string) {
-		return string.chars().allMatch(i -> i == 95 || i == 45 || i >= 97 && i <= 122 || i >= 48 && i <= 57 || i == 46);
+	private static boolean isNamespaceValid(String namespace) {
+		for (int i = 0; i < namespace.length(); i++) {
+			if (!isNamespaceCharacterValid(namespace.charAt(i))) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
-	public static boolean isValid(String string) {
-		String[] strings = split(string, ':');
+	public static boolean isPathCharacterValid(char c) {
+		return c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '/' || c == '.';
+	}
+
+	private static boolean isNamespaceCharacterValid(char c) {
+		return c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '.';
+	}
+
+	public static boolean isValid(String id) {
+		String[] strings = split(id, ':');
 		return isNamespaceValid(StringUtils.isEmpty(strings[0]) ? "minecraft" : strings[0]) && isPathValid(strings[1]);
 	}
 
-	public static class Serializer implements JsonDeserializer<Identifier>, JsonSerializer<Identifier> {
+	public static class Serializer implements JsonDeserializer<Identifier>, com.google.gson.JsonSerializer<Identifier> {
 		public Identifier deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			return new Identifier(JsonHelper.asString(jsonElement, "location"));
 		}

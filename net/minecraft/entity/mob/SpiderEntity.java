@@ -10,7 +10,7 @@ import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
@@ -20,6 +20,7 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.SpiderNavigation;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -36,8 +37,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class SpiderEntity extends HostileEntity {
@@ -80,46 +81,43 @@ public class SpiderEntity extends HostileEntity {
 	public void tick() {
 		super.tick();
 		if (!this.world.isClient) {
-			this.setCanClimb(this.horizontalCollision);
+			this.setClimbingWall(this.horizontalCollision);
 		}
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(16.0);
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.3F);
+	public static DefaultAttributeContainer.Builder createSpiderAttributes() {
+		return HostileEntity.createHostileAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 16.0).add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3F);
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_15170;
+		return SoundEvents.ENTITY_SPIDER_AMBIENT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_14657;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_SPIDER_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_14579;
+		return SoundEvents.ENTITY_SPIDER_DEATH;
 	}
 
 	@Override
-	protected void playStepSound(BlockPos blockPos, BlockState blockState) {
-		this.playSound(SoundEvents.field_14760, 0.15F, 1.0F);
+	protected void playStepSound(BlockPos pos, BlockState state) {
+		this.playSound(SoundEvents.ENTITY_SPIDER_STEP, 0.15F, 1.0F);
 	}
 
 	@Override
 	public boolean isClimbing() {
-		return this.getCanClimb();
+		return this.isClimbingWall();
 	}
 
 	@Override
-	public void slowMovement(BlockState blockState, Vec3d vec3d) {
-		if (blockState.getBlock() != Blocks.field_10343) {
-			super.slowMovement(blockState, vec3d);
+	public void slowMovement(BlockState state, Vec3d multiplier) {
+		if (!state.isOf(Blocks.COBWEB)) {
+			super.slowMovement(state, multiplier);
 		}
 	}
 
@@ -129,17 +127,17 @@ public class SpiderEntity extends HostileEntity {
 	}
 
 	@Override
-	public boolean canHaveStatusEffect(StatusEffectInstance statusEffectInstance) {
-		return statusEffectInstance.getEffectType() == StatusEffects.field_5899 ? false : super.canHaveStatusEffect(statusEffectInstance);
+	public boolean canHaveStatusEffect(StatusEffectInstance effect) {
+		return effect.getEffectType() == StatusEffects.POISON ? false : super.canHaveStatusEffect(effect);
 	}
 
-	public boolean getCanClimb() {
+	public boolean isClimbingWall() {
 		return (this.dataTracker.get(SPIDER_FLAGS) & 1) != 0;
 	}
 
-	public void setCanClimb(boolean bl) {
+	public void setClimbingWall(boolean climbing) {
 		byte b = this.dataTracker.get(SPIDER_FLAGS);
-		if (bl) {
+		if (climbing) {
 			b = (byte)(b | 1);
 		} else {
 			b = (byte)(b & -2);
@@ -151,26 +149,25 @@ public class SpiderEntity extends HostileEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
-		entityData = super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
-		if (iWorld.getRandom().nextInt(100) == 0) {
-			SkeletonEntity skeletonEntity = EntityType.field_6137.create(this.world);
+		entityData = super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+		if (world.getRandom().nextInt(100) == 0) {
+			SkeletonEntity skeletonEntity = EntityType.SKELETON.create(this.world);
 			skeletonEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, 0.0F);
-			skeletonEntity.initialize(iWorld, localDifficulty, spawnType, null, null);
-			iWorld.spawnEntity(skeletonEntity);
+			skeletonEntity.initialize(world, difficulty, spawnReason, null, null);
 			skeletonEntity.startRiding(this);
 		}
 
 		if (entityData == null) {
-			entityData = new SpiderEntity.SpawnEffectData();
-			if (iWorld.getDifficulty() == Difficulty.field_5807 && iWorld.getRandom().nextFloat() < 0.1F * localDifficulty.getClampedLocalDifficulty()) {
-				((SpiderEntity.SpawnEffectData)entityData).setEffect(iWorld.getRandom());
+			entityData = new SpiderEntity.SpiderData();
+			if (world.getDifficulty() == Difficulty.HARD && world.getRandom().nextFloat() < 0.1F * difficulty.getClampedLocalDifficulty()) {
+				((SpiderEntity.SpiderData)entityData).setEffect(world.getRandom());
 			}
 		}
 
-		if (entityData instanceof SpiderEntity.SpawnEffectData) {
-			StatusEffect statusEffect = ((SpiderEntity.SpawnEffectData)entityData).effect;
+		if (entityData instanceof SpiderEntity.SpiderData) {
+			StatusEffect statusEffect = ((SpiderEntity.SpiderData)entityData).effect;
 			if (statusEffect != null) {
 				this.addStatusEffect(new StatusEffectInstance(statusEffect, Integer.MAX_VALUE));
 			}
@@ -180,13 +177,13 @@ public class SpiderEntity extends HostileEntity {
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
 		return 0.65F;
 	}
 
 	static class AttackGoal extends MeleeAttackGoal {
-		public AttackGoal(SpiderEntity spiderEntity) {
-			super(spiderEntity, 1.0, true);
+		public AttackGoal(SpiderEntity spider) {
+			super(spider, 1.0, true);
 		}
 
 		@Override
@@ -206,14 +203,14 @@ public class SpiderEntity extends HostileEntity {
 		}
 
 		@Override
-		protected double getSquaredMaxAttackDistance(LivingEntity livingEntity) {
-			return (double)(4.0F + livingEntity.getWidth());
+		protected double getSquaredMaxAttackDistance(LivingEntity entity) {
+			return (double)(4.0F + entity.getWidth());
 		}
 	}
 
 	static class FollowTargetGoal<T extends LivingEntity> extends net.minecraft.entity.ai.goal.FollowTargetGoal<T> {
-		public FollowTargetGoal(SpiderEntity spiderEntity, Class<T> class_) {
-			super(spiderEntity, class_, true);
+		public FollowTargetGoal(SpiderEntity spider, Class<T> targetEntityClass) {
+			super(spider, targetEntityClass, true);
 		}
 
 		@Override
@@ -223,19 +220,19 @@ public class SpiderEntity extends HostileEntity {
 		}
 	}
 
-	public static class SpawnEffectData implements EntityData {
+	public static class SpiderData implements EntityData {
 		public StatusEffect effect;
 
 		public void setEffect(Random random) {
 			int i = random.nextInt(5);
 			if (i <= 1) {
-				this.effect = StatusEffects.field_5904;
+				this.effect = StatusEffects.SPEED;
 			} else if (i <= 2) {
-				this.effect = StatusEffects.field_5910;
+				this.effect = StatusEffects.STRENGTH;
 			} else if (i <= 3) {
-				this.effect = StatusEffects.field_5924;
+				this.effect = StatusEffects.REGENERATION;
 			} else if (i <= 4) {
-				this.effect = StatusEffects.field_5905;
+				this.effect = StatusEffects.INVISIBILITY;
 			}
 		}
 	}

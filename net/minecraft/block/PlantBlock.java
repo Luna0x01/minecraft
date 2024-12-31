@@ -1,49 +1,43 @@
 package net.minecraft.block;
 
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class PlantBlock extends Block {
-	protected PlantBlock(Block.Settings settings) {
+	protected PlantBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
-	protected boolean canPlantOnTop(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		Block block = blockState.getBlock();
-		return block == Blocks.field_10219
-			|| block == Blocks.field_10566
-			|| block == Blocks.field_10253
-			|| block == Blocks.field_10520
-			|| block == Blocks.field_10362;
+	protected boolean canPlantOnTop(BlockState floor, BlockView world, BlockPos pos) {
+		return floor.isOf(Blocks.GRASS_BLOCK)
+			|| floor.isOf(Blocks.DIRT)
+			|| floor.isOf(Blocks.COARSE_DIRT)
+			|| floor.isOf(Blocks.PODZOL)
+			|| floor.isOf(Blocks.FARMLAND);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		return !blockState.canPlaceAt(iWorld, blockPos)
-			? Blocks.field_10124.getDefaultState()
-			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		return !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() : super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
-		BlockPos blockPos2 = blockPos.down();
-		return this.canPlantOnTop(worldView.getBlockState(blockPos2), worldView, blockPos2);
+	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+		BlockPos blockPos = pos.down();
+		return this.canPlantOnTop(world.getBlockState(blockPos), world, blockPos);
 	}
 
 	@Override
-	public boolean isTranslucent(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return true;
+	public boolean isTranslucent(BlockState state, BlockView world, BlockPos pos) {
+		return state.getFluidState().isEmpty();
 	}
 
 	@Override
-	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
-		return blockPlacementEnvironment == BlockPlacementEnvironment.field_51 && !this.collidable
-			? true
-			: super.canPlaceAtSide(blockState, blockView, blockPos, blockPlacementEnvironment);
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
+		return type == NavigationType.AIR && !this.collidable ? true : super.canPathfindThrough(state, world, pos, type);
 	}
 }

@@ -14,9 +14,9 @@ public abstract class AbstractBeeSoundInstance extends MovingSoundInstance {
 	public AbstractBeeSoundInstance(BeeEntity beeEntity, SoundEvent soundEvent, SoundCategory soundCategory) {
 		super(soundEvent, soundCategory);
 		this.bee = beeEntity;
-		this.x = (float)beeEntity.getX();
-		this.y = (float)beeEntity.getY();
-		this.z = (float)beeEntity.getZ();
+		this.x = (double)((float)beeEntity.getX());
+		this.y = (double)((float)beeEntity.getY());
+		this.z = (double)((float)beeEntity.getZ());
 		this.repeat = true;
 		this.repeatDelay = 0;
 		this.volume = 0.0F;
@@ -25,15 +25,15 @@ public abstract class AbstractBeeSoundInstance extends MovingSoundInstance {
 	@Override
 	public void tick() {
 		boolean bl = this.shouldReplace();
-		if (bl && !this.done) {
+		if (bl && !this.isDone()) {
 			MinecraftClient.getInstance().getSoundManager().playNextTick(this.getReplacement());
 			this.replaced = true;
 		}
 
 		if (!this.bee.removed && !this.replaced) {
-			this.x = (float)this.bee.getX();
-			this.y = (float)this.bee.getY();
-			this.z = (float)this.bee.getZ();
+			this.x = (double)((float)this.bee.getX());
+			this.y = (double)((float)this.bee.getY());
+			this.z = (double)((float)this.bee.getZ());
 			float f = MathHelper.sqrt(Entity.squaredHorizontalLength(this.bee.getVelocity()));
 			if ((double)f >= 0.01) {
 				this.pitch = MathHelper.lerp(MathHelper.clamp(f, this.getMinPitch(), this.getMaxPitch()), this.getMinPitch(), this.getMaxPitch());
@@ -43,7 +43,7 @@ public abstract class AbstractBeeSoundInstance extends MovingSoundInstance {
 				this.volume = 0.0F;
 			}
 		} else {
-			this.done = true;
+			this.setDone();
 		}
 	}
 
@@ -58,6 +58,11 @@ public abstract class AbstractBeeSoundInstance extends MovingSoundInstance {
 	@Override
 	public boolean shouldAlwaysPlay() {
 		return true;
+	}
+
+	@Override
+	public boolean canPlay() {
+		return !this.bee.isSilent();
 	}
 
 	protected abstract MovingSoundInstance getReplacement();

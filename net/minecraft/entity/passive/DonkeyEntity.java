@@ -1,7 +1,9 @@
 package net.minecraft.entity.passive;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.world.World;
@@ -14,37 +16,47 @@ public class DonkeyEntity extends AbstractDonkeyEntity {
 	@Override
 	protected SoundEvent getAmbientSound() {
 		super.getAmbientSound();
-		return SoundEvents.field_15094;
+		return SoundEvents.ENTITY_DONKEY_AMBIENT;
+	}
+
+	@Override
+	protected SoundEvent getAngrySound() {
+		super.getAngrySound();
+		return SoundEvents.ENTITY_DONKEY_ANGRY;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
 		super.getDeathSound();
-		return SoundEvents.field_14827;
+		return SoundEvents.ENTITY_DONKEY_DEATH;
+	}
+
+	@Nullable
+	@Override
+	protected SoundEvent getEatSound() {
+		return SoundEvents.ENTITY_DONKEY_EAT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		super.getHurtSound(damageSource);
-		return SoundEvents.field_14781;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		super.getHurtSound(source);
+		return SoundEvents.ENTITY_DONKEY_HURT;
 	}
 
 	@Override
-	public boolean canBreedWith(AnimalEntity animalEntity) {
-		if (animalEntity == this) {
+	public boolean canBreedWith(AnimalEntity other) {
+		if (other == this) {
 			return false;
 		} else {
-			return !(animalEntity instanceof DonkeyEntity) && !(animalEntity instanceof HorseEntity)
-				? false
-				: this.canBreed() && ((HorseBaseEntity)animalEntity).canBreed();
+			return !(other instanceof DonkeyEntity) && !(other instanceof HorseEntity) ? false : this.canBreed() && ((HorseBaseEntity)other).canBreed();
 		}
 	}
 
 	@Override
-	public PassiveEntity createChild(PassiveEntity passiveEntity) {
-		EntityType<? extends HorseBaseEntity> entityType = passiveEntity instanceof HorseEntity ? EntityType.field_6057 : EntityType.field_6067;
-		HorseBaseEntity horseBaseEntity = entityType.create(this.world);
-		this.setChildAttributes(passiveEntity, horseBaseEntity);
+	public PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
+		EntityType<? extends HorseBaseEntity> entityType = entity instanceof HorseEntity ? EntityType.MULE : EntityType.DONKEY;
+		HorseBaseEntity horseBaseEntity = entityType.create(world);
+		this.setChildAttributes(entity, horseBaseEntity);
 		return horseBaseEntity;
 	}
 }

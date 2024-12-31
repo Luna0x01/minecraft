@@ -3,7 +3,6 @@ package net.minecraft.block;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -14,78 +13,76 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class SeagrassBlock extends PlantBlock implements Fertilizable, FluidFillable {
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 12.0, 14.0);
 
-	protected SeagrassBlock(Block.Settings settings) {
+	protected SeagrassBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return SHAPE;
 	}
 
 	@Override
-	protected boolean canPlantOnTop(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return blockState.isSideSolidFullSquare(blockView, blockPos, Direction.field_11036) && blockState.getBlock() != Blocks.field_10092;
+	protected boolean canPlantOnTop(BlockState floor, BlockView world, BlockPos pos) {
+		return floor.isSideSolidFullSquare(world, pos, Direction.UP) && !floor.isOf(Blocks.MAGMA_BLOCK);
 	}
 
 	@Nullable
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		FluidState fluidState = itemPlacementContext.getWorld().getFluidState(itemPlacementContext.getBlockPos());
-		return fluidState.matches(FluidTags.field_15517) && fluidState.getLevel() == 8 ? super.getPlacementState(itemPlacementContext) : null;
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		FluidState fluidState = ctx.getWorld().getFluidState(ctx.getBlockPos());
+		return fluidState.isIn(FluidTags.WATER) && fluidState.getLevel() == 8 ? super.getPlacementState(ctx) : null;
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		BlockState blockState3 = super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
-		if (!blockState3.isAir()) {
-			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		BlockState blockState = super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
+		if (!blockState.isAir()) {
+			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
-		return blockState3;
+		return blockState;
 	}
 
 	@Override
-	public boolean isFertilizable(BlockView blockView, BlockPos blockPos, BlockState blockState, boolean bl) {
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
 		return true;
 	}
 
 	@Override
-	public boolean canGrow(World world, Random random, BlockPos blockPos, BlockState blockState) {
+	public boolean canGrow(World world, Random random, BlockPos pos, BlockState state) {
 		return true;
 	}
 
 	@Override
-	public FluidState getFluidState(BlockState blockState) {
+	public FluidState getFluidState(BlockState state) {
 		return Fluids.WATER.getStill(false);
 	}
 
 	@Override
-	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
-		BlockState blockState2 = Blocks.field_10238.getDefaultState();
-		BlockState blockState3 = blockState2.with(TallSeagrassBlock.HALF, DoubleBlockHalf.field_12609);
-		BlockPos blockPos2 = blockPos.up();
-		if (serverWorld.getBlockState(blockPos2).getBlock() == Blocks.field_10382) {
-			serverWorld.setBlockState(blockPos, blockState2, 2);
-			serverWorld.setBlockState(blockPos2, blockState3, 2);
+	public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
+		BlockState blockState = Blocks.TALL_SEAGRASS.getDefaultState();
+		BlockState blockState2 = blockState.with(TallSeagrassBlock.HALF, DoubleBlockHalf.UPPER);
+		BlockPos blockPos = pos.up();
+		if (world.getBlockState(blockPos).isOf(Blocks.WATER)) {
+			world.setBlockState(pos, blockState, 2);
+			world.setBlockState(blockPos, blockState2, 2);
 		}
 	}
 
 	@Override
-	public boolean canFillWithFluid(BlockView blockView, BlockPos blockPos, BlockState blockState, Fluid fluid) {
+	public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
 		return false;
 	}
 
 	@Override
-	public boolean tryFillWithFluid(IWorld iWorld, BlockPos blockPos, BlockState blockState, FluidState fluidState) {
+	public boolean tryFillWithFluid(WorldAccess world, BlockPos pos, BlockState state, FluidState fluidState) {
 		return false;
 	}
 }

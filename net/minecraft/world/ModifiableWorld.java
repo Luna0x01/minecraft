@@ -6,15 +6,23 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 
 public interface ModifiableWorld {
-	boolean setBlockState(BlockPos blockPos, BlockState blockState, int i);
+	boolean setBlockState(BlockPos pos, BlockState state, int flags, int maxUpdateDepth);
 
-	boolean removeBlock(BlockPos blockPos, boolean bl);
-
-	default boolean breakBlock(BlockPos blockPos, boolean bl) {
-		return this.breakBlock(blockPos, bl, null);
+	default boolean setBlockState(BlockPos pos, BlockState state, int flags) {
+		return this.setBlockState(pos, state, flags, 512);
 	}
 
-	boolean breakBlock(BlockPos blockPos, boolean bl, @Nullable Entity entity);
+	boolean removeBlock(BlockPos pos, boolean move);
+
+	default boolean breakBlock(BlockPos pos, boolean drop) {
+		return this.breakBlock(pos, drop, null);
+	}
+
+	default boolean breakBlock(BlockPos pos, boolean drop, @Nullable Entity breakingEntity) {
+		return this.breakBlock(pos, drop, breakingEntity, 512);
+	}
+
+	boolean breakBlock(BlockPos pos, boolean drop, @Nullable Entity breakingEntity, int maxUpdateDepth);
 
 	default boolean spawnEntity(Entity entity) {
 		return false;

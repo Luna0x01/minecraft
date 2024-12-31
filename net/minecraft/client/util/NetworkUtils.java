@@ -21,7 +21,7 @@ import java.util.concurrent.Executors;
 import javax.annotation.Nullable;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ProgressListener;
-import net.minecraft.util.UncaughtExceptionLogger;
+import net.minecraft.util.logging.UncaughtExceptionLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;

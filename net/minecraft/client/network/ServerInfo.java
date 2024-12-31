@@ -1,29 +1,33 @@
 package net.minecraft.client.network;
 
+import java.util.Collections;
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public class ServerInfo {
 	public String name;
 	public String address;
-	public String playerCountLabel;
-	public String label;
+	public Text playerCountLabel;
+	public Text label;
 	public long ping;
 	public int protocolVersion = SharedConstants.getGameVersion().getProtocolVersion();
-	public String version = SharedConstants.getGameVersion().getName();
+	public Text version = new LiteralText(SharedConstants.getGameVersion().getName());
 	public boolean online;
-	public String playerListSummary;
-	private ServerInfo.ResourcePackState resourcePackState = ServerInfo.ResourcePackState.field_3767;
+	public List<Text> playerListSummary = Collections.emptyList();
+	private ServerInfo.ResourcePackState resourcePackState = ServerInfo.ResourcePackState.PROMPT;
+	@Nullable
 	private String icon;
 	private boolean local;
 
-	public ServerInfo(String string, String string2, boolean bl) {
-		this.name = string;
-		this.address = string2;
-		this.local = bl;
+	public ServerInfo(String name, String address, boolean local) {
+		this.name = name;
+		this.address = address;
+		this.local = local;
 	}
 
 	public CompoundTag serialize() {
@@ -34,9 +38,9 @@ public class ServerInfo {
 			compoundTag.putString("icon", this.icon);
 		}
 
-		if (this.resourcePackState == ServerInfo.ResourcePackState.field_3768) {
+		if (this.resourcePackState == ServerInfo.ResourcePackState.ENABLED) {
 			compoundTag.putBoolean("acceptTextures", true);
-		} else if (this.resourcePackState == ServerInfo.ResourcePackState.field_3764) {
+		} else if (this.resourcePackState == ServerInfo.ResourcePackState.DISABLED) {
 			compoundTag.putBoolean("acceptTextures", false);
 		}
 
@@ -51,20 +55,20 @@ public class ServerInfo {
 		this.resourcePackState = resourcePackState;
 	}
 
-	public static ServerInfo deserialize(CompoundTag compoundTag) {
-		ServerInfo serverInfo = new ServerInfo(compoundTag.getString("name"), compoundTag.getString("ip"), false);
-		if (compoundTag.contains("icon", 8)) {
-			serverInfo.setIcon(compoundTag.getString("icon"));
+	public static ServerInfo deserialize(CompoundTag tag) {
+		ServerInfo serverInfo = new ServerInfo(tag.getString("name"), tag.getString("ip"), false);
+		if (tag.contains("icon", 8)) {
+			serverInfo.setIcon(tag.getString("icon"));
 		}
 
-		if (compoundTag.contains("acceptTextures", 1)) {
-			if (compoundTag.getBoolean("acceptTextures")) {
-				serverInfo.setResourcePackState(ServerInfo.ResourcePackState.field_3768);
+		if (tag.contains("acceptTextures", 1)) {
+			if (tag.getBoolean("acceptTextures")) {
+				serverInfo.setResourcePackState(ServerInfo.ResourcePackState.ENABLED);
 			} else {
-				serverInfo.setResourcePackState(ServerInfo.ResourcePackState.field_3764);
+				serverInfo.setResourcePackState(ServerInfo.ResourcePackState.DISABLED);
 			}
 		} else {
-			serverInfo.setResourcePackState(ServerInfo.ResourcePackState.field_3767);
+			serverInfo.setResourcePackState(ServerInfo.ResourcePackState.PROMPT);
 		}
 
 		return serverInfo;
@@ -92,14 +96,14 @@ public class ServerInfo {
 	}
 
 	public static enum ResourcePackState {
-		field_3768("enabled"),
-		field_3764("disabled"),
-		field_3767("prompt");
+		ENABLED("enabled"),
+		DISABLED("disabled"),
+		PROMPT("prompt");
 
 		private final Text name;
 
-		private ResourcePackState(String string2) {
-			this.name = new TranslatableText("addServer.resourcePack." + string2);
+		private ResourcePackState(String name) {
+			this.name = new TranslatableText("addServer.resourcePack." + name);
 		}
 
 		public Text getName() {

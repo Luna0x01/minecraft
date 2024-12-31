@@ -7,27 +7,27 @@ public class DoubleInventory implements Inventory {
 	private final Inventory first;
 	private final Inventory second;
 
-	public DoubleInventory(Inventory inventory, Inventory inventory2) {
-		if (inventory == null) {
-			inventory = inventory2;
+	public DoubleInventory(Inventory first, Inventory second) {
+		if (first == null) {
+			first = second;
 		}
 
-		if (inventory2 == null) {
-			inventory2 = inventory;
+		if (second == null) {
+			second = first;
 		}
 
-		this.first = inventory;
-		this.second = inventory2;
+		this.first = first;
+		this.second = second;
 	}
 
 	@Override
-	public int getInvSize() {
-		return this.first.getInvSize() + this.second.getInvSize();
+	public int size() {
+		return this.first.size() + this.second.size();
 	}
 
 	@Override
-	public boolean isInvEmpty() {
-		return this.first.isInvEmpty() && this.second.isInvEmpty();
+	public boolean isEmpty() {
+		return this.first.isEmpty() && this.second.isEmpty();
 	}
 
 	public boolean isPart(Inventory inventory) {
@@ -35,32 +35,32 @@ public class DoubleInventory implements Inventory {
 	}
 
 	@Override
-	public ItemStack getInvStack(int i) {
-		return i >= this.first.getInvSize() ? this.second.getInvStack(i - this.first.getInvSize()) : this.first.getInvStack(i);
+	public ItemStack getStack(int slot) {
+		return slot >= this.first.size() ? this.second.getStack(slot - this.first.size()) : this.first.getStack(slot);
 	}
 
 	@Override
-	public ItemStack takeInvStack(int i, int j) {
-		return i >= this.first.getInvSize() ? this.second.takeInvStack(i - this.first.getInvSize(), j) : this.first.takeInvStack(i, j);
+	public ItemStack removeStack(int slot, int amount) {
+		return slot >= this.first.size() ? this.second.removeStack(slot - this.first.size(), amount) : this.first.removeStack(slot, amount);
 	}
 
 	@Override
-	public ItemStack removeInvStack(int i) {
-		return i >= this.first.getInvSize() ? this.second.removeInvStack(i - this.first.getInvSize()) : this.first.removeInvStack(i);
+	public ItemStack removeStack(int slot) {
+		return slot >= this.first.size() ? this.second.removeStack(slot - this.first.size()) : this.first.removeStack(slot);
 	}
 
 	@Override
-	public void setInvStack(int i, ItemStack itemStack) {
-		if (i >= this.first.getInvSize()) {
-			this.second.setInvStack(i - this.first.getInvSize(), itemStack);
+	public void setStack(int slot, ItemStack stack) {
+		if (slot >= this.first.size()) {
+			this.second.setStack(slot - this.first.size(), stack);
 		} else {
-			this.first.setInvStack(i, itemStack);
+			this.first.setStack(slot, stack);
 		}
 	}
 
 	@Override
-	public int getInvMaxStackAmount() {
-		return this.first.getInvMaxStackAmount();
+	public int getMaxCountPerStack() {
+		return this.first.getMaxCountPerStack();
 	}
 
 	@Override
@@ -70,25 +70,25 @@ public class DoubleInventory implements Inventory {
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity playerEntity) {
-		return this.first.canPlayerUseInv(playerEntity) && this.second.canPlayerUseInv(playerEntity);
+	public boolean canPlayerUse(PlayerEntity player) {
+		return this.first.canPlayerUse(player) && this.second.canPlayerUse(player);
 	}
 
 	@Override
-	public void onInvOpen(PlayerEntity playerEntity) {
-		this.first.onInvOpen(playerEntity);
-		this.second.onInvOpen(playerEntity);
+	public void onOpen(PlayerEntity player) {
+		this.first.onOpen(player);
+		this.second.onOpen(player);
 	}
 
 	@Override
-	public void onInvClose(PlayerEntity playerEntity) {
-		this.first.onInvClose(playerEntity);
-		this.second.onInvClose(playerEntity);
+	public void onClose(PlayerEntity player) {
+		this.first.onClose(player);
+		this.second.onClose(player);
 	}
 
 	@Override
-	public boolean isValidInvStack(int i, ItemStack itemStack) {
-		return i >= this.first.getInvSize() ? this.second.isValidInvStack(i - this.first.getInvSize(), itemStack) : this.first.isValidInvStack(i, itemStack);
+	public boolean isValid(int slot, ItemStack stack) {
+		return slot >= this.first.size() ? this.second.isValid(slot - this.first.size(), stack) : this.first.isValid(slot, stack);
 	}
 
 	@Override

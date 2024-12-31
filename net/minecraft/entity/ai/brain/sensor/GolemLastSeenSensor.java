@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.Set;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.brain.Brain;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.server.world.ServerWorld;
 
@@ -20,23 +19,26 @@ public class GolemLastSeenSensor extends Sensor<LivingEntity> {
 	}
 
 	@Override
-	protected void sense(ServerWorld serverWorld, LivingEntity livingEntity) {
-		senseIronGolem(serverWorld.getTime(), livingEntity);
+	protected void sense(ServerWorld world, LivingEntity entity) {
+		senseIronGolem(entity);
 	}
 
 	@Override
 	public Set<MemoryModuleType<?>> getOutputMemoryModules() {
-		return ImmutableSet.of(MemoryModuleType.field_18441);
+		return ImmutableSet.of(MemoryModuleType.MOBS);
 	}
 
-	public static void senseIronGolem(long l, LivingEntity livingEntity) {
-		Brain<?> brain = livingEntity.getBrain();
-		Optional<List<LivingEntity>> optional = brain.getOptionalMemory(MemoryModuleType.field_18441);
+	public static void senseIronGolem(LivingEntity livingEntity) {
+		Optional<List<LivingEntity>> optional = livingEntity.getBrain().getOptionalMemory(MemoryModuleType.MOBS);
 		if (optional.isPresent()) {
-			boolean bl = ((List)optional.get()).stream().anyMatch(livingEntityx -> livingEntityx.getType().equals(EntityType.field_6147));
+			boolean bl = ((List)optional.get()).stream().anyMatch(livingEntityx -> livingEntityx.getType().equals(EntityType.IRON_GOLEM));
 			if (bl) {
-				brain.putMemory(MemoryModuleType.field_19355, l);
+				method_30233(livingEntity);
 			}
 		}
+	}
+
+	public static void method_30233(LivingEntity livingEntity) {
+		livingEntity.getBrain().remember(MemoryModuleType.GOLEM_DETECTED_RECENTLY, true, 600L);
 	}
 }

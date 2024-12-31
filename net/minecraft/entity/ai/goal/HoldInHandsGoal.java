@@ -14,11 +14,11 @@ public class HoldInHandsGoal<T extends MobEntity> extends Goal {
 	private final Predicate<? super T> condition;
 	private final SoundEvent sound;
 
-	public HoldInHandsGoal(T mobEntity, ItemStack itemStack, @Nullable SoundEvent soundEvent, Predicate<? super T> predicate) {
-		this.actor = mobEntity;
-		this.item = itemStack;
-		this.sound = soundEvent;
-		this.condition = predicate;
+	public HoldInHandsGoal(T actor, ItemStack item, @Nullable SoundEvent sound, Predicate<? super T> condition) {
+		this.actor = actor;
+		this.item = item;
+		this.sound = sound;
+		this.condition = condition;
 	}
 
 	@Override
@@ -33,13 +33,13 @@ public class HoldInHandsGoal<T extends MobEntity> extends Goal {
 
 	@Override
 	public void start() {
-		this.actor.equipStack(EquipmentSlot.field_6173, this.item.copy());
-		this.actor.setCurrentHand(Hand.field_5808);
+		this.actor.equipStack(EquipmentSlot.MAINHAND, this.item.copy());
+		this.actor.setCurrentHand(Hand.MAIN_HAND);
 	}
 
 	@Override
 	public void stop() {
-		this.actor.equipStack(EquipmentSlot.field_6173, ItemStack.EMPTY);
+		this.actor.equipStack(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
 		if (this.sound != null) {
 			this.actor.playSound(this.sound, 1.0F, this.actor.getRandom().nextFloat() * 0.2F + 0.9F);
 		}

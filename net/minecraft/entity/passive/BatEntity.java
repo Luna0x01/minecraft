@@ -9,22 +9,24 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.TargetPredicate;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.AmbientEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class BatEntity extends AmbientEntity {
 	private static final TrackedData<Byte> BAT_FLAGS = DataTracker.registerData(BatEntity.class, TrackedDataHandlerRegistry.BYTE);
@@ -55,17 +57,17 @@ public class BatEntity extends AmbientEntity {
 	@Nullable
 	@Override
 	public SoundEvent getAmbientSound() {
-		return this.isRoosting() && this.random.nextInt(4) != 0 ? null : SoundEvents.field_15009;
+		return this.isRoosting() && this.random.nextInt(4) != 0 ? null : SoundEvents.ENTITY_BAT_AMBIENT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_14746;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_BAT_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_14911;
+		return SoundEvents.ENTITY_BAT_DEATH;
 	}
 
 	@Override
@@ -81,19 +83,17 @@ public class BatEntity extends AmbientEntity {
 	protected void tickCramming() {
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(6.0);
+	public static DefaultAttributeContainer.Builder createBatAttributes() {
+		return MobEntity.createMobAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 6.0);
 	}
 
 	public boolean isRoosting() {
 		return (this.dataTracker.get(BAT_FLAGS) & 1) != 0;
 	}
 
-	public void setRoosting(boolean bl) {
+	public void setRoosting(boolean roosting) {
 		byte b = this.dataTracker.get(BAT_FLAGS);
-		if (bl) {
+		if (roosting) {
 			this.dataTracker.set(BAT_FLAGS, (byte)(b | 1));
 		} else {
 			this.dataTracker.set(BAT_FLAGS, (byte)(b & -2));
@@ -114,21 +114,26 @@ public class BatEntity extends AmbientEntity {
 	@Override
 	protected void mobTick() {
 		super.mobTick();
-		BlockPos blockPos = new BlockPos(this);
+		BlockPos blockPos = this.getBlockPos();
 		BlockPos blockPos2 = blockPos.up();
 		if (this.isRoosting()) {
-			if (this.world.getBlockState(blockPos2).isSimpleFullBlock(this.world, blockPos)) {
+			boolean bl = this.isSilent();
+			if (this.world.getBlockState(blockPos2).isSolidBlock(this.world, blockPos)) {
 				if (this.random.nextInt(200) == 0) {
 					this.headYaw = (float)this.random.nextInt(360);
 				}
 
 				if (this.world.getClosestPlayer(CLOSE_PLAYER_PREDICATE, this) != null) {
 					this.setRoosting(false);
-					this.world.playLevelEvent(null, 1025, blockPos, 0);
+					if (!bl) {
+						this.world.syncWorldEvent(null, 1025, blockPos, 0);
+					}
 				}
 			} else {
 				this.setRoosting(false);
-				this.world.playLevelEvent(null, 1025, blockPos, 0);
+				if (!bl) {
+					this.world.syncWorldEvent(null, 1025, blockPos, 0);
+				}
 			}
 		} else {
 			if (this.hangingPosition != null && (!this.world.isAir(this.hangingPosition) || this.hangingPosition.getY() < 1)) {
@@ -153,7 +158,7 @@ public class BatEntity extends AmbientEntity {
 			float h = MathHelper.wrapDegrees(g - this.yaw);
 			this.forwardSpeed = 0.5F;
 			this.yaw += h;
-			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).isSimpleFullBlock(this.world, blockPos2)) {
+			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).isSolidBlock(this.world, blockPos2)) {
 				this.setRoosting(true);
 			}
 		}
@@ -165,12 +170,12 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	public boolean handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
 		return false;
 	}
 
 	@Override
-	protected void fall(double d, boolean bl, BlockState blockState, BlockPos blockPos) {
+	protected void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPosition) {
 	}
 
 	@Override
@@ -179,35 +184,35 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
 			if (!this.world.isClient && this.isRoosting()) {
 				this.setRoosting(false);
 			}
 
-			return super.damage(damageSource, f);
+			return super.damage(source, amount);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.dataTracker.set(BAT_FLAGS, compoundTag.getByte("BatFlags"));
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.dataTracker.set(BAT_FLAGS, tag.getByte("BatFlags"));
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putByte("BatFlags", this.dataTracker.get(BAT_FLAGS));
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putByte("BatFlags", this.dataTracker.get(BAT_FLAGS));
 	}
 
-	public static boolean canSpawn(EntityType<BatEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		if (blockPos.getY() >= iWorld.getSeaLevel()) {
+	public static boolean canSpawn(EntityType<BatEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
+		if (pos.getY() >= world.getSeaLevel()) {
 			return false;
 		} else {
-			int i = iWorld.getLightLevel(blockPos);
+			int i = world.getLightLevel(pos);
 			int j = 4;
 			if (isTodayAroundHalloween()) {
 				j = 7;
@@ -215,7 +220,7 @@ public class BatEntity extends AmbientEntity {
 				return false;
 			}
 
-			return i > random.nextInt(j) ? false : canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
+			return i > random.nextInt(j) ? false : canMobSpawn(type, world, spawnReason, pos, random);
 		}
 	}
 
@@ -227,7 +232,7 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		return entityDimensions.height / 2.0F;
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
+		return dimensions.height / 2.0F;
 	}
 }

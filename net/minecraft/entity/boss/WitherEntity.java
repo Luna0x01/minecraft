@@ -21,6 +21,7 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.ProjectileAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -31,7 +32,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
@@ -62,15 +63,14 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 	private final int[] field_7091 = new int[2];
 	private final int[] field_7092 = new int[2];
 	private int field_7082;
-	private final ServerBossBar bossBar = (ServerBossBar)new ServerBossBar(this.getDisplayName(), BossBar.Color.field_5783, BossBar.Style.field_5795)
-		.setDarkenSky(true);
+	private final ServerBossBar bossBar = (ServerBossBar)new ServerBossBar(this.getDisplayName(), BossBar.Color.PURPLE, BossBar.Style.PROGRESS).setDarkenSky(true);
 	private static final Predicate<LivingEntity> CAN_ATTACK_PREDICATE = livingEntity -> livingEntity.getGroup() != EntityGroup.UNDEAD
-			&& livingEntity.method_6102();
+			&& livingEntity.isMobOrPlayer();
 	private static final TargetPredicate HEAD_TARGET_PREDICATE = new TargetPredicate().setBaseMaxDistance(20.0).setPredicate(CAN_ATTACK_PREDICATE);
 
 	public WitherEntity(EntityType<? extends WitherEntity> entityType, World world) {
 		super(entityType, world);
-		this.setHealth(this.getMaximumHealth());
+		this.setHealth(this.getMaxHealth());
 		this.getNavigation().setCanSwim(true);
 		this.experiencePoints = 50;
 	}
@@ -96,39 +96,39 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("Invul", this.getInvulnerableTimer());
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("Invul", this.getInvulnerableTimer());
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.setInvulTimer(compoundTag.getInt("Invul"));
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.setInvulTimer(tag.getInt("Invul"));
 		if (this.hasCustomName()) {
 			this.bossBar.setName(this.getDisplayName());
 		}
 	}
 
 	@Override
-	public void setCustomName(@Nullable Text text) {
-		super.setCustomName(text);
+	public void setCustomName(@Nullable Text name) {
+		super.setCustomName(name);
 		this.bossBar.setName(this.getDisplayName());
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_15163;
+		return SoundEvents.ENTITY_WITHER_AMBIENT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_14688;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_WITHER_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_15136;
+		return SoundEvents.ENTITY_WITHER_DEATH;
 	}
 
 	@Override
@@ -196,18 +196,12 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 			double t = this.getHeadZ(q);
 			this.world
 				.addParticle(
-					ParticleTypes.field_11251,
-					r + this.random.nextGaussian() * 0.3F,
-					s + this.random.nextGaussian() * 0.3F,
-					t + this.random.nextGaussian() * 0.3F,
-					0.0,
-					0.0,
-					0.0
+					ParticleTypes.SMOKE, r + this.random.nextGaussian() * 0.3F, s + this.random.nextGaussian() * 0.3F, t + this.random.nextGaussian() * 0.3F, 0.0, 0.0, 0.0
 				);
 			if (bl && this.world.random.nextInt(4) == 0) {
 				this.world
 					.addParticle(
-						ParticleTypes.field_11226,
+						ParticleTypes.ENTITY_EFFECT,
 						r + this.random.nextGaussian() * 0.3F,
 						s + this.random.nextGaussian() * 0.3F,
 						t + this.random.nextGaussian() * 0.3F,
@@ -222,7 +216,7 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 			for (int u = 0; u < 3; u++) {
 				this.world
 					.addParticle(
-						ParticleTypes.field_11226,
+						ParticleTypes.ENTITY_EFFECT,
 						this.getX() + this.random.nextGaussian(),
 						this.getY() + (double)(this.random.nextFloat() * 3.3F),
 						this.getZ() + this.random.nextGaussian(),
@@ -239,11 +233,13 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 		if (this.getInvulnerableTimer() > 0) {
 			int i = this.getInvulnerableTimer() - 1;
 			if (i <= 0) {
-				Explosion.DestructionType destructionType = this.world.getGameRules().getBoolean(GameRules.field_19388)
-					? Explosion.DestructionType.field_18687
-					: Explosion.DestructionType.field_18685;
+				Explosion.DestructionType destructionType = this.world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)
+					? Explosion.DestructionType.DESTROY
+					: Explosion.DestructionType.NONE;
 				this.world.createExplosion(this, this.getX(), this.getEyeY(), this.getZ(), 7.0F, false, destructionType);
-				this.world.playGlobalEvent(1023, new BlockPos(this), 0);
+				if (!this.isSilent()) {
+					this.world.syncGlobalEvent(1023, this.getBlockPos(), 0);
+				}
 			}
 
 			this.setInvulTimer(i);
@@ -256,7 +252,7 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 			for (int j = 1; j < 3; j++) {
 				if (this.age >= this.field_7091[j - 1]) {
 					this.field_7091[j - 1] = this.age + 10 + this.random.nextInt(10);
-					if ((this.world.getDifficulty() == Difficulty.field_5802 || this.world.getDifficulty() == Difficulty.field_5807) && this.field_7092[j - 1]++ > 15) {
+					if ((this.world.getDifficulty() == Difficulty.NORMAL || this.world.getDifficulty() == Difficulty.HARD) && this.field_7092[j - 1]++ > 15) {
 						float f = 10.0F;
 						float g = 5.0F;
 						double d = MathHelper.nextDouble(this.random, this.getX() - 10.0, this.getX() + 10.0);
@@ -308,7 +304,7 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 
 			if (this.field_7082 > 0) {
 				this.field_7082--;
-				if (this.field_7082 == 0 && this.world.getGameRules().getBoolean(GameRules.field_19388)) {
+				if (this.field_7082 == 0 && this.world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
 					int m = MathHelper.floor(this.getY());
 					int n = MathHelper.floor(this.getX());
 					int o = MathHelper.floor(this.getZ());
@@ -330,7 +326,7 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 					}
 
 					if (bl) {
-						this.world.playLevelEvent(null, 1022, new BlockPos(this), 0);
+						this.world.syncWorldEvent(null, 1022, this.getBlockPos(), 0);
 					}
 				}
 			}
@@ -339,70 +335,70 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 				this.heal(1.0F);
 			}
 
-			this.bossBar.setPercent(this.getHealth() / this.getMaximumHealth());
+			this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
 		}
 	}
 
-	public static boolean canDestroy(BlockState blockState) {
-		return !blockState.isAir() && !BlockTags.field_17754.contains(blockState.getBlock());
+	public static boolean canDestroy(BlockState block) {
+		return !block.isAir() && !BlockTags.WITHER_IMMUNE.contains(block.getBlock());
 	}
 
 	public void method_6885() {
 		this.setInvulTimer(220);
-		this.setHealth(this.getMaximumHealth() / 3.0F);
+		this.setHealth(this.getMaxHealth() / 3.0F);
 	}
 
 	@Override
-	public void slowMovement(BlockState blockState, Vec3d vec3d) {
+	public void slowMovement(BlockState state, Vec3d multiplier) {
 	}
 
 	@Override
-	public void onStartedTrackingBy(ServerPlayerEntity serverPlayerEntity) {
-		super.onStartedTrackingBy(serverPlayerEntity);
-		this.bossBar.addPlayer(serverPlayerEntity);
+	public void onStartedTrackingBy(ServerPlayerEntity player) {
+		super.onStartedTrackingBy(player);
+		this.bossBar.addPlayer(player);
 	}
 
 	@Override
-	public void onStoppedTrackingBy(ServerPlayerEntity serverPlayerEntity) {
-		super.onStoppedTrackingBy(serverPlayerEntity);
-		this.bossBar.removePlayer(serverPlayerEntity);
+	public void onStoppedTrackingBy(ServerPlayerEntity player) {
+		super.onStoppedTrackingBy(player);
+		this.bossBar.removePlayer(player);
 	}
 
-	private double getHeadX(int i) {
-		if (i <= 0) {
+	private double getHeadX(int headIndex) {
+		if (headIndex <= 0) {
 			return this.getX();
 		} else {
-			float f = (this.bodyYaw + (float)(180 * (i - 1))) * (float) (Math.PI / 180.0);
+			float f = (this.bodyYaw + (float)(180 * (headIndex - 1))) * (float) (Math.PI / 180.0);
 			float g = MathHelper.cos(f);
 			return this.getX() + (double)g * 1.3;
 		}
 	}
 
-	private double getHeadY(int i) {
-		return i <= 0 ? this.getY() + 3.0 : this.getY() + 2.2;
+	private double getHeadY(int headIndex) {
+		return headIndex <= 0 ? this.getY() + 3.0 : this.getY() + 2.2;
 	}
 
-	private double getHeadZ(int i) {
-		if (i <= 0) {
+	private double getHeadZ(int headIndex) {
+		if (headIndex <= 0) {
 			return this.getZ();
 		} else {
-			float f = (this.bodyYaw + (float)(180 * (i - 1))) * (float) (Math.PI / 180.0);
+			float f = (this.bodyYaw + (float)(180 * (headIndex - 1))) * (float) (Math.PI / 180.0);
 			float g = MathHelper.sin(f);
 			return this.getZ() + (double)g * 1.3;
 		}
 	}
 
-	private float getNextAngle(float f, float g, float h) {
-		float i = MathHelper.wrapDegrees(g - f);
-		if (i > h) {
-			i = h;
+	private float getNextAngle(float prevAngle, float desiredAngle, float maxDifference) {
+		float f = MathHelper.wrapDegrees(desiredAngle - prevAngle);
+		if (f > maxDifference) {
+			f = maxDifference;
 		}
 
-		if (i < -h) {
-			i = -h;
+		if (f < -maxDifference) {
+			f = -maxDifference;
 		}
 
-		return f + i;
+		return prevAngle + f;
 	}
 
 	private void method_6878(int i, LivingEntity livingEntity) {
@@ -415,45 +411,49 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 		);
 	}
 
-	private void method_6877(int i, double d, double e, double f, boolean bl) {
-		this.world.playLevelEvent(null, 1024, new BlockPos(this), 0);
-		double g = this.getHeadX(i);
-		double h = this.getHeadY(i);
-		double j = this.getHeadZ(i);
-		double k = d - g;
-		double l = e - h;
-		double m = f - j;
-		WitherSkullEntity witherSkullEntity = new WitherSkullEntity(this.world, this, k, l, m);
+	private void method_6877(int headIndex, double d, double e, double f, boolean bl) {
+		if (!this.isSilent()) {
+			this.world.syncWorldEvent(null, 1024, this.getBlockPos(), 0);
+		}
+
+		double g = this.getHeadX(headIndex);
+		double h = this.getHeadY(headIndex);
+		double i = this.getHeadZ(headIndex);
+		double j = d - g;
+		double k = e - h;
+		double l = f - i;
+		WitherSkullEntity witherSkullEntity = new WitherSkullEntity(this.world, this, j, k, l);
+		witherSkullEntity.setOwner(this);
 		if (bl) {
 			witherSkullEntity.setCharged(true);
 		}
 
-		witherSkullEntity.setPos(g, h, j);
+		witherSkullEntity.setPos(g, h, i);
 		this.world.spawnEntity(witherSkullEntity);
 	}
 
 	@Override
-	public void attack(LivingEntity livingEntity, float f) {
-		this.method_6878(0, livingEntity);
+	public void attack(LivingEntity target, float pullProgress) {
+		this.method_6878(0, target);
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
-		} else if (damageSource == DamageSource.DROWN || damageSource.getAttacker() instanceof WitherEntity) {
+		} else if (source == DamageSource.DROWN || source.getAttacker() instanceof WitherEntity) {
 			return false;
-		} else if (this.getInvulnerableTimer() > 0 && damageSource != DamageSource.OUT_OF_WORLD) {
+		} else if (this.getInvulnerableTimer() > 0 && source != DamageSource.OUT_OF_WORLD) {
 			return false;
 		} else {
 			if (this.shouldRenderOverlay()) {
-				Entity entity = damageSource.getSource();
-				if (entity instanceof ProjectileEntity) {
+				Entity entity = source.getSource();
+				if (entity instanceof PersistentProjectileEntity) {
 					return false;
 				}
 			}
 
-			Entity entity2 = damageSource.getAttacker();
+			Entity entity2 = source.getAttacker();
 			if (entity2 != null && !(entity2 instanceof PlayerEntity) && entity2 instanceof LivingEntity && ((LivingEntity)entity2).getGroup() == this.getGroup()) {
 				return false;
 			} else {
@@ -465,15 +465,15 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 					this.field_7092[i] = this.field_7092[i] + 3;
 				}
 
-				return super.damage(damageSource, f);
+				return super.damage(source, amount);
 			}
 		}
 	}
 
 	@Override
-	protected void dropEquipment(DamageSource damageSource, int i, boolean bl) {
-		super.dropEquipment(damageSource, i, bl);
-		ItemEntity itemEntity = this.dropItem(Items.field_8137);
+	protected void dropEquipment(DamageSource source, int lootingMultiplier, boolean allowDrops) {
+		super.dropEquipment(source, lootingMultiplier, allowDrops);
+		ItemEntity itemEntity = this.dropItem(Items.NETHER_STAR);
 		if (itemEntity != null) {
 			itemEntity.setCovetedItem();
 		}
@@ -481,7 +481,7 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 
 	@Override
 	public void checkDespawn() {
-		if (this.world.getDifficulty() == Difficulty.field_5801 && this.method_23734()) {
+		if (this.world.getDifficulty() == Difficulty.PEACEFUL && this.isDisallowedInPeaceful()) {
 			this.remove();
 		} else {
 			this.despawnCounter = 0;
@@ -489,51 +489,50 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 	}
 
 	@Override
-	public boolean handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
 		return false;
 	}
 
 	@Override
-	public boolean addStatusEffect(StatusEffectInstance statusEffectInstance) {
+	public boolean addStatusEffect(StatusEffectInstance effect) {
 		return false;
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(300.0);
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.6F);
-		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(40.0);
-		this.getAttributeInstance(EntityAttributes.ARMOR).setBaseValue(4.0);
+	public static DefaultAttributeContainer.Builder createWitherAttributes() {
+		return HostileEntity.createHostileAttributes()
+			.add(EntityAttributes.GENERIC_MAX_HEALTH, 300.0)
+			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.6F)
+			.add(EntityAttributes.GENERIC_FOLLOW_RANGE, 40.0)
+			.add(EntityAttributes.GENERIC_ARMOR, 4.0);
 	}
 
-	public float getHeadYaw(int i) {
-		return this.sideHeadYaws[i];
+	public float getHeadYaw(int headIndex) {
+		return this.sideHeadYaws[headIndex];
 	}
 
-	public float getHeadPitch(int i) {
-		return this.sideHeadPitches[i];
+	public float getHeadPitch(int headIndex) {
+		return this.sideHeadPitches[headIndex];
 	}
 
 	public int getInvulnerableTimer() {
 		return this.dataTracker.get(INVUL_TIMER);
 	}
 
-	public void setInvulTimer(int i) {
-		this.dataTracker.set(INVUL_TIMER, i);
+	public void setInvulTimer(int ticks) {
+		this.dataTracker.set(INVUL_TIMER, ticks);
 	}
 
-	public int getTrackedEntityId(int i) {
-		return this.dataTracker.<Integer>get((TrackedData<Integer>)TRACKED_ENTITY_IDS.get(i));
+	public int getTrackedEntityId(int headIndex) {
+		return this.dataTracker.<Integer>get((TrackedData<Integer>)TRACKED_ENTITY_IDS.get(headIndex));
 	}
 
-	public void setTrackedEntityId(int i, int j) {
-		this.dataTracker.set((TrackedData<Integer>)TRACKED_ENTITY_IDS.get(i), j);
+	public void setTrackedEntityId(int headIndex, int id) {
+		this.dataTracker.set((TrackedData<Integer>)TRACKED_ENTITY_IDS.get(headIndex), id);
 	}
 
 	@Override
 	public boolean shouldRenderOverlay() {
-		return this.getHealth() <= this.getMaximumHealth() / 2.0F;
+		return this.getHealth() <= this.getMaxHealth() / 2.0F;
 	}
 
 	@Override
@@ -552,13 +551,13 @@ public class WitherEntity extends HostileEntity implements SkinOverlayOwner, Ran
 	}
 
 	@Override
-	public boolean canHaveStatusEffect(StatusEffectInstance statusEffectInstance) {
-		return statusEffectInstance.getEffectType() == StatusEffects.field_5920 ? false : super.canHaveStatusEffect(statusEffectInstance);
+	public boolean canHaveStatusEffect(StatusEffectInstance effect) {
+		return effect.getEffectType() == StatusEffects.WITHER ? false : super.canHaveStatusEffect(effect);
 	}
 
 	class DescendAtHalfHealthGoal extends Goal {
 		public DescendAtHalfHealthGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18407, Goal.Control.field_18406));
+			this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.JUMP, Goal.Control.LOOK));
 		}
 
 		@Override

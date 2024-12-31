@@ -1,13 +1,14 @@
 package net.minecraft.datafixer.fix;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.mojang.datafixers.DataFix;
 import com.mojang.datafixers.DataFixUtils;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
+import com.mojang.serialization.Dynamic;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -19,32 +20,33 @@ import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.datafixer.TypeReferences;
-import net.minecraft.util.Int2ObjectBiMap;
-import net.minecraft.util.PackedIntegerArray;
+import net.minecraft.util.collection.Int2ObjectBiMap;
+import net.minecraft.util.math.WordPackedArray;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ChunkPalettedStorageFix extends DataFix {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final BitSet blocksNeedingSideUpdate = new BitSet(256);
-	private static final BitSet blocksNeedingInPlaceUpdate = new BitSet(256);
-	private static final Dynamic<?> pumpkin = BlockStateFlattening.parseState("{Name:'minecraft:pumpkin'}");
-	private static final Dynamic<?> podzol = BlockStateFlattening.parseState("{Name:'minecraft:podzol',Properties:{snowy:'true'}}");
-	private static final Dynamic<?> snowyGrass = BlockStateFlattening.parseState("{Name:'minecraft:grass_block',Properties:{snowy:'true'}}");
-	private static final Dynamic<?> snowyMycelium = BlockStateFlattening.parseState("{Name:'minecraft:mycelium',Properties:{snowy:'true'}}");
-	private static final Dynamic<?> sunflowerUpper = BlockStateFlattening.parseState("{Name:'minecraft:sunflower',Properties:{half:'upper'}}");
-	private static final Dynamic<?> lilacUpper = BlockStateFlattening.parseState("{Name:'minecraft:lilac',Properties:{half:'upper'}}");
-	private static final Dynamic<?> grassUpper = BlockStateFlattening.parseState("{Name:'minecraft:tall_grass',Properties:{half:'upper'}}");
-	private static final Dynamic<?> fernUpper = BlockStateFlattening.parseState("{Name:'minecraft:large_fern',Properties:{half:'upper'}}");
-	private static final Dynamic<?> roseUpper = BlockStateFlattening.parseState("{Name:'minecraft:rose_bush',Properties:{half:'upper'}}");
-	private static final Dynamic<?> peonyUpper = BlockStateFlattening.parseState("{Name:'minecraft:peony',Properties:{half:'upper'}}");
-	private static final Map<String, Dynamic<?>> flowerPot = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+	private static final BitSet BLOCKS_NEEDING_SIDE_UPDATE = new BitSet(256);
+	private static final BitSet BLOCKS_NEEDING_IN_PLACE_UPDATE = new BitSet(256);
+	private static final Dynamic<?> PUMPKIN = BlockStateFlattening.parseState("{Name:'minecraft:pumpkin'}");
+	private static final Dynamic<?> PODZOL = BlockStateFlattening.parseState("{Name:'minecraft:podzol',Properties:{snowy:'true'}}");
+	private static final Dynamic<?> SNOWY_GRASS = BlockStateFlattening.parseState("{Name:'minecraft:grass_block',Properties:{snowy:'true'}}");
+	private static final Dynamic<?> SNOWY_MYCELIUM = BlockStateFlattening.parseState("{Name:'minecraft:mycelium',Properties:{snowy:'true'}}");
+	private static final Dynamic<?> SUNFLOWER_UPPER = BlockStateFlattening.parseState("{Name:'minecraft:sunflower',Properties:{half:'upper'}}");
+	private static final Dynamic<?> LILAC_UPPER = BlockStateFlattening.parseState("{Name:'minecraft:lilac',Properties:{half:'upper'}}");
+	private static final Dynamic<?> GRASS_UPPER = BlockStateFlattening.parseState("{Name:'minecraft:tall_grass',Properties:{half:'upper'}}");
+	private static final Dynamic<?> FERN_UPPER = BlockStateFlattening.parseState("{Name:'minecraft:large_fern',Properties:{half:'upper'}}");
+	private static final Dynamic<?> ROSE_UPPER = BlockStateFlattening.parseState("{Name:'minecraft:rose_bush',Properties:{half:'upper'}}");
+	private static final Dynamic<?> PEONY_UPPER = BlockStateFlattening.parseState("{Name:'minecraft:peony',Properties:{half:'upper'}}");
+	private static final Map<String, Dynamic<?>> FLOWER_POT = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
 		hashMap.put("minecraft:air0", BlockStateFlattening.parseState("{Name:'minecraft:flower_pot'}"));
 		hashMap.put("minecraft:red_flower0", BlockStateFlattening.parseState("{Name:'minecraft:potted_poppy'}"));
 		hashMap.put("minecraft:red_flower1", BlockStateFlattening.parseState("{Name:'minecraft:potted_blue_orchid'}"));
@@ -68,7 +70,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 		hashMap.put("minecraft:tallgrass2", BlockStateFlattening.parseState("{Name:'minecraft:potted_fern'}"));
 		hashMap.put("minecraft:cactus0", BlockStateFlattening.lookupState(2240));
 	});
-	private static final Map<String, Dynamic<?>> skull = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+	private static final Map<String, Dynamic<?>> SKULL = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
 		buildSkull(hashMap, 0, "skeleton", "skull");
 		buildSkull(hashMap, 1, "wither_skeleton", "skull");
 		buildSkull(hashMap, 2, "zombie", "head");
@@ -76,7 +78,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 		buildSkull(hashMap, 4, "creeper", "head");
 		buildSkull(hashMap, 5, "dragon", "head");
 	});
-	private static final Map<String, Dynamic<?>> door = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+	private static final Map<String, Dynamic<?>> DOOR = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
 		buildDoor(hashMap, "oak_door", 1024);
 		buildDoor(hashMap, "iron_door", 1136);
 		buildDoor(hashMap, "spruce_door", 3088);
@@ -85,13 +87,13 @@ public class ChunkPalettedStorageFix extends DataFix {
 		buildDoor(hashMap, "acacia_door", 3136);
 		buildDoor(hashMap, "dark_oak_door", 3152);
 	});
-	private static final Map<String, Dynamic<?>> noteblock = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+	private static final Map<String, Dynamic<?>> NOTE_BLOCK = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
 		for (int i = 0; i < 26; i++) {
 			hashMap.put("true" + i, BlockStateFlattening.parseState("{Name:'minecraft:note_block',Properties:{powered:'true',note:'" + i + "'}}"));
 			hashMap.put("false" + i, BlockStateFlattening.parseState("{Name:'minecraft:note_block',Properties:{powered:'false',note:'" + i + "'}}"));
 		}
 	});
-	private static final Int2ObjectMap<String> colors = (Int2ObjectMap<String>)DataFixUtils.make(new Int2ObjectOpenHashMap(), int2ObjectOpenHashMap -> {
+	private static final Int2ObjectMap<String> COLORS = (Int2ObjectMap<String>)DataFixUtils.make(new Int2ObjectOpenHashMap(), int2ObjectOpenHashMap -> {
 		int2ObjectOpenHashMap.put(0, "white");
 		int2ObjectOpenHashMap.put(1, "orange");
 		int2ObjectOpenHashMap.put(2, "magenta");
@@ -109,8 +111,8 @@ public class ChunkPalettedStorageFix extends DataFix {
 		int2ObjectOpenHashMap.put(14, "red");
 		int2ObjectOpenHashMap.put(15, "black");
 	});
-	private static final Map<String, Dynamic<?>> bed = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
-		ObjectIterator var1 = colors.int2ObjectEntrySet().iterator();
+	private static final Map<String, Dynamic<?>> BED = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+		ObjectIterator var1 = COLORS.int2ObjectEntrySet().iterator();
 
 		while (var1.hasNext()) {
 			Entry<String> entry = (Entry<String>)var1.next();
@@ -119,8 +121,8 @@ public class ChunkPalettedStorageFix extends DataFix {
 			}
 		}
 	});
-	private static final Map<String, Dynamic<?>> banner = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
-		ObjectIterator var1 = colors.int2ObjectEntrySet().iterator();
+	private static final Map<String, Dynamic<?>> BANNER = (Map<String, Dynamic<?>>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
+		ObjectIterator var1 = COLORS.int2ObjectEntrySet().iterator();
 
 		while (var1.hasNext()) {
 			Entry<String> entry = (Entry<String>)var1.next();
@@ -129,278 +131,278 @@ public class ChunkPalettedStorageFix extends DataFix {
 			}
 		}
 	});
-	private static final Dynamic<?> air = BlockStateFlattening.lookupState(0);
+	private static final Dynamic<?> AIR = BlockStateFlattening.lookupState(0);
 
-	public ChunkPalettedStorageFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ChunkPalettedStorageFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
-	private static void buildSkull(Map<String, Dynamic<?>> map, int i, String string, String string2) {
-		map.put(i + "north", BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_" + string2 + "',Properties:{facing:'north'}}"));
-		map.put(i + "east", BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_" + string2 + "',Properties:{facing:'east'}}"));
-		map.put(i + "south", BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_" + string2 + "',Properties:{facing:'south'}}"));
-		map.put(i + "west", BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_" + string2 + "',Properties:{facing:'west'}}"));
+	private static void buildSkull(Map<String, Dynamic<?>> out, int i, String mob, String block) {
+		out.put(i + "north", BlockStateFlattening.parseState("{Name:'minecraft:" + mob + "_wall_" + block + "',Properties:{facing:'north'}}"));
+		out.put(i + "east", BlockStateFlattening.parseState("{Name:'minecraft:" + mob + "_wall_" + block + "',Properties:{facing:'east'}}"));
+		out.put(i + "south", BlockStateFlattening.parseState("{Name:'minecraft:" + mob + "_wall_" + block + "',Properties:{facing:'south'}}"));
+		out.put(i + "west", BlockStateFlattening.parseState("{Name:'minecraft:" + mob + "_wall_" + block + "',Properties:{facing:'west'}}"));
 
 		for (int j = 0; j < 16; j++) {
-			map.put(i + "" + j, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_" + string2 + "',Properties:{rotation:'" + j + "'}}"));
+			out.put(i + "" + j, BlockStateFlattening.parseState("{Name:'minecraft:" + mob + "_" + block + "',Properties:{rotation:'" + j + "'}}"));
 		}
 	}
 
-	private static void buildDoor(Map<String, Dynamic<?>> map, String string, int i) {
-		map.put(
-			"minecraft:" + string + "eastlowerleftfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'false',powered:'false'}}")
+	private static void buildDoor(Map<String, Dynamic<?>> out, String name, int i) {
+		out.put(
+			"minecraft:" + name + "eastlowerleftfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "eastlowerleftfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "eastlowerleftfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "eastlowerlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "eastlowerlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "eastlowerlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "eastlowerlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'lower',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "eastlowerrightfalsefalse", BlockStateFlattening.lookupState(i));
-		map.put(
-			"minecraft:" + string + "eastlowerrightfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'lower',hinge:'right',open:'false',powered:'true'}}")
+		out.put("minecraft:" + name + "eastlowerrightfalsefalse", BlockStateFlattening.lookupState(i));
+		out.put(
+			"minecraft:" + name + "eastlowerrightfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'lower',hinge:'right',open:'false',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "eastlowerrighttruefalse", BlockStateFlattening.lookupState(i + 4));
-		map.put(
-			"minecraft:" + string + "eastlowerrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'lower',hinge:'right',open:'true',powered:'true'}}")
+		out.put("minecraft:" + name + "eastlowerrighttruefalse", BlockStateFlattening.lookupState(i + 4));
+		out.put(
+			"minecraft:" + name + "eastlowerrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'lower',hinge:'right',open:'true',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "eastupperleftfalsefalse", BlockStateFlattening.lookupState(i + 8));
-		map.put("minecraft:" + string + "eastupperleftfalsetrue", BlockStateFlattening.lookupState(i + 10));
-		map.put(
-			"minecraft:" + string + "eastupperlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'upper',hinge:'left',open:'true',powered:'false'}}")
+		out.put("minecraft:" + name + "eastupperleftfalsefalse", BlockStateFlattening.lookupState(i + 8));
+		out.put("minecraft:" + name + "eastupperleftfalsetrue", BlockStateFlattening.lookupState(i + 10));
+		out.put(
+			"minecraft:" + name + "eastupperlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'upper',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "eastupperlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'upper',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "eastupperlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'upper',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "eastupperrightfalsefalse", BlockStateFlattening.lookupState(i + 9));
-		map.put("minecraft:" + string + "eastupperrightfalsetrue", BlockStateFlattening.lookupState(i + 11));
-		map.put(
-			"minecraft:" + string + "eastupperrighttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'upper',hinge:'right',open:'true',powered:'false'}}")
+		out.put("minecraft:" + name + "eastupperrightfalsefalse", BlockStateFlattening.lookupState(i + 9));
+		out.put("minecraft:" + name + "eastupperrightfalsetrue", BlockStateFlattening.lookupState(i + 11));
+		out.put(
+			"minecraft:" + name + "eastupperrighttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'upper',hinge:'right',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "eastupperrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'east',half:'upper',hinge:'right',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "eastupperrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'east',half:'upper',hinge:'right',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northlowerleftfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "northlowerleftfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northlowerleftfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "northlowerleftfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northlowerlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "northlowerlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northlowerlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "northlowerlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'lower',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "northlowerrightfalsefalse", BlockStateFlattening.lookupState(i + 3));
-		map.put(
-			"minecraft:" + string + "northlowerrightfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'lower',hinge:'right',open:'false',powered:'true'}}")
+		out.put("minecraft:" + name + "northlowerrightfalsefalse", BlockStateFlattening.lookupState(i + 3));
+		out.put(
+			"minecraft:" + name + "northlowerrightfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'lower',hinge:'right',open:'false',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "northlowerrighttruefalse", BlockStateFlattening.lookupState(i + 7));
-		map.put(
-			"minecraft:" + string + "northlowerrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'lower',hinge:'right',open:'true',powered:'true'}}")
+		out.put("minecraft:" + name + "northlowerrighttruefalse", BlockStateFlattening.lookupState(i + 7));
+		out.put(
+			"minecraft:" + name + "northlowerrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'lower',hinge:'right',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperleftfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "northupperleftfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperleftfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "northupperleftfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "northupperlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "northupperlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperrightfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "northupperrightfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperrightfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "northupperrightfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperrighttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "northupperrighttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "northupperrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "northupperrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'north',half:'upper',hinge:'right',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southlowerleftfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "southlowerleftfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southlowerleftfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "southlowerleftfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southlowerlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "southlowerlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southlowerlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "southlowerlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'lower',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "southlowerrightfalsefalse", BlockStateFlattening.lookupState(i + 1));
-		map.put(
-			"minecraft:" + string + "southlowerrightfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'lower',hinge:'right',open:'false',powered:'true'}}")
+		out.put("minecraft:" + name + "southlowerrightfalsefalse", BlockStateFlattening.lookupState(i + 1));
+		out.put(
+			"minecraft:" + name + "southlowerrightfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'lower',hinge:'right',open:'false',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "southlowerrighttruefalse", BlockStateFlattening.lookupState(i + 5));
-		map.put(
-			"minecraft:" + string + "southlowerrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'lower',hinge:'right',open:'true',powered:'true'}}")
+		out.put("minecraft:" + name + "southlowerrighttruefalse", BlockStateFlattening.lookupState(i + 5));
+		out.put(
+			"minecraft:" + name + "southlowerrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'lower',hinge:'right',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperleftfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "southupperleftfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperleftfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "southupperleftfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "southupperlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "southupperlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperrightfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "southupperrightfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperrightfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "southupperrightfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperrighttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "southupperrighttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "southupperrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "southupperrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'south',half:'upper',hinge:'right',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westlowerleftfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "westlowerleftfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westlowerleftfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "westlowerleftfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westlowerlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "westlowerlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westlowerlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "westlowerlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'lower',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "westlowerrightfalsefalse", BlockStateFlattening.lookupState(i + 2));
-		map.put(
-			"minecraft:" + string + "westlowerrightfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'lower',hinge:'right',open:'false',powered:'true'}}")
+		out.put("minecraft:" + name + "westlowerrightfalsefalse", BlockStateFlattening.lookupState(i + 2));
+		out.put(
+			"minecraft:" + name + "westlowerrightfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'lower',hinge:'right',open:'false',powered:'true'}}")
 		);
-		map.put("minecraft:" + string + "westlowerrighttruefalse", BlockStateFlattening.lookupState(i + 6));
-		map.put(
-			"minecraft:" + string + "westlowerrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'lower',hinge:'right',open:'true',powered:'true'}}")
+		out.put("minecraft:" + name + "westlowerrighttruefalse", BlockStateFlattening.lookupState(i + 6));
+		out.put(
+			"minecraft:" + name + "westlowerrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'lower',hinge:'right',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperleftfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "westupperleftfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperleftfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "westupperleftfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperlefttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "westupperlefttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperlefttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "westupperlefttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'left',open:'true',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperrightfalsefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'false',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "westupperrightfalsefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'false',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperrightfalsetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'false',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "westupperrightfalsetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'false',powered:'true'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperrighttruefalse",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'true',powered:'false'}}")
+		out.put(
+			"minecraft:" + name + "westupperrighttruefalse",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'true',powered:'false'}}")
 		);
-		map.put(
-			"minecraft:" + string + "westupperrighttruetrue",
-			BlockStateFlattening.parseState("{Name:'minecraft:" + string + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'true',powered:'true'}}")
+		out.put(
+			"minecraft:" + name + "westupperrighttruetrue",
+			BlockStateFlattening.parseState("{Name:'minecraft:" + name + "',Properties:{facing:'west',half:'upper',hinge:'right',open:'true',powered:'true'}}")
 		);
 	}
 
-	private static void buildBed(Map<String, Dynamic<?>> map, int i, String string) {
-		map.put(
+	private static void buildBed(Map<String, Dynamic<?>> out, int i, String string) {
+		out.put(
 			"southfalsefoot" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'south',occupied:'false',part:'foot'}}")
 		);
-		map.put("westfalsefoot" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'west',occupied:'false',part:'foot'}}"));
-		map.put(
+		out.put("westfalsefoot" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'west',occupied:'false',part:'foot'}}"));
+		out.put(
 			"northfalsefoot" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'north',occupied:'false',part:'foot'}}")
 		);
-		map.put("eastfalsefoot" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'east',occupied:'false',part:'foot'}}"));
-		map.put(
+		out.put("eastfalsefoot" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'east',occupied:'false',part:'foot'}}"));
+		out.put(
 			"southfalsehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'south',occupied:'false',part:'head'}}")
 		);
-		map.put("westfalsehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'west',occupied:'false',part:'head'}}"));
-		map.put(
+		out.put("westfalsehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'west',occupied:'false',part:'head'}}"));
+		out.put(
 			"northfalsehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'north',occupied:'false',part:'head'}}")
 		);
-		map.put("eastfalsehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'east',occupied:'false',part:'head'}}"));
-		map.put("southtruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'south',occupied:'true',part:'head'}}"));
-		map.put("westtruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'west',occupied:'true',part:'head'}}"));
-		map.put("northtruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'north',occupied:'true',part:'head'}}"));
-		map.put("easttruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'east',occupied:'true',part:'head'}}"));
+		out.put("eastfalsehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'east',occupied:'false',part:'head'}}"));
+		out.put("southtruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'south',occupied:'true',part:'head'}}"));
+		out.put("westtruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'west',occupied:'true',part:'head'}}"));
+		out.put("northtruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'north',occupied:'true',part:'head'}}"));
+		out.put("easttruehead" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_bed',Properties:{facing:'east',occupied:'true',part:'head'}}"));
 	}
 
-	private static void buildBanner(Map<String, Dynamic<?>> map, int i, String string) {
+	private static void buildBanner(Map<String, Dynamic<?>> out, int i, String string) {
 		for (int j = 0; j < 16; j++) {
-			map.put("" + j + "_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_banner',Properties:{rotation:'" + j + "'}}"));
+			out.put("" + j + "_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_banner',Properties:{rotation:'" + j + "'}}"));
 		}
 
-		map.put("north_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'north'}}"));
-		map.put("south_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'south'}}"));
-		map.put("west_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'west'}}"));
-		map.put("east_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'east'}}"));
+		out.put("north_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'north'}}"));
+		out.put("south_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'south'}}"));
+		out.put("west_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'west'}}"));
+		out.put("east_" + i, BlockStateFlattening.parseState("{Name:'minecraft:" + string + "_wall_banner',Properties:{facing:'east'}}"));
 	}
 
 	public static String getName(Dynamic<?> dynamic) {
@@ -412,7 +414,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 	}
 
 	public static int addTo(Int2ObjectBiMap<Dynamic<?>> int2ObjectBiMap, Dynamic<?> dynamic) {
-		int i = int2ObjectBiMap.getId(dynamic);
+		int i = int2ObjectBiMap.getRawId(dynamic);
 		if (i == -1) {
 			i = int2ObjectBiMap.add(dynamic);
 		}
@@ -421,8 +423,8 @@ public class ChunkPalettedStorageFix extends DataFix {
 	}
 
 	private Dynamic<?> fixChunk(Dynamic<?> dynamic) {
-		Optional<? extends Dynamic<?>> optional = dynamic.get("Level").get();
-		return optional.isPresent() && ((Dynamic)optional.get()).get("Sections").asStreamOpt().isPresent()
+		Optional<? extends Dynamic<?>> optional = dynamic.get("Level").result();
+		return optional.isPresent() && ((Dynamic)optional.get()).get("Sections").asStreamOpt().result().isPresent()
 			? dynamic.set("Level", new ChunkPalettedStorageFix.Level((Dynamic<?>)optional.get()).transform())
 			: dynamic;
 	}
@@ -433,27 +435,27 @@ public class ChunkPalettedStorageFix extends DataFix {
 		return this.writeFixAndRead("ChunkPalettedStorageFix", type, type2, this::fixChunk);
 	}
 
-	public static int getSideToUpgradeFlag(boolean bl, boolean bl2, boolean bl3, boolean bl4) {
+	public static int getSideToUpgradeFlag(boolean west, boolean east, boolean north, boolean south) {
 		int i = 0;
-		if (bl3) {
-			if (bl2) {
+		if (north) {
+			if (east) {
 				i |= 2;
-			} else if (bl) {
+			} else if (west) {
 				i |= 128;
 			} else {
 				i |= 1;
 			}
-		} else if (bl4) {
-			if (bl) {
+		} else if (south) {
+			if (west) {
 				i |= 32;
-			} else if (bl2) {
+			} else if (east) {
 				i |= 8;
 			} else {
 				i |= 16;
 			}
-		} else if (bl2) {
+		} else if (east) {
 			i |= 4;
-		} else if (bl) {
+		} else if (west) {
 			i |= 64;
 		}
 
@@ -461,66 +463,66 @@ public class ChunkPalettedStorageFix extends DataFix {
 	}
 
 	static {
-		blocksNeedingInPlaceUpdate.set(2);
-		blocksNeedingInPlaceUpdate.set(3);
-		blocksNeedingInPlaceUpdate.set(110);
-		blocksNeedingInPlaceUpdate.set(140);
-		blocksNeedingInPlaceUpdate.set(144);
-		blocksNeedingInPlaceUpdate.set(25);
-		blocksNeedingInPlaceUpdate.set(86);
-		blocksNeedingInPlaceUpdate.set(26);
-		blocksNeedingInPlaceUpdate.set(176);
-		blocksNeedingInPlaceUpdate.set(177);
-		blocksNeedingInPlaceUpdate.set(175);
-		blocksNeedingInPlaceUpdate.set(64);
-		blocksNeedingInPlaceUpdate.set(71);
-		blocksNeedingInPlaceUpdate.set(193);
-		blocksNeedingInPlaceUpdate.set(194);
-		blocksNeedingInPlaceUpdate.set(195);
-		blocksNeedingInPlaceUpdate.set(196);
-		blocksNeedingInPlaceUpdate.set(197);
-		blocksNeedingSideUpdate.set(54);
-		blocksNeedingSideUpdate.set(146);
-		blocksNeedingSideUpdate.set(25);
-		blocksNeedingSideUpdate.set(26);
-		blocksNeedingSideUpdate.set(51);
-		blocksNeedingSideUpdate.set(53);
-		blocksNeedingSideUpdate.set(67);
-		blocksNeedingSideUpdate.set(108);
-		blocksNeedingSideUpdate.set(109);
-		blocksNeedingSideUpdate.set(114);
-		blocksNeedingSideUpdate.set(128);
-		blocksNeedingSideUpdate.set(134);
-		blocksNeedingSideUpdate.set(135);
-		blocksNeedingSideUpdate.set(136);
-		blocksNeedingSideUpdate.set(156);
-		blocksNeedingSideUpdate.set(163);
-		blocksNeedingSideUpdate.set(164);
-		blocksNeedingSideUpdate.set(180);
-		blocksNeedingSideUpdate.set(203);
-		blocksNeedingSideUpdate.set(55);
-		blocksNeedingSideUpdate.set(85);
-		blocksNeedingSideUpdate.set(113);
-		blocksNeedingSideUpdate.set(188);
-		blocksNeedingSideUpdate.set(189);
-		blocksNeedingSideUpdate.set(190);
-		blocksNeedingSideUpdate.set(191);
-		blocksNeedingSideUpdate.set(192);
-		blocksNeedingSideUpdate.set(93);
-		blocksNeedingSideUpdate.set(94);
-		blocksNeedingSideUpdate.set(101);
-		blocksNeedingSideUpdate.set(102);
-		blocksNeedingSideUpdate.set(160);
-		blocksNeedingSideUpdate.set(106);
-		blocksNeedingSideUpdate.set(107);
-		blocksNeedingSideUpdate.set(183);
-		blocksNeedingSideUpdate.set(184);
-		blocksNeedingSideUpdate.set(185);
-		blocksNeedingSideUpdate.set(186);
-		blocksNeedingSideUpdate.set(187);
-		blocksNeedingSideUpdate.set(132);
-		blocksNeedingSideUpdate.set(139);
-		blocksNeedingSideUpdate.set(199);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(2);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(3);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(110);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(140);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(144);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(25);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(86);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(26);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(176);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(177);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(175);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(64);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(71);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(193);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(194);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(195);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(196);
+		BLOCKS_NEEDING_IN_PLACE_UPDATE.set(197);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(54);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(146);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(25);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(26);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(51);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(53);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(67);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(108);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(109);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(114);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(128);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(134);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(135);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(136);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(156);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(163);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(164);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(180);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(203);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(55);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(85);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(113);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(188);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(189);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(190);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(191);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(192);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(93);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(94);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(101);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(102);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(160);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(106);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(107);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(183);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(184);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(185);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(186);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(187);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(132);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(139);
+		BLOCKS_NEEDING_SIDE_UPDATE.set(199);
 	}
 
 	static class ChunkNibbleArray {
@@ -537,27 +539,27 @@ public class ChunkPalettedStorageFix extends DataFix {
 			}
 		}
 
-		public int get(int i, int j, int k) {
-			int l = this.getRawIndex(j << 8 | k << 4 | i);
-			return this.usesLowNibble(j << 8 | k << 4 | i) ? this.contents[l] & 15 : this.contents[l] >> 4 & 15;
+		public int get(int x, int y, int i) {
+			int j = this.getRawIndex(y << 8 | i << 4 | x);
+			return this.usesLowNibble(y << 8 | i << 4 | x) ? this.contents[j] & 15 : this.contents[j] >> 4 & 15;
 		}
 
-		private boolean usesLowNibble(int i) {
-			return (i & 1) == 0;
+		private boolean usesLowNibble(int index) {
+			return (index & 1) == 0;
 		}
 
-		private int getRawIndex(int i) {
-			return i >> 1;
+		private int getRawIndex(int index) {
+			return index >> 1;
 		}
 	}
 
 	public static enum Facing {
-		field_15858(ChunkPalettedStorageFix.Facing.Direction.field_15870, ChunkPalettedStorageFix.Facing.Axis.field_15866),
-		field_15863(ChunkPalettedStorageFix.Facing.Direction.field_15873, ChunkPalettedStorageFix.Facing.Axis.field_15866),
-		field_15859(ChunkPalettedStorageFix.Facing.Direction.field_15870, ChunkPalettedStorageFix.Facing.Axis.field_15867),
-		field_15862(ChunkPalettedStorageFix.Facing.Direction.field_15873, ChunkPalettedStorageFix.Facing.Axis.field_15867),
-		field_15857(ChunkPalettedStorageFix.Facing.Direction.field_15870, ChunkPalettedStorageFix.Facing.Axis.field_15869),
-		field_15860(ChunkPalettedStorageFix.Facing.Direction.field_15873, ChunkPalettedStorageFix.Facing.Axis.field_15869);
+		DOWN(ChunkPalettedStorageFix.Facing.Direction.NEGATIVE, ChunkPalettedStorageFix.Facing.Axis.Y),
+		UP(ChunkPalettedStorageFix.Facing.Direction.POSITIVE, ChunkPalettedStorageFix.Facing.Axis.Y),
+		NORTH(ChunkPalettedStorageFix.Facing.Direction.NEGATIVE, ChunkPalettedStorageFix.Facing.Axis.Z),
+		SOUTH(ChunkPalettedStorageFix.Facing.Direction.POSITIVE, ChunkPalettedStorageFix.Facing.Axis.Z),
+		WEST(ChunkPalettedStorageFix.Facing.Direction.NEGATIVE, ChunkPalettedStorageFix.Facing.Axis.X),
+		EAST(ChunkPalettedStorageFix.Facing.Direction.POSITIVE, ChunkPalettedStorageFix.Facing.Axis.X);
 
 		private final ChunkPalettedStorageFix.Facing.Axis axis;
 		private final ChunkPalettedStorageFix.Facing.Direction direction;
@@ -576,14 +578,14 @@ public class ChunkPalettedStorageFix extends DataFix {
 		}
 
 		public static enum Axis {
-			field_15869,
-			field_15866,
-			field_15867;
+			X,
+			Y,
+			Z;
 		}
 
 		public static enum Direction {
-			field_15873(1),
-			field_15870(-1);
+			POSITIVE(1),
+			NEGATIVE(-1);
 
 			private final int offset;
 
@@ -609,7 +611,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 			this.level = dynamic;
 			this.xPos = dynamic.get("xPos").asInt(0) << 4;
 			this.yPos = dynamic.get("zPos").asInt(0) << 4;
-			dynamic.get("TileEntities").asStreamOpt().ifPresent(stream -> stream.forEach(dynamicx -> {
+			dynamic.get("TileEntities").asStreamOpt().result().ifPresent(stream -> stream.forEach(dynamicx -> {
 					int ix = dynamicx.get("x").asInt(0) - this.xPos & 15;
 					int j = dynamicx.get("y").asInt(0);
 					int k = dynamicx.get("z").asInt(0) - this.yPos & 15;
@@ -619,7 +621,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 					}
 				}));
 			boolean bl = dynamic.get("convertedFromAlphaFormat").asBoolean(false);
-			dynamic.get("Sections").asStreamOpt().ifPresent(stream -> stream.forEach(dynamicx -> {
+			dynamic.get("Sections").asStreamOpt().result().ifPresent(stream -> stream.forEach(dynamicx -> {
 					ChunkPalettedStorageFix.Section sectionx = new ChunkPalettedStorageFix.Section(dynamicx);
 					this.sidesToUpgrade = sectionx.visit(this.sidesToUpgrade);
 					this.sections[sectionx.y] = sectionx;
@@ -641,9 +643,9 @@ public class ChunkPalettedStorageFix extends DataFix {
 									j |= i;
 									Dynamic<?> dynamic2 = this.getBlock(j);
 									if ("minecraft:grass_block".equals(ChunkPalettedStorageFix.getName(dynamic2))) {
-										String string = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(j, ChunkPalettedStorageFix.Facing.field_15863)));
+										String string = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(j, ChunkPalettedStorageFix.Facing.UP)));
 										if ("minecraft:snow".equals(string) || "minecraft:snow_layer".equals(string)) {
-											this.setBlock(j, ChunkPalettedStorageFix.snowyGrass);
+											this.setBlock(j, ChunkPalettedStorageFix.SNOWY_GRASS);
 										}
 									}
 								}
@@ -656,9 +658,9 @@ public class ChunkPalettedStorageFix extends DataFix {
 									k |= i;
 									Dynamic<?> dynamic3 = this.getBlock(k);
 									if ("minecraft:podzol".equals(ChunkPalettedStorageFix.getName(dynamic3))) {
-										String string2 = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(k, ChunkPalettedStorageFix.Facing.field_15863)));
+										String string2 = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(k, ChunkPalettedStorageFix.Facing.UP)));
 										if ("minecraft:snow".equals(string2) || "minecraft:snow_layer".equals(string2)) {
-											this.setBlock(k, ChunkPalettedStorageFix.podzol);
+											this.setBlock(k, ChunkPalettedStorageFix.PODZOL);
 										}
 									}
 								}
@@ -672,7 +674,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 									Dynamic<?> dynamic5 = this.removeBlockEntity(m);
 									if (dynamic5 != null) {
 										String string4 = Boolean.toString(dynamic5.get("powered").asBoolean(false)) + (byte)Math.min(Math.max(dynamic5.get("note").asInt(0), 0), 24);
-										this.setBlock(m, (Dynamic<?>)ChunkPalettedStorageFix.noteblock.getOrDefault(string4, ChunkPalettedStorageFix.noteblock.get("false0")));
+										this.setBlock(m, (Dynamic<?>)ChunkPalettedStorageFix.NOTE_BLOCK.getOrDefault(string4, ChunkPalettedStorageFix.NOTE_BLOCK.get("false0")));
 									}
 								}
 								break;
@@ -691,8 +693,8 @@ public class ChunkPalettedStorageFix extends DataFix {
 												+ ChunkPalettedStorageFix.getProperty(dynamic7, "occupied")
 												+ ChunkPalettedStorageFix.getProperty(dynamic7, "part")
 												+ o;
-											if (ChunkPalettedStorageFix.bed.containsKey(string5)) {
-												this.setBlock(n, (Dynamic<?>)ChunkPalettedStorageFix.bed.get(string5));
+											if (ChunkPalettedStorageFix.BED.containsKey(string5)) {
+												this.setBlock(n, (Dynamic<?>)ChunkPalettedStorageFix.BED.get(string5));
 											}
 										}
 									}
@@ -714,7 +716,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 									if (ChunkPalettedStorageFix.getName(dynamic13).endsWith("_door")) {
 										Dynamic<?> dynamic14 = this.getBlock(u);
 										if ("lower".equals(ChunkPalettedStorageFix.getProperty(dynamic14, "half"))) {
-											int v = adjacentTo(u, ChunkPalettedStorageFix.Facing.field_15863);
+											int v = adjacentTo(u, ChunkPalettedStorageFix.Facing.UP);
 											Dynamic<?> dynamic15 = this.getBlock(v);
 											String string13 = ChunkPalettedStorageFix.getName(dynamic14);
 											if (string13.equals(ChunkPalettedStorageFix.getName(dynamic15))) {
@@ -722,8 +724,8 @@ public class ChunkPalettedStorageFix extends DataFix {
 												String string15 = ChunkPalettedStorageFix.getProperty(dynamic14, "open");
 												String string16 = bl ? "left" : ChunkPalettedStorageFix.getProperty(dynamic15, "hinge");
 												String string17 = bl ? "false" : ChunkPalettedStorageFix.getProperty(dynamic15, "powered");
-												this.setBlock(u, (Dynamic<?>)ChunkPalettedStorageFix.door.get(string13 + string14 + "lower" + string16 + string15 + string17));
-												this.setBlock(v, (Dynamic<?>)ChunkPalettedStorageFix.door.get(string13 + string14 + "upper" + string16 + string15 + string17));
+												this.setBlock(u, (Dynamic<?>)ChunkPalettedStorageFix.DOOR.get(string13 + string14 + "lower" + string16 + string15 + string17));
+												this.setBlock(v, (Dynamic<?>)ChunkPalettedStorageFix.DOOR.get(string13 + string14 + "upper" + string16 + string15 + string17));
 											}
 										}
 									}
@@ -737,9 +739,9 @@ public class ChunkPalettedStorageFix extends DataFix {
 									r |= i;
 									Dynamic<?> dynamic10 = this.getBlock(r);
 									if ("minecraft:carved_pumpkin".equals(ChunkPalettedStorageFix.getName(dynamic10))) {
-										String string7 = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(r, ChunkPalettedStorageFix.Facing.field_15858)));
+										String string7 = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(r, ChunkPalettedStorageFix.Facing.DOWN)));
 										if ("minecraft:grass_block".equals(string7) || "minecraft:dirt".equals(string7)) {
-											this.setBlock(r, ChunkPalettedStorageFix.pumpkin);
+											this.setBlock(r, ChunkPalettedStorageFix.PUMPKIN);
 										}
 									}
 								}
@@ -752,9 +754,9 @@ public class ChunkPalettedStorageFix extends DataFix {
 									l |= i;
 									Dynamic<?> dynamic4 = this.getBlock(l);
 									if ("minecraft:mycelium".equals(ChunkPalettedStorageFix.getName(dynamic4))) {
-										String string3 = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(l, ChunkPalettedStorageFix.Facing.field_15863)));
+										String string3 = ChunkPalettedStorageFix.getName(this.getBlock(adjacentTo(l, ChunkPalettedStorageFix.Facing.UP)));
 										if ("minecraft:snow".equals(string3) || "minecraft:snow_layer".equals(string3)) {
-											this.setBlock(l, ChunkPalettedStorageFix.snowyMycelium);
+											this.setBlock(l, ChunkPalettedStorageFix.SNOWY_MYCELIUM);
 										}
 									}
 								}
@@ -768,7 +770,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 									Dynamic<?> dynamic11 = this.removeBlockEntity(s);
 									if (dynamic11 != null) {
 										String string8 = dynamic11.get("Item").asString("") + dynamic11.get("Data").asInt(0);
-										this.setBlock(s, (Dynamic<?>)ChunkPalettedStorageFix.flowerPot.getOrDefault(string8, ChunkPalettedStorageFix.flowerPot.get("minecraft:air0")));
+										this.setBlock(s, (Dynamic<?>)ChunkPalettedStorageFix.FLOWER_POT.getOrDefault(string8, ChunkPalettedStorageFix.FLOWER_POT.get("minecraft:air0")));
 									}
 								}
 								break;
@@ -792,7 +794,7 @@ public class ChunkPalettedStorageFix extends DataFix {
 										dynamic12.remove("SkullType");
 										dynamic12.remove("facing");
 										dynamic12.remove("Rot");
-										this.setBlock(t, (Dynamic<?>)ChunkPalettedStorageFix.skull.getOrDefault(string12, ChunkPalettedStorageFix.skull.get("0north")));
+										this.setBlock(t, (Dynamic<?>)ChunkPalettedStorageFix.SKULL.getOrDefault(string12, ChunkPalettedStorageFix.SKULL.get("0north")));
 									}
 								}
 								break;
@@ -804,20 +806,20 @@ public class ChunkPalettedStorageFix extends DataFix {
 									w |= i;
 									Dynamic<?> dynamic16 = this.getBlock(w);
 									if ("upper".equals(ChunkPalettedStorageFix.getProperty(dynamic16, "half"))) {
-										Dynamic<?> dynamic17 = this.getBlock(adjacentTo(w, ChunkPalettedStorageFix.Facing.field_15858));
+										Dynamic<?> dynamic17 = this.getBlock(adjacentTo(w, ChunkPalettedStorageFix.Facing.DOWN));
 										String string18 = ChunkPalettedStorageFix.getName(dynamic17);
 										if ("minecraft:sunflower".equals(string18)) {
-											this.setBlock(w, ChunkPalettedStorageFix.sunflowerUpper);
+											this.setBlock(w, ChunkPalettedStorageFix.SUNFLOWER_UPPER);
 										} else if ("minecraft:lilac".equals(string18)) {
-											this.setBlock(w, ChunkPalettedStorageFix.lilacUpper);
+											this.setBlock(w, ChunkPalettedStorageFix.LILAC_UPPER);
 										} else if ("minecraft:tall_grass".equals(string18)) {
-											this.setBlock(w, ChunkPalettedStorageFix.grassUpper);
+											this.setBlock(w, ChunkPalettedStorageFix.GRASS_UPPER);
 										} else if ("minecraft:large_fern".equals(string18)) {
-											this.setBlock(w, ChunkPalettedStorageFix.fernUpper);
+											this.setBlock(w, ChunkPalettedStorageFix.FERN_UPPER);
 										} else if ("minecraft:rose_bush".equals(string18)) {
-											this.setBlock(w, ChunkPalettedStorageFix.roseUpper);
+											this.setBlock(w, ChunkPalettedStorageFix.ROSE_UPPER);
 										} else if ("minecraft:peony".equals(string18)) {
-											this.setBlock(w, ChunkPalettedStorageFix.peonyUpper);
+											this.setBlock(w, ChunkPalettedStorageFix.PEONY_UPPER);
 										}
 									}
 								}
@@ -835,8 +837,8 @@ public class ChunkPalettedStorageFix extends DataFix {
 										int q = dynamic8.get("Base").asInt(0);
 										if (q != 15 && q >= 0 && q < 16) {
 											String string6 = ChunkPalettedStorageFix.getProperty(dynamic9, entry.getKey() == 176 ? "rotation" : "facing") + "_" + q;
-											if (ChunkPalettedStorageFix.banner.containsKey(string6)) {
-												this.setBlock(p, (Dynamic<?>)ChunkPalettedStorageFix.banner.get(string6));
+											if (ChunkPalettedStorageFix.BANNER.containsKey(string6)) {
+												this.setBlock(p, (Dynamic<?>)ChunkPalettedStorageFix.BANNER.get(string6));
 											}
 										}
 									}
@@ -857,16 +859,16 @@ public class ChunkPalettedStorageFix extends DataFix {
 			return (Dynamic<?>)this.blockEntities.remove(i);
 		}
 
-		public static int adjacentTo(int i, ChunkPalettedStorageFix.Facing facing) {
-			switch (facing.getAxis()) {
-				case field_15869:
-					int j = (i & 15) + facing.getDirection().getOffset();
+		public static int adjacentTo(int i, ChunkPalettedStorageFix.Facing direction) {
+			switch (direction.getAxis()) {
+				case X:
+					int j = (i & 15) + direction.getDirection().getOffset();
 					return j >= 0 && j <= 15 ? i & -16 | j : -1;
-				case field_15866:
-					int k = (i >> 8) + facing.getDirection().getOffset();
+				case Y:
+					int k = (i >> 8) + direction.getDirection().getOffset();
 					return k >= 0 && k <= 255 ? i & 0xFF | k << 8 : -1;
-				case field_15867:
-					int l = (i >> 4 & 15) + facing.getDirection().getOffset();
+				case Z:
+					int l = (i >> 4 & 15) + direction.getDirection().getOffset();
 					return l >= 0 && l <= 15 ? i & -241 | l << 4 : -1;
 				default:
 					return -1;
@@ -891,9 +893,9 @@ public class ChunkPalettedStorageFix extends DataFix {
 		public Dynamic<?> getBlock(int i) {
 			if (i >= 0 && i <= 65535) {
 				ChunkPalettedStorageFix.Section section = this.getSection(i);
-				return section == null ? ChunkPalettedStorageFix.air : section.getBlock(i & 4095);
+				return section == null ? ChunkPalettedStorageFix.AIR : section.getBlock(i & 4095);
 			} else {
-				return ChunkPalettedStorageFix.air;
+				return ChunkPalettedStorageFix.AIR;
 			}
 		}
 
@@ -906,25 +908,25 @@ public class ChunkPalettedStorageFix extends DataFix {
 			}
 
 			Dynamic<?> dynamic2 = dynamic.emptyMap();
-			Dynamic<?> dynamic3 = dynamic.emptyList();
+			List<Dynamic<?>> list = Lists.newArrayList();
 
 			for (ChunkPalettedStorageFix.Section section : this.sections) {
 				if (section != null) {
-					dynamic3 = dynamic3.merge(section.transform());
+					list.add(section.transform());
 					dynamic2 = dynamic2.set(String.valueOf(section.y), dynamic2.createIntList(Arrays.stream(section.innerPositions.toIntArray())));
 				}
 			}
 
-			Dynamic<?> dynamic4 = dynamic.emptyMap();
-			dynamic4 = dynamic4.set("Sides", dynamic4.createByte((byte)this.sidesToUpgrade));
-			dynamic4 = dynamic4.set("Indices", dynamic2);
-			return dynamic.set("UpgradeData", dynamic4).set("Sections", dynamic3);
+			Dynamic<?> dynamic3 = dynamic.emptyMap();
+			dynamic3 = dynamic3.set("Sides", dynamic3.createByte((byte)this.sidesToUpgrade));
+			dynamic3 = dynamic3.set("Indices", dynamic2);
+			return dynamic.set("UpgradeData", dynamic3).set("Sections", dynamic3.createList(list.stream()));
 		}
 	}
 
 	static class Section {
 		private final Int2ObjectBiMap<Dynamic<?>> paletteMap = new Int2ObjectBiMap<>(32);
-		private Dynamic<?> paletteData;
+		private final List<Dynamic<?>> paletteData;
 		private final Dynamic<?> section;
 		private final boolean hasBlocks;
 		private final Int2ObjectMap<IntList> inPlaceUpdates = new Int2ObjectLinkedOpenHashMap();
@@ -934,81 +936,83 @@ public class ChunkPalettedStorageFix extends DataFix {
 		private final int[] states = new int[4096];
 
 		public Section(Dynamic<?> dynamic) {
-			this.paletteData = dynamic.emptyList();
+			this.paletteData = Lists.newArrayList();
 			this.section = dynamic;
 			this.y = dynamic.get("Y").asInt(0);
-			this.hasBlocks = dynamic.get("Blocks").get().isPresent();
+			this.hasBlocks = dynamic.get("Blocks").result().isPresent();
 		}
 
-		public Dynamic<?> getBlock(int i) {
-			if (i >= 0 && i <= 4095) {
-				Dynamic<?> dynamic = this.paletteMap.get(this.states[i]);
-				return dynamic == null ? ChunkPalettedStorageFix.air : dynamic;
+		public Dynamic<?> getBlock(int index) {
+			if (index >= 0 && index <= 4095) {
+				Dynamic<?> dynamic = this.paletteMap.get(this.states[index]);
+				return dynamic == null ? ChunkPalettedStorageFix.AIR : dynamic;
 			} else {
-				return ChunkPalettedStorageFix.air;
+				return ChunkPalettedStorageFix.AIR;
 			}
 		}
 
-		public void setBlock(int i, Dynamic<?> dynamic) {
+		public void setBlock(int pos, Dynamic<?> dynamic) {
 			if (this.seenStates.add(dynamic)) {
-				this.paletteData = this.paletteData.merge("%%FILTER_ME%%".equals(ChunkPalettedStorageFix.getName(dynamic)) ? ChunkPalettedStorageFix.air : dynamic);
+				this.paletteData.add("%%FILTER_ME%%".equals(ChunkPalettedStorageFix.getName(dynamic)) ? ChunkPalettedStorageFix.AIR : dynamic);
 			}
 
-			this.states[i] = ChunkPalettedStorageFix.addTo(this.paletteMap, dynamic);
+			this.states[pos] = ChunkPalettedStorageFix.addTo(this.paletteMap, dynamic);
 		}
 
-		public int visit(int i) {
+		public int visit(int sidesToUpgrade) {
 			if (!this.hasBlocks) {
-				return i;
+				return sidesToUpgrade;
 			} else {
-				ByteBuffer byteBuffer = (ByteBuffer)this.section.get("Blocks").asByteBufferOpt().get();
+				ByteBuffer byteBuffer = (ByteBuffer)this.section.get("Blocks").asByteBufferOpt().result().get();
 				ChunkPalettedStorageFix.ChunkNibbleArray chunkNibbleArray = (ChunkPalettedStorageFix.ChunkNibbleArray)this.section
 					.get("Data")
 					.asByteBufferOpt()
 					.map(byteBufferx -> new ChunkPalettedStorageFix.ChunkNibbleArray(DataFixUtils.toArray(byteBufferx)))
+					.result()
 					.orElseGet(ChunkPalettedStorageFix.ChunkNibbleArray::new);
 				ChunkPalettedStorageFix.ChunkNibbleArray chunkNibbleArray2 = (ChunkPalettedStorageFix.ChunkNibbleArray)this.section
 					.get("Add")
 					.asByteBufferOpt()
 					.map(byteBufferx -> new ChunkPalettedStorageFix.ChunkNibbleArray(DataFixUtils.toArray(byteBufferx)))
+					.result()
 					.orElseGet(ChunkPalettedStorageFix.ChunkNibbleArray::new);
-				this.seenStates.add(ChunkPalettedStorageFix.air);
-				ChunkPalettedStorageFix.addTo(this.paletteMap, ChunkPalettedStorageFix.air);
-				this.paletteData = this.paletteData.merge(ChunkPalettedStorageFix.air);
+				this.seenStates.add(ChunkPalettedStorageFix.AIR);
+				ChunkPalettedStorageFix.addTo(this.paletteMap, ChunkPalettedStorageFix.AIR);
+				this.paletteData.add(ChunkPalettedStorageFix.AIR);
 
-				for (int j = 0; j < 4096; j++) {
-					int k = j & 15;
-					int l = j >> 8 & 15;
-					int m = j >> 4 & 15;
-					int n = chunkNibbleArray2.get(k, l, m) << 12 | (byteBuffer.get(j) & 255) << 4 | chunkNibbleArray.get(k, l, m);
-					if (ChunkPalettedStorageFix.blocksNeedingInPlaceUpdate.get(n >> 4)) {
-						this.addInPlaceUpdate(n >> 4, j);
+				for (int i = 0; i < 4096; i++) {
+					int j = i & 15;
+					int k = i >> 8 & 15;
+					int l = i >> 4 & 15;
+					int m = chunkNibbleArray2.get(j, k, l) << 12 | (byteBuffer.get(i) & 255) << 4 | chunkNibbleArray.get(j, k, l);
+					if (ChunkPalettedStorageFix.BLOCKS_NEEDING_IN_PLACE_UPDATE.get(m >> 4)) {
+						this.addInPlaceUpdate(m >> 4, i);
 					}
 
-					if (ChunkPalettedStorageFix.blocksNeedingSideUpdate.get(n >> 4)) {
-						int o = ChunkPalettedStorageFix.getSideToUpgradeFlag(k == 0, k == 15, m == 0, m == 15);
-						if (o == 0) {
-							this.innerPositions.add(j);
+					if (ChunkPalettedStorageFix.BLOCKS_NEEDING_SIDE_UPDATE.get(m >> 4)) {
+						int n = ChunkPalettedStorageFix.getSideToUpgradeFlag(j == 0, j == 15, l == 0, l == 15);
+						if (n == 0) {
+							this.innerPositions.add(i);
 						} else {
-							i |= o;
+							sidesToUpgrade |= n;
 						}
 					}
 
-					this.setBlock(j, BlockStateFlattening.lookupState(n));
+					this.setBlock(i, BlockStateFlattening.lookupState(m));
 				}
 
-				return i;
+				return sidesToUpgrade;
 			}
 		}
 
-		private void addInPlaceUpdate(int i, int j) {
-			IntList intList = (IntList)this.inPlaceUpdates.get(i);
+		private void addInPlaceUpdate(int section, int index) {
+			IntList intList = (IntList)this.inPlaceUpdates.get(section);
 			if (intList == null) {
 				intList = new IntArrayList();
-				this.inPlaceUpdates.put(i, intList);
+				this.inPlaceUpdates.put(section, intList);
 			}
 
-			intList.add(j);
+			intList.add(index);
 		}
 
 		public Dynamic<?> transform() {
@@ -1016,15 +1020,15 @@ public class ChunkPalettedStorageFix extends DataFix {
 			if (!this.hasBlocks) {
 				return dynamic;
 			} else {
-				dynamic = dynamic.set("Palette", this.paletteData);
+				dynamic = dynamic.set("Palette", dynamic.createList(this.paletteData.stream()));
 				int i = Math.max(4, DataFixUtils.ceillog2(this.seenStates.size()));
-				PackedIntegerArray packedIntegerArray = new PackedIntegerArray(i, 4096);
+				WordPackedArray wordPackedArray = new WordPackedArray(i, 4096);
 
 				for (int j = 0; j < this.states.length; j++) {
-					packedIntegerArray.set(j, this.states[j]);
+					wordPackedArray.set(j, this.states[j]);
 				}
 
-				dynamic = dynamic.set("BlockStates", dynamic.createLongList(Arrays.stream(packedIntegerArray.getStorage())));
+				dynamic = dynamic.set("BlockStates", dynamic.createLongList(Arrays.stream(wordPackedArray.getAlignedArray())));
 				dynamic = dynamic.remove("Blocks");
 				dynamic = dynamic.remove("Data");
 				return dynamic.remove("Add");

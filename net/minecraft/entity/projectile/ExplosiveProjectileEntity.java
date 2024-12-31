@@ -1,29 +1,21 @@
 package net.minecraft.entity.projectile;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ProjectileUtil;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.Packet;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RayTraceContext;
 import net.minecraft.world.World;
 
-public abstract class ExplosiveProjectileEntity extends Entity {
-	public LivingEntity owner;
-	private int life;
-	private int ticks;
+public abstract class ExplosiveProjectileEntity extends ProjectileEntity {
 	public double posX;
 	public double posY;
 	public double posZ;
@@ -33,32 +25,25 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	public ExplosiveProjectileEntity(
-		EntityType<? extends ExplosiveProjectileEntity> entityType, double d, double e, double f, double g, double h, double i, World world
+		EntityType<? extends ExplosiveProjectileEntity> type, double x, double y, double z, double directionX, double directionY, double directionZ, World world
 	) {
-		this(entityType, world);
-		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
-		this.updatePosition(d, e, f);
-		double j = (double)MathHelper.sqrt(g * g + h * h + i * i);
-		this.posX = g / j * 0.1;
-		this.posY = h / j * 0.1;
-		this.posZ = i / j * 0.1;
+		this(type, world);
+		this.refreshPositionAndAngles(x, y, z, this.yaw, this.pitch);
+		this.refreshPosition();
+		double d = (double)MathHelper.sqrt(directionX * directionX + directionY * directionY + directionZ * directionZ);
+		if (d != 0.0) {
+			this.posX = directionX / d * 0.1;
+			this.posY = directionY / d * 0.1;
+			this.posZ = directionZ / d * 0.1;
+		}
 	}
 
 	public ExplosiveProjectileEntity(
-		EntityType<? extends ExplosiveProjectileEntity> entityType, LivingEntity livingEntity, double d, double e, double f, World world
+		EntityType<? extends ExplosiveProjectileEntity> type, LivingEntity owner, double directionX, double directionY, double directionZ, World world
 	) {
-		this(entityType, world);
-		this.owner = livingEntity;
-		this.refreshPositionAndAngles(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), livingEntity.yaw, livingEntity.pitch);
-		this.refreshPosition();
-		this.setVelocity(Vec3d.ZERO);
-		d += this.random.nextGaussian() * 0.4;
-		e += this.random.nextGaussian() * 0.4;
-		f += this.random.nextGaussian() * 0.4;
-		double g = (double)MathHelper.sqrt(d * d + e * e + f * f);
-		this.posX = d / g * 0.1;
-		this.posY = e / g * 0.1;
-		this.posZ = f / g * 0.1;
+		this(type, owner.getX(), owner.getY(), owner.getZ(), directionX, directionY, directionZ, world);
+		this.setOwner(owner);
+		this.setRotation(owner.yaw, owner.pitch);
 	}
 
 	@Override
@@ -66,30 +51,31 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	@Override
-	public boolean shouldRender(double d) {
-		double e = this.getBoundingBox().getAverageSideLength() * 4.0;
-		if (Double.isNaN(e)) {
-			e = 4.0;
+	public boolean shouldRender(double distance) {
+		double d = this.getBoundingBox().getAverageSideLength() * 4.0;
+		if (Double.isNaN(d)) {
+			d = 4.0;
 		}
 
-		e *= 64.0;
-		return d < e * e;
+		d *= 64.0;
+		return distance < d * d;
 	}
 
 	@Override
 	public void tick() {
-		if (this.world.isClient || (this.owner == null || !this.owner.removed) && this.world.isChunkLoaded(new BlockPos(this))) {
+		Entity entity = this.getOwner();
+		if (this.world.isClient || (entity == null || !entity.removed) && this.world.isChunkLoaded(this.getBlockPos())) {
 			super.tick();
 			if (this.isBurning()) {
 				this.setOnFireFor(1);
 			}
 
-			this.ticks++;
-			HitResult hitResult = ProjectileUtil.getCollision(this, true, this.ticks >= 25, this.owner, RayTraceContext.ShapeType.field_17558);
-			if (hitResult.getType() != HitResult.Type.field_1333) {
+			HitResult hitResult = ProjectileUtil.getCollision(this, this::method_26958);
+			if (hitResult.getType() != HitResult.Type.MISS) {
 				this.onCollision(hitResult);
 			}
 
+			this.checkBlockCollision();
 			Vec3d vec3d = this.getVelocity();
 			double d = this.getX() + vec3d.x;
 			double e = this.getY() + vec3d.y;
@@ -99,7 +85,7 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 			if (this.isTouchingWater()) {
 				for (int i = 0; i < 4; i++) {
 					float h = 0.25F;
-					this.world.addParticle(ParticleTypes.field_11247, d - vec3d.x * 0.25, e - vec3d.y * 0.25, f - vec3d.z * 0.25, vec3d.x, vec3d.y, vec3d.z);
+					this.world.addParticle(ParticleTypes.BUBBLE, d - vec3d.x * 0.25, e - vec3d.y * 0.25, f - vec3d.z * 0.25, vec3d.x, vec3d.y, vec3d.z);
 				}
 
 				g = 0.8F;
@@ -113,52 +99,39 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		}
 	}
 
+	@Override
+	protected boolean method_26958(Entity entity) {
+		return super.method_26958(entity) && !entity.noClip;
+	}
+
 	protected boolean isBurning() {
 		return true;
 	}
 
 	protected ParticleEffect getParticleType() {
-		return ParticleTypes.field_11251;
+		return ParticleTypes.SMOKE;
 	}
 
 	protected float getDrag() {
 		return 0.95F;
 	}
 
-	protected void onCollision(HitResult hitResult) {
-		HitResult.Type type = hitResult.getType();
-		if (type == HitResult.Type.field_1332) {
-			BlockHitResult blockHitResult = (BlockHitResult)hitResult;
-			BlockState blockState = this.world.getBlockState(blockHitResult.getBlockPos());
-			blockState.onProjectileHit(this.world, blockState, blockHitResult, this);
-		}
+	@Override
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.put("power", this.toListTag(new double[]{this.posX, this.posY, this.posZ}));
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		Vec3d vec3d = this.getVelocity();
-		compoundTag.put("direction", this.toListTag(new double[]{vec3d.x, vec3d.y, vec3d.z}));
-		compoundTag.put("power", this.toListTag(new double[]{this.posX, this.posY, this.posZ}));
-		compoundTag.putInt("life", this.life);
-	}
-
-	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		if (compoundTag.contains("power", 9)) {
-			ListTag listTag = compoundTag.getList("power", 6);
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("power", 9)) {
+			ListTag listTag = tag.getList("power", 6);
 			if (listTag.size() == 3) {
 				this.posX = listTag.getDouble(0);
 				this.posY = listTag.getDouble(1);
 				this.posZ = listTag.getDouble(2);
 			}
-		}
-
-		this.life = compoundTag.getInt("life");
-		if (compoundTag.contains("direction", 9) && compoundTag.getList("direction", 6).size() == 3) {
-			ListTag listTag2 = compoundTag.getList("direction", 6);
-			this.setVelocity(listTag2.getDouble(0), listTag2.getDouble(1), listTag2.getDouble(2));
-		} else {
-			this.remove();
 		}
 	}
 
@@ -173,21 +146,19 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
 			this.scheduleVelocityUpdate();
-			if (damageSource.getAttacker() != null) {
-				Vec3d vec3d = damageSource.getAttacker().getRotationVector();
+			Entity entity = source.getAttacker();
+			if (entity != null) {
+				Vec3d vec3d = entity.getRotationVector();
 				this.setVelocity(vec3d);
 				this.posX = vec3d.x * 0.1;
 				this.posY = vec3d.y * 0.1;
 				this.posZ = vec3d.z * 0.1;
-				if (damageSource.getAttacker() instanceof LivingEntity) {
-					this.owner = (LivingEntity)damageSource.getAttacker();
-				}
-
+				this.setOwner(entity);
 				return true;
 			} else {
 				return false;
@@ -202,7 +173,8 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 
 	@Override
 	public Packet<?> createSpawnPacket() {
-		int i = this.owner == null ? 0 : this.owner.getEntityId();
+		Entity entity = this.getOwner();
+		int i = entity == null ? 0 : entity.getEntityId();
 		return new EntitySpawnS2CPacket(
 			this.getEntityId(),
 			this.getUuid(),

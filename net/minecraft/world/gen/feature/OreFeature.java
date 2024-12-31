@@ -1,31 +1,30 @@
 package net.minecraft.world.gen.feature;
 
-import com.mojang.datafixers.Dynamic;
+import com.mojang.serialization.Codec;
 import java.util.BitSet;
 import java.util.Random;
-import java.util.function.Function;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 
 public class OreFeature extends Feature<OreFeatureConfig> {
-	public OreFeature(Function<Dynamic<?>, ? extends OreFeatureConfig> function) {
-		super(function);
+	public OreFeature(Codec<OreFeatureConfig> codec) {
+		super(codec);
 	}
 
 	public boolean generate(
-		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, OreFeatureConfig oreFeatureConfig
+		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, OreFeatureConfig oreFeatureConfig
 	) {
 		float f = random.nextFloat() * (float) Math.PI;
 		float g = (float)oreFeatureConfig.size / 8.0F;
 		int i = MathHelper.ceil(((float)oreFeatureConfig.size / 16.0F * 2.0F + 1.0F) / 2.0F);
-		double d = (double)((float)blockPos.getX() + MathHelper.sin(f) * g);
-		double e = (double)((float)blockPos.getX() - MathHelper.sin(f) * g);
-		double h = (double)((float)blockPos.getZ() + MathHelper.cos(f) * g);
-		double j = (double)((float)blockPos.getZ() - MathHelper.cos(f) * g);
+		double d = (double)blockPos.getX() + Math.sin((double)f) * (double)g;
+		double e = (double)blockPos.getX() - Math.sin((double)f) * (double)g;
+		double h = (double)blockPos.getZ() + Math.cos((double)f) * (double)g;
+		double j = (double)blockPos.getZ() - Math.cos((double)f) * (double)g;
 		int k = 2;
 		double l = (double)(blockPos.getY() + random.nextInt(3) - 2);
 		double m = (double)(blockPos.getY() + random.nextInt(3) - 2);
@@ -37,8 +36,8 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 
 		for (int s = n; s <= n + q; s++) {
 			for (int t = p; t <= p + q; t++) {
-				if (o <= iWorld.getTopY(Heightmap.Type.field_13195, s, t)) {
-					return this.generateVeinPart(iWorld, random, oreFeatureConfig, d, e, h, j, l, m, n, o, p, q, r);
+				if (o <= structureWorldAccess.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, s, t)) {
+					return this.generateVeinPart(structureWorldAccess, random, oreFeatureConfig, d, e, h, j, l, m, n, o, p, q, r);
 				}
 			}
 		}
@@ -47,52 +46,53 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 	}
 
 	protected boolean generateVeinPart(
-		IWorld iWorld,
+		WorldAccess world,
 		Random random,
-		OreFeatureConfig oreFeatureConfig,
-		double d,
-		double e,
-		double f,
-		double g,
-		double h,
-		double i,
-		int j,
-		int k,
-		int l,
-		int m,
-		int n
+		OreFeatureConfig config,
+		double startX,
+		double endX,
+		double startZ,
+		double endZ,
+		double startY,
+		double endY,
+		int x,
+		int y,
+		int z,
+		int size,
+		int i
 	) {
-		int o = 0;
-		BitSet bitSet = new BitSet(m * n * m);
+		int j = 0;
+		BitSet bitSet = new BitSet(size * i * size);
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
-		double[] ds = new double[oreFeatureConfig.size * 4];
+		int k = config.size;
+		double[] ds = new double[k * 4];
 
-		for (int p = 0; p < oreFeatureConfig.size; p++) {
-			float q = (float)p / (float)oreFeatureConfig.size;
-			double r = MathHelper.lerp((double)q, d, e);
-			double s = MathHelper.lerp((double)q, h, i);
-			double t = MathHelper.lerp((double)q, f, g);
-			double u = random.nextDouble() * (double)oreFeatureConfig.size / 16.0;
-			double v = ((double)(MathHelper.sin((float) Math.PI * q) + 1.0F) * u + 1.0) / 2.0;
-			ds[p * 4 + 0] = r;
-			ds[p * 4 + 1] = s;
-			ds[p * 4 + 2] = t;
-			ds[p * 4 + 3] = v;
+		for (int l = 0; l < k; l++) {
+			float f = (float)l / (float)k;
+			double d = MathHelper.lerp((double)f, startX, endX);
+			double e = MathHelper.lerp((double)f, startY, endY);
+			double g = MathHelper.lerp((double)f, startZ, endZ);
+			double h = random.nextDouble() * (double)k / 16.0;
+			double m = ((double)(MathHelper.sin((float) Math.PI * f) + 1.0F) * h + 1.0) / 2.0;
+			ds[l * 4 + 0] = d;
+			ds[l * 4 + 1] = e;
+			ds[l * 4 + 2] = g;
+			ds[l * 4 + 3] = m;
 		}
 
-		for (int w = 0; w < oreFeatureConfig.size - 1; w++) {
-			if (!(ds[w * 4 + 3] <= 0.0)) {
-				for (int x = w + 1; x < oreFeatureConfig.size; x++) {
-					if (!(ds[x * 4 + 3] <= 0.0)) {
-						double y = ds[w * 4 + 0] - ds[x * 4 + 0];
-						double z = ds[w * 4 + 1] - ds[x * 4 + 1];
-						double aa = ds[w * 4 + 2] - ds[x * 4 + 2];
-						double ab = ds[w * 4 + 3] - ds[x * 4 + 3];
-						if (ab * ab > y * y + z * z + aa * aa) {
-							if (ab > 0.0) {
-								ds[x * 4 + 3] = -1.0;
+		for (int n = 0; n < k - 1; n++) {
+			if (!(ds[n * 4 + 3] <= 0.0)) {
+				for (int o = n + 1; o < k; o++) {
+					if (!(ds[o * 4 + 3] <= 0.0)) {
+						double p = ds[n * 4 + 0] - ds[o * 4 + 0];
+						double q = ds[n * 4 + 1] - ds[o * 4 + 1];
+						double r = ds[n * 4 + 2] - ds[o * 4 + 2];
+						double s = ds[n * 4 + 3] - ds[o * 4 + 3];
+						if (s * s > p * p + q * q + r * r) {
+							if (s > 0.0) {
+								ds[o * 4 + 3] = -1.0;
 							} else {
-								ds[w * 4 + 3] = -1.0;
+								ds[n * 4 + 3] = -1.0;
 							}
 						}
 					}
@@ -100,35 +100,35 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 			}
 		}
 
-		for (int ac = 0; ac < oreFeatureConfig.size; ac++) {
-			double ad = ds[ac * 4 + 3];
-			if (!(ad < 0.0)) {
-				double ae = ds[ac * 4 + 0];
-				double af = ds[ac * 4 + 1];
-				double ag = ds[ac * 4 + 2];
-				int ah = Math.max(MathHelper.floor(ae - ad), j);
-				int ai = Math.max(MathHelper.floor(af - ad), k);
-				int aj = Math.max(MathHelper.floor(ag - ad), l);
-				int ak = Math.max(MathHelper.floor(ae + ad), ah);
-				int al = Math.max(MathHelper.floor(af + ad), ai);
-				int am = Math.max(MathHelper.floor(ag + ad), aj);
+		for (int t = 0; t < k; t++) {
+			double u = ds[t * 4 + 3];
+			if (!(u < 0.0)) {
+				double v = ds[t * 4 + 0];
+				double w = ds[t * 4 + 1];
+				double aa = ds[t * 4 + 2];
+				int ab = Math.max(MathHelper.floor(v - u), x);
+				int ac = Math.max(MathHelper.floor(w - u), y);
+				int ad = Math.max(MathHelper.floor(aa - u), z);
+				int ae = Math.max(MathHelper.floor(v + u), ab);
+				int af = Math.max(MathHelper.floor(w + u), ac);
+				int ag = Math.max(MathHelper.floor(aa + u), ad);
 
-				for (int an = ah; an <= ak; an++) {
-					double ao = ((double)an + 0.5 - ae) / ad;
-					if (ao * ao < 1.0) {
-						for (int ap = ai; ap <= al; ap++) {
-							double aq = ((double)ap + 0.5 - af) / ad;
-							if (ao * ao + aq * aq < 1.0) {
-								for (int ar = aj; ar <= am; ar++) {
-									double as = ((double)ar + 0.5 - ag) / ad;
-									if (ao * ao + aq * aq + as * as < 1.0) {
-										int at = an - j + (ap - k) * m + (ar - l) * m * n;
-										if (!bitSet.get(at)) {
-											bitSet.set(at);
-											mutable.set(an, ap, ar);
-											if (oreFeatureConfig.target.getCondition().test(iWorld.getBlockState(mutable))) {
-												iWorld.setBlockState(mutable, oreFeatureConfig.state, 2);
-												o++;
+				for (int ah = ab; ah <= ae; ah++) {
+					double ai = ((double)ah + 0.5 - v) / u;
+					if (ai * ai < 1.0) {
+						for (int aj = ac; aj <= af; aj++) {
+							double ak = ((double)aj + 0.5 - w) / u;
+							if (ai * ai + ak * ak < 1.0) {
+								for (int al = ad; al <= ag; al++) {
+									double am = ((double)al + 0.5 - aa) / u;
+									if (ai * ai + ak * ak + am * am < 1.0) {
+										int an = ah - x + (aj - y) * size + (al - z) * size * i;
+										if (!bitSet.get(an)) {
+											bitSet.set(an);
+											mutable.set(ah, aj, al);
+											if (config.target.test(world.getBlockState(mutable), random)) {
+												world.setBlockState(mutable, config.state, 2);
+												j++;
 											}
 										}
 									}
@@ -140,6 +140,6 @@ public class OreFeature extends Feature<OreFeatureConfig> {
 			}
 		}
 
-		return o > 0;
+		return j > 0;
 	}
 }

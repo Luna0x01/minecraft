@@ -3,22 +3,22 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class KnockbackEnchantment extends Enchantment {
-	protected KnockbackEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
-		super(weight, EnchantmentTarget.field_9074, equipmentSlots);
+	protected KnockbackEnchantment(Enchantment.Rarity weight, EquipmentSlot... slot) {
+		super(weight, EnchantmentTarget.WEAPON, slot);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
-		return 5 + 20 * (i - 1);
+	public int getMinPower(int level) {
+		return 5 + 20 * (level - 1);
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
-		return super.getMinimumPower(i) + 50;
+	public int getMaxPower(int level) {
+		return super.getMinPower(level) + 50;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 2;
 	}
 }

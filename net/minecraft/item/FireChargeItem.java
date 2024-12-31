@@ -1,9 +1,8 @@
 package net.minecraft.item;
 
+import net.minecraft.block.AbstractFireBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.CampfireBlock;
-import net.minecraft.block.FireBlock;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
@@ -16,35 +15,33 @@ public class FireChargeItem extends Item {
 	}
 
 	@Override
-	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
-		World world = itemUsageContext.getWorld();
-		BlockPos blockPos = itemUsageContext.getBlockPos();
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
 		BlockState blockState = world.getBlockState(blockPos);
 		boolean bl = false;
-		if (blockState.getBlock() == Blocks.field_17350) {
-			if (!(Boolean)blockState.get(CampfireBlock.LIT) && !(Boolean)blockState.get(CampfireBlock.WATERLOGGED)) {
-				this.playUseSound(world, blockPos);
-				world.setBlockState(blockPos, blockState.with(CampfireBlock.LIT, Boolean.valueOf(true)));
-				bl = true;
-			}
+		if (CampfireBlock.method_30035(blockState)) {
+			this.playUseSound(world, blockPos);
+			world.setBlockState(blockPos, blockState.with(CampfireBlock.LIT, Boolean.valueOf(true)));
+			bl = true;
 		} else {
-			blockPos = blockPos.offset(itemUsageContext.getSide());
-			if (world.getBlockState(blockPos).isAir()) {
+			blockPos = blockPos.offset(context.getSide());
+			if (AbstractFireBlock.method_30032(world, blockPos, context.getPlayerFacing())) {
 				this.playUseSound(world, blockPos);
-				world.setBlockState(blockPos, ((FireBlock)Blocks.field_10036).getStateForPosition(world, blockPos));
+				world.setBlockState(blockPos, AbstractFireBlock.getState(world, blockPos));
 				bl = true;
 			}
 		}
 
 		if (bl) {
-			itemUsageContext.getStack().decrement(1);
-			return ActionResult.field_5812;
+			context.getStack().decrement(1);
+			return ActionResult.success(world.isClient);
 		} else {
-			return ActionResult.field_5814;
+			return ActionResult.FAIL;
 		}
 	}
 
-	private void playUseSound(World world, BlockPos blockPos) {
-		world.playSound(null, blockPos, SoundEvents.field_15013, SoundCategory.field_15245, 1.0F, (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2F + 1.0F);
+	private void playUseSound(World world, BlockPos pos) {
+		world.playSound(null, pos, SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 1.0F, (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2F + 1.0F);
 	}
 }

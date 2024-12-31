@@ -22,13 +22,13 @@ public class EntityFlagsPredicate {
 	private final Boolean isBaby;
 
 	public EntityFlagsPredicate(
-		@Nullable Boolean boolean_, @Nullable Boolean boolean2, @Nullable Boolean boolean3, @Nullable Boolean boolean4, @Nullable Boolean boolean5
+		@Nullable Boolean isOnFire, @Nullable Boolean isSneaking, @Nullable Boolean isSprinting, @Nullable Boolean isSwimming, @Nullable Boolean isBaby
 	) {
-		this.isOnFire = boolean_;
-		this.isSneaking = boolean2;
-		this.isSprinting = boolean3;
-		this.isSwimming = boolean4;
-		this.isBaby = boolean5;
+		this.isOnFire = isOnFire;
+		this.isSneaking = isSneaking;
+		this.isSprinting = isSprinting;
+		this.isSwimming = isSwimming;
+		this.isBaby = isBaby;
 	}
 
 	public boolean test(Entity entity) {
@@ -46,40 +46,40 @@ public class EntityFlagsPredicate {
 	}
 
 	@Nullable
-	private static Boolean deserializeBoolean(JsonObject jsonObject, String string) {
-		return jsonObject.has(string) ? JsonHelper.getBoolean(jsonObject, string) : null;
+	private static Boolean nullableBooleanFromJson(JsonObject json, String key) {
+		return json.has(key) ? JsonHelper.getBoolean(json, key) : null;
 	}
 
-	public static EntityFlagsPredicate deserialize(@Nullable JsonElement jsonElement) {
-		if (jsonElement != null && !jsonElement.isJsonNull()) {
-			JsonObject jsonObject = JsonHelper.asObject(jsonElement, "entity flags");
-			Boolean boolean_ = deserializeBoolean(jsonObject, "is_on_fire");
-			Boolean boolean2 = deserializeBoolean(jsonObject, "is_sneaking");
-			Boolean boolean3 = deserializeBoolean(jsonObject, "is_sprinting");
-			Boolean boolean4 = deserializeBoolean(jsonObject, "is_swimming");
-			Boolean boolean5 = deserializeBoolean(jsonObject, "is_baby");
+	public static EntityFlagsPredicate fromJson(@Nullable JsonElement json) {
+		if (json != null && !json.isJsonNull()) {
+			JsonObject jsonObject = JsonHelper.asObject(json, "entity flags");
+			Boolean boolean_ = nullableBooleanFromJson(jsonObject, "is_on_fire");
+			Boolean boolean2 = nullableBooleanFromJson(jsonObject, "is_sneaking");
+			Boolean boolean3 = nullableBooleanFromJson(jsonObject, "is_sprinting");
+			Boolean boolean4 = nullableBooleanFromJson(jsonObject, "is_swimming");
+			Boolean boolean5 = nullableBooleanFromJson(jsonObject, "is_baby");
 			return new EntityFlagsPredicate(boolean_, boolean2, boolean3, boolean4, boolean5);
 		} else {
 			return ANY;
 		}
 	}
 
-	private void serializeBoolean(JsonObject jsonObject, String string, @Nullable Boolean boolean_) {
-		if (boolean_ != null) {
-			jsonObject.addProperty(string, boolean_);
+	private void nullableBooleanToJson(JsonObject json, String key, @Nullable Boolean value) {
+		if (value != null) {
+			json.addProperty(key, value);
 		}
 	}
 
-	public JsonElement serialize() {
+	public JsonElement toJson() {
 		if (this == ANY) {
 			return JsonNull.INSTANCE;
 		} else {
 			JsonObject jsonObject = new JsonObject();
-			this.serializeBoolean(jsonObject, "is_on_fire", this.isOnFire);
-			this.serializeBoolean(jsonObject, "is_sneaking", this.isSneaking);
-			this.serializeBoolean(jsonObject, "is_sprinting", this.isSprinting);
-			this.serializeBoolean(jsonObject, "is_swimming", this.isSwimming);
-			this.serializeBoolean(jsonObject, "is_baby", this.isBaby);
+			this.nullableBooleanToJson(jsonObject, "is_on_fire", this.isOnFire);
+			this.nullableBooleanToJson(jsonObject, "is_sneaking", this.isSneaking);
+			this.nullableBooleanToJson(jsonObject, "is_sprinting", this.isSprinting);
+			this.nullableBooleanToJson(jsonObject, "is_swimming", this.isSwimming);
+			this.nullableBooleanToJson(jsonObject, "is_baby", this.isBaby);
 			return jsonObject;
 		}
 	}
@@ -100,8 +100,13 @@ public class EntityFlagsPredicate {
 			return new EntityFlagsPredicate.Builder();
 		}
 
-		public EntityFlagsPredicate.Builder onFire(@Nullable Boolean boolean_) {
-			this.isOnFire = boolean_;
+		public EntityFlagsPredicate.Builder onFire(@Nullable Boolean onFire) {
+			this.isOnFire = onFire;
+			return this;
+		}
+
+		public EntityFlagsPredicate.Builder method_29935(@Nullable Boolean boolean_) {
+			this.isBaby = boolean_;
 			return this;
 		}
 

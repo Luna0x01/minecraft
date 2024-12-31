@@ -8,10 +8,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 
-public abstract class WaterCreatureEntity extends MobEntityWithAi {
+public abstract class WaterCreatureEntity extends PathAwareEntity {
 	protected WaterCreatureEntity(EntityType<? extends WaterCreatureEntity> entityType, World world) {
 		super(entityType, world);
-		this.setPathfindingPenalty(PathNodeType.field_18, 0.0F);
+		this.setPathfindingPenalty(PathNodeType.WATER, 0.0F);
 	}
 
 	@Override
@@ -25,8 +25,8 @@ public abstract class WaterCreatureEntity extends MobEntityWithAi {
 	}
 
 	@Override
-	public boolean canSpawn(WorldView worldView) {
-		return worldView.intersectsEntities(this);
+	public boolean canSpawn(WorldView world) {
+		return world.intersectsEntities(this);
 	}
 
 	@Override
@@ -35,13 +35,13 @@ public abstract class WaterCreatureEntity extends MobEntityWithAi {
 	}
 
 	@Override
-	protected int getCurrentExperience(PlayerEntity playerEntity) {
+	protected int getCurrentExperience(PlayerEntity player) {
 		return 1 + this.world.random.nextInt(3);
 	}
 
-	protected void tickWaterBreathingAir(int i) {
+	protected void tickWaterBreathingAir(int air) {
 		if (this.isAlive() && !this.isInsideWaterOrBubbleColumn()) {
-			this.setAir(i - 1);
+			this.setAir(air - 1);
 			if (this.getAir() == -20) {
 				this.setAir(0);
 				this.damage(DamageSource.DROWN, 2.0F);
@@ -64,7 +64,7 @@ public abstract class WaterCreatureEntity extends MobEntityWithAi {
 	}
 
 	@Override
-	public boolean canBeLeashedBy(PlayerEntity playerEntity) {
+	public boolean canBeLeashedBy(PlayerEntity player) {
 		return false;
 	}
 }

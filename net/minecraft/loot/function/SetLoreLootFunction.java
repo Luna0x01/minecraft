@@ -19,7 +19,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class SetLoreLootFunction extends ConditionalLootFunction {
@@ -28,11 +27,16 @@ public class SetLoreLootFunction extends ConditionalLootFunction {
 	@Nullable
 	private final LootContext.EntityTarget entity;
 
-	public SetLoreLootFunction(LootCondition[] lootConditions, boolean bl, List<Text> list, @Nullable LootContext.EntityTarget entityTarget) {
-		super(lootConditions);
-		this.replace = bl;
-		this.lore = ImmutableList.copyOf(list);
-		this.entity = entityTarget;
+	public SetLoreLootFunction(LootCondition[] conditions, boolean replace, List<Text> lore, @Nullable LootContext.EntityTarget entity) {
+		super(conditions);
+		this.replace = replace;
+		this.lore = ImmutableList.copyOf(lore);
+		this.entity = entity;
+	}
+
+	@Override
+	public LootFunctionType getType() {
+		return LootFunctionTypes.SET_LORE;
 	}
 
 	@Override
@@ -41,39 +45,39 @@ public class SetLoreLootFunction extends ConditionalLootFunction {
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		ListTag listTag = this.getLoreForMerge(itemStack, !this.lore.isEmpty());
+	public ItemStack process(ItemStack stack, LootContext context) {
+		ListTag listTag = this.getLoreForMerge(stack, !this.lore.isEmpty());
 		if (listTag != null) {
 			if (this.replace) {
 				listTag.clear();
 			}
 
-			UnaryOperator<Text> unaryOperator = SetNameLootFunction.applySourceEntity(lootContext, this.entity);
+			UnaryOperator<Text> unaryOperator = SetNameLootFunction.applySourceEntity(context, this.entity);
 			this.lore.stream().map(unaryOperator).map(Text.Serializer::toJson).map(StringTag::of).forEach(listTag::add);
 		}
 
-		return itemStack;
+		return stack;
 	}
 
 	@Nullable
-	private ListTag getLoreForMerge(ItemStack itemStack, boolean bl) {
+	private ListTag getLoreForMerge(ItemStack stack, boolean otherLoreExists) {
 		CompoundTag compoundTag;
-		if (itemStack.hasTag()) {
-			compoundTag = itemStack.getTag();
+		if (stack.hasTag()) {
+			compoundTag = stack.getTag();
 		} else {
-			if (!bl) {
+			if (!otherLoreExists) {
 				return null;
 			}
 
 			compoundTag = new CompoundTag();
-			itemStack.setTag(compoundTag);
+			stack.setTag(compoundTag);
 		}
 
 		CompoundTag compoundTag4;
 		if (compoundTag.contains("display", 10)) {
 			compoundTag4 = compoundTag.getCompound("display");
 		} else {
-			if (!bl) {
+			if (!otherLoreExists) {
 				return null;
 			}
 
@@ -83,7 +87,7 @@ public class SetLoreLootFunction extends ConditionalLootFunction {
 
 		if (compoundTag4.contains("Lore", 9)) {
 			return compoundTag4.getList("Lore", 8);
-		} else if (bl) {
+		} else if (otherLoreExists) {
 			ListTag listTag = new ListTag();
 			compoundTag4.put("Lore", listTag);
 			return listTag;
@@ -92,11 +96,7 @@ public class SetLoreLootFunction extends ConditionalLootFunction {
 		}
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<SetLoreLootFunction> {
-		public Factory() {
-			super(new Identifier("set_lore"), SetLoreLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<SetLoreLootFunction> {
 		public void toJson(JsonObject jsonObject, SetLoreLootFunction setLoreLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, setLoreLootFunction, jsonSerializationContext);
 			jsonObject.addProperty("replace", setLoreLootFunction.replace);

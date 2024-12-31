@@ -1,14 +1,14 @@
 package net.minecraft.client.gui.screen.ingame;
 
 import net.minecraft.entity.vehicle.CommandBlockMinecartEntity;
-import net.minecraft.server.network.packet.UpdateCommandBlockMinecartC2SPacket;
+import net.minecraft.network.packet.c2s.play.UpdateCommandBlockMinecartC2SPacket;
 import net.minecraft.world.CommandBlockExecutor;
 
 public class MinecartCommandBlockScreen extends AbstractCommandBlockScreen {
 	private final CommandBlockExecutor commandExecutor;
 
-	public MinecartCommandBlockScreen(CommandBlockExecutor commandBlockExecutor) {
-		this.commandExecutor = commandBlockExecutor;
+	public MinecartCommandBlockScreen(CommandBlockExecutor commandExecutor) {
+		this.commandExecutor = commandExecutor;
 	}
 
 	@Override
@@ -30,14 +30,14 @@ public class MinecartCommandBlockScreen extends AbstractCommandBlockScreen {
 	}
 
 	@Override
-	protected void syncSettingsToServer(CommandBlockExecutor commandBlockExecutor) {
-		if (commandBlockExecutor instanceof CommandBlockMinecartEntity.CommandExecutor) {
-			CommandBlockMinecartEntity.CommandExecutor commandExecutor = (CommandBlockMinecartEntity.CommandExecutor)commandBlockExecutor;
-			this.minecraft
+	protected void syncSettingsToServer(CommandBlockExecutor commandExecutor) {
+		if (commandExecutor instanceof CommandBlockMinecartEntity.CommandExecutor) {
+			CommandBlockMinecartEntity.CommandExecutor commandExecutor2 = (CommandBlockMinecartEntity.CommandExecutor)commandExecutor;
+			this.client
 				.getNetworkHandler()
 				.sendPacket(
 					new UpdateCommandBlockMinecartC2SPacket(
-						commandExecutor.getMinecart().getEntityId(), this.consoleCommandTextField.getText(), commandBlockExecutor.isTrackingOutput()
+						commandExecutor2.getMinecart().getEntityId(), this.consoleCommandTextField.getText(), commandExecutor.isTrackingOutput()
 					)
 				);
 		}

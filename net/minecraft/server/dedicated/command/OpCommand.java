@@ -6,18 +6,18 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Collection;
-import net.minecraft.command.arguments.GameProfileArgumentType;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.argument.GameProfileArgumentType;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 
 public class OpCommand {
 	private static final SimpleCommandExceptionType ALREADY_OPPED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.op.failed"));
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("op").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
 				.then(
 					CommandManager.argument("targets", GameProfileArgumentType.gameProfile())
@@ -38,15 +38,15 @@ public class OpCommand {
 		);
 	}
 
-	private static int op(ServerCommandSource serverCommandSource, Collection<GameProfile> collection) throws CommandSyntaxException {
-		PlayerManager playerManager = serverCommandSource.getMinecraftServer().getPlayerManager();
+	private static int op(ServerCommandSource source, Collection<GameProfile> targets) throws CommandSyntaxException {
+		PlayerManager playerManager = source.getMinecraftServer().getPlayerManager();
 		int i = 0;
 
-		for (GameProfile gameProfile : collection) {
+		for (GameProfile gameProfile : targets) {
 			if (!playerManager.isOperator(gameProfile)) {
 				playerManager.addToOperators(gameProfile);
 				i++;
-				serverCommandSource.sendFeedback(new TranslatableText("commands.op.success", ((GameProfile)collection.iterator().next()).getName()), true);
+				source.sendFeedback(new TranslatableText("commands.op.success", ((GameProfile)targets.iterator().next()).getName()), true);
 			}
 		}
 

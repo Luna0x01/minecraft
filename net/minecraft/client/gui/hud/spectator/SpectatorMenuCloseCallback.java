@@ -1,5 +1,5 @@
 package net.minecraft.client.gui.hud.spectator;
 
 public interface SpectatorMenuCloseCallback {
-	void close(SpectatorMenu spectatorMenu);
+	void close(SpectatorMenu menu);
 }

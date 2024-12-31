@@ -9,31 +9,31 @@ public final class SimplePairList implements PairList {
 	private final IntArrayList minValues;
 	private final IntArrayList maxValues;
 
-	protected SimplePairList(DoubleList doubleList, DoubleList doubleList2, boolean bl, boolean bl2) {
+	protected SimplePairList(DoubleList first, DoubleList second, boolean includeFirstOnly, boolean includeSecondOnly) {
 		int i = 0;
 		int j = 0;
 		double d = Double.NaN;
-		int k = doubleList.size();
-		int l = doubleList2.size();
+		int k = first.size();
+		int l = second.size();
 		int m = k + l;
 		this.valueIndices = new DoubleArrayList(m);
 		this.minValues = new IntArrayList(m);
 		this.maxValues = new IntArrayList(m);
 
 		while (true) {
-			boolean bl3 = i < k;
-			boolean bl4 = j < l;
-			if (!bl3 && !bl4) {
+			boolean bl = i < k;
+			boolean bl2 = j < l;
+			if (!bl && !bl2) {
 				if (this.valueIndices.isEmpty()) {
-					this.valueIndices.add(Math.min(doubleList.getDouble(k - 1), doubleList2.getDouble(l - 1)));
+					this.valueIndices.add(Math.min(first.getDouble(k - 1), second.getDouble(l - 1)));
 				}
 
 				return;
 			}
 
-			boolean bl5 = bl3 && (!bl4 || doubleList.getDouble(i) < doubleList2.getDouble(j) + 1.0E-7);
-			double e = bl5 ? doubleList.getDouble(i++) : doubleList2.getDouble(j++);
-			if ((i != 0 && bl3 || bl5 || bl2) && (j != 0 && bl4 || !bl5 || bl)) {
+			boolean bl3 = bl && (!bl2 || first.getDouble(i) < second.getDouble(j) + 1.0E-7);
+			double e = bl3 ? first.getDouble(i++) : second.getDouble(j++);
+			if ((i != 0 && bl || bl3 || includeSecondOnly) && (j != 0 && bl2 || !bl3 || includeFirstOnly)) {
 				if (!(d >= e - 1.0E-7)) {
 					this.minValues.add(i - 1);
 					this.maxValues.add(j - 1);
@@ -48,9 +48,9 @@ public final class SimplePairList implements PairList {
 	}
 
 	@Override
-	public boolean forEachPair(PairList.Consumer consumer) {
+	public boolean forEachPair(PairList.Consumer predicate) {
 		for (int i = 0; i < this.valueIndices.size() - 1; i++) {
-			if (!consumer.merge(this.minValues.getInt(i), this.maxValues.getInt(i), i)) {
+			if (!predicate.merge(this.minValues.getInt(i), this.maxValues.getInt(i), i)) {
 				return false;
 			}
 		}

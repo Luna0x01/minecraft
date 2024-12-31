@@ -8,12 +8,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class FletchingTableBlock extends CraftingTableBlock {
-	protected FletchingTableBlock(Block.Settings settings) {
+	protected FletchingTableBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		return ActionResult.field_5811;
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+		return ActionResult.PASS;
 	}
 }

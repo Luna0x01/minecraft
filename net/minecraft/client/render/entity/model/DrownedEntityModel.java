@@ -24,14 +24,14 @@ public class DrownedEntityModel<T extends ZombieEntity> extends ZombieEntityMode
 	}
 
 	public void animateModel(T zombieEntity, float f, float g, float h) {
-		this.rightArmPose = BipedEntityModel.ArmPose.field_3409;
-		this.leftArmPose = BipedEntityModel.ArmPose.field_3409;
-		ItemStack itemStack = zombieEntity.getStackInHand(Hand.field_5808);
-		if (itemStack.getItem() == Items.field_8547 && zombieEntity.isAttacking()) {
-			if (zombieEntity.getMainArm() == Arm.field_6183) {
-				this.rightArmPose = BipedEntityModel.ArmPose.field_3407;
+		this.rightArmPose = BipedEntityModel.ArmPose.EMPTY;
+		this.leftArmPose = BipedEntityModel.ArmPose.EMPTY;
+		ItemStack itemStack = zombieEntity.getStackInHand(Hand.MAIN_HAND);
+		if (itemStack.getItem() == Items.TRIDENT && zombieEntity.isAttacking()) {
+			if (zombieEntity.getMainArm() == Arm.RIGHT) {
+				this.rightArmPose = BipedEntityModel.ArmPose.THROW_SPEAR;
 			} else {
-				this.leftArmPose = BipedEntityModel.ArmPose.field_3407;
+				this.leftArmPose = BipedEntityModel.ArmPose.THROW_SPEAR;
 			}
 		}
 
@@ -40,25 +40,25 @@ public class DrownedEntityModel<T extends ZombieEntity> extends ZombieEntityMode
 
 	public void setAngles(T zombieEntity, float f, float g, float h, float i, float j) {
 		super.setAngles(zombieEntity, f, g, h, i, j);
-		if (this.leftArmPose == BipedEntityModel.ArmPose.field_3407) {
+		if (this.leftArmPose == BipedEntityModel.ArmPose.THROW_SPEAR) {
 			this.leftArm.pitch = this.leftArm.pitch * 0.5F - (float) Math.PI;
 			this.leftArm.yaw = 0.0F;
 		}
 
-		if (this.rightArmPose == BipedEntityModel.ArmPose.field_3407) {
+		if (this.rightArmPose == BipedEntityModel.ArmPose.THROW_SPEAR) {
 			this.rightArm.pitch = this.rightArm.pitch * 0.5F - (float) Math.PI;
 			this.rightArm.yaw = 0.0F;
 		}
 
-		if (this.field_3396 > 0.0F) {
-			this.rightArm.pitch = this.lerpAngle(this.rightArm.pitch, (float) (-Math.PI * 4.0 / 5.0), this.field_3396)
-				+ this.field_3396 * 0.35F * MathHelper.sin(0.1F * h);
-			this.leftArm.pitch = this.lerpAngle(this.leftArm.pitch, (float) (-Math.PI * 4.0 / 5.0), this.field_3396)
-				- this.field_3396 * 0.35F * MathHelper.sin(0.1F * h);
-			this.rightArm.roll = this.lerpAngle(this.rightArm.roll, -0.15F, this.field_3396);
-			this.leftArm.roll = this.lerpAngle(this.leftArm.roll, 0.15F, this.field_3396);
-			this.leftLeg.pitch = this.leftLeg.pitch - this.field_3396 * 0.55F * MathHelper.sin(0.1F * h);
-			this.rightLeg.pitch = this.rightLeg.pitch + this.field_3396 * 0.55F * MathHelper.sin(0.1F * h);
+		if (this.leaningPitch > 0.0F) {
+			this.rightArm.pitch = this.lerpAngle(this.leaningPitch, this.rightArm.pitch, (float) (-Math.PI * 4.0 / 5.0))
+				+ this.leaningPitch * 0.35F * MathHelper.sin(0.1F * h);
+			this.leftArm.pitch = this.lerpAngle(this.leaningPitch, this.leftArm.pitch, (float) (-Math.PI * 4.0 / 5.0))
+				- this.leaningPitch * 0.35F * MathHelper.sin(0.1F * h);
+			this.rightArm.roll = this.lerpAngle(this.leaningPitch, this.rightArm.roll, -0.15F);
+			this.leftArm.roll = this.lerpAngle(this.leaningPitch, this.leftArm.roll, 0.15F);
+			this.leftLeg.pitch = this.leftLeg.pitch - this.leaningPitch * 0.55F * MathHelper.sin(0.1F * h);
+			this.rightLeg.pitch = this.rightLeg.pitch + this.leaningPitch * 0.55F * MathHelper.sin(0.1F * h);
 			this.head.pitch = 0.0F;
 		}
 	}

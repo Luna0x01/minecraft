@@ -16,16 +16,21 @@ public class SetLootTableLootFunction extends ConditionalLootFunction {
 	private final Identifier id;
 	private final long seed;
 
-	private SetLootTableLootFunction(LootCondition[] lootConditions, Identifier identifier, long l) {
-		super(lootConditions);
-		this.id = identifier;
-		this.seed = l;
+	private SetLootTableLootFunction(LootCondition[] conditions, Identifier id, long seed) {
+		super(conditions);
+		this.id = id;
+		this.seed = seed;
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		if (itemStack.isEmpty()) {
-			return itemStack;
+	public LootFunctionType getType() {
+		return LootFunctionTypes.SET_LOOT_TABLE;
+	}
+
+	@Override
+	public ItemStack process(ItemStack stack, LootContext context) {
+		if (stack.isEmpty()) {
+			return stack;
 		} else {
 			CompoundTag compoundTag = new CompoundTag();
 			compoundTag.putString("LootTable", this.id.toString());
@@ -33,31 +38,27 @@ public class SetLootTableLootFunction extends ConditionalLootFunction {
 				compoundTag.putLong("LootTableSeed", this.seed);
 			}
 
-			itemStack.getOrCreateTag().put("BlockEntityTag", compoundTag);
-			return itemStack;
+			stack.getOrCreateTag().put("BlockEntityTag", compoundTag);
+			return stack;
 		}
 	}
 
 	@Override
-	public void check(LootTableReporter lootTableReporter) {
-		if (lootTableReporter.hasSupplier(this.id)) {
-			lootTableReporter.report("Table " + this.id + " is recursively called");
+	public void validate(LootTableReporter reporter) {
+		if (reporter.hasTable(this.id)) {
+			reporter.report("Table " + this.id + " is recursively called");
 		} else {
-			super.check(lootTableReporter);
-			LootTable lootTable = lootTableReporter.getSupplier(this.id);
+			super.validate(reporter);
+			LootTable lootTable = reporter.getTable(this.id);
 			if (lootTable == null) {
-				lootTableReporter.report("Unknown loot table called " + this.id);
+				reporter.report("Unknown loot table called " + this.id);
 			} else {
-				lootTable.check(lootTableReporter.withSupplier("->{" + this.id + "}", this.id));
+				lootTable.validate(reporter.withTable("->{" + this.id + "}", this.id));
 			}
 		}
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<SetLootTableLootFunction> {
-		protected Factory() {
-			super(new Identifier("set_loot_table"), SetLootTableLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<SetLootTableLootFunction> {
 		public void toJson(JsonObject jsonObject, SetLootTableLootFunction setLootTableLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, setLootTableLootFunction, jsonSerializationContext);
 			jsonObject.addProperty("name", setLootTableLootFunction.id.toString());

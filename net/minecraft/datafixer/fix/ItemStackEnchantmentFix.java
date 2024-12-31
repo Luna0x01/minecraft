@@ -3,11 +3,11 @@ package net.minecraft.datafixer.fix;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
 import com.mojang.datafixers.DataFixUtils;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
+import com.mojang.serialization.Dynamic;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Optional;
@@ -53,8 +53,8 @@ public class ItemStackEnchantmentFix extends DataFix {
 		}
 	);
 
-	public ItemStackEnchantmentFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ItemStackEnchantmentFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	protected TypeRewriteRule makeRule() {
@@ -66,14 +66,15 @@ public class ItemStackEnchantmentFix extends DataFix {
 	}
 
 	private Dynamic<?> fixEnchantments(Dynamic<?> dynamic) {
-		Optional<Dynamic<?>> optional = dynamic.get("ench")
+		Optional<? extends Dynamic<?>> optional = dynamic.get("ench")
 			.asStreamOpt()
 			.map(
 				stream -> stream.map(
 						dynamicx -> dynamicx.set("id", dynamicx.createString((String)ID_TO_ENCHANTMENTS_MAP.getOrDefault(dynamicx.get("id").asInt(0), "null")))
 					)
 			)
-			.map(dynamic::createList);
+			.map(dynamic::createList)
+			.result();
 		if (optional.isPresent()) {
 			dynamic = dynamic.remove("ench").set("Enchantments", (Dynamic)optional.get());
 		}
@@ -87,7 +88,8 @@ public class ItemStackEnchantmentFix extends DataFix {
 									dynamicxx -> dynamicxx.set("id", dynamicxx.createString((String)ID_TO_ENCHANTMENTS_MAP.getOrDefault(dynamicxx.get("id").asInt(0), "null")))
 								)
 						)
-						.map(dynamicx::createList),
+						.map(dynamicx::createList)
+						.result(),
 					dynamicx
 				)
 		);

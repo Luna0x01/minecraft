@@ -9,8 +9,8 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Predicate;
-import net.minecraft.command.arguments.EntityArgumentType;
-import net.minecraft.command.arguments.ItemPredicateArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.ItemPredicateArgumentType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.TranslatableText;
@@ -23,8 +23,8 @@ public class ClearCommand {
 		object -> new TranslatableText("clear.failed.multiple", object)
 	);
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("clear")
 						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 					.executes(
@@ -68,39 +68,36 @@ public class ClearCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, Collection<ServerPlayerEntity> collection, Predicate<ItemStack> predicate, int i) throws CommandSyntaxException {
-		int j = 0;
+	private static int execute(ServerCommandSource source, Collection<ServerPlayerEntity> targets, Predicate<ItemStack> item, int maxCount) throws CommandSyntaxException {
+		int i = 0;
 
-		for (ServerPlayerEntity serverPlayerEntity : collection) {
-			j += serverPlayerEntity.inventory.method_7369(predicate, i);
-			serverPlayerEntity.container.sendContentUpdates();
-			serverPlayerEntity.method_14241();
+		for (ServerPlayerEntity serverPlayerEntity : targets) {
+			i += serverPlayerEntity.inventory.remove(item, maxCount, serverPlayerEntity.playerScreenHandler.method_29281());
+			serverPlayerEntity.currentScreenHandler.sendContentUpdates();
+			serverPlayerEntity.playerScreenHandler.onContentChanged(serverPlayerEntity.inventory);
+			serverPlayerEntity.updateCursorStack();
 		}
 
-		if (j == 0) {
-			if (collection.size() == 1) {
-				throw FAILED_SINGLE_EXCEPTION.create(((ServerPlayerEntity)collection.iterator().next()).getName().asFormattedString());
+		if (i == 0) {
+			if (targets.size() == 1) {
+				throw FAILED_SINGLE_EXCEPTION.create(((ServerPlayerEntity)targets.iterator().next()).getName());
 			} else {
-				throw FAILED_MULTIPLE_EXCEPTION.create(collection.size());
+				throw FAILED_MULTIPLE_EXCEPTION.create(targets.size());
 			}
 		} else {
-			if (i == 0) {
-				if (collection.size() == 1) {
-					serverCommandSource.sendFeedback(
-						new TranslatableText("commands.clear.test.single", j, ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()), true
-					);
+			if (maxCount == 0) {
+				if (targets.size() == 1) {
+					source.sendFeedback(new TranslatableText("commands.clear.test.single", i, ((ServerPlayerEntity)targets.iterator().next()).getDisplayName()), true);
 				} else {
-					serverCommandSource.sendFeedback(new TranslatableText("commands.clear.test.multiple", j, collection.size()), true);
+					source.sendFeedback(new TranslatableText("commands.clear.test.multiple", i, targets.size()), true);
 				}
-			} else if (collection.size() == 1) {
-				serverCommandSource.sendFeedback(
-					new TranslatableText("commands.clear.success.single", j, ((ServerPlayerEntity)collection.iterator().next()).getDisplayName()), true
-				);
+			} else if (targets.size() == 1) {
+				source.sendFeedback(new TranslatableText("commands.clear.success.single", i, ((ServerPlayerEntity)targets.iterator().next()).getDisplayName()), true);
 			} else {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.clear.success.multiple", j, collection.size()), true);
+				source.sendFeedback(new TranslatableText("commands.clear.success.multiple", i, targets.size()), true);
 			}
 
-			return j;
+			return i;
 		}
 	}
 }

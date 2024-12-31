@@ -1,26 +1,25 @@
 package net.minecraft.world.gen.feature;
 
-import com.mojang.datafixers.Dynamic;
+import com.mojang.serialization.Codec;
 import java.util.Random;
-import java.util.function.Function;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
 
 public class DefaultFlowerFeature extends FlowerFeature<RandomPatchFeatureConfig> {
-	public DefaultFlowerFeature(Function<Dynamic<?>, ? extends RandomPatchFeatureConfig> function) {
-		super(function);
+	public DefaultFlowerFeature(Codec<RandomPatchFeatureConfig> codec) {
+		super(codec);
 	}
 
-	public boolean method_23369(IWorld iWorld, BlockPos blockPos, RandomPatchFeatureConfig randomPatchFeatureConfig) {
-		return !randomPatchFeatureConfig.blacklist.contains(iWorld.getBlockState(blockPos));
+	public boolean isPosValid(WorldAccess worldAccess, BlockPos blockPos, RandomPatchFeatureConfig randomPatchFeatureConfig) {
+		return !randomPatchFeatureConfig.blacklist.contains(worldAccess.getBlockState(blockPos));
 	}
 
-	public int method_23370(RandomPatchFeatureConfig randomPatchFeatureConfig) {
+	public int getFlowerAmount(RandomPatchFeatureConfig randomPatchFeatureConfig) {
 		return randomPatchFeatureConfig.tries;
 	}
 
-	public BlockPos method_23371(Random random, BlockPos blockPos, RandomPatchFeatureConfig randomPatchFeatureConfig) {
+	public BlockPos getPos(Random random, BlockPos blockPos, RandomPatchFeatureConfig randomPatchFeatureConfig) {
 		return blockPos.add(
 			random.nextInt(randomPatchFeatureConfig.spreadX) - random.nextInt(randomPatchFeatureConfig.spreadX),
 			random.nextInt(randomPatchFeatureConfig.spreadY) - random.nextInt(randomPatchFeatureConfig.spreadY),
@@ -28,7 +27,7 @@ public class DefaultFlowerFeature extends FlowerFeature<RandomPatchFeatureConfig
 		);
 	}
 
-	public BlockState getFlowerToPlace(Random random, BlockPos blockPos, RandomPatchFeatureConfig randomPatchFeatureConfig) {
+	public BlockState getFlowerState(Random random, BlockPos blockPos, RandomPatchFeatureConfig randomPatchFeatureConfig) {
 		return randomPatchFeatureConfig.stateProvider.getBlockState(random, blockPos);
 	}
 }

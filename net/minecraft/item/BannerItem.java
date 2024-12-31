@@ -22,8 +22,8 @@ public class BannerItem extends WallStandingBlockItem {
 		Validate.isInstanceOf(AbstractBannerBlock.class, block2);
 	}
 
-	public static void appendBannerTooltip(ItemStack itemStack, List<Text> list) {
-		CompoundTag compoundTag = itemStack.getSubTag("BlockEntityTag");
+	public static void appendBannerTooltip(ItemStack stack, List<Text> tooltip) {
+		CompoundTag compoundTag = stack.getSubTag("BlockEntityTag");
 		if (compoundTag != null && compoundTag.contains("Patterns")) {
 			ListTag listTag = compoundTag.getList("Patterns", 10);
 
@@ -32,7 +32,7 @@ public class BannerItem extends WallStandingBlockItem {
 				DyeColor dyeColor = DyeColor.byId(compoundTag2.getInt("Color"));
 				BannerPattern bannerPattern = BannerPattern.byId(compoundTag2.getString("Pattern"));
 				if (bannerPattern != null) {
-					list.add(new TranslatableText("block.minecraft.banner." + bannerPattern.getName() + '.' + dyeColor.getName()).formatted(Formatting.field_1080));
+					tooltip.add(new TranslatableText("block.minecraft.banner." + bannerPattern.getName() + '.' + dyeColor.getName()).formatted(Formatting.GRAY));
 				}
 			}
 		}
@@ -43,7 +43,7 @@ public class BannerItem extends WallStandingBlockItem {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
-		appendBannerTooltip(itemStack, list);
+	public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+		appendBannerTooltip(stack, tooltip);
 	}
 }

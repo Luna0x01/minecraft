@@ -48,7 +48,7 @@ public class SoundEngine {
 	};
 	private SoundEngine.SourceSet streamingSources = EMPTY_SOURCE_SET;
 	private SoundEngine.SourceSet staticSources = EMPTY_SOURCE_SET;
-	private final Listener listener = new Listener();
+	private final SoundListener listener = new SoundListener();
 
 	public void init() {
 		this.devicePointer = openDevice();
@@ -156,13 +156,13 @@ public class SoundEngine {
 		}
 	}
 
-	public Listener getListener() {
+	public SoundListener getListener() {
 		return this.listener;
 	}
 
 	@Nullable
-	public Source createSource(SoundEngine.RunMode runMode) {
-		return (runMode == SoundEngine.RunMode.field_18353 ? this.staticSources : this.streamingSources).createSource();
+	public Source createSource(SoundEngine.RunMode mode) {
+		return (mode == SoundEngine.RunMode.STREAMING ? this.staticSources : this.streamingSources).createSource();
 	}
 
 	public void release(Source source) {
@@ -182,8 +182,8 @@ public class SoundEngine {
 	}
 
 	public static enum RunMode {
-		field_18352,
-		field_18353;
+		STATIC,
+		STREAMING;
 	}
 
 	interface SourceSet {
@@ -203,14 +203,15 @@ public class SoundEngine {
 		private final int maxSourceCount;
 		private final Set<Source> sources = Sets.newIdentityHashSet();
 
-		public SourceSetImpl(int i) {
-			this.maxSourceCount = i;
+		public SourceSetImpl(int maxSourceCount) {
+			this.maxSourceCount = maxSourceCount;
 		}
 
 		@Nullable
 		@Override
 		public Source createSource() {
 			if (this.sources.size() >= this.maxSourceCount) {
+				SoundEngine.LOGGER.warn("Maximum sound pool size {} reached", this.maxSourceCount);
 				return null;
 			} else {
 				Source source = Source.create();

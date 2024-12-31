@@ -74,10 +74,10 @@ public class SpiderEntityModel<T extends Entity> extends CompositeEntityModel<T>
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		this.head.yaw = i * (float) (Math.PI / 180.0);
-		this.head.pitch = j * (float) (Math.PI / 180.0);
-		float k = (float) (Math.PI / 4);
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		this.head.yaw = headYaw * (float) (Math.PI / 180.0);
+		this.head.pitch = headPitch * (float) (Math.PI / 180.0);
+		float f = (float) (Math.PI / 4);
 		this.rightBackLeg.roll = (float) (-Math.PI / 4);
 		this.leftBackLeg.roll = (float) (Math.PI / 4);
 		this.rightBackMiddleLeg.roll = -0.58119464F;
@@ -86,8 +86,8 @@ public class SpiderEntityModel<T extends Entity> extends CompositeEntityModel<T>
 		this.leftFrontMiddleLeg.roll = 0.58119464F;
 		this.rightFrontLeg.roll = (float) (-Math.PI / 4);
 		this.leftFrontLeg.roll = (float) (Math.PI / 4);
-		float l = -0.0F;
-		float m = (float) (Math.PI / 8);
+		float g = -0.0F;
+		float h = (float) (Math.PI / 8);
 		this.rightBackLeg.yaw = (float) (Math.PI / 4);
 		this.leftBackLeg.yaw = (float) (-Math.PI / 4);
 		this.rightBackMiddleLeg.yaw = (float) (Math.PI / 8);
@@ -96,29 +96,29 @@ public class SpiderEntityModel<T extends Entity> extends CompositeEntityModel<T>
 		this.leftFrontMiddleLeg.yaw = (float) (Math.PI / 8);
 		this.rightFrontLeg.yaw = (float) (-Math.PI / 4);
 		this.leftFrontLeg.yaw = (float) (Math.PI / 4);
-		float n = -(MathHelper.cos(f * 0.6662F * 2.0F + 0.0F) * 0.4F) * g;
-		float o = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) Math.PI) * 0.4F) * g;
-		float p = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) (Math.PI / 2)) * 0.4F) * g;
-		float q = -(MathHelper.cos(f * 0.6662F * 2.0F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * g;
-		float r = Math.abs(MathHelper.sin(f * 0.6662F + 0.0F) * 0.4F) * g;
-		float s = Math.abs(MathHelper.sin(f * 0.6662F + (float) Math.PI) * 0.4F) * g;
-		float t = Math.abs(MathHelper.sin(f * 0.6662F + (float) (Math.PI / 2)) * 0.4F) * g;
-		float u = Math.abs(MathHelper.sin(f * 0.6662F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * g;
-		this.rightBackLeg.yaw += n;
-		this.leftBackLeg.yaw += -n;
-		this.rightBackMiddleLeg.yaw += o;
-		this.leftBackMiddleLeg.yaw += -o;
-		this.rightFrontMiddleLeg.yaw += p;
-		this.leftFrontMiddleLeg.yaw += -p;
-		this.rightFrontLeg.yaw += q;
-		this.leftFrontLeg.yaw += -q;
-		this.rightBackLeg.roll += r;
-		this.leftBackLeg.roll += -r;
-		this.rightBackMiddleLeg.roll += s;
-		this.leftBackMiddleLeg.roll += -s;
-		this.rightFrontMiddleLeg.roll += t;
-		this.leftFrontMiddleLeg.roll += -t;
-		this.rightFrontLeg.roll += u;
-		this.leftFrontLeg.roll += -u;
+		float i = -(MathHelper.cos(limbAngle * 0.6662F * 2.0F + 0.0F) * 0.4F) * limbDistance;
+		float j = -(MathHelper.cos(limbAngle * 0.6662F * 2.0F + (float) Math.PI) * 0.4F) * limbDistance;
+		float k = -(MathHelper.cos(limbAngle * 0.6662F * 2.0F + (float) (Math.PI / 2)) * 0.4F) * limbDistance;
+		float l = -(MathHelper.cos(limbAngle * 0.6662F * 2.0F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * limbDistance;
+		float m = Math.abs(MathHelper.sin(limbAngle * 0.6662F + 0.0F) * 0.4F) * limbDistance;
+		float n = Math.abs(MathHelper.sin(limbAngle * 0.6662F + (float) Math.PI) * 0.4F) * limbDistance;
+		float o = Math.abs(MathHelper.sin(limbAngle * 0.6662F + (float) (Math.PI / 2)) * 0.4F) * limbDistance;
+		float p = Math.abs(MathHelper.sin(limbAngle * 0.6662F + (float) (Math.PI * 3.0 / 2.0)) * 0.4F) * limbDistance;
+		this.rightBackLeg.yaw += i;
+		this.leftBackLeg.yaw += -i;
+		this.rightBackMiddleLeg.yaw += j;
+		this.leftBackMiddleLeg.yaw += -j;
+		this.rightFrontMiddleLeg.yaw += k;
+		this.leftFrontMiddleLeg.yaw += -k;
+		this.rightFrontLeg.yaw += l;
+		this.leftFrontLeg.yaw += -l;
+		this.rightBackLeg.roll += m;
+		this.leftBackLeg.roll += -m;
+		this.rightBackMiddleLeg.roll += n;
+		this.leftBackMiddleLeg.roll += -n;
+		this.rightFrontMiddleLeg.roll += o;
+		this.leftFrontMiddleLeg.roll += -o;
+		this.rightFrontLeg.roll += p;
+		this.leftFrontLeg.roll += -p;
 	}
 }

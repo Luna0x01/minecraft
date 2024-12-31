@@ -12,7 +12,7 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RayTraceContext;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 public class BoatItem extends Item {
@@ -25,17 +25,17 @@ public class BoatItem extends Item {
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1347);
-		if (hitResult.getType() == HitResult.Type.field_1333) {
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+		ItemStack itemStack = user.getStackInHand(hand);
+		HitResult hitResult = raycast(world, user, RaycastContext.FluidHandling.ANY);
+		if (hitResult.getType() == HitResult.Type.MISS) {
 			return TypedActionResult.pass(itemStack);
 		} else {
-			Vec3d vec3d = playerEntity.getRotationVec(1.0F);
+			Vec3d vec3d = user.getRotationVec(1.0F);
 			double d = 5.0;
-			List<Entity> list = world.getEntities(playerEntity, playerEntity.getBoundingBox().stretch(vec3d.multiply(5.0)).expand(1.0), RIDERS);
+			List<Entity> list = world.getOtherEntities(user, user.getBoundingBox().stretch(vec3d.multiply(5.0)).expand(1.0), RIDERS);
 			if (!list.isEmpty()) {
-				Vec3d vec3d2 = playerEntity.getCameraPosVec(1.0F);
+				Vec3d vec3d2 = user.getCameraPosVec(1.0F);
 
 				for (Entity entity : list) {
 					Box box = entity.getBoundingBox().expand((double)entity.getTargetingMargin());
@@ -45,22 +45,22 @@ public class BoatItem extends Item {
 				}
 			}
 
-			if (hitResult.getType() == HitResult.Type.field_1332) {
+			if (hitResult.getType() == HitResult.Type.BLOCK) {
 				BoatEntity boatEntity = new BoatEntity(world, hitResult.getPos().x, hitResult.getPos().y, hitResult.getPos().z);
 				boatEntity.setBoatType(this.type);
-				boatEntity.yaw = playerEntity.yaw;
-				if (!world.doesNotCollide(boatEntity, boatEntity.getBoundingBox().expand(-0.1))) {
+				boatEntity.yaw = user.yaw;
+				if (!world.isSpaceEmpty(boatEntity, boatEntity.getBoundingBox().expand(-0.1))) {
 					return TypedActionResult.fail(itemStack);
 				} else {
 					if (!world.isClient) {
 						world.spawnEntity(boatEntity);
-						if (!playerEntity.abilities.creativeMode) {
+						if (!user.abilities.creativeMode) {
 							itemStack.decrement(1);
 						}
 					}
 
-					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-					return TypedActionResult.success(itemStack);
+					user.incrementStat(Stats.USED.getOrCreateStat(this));
+					return TypedActionResult.success(itemStack, world.isClient());
 				}
 			} else {
 				return TypedActionResult.pass(itemStack);

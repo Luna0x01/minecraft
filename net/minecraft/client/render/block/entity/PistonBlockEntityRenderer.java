@@ -30,18 +30,18 @@ public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEn
 		if (world != null) {
 			BlockPos blockPos = pistonBlockEntity.getPos().offset(pistonBlockEntity.getMovementDirection().getOpposite());
 			BlockState blockState = pistonBlockEntity.getPushedBlock();
-			if (!blockState.isAir() && !(pistonBlockEntity.getProgress(f) >= 1.0F)) {
+			if (!blockState.isAir()) {
 				BlockModelRenderer.enableBrightnessCache();
 				matrixStack.push();
 				matrixStack.translate(
 					(double)pistonBlockEntity.getRenderOffsetX(f), (double)pistonBlockEntity.getRenderOffsetY(f), (double)pistonBlockEntity.getRenderOffsetZ(f)
 				);
-				if (blockState.getBlock() == Blocks.field_10379 && pistonBlockEntity.getProgress(f) <= 4.0F) {
-					blockState = blockState.with(PistonHeadBlock.SHORT, Boolean.valueOf(true));
+				if (blockState.isOf(Blocks.PISTON_HEAD) && pistonBlockEntity.getProgress(f) <= 4.0F) {
+					blockState = blockState.with(PistonHeadBlock.SHORT, Boolean.valueOf(pistonBlockEntity.getProgress(f) <= 0.5F));
 					this.method_3575(blockPos, blockState, matrixStack, vertexConsumerProvider, world, false, j);
 				} else if (pistonBlockEntity.isSource() && !pistonBlockEntity.isExtending()) {
-					PistonType pistonType = blockState.getBlock() == Blocks.field_10615 ? PistonType.field_12634 : PistonType.field_12637;
-					BlockState blockState2 = Blocks.field_10379
+					PistonType pistonType = blockState.isOf(Blocks.STICKY_PISTON) ? PistonType.STICKY : PistonType.DEFAULT;
+					BlockState blockState2 = Blocks.PISTON_HEAD
 						.getDefaultState()
 						.with(PistonHeadBlock.TYPE, pistonType)
 						.with(PistonHeadBlock.FACING, blockState.get(PistonBlock.FACING));
@@ -65,7 +65,7 @@ public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEn
 	private void method_3575(
 		BlockPos blockPos, BlockState blockState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, World world, boolean bl, int i
 	) {
-		RenderLayer renderLayer = RenderLayers.getBlockLayer(blockState);
+		RenderLayer renderLayer = RenderLayers.getMovingBlockLayer(blockState);
 		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(renderLayer);
 		this.manager
 			.getModelRenderer()

@@ -6,9 +6,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.Collection;
-import net.minecraft.command.arguments.EntityArgumentType;
-import net.minecraft.command.arguments.ItemStackArgument;
-import net.minecraft.command.arguments.ItemStackArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.ItemStackArgument;
+import net.minecraft.command.argument.ItemStackArgumentType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -17,8 +17,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.TranslatableText;
 
 public class GiveCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("give").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
 					CommandManager.argument("targets", EntityArgumentType.players())
@@ -48,14 +48,14 @@ public class GiveCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, ItemStackArgument itemStackArgument, Collection<ServerPlayerEntity> collection, int i) throws CommandSyntaxException {
-		for (ServerPlayerEntity serverPlayerEntity : collection) {
-			int j = i;
+	private static int execute(ServerCommandSource source, ItemStackArgument item, Collection<ServerPlayerEntity> targets, int count) throws CommandSyntaxException {
+		for (ServerPlayerEntity serverPlayerEntity : targets) {
+			int i = count;
 
-			while (j > 0) {
-				int k = Math.min(itemStackArgument.getItem().getMaxCount(), j);
-				j -= k;
-				ItemStack itemStack = itemStackArgument.createStack(k, false);
+			while (i > 0) {
+				int j = Math.min(item.getItem().getMaxCount(), i);
+				i -= j;
+				ItemStack itemStack = item.createStack(j, false);
 				boolean bl = serverPlayerEntity.inventory.insertStack(itemStack);
 				if (bl && itemStack.isEmpty()) {
 					itemStack.setCount(1);
@@ -70,12 +70,12 @@ public class GiveCommand {
 							serverPlayerEntity.getX(),
 							serverPlayerEntity.getY(),
 							serverPlayerEntity.getZ(),
-							SoundEvents.field_15197,
+							SoundEvents.ENTITY_ITEM_PICKUP,
 							SoundCategory.PLAYERS,
 							0.2F,
 							((serverPlayerEntity.getRandom().nextFloat() - serverPlayerEntity.getRandom().nextFloat()) * 0.7F + 1.0F) * 2.0F
 						);
-					serverPlayerEntity.playerContainer.sendContentUpdates();
+					serverPlayerEntity.playerScreenHandler.sendContentUpdates();
 				} else {
 					ItemEntity itemEntity = serverPlayerEntity.dropItem(itemStack, false);
 					if (itemEntity != null) {
@@ -86,22 +86,17 @@ public class GiveCommand {
 			}
 		}
 
-		if (collection.size() == 1) {
-			serverCommandSource.sendFeedback(
+		if (targets.size() == 1) {
+			source.sendFeedback(
 				new TranslatableText(
-					"commands.give.success.single",
-					i,
-					itemStackArgument.createStack(i, false).toHoverableText(),
-					((ServerPlayerEntity)collection.iterator().next()).getDisplayName()
+					"commands.give.success.single", count, item.createStack(count, false).toHoverableText(), ((ServerPlayerEntity)targets.iterator().next()).getDisplayName()
 				),
 				true
 			);
 		} else {
-			serverCommandSource.sendFeedback(
-				new TranslatableText("commands.give.success.single", i, itemStackArgument.createStack(i, false).toHoverableText(), collection.size()), true
-			);
+			source.sendFeedback(new TranslatableText("commands.give.success.single", count, item.createStack(count, false).toHoverableText(), targets.size()), true);
 		}
 
-		return collection.size();
+		return targets.size();
 	}
 }

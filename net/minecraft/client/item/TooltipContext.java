@@ -4,13 +4,13 @@ public interface TooltipContext {
 	boolean isAdvanced();
 
 	public static enum Default implements TooltipContext {
-		field_8934(false),
-		field_8935(true);
+		NORMAL(false),
+		ADVANCED(true);
 
 		private final boolean advanced;
 
-		private Default(boolean bl) {
-			this.advanced = bl;
+		private Default(boolean advanced) {
+			this.advanced = advanced;
 		}
 
 		@Override

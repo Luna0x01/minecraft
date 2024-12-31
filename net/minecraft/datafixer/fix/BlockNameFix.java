@@ -10,25 +10,26 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public abstract class BlockNameFix extends DataFix {
 	private final String name;
 
-	public BlockNameFix(Schema schema, String string) {
-		super(schema, false);
-		this.name = string;
+	public BlockNameFix(Schema oldSchema, String name) {
+		super(oldSchema, false);
+		this.name = name;
 	}
 
 	public TypeRewriteRule makeRule() {
 		Type<?> type = this.getInputSchema().getType(TypeReferences.BLOCK_NAME);
-		Type<Pair<String, String>> type2 = DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.namespacedString());
+		Type<Pair<String, String>> type2 = DSL.named(TypeReferences.BLOCK_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType());
 		if (!Objects.equals(type, type2)) {
 			throw new IllegalStateException("block type is not what was expected.");
 		} else {
 			TypeRewriteRule typeRewriteRule = this.fixTypeEverywhere(this.name + " for block", type2, dynamicOps -> pair -> pair.mapSecond(this::rename));
 			TypeRewriteRule typeRewriteRule2 = this.fixTypeEverywhereTyped(
 				this.name + " for block_state", this.getInputSchema().getType(TypeReferences.BLOCK_STATE), typed -> typed.update(DSL.remainderFinder(), dynamic -> {
-						Optional<String> optional = dynamic.get("Name").asString();
+						Optional<String> optional = dynamic.get("Name").asString().result();
 						return optional.isPresent() ? dynamic.set("Name", dynamic.createString(this.rename((String)optional.get()))) : dynamic;
 					})
 			);
@@ -36,13 +37,13 @@ public abstract class BlockNameFix extends DataFix {
 		}
 	}
 
-	protected abstract String rename(String string);
+	protected abstract String rename(String oldName);
 
-	public static DataFix create(Schema schema, String string, Function<String, String> function) {
-		return new BlockNameFix(schema, string) {
+	public static DataFix create(Schema oldSchema, String name, Function<String, String> rename) {
+		return new BlockNameFix(oldSchema, name) {
 			@Override
-			protected String rename(String string) {
-				return (String)function.apply(string);
+			protected String rename(String oldName) {
+				return (String)rename.apply(oldName);
 			}
 		};
 	}

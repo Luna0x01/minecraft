@@ -4,7 +4,7 @@ import com.google.common.base.Predicates;
 import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.block.pattern.BlockPatternBuilder;
 import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.EntityContext;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.state.StateManager;
@@ -28,44 +28,44 @@ public class EndPortalFrameBlock extends Block {
 	protected static final VoxelShape FRAME_WITH_EYE_SHAPE = VoxelShapes.union(FRAME_SHAPE, EYE_SHAPE);
 	private static BlockPattern COMPLETED_FRAME;
 
-	public EndPortalFrameBlock(Block.Settings settings) {
+	public EndPortalFrameBlock(AbstractBlock.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(EYE, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(EYE, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public boolean hasSidedTransparency(BlockState blockState) {
+	public boolean hasSidedTransparency(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		return blockState.get(EYE) ? FRAME_WITH_EYE_SHAPE : FRAME_SHAPE;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return state.get(EYE) ? FRAME_WITH_EYE_SHAPE : FRAME_SHAPE;
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		return this.getDefaultState().with(FACING, itemPlacementContext.getPlayerFacing().getOpposite()).with(EYE, Boolean.valueOf(false));
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		return this.getDefaultState().with(FACING, ctx.getPlayerFacing().getOpposite()).with(EYE, Boolean.valueOf(false));
 	}
 
 	@Override
-	public boolean hasComparatorOutput(BlockState blockState) {
+	public boolean hasComparatorOutput(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(BlockState blockState, World world, BlockPos blockPos) {
-		return blockState.get(EYE) ? 15 : 0;
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+		return state.get(EYE) ? 15 : 0;
 	}
 
 	@Override
-	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
-		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
 	}
 
 	@Override
-	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
-		return blockState.rotate(blockMirror.getRotation(blockState.get(FACING)));
+	public BlockState mirror(BlockState state, BlockMirror mirror) {
+		return state.rotate(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override
@@ -81,25 +81,25 @@ public class EndPortalFrameBlock extends Block {
 				.where(
 					'^',
 					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.forBlock(Blocks.field_10398).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.field_11035))
+						BlockStatePredicate.forBlock(Blocks.END_PORTAL_FRAME).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.SOUTH))
 					)
 				)
 				.where(
 					'>',
 					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.forBlock(Blocks.field_10398).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.field_11039))
+						BlockStatePredicate.forBlock(Blocks.END_PORTAL_FRAME).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.WEST))
 					)
 				)
 				.where(
 					'v',
 					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.forBlock(Blocks.field_10398).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.field_11043))
+						BlockStatePredicate.forBlock(Blocks.END_PORTAL_FRAME).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.NORTH))
 					)
 				)
 				.where(
 					'<',
 					CachedBlockPosition.matchesBlockState(
-						BlockStatePredicate.forBlock(Blocks.field_10398).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.field_11034))
+						BlockStatePredicate.forBlock(Blocks.END_PORTAL_FRAME).with(EYE, Predicates.equalTo(true)).with(FACING, Predicates.equalTo(Direction.EAST))
 					)
 				)
 				.build();
@@ -109,7 +109,7 @@ public class EndPortalFrameBlock extends Block {
 	}
 
 	@Override
-	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
 		return false;
 	}
 }

@@ -2,8 +2,8 @@ package net.minecraft.recipe;
 
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public abstract class AbstractCookingRecipe implements Recipe<Inventory> {
@@ -15,28 +15,28 @@ public abstract class AbstractCookingRecipe implements Recipe<Inventory> {
 	protected final float experience;
 	protected final int cookTime;
 
-	public AbstractCookingRecipe(RecipeType<?> recipeType, Identifier identifier, String string, Ingredient ingredient, ItemStack itemStack, float f, int i) {
-		this.type = recipeType;
-		this.id = identifier;
-		this.group = string;
-		this.input = ingredient;
-		this.output = itemStack;
-		this.experience = f;
-		this.cookTime = i;
+	public AbstractCookingRecipe(RecipeType<?> type, Identifier id, String group, Ingredient input, ItemStack output, float experience, int cookTime) {
+		this.type = type;
+		this.id = id;
+		this.group = group;
+		this.input = input;
+		this.output = output;
+		this.experience = experience;
+		this.cookTime = cookTime;
 	}
 
 	@Override
-	public boolean matches(Inventory inventory, World world) {
-		return this.input.test(inventory.getInvStack(0));
+	public boolean matches(Inventory inv, World world) {
+		return this.input.test(inv.getStack(0));
 	}
 
 	@Override
-	public ItemStack craft(Inventory inventory) {
+	public ItemStack craft(Inventory inv) {
 		return this.output.copy();
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
+	public boolean fits(int width, int height) {
 		return true;
 	}
 

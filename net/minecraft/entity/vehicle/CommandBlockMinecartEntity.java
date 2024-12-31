@@ -12,6 +12,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
@@ -27,39 +28,39 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 		super(entityType, world);
 	}
 
-	public CommandBlockMinecartEntity(World world, double d, double e, double f) {
-		super(EntityType.field_6136, world, d, e, f);
+	public CommandBlockMinecartEntity(World world, double x, double y, double z) {
+		super(EntityType.COMMAND_BLOCK_MINECART, world, x, y, z);
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.getDataTracker().startTracking(COMMAND, "");
-		this.getDataTracker().startTracking(LAST_OUTPUT, new LiteralText(""));
+		this.getDataTracker().startTracking(LAST_OUTPUT, LiteralText.EMPTY);
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.commandExecutor.deserialize(compoundTag);
+	protected void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.commandExecutor.deserialize(tag);
 		this.getDataTracker().set(COMMAND, this.getCommandExecutor().getCommand());
 		this.getDataTracker().set(LAST_OUTPUT, this.getCommandExecutor().getLastOutput());
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		this.commandExecutor.serialize(compoundTag);
+	protected void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		this.commandExecutor.serialize(tag);
 	}
 
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
-		return AbstractMinecartEntity.Type.field_7681;
+		return AbstractMinecartEntity.Type.COMMAND_BLOCK;
 	}
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return Blocks.field_10525.getDefaultState();
+		return Blocks.COMMAND_BLOCK.getDefaultState();
 	}
 
 	public CommandBlockExecutor getCommandExecutor() {
@@ -67,28 +68,27 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public void onActivatorRail(int i, int j, int k, boolean bl) {
-		if (bl && this.age - this.lastExecuted >= 4) {
+	public void onActivatorRail(int x, int y, int z, boolean powered) {
+		if (powered && this.age - this.lastExecuted >= 4) {
 			this.getCommandExecutor().execute(this.world);
 			this.lastExecuted = this.age;
 		}
 	}
 
 	@Override
-	public boolean interact(PlayerEntity playerEntity, Hand hand) {
-		this.commandExecutor.interact(playerEntity);
-		return true;
+	public ActionResult interact(PlayerEntity player, Hand hand) {
+		return this.commandExecutor.interact(player);
 	}
 
 	@Override
-	public void onTrackedDataSet(TrackedData<?> trackedData) {
-		super.onTrackedDataSet(trackedData);
-		if (LAST_OUTPUT.equals(trackedData)) {
+	public void onTrackedDataSet(TrackedData<?> data) {
+		super.onTrackedDataSet(data);
+		if (LAST_OUTPUT.equals(data)) {
 			try {
 				this.commandExecutor.setLastOutput(this.getDataTracker().get(LAST_OUTPUT));
 			} catch (Throwable var3) {
 			}
-		} else if (COMMAND.equals(trackedData)) {
+		} else if (COMMAND.equals(data)) {
 			this.commandExecutor.setCommand(this.getDataTracker().get(COMMAND));
 		}
 	}

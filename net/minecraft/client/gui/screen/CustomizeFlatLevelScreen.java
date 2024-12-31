@@ -1,10 +1,9 @@
 package net.minecraft.client.gui.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.datafixers.Dynamic;
 import java.util.List;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.DrawableHelper;
@@ -13,49 +12,43 @@ import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.NarratorManager;
-import net.minecraft.datafixer.NbtOps;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.world.gen.chunk.FlatChunkGeneratorConfig;
 import net.minecraft.world.gen.chunk.FlatChunkGeneratorLayer;
 
 public class CustomizeFlatLevelScreen extends Screen {
-	private final CreateWorldScreen parent;
-	private FlatChunkGeneratorConfig config = FlatChunkGeneratorConfig.getDefaultConfig();
-	private String tileText;
-	private String heightText;
+	protected final CreateWorldScreen parent;
+	private final Consumer<FlatChunkGeneratorConfig> configConsumer;
+	private FlatChunkGeneratorConfig config;
+	private Text tileText;
+	private Text heightText;
 	private CustomizeFlatLevelScreen.SuperflatLayersListWidget layers;
 	private ButtonWidget widgetButtonRemoveLayer;
 
-	public CustomizeFlatLevelScreen(CreateWorldScreen createWorldScreen, CompoundTag compoundTag) {
+	public CustomizeFlatLevelScreen(CreateWorldScreen parent, Consumer<FlatChunkGeneratorConfig> configConsumer, FlatChunkGeneratorConfig config) {
 		super(new TranslatableText("createWorld.customize.flat.title"));
-		this.parent = createWorldScreen;
-		this.setConfigTag(compoundTag);
+		this.parent = parent;
+		this.configConsumer = configConsumer;
+		this.config = config;
 	}
 
-	public String getConfigString() {
-		return this.config.toString();
+	public FlatChunkGeneratorConfig getConfig() {
+		return this.config;
 	}
 
-	public CompoundTag getConfigTag() {
-		return (CompoundTag)this.config.toDynamic(NbtOps.INSTANCE).getValue();
-	}
-
-	public void setConfigString(String string) {
-		this.config = FlatChunkGeneratorConfig.fromString(string);
-	}
-
-	public void setConfigTag(CompoundTag compoundTag) {
-		this.config = FlatChunkGeneratorConfig.fromDynamic(new Dynamic(NbtOps.INSTANCE, compoundTag));
+	public void setConfig(FlatChunkGeneratorConfig config) {
+		this.config = config;
 	}
 
 	@Override
 	protected void init() {
-		this.tileText = I18n.translate("createWorld.customize.flat.tile");
-		this.heightText = I18n.translate("createWorld.customize.flat.height");
+		this.tileText = new TranslatableText("createWorld.customize.flat.tile");
+		this.heightText = new TranslatableText("createWorld.customize.flat.height");
 		this.layers = new CustomizeFlatLevelScreen.SuperflatLayersListWidget();
 		this.children.add(this.layers);
 		this.widgetButtonRemoveLayer = this.addButton(
@@ -64,72 +57,72 @@ public class CustomizeFlatLevelScreen extends Screen {
 				this.height - 52,
 				150,
 				20,
-				I18n.translate("createWorld.customize.flat.removeLayer"),
+				new TranslatableText("createWorld.customize.flat.removeLayer"),
 				buttonWidget -> {
-					if (this.method_2147()) {
+					if (this.hasLayerSelected()) {
 						List<FlatChunkGeneratorLayer> list = this.config.getLayers();
 						int i = this.layers.children().indexOf(this.layers.getSelected());
 						int j = list.size() - i - 1;
 						list.remove(j);
 						this.layers
 							.setSelected(
-								list.isEmpty() ? null : (CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem)this.layers.children().get(Math.min(i, list.size() - 1))
+								list.isEmpty()
+									? null
+									: (CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry)this.layers.children().get(Math.min(i, list.size() - 1))
 							);
 						this.config.updateLayerBlocks();
-						this.method_2145();
+						this.layers.updateLayers();
+						this.updateRemoveLayerButton();
 					}
 				}
 			)
 		);
-		this.addButton(new ButtonWidget(this.width / 2 + 5, this.height - 52, 150, 20, I18n.translate("createWorld.customize.presets"), buttonWidget -> {
-			this.minecraft.openScreen(new PresetsScreen(this));
+		this.addButton(new ButtonWidget(this.width / 2 + 5, this.height - 52, 150, 20, new TranslatableText("createWorld.customize.presets"), buttonWidget -> {
+			this.client.openScreen(new PresetsScreen(this));
 			this.config.updateLayerBlocks();
-			this.method_2145();
+			this.updateRemoveLayerButton();
 		}));
-		this.addButton(new ButtonWidget(this.width / 2 - 155, this.height - 28, 150, 20, I18n.translate("gui.done"), buttonWidget -> {
-			this.parent.generatorOptionsTag = this.getConfigTag();
-			this.minecraft.openScreen(this.parent);
+		this.addButton(new ButtonWidget(this.width / 2 - 155, this.height - 28, 150, 20, ScreenTexts.DONE, buttonWidget -> {
+			this.configConsumer.accept(this.config);
+			this.client.openScreen(this.parent);
 			this.config.updateLayerBlocks();
-			this.method_2145();
 		}));
-		this.addButton(new ButtonWidget(this.width / 2 + 5, this.height - 28, 150, 20, I18n.translate("gui.cancel"), buttonWidget -> {
-			this.minecraft.openScreen(this.parent);
+		this.addButton(new ButtonWidget(this.width / 2 + 5, this.height - 28, 150, 20, ScreenTexts.CANCEL, buttonWidget -> {
+			this.client.openScreen(this.parent);
 			this.config.updateLayerBlocks();
-			this.method_2145();
 		}));
 		this.config.updateLayerBlocks();
-		this.method_2145();
+		this.updateRemoveLayerButton();
 	}
 
-	public void method_2145() {
-		this.widgetButtonRemoveLayer.active = this.method_2147();
-		this.layers.method_19372();
+	private void updateRemoveLayerButton() {
+		this.widgetButtonRemoveLayer.active = this.hasLayerSelected();
 	}
 
-	private boolean method_2147() {
+	private boolean hasLayerSelected() {
 		return this.layers.getSelected() != null;
 	}
 
 	@Override
 	public void onClose() {
-		this.minecraft.openScreen(this.parent);
+		this.client.openScreen(this.parent);
 	}
 
 	@Override
-	public void render(int i, int j, float f) {
-		this.renderBackground();
-		this.layers.render(i, j, f);
-		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 8, 16777215);
-		int k = this.width / 2 - 92 - 16;
-		this.drawString(this.font, this.tileText, k, 32, 16777215);
-		this.drawString(this.font, this.heightText, k + 2 + 213 - this.font.getStringWidth(this.heightText), 32, 16777215);
-		super.render(i, j, f);
+	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		this.renderBackground(matrices);
+		this.layers.render(matrices, mouseX, mouseY, delta);
+		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 8, 16777215);
+		int i = this.width / 2 - 92 - 16;
+		drawTextWithShadow(matrices, this.textRenderer, this.tileText, i, 32, 16777215);
+		drawTextWithShadow(matrices, this.textRenderer, this.heightText, i + 2 + 213 - this.textRenderer.getWidth(this.heightText), 32, 16777215);
+		super.render(matrices, mouseX, mouseY, delta);
 	}
 
-	class SuperflatLayersListWidget extends AlwaysSelectedEntryListWidget<CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem> {
+	class SuperflatLayersListWidget extends AlwaysSelectedEntryListWidget<CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry> {
 		public SuperflatLayersListWidget() {
 			super(
-				CustomizeFlatLevelScreen.this.minecraft,
+				CustomizeFlatLevelScreen.this.client,
 				CustomizeFlatLevelScreen.this.width,
 				CustomizeFlatLevelScreen.this.height,
 				43,
@@ -138,27 +131,23 @@ public class CustomizeFlatLevelScreen extends Screen {
 			);
 
 			for (int i = 0; i < CustomizeFlatLevelScreen.this.config.getLayers().size(); i++) {
-				this.addEntry(new CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem());
+				this.addEntry(new CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry());
 			}
 		}
 
-		public void setSelected(@Nullable CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem superflatLayerItem) {
-			super.setSelected(superflatLayerItem);
-			if (superflatLayerItem != null) {
+		public void setSelected(@Nullable CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry superflatLayerEntry) {
+			super.setSelected(superflatLayerEntry);
+			if (superflatLayerEntry != null) {
 				FlatChunkGeneratorLayer flatChunkGeneratorLayer = (FlatChunkGeneratorLayer)CustomizeFlatLevelScreen.this.config
 					.getLayers()
-					.get(CustomizeFlatLevelScreen.this.config.getLayers().size() - this.children().indexOf(superflatLayerItem) - 1);
+					.get(CustomizeFlatLevelScreen.this.config.getLayers().size() - this.children().indexOf(superflatLayerEntry) - 1);
 				Item item = flatChunkGeneratorLayer.getBlockState().getBlock().asItem();
 				if (item != Items.AIR) {
 					NarratorManager.INSTANCE.narrate(new TranslatableText("narrator.select", item.getName(new ItemStack(item))).getString());
 				}
 			}
-		}
 
-		@Override
-		protected void moveSelection(int i) {
-			super.moveSelection(i);
-			CustomizeFlatLevelScreen.this.method_2145();
+			CustomizeFlatLevelScreen.this.updateRemoveLayerButton();
 		}
 
 		@Override
@@ -167,86 +156,83 @@ public class CustomizeFlatLevelScreen extends Screen {
 		}
 
 		@Override
-		protected int getScrollbarPosition() {
+		protected int getScrollbarPositionX() {
 			return this.width - 70;
 		}
 
-		public void method_19372() {
+		public void updateLayers() {
 			int i = this.children().indexOf(this.getSelected());
 			this.clearEntries();
 
 			for (int j = 0; j < CustomizeFlatLevelScreen.this.config.getLayers().size(); j++) {
-				this.addEntry(new CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem());
+				this.addEntry(new CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry());
 			}
 
-			List<CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem> list = this.children();
+			List<CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry> list = this.children();
 			if (i >= 0 && i < list.size()) {
-				this.setSelected((CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem)list.get(i));
+				this.setSelected((CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry)list.get(i));
 			}
 		}
 
-		class SuperflatLayerItem extends AlwaysSelectedEntryListWidget.Entry<CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerItem> {
-			private SuperflatLayerItem() {
+		class SuperflatLayerEntry extends AlwaysSelectedEntryListWidget.Entry<CustomizeFlatLevelScreen.SuperflatLayersListWidget.SuperflatLayerEntry> {
+			private SuperflatLayerEntry() {
 			}
 
 			@Override
-			public void render(int i, int j, int k, int l, int m, int n, int o, boolean bl, float f) {
+			public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
 				FlatChunkGeneratorLayer flatChunkGeneratorLayer = (FlatChunkGeneratorLayer)CustomizeFlatLevelScreen.this.config
 					.getLayers()
-					.get(CustomizeFlatLevelScreen.this.config.getLayers().size() - i - 1);
+					.get(CustomizeFlatLevelScreen.this.config.getLayers().size() - index - 1);
 				BlockState blockState = flatChunkGeneratorLayer.getBlockState();
-				Block block = blockState.getBlock();
-				Item item = block.asItem();
+				Item item = blockState.getBlock().asItem();
 				if (item == Items.AIR) {
-					if (block == Blocks.field_10382) {
-						item = Items.field_8705;
-					} else if (block == Blocks.field_10164) {
-						item = Items.field_8187;
+					if (blockState.isOf(Blocks.WATER)) {
+						item = Items.WATER_BUCKET;
+					} else if (blockState.isOf(Blocks.LAVA)) {
+						item = Items.LAVA_BUCKET;
 					}
 				}
 
 				ItemStack itemStack = new ItemStack(item);
-				String string = item.getName(itemStack).asFormattedString();
-				this.method_19375(k, j, itemStack);
-				CustomizeFlatLevelScreen.this.font.draw(string, (float)(k + 18 + 5), (float)(j + 3), 16777215);
-				String string2;
-				if (i == 0) {
-					string2 = I18n.translate("createWorld.customize.flat.layer.top", flatChunkGeneratorLayer.getThickness());
-				} else if (i == CustomizeFlatLevelScreen.this.config.getLayers().size() - 1) {
-					string2 = I18n.translate("createWorld.customize.flat.layer.bottom", flatChunkGeneratorLayer.getThickness());
+				this.renderIcon(matrices, x, y, itemStack);
+				CustomizeFlatLevelScreen.this.textRenderer.draw(matrices, item.getName(itemStack), (float)(x + 18 + 5), (float)(y + 3), 16777215);
+				String string;
+				if (index == 0) {
+					string = I18n.translate("createWorld.customize.flat.layer.top", flatChunkGeneratorLayer.getThickness());
+				} else if (index == CustomizeFlatLevelScreen.this.config.getLayers().size() - 1) {
+					string = I18n.translate("createWorld.customize.flat.layer.bottom", flatChunkGeneratorLayer.getThickness());
 				} else {
-					string2 = I18n.translate("createWorld.customize.flat.layer", flatChunkGeneratorLayer.getThickness());
+					string = I18n.translate("createWorld.customize.flat.layer", flatChunkGeneratorLayer.getThickness());
 				}
 
-				CustomizeFlatLevelScreen.this.font
-					.draw(string2, (float)(k + 2 + 213 - CustomizeFlatLevelScreen.this.font.getStringWidth(string2)), (float)(j + 3), 16777215);
+				CustomizeFlatLevelScreen.this.textRenderer
+					.draw(matrices, string, (float)(x + 2 + 213 - CustomizeFlatLevelScreen.this.textRenderer.getWidth(string)), (float)(y + 3), 16777215);
 			}
 
 			@Override
-			public boolean mouseClicked(double d, double e, int i) {
-				if (i == 0) {
+			public boolean mouseClicked(double mouseX, double mouseY, int button) {
+				if (button == 0) {
 					SuperflatLayersListWidget.this.setSelected(this);
-					CustomizeFlatLevelScreen.this.method_2145();
 					return true;
 				} else {
 					return false;
 				}
 			}
 
-			private void method_19375(int i, int j, ItemStack itemStack) {
-				this.method_19373(i + 1, j + 1);
+			private void renderIcon(MatrixStack matrices, int x, int y, ItemStack iconItem) {
+				this.renderIconBackgroundTexture(matrices, x + 1, y + 1);
 				RenderSystem.enableRescaleNormal();
-				if (!itemStack.isEmpty()) {
-					CustomizeFlatLevelScreen.this.itemRenderer.renderGuiItemIcon(itemStack, i + 2, j + 2);
+				if (!iconItem.isEmpty()) {
+					CustomizeFlatLevelScreen.this.itemRenderer.renderGuiItemIcon(iconItem, x + 2, y + 2);
 				}
 
 				RenderSystem.disableRescaleNormal();
 			}
 
-			private void method_19373(int i, int j) {
+			private void renderIconBackgroundTexture(MatrixStack matrices, int x, int y) {
 				RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-				SuperflatLayersListWidget.this.minecraft.getTextureManager().bindTexture(DrawableHelper.STATS_ICON_LOCATION);
-				DrawableHelper.blit(i, j, CustomizeFlatLevelScreen.this.getBlitOffset(), 0.0F, 0.0F, 18, 18, 128, 128);
+				SuperflatLayersListWidget.this.client.getTextureManager().bindTexture(DrawableHelper.STATS_ICON_TEXTURE);
+				DrawableHelper.drawTexture(matrices, x, y, CustomizeFlatLevelScreen.this.getZOffset(), 0.0F, 0.0F, 18, 18, 128, 128);
 			}
 		}
 	}

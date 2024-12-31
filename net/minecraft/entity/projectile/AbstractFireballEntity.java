@@ -27,9 +27,9 @@ public abstract class AbstractFireballEntity extends ExplosiveProjectileEntity i
 		super(entityType, livingEntity, d, e, f, world);
 	}
 
-	public void setItem(ItemStack itemStack) {
-		if (itemStack.getItem() != Items.field_8814 || itemStack.hasTag()) {
-			this.getDataTracker().set(ITEM, Util.make(itemStack.copy(), itemStackx -> itemStackx.setCount(1)));
+	public void setItem(ItemStack stack) {
+		if (stack.getItem() != Items.FIRE_CHARGE || stack.hasTag()) {
+			this.getDataTracker().set(ITEM, Util.make(stack.copy(), itemStack -> itemStack.setCount(1)));
 		}
 	}
 
@@ -40,7 +40,7 @@ public abstract class AbstractFireballEntity extends ExplosiveProjectileEntity i
 	@Override
 	public ItemStack getStack() {
 		ItemStack itemStack = this.getItem();
-		return itemStack.isEmpty() ? new ItemStack(Items.field_8814) : itemStack;
+		return itemStack.isEmpty() ? new ItemStack(Items.FIRE_CHARGE) : itemStack;
 	}
 
 	@Override
@@ -49,18 +49,18 @@ public abstract class AbstractFireballEntity extends ExplosiveProjectileEntity i
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
 		ItemStack itemStack = this.getItem();
 		if (!itemStack.isEmpty()) {
-			compoundTag.put("Item", itemStack.toTag(new CompoundTag()));
+			tag.put("Item", itemStack.toTag(new CompoundTag()));
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		ItemStack itemStack = ItemStack.fromTag(compoundTag.getCompound("Item"));
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		ItemStack itemStack = ItemStack.fromTag(tag.getCompound("Item"));
 		this.setItem(itemStack);
 	}
 }

@@ -3,13 +3,13 @@ package net.minecraft.server.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.arguments.TimeArgumentType;
+import net.minecraft.command.argument.TimeArgumentType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.TranslatableText;
 
 public class TimeCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("time")
 							.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 						.then(
@@ -61,31 +61,31 @@ public class TimeCommand {
 		);
 	}
 
-	private static int getDayTime(ServerWorld serverWorld) {
-		return (int)(serverWorld.getTimeOfDay() % 24000L);
+	private static int getDayTime(ServerWorld world) {
+		return (int)(world.getTimeOfDay() % 24000L);
 	}
 
-	private static int executeQuery(ServerCommandSource serverCommandSource, int i) {
-		serverCommandSource.sendFeedback(new TranslatableText("commands.time.query", i), false);
+	private static int executeQuery(ServerCommandSource source, int time) {
+		source.sendFeedback(new TranslatableText("commands.time.query", time), false);
+		return time;
+	}
+
+	public static int executeSet(ServerCommandSource source, int time) {
+		for (ServerWorld serverWorld : source.getMinecraftServer().getWorlds()) {
+			serverWorld.setTimeOfDay((long)time);
+		}
+
+		source.sendFeedback(new TranslatableText("commands.time.set", time), true);
+		return getDayTime(source.getWorld());
+	}
+
+	public static int executeAdd(ServerCommandSource source, int time) {
+		for (ServerWorld serverWorld : source.getMinecraftServer().getWorlds()) {
+			serverWorld.setTimeOfDay(serverWorld.getTimeOfDay() + (long)time);
+		}
+
+		int i = getDayTime(source.getWorld());
+		source.sendFeedback(new TranslatableText("commands.time.set", i), true);
 		return i;
-	}
-
-	public static int executeSet(ServerCommandSource serverCommandSource, int i) {
-		for (ServerWorld serverWorld : serverCommandSource.getMinecraftServer().getWorlds()) {
-			serverWorld.setTimeOfDay((long)i);
-		}
-
-		serverCommandSource.sendFeedback(new TranslatableText("commands.time.set", i), true);
-		return getDayTime(serverCommandSource.getWorld());
-	}
-
-	public static int executeAdd(ServerCommandSource serverCommandSource, int i) {
-		for (ServerWorld serverWorld : serverCommandSource.getMinecraftServer().getWorlds()) {
-			serverWorld.setTimeOfDay(serverWorld.getTimeOfDay() + (long)i);
-		}
-
-		int j = getDayTime(serverCommandSource.getWorld());
-		serverCommandSource.sendFeedback(new TranslatableText("commands.time.set", j), true);
-		return j;
 	}
 }

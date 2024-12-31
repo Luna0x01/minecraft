@@ -7,14 +7,15 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class CaveSpiderEntity extends SpiderEntity {
@@ -22,25 +23,23 @@ public class CaveSpiderEntity extends SpiderEntity {
 		super(entityType, world);
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(12.0);
+	public static DefaultAttributeContainer.Builder createCaveSpiderAttributes() {
+		return SpiderEntity.createSpiderAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 12.0);
 	}
 
 	@Override
-	public boolean tryAttack(Entity entity) {
-		if (super.tryAttack(entity)) {
-			if (entity instanceof LivingEntity) {
+	public boolean tryAttack(Entity target) {
+		if (super.tryAttack(target)) {
+			if (target instanceof LivingEntity) {
 				int i = 0;
-				if (this.world.getDifficulty() == Difficulty.field_5802) {
+				if (this.world.getDifficulty() == Difficulty.NORMAL) {
 					i = 7;
-				} else if (this.world.getDifficulty() == Difficulty.field_5807) {
+				} else if (this.world.getDifficulty() == Difficulty.HARD) {
 					i = 15;
 				}
 
 				if (i > 0) {
-					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5899, i * 20, 0));
+					((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, i * 20, 0));
 				}
 			}
 
@@ -53,13 +52,13 @@ public class CaveSpiderEntity extends SpiderEntity {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
 		return entityData;
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
 		return 0.45F;
 	}
 }

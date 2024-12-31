@@ -4,7 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import java.util.Collection;
-import net.minecraft.command.arguments.FunctionArgumentType;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.argument.FunctionArgumentType;
 import net.minecraft.server.function.CommandFunction;
 import net.minecraft.server.function.CommandFunctionManager;
 import net.minecraft.text.TranslatableText;
@@ -12,12 +13,12 @@ import net.minecraft.text.TranslatableText;
 public class FunctionCommand {
 	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> {
 		CommandFunctionManager commandFunctionManager = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getCommandFunctionManager();
-		CommandSource.suggestIdentifiers(commandFunctionManager.getTags().getKeys(), suggestionsBuilder, "#");
-		return CommandSource.suggestIdentifiers(commandFunctionManager.getFunctions().keySet(), suggestionsBuilder);
+		CommandSource.suggestIdentifiers(commandFunctionManager.method_29464(), suggestionsBuilder, "#");
+		return CommandSource.suggestIdentifiers(commandFunctionManager.method_29463(), suggestionsBuilder);
 	};
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("function")
 					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2)))
 				.then(
@@ -28,17 +29,17 @@ public class FunctionCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, Collection<CommandFunction> collection) {
+	private static int execute(ServerCommandSource source, Collection<CommandFunction> functions) {
 		int i = 0;
 
-		for (CommandFunction commandFunction : collection) {
-			i += serverCommandSource.getMinecraftServer().getCommandFunctionManager().execute(commandFunction, serverCommandSource.withSilent().withMaxLevel(2));
+		for (CommandFunction commandFunction : functions) {
+			i += source.getMinecraftServer().getCommandFunctionManager().execute(commandFunction, source.withSilent().withMaxLevel(2));
 		}
 
-		if (collection.size() == 1) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.function.success.single", i, ((CommandFunction)collection.iterator().next()).getId()), true);
+		if (functions.size() == 1) {
+			source.sendFeedback(new TranslatableText("commands.function.success.single", i, ((CommandFunction)functions.iterator().next()).getId()), true);
 		} else {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.function.success.multiple", i, collection.size()), true);
+			source.sendFeedback(new TranslatableText("commands.function.success.multiple", i, functions.size()), true);
 		}
 
 		return i;

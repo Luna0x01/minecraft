@@ -5,18 +5,18 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public enum GameMode {
-	field_9218(-1, ""),
-	field_9215(0, "survival"),
-	field_9220(1, "creative"),
-	field_9216(2, "adventure"),
-	field_9219(3, "spectator");
+	NOT_SET(-1, ""),
+	SURVIVAL(0, "survival"),
+	CREATIVE(1, "creative"),
+	ADVENTURE(2, "adventure"),
+	SPECTATOR(3, "spectator");
 
 	private final int id;
 	private final String name;
 
-	private GameMode(int j, String string2) {
-		this.id = j;
-		this.name = string2;
+	private GameMode(int id, String name) {
+		this.id = id;
+		this.name = name;
 	}
 
 	public int getId() {
@@ -31,63 +31,63 @@ public enum GameMode {
 		return new TranslatableText("gameMode." + this.name);
 	}
 
-	public void setAbilitites(PlayerAbilities playerAbilities) {
-		if (this == field_9220) {
-			playerAbilities.allowFlying = true;
-			playerAbilities.creativeMode = true;
-			playerAbilities.invulnerable = true;
-		} else if (this == field_9219) {
-			playerAbilities.allowFlying = true;
-			playerAbilities.creativeMode = false;
-			playerAbilities.invulnerable = true;
-			playerAbilities.flying = true;
+	public void setAbilities(PlayerAbilities abilities) {
+		if (this == CREATIVE) {
+			abilities.allowFlying = true;
+			abilities.creativeMode = true;
+			abilities.invulnerable = true;
+		} else if (this == SPECTATOR) {
+			abilities.allowFlying = true;
+			abilities.creativeMode = false;
+			abilities.invulnerable = true;
+			abilities.flying = true;
 		} else {
-			playerAbilities.allowFlying = false;
-			playerAbilities.creativeMode = false;
-			playerAbilities.invulnerable = false;
-			playerAbilities.flying = false;
+			abilities.allowFlying = false;
+			abilities.creativeMode = false;
+			abilities.invulnerable = false;
+			abilities.flying = false;
 		}
 
-		playerAbilities.allowModifyWorld = !this.shouldLimitWorldModification();
+		abilities.allowModifyWorld = !this.isBlockBreakingRestricted();
 	}
 
-	public boolean shouldLimitWorldModification() {
-		return this == field_9216 || this == field_9219;
+	public boolean isBlockBreakingRestricted() {
+		return this == ADVENTURE || this == SPECTATOR;
 	}
 
 	public boolean isCreative() {
-		return this == field_9220;
+		return this == CREATIVE;
 	}
 
 	public boolean isSurvivalLike() {
-		return this == field_9215 || this == field_9216;
+		return this == SURVIVAL || this == ADVENTURE;
 	}
 
-	public static GameMode byId(int i) {
-		return byId(i, field_9215);
+	public static GameMode byId(int id) {
+		return byId(id, SURVIVAL);
 	}
 
-	public static GameMode byId(int i, GameMode gameMode) {
-		for (GameMode gameMode2 : values()) {
-			if (gameMode2.id == i) {
-				return gameMode2;
+	public static GameMode byId(int id, GameMode defaultMode) {
+		for (GameMode gameMode : values()) {
+			if (gameMode.id == id) {
+				return gameMode;
 			}
 		}
 
-		return gameMode;
+		return defaultMode;
 	}
 
-	public static GameMode byName(String string) {
-		return byName(string, field_9215);
+	public static GameMode byName(String name) {
+		return byName(name, SURVIVAL);
 	}
 
-	public static GameMode byName(String string, GameMode gameMode) {
-		for (GameMode gameMode2 : values()) {
-			if (gameMode2.name.equals(string)) {
-				return gameMode2;
+	public static GameMode byName(String name, GameMode defaultMode) {
+		for (GameMode gameMode : values()) {
+			if (gameMode.name.equals(name)) {
+				return gameMode;
 			}
 		}
 
-		return gameMode;
+		return defaultMode;
 	}
 }

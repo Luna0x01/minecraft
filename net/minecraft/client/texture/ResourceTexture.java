@@ -15,13 +15,13 @@ public class ResourceTexture extends AbstractTexture {
 	private static final Logger LOGGER = LogManager.getLogger();
 	protected final Identifier location;
 
-	public ResourceTexture(Identifier identifier) {
-		this.location = identifier;
+	public ResourceTexture(Identifier location) {
+		this.location = location;
 	}
 
 	@Override
-	public void load(ResourceManager resourceManager) throws IOException {
-		ResourceTexture.TextureData textureData = this.loadTextureData(resourceManager);
+	public void load(ResourceManager manager) throws IOException {
+		ResourceTexture.TextureData textureData = this.loadTextureData(manager);
 		textureData.checkException();
 		TextureResourceMetadata textureResourceMetadata = textureData.getMetadata();
 		boolean bl;
@@ -36,15 +36,15 @@ public class ResourceTexture extends AbstractTexture {
 
 		NativeImage nativeImage = textureData.getImage();
 		if (!RenderSystem.isOnRenderThreadOrInit()) {
-			RenderSystem.recordRenderCall(() -> this.method_22810(nativeImage, bl, bl2));
+			RenderSystem.recordRenderCall(() -> this.upload(nativeImage, bl, bl2));
 		} else {
-			this.method_22810(nativeImage, bl, bl2);
+			this.upload(nativeImage, bl, bl2);
 		}
 	}
 
-	private void method_22810(NativeImage nativeImage, boolean bl, boolean bl2) {
-		TextureUtil.prepareImage(this.getGlId(), 0, nativeImage.getWidth(), nativeImage.getHeight());
-		nativeImage.upload(0, 0, 0, 0, 0, nativeImage.getWidth(), nativeImage.getHeight(), bl, bl2, false, true);
+	private void upload(NativeImage nativeImage, boolean blur, boolean clamp) {
+		TextureUtil.allocate(this.getGlId(), 0, nativeImage.getWidth(), nativeImage.getHeight());
+		nativeImage.upload(0, 0, 0, 0, 0, nativeImage.getWidth(), nativeImage.getHeight(), blur, clamp, false, true);
 	}
 
 	protected ResourceTexture.TextureData loadTextureData(ResourceManager resourceManager) {
@@ -59,16 +59,16 @@ public class ResourceTexture extends AbstractTexture {
 		@Nullable
 		private final IOException exception;
 
-		public TextureData(IOException iOException) {
-			this.exception = iOException;
+		public TextureData(IOException exception) {
+			this.exception = exception;
 			this.metadata = null;
 			this.image = null;
 		}
 
-		public TextureData(@Nullable TextureResourceMetadata textureResourceMetadata, NativeImage nativeImage) {
+		public TextureData(@Nullable TextureResourceMetadata metadata, NativeImage image) {
 			this.exception = null;
-			this.metadata = textureResourceMetadata;
-			this.image = nativeImage;
+			this.metadata = metadata;
+			this.image = image;
 		}
 
 		public static ResourceTexture.TextureData load(ResourceManager resourceManager, Identifier identifier) {

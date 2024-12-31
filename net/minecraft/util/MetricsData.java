@@ -6,8 +6,8 @@ public class MetricsData {
 	private int sampleCount;
 	private int writeIndex;
 
-	public void pushSample(long l) {
-		this.samples[this.writeIndex] = l;
+	public void pushSample(long time) {
+		this.samples[this.writeIndex] = time;
 		this.writeIndex++;
 		if (this.writeIndex == 240) {
 			this.writeIndex = 0;
@@ -34,8 +34,8 @@ public class MetricsData {
 		return this.writeIndex;
 	}
 
-	public int wrapIndex(int i) {
-		return i % 240;
+	public int wrapIndex(int index) {
+		return index % 240;
 	}
 
 	public long[] getSamples() {

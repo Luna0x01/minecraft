@@ -1,11 +1,16 @@
 package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import java.util.List;
+import java.util.Map;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
 public class RepairItemRecipe extends SpecialCraftingRecipe {
@@ -16,8 +21,8 @@ public class RepairItemRecipe extends SpecialCraftingRecipe {
 	public boolean matches(CraftingInventory craftingInventory, World world) {
 		List<ItemStack> list = Lists.newArrayList();
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack = craftingInventory.getStack(i);
 			if (!itemStack.isEmpty()) {
 				list.add(itemStack);
 				if (list.size() > 1) {
@@ -35,8 +40,8 @@ public class RepairItemRecipe extends SpecialCraftingRecipe {
 	public ItemStack craft(CraftingInventory craftingInventory) {
 		List<ItemStack> list = Lists.newArrayList();
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack = craftingInventory.getStack(i);
 			if (!itemStack.isEmpty()) {
 				list.add(itemStack);
 				if (list.size() > 1) {
@@ -63,6 +68,19 @@ public class RepairItemRecipe extends SpecialCraftingRecipe {
 
 				ItemStack itemStack5 = new ItemStack(itemStack3.getItem());
 				itemStack5.setDamage(m);
+				Map<Enchantment, Integer> map = Maps.newHashMap();
+				Map<Enchantment, Integer> map2 = EnchantmentHelper.get(itemStack3);
+				Map<Enchantment, Integer> map3 = EnchantmentHelper.get(itemStack4);
+				Registry.ENCHANTMENT.stream().filter(Enchantment::isCursed).forEach(enchantment -> {
+					int ix = Math.max((Integer)map2.getOrDefault(enchantment, 0), (Integer)map3.getOrDefault(enchantment, 0));
+					if (ix > 0) {
+						map.put(enchantment, ix);
+					}
+				});
+				if (!map.isEmpty()) {
+					EnchantmentHelper.set(map, itemStack5);
+				}
+
 				return itemStack5;
 			}
 		}
@@ -71,8 +89,8 @@ public class RepairItemRecipe extends SpecialCraftingRecipe {
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
-		return i * j >= 2;
+	public boolean fits(int width, int height) {
+		return width * height >= 2;
 	}
 
 	@Override

@@ -1,70 +1,56 @@
 package net.minecraft.text;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Streams;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.Arrays;
-import java.util.IllegalFormatException;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.util.Language;
 
 public class TranslatableText extends BaseText implements ParsableText {
-	private static final Language EMPTY_LANGUAGE = new Language();
-	private static final Language LANGUAGE = Language.getInstance();
+	private static final Object[] EMPTY_ARGUMENTS = new Object[0];
+	private static final StringVisitable LITERAL_PERCENT_SIGN = StringVisitable.plain("%");
+	private static final StringVisitable NULL_ARGUMENT = StringVisitable.plain("null");
 	private final String key;
 	private final Object[] args;
-	private final Object lock = new Object();
-	private long languageReloadTimestamp = -1L;
-	protected final List<Text> translations = Lists.newArrayList();
-	public static final Pattern ARG_FORMAT = Pattern.compile("%(?:(\\d+)\\$)?([A-Za-z%]|$)");
+	@Nullable
+	private Language languageCache;
+	private final List<StringVisitable> translations = Lists.newArrayList();
+	private static final Pattern ARG_FORMAT = Pattern.compile("%(?:(\\d+)\\$)?([A-Za-z%]|$)");
 
-	public TranslatableText(String string, Object... objects) {
-		this.key = string;
-		this.args = objects;
+	public TranslatableText(String key) {
+		this.key = key;
+		this.args = EMPTY_ARGUMENTS;
+	}
 
-		for (int i = 0; i < objects.length; i++) {
-			Object object = objects[i];
-			if (object instanceof Text) {
-				Text text = ((Text)object).deepCopy();
-				this.args[i] = text;
-				text.getStyle().setParent(this.getStyle());
-			} else if (object == null) {
-				this.args[i] = "null";
+	public TranslatableText(String key, Object... args) {
+		this.key = key;
+		this.args = args;
+	}
+
+	private void updateTranslations() {
+		Language language = Language.getInstance();
+		if (language != this.languageCache) {
+			this.languageCache = language;
+			this.translations.clear();
+			String string = language.get(this.key);
+
+			try {
+				this.setTranslation(string);
+			} catch (TranslationException var4) {
+				this.translations.clear();
+				this.translations.add(StringVisitable.plain(string));
 			}
 		}
 	}
 
-	@VisibleForTesting
-	synchronized void updateTranslations() {
-		synchronized (this.lock) {
-			long l = LANGUAGE.getTimeLoaded();
-			if (l == this.languageReloadTimestamp) {
-				return;
-			}
-
-			this.languageReloadTimestamp = l;
-			this.translations.clear();
-		}
-
-		String string = LANGUAGE.translate(this.key);
-
-		try {
-			this.setTranslation(string);
-		} catch (TranslationException var5) {
-			this.translations.clear();
-			this.translations.add(new LiteralText(string));
-		}
-	}
-
-	protected void setTranslation(String string) {
-		Matcher matcher = ARG_FORMAT.matcher(string);
+	private void setTranslation(String translation) {
+		Matcher matcher = ARG_FORMAT.matcher(translation);
 
 		try {
 			int i = 0;
@@ -74,17 +60,18 @@ public class TranslatableText extends BaseText implements ParsableText {
 				int k = matcher.start();
 				int l = matcher.end();
 				if (k > j) {
-					Text text = new LiteralText(String.format(string.substring(j, k)));
-					text.getStyle().setParent(this.getStyle());
-					this.translations.add(text);
+					String string = translation.substring(j, k);
+					if (string.indexOf(37) != -1) {
+						throw new IllegalArgumentException();
+					}
+
+					this.translations.add(StringVisitable.plain(string));
 				}
 
 				String string2 = matcher.group(2);
-				String string3 = string.substring(k, l);
+				String string3 = translation.substring(k, l);
 				if ("%".equals(string2) && "%%".equals(string3)) {
-					Text text2 = new LiteralText("%");
-					text2.getStyle().setParent(this.getStyle());
-					this.translations.add(text2);
+					this.translations.add(LITERAL_PERCENT_SIGN);
 				} else {
 					if (!"s".equals(string2)) {
 						throw new TranslationException(this, "Unsupported format: '" + string3 + "'");
@@ -100,94 +87,74 @@ public class TranslatableText extends BaseText implements ParsableText {
 				j = l;
 			}
 
-			if (j < string.length()) {
-				Text text3 = new LiteralText(String.format(string.substring(j)));
-				text3.getStyle().setParent(this.getStyle());
-				this.translations.add(text3);
+			if (j < translation.length()) {
+				String string5 = translation.substring(j);
+				if (string5.indexOf(37) != -1) {
+					throw new IllegalArgumentException();
+				}
+
+				this.translations.add(StringVisitable.plain(string5));
 			}
-		} catch (IllegalFormatException var11) {
+		} catch (IllegalArgumentException var11) {
 			throw new TranslationException(this, var11);
 		}
 	}
 
-	private Text getArg(int i) {
-		if (i >= this.args.length) {
-			throw new TranslationException(this, i);
+	private StringVisitable getArg(int index) {
+		if (index >= this.args.length) {
+			throw new TranslationException(this, index);
 		} else {
-			Object object = this.args[i];
-			Text text;
+			Object object = this.args[index];
 			if (object instanceof Text) {
-				text = (Text)object;
+				return (Text)object;
 			} else {
-				text = new LiteralText(object == null ? "null" : object.toString());
-				text.getStyle().setParent(this.getStyle());
-			}
-
-			return text;
-		}
-	}
-
-	@Override
-	public Text setStyle(Style style) {
-		super.setStyle(style);
-
-		for (Object object : this.args) {
-			if (object instanceof Text) {
-				((Text)object).getStyle().setParent(this.getStyle());
+				return object == null ? NULL_ARGUMENT : StringVisitable.plain(object.toString());
 			}
 		}
-
-		if (this.languageReloadTimestamp > -1L) {
-			for (Text text : this.translations) {
-				text.getStyle().setParent(style);
-			}
-		}
-
-		return this;
-	}
-
-	@Override
-	public Stream<Text> stream() {
-		this.updateTranslations();
-		return Streams.concat(new Stream[]{this.translations.stream(), this.siblings.stream()}).flatMap(Text::stream);
-	}
-
-	@Override
-	public String asString() {
-		this.updateTranslations();
-		StringBuilder stringBuilder = new StringBuilder();
-
-		for (Text text : this.translations) {
-			stringBuilder.append(text.asString());
-		}
-
-		return stringBuilder.toString();
 	}
 
 	public TranslatableText copy() {
-		Object[] objects = new Object[this.args.length];
-
-		for (int i = 0; i < this.args.length; i++) {
-			if (this.args[i] instanceof Text) {
-				objects[i] = ((Text)this.args[i]).deepCopy();
-			} else {
-				objects[i] = this.args[i];
-			}
-		}
-
-		return new TranslatableText(this.key, objects);
+		return new TranslatableText(this.key, this.args);
 	}
 
 	@Override
-	public Text parse(@Nullable ServerCommandSource serverCommandSource, @Nullable Entity entity, int i) throws CommandSyntaxException {
+	public <T> Optional<T> visitSelf(StringVisitable.StyledVisitor<T> visitor, Style style) {
+		this.updateTranslations();
+
+		for (StringVisitable stringVisitable : this.translations) {
+			Optional<T> optional = stringVisitable.visit(visitor, style);
+			if (optional.isPresent()) {
+				return optional;
+			}
+		}
+
+		return Optional.empty();
+	}
+
+	@Override
+	public <T> Optional<T> visitSelf(StringVisitable.Visitor<T> visitor) {
+		this.updateTranslations();
+
+		for (StringVisitable stringVisitable : this.translations) {
+			Optional<T> optional = stringVisitable.visit(visitor);
+			if (optional.isPresent()) {
+				return optional;
+			}
+		}
+
+		return Optional.empty();
+	}
+
+	@Override
+	public MutableText parse(@Nullable ServerCommandSource source, @Nullable Entity sender, int depth) throws CommandSyntaxException {
 		Object[] objects = new Object[this.args.length];
 
-		for (int j = 0; j < objects.length; j++) {
-			Object object = this.args[j];
+		for (int i = 0; i < objects.length; i++) {
+			Object object = this.args[i];
 			if (object instanceof Text) {
-				objects[j] = Texts.parse(serverCommandSource, (Text)object, entity, i);
+				objects[i] = Texts.parse(source, (Text)object, sender, depth);
 			} else {
-				objects[j] = object;
+				objects[i] = object;
 			}
 		}
 

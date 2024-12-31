@@ -12,16 +12,10 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 
 public class BanListCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("banlist")
-							.requires(
-								serverCommandSource -> (
-											serverCommandSource.getMinecraftServer().getPlayerManager().getUserBanList().isEnabled()
-												|| serverCommandSource.getMinecraftServer().getPlayerManager().getIpBanList().isEnabled()
-										)
-										&& serverCommandSource.hasPermissionLevel(3)
-							))
+							.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(3)))
 						.executes(
 							commandContext -> {
 								PlayerManager playerManager = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getPlayerManager();
@@ -52,17 +46,17 @@ public class BanListCommand {
 		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, Collection<? extends BanEntry<?>> collection) {
-		if (collection.isEmpty()) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.banlist.none"), false);
+	private static int execute(ServerCommandSource source, Collection<? extends BanEntry<?>> targets) {
+		if (targets.isEmpty()) {
+			source.sendFeedback(new TranslatableText("commands.banlist.none"), false);
 		} else {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.banlist.list", collection.size()), false);
+			source.sendFeedback(new TranslatableText("commands.banlist.list", targets.size()), false);
 
-			for (BanEntry<?> banEntry : collection) {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.banlist.entry", banEntry.toText(), banEntry.getSource(), banEntry.getReason()), false);
+			for (BanEntry<?> banEntry : targets) {
+				source.sendFeedback(new TranslatableText("commands.banlist.entry", banEntry.toText(), banEntry.getSource(), banEntry.getReason()), false);
 			}
 		}
 
-		return collection.size();
+		return targets.size();
 	}
 }

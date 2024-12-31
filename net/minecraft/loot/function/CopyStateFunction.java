@@ -25,22 +25,27 @@ public class CopyStateFunction extends ConditionalLootFunction {
 	private final Block block;
 	private final Set<Property<?>> properties;
 
-	private CopyStateFunction(LootCondition[] lootConditions, Block block, Set<Property<?>> set) {
+	private CopyStateFunction(LootCondition[] lootConditions, Block block, Set<Property<?>> properties) {
 		super(lootConditions);
 		this.block = block;
-		this.properties = set;
+		this.properties = properties;
+	}
+
+	@Override
+	public LootFunctionType getType() {
+		return LootFunctionTypes.COPY_STATE;
 	}
 
 	@Override
 	public Set<LootContextParameter<?>> getRequiredParameters() {
-		return ImmutableSet.of(LootContextParameters.field_1224);
+		return ImmutableSet.of(LootContextParameters.BLOCK_STATE);
 	}
 
 	@Override
-	protected ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		BlockState blockState = lootContext.get(LootContextParameters.field_1224);
+	protected ItemStack process(ItemStack stack, LootContext context) {
+		BlockState blockState = context.get(LootContextParameters.BLOCK_STATE);
 		if (blockState != null) {
-			CompoundTag compoundTag = itemStack.getOrCreateTag();
+			CompoundTag compoundTag = stack.getOrCreateTag();
 			CompoundTag compoundTag2;
 			if (compoundTag.contains("BlockStateTag", 10)) {
 				compoundTag2 = compoundTag.getCompound("BlockStateTag");
@@ -52,7 +57,7 @@ public class CopyStateFunction extends ConditionalLootFunction {
 			this.properties.stream().filter(blockState::contains).forEach(property -> compoundTag2.putString(property.getName(), method_21893(blockState, property)));
 		}
 
-		return itemStack;
+		return stack;
 	}
 
 	public static CopyStateFunction.Builder getBuilder(Block block) {
@@ -91,14 +96,10 @@ public class CopyStateFunction extends ConditionalLootFunction {
 		}
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<CopyStateFunction> {
-		public Factory() {
-			super(new Identifier("copy_state"), CopyStateFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<CopyStateFunction> {
 		public void toJson(JsonObject jsonObject, CopyStateFunction copyStateFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, copyStateFunction, jsonSerializationContext);
-			jsonObject.addProperty("block", Registry.field_11146.getId(copyStateFunction.block).toString());
+			jsonObject.addProperty("block", Registry.BLOCK.getId(copyStateFunction.block).toString());
 			JsonArray jsonArray = new JsonArray();
 			copyStateFunction.properties.forEach(property -> jsonArray.add(property.getName()));
 			jsonObject.add("properties", jsonArray);
@@ -106,7 +107,7 @@ public class CopyStateFunction extends ConditionalLootFunction {
 
 		public CopyStateFunction fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootCondition[] lootConditions) {
 			Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "block"));
-			Block block = (Block)Registry.field_11146.getOrEmpty(identifier).orElseThrow(() -> new IllegalArgumentException("Can't find block " + identifier));
+			Block block = (Block)Registry.BLOCK.getOrEmpty(identifier).orElseThrow(() -> new IllegalArgumentException("Can't find block " + identifier));
 			StateManager<Block, BlockState> stateManager = block.getStateManager();
 			Set<Property<?>> set = Sets.newHashSet();
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "properties", null);

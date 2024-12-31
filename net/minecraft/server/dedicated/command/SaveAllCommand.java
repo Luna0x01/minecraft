@@ -10,10 +10,10 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 
 public class SaveAllCommand {
-	private static final SimpleCommandExceptionType SAVE_FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.save.failed"));
+	private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.save.failed"));
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("save-all")
 						.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)))
 					.executes(commandContext -> saveAll((ServerCommandSource)commandContext.getSource(), false)))
@@ -21,15 +21,15 @@ public class SaveAllCommand {
 		);
 	}
 
-	private static int saveAll(ServerCommandSource serverCommandSource, boolean bl) throws CommandSyntaxException {
-		serverCommandSource.sendFeedback(new TranslatableText("commands.save.saving"), false);
-		MinecraftServer minecraftServer = serverCommandSource.getMinecraftServer();
+	private static int saveAll(ServerCommandSource source, boolean flush) throws CommandSyntaxException {
+		source.sendFeedback(new TranslatableText("commands.save.saving"), false);
+		MinecraftServer minecraftServer = source.getMinecraftServer();
 		minecraftServer.getPlayerManager().saveAllPlayerData();
-		boolean bl2 = minecraftServer.save(true, bl, true);
-		if (!bl2) {
-			throw SAVE_FAILED_EXCEPTION.create();
+		boolean bl = minecraftServer.save(true, flush, true);
+		if (!bl) {
+			throw FAILED_EXCEPTION.create();
 		} else {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.save.success"), true);
+			source.sendFeedback(new TranslatableText("commands.save.success"), true);
 			return 1;
 		}
 	}

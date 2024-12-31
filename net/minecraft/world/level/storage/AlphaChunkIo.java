@@ -3,35 +3,37 @@ package net.minecraft.world.level.storage;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.DynamicRegistryManager;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 
 public class AlphaChunkIo {
-	public static AlphaChunkIo.AlphaChunk readAlphaChunk(CompoundTag compoundTag) {
-		int i = compoundTag.getInt("xPos");
-		int j = compoundTag.getInt("zPos");
+	public static AlphaChunkIo.AlphaChunk readAlphaChunk(CompoundTag tag) {
+		int i = tag.getInt("xPos");
+		int j = tag.getInt("zPos");
 		AlphaChunkIo.AlphaChunk alphaChunk = new AlphaChunkIo.AlphaChunk(i, j);
-		alphaChunk.blocks = compoundTag.getByteArray("Blocks");
-		alphaChunk.data = new AlphaChunkDataArray(compoundTag.getByteArray("Data"), 7);
-		alphaChunk.skyLight = new AlphaChunkDataArray(compoundTag.getByteArray("SkyLight"), 7);
-		alphaChunk.blockLight = new AlphaChunkDataArray(compoundTag.getByteArray("BlockLight"), 7);
-		alphaChunk.heightMap = compoundTag.getByteArray("HeightMap");
-		alphaChunk.terrainPopulated = compoundTag.getBoolean("TerrainPopulated");
-		alphaChunk.entities = compoundTag.getList("Entities", 10);
-		alphaChunk.blockEntities = compoundTag.getList("TileEntities", 10);
-		alphaChunk.blockTicks = compoundTag.getList("TileTicks", 10);
+		alphaChunk.blocks = tag.getByteArray("Blocks");
+		alphaChunk.data = new AlphaChunkDataArray(tag.getByteArray("Data"), 7);
+		alphaChunk.skyLight = new AlphaChunkDataArray(tag.getByteArray("SkyLight"), 7);
+		alphaChunk.blockLight = new AlphaChunkDataArray(tag.getByteArray("BlockLight"), 7);
+		alphaChunk.heightMap = tag.getByteArray("HeightMap");
+		alphaChunk.terrainPopulated = tag.getBoolean("TerrainPopulated");
+		alphaChunk.entities = tag.getList("Entities", 10);
+		alphaChunk.blockEntities = tag.getList("TileEntities", 10);
+		alphaChunk.blockTicks = tag.getList("TileTicks", 10);
 
 		try {
-			alphaChunk.lastUpdate = compoundTag.getLong("LastUpdate");
+			alphaChunk.lastUpdate = tag.getLong("LastUpdate");
 		} catch (ClassCastException var5) {
-			alphaChunk.lastUpdate = (long)compoundTag.getInt("LastUpdate");
+			alphaChunk.lastUpdate = (long)tag.getInt("LastUpdate");
 		}
 
 		return alphaChunk;
 	}
 
-	public static void convertAlphaChunk(AlphaChunkIo.AlphaChunk alphaChunk, CompoundTag compoundTag, BiomeSource biomeSource) {
+	public static void convertAlphaChunk(DynamicRegistryManager.Impl impl, AlphaChunkIo.AlphaChunk alphaChunk, CompoundTag compoundTag, BiomeSource biomeSource) {
 		compoundTag.putInt("xPos", alphaChunk.x);
 		compoundTag.putInt("zPos", alphaChunk.z);
 		compoundTag.putLong("LastUpdate", alphaChunk.lastUpdate);
@@ -91,7 +93,7 @@ public class AlphaChunkIo {
 		}
 
 		compoundTag.put("Sections", listTag);
-		compoundTag.putIntArray("Biomes", new BiomeArray(new ChunkPos(alphaChunk.x, alphaChunk.z), biomeSource).toIntArray());
+		compoundTag.putIntArray("Biomes", new BiomeArray(impl.get(Registry.BIOME_KEY), new ChunkPos(alphaChunk.x, alphaChunk.z), biomeSource).toIntArray());
 		compoundTag.put("Entities", alphaChunk.entities);
 		compoundTag.put("TileEntities", alphaChunk.blockEntities);
 		if (alphaChunk.blockTicks != null) {
@@ -115,9 +117,9 @@ public class AlphaChunkIo {
 		public final int x;
 		public final int z;
 
-		public AlphaChunk(int i, int j) {
-			this.x = i;
-			this.z = j;
+		public AlphaChunk(int x, int z) {
+			this.x = x;
+			this.z = z;
 		}
 	}
 }

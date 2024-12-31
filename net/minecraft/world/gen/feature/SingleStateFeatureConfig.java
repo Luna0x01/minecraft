@@ -1,27 +1,16 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 
 public class SingleStateFeatureConfig implements FeatureConfig {
+	public static final Codec<SingleStateFeatureConfig> CODEC = BlockState.CODEC
+		.fieldOf("state")
+		.xmap(SingleStateFeatureConfig::new, singleStateFeatureConfig -> singleStateFeatureConfig.state)
+		.codec();
 	public final BlockState state;
 
-	public SingleStateFeatureConfig(BlockState blockState) {
-		this.state = blockState;
-	}
-
-	@Override
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		return new Dynamic(
-			dynamicOps, dynamicOps.createMap(ImmutableMap.of(dynamicOps.createString("state"), BlockState.serialize(dynamicOps, this.state).getValue()))
-		);
-	}
-
-	public static <T> SingleStateFeatureConfig deserialize(Dynamic<T> dynamic) {
-		BlockState blockState = (BlockState)dynamic.get("state").map(BlockState::deserialize).orElse(Blocks.field_10124.getDefaultState());
-		return new SingleStateFeatureConfig(blockState);
+	public SingleStateFeatureConfig(BlockState state) {
+		this.state = state;
 	}
 }

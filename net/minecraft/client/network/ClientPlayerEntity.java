@@ -1,11 +1,12 @@
 package net.minecraft.client.network;
 
 import com.google.common.collect.Lists;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.JigsawBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
@@ -13,23 +14,23 @@ import net.minecraft.block.entity.StructureBlockBlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.BookEditScreen;
 import net.minecraft.client.gui.screen.ingame.CommandBlockScreen;
-import net.minecraft.client.gui.screen.ingame.ContainerScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.JigsawBlockScreen;
 import net.minecraft.client.gui.screen.ingame.MinecartCommandBlockScreen;
 import net.minecraft.client.gui.screen.ingame.SignEditScreen;
 import net.minecraft.client.gui.screen.ingame.StructureBlockScreen;
 import net.minecraft.client.input.Input;
-import net.minecraft.client.recipe.book.ClientRecipeBook;
+import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.sound.AmbientSoundLoops;
 import net.minecraft.client.sound.AmbientSoundPlayer;
+import net.minecraft.client.sound.BiomeEffectSoundPlayer;
 import net.minecraft.client.sound.BubbleColumnSoundPlayer;
 import net.minecraft.client.sound.ElytraSoundInstance;
-import net.minecraft.client.sound.MinecartSoundInstance;
+import net.minecraft.client.sound.MinecartInsideSoundInstance;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.ClientPlayerTickable;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.JumpingMount;
@@ -45,25 +46,26 @@ import net.minecraft.item.ElytraItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
+import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
+import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.RecipeBookDataC2SPacket;
+import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
+import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.server.network.packet.ChatMessageC2SPacket;
-import net.minecraft.server.network.packet.ClientCommandC2SPacket;
-import net.minecraft.server.network.packet.ClientStatusC2SPacket;
-import net.minecraft.server.network.packet.GuiCloseC2SPacket;
-import net.minecraft.server.network.packet.HandSwingC2SPacket;
-import net.minecraft.server.network.packet.PlayerActionC2SPacket;
-import net.minecraft.server.network.packet.PlayerInputC2SPacket;
-import net.minecraft.server.network.packet.PlayerMoveC2SPacket;
-import net.minecraft.server.network.packet.RecipeBookDataC2SPacket;
-import net.minecraft.server.network.packet.UpdatePlayerAbilitiesC2SPacket;
-import net.minecraft.server.network.packet.VehicleMoveC2SPacket;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.text.Text;
+import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -73,7 +75,6 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.CommandBlockExecutor;
-import net.minecraft.world.dimension.DimensionType;
 
 public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	public final ClientPlayNetworkHandler networkHandler;
@@ -87,15 +88,16 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	private float lastYaw;
 	private float lastPitch;
 	private boolean lastOnGround;
-	private boolean lastIsHoldingSneakKey;
+	private boolean inSneakingPose;
+	private boolean lastSneaking;
 	private boolean lastSprinting;
-	private int field_3923;
-	private boolean field_3918;
+	private int ticksSinceLastPositionPacketSent;
+	private boolean healthInitialized;
 	private String serverBrand;
 	public Input input;
 	protected final MinecraftClient client;
-	protected int field_3935;
-	public int field_3921;
+	protected int ticksLeftToDoubleTapSprint;
+	public int ticksSinceSprintingChanged;
 	public float renderYaw;
 	public float renderPitch;
 	public float lastRenderYaw;
@@ -107,50 +109,49 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	private boolean usingItem;
 	private Hand activeHand;
 	private boolean riding;
-	private boolean lastAutoJump = true;
-	private int field_3934;
+	private boolean autoJumpEnabled = true;
+	private int ticksToNextAutojump;
 	private boolean field_3939;
-	private int field_3917;
+	private int underwaterVisibilityTicks;
 	private boolean showsDeathScreen = true;
 
 	public ClientPlayerEntity(
-		MinecraftClient minecraftClient,
-		ClientWorld clientWorld,
-		ClientPlayNetworkHandler clientPlayNetworkHandler,
-		StatHandler statHandler,
-		ClientRecipeBook clientRecipeBook
+		MinecraftClient client,
+		ClientWorld world,
+		ClientPlayNetworkHandler networkHandler,
+		StatHandler stats,
+		ClientRecipeBook recipeBook,
+		boolean lastSneaking,
+		boolean lastSprinting
 	) {
-		super(clientWorld, clientPlayNetworkHandler.getProfile());
-		this.networkHandler = clientPlayNetworkHandler;
-		this.statHandler = statHandler;
-		this.recipeBook = clientRecipeBook;
-		this.client = minecraftClient;
-		this.dimension = DimensionType.field_13072;
-		this.tickables.add(new AmbientSoundPlayer(this, minecraftClient.getSoundManager()));
+		super(world, networkHandler.getProfile());
+		this.client = client;
+		this.networkHandler = networkHandler;
+		this.statHandler = stats;
+		this.recipeBook = recipeBook;
+		this.lastSneaking = lastSneaking;
+		this.lastSprinting = lastSprinting;
+		this.tickables.add(new AmbientSoundPlayer(this, client.getSoundManager()));
 		this.tickables.add(new BubbleColumnSoundPlayer(this));
+		this.tickables.add(new BiomeEffectSoundPlayer(this, client.getSoundManager(), world.getBiomeAccess()));
 	}
 
 	@Override
-	public boolean isGlowing() {
-		return super.isGlowing() || this.client.player.isSpectator() && this.client.options.keySpectatorOutlines.isPressed();
-	}
-
-	@Override
-	public boolean damage(DamageSource damageSource, float f) {
+	public boolean damage(DamageSource source, float amount) {
 		return false;
 	}
 
 	@Override
-	public void heal(float f) {
+	public void heal(float amount) {
 	}
 
 	@Override
-	public boolean startRiding(Entity entity, boolean bl) {
-		if (!super.startRiding(entity, bl)) {
+	public boolean startRiding(Entity entity, boolean force) {
+		if (!super.startRiding(entity, force)) {
 			return false;
 		} else {
 			if (entity instanceof AbstractMinecartEntity) {
-				this.client.getSoundManager().play(new MinecartSoundInstance(this, (AbstractMinecartEntity)entity));
+				this.client.getSoundManager().play(new MinecartInsideSoundInstance(this, (AbstractMinecartEntity)entity));
 			}
 
 			if (entity instanceof BoatEntity) {
@@ -164,19 +165,19 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void stopRiding() {
-		super.stopRiding();
+	public void method_29239() {
+		super.method_29239();
 		this.riding = false;
 	}
 
 	@Override
-	public float getPitch(float f) {
+	public float getPitch(float tickDelta) {
 		return this.pitch;
 	}
 
 	@Override
-	public float getYaw(float f) {
-		return this.hasVehicle() ? super.getYaw(f) : this.yaw;
+	public float getYaw(float tickDelta) {
+		return this.hasVehicle() ? super.getYaw(tickDelta) : this.yaw;
 	}
 
 	@Override
@@ -200,19 +201,29 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
+	public float getMoodPercentage() {
+		for (ClientPlayerTickable clientPlayerTickable : this.tickables) {
+			if (clientPlayerTickable instanceof BiomeEffectSoundPlayer) {
+				return ((BiomeEffectSoundPlayer)clientPlayerTickable).getMoodPercentage();
+			}
+		}
+
+		return 0.0F;
+	}
+
 	private void sendMovementPackets() {
 		boolean bl = this.isSprinting();
 		if (bl != this.lastSprinting) {
-			ClientCommandC2SPacket.Mode mode = bl ? ClientCommandC2SPacket.Mode.field_12981 : ClientCommandC2SPacket.Mode.field_12985;
+			ClientCommandC2SPacket.Mode mode = bl ? ClientCommandC2SPacket.Mode.START_SPRINTING : ClientCommandC2SPacket.Mode.STOP_SPRINTING;
 			this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, mode));
 			this.lastSprinting = bl;
 		}
 
 		boolean bl2 = this.isSneaking();
-		if (bl2 != this.lastIsHoldingSneakKey) {
-			ClientCommandC2SPacket.Mode mode2 = bl2 ? ClientCommandC2SPacket.Mode.field_12979 : ClientCommandC2SPacket.Mode.field_12984;
+		if (bl2 != this.lastSneaking) {
+			ClientCommandC2SPacket.Mode mode2 = bl2 ? ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY : ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY;
 			this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, mode2));
-			this.lastIsHoldingSneakKey = bl2;
+			this.lastSneaking = bl2;
 		}
 
 		if (this.isCamera()) {
@@ -221,8 +232,8 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			double f = this.getZ() - this.lastZ;
 			double g = (double)(this.yaw - this.lastYaw);
 			double h = (double)(this.pitch - this.lastPitch);
-			this.field_3923++;
-			boolean bl3 = d * d + e * e + f * f > 9.0E-4 || this.field_3923 >= 20;
+			this.ticksSinceLastPositionPacketSent++;
+			boolean bl3 = d * d + e * e + f * f > 9.0E-4 || this.ticksSinceLastPositionPacketSent >= 20;
 			boolean bl4 = g != 0.0 || h != 0.0;
 			if (this.hasVehicle()) {
 				Vec3d vec3d = this.getVelocity();
@@ -242,7 +253,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 				this.lastX = this.getX();
 				this.lastBaseY = this.getY();
 				this.lastZ = this.getZ();
-				this.field_3923 = 0;
+				this.ticksSinceLastPositionPacketSent = 0;
 			}
 
 			if (bl4) {
@@ -251,21 +262,23 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 
 			this.lastOnGround = this.onGround;
-			this.lastAutoJump = this.client.options.autoJump;
+			this.autoJumpEnabled = this.client.options.autoJump;
 		}
 	}
 
 	@Override
-	public boolean dropSelectedItem(boolean bl) {
-		PlayerActionC2SPacket.Action action = bl ? PlayerActionC2SPacket.Action.field_12970 : PlayerActionC2SPacket.Action.field_12975;
-		this.networkHandler.sendPacket(new PlayerActionC2SPacket(action, BlockPos.ORIGIN, Direction.field_11033));
+	public boolean dropSelectedItem(boolean dropEntireStack) {
+		PlayerActionC2SPacket.Action action = dropEntireStack ? PlayerActionC2SPacket.Action.DROP_ALL_ITEMS : PlayerActionC2SPacket.Action.DROP_ITEM;
+		this.networkHandler.sendPacket(new PlayerActionC2SPacket(action, BlockPos.ORIGIN, Direction.DOWN));
 		return this.inventory
-				.takeInvStack(this.inventory.selectedSlot, bl && !this.inventory.getMainHandStack().isEmpty() ? this.inventory.getMainHandStack().getCount() : 1)
+				.removeStack(
+					this.inventory.selectedSlot, dropEntireStack && !this.inventory.getMainHandStack().isEmpty() ? this.inventory.getMainHandStack().getCount() : 1
+				)
 			!= ItemStack.EMPTY;
 	}
 
-	public void sendChatMessage(String string) {
-		this.networkHandler.sendPacket(new ChatMessageC2SPacket(string));
+	public void sendChatMessage(String message) {
+		this.networkHandler.sendPacket(new ChatMessageC2SPacket(message));
 	}
 
 	@Override
@@ -276,47 +289,47 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public void requestRespawn() {
-		this.networkHandler.sendPacket(new ClientStatusC2SPacket(ClientStatusC2SPacket.Mode.field_12774));
+		this.networkHandler.sendPacket(new ClientStatusC2SPacket(ClientStatusC2SPacket.Mode.PERFORM_RESPAWN));
 	}
 
 	@Override
-	protected void applyDamage(DamageSource damageSource, float f) {
-		if (!this.isInvulnerableTo(damageSource)) {
-			this.setHealth(this.getHealth() - f);
+	protected void applyDamage(DamageSource source, float amount) {
+		if (!this.isInvulnerableTo(source)) {
+			this.setHealth(this.getHealth() - amount);
 		}
 	}
 
 	@Override
-	public void closeContainer() {
-		this.networkHandler.sendPacket(new GuiCloseC2SPacket(this.container.syncId));
+	public void closeHandledScreen() {
+		this.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(this.currentScreenHandler.syncId));
 		this.closeScreen();
 	}
 
 	public void closeScreen() {
 		this.inventory.setCursorStack(ItemStack.EMPTY);
-		super.closeContainer();
+		super.closeHandledScreen();
 		this.client.openScreen(null);
 	}
 
-	public void updateHealth(float f) {
-		if (this.field_3918) {
-			float g = this.getHealth() - f;
-			if (g <= 0.0F) {
-				this.setHealth(f);
-				if (g < 0.0F) {
+	public void updateHealth(float health) {
+		if (this.healthInitialized) {
+			float f = this.getHealth() - health;
+			if (f <= 0.0F) {
+				this.setHealth(health);
+				if (f < 0.0F) {
 					this.timeUntilRegen = 10;
 				}
 			} else {
-				this.lastDamageTaken = g;
+				this.lastDamageTaken = f;
 				this.setHealth(this.getHealth());
 				this.timeUntilRegen = 20;
-				this.applyDamage(DamageSource.GENERIC, g);
+				this.applyDamage(DamageSource.GENERIC, f);
 				this.maxHurtTime = 10;
 				this.hurtTime = this.maxHurtTime;
 			}
 		} else {
-			this.setHealth(f);
-			this.field_3918 = true;
+			this.setHealth(health);
+			this.healthInitialized = true;
 		}
 	}
 
@@ -330,16 +343,32 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		return true;
 	}
 
+	@Override
+	public boolean isHoldingOntoLadder() {
+		return !this.abilities.flying && super.isHoldingOntoLadder();
+	}
+
+	@Override
+	public boolean shouldSpawnSprintingParticles() {
+		return !this.abilities.flying && super.shouldSpawnSprintingParticles();
+	}
+
+	@Override
+	public boolean shouldDisplaySoulSpeedEffects() {
+		return !this.abilities.flying && super.shouldDisplaySoulSpeedEffects();
+	}
+
 	protected void startRidingJump() {
-		this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.field_12987, MathHelper.floor(this.method_3151() * 100.0F)));
+		this.networkHandler
+			.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.START_RIDING_JUMP, MathHelper.floor(this.method_3151() * 100.0F)));
 	}
 
 	public void openRidingInventory() {
-		this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.field_12988));
+		this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.OPEN_INVENTORY));
 	}
 
-	public void setServerBrand(String string) {
-		this.serverBrand = string;
+	public void setServerBrand(String serverBrand) {
+		this.serverBrand = serverBrand;
 	}
 
 	public String getServerBrand() {
@@ -366,108 +395,83 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		return this.clientPermissionLevel;
 	}
 
-	public void setClientPermissionLevel(int i) {
-		this.clientPermissionLevel = i;
+	public void setClientPermissionLevel(int clientPermissionLevel) {
+		this.clientPermissionLevel = clientPermissionLevel;
 	}
 
 	@Override
-	public void addChatMessage(Text text, boolean bl) {
-		if (bl) {
-			this.client.inGameHud.setOverlayMessage(text, false);
+	public void sendMessage(Text message, boolean actionBar) {
+		if (actionBar) {
+			this.client.inGameHud.setOverlayMessage(message, false);
 		} else {
-			this.client.inGameHud.getChatHud().addMessage(text);
+			this.client.inGameHud.getChatHud().addMessage(message);
 		}
 	}
 
-	@Override
-	protected void pushOutOfBlocks(double d, double e, double f) {
-		BlockPos blockPos = new BlockPos(d, e, f);
-		if (this.cannotFitAt(blockPos)) {
-			double g = d - (double)blockPos.getX();
-			double h = f - (double)blockPos.getZ();
+	private void pushOutOfBlocks(double x, double d) {
+		BlockPos blockPos = new BlockPos(x, this.getY(), d);
+		if (this.wouldCollideAt(blockPos)) {
+			double e = x - (double)blockPos.getX();
+			double f = d - (double)blockPos.getZ();
 			Direction direction = null;
-			double i = 9999.0;
-			if (!this.cannotFitAt(blockPos.west()) && g < i) {
-				i = g;
-				direction = Direction.field_11039;
-			}
+			double g = Double.MAX_VALUE;
+			Direction[] directions = new Direction[]{Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH};
 
-			if (!this.cannotFitAt(blockPos.east()) && 1.0 - g < i) {
-				i = 1.0 - g;
-				direction = Direction.field_11034;
-			}
-
-			if (!this.cannotFitAt(blockPos.north()) && h < i) {
-				i = h;
-				direction = Direction.field_11043;
-			}
-
-			if (!this.cannotFitAt(blockPos.south()) && 1.0 - h < i) {
-				i = 1.0 - h;
-				direction = Direction.field_11035;
+			for (Direction direction2 : directions) {
+				double h = direction2.getAxis().choose(e, 0.0, f);
+				double i = direction2.getDirection() == Direction.AxisDirection.POSITIVE ? 1.0 - h : h;
+				if (i < g && !this.wouldCollideAt(blockPos.offset(direction2))) {
+					g = i;
+					direction = direction2;
+				}
 			}
 
 			if (direction != null) {
 				Vec3d vec3d = this.getVelocity();
-				switch (direction) {
-					case field_11039:
-						this.setVelocity(-0.1, vec3d.y, vec3d.z);
-						break;
-					case field_11034:
-						this.setVelocity(0.1, vec3d.y, vec3d.z);
-						break;
-					case field_11043:
-						this.setVelocity(vec3d.x, vec3d.y, -0.1);
-						break;
-					case field_11035:
-						this.setVelocity(vec3d.x, vec3d.y, 0.1);
+				if (direction.getAxis() == Direction.Axis.X) {
+					this.setVelocity(0.1 * (double)direction.getOffsetX(), vec3d.y, vec3d.z);
+				} else {
+					this.setVelocity(vec3d.x, vec3d.y, 0.1 * (double)direction.getOffsetZ());
 				}
 			}
 		}
 	}
 
-	private boolean cannotFitAt(BlockPos blockPos) {
+	private boolean wouldCollideAt(BlockPos blockPos) {
 		Box box = this.getBoundingBox();
-		BlockPos.Mutable mutable = new BlockPos.Mutable(blockPos);
-
-		for (int i = MathHelper.floor(box.y1); i < MathHelper.ceil(box.y2); i++) {
-			mutable.setY(i);
-			if (!this.doesNotSuffocate(mutable)) {
-				return true;
-			}
-		}
-
-		return false;
+		Box box2 = new Box((double)blockPos.getX(), box.minY, (double)blockPos.getZ(), (double)blockPos.getX() + 1.0, box.maxY, (double)blockPos.getZ() + 1.0)
+			.contract(1.0E-7);
+		return !this.world.isBlockSpaceEmpty(this, box2, (blockState, blockPosx) -> blockState.shouldSuffocate(this.world, blockPosx));
 	}
 
 	@Override
-	public void setSprinting(boolean bl) {
-		super.setSprinting(bl);
-		this.field_3921 = 0;
+	public void setSprinting(boolean sprinting) {
+		super.setSprinting(sprinting);
+		this.ticksSinceSprintingChanged = 0;
 	}
 
-	public void setExperience(float f, int i, int j) {
-		this.experienceProgress = f;
-		this.totalExperience = i;
-		this.experienceLevel = j;
-	}
-
-	@Override
-	public void sendMessage(Text text) {
-		this.client.inGameHud.getChatHud().addMessage(text);
+	public void setExperience(float progress, int total, int level) {
+		this.experienceProgress = progress;
+		this.totalExperience = total;
+		this.experienceLevel = level;
 	}
 
 	@Override
-	public void handleStatus(byte b) {
-		if (b >= 24 && b <= 28) {
-			this.setClientPermissionLevel(b - 24);
+	public void sendSystemMessage(Text message, UUID senderUuid) {
+		this.client.inGameHud.getChatHud().addMessage(message);
+	}
+
+	@Override
+	public void handleStatus(byte status) {
+		if (status >= 24 && status <= 28) {
+			this.setClientPermissionLevel(status - 24);
 		} else {
-			super.handleStatus(b);
+			super.handleStatus(status);
 		}
 	}
 
-	public void setShowsDeathScreen(boolean bl) {
-		this.showsDeathScreen = bl;
+	public void setShowsDeathScreen(boolean shouldShow) {
+		this.showsDeathScreen = shouldShow;
 	}
 
 	public boolean showsDeathScreen() {
@@ -475,13 +479,13 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void playSound(SoundEvent soundEvent, float f, float g) {
-		this.world.playSound(this.getX(), this.getY(), this.getZ(), soundEvent, this.getSoundCategory(), f, g, false);
+	public void playSound(SoundEvent sound, float volume, float pitch) {
+		this.world.playSound(this.getX(), this.getY(), this.getZ(), sound, this.getSoundCategory(), volume, pitch, false);
 	}
 
 	@Override
-	public void playSound(SoundEvent soundEvent, SoundCategory soundCategory, float f, float g) {
-		this.world.playSound(this.getX(), this.getY(), this.getZ(), soundEvent, soundCategory, f, g, false);
+	public void playSound(SoundEvent event, SoundCategory category, float volume, float pitch) {
+		this.world.playSound(this.getX(), this.getY(), this.getZ(), event, category, volume, pitch, false);
 	}
 
 	@Override
@@ -516,11 +520,11 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void onTrackedDataSet(TrackedData<?> trackedData) {
-		super.onTrackedDataSet(trackedData);
-		if (LIVING_FLAGS.equals(trackedData)) {
+	public void onTrackedDataSet(TrackedData<?> data) {
+		super.onTrackedDataSet(data);
+		if (LIVING_FLAGS.equals(data)) {
 			boolean bl = (this.dataTracker.get(LIVING_FLAGS) & 1) > 0;
-			Hand hand = (this.dataTracker.get(LIVING_FLAGS) & 2) > 0 ? Hand.field_5810 : Hand.field_5808;
+			Hand hand = (this.dataTracker.get(LIVING_FLAGS) & 2) > 0 ? Hand.OFF_HAND : Hand.MAIN_HAND;
 			if (bl && !this.usingItem) {
 				this.setCurrentHand(hand);
 			} else if (!bl && this.usingItem) {
@@ -528,7 +532,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 		}
 
-		if (FLAGS.equals(trackedData) && this.isFallFlying() && !this.field_3939) {
+		if (FLAGS.equals(data) && this.isFallFlying() && !this.field_3939) {
 			this.client.getSoundManager().play(new ElytraSoundInstance(this));
 		}
 	}
@@ -543,8 +547,8 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void openEditSignScreen(SignBlockEntity signBlockEntity) {
-		this.client.openScreen(new SignEditScreen(signBlockEntity));
+	public void openEditSignScreen(SignBlockEntity sign) {
+		this.client.openScreen(new SignEditScreen(sign));
 	}
 
 	@Override
@@ -553,36 +557,36 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void openCommandBlockScreen(CommandBlockBlockEntity commandBlockBlockEntity) {
-		this.client.openScreen(new CommandBlockScreen(commandBlockBlockEntity));
+	public void openCommandBlockScreen(CommandBlockBlockEntity commandBlock) {
+		this.client.openScreen(new CommandBlockScreen(commandBlock));
 	}
 
 	@Override
-	public void openStructureBlockScreen(StructureBlockBlockEntity structureBlockBlockEntity) {
-		this.client.openScreen(new StructureBlockScreen(structureBlockBlockEntity));
+	public void openStructureBlockScreen(StructureBlockBlockEntity structureBlock) {
+		this.client.openScreen(new StructureBlockScreen(structureBlock));
 	}
 
 	@Override
-	public void openJigsawScreen(JigsawBlockEntity jigsawBlockEntity) {
-		this.client.openScreen(new JigsawBlockScreen(jigsawBlockEntity));
+	public void openJigsawScreen(JigsawBlockEntity jigsaw) {
+		this.client.openScreen(new JigsawBlockScreen(jigsaw));
 	}
 
 	@Override
-	public void openEditBookScreen(ItemStack itemStack, Hand hand) {
-		Item item = itemStack.getItem();
-		if (item == Items.field_8674) {
-			this.client.openScreen(new BookEditScreen(this, itemStack, hand));
+	public void openEditBookScreen(ItemStack book, Hand hand) {
+		Item item = book.getItem();
+		if (item == Items.WRITABLE_BOOK) {
+			this.client.openScreen(new BookEditScreen(this, book, hand));
 		}
 	}
 
 	@Override
-	public void addCritParticles(Entity entity) {
-		this.client.particleManager.addEmitter(entity, ParticleTypes.field_11205);
+	public void addCritParticles(Entity target) {
+		this.client.particleManager.addEmitter(target, ParticleTypes.CRIT);
 	}
 
 	@Override
-	public void addEnchantedHitParticles(Entity entity) {
-		this.client.particleManager.addEmitter(entity, ParticleTypes.field_11208);
+	public void addEnchantedHitParticles(Entity target) {
+		this.client.particleManager.addEmitter(target, ParticleTypes.ENCHANTED_HIT);
 	}
 
 	@Override
@@ -592,12 +596,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public boolean isInSneakingPose() {
-		return !this.abilities.flying && !this.isSwimming() && this.wouldPoseNotCollide(EntityPose.field_18081)
-			? this.isSneaking() || !this.isSleeping() && !this.wouldPoseNotCollide(EntityPose.field_18076)
-			: false;
+		return this.inSneakingPose;
 	}
 
-	public boolean isHoldingSneakKey() {
+	public boolean shouldSlowDown() {
 		return this.isInSneakingPose() || this.shouldLeaveSwimmingPose();
 	}
 
@@ -621,48 +623,56 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Override
 	public void tickMovement() {
-		this.field_3921++;
-		if (this.field_3935 > 0) {
-			this.field_3935--;
+		this.ticksSinceSprintingChanged++;
+		if (this.ticksLeftToDoubleTapSprint > 0) {
+			this.ticksLeftToDoubleTapSprint--;
 		}
 
 		this.updateNausea();
 		boolean bl = this.input.jumping;
 		boolean bl2 = this.input.sneaking;
-		boolean bl3 = this.method_20623();
-		this.input.tick(this.isHoldingSneakKey());
+		boolean bl3 = this.isWalking();
+		this.inSneakingPose = !this.abilities.flying
+			&& !this.isSwimming()
+			&& this.wouldPoseNotCollide(EntityPose.CROUCHING)
+			&& (this.isSneaking() || !this.isSleeping() && !this.wouldPoseNotCollide(EntityPose.STANDING));
+		this.input.tick(this.shouldSlowDown());
 		this.client.getTutorialManager().onMovement(this.input);
 		if (this.isUsingItem() && !this.hasVehicle()) {
 			this.input.movementSideways *= 0.2F;
 			this.input.movementForward *= 0.2F;
-			this.field_3935 = 0;
+			this.ticksLeftToDoubleTapSprint = 0;
 		}
 
 		boolean bl4 = false;
-		if (this.field_3934 > 0) {
-			this.field_3934--;
+		if (this.ticksToNextAutojump > 0) {
+			this.ticksToNextAutojump--;
 			bl4 = true;
 			this.input.jumping = true;
 		}
 
 		if (!this.noClip) {
-			this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35, this.getY() + 0.5, this.getZ() + (double)this.getWidth() * 0.35);
-			this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35, this.getY() + 0.5, this.getZ() - (double)this.getWidth() * 0.35);
-			this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35, this.getY() + 0.5, this.getZ() - (double)this.getWidth() * 0.35);
-			this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35, this.getY() + 0.5, this.getZ() + (double)this.getWidth() * 0.35);
+			this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35, this.getZ() + (double)this.getWidth() * 0.35);
+			this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35, this.getZ() - (double)this.getWidth() * 0.35);
+			this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35, this.getZ() - (double)this.getWidth() * 0.35);
+			this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35, this.getZ() + (double)this.getWidth() * 0.35);
+		}
+
+		if (bl2) {
+			this.ticksLeftToDoubleTapSprint = 0;
 		}
 
 		boolean bl5 = (float)this.getHungerManager().getFoodLevel() > 6.0F || this.abilities.allowFlying;
 		if ((this.onGround || this.isSubmergedInWater())
 			&& !bl2
 			&& !bl3
-			&& this.method_20623()
+			&& this.isWalking()
 			&& !this.isSprinting()
 			&& bl5
 			&& !this.isUsingItem()
-			&& !this.hasStatusEffect(StatusEffects.field_5919)) {
-			if (this.field_3935 <= 0 && !this.client.options.keySprint.isPressed()) {
-				this.field_3935 = 7;
+			&& !this.hasStatusEffect(StatusEffects.BLINDNESS)) {
+			if (this.ticksLeftToDoubleTapSprint <= 0 && !this.client.options.keySprint.isPressed()) {
+				this.ticksLeftToDoubleTapSprint = 7;
 			} else {
 				this.setSprinting(true);
 			}
@@ -670,10 +680,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 		if (!this.isSprinting()
 			&& (!this.isTouchingWater() || this.isSubmergedInWater())
-			&& this.method_20623()
+			&& this.isWalking()
 			&& bl5
 			&& !this.isUsingItem()
-			&& !this.hasStatusEffect(StatusEffects.field_5919)
+			&& !this.hasStatusEffect(StatusEffects.BLINDNESS)
 			&& this.client.options.keySprint.isPressed()) {
 			this.setSprinting(true);
 		}
@@ -699,35 +709,35 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 					this.sendAbilitiesUpdate();
 				}
 			} else if (!bl && this.input.jumping && !bl4) {
-				if (this.field_7489 == 0) {
-					this.field_7489 = 7;
+				if (this.abilityResyncCountdown == 0) {
+					this.abilityResyncCountdown = 7;
 				} else if (!this.isSwimming()) {
 					this.abilities.flying = !this.abilities.flying;
 					bl8 = true;
 					this.sendAbilitiesUpdate();
-					this.field_7489 = 0;
+					this.abilityResyncCountdown = 0;
 				}
 			}
 		}
 
 		if (this.input.jumping && !bl8 && !bl && !this.abilities.flying && !this.hasVehicle() && !this.isClimbing()) {
-			ItemStack itemStack = this.getEquippedStack(EquipmentSlot.field_6174);
-			if (itemStack.getItem() == Items.field_8833 && ElytraItem.isUsable(itemStack) && this.method_23668()) {
-				this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.field_12982));
+			ItemStack itemStack = this.getEquippedStack(EquipmentSlot.CHEST);
+			if (itemStack.getItem() == Items.ELYTRA && ElytraItem.isUsable(itemStack) && this.checkFallFlying()) {
+				this.networkHandler.sendPacket(new ClientCommandC2SPacket(this, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
 			}
 		}
 
 		this.field_3939 = this.isFallFlying();
-		if (this.isTouchingWater() && this.input.sneaking) {
+		if (this.isTouchingWater() && this.input.sneaking && this.method_29920()) {
 			this.knockDownwards();
 		}
 
-		if (this.isInFluid(FluidTags.field_15517)) {
+		if (this.isSubmergedIn(FluidTags.WATER)) {
 			int i = this.isSpectator() ? 10 : 1;
-			this.field_3917 = MathHelper.clamp(this.field_3917 + i, 0, 600);
-		} else if (this.field_3917 > 0) {
-			this.isInFluid(FluidTags.field_15517);
-			this.field_3917 = MathHelper.clamp(this.field_3917 - 10, 0, 600);
+			this.underwaterVisibilityTicks = MathHelper.clamp(this.underwaterVisibilityTicks + i, 0, 600);
+		} else if (this.underwaterVisibilityTicks > 0) {
+			this.isSubmergedIn(FluidTags.WATER);
+			this.underwaterVisibilityTicks = MathHelper.clamp(this.underwaterVisibilityTicks - 10, 0, 600);
 		}
 
 		if (this.abilities.flying && this.isCamera()) {
@@ -784,15 +794,15 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		this.lastNauseaStrength = this.nextNauseaStrength;
 		if (this.inNetherPortal) {
 			if (this.client.currentScreen != null && !this.client.currentScreen.isPauseScreen()) {
-				if (this.client.currentScreen instanceof ContainerScreen) {
-					this.closeContainer();
+				if (this.client.currentScreen instanceof HandledScreen) {
+					this.closeHandledScreen();
 				}
 
 				this.client.openScreen(null);
 			}
 
 			if (this.nextNauseaStrength == 0.0F) {
-				this.client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.field_14669, this.random.nextFloat() * 0.4F + 0.8F));
+				this.client.getSoundManager().play(PositionedSoundInstance.ambient(SoundEvents.BLOCK_PORTAL_TRIGGER, this.random.nextFloat() * 0.4F + 0.8F, 0.25F));
 			}
 
 			this.nextNauseaStrength += 0.0125F;
@@ -801,7 +811,7 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			}
 
 			this.inNetherPortal = false;
-		} else if (this.hasStatusEffect(StatusEffects.field_5916) && this.getStatusEffect(StatusEffects.field_5916).getDuration() > 60) {
+		} else if (this.hasStatusEffect(StatusEffects.NAUSEA) && this.getStatusEffect(StatusEffects.NAUSEA).getDuration() > 60) {
 			this.nextNauseaStrength += 0.006666667F;
 			if (this.nextNauseaStrength > 1.0F) {
 				this.nextNauseaStrength = 1.0F;
@@ -836,106 +846,103 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
 	@Nullable
 	@Override
-	public StatusEffectInstance removeStatusEffectInternal(@Nullable StatusEffect statusEffect) {
-		if (statusEffect == StatusEffects.field_5916) {
+	public StatusEffectInstance removeStatusEffectInternal(@Nullable StatusEffect type) {
+		if (type == StatusEffects.NAUSEA) {
 			this.lastNauseaStrength = 0.0F;
 			this.nextNauseaStrength = 0.0F;
 		}
 
-		return super.removeStatusEffectInternal(statusEffect);
+		return super.removeStatusEffectInternal(type);
 	}
 
 	@Override
-	public void move(MovementType movementType, Vec3d vec3d) {
+	public void move(MovementType type, Vec3d movement) {
 		double d = this.getX();
 		double e = this.getZ();
-		super.move(movementType, vec3d);
-		this.method_3148((float)(this.getX() - d), (float)(this.getZ() - e));
+		super.move(type, movement);
+		this.autoJump((float)(this.getX() - d), (float)(this.getZ() - e));
 	}
 
-	public boolean getLastAutoJump() {
-		return this.lastAutoJump;
+	public boolean isAutoJumpEnabled() {
+		return this.autoJumpEnabled;
 	}
 
-	protected void method_3148(float f, float g) {
-		if (this.method_22119()) {
+	protected void autoJump(float dx, float dz) {
+		if (this.shouldAutoJump()) {
 			Vec3d vec3d = this.getPos();
-			Vec3d vec3d2 = vec3d.add((double)f, 0.0, (double)g);
-			Vec3d vec3d3 = new Vec3d((double)f, 0.0, (double)g);
-			float h = this.getMovementSpeed();
-			float i = (float)vec3d3.lengthSquared();
-			if (i <= 0.001F) {
+			Vec3d vec3d2 = vec3d.add((double)dx, 0.0, (double)dz);
+			Vec3d vec3d3 = new Vec3d((double)dx, 0.0, (double)dz);
+			float f = this.getMovementSpeed();
+			float g = (float)vec3d3.lengthSquared();
+			if (g <= 0.001F) {
 				Vec2f vec2f = this.input.getMovementInput();
-				float j = h * vec2f.x;
-				float k = h * vec2f.y;
-				float l = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
-				float m = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
-				vec3d3 = new Vec3d((double)(j * m - k * l), vec3d3.y, (double)(k * m + j * l));
-				i = (float)vec3d3.lengthSquared();
-				if (i <= 0.001F) {
+				float h = f * vec2f.x;
+				float i = f * vec2f.y;
+				float j = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
+				float k = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
+				vec3d3 = new Vec3d((double)(h * k - i * j), vec3d3.y, (double)(i * k + h * j));
+				g = (float)vec3d3.lengthSquared();
+				if (g <= 0.001F) {
 					return;
 				}
 			}
 
-			float n = MathHelper.fastInverseSqrt(i);
-			Vec3d vec3d4 = vec3d3.multiply((double)n);
+			float l = MathHelper.fastInverseSqrt(g);
+			Vec3d vec3d4 = vec3d3.multiply((double)l);
 			Vec3d vec3d5 = this.getRotationVecClient();
-			float o = (float)(vec3d5.x * vec3d4.x + vec3d5.z * vec3d4.z);
-			if (!(o < -0.15F)) {
-				EntityContext entityContext = EntityContext.of(this);
-				BlockPos blockPos = new BlockPos(this.getX(), this.getBoundingBox().y2, this.getZ());
+			float m = (float)(vec3d5.x * vec3d4.x + vec3d5.z * vec3d4.z);
+			if (!(m < -0.15F)) {
+				ShapeContext shapeContext = ShapeContext.of(this);
+				BlockPos blockPos = new BlockPos(this.getX(), this.getBoundingBox().maxY, this.getZ());
 				BlockState blockState = this.world.getBlockState(blockPos);
-				if (blockState.getCollisionShape(this.world, blockPos, entityContext).isEmpty()) {
+				if (blockState.getCollisionShape(this.world, blockPos, shapeContext).isEmpty()) {
 					blockPos = blockPos.up();
 					BlockState blockState2 = this.world.getBlockState(blockPos);
-					if (blockState2.getCollisionShape(this.world, blockPos, entityContext).isEmpty()) {
-						float p = 7.0F;
-						float q = 1.2F;
-						if (this.hasStatusEffect(StatusEffects.field_5913)) {
-							q += (float)(this.getStatusEffect(StatusEffects.field_5913).getAmplifier() + 1) * 0.75F;
+					if (blockState2.getCollisionShape(this.world, blockPos, shapeContext).isEmpty()) {
+						float n = 7.0F;
+						float o = 1.2F;
+						if (this.hasStatusEffect(StatusEffects.JUMP_BOOST)) {
+							o += (float)(this.getStatusEffect(StatusEffects.JUMP_BOOST).getAmplifier() + 1) * 0.75F;
 						}
 
-						float r = Math.max(h * 7.0F, 1.0F / n);
-						Vec3d vec3d7 = vec3d2.add(vec3d4.multiply((double)r));
-						float s = this.getWidth();
-						float t = this.getHeight();
-						Box box = new Box(vec3d, vec3d7.add(0.0, (double)t, 0.0)).expand((double)s, 0.0, (double)s);
+						float p = Math.max(f * 7.0F, 1.0F / l);
+						Vec3d vec3d7 = vec3d2.add(vec3d4.multiply((double)p));
+						float q = this.getWidth();
+						float r = this.getHeight();
+						Box box = new Box(vec3d, vec3d7.add(0.0, (double)r, 0.0)).expand((double)q, 0.0, (double)q);
 						Vec3d vec3d6 = vec3d.add(0.0, 0.51F, 0.0);
 						vec3d7 = vec3d7.add(0.0, 0.51F, 0.0);
 						Vec3d vec3d8 = vec3d4.crossProduct(new Vec3d(0.0, 1.0, 0.0));
-						Vec3d vec3d9 = vec3d8.multiply((double)(s * 0.5F));
+						Vec3d vec3d9 = vec3d8.multiply((double)(q * 0.5F));
 						Vec3d vec3d10 = vec3d6.subtract(vec3d9);
 						Vec3d vec3d11 = vec3d7.subtract(vec3d9);
 						Vec3d vec3d12 = vec3d6.add(vec3d9);
 						Vec3d vec3d13 = vec3d7.add(vec3d9);
-						Iterator<Box> iterator = this.world
-							.getCollisions(this, box, Collections.emptySet())
-							.flatMap(voxelShapex -> voxelShapex.getBoundingBoxes().stream())
-							.iterator();
-						float u = Float.MIN_VALUE;
+						Iterator<Box> iterator = this.world.getCollisions(this, box, entity -> true).flatMap(voxelShapex -> voxelShapex.getBoundingBoxes().stream()).iterator();
+						float s = Float.MIN_VALUE;
 
 						while (iterator.hasNext()) {
 							Box box2 = (Box)iterator.next();
 							if (box2.intersects(vec3d10, vec3d11) || box2.intersects(vec3d12, vec3d13)) {
-								u = (float)box2.y2;
+								s = (float)box2.maxY;
 								Vec3d vec3d14 = box2.getCenter();
 								BlockPos blockPos2 = new BlockPos(vec3d14);
 
-								for (int v = 1; (float)v < q; v++) {
-									BlockPos blockPos3 = blockPos2.up(v);
+								for (int t = 1; (float)t < o; t++) {
+									BlockPos blockPos3 = blockPos2.up(t);
 									BlockState blockState3 = this.world.getBlockState(blockPos3);
 									VoxelShape voxelShape;
-									if (!(voxelShape = blockState3.getCollisionShape(this.world, blockPos3, entityContext)).isEmpty()) {
-										u = (float)voxelShape.getMaximum(Direction.Axis.field_11052) + (float)blockPos3.getY();
-										if ((double)u - this.getY() > (double)q) {
+									if (!(voxelShape = blockState3.getCollisionShape(this.world, blockPos3, shapeContext)).isEmpty()) {
+										s = (float)voxelShape.getMax(Direction.Axis.Y) + (float)blockPos3.getY();
+										if ((double)s - this.getY() > (double)o) {
 											return;
 										}
 									}
 
-									if (v > 1) {
+									if (t > 1) {
 										blockPos = blockPos.up();
 										BlockState blockState4 = this.world.getBlockState(blockPos);
-										if (!blockState4.getCollisionShape(this.world, blockPos, entityContext).isEmpty()) {
+										if (!blockState4.getCollisionShape(this.world, blockPos, shapeContext).isEmpty()) {
 											return;
 										}
 									}
@@ -944,10 +951,10 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 							}
 						}
 
-						if (u != Float.MIN_VALUE) {
-							float w = (float)((double)u - this.getY());
-							if (!(w <= 0.5F) && !(w > q)) {
-								this.field_3934 = 1;
+						if (s != Float.MIN_VALUE) {
+							float u = (float)((double)s - this.getY());
+							if (!(u <= 0.5F) && !(u > o)) {
+								this.ticksToNextAutojump = 1;
 							}
 						}
 					}
@@ -956,9 +963,9 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		}
 	}
 
-	private boolean method_22119() {
-		return this.getLastAutoJump()
-			&& this.field_3934 <= 0
+	private boolean shouldAutoJump() {
+		return this.isAutoJumpEnabled()
+			&& this.ticksToNextAutojump <= 0
 			&& this.onGround
 			&& !this.clipAtLedge()
 			&& !this.hasVehicle()
@@ -971,22 +978,22 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 		return vec2f.x != 0.0F || vec2f.y != 0.0F;
 	}
 
-	private boolean method_20623() {
+	private boolean isWalking() {
 		double d = 0.8;
 		return this.isSubmergedInWater() ? this.input.hasForwardMovement() : (double)this.input.movementForward >= 0.8;
 	}
 
-	public float method_3140() {
-		if (!this.isInFluid(FluidTags.field_15517)) {
+	public float getUnderwaterVisibility() {
+		if (!this.isSubmergedIn(FluidTags.WATER)) {
 			return 0.0F;
 		} else {
 			float f = 600.0F;
 			float g = 100.0F;
-			if ((float)this.field_3917 >= 600.0F) {
+			if ((float)this.underwaterVisibilityTicks >= 600.0F) {
 				return 1.0F;
 			} else {
-				float h = MathHelper.clamp((float)this.field_3917 / 100.0F, 0.0F, 1.0F);
-				float i = (float)this.field_3917 < 100.0F ? 0.0F : MathHelper.clamp(((float)this.field_3917 - 100.0F) / 500.0F, 0.0F, 1.0F);
+				float h = MathHelper.clamp((float)this.underwaterVisibilityTicks / 100.0F, 0.0F, 1.0F);
+				float i = (float)this.underwaterVisibilityTicks < 100.0F ? 0.0F : MathHelper.clamp(((float)this.underwaterVisibilityTicks - 100.0F) / 500.0F, 0.0F, 1.0F);
 				return h * 0.6F + i * 0.39999998F;
 			}
 		}
@@ -1005,15 +1012,28 @@ public class ClientPlayerEntity extends AbstractClientPlayerEntity {
 			return this.isSubmergedInWater;
 		} else {
 			if (!bl && bl2) {
-				this.world.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.field_14756, SoundCategory.field_15256, 1.0F, 1.0F, false);
+				this.world.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.AMBIENT_UNDERWATER_ENTER, SoundCategory.AMBIENT, 1.0F, 1.0F, false);
 				this.client.getSoundManager().play(new AmbientSoundLoops.Underwater(this));
 			}
 
 			if (bl && !bl2) {
-				this.world.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.field_14828, SoundCategory.field_15256, 1.0F, 1.0F, false);
+				this.world.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.AMBIENT_UNDERWATER_EXIT, SoundCategory.AMBIENT, 1.0F, 1.0F, false);
 			}
 
 			return this.isSubmergedInWater;
+		}
+	}
+
+	@Override
+	public Vec3d method_30951(float f) {
+		if (this.client.options.getPerspective().isFirstPerson()) {
+			float g = MathHelper.lerp(f * 0.5F, this.yaw, this.prevYaw) * (float) (Math.PI / 180.0);
+			float h = MathHelper.lerp(f * 0.5F, this.pitch, this.prevPitch) * (float) (Math.PI / 180.0);
+			double d = this.getMainArm() == Arm.RIGHT ? -1.0 : 1.0;
+			Vec3d vec3d = new Vec3d(0.39 * d, -0.6, 0.3);
+			return vec3d.rotateX(-h).rotateY(-g).add(this.getCameraPosVec(f));
+		} else {
+			return super.method_30951(f);
 		}
 	}
 }

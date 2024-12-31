@@ -1,36 +1,27 @@
 package net.minecraft.block;
 
-import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 
 public abstract class AbstractGlassBlock extends TransparentBlock {
-	protected AbstractGlassBlock(Block.Settings settings) {
+	protected AbstractGlassBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public float getAmbientOcclusionLightLevel(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public VoxelShape getVisualShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return VoxelShapes.empty();
+	}
+
+	@Override
+	public float getAmbientOcclusionLightLevel(BlockState state, BlockView world, BlockPos pos) {
 		return 1.0F;
 	}
 
 	@Override
-	public boolean isTranslucent(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public boolean isTranslucent(BlockState state, BlockView world, BlockPos pos) {
 		return true;
-	}
-
-	@Override
-	public boolean canSuffocate(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return false;
-	}
-
-	@Override
-	public boolean isSimpleFullBlock(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return false;
-	}
-
-	@Override
-	public boolean allowsSpawning(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityType<?> entityType) {
-		return false;
 	}
 }

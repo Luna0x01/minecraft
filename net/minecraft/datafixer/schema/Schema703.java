@@ -8,8 +8,8 @@ import java.util.function.Supplier;
 import net.minecraft.datafixer.TypeReferences;
 
 public class Schema703 extends Schema {
-	public Schema703(int i, Schema schema) {
-		super(i, schema);
+	public Schema703(int versionKey, Schema parent) {
+		super(versionKey, parent);
 	}
 
 	public Map<String, Supplier<TypeTemplate>> registerEntities(Schema schema) {
@@ -19,25 +19,25 @@ public class Schema703 extends Schema {
 			map,
 			"Horse",
 			() -> DSL.optionalFields(
-					"ArmorItem", TypeReferences.ITEM_STACK.in(schema), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)
+					"ArmorItem", TypeReferences.ITEM_STACK.in(schema), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)
 				)
 		);
 		schema.register(
 			map,
 			"Donkey",
 			() -> DSL.optionalFields(
-					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)
+					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)
 				)
 		);
 		schema.register(
 			map,
 			"Mule",
 			() -> DSL.optionalFields(
-					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)
+					"Items", DSL.list(TypeReferences.ITEM_STACK.in(schema)), "SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)
 				)
 		);
-		schema.register(map, "ZombieHorse", () -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)));
-		schema.register(map, "SkeletonHorse", () -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.method_5196(schema)));
+		schema.register(map, "ZombieHorse", () -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)));
+		schema.register(map, "SkeletonHorse", () -> DSL.optionalFields("SaddleItem", TypeReferences.ITEM_STACK.in(schema), Schema100.targetItems(schema)));
 		return map;
 	}
 }

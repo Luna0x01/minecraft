@@ -9,7 +9,7 @@ import java.util.Set;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonSerializer;
 
 public class SurvivesExplosionLootCondition implements LootCondition {
 	private static final SurvivesExplosionLootCondition INSTANCE = new SurvivesExplosionLootCondition();
@@ -18,12 +18,17 @@ public class SurvivesExplosionLootCondition implements LootCondition {
 	}
 
 	@Override
+	public LootConditionType getType() {
+		return LootConditionTypes.SURVIVES_EXPLOSION;
+	}
+
+	@Override
 	public Set<LootContextParameter<?>> getRequiredParameters() {
-		return ImmutableSet.of(LootContextParameters.field_1225);
+		return ImmutableSet.of(LootContextParameters.EXPLOSION_RADIUS);
 	}
 
 	public boolean test(LootContext lootContext) {
-		Float float_ = lootContext.get(LootContextParameters.field_1225);
+		Float float_ = lootContext.get(LootContextParameters.EXPLOSION_RADIUS);
 		if (float_ != null) {
 			Random random = lootContext.getRandom();
 			float f = 1.0F / float_;
@@ -37,11 +42,7 @@ public class SurvivesExplosionLootCondition implements LootCondition {
 		return () -> INSTANCE;
 	}
 
-	public static class Factory extends LootCondition.Factory<SurvivesExplosionLootCondition> {
-		protected Factory() {
-			super(new Identifier("survives_explosion"), SurvivesExplosionLootCondition.class);
-		}
-
+	public static class Serializer implements JsonSerializer<SurvivesExplosionLootCondition> {
 		public void toJson(JsonObject jsonObject, SurvivesExplosionLootCondition survivesExplosionLootCondition, JsonSerializationContext jsonSerializationContext) {
 		}
 

@@ -2,12 +2,11 @@ package net.minecraft.client.gui.screen;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -21,46 +20,45 @@ import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.widget.AbstractButtonWidget;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.nbt.Tag;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.util.math.Matrix4f;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class Screen extends AbstractParentElement implements Drawable {
+public abstract class Screen extends AbstractParentElement implements TickableElement, Drawable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Set<String> ALLOWED_PROTOCOLS = Sets.newHashSet(new String[]{"http", "https"});
 	protected final Text title;
 	protected final List<Element> children = Lists.newArrayList();
 	@Nullable
-	protected MinecraftClient minecraft;
+	protected MinecraftClient client;
 	protected ItemRenderer itemRenderer;
 	public int width;
 	public int height;
 	protected final List<AbstractButtonWidget> buttons = Lists.newArrayList();
 	public boolean passEvents;
-	protected TextRenderer font;
+	protected TextRenderer textRenderer;
 	private URI clickedLink;
 
-	protected Screen(Text text) {
-		this.title = text;
+	protected Screen(Text title) {
+		this.title = title;
 	}
 
 	public Text getTitle() {
@@ -72,26 +70,26 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 	}
 
 	@Override
-	public void render(int i, int j, float f) {
-		for (int k = 0; k < this.buttons.size(); k++) {
-			((AbstractButtonWidget)this.buttons.get(k)).render(i, j, f);
+	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		for (int i = 0; i < this.buttons.size(); i++) {
+			((AbstractButtonWidget)this.buttons.get(i)).render(matrices, mouseX, mouseY, delta);
 		}
 	}
 
 	@Override
-	public boolean keyPressed(int i, int j, int k) {
-		if (i == 256 && this.shouldCloseOnEsc()) {
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		if (keyCode == 256 && this.shouldCloseOnEsc()) {
 			this.onClose();
 			return true;
-		} else if (i == 258) {
+		} else if (keyCode == 258) {
 			boolean bl = !hasShiftDown();
 			if (!this.changeFocus(bl)) {
 				this.changeFocus(bl);
 			}
 
-			return true;
+			return false;
 		} else {
-			return super.keyPressed(i, j, k);
+			return super.keyPressed(keyCode, scanCode, modifiers);
 		}
 	}
 
@@ -100,165 +98,147 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 	}
 
 	public void onClose() {
-		this.minecraft.openScreen(null);
+		this.client.openScreen(null);
 	}
 
-	protected <T extends AbstractButtonWidget> T addButton(T abstractButtonWidget) {
-		this.buttons.add(abstractButtonWidget);
-		this.children.add(abstractButtonWidget);
-		return abstractButtonWidget;
+	protected <T extends AbstractButtonWidget> T addButton(T button) {
+		this.buttons.add(button);
+		return this.addChild(button);
 	}
 
-	protected void renderTooltip(ItemStack itemStack, int i, int j) {
-		this.renderTooltip(this.getTooltipFromItem(itemStack), i, j);
+	protected <T extends Element> T addChild(T child) {
+		this.children.add(child);
+		return child;
 	}
 
-	public List<String> getTooltipFromItem(ItemStack itemStack) {
-		List<Text> list = itemStack.getTooltip(
-			this.minecraft.player, this.minecraft.options.advancedItemTooltips ? TooltipContext.Default.field_8935 : TooltipContext.Default.field_8934
-		);
-		List<String> list2 = Lists.newArrayList();
-
-		for (Text text : list) {
-			list2.add(text.asFormattedString());
-		}
-
-		return list2;
+	protected void renderTooltip(MatrixStack matrices, ItemStack stack, int x, int y) {
+		this.renderTooltip(matrices, this.getTooltipFromItem(stack), x, y);
 	}
 
-	public void renderTooltip(String string, int i, int j) {
-		this.renderTooltip(Arrays.asList(string), i, j);
+	public List<Text> getTooltipFromItem(ItemStack stack) {
+		return stack.getTooltip(this.client.player, this.client.options.advancedItemTooltips ? TooltipContext.Default.ADVANCED : TooltipContext.Default.NORMAL);
 	}
 
-	public void renderTooltip(List<String> list, int i, int j) {
-		if (!list.isEmpty()) {
-			RenderSystem.disableRescaleNormal();
-			RenderSystem.disableDepthTest();
-			int k = 0;
+	public void renderTooltip(MatrixStack matrices, Text text, int x, int y) {
+		this.renderOrderedTooltip(matrices, Arrays.asList(text.asOrderedText()), x, y);
+	}
 
-			for (String string : list) {
-				int l = this.font.getStringWidth(string);
-				if (l > k) {
-					k = l;
+	public void renderTooltip(MatrixStack matrices, List<Text> lines, int x, int y) {
+		this.renderOrderedTooltip(matrices, Lists.transform(lines, Text::asOrderedText), x, y);
+	}
+
+	public void renderOrderedTooltip(MatrixStack matrices, List<? extends OrderedText> lines, int x, int y) {
+		if (!lines.isEmpty()) {
+			int i = 0;
+
+			for (OrderedText orderedText : lines) {
+				int j = this.textRenderer.getWidth(orderedText);
+				if (j > i) {
+					i = j;
 				}
 			}
 
-			int m = i + 12;
-			int n = j - 12;
-			int p = 8;
-			if (list.size() > 1) {
-				p += 2 + (list.size() - 1) * 10;
+			int k = x + 12;
+			int l = y - 12;
+			int n = 8;
+			if (lines.size() > 1) {
+				n += 2 + (lines.size() - 1) * 10;
 			}
 
-			if (m + k > this.width) {
-				m -= 28 + k;
+			if (k + i > this.width) {
+				k -= 28 + i;
 			}
 
-			if (n + p + 6 > this.height) {
-				n = this.height - p - 6;
+			if (l + n + 6 > this.height) {
+				l = this.height - n - 6;
 			}
 
-			this.setBlitOffset(300);
-			this.itemRenderer.zOffset = 300.0F;
-			int q = -267386864;
-			this.fillGradient(m - 3, n - 4, m + k + 3, n - 3, -267386864, -267386864);
-			this.fillGradient(m - 3, n + p + 3, m + k + 3, n + p + 4, -267386864, -267386864);
-			this.fillGradient(m - 3, n - 3, m + k + 3, n + p + 3, -267386864, -267386864);
-			this.fillGradient(m - 4, n - 3, m - 3, n + p + 3, -267386864, -267386864);
-			this.fillGradient(m + k + 3, n - 3, m + k + 4, n + p + 3, -267386864, -267386864);
-			int r = 1347420415;
-			int s = 1344798847;
-			this.fillGradient(m - 3, n - 3 + 1, m - 3 + 1, n + p + 3 - 1, 1347420415, 1344798847);
-			this.fillGradient(m + k + 2, n - 3 + 1, m + k + 3, n + p + 3 - 1, 1347420415, 1344798847);
-			this.fillGradient(m - 3, n - 3, m + k + 3, n - 3 + 1, 1347420415, 1347420415);
-			this.fillGradient(m - 3, n + p + 2, m + k + 3, n + p + 3, 1344798847, 1344798847);
-			MatrixStack matrixStack = new MatrixStack();
+			matrices.push();
+			int o = -267386864;
+			int p = 1347420415;
+			int q = 1344798847;
+			int r = 400;
+			Tessellator tessellator = Tessellator.getInstance();
+			BufferBuilder bufferBuilder = tessellator.getBuffer();
+			bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
+			Matrix4f matrix4f = matrices.peek().getModel();
+			fillGradient(matrix4f, bufferBuilder, k - 3, l - 4, k + i + 3, l - 3, 400, -267386864, -267386864);
+			fillGradient(matrix4f, bufferBuilder, k - 3, l + n + 3, k + i + 3, l + n + 4, 400, -267386864, -267386864);
+			fillGradient(matrix4f, bufferBuilder, k - 3, l - 3, k + i + 3, l + n + 3, 400, -267386864, -267386864);
+			fillGradient(matrix4f, bufferBuilder, k - 4, l - 3, k - 3, l + n + 3, 400, -267386864, -267386864);
+			fillGradient(matrix4f, bufferBuilder, k + i + 3, l - 3, k + i + 4, l + n + 3, 400, -267386864, -267386864);
+			fillGradient(matrix4f, bufferBuilder, k - 3, l - 3 + 1, k - 3 + 1, l + n + 3 - 1, 400, 1347420415, 1344798847);
+			fillGradient(matrix4f, bufferBuilder, k + i + 2, l - 3 + 1, k + i + 3, l + n + 3 - 1, 400, 1347420415, 1344798847);
+			fillGradient(matrix4f, bufferBuilder, k - 3, l - 3, k + i + 3, l - 3 + 1, 400, 1347420415, 1347420415);
+			fillGradient(matrix4f, bufferBuilder, k - 3, l + n + 2, k + i + 3, l + n + 3, 400, 1344798847, 1344798847);
+			RenderSystem.enableDepthTest();
+			RenderSystem.disableTexture();
+			RenderSystem.enableBlend();
+			RenderSystem.defaultBlendFunc();
+			RenderSystem.shadeModel(7425);
+			bufferBuilder.end();
+			BufferRenderer.draw(bufferBuilder);
+			RenderSystem.shadeModel(7424);
+			RenderSystem.disableBlend();
+			RenderSystem.enableTexture();
 			VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
-			matrixStack.translate(0.0, 0.0, (double)this.itemRenderer.zOffset);
-			Matrix4f matrix4f = matrixStack.peek().getModel();
+			matrices.translate(0.0, 0.0, 400.0);
 
-			for (int t = 0; t < list.size(); t++) {
-				String string2 = (String)list.get(t);
-				if (string2 != null) {
-					this.font.draw(string2, (float)m, (float)n, -1, true, matrix4f, immediate, false, 0, 15728880);
+			for (int s = 0; s < lines.size(); s++) {
+				OrderedText orderedText2 = (OrderedText)lines.get(s);
+				if (orderedText2 != null) {
+					this.textRenderer.draw(orderedText2, (float)k, (float)l, -1, true, matrix4f, immediate, false, 0, 15728880);
 				}
 
-				if (t == 0) {
-					n += 2;
+				if (s == 0) {
+					l += 2;
 				}
 
-				n += 10;
+				l += 10;
 			}
 
 			immediate.draw();
-			this.setBlitOffset(0);
-			this.itemRenderer.zOffset = 0.0F;
-			RenderSystem.enableDepthTest();
-			RenderSystem.enableRescaleNormal();
+			matrices.pop();
 		}
 	}
 
-	protected void renderComponentHoverEffect(Text text, int i, int j) {
-		if (text != null && text.getStyle().getHoverEvent() != null) {
-			HoverEvent hoverEvent = text.getStyle().getHoverEvent();
-			if (hoverEvent.getAction() == HoverEvent.Action.field_11757) {
-				ItemStack itemStack = ItemStack.EMPTY;
-
-				try {
-					Tag tag = StringNbtReader.parse(hoverEvent.getValue().getString());
-					if (tag instanceof CompoundTag) {
-						itemStack = ItemStack.fromTag((CompoundTag)tag);
+	protected void renderTextHoverEffect(MatrixStack matrices, @Nullable Style style, int x, int y) {
+		if (style != null && style.getHoverEvent() != null) {
+			HoverEvent hoverEvent = style.getHoverEvent();
+			HoverEvent.ItemStackContent itemStackContent = hoverEvent.getValue(HoverEvent.Action.SHOW_ITEM);
+			if (itemStackContent != null) {
+				this.renderTooltip(matrices, itemStackContent.asStack(), x, y);
+			} else {
+				HoverEvent.EntityContent entityContent = hoverEvent.getValue(HoverEvent.Action.SHOW_ENTITY);
+				if (entityContent != null) {
+					if (this.client.options.advancedItemTooltips) {
+						this.renderTooltip(matrices, entityContent.asTooltip(), x, y);
 					}
-				} catch (CommandSyntaxException var10) {
-				}
-
-				if (itemStack.isEmpty()) {
-					this.renderTooltip(Formatting.field_1061 + "Invalid Item!", i, j);
 				} else {
-					this.renderTooltip(itemStack, i, j);
-				}
-			} else if (hoverEvent.getAction() == HoverEvent.Action.field_11761) {
-				if (this.minecraft.options.advancedItemTooltips) {
-					try {
-						CompoundTag compoundTag = StringNbtReader.parse(hoverEvent.getValue().getString());
-						List<String> list = Lists.newArrayList();
-						Text text2 = Text.Serializer.fromJson(compoundTag.getString("name"));
-						if (text2 != null) {
-							list.add(text2.asFormattedString());
-						}
-
-						if (compoundTag.contains("type", 8)) {
-							String string = compoundTag.getString("type");
-							list.add("Type: " + string);
-						}
-
-						list.add(compoundTag.getString("id"));
-						this.renderTooltip(list, i, j);
-					} catch (CommandSyntaxException | JsonSyntaxException var9) {
-						this.renderTooltip(Formatting.field_1061 + "Invalid Entity!", i, j);
+					Text text = hoverEvent.getValue(HoverEvent.Action.SHOW_TEXT);
+					if (text != null) {
+						this.renderOrderedTooltip(matrices, this.client.textRenderer.wrapLines(text, Math.max(this.width / 2, 200)), x, y);
 					}
 				}
-			} else if (hoverEvent.getAction() == HoverEvent.Action.field_11762) {
-				this.renderTooltip(this.minecraft.textRenderer.wrapStringToWidthAsList(hoverEvent.getValue().asFormattedString(), Math.max(this.width / 2, 200)), i, j);
 			}
 		}
 	}
 
-	protected void insertText(String string, boolean bl) {
+	protected void insertText(String text, boolean override) {
 	}
 
-	public boolean handleComponentClicked(Text text) {
-		if (text == null) {
+	public boolean handleTextClick(@Nullable Style style) {
+		if (style == null) {
 			return false;
 		} else {
-			ClickEvent clickEvent = text.getStyle().getClickEvent();
+			ClickEvent clickEvent = style.getClickEvent();
 			if (hasShiftDown()) {
-				if (text.getStyle().getInsertion() != null) {
-					this.insertText(text.getStyle().getInsertion(), false);
+				if (style.getInsertion() != null) {
+					this.insertText(style.getInsertion(), false);
 				}
 			} else if (clickEvent != null) {
-				if (clickEvent.getAction() == ClickEvent.Action.field_11749) {
-					if (!this.minecraft.options.chatLinks) {
+				if (clickEvent.getAction() == ClickEvent.Action.OPEN_URL) {
+					if (!this.client.options.chatLinks) {
 						return false;
 					}
 
@@ -273,24 +253,24 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 							throw new URISyntaxException(clickEvent.getValue(), "Unsupported protocol: " + string.toLowerCase(Locale.ROOT));
 						}
 
-						if (this.minecraft.options.chatLinksPrompt) {
+						if (this.client.options.chatLinksPrompt) {
 							this.clickedLink = uRI;
-							this.minecraft.openScreen(new ConfirmChatLinkScreen(this::confirmLink, clickEvent.getValue(), false));
+							this.client.openScreen(new ConfirmChatLinkScreen(this::confirmLink, clickEvent.getValue(), false));
 						} else {
 							this.openLink(uRI);
 						}
 					} catch (URISyntaxException var5) {
 						LOGGER.error("Can't open url for {}", clickEvent, var5);
 					}
-				} else if (clickEvent.getAction() == ClickEvent.Action.field_11746) {
+				} else if (clickEvent.getAction() == ClickEvent.Action.OPEN_FILE) {
 					URI uRI2 = new File(clickEvent.getValue()).toURI();
 					this.openLink(uRI2);
-				} else if (clickEvent.getAction() == ClickEvent.Action.field_11745) {
+				} else if (clickEvent.getAction() == ClickEvent.Action.SUGGEST_COMMAND) {
 					this.insertText(clickEvent.getValue(), true);
-				} else if (clickEvent.getAction() == ClickEvent.Action.field_11750) {
+				} else if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
 					this.sendMessage(clickEvent.getValue(), false);
-				} else if (clickEvent.getAction() == ClickEvent.Action.field_21462) {
-					this.minecraft.keyboard.setClipboard(clickEvent.getValue());
+				} else if (clickEvent.getAction() == ClickEvent.Action.COPY_TO_CLIPBOARD) {
+					this.client.keyboard.setClipboard(clickEvent.getValue());
 				} else {
 					LOGGER.error("Don't know how to handle {}", clickEvent);
 				}
@@ -302,33 +282,28 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 		}
 	}
 
-	public void sendMessage(String string) {
-		this.sendMessage(string, true);
+	public void sendMessage(String message) {
+		this.sendMessage(message, true);
 	}
 
-	public void sendMessage(String string, boolean bl) {
-		if (bl) {
-			this.minecraft.inGameHud.getChatHud().addToMessageHistory(string);
+	public void sendMessage(String message, boolean toHud) {
+		if (toHud) {
+			this.client.inGameHud.getChatHud().addToMessageHistory(message);
 		}
 
-		this.minecraft.player.sendChatMessage(string);
+		this.client.player.sendChatMessage(message);
 	}
 
-	public void init(MinecraftClient minecraftClient, int i, int j) {
-		this.minecraft = minecraftClient;
-		this.itemRenderer = minecraftClient.getItemRenderer();
-		this.font = minecraftClient.textRenderer;
-		this.width = i;
-		this.height = j;
+	public void init(MinecraftClient client, int width, int height) {
+		this.client = client;
+		this.itemRenderer = client.getItemRenderer();
+		this.textRenderer = client.textRenderer;
+		this.width = width;
+		this.height = height;
 		this.buttons.clear();
 		this.children.clear();
 		this.setFocused(null);
 		this.init();
-	}
-
-	public void setSize(int i, int j) {
-		this.width = i;
-		this.height = j;
 	}
 
 	@Override
@@ -339,38 +314,39 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 	protected void init() {
 	}
 
+	@Override
 	public void tick() {
 	}
 
 	public void removed() {
 	}
 
-	public void renderBackground() {
-		this.renderBackground(0);
+	public void renderBackground(MatrixStack matrices) {
+		this.renderBackground(matrices, 0);
 	}
 
-	public void renderBackground(int i) {
-		if (this.minecraft.world != null) {
-			this.fillGradient(0, 0, this.width, this.height, -1072689136, -804253680);
+	public void renderBackground(MatrixStack matrices, int vOffset) {
+		if (this.client.world != null) {
+			this.fillGradient(matrices, 0, 0, this.width, this.height, -1072689136, -804253680);
 		} else {
-			this.renderDirtBackground(i);
+			this.renderBackgroundTexture(vOffset);
 		}
 	}
 
-	public void renderDirtBackground(int i) {
+	public void renderBackgroundTexture(int vOffset) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		this.minecraft.getTextureManager().bindTexture(BACKGROUND_LOCATION);
+		this.client.getTextureManager().bindTexture(OPTIONS_BACKGROUND_TEXTURE);
 		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		float f = 32.0F;
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
-		bufferBuilder.vertex(0.0, (double)this.height, 0.0).texture(0.0F, (float)this.height / 32.0F + (float)i).color(64, 64, 64, 255).next();
+		bufferBuilder.vertex(0.0, (double)this.height, 0.0).texture(0.0F, (float)this.height / 32.0F + (float)vOffset).color(64, 64, 64, 255).next();
 		bufferBuilder.vertex((double)this.width, (double)this.height, 0.0)
-			.texture((float)this.width / 32.0F, (float)this.height / 32.0F + (float)i)
+			.texture((float)this.width / 32.0F, (float)this.height / 32.0F + (float)vOffset)
 			.color(64, 64, 64, 255)
 			.next();
-		bufferBuilder.vertex((double)this.width, 0.0, 0.0).texture((float)this.width / 32.0F, (float)i).color(64, 64, 64, 255).next();
-		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0F, (float)i).color(64, 64, 64, 255).next();
+		bufferBuilder.vertex((double)this.width, 0.0, 0.0).texture((float)this.width / 32.0F, (float)vOffset).color(64, 64, 64, 255).next();
+		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0F, (float)vOffset).color(64, 64, 64, 255).next();
 		tessellator.draw();
 	}
 
@@ -378,17 +354,17 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 		return true;
 	}
 
-	private void confirmLink(boolean bl) {
-		if (bl) {
+	private void confirmLink(boolean open) {
+		if (open) {
 			this.openLink(this.clickedLink);
 		}
 
 		this.clickedLink = null;
-		this.minecraft.openScreen(this);
+		this.client.openScreen(this);
 	}
 
-	private void openLink(URI uRI) {
-		Util.getOperatingSystem().open(uRI);
+	private void openLink(URI link) {
+		Util.getOperatingSystem().open(link);
 	}
 
 	public static boolean hasControlDown() {
@@ -409,49 +385,54 @@ public abstract class Screen extends AbstractParentElement implements Drawable {
 			|| InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), 346);
 	}
 
-	public static boolean isCut(int i) {
-		return i == 88 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isCut(int code) {
+		return code == 88 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public static boolean isPaste(int i) {
-		return i == 86 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isPaste(int code) {
+		return code == 86 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public static boolean isCopy(int i) {
-		return i == 67 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isCopy(int code) {
+		return code == 67 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public static boolean isSelectAll(int i) {
-		return i == 65 && hasControlDown() && !hasShiftDown() && !hasAltDown();
+	public static boolean isSelectAll(int code) {
+		return code == 65 && hasControlDown() && !hasShiftDown() && !hasAltDown();
 	}
 
-	public void resize(MinecraftClient minecraftClient, int i, int j) {
-		this.init(minecraftClient, i, j);
+	public void resize(MinecraftClient client, int width, int height) {
+		this.init(client, width, height);
 	}
 
-	public static void wrapScreenError(Runnable runnable, String string, String string2) {
+	public static void wrapScreenError(Runnable task, String errorTitle, String screenName) {
 		try {
-			runnable.run();
+			task.run();
 		} catch (Throwable var6) {
-			CrashReport crashReport = CrashReport.create(var6, string);
+			CrashReport crashReport = CrashReport.create(var6, errorTitle);
 			CrashReportSection crashReportSection = crashReport.addElement("Affected screen");
-			crashReportSection.add("Screen name", (CrashCallable<String>)(() -> string2));
+			crashReportSection.add("Screen name", (CrashCallable<String>)(() -> screenName));
 			throw new CrashException(crashReport);
 		}
 	}
 
-	protected boolean isValidCharacterForName(String string, char c, int i) {
-		int j = string.indexOf(58);
-		int k = string.indexOf(47);
-		if (c == ':') {
-			return (k == -1 || i <= k) && j == -1;
+	protected boolean isValidCharacterForName(String name, char character, int cursorPos) {
+		int i = name.indexOf(58);
+		int j = name.indexOf(47);
+		if (character == ':') {
+			return (j == -1 || cursorPos <= j) && i == -1;
 		} else {
-			return c == '/' ? i > j : c == '_' || c == '-' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '.';
+			return character == '/'
+				? cursorPos > i
+				: character == '_' || character == '-' || character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '.';
 		}
 	}
 
 	@Override
-	public boolean isMouseOver(double d, double e) {
+	public boolean isMouseOver(double mouseX, double mouseY) {
 		return true;
+	}
+
+	public void filesDragged(List<Path> paths) {
 	}
 }

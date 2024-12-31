@@ -1,41 +1,42 @@
 package net.minecraft.client.gui.screen.ingame;
 
+import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.resource.language.I18n;
-import net.minecraft.container.Container;
-import net.minecraft.container.ContainerListener;
-import net.minecraft.container.LecternContainer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.LecternScreenHandler;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerListener;
 import net.minecraft.text.Text;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.collection.DefaultedList;
 
-public class LecternScreen extends BookScreen implements ContainerProvider<LecternContainer> {
-	private final LecternContainer container;
-	private final ContainerListener listener = new ContainerListener() {
+public class LecternScreen extends BookScreen implements ScreenHandlerProvider<LecternScreenHandler> {
+	private final LecternScreenHandler container;
+	private final ScreenHandlerListener listener = new ScreenHandlerListener() {
 		@Override
-		public void onContainerRegistered(Container container, DefaultedList<ItemStack> defaultedList) {
+		public void onHandlerRegistered(ScreenHandler handler, DefaultedList<ItemStack> stacks) {
 			LecternScreen.this.updatePageProvider();
 		}
 
 		@Override
-		public void onContainerSlotUpdate(Container container, int i, ItemStack itemStack) {
+		public void onSlotUpdate(ScreenHandler handler, int slotId, ItemStack stack) {
 			LecternScreen.this.updatePageProvider();
 		}
 
 		@Override
-		public void onContainerPropertyUpdate(Container container, int i, int j) {
-			if (i == 0) {
+		public void onPropertyUpdate(ScreenHandler handler, int property, int value) {
+			if (property == 0) {
 				LecternScreen.this.updatePage();
 			}
 		}
 	};
 
-	public LecternScreen(LecternContainer lecternContainer, PlayerInventory playerInventory, Text text) {
-		this.container = lecternContainer;
+	public LecternScreen(LecternScreenHandler container, PlayerInventory inventory, Text title) {
+		this.container = container;
 	}
 
-	public LecternContainer getContainer() {
+	public LecternScreenHandler getScreenHandler() {
 		return this.container;
 	}
 
@@ -47,7 +48,7 @@ public class LecternScreen extends BookScreen implements ContainerProvider<Lecte
 
 	@Override
 	public void onClose() {
-		this.minecraft.player.closeContainer();
+		this.client.player.closeHandledScreen();
 		super.onClose();
 	}
 
@@ -59,9 +60,9 @@ public class LecternScreen extends BookScreen implements ContainerProvider<Lecte
 
 	@Override
 	protected void addCloseButton() {
-		if (this.minecraft.player.canModifyWorld()) {
-			this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, I18n.translate("gui.done"), buttonWidget -> this.minecraft.openScreen(null)));
-			this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, I18n.translate("lectern.take_book"), buttonWidget -> this.sendButtonPressPacket(3)));
+		if (this.client.player.canModifyBlocks()) {
+			this.addButton(new ButtonWidget(this.width / 2 - 100, 196, 98, 20, ScreenTexts.DONE, buttonWidget -> this.client.openScreen(null)));
+			this.addButton(new ButtonWidget(this.width / 2 + 2, 196, 98, 20, new TranslatableText("lectern.take_book"), buttonWidget -> this.sendButtonPressPacket(3)));
 		} else {
 			super.addCloseButton();
 		}
@@ -78,17 +79,17 @@ public class LecternScreen extends BookScreen implements ContainerProvider<Lecte
 	}
 
 	@Override
-	protected boolean jumpToPage(int i) {
-		if (i != this.container.getPage()) {
-			this.sendButtonPressPacket(100 + i);
+	protected boolean jumpToPage(int page) {
+		if (page != this.container.getPage()) {
+			this.sendButtonPressPacket(100 + page);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	private void sendButtonPressPacket(int i) {
-		this.minecraft.interactionManager.clickButton(this.container.syncId, i);
+	private void sendButtonPressPacket(int id) {
+		this.client.interactionManager.clickButton(this.container.syncId, id);
 	}
 
 	@Override

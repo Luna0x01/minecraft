@@ -12,15 +12,17 @@ public class SignType {
 	public static final SignType ACACIA = register(new SignType("acacia"));
 	public static final SignType JUNGLE = register(new SignType("jungle"));
 	public static final SignType DARK_OAK = register(new SignType("dark_oak"));
+	public static final SignType CRIMSON = register(new SignType("crimson"));
+	public static final SignType WARPED = register(new SignType("warped"));
 	private final String name;
 
-	protected SignType(String string) {
-		this.name = string;
+	protected SignType(String name) {
+		this.name = name;
 	}
 
-	private static SignType register(SignType signType) {
-		VALUES.add(signType);
-		return signType;
+	private static SignType register(SignType type) {
+		VALUES.add(type);
+		return type;
 	}
 
 	public static Stream<SignType> stream() {

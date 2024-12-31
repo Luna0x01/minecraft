@@ -25,16 +25,16 @@ public class FollowOwnerGoal extends Goal {
 	private float oldWaterPathfindingPenalty;
 	private final boolean leavesAllowed;
 
-	public FollowOwnerGoal(TameableEntity tameableEntity, double d, float f, float g, boolean bl) {
-		this.tameable = tameableEntity;
-		this.world = tameableEntity.world;
-		this.speed = d;
-		this.navigation = tameableEntity.getNavigation();
-		this.minDistance = f;
-		this.maxDistance = g;
-		this.leavesAllowed = bl;
-		this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
-		if (!(tameableEntity.getNavigation() instanceof MobNavigation) && !(tameableEntity.getNavigation() instanceof BirdNavigation)) {
+	public FollowOwnerGoal(TameableEntity tameable, double speed, float minDistance, float maxDistance, boolean leavesAllowed) {
+		this.tameable = tameable;
+		this.world = tameable.world;
+		this.speed = speed;
+		this.navigation = tameable.getNavigation();
+		this.minDistance = minDistance;
+		this.maxDistance = maxDistance;
+		this.leavesAllowed = leavesAllowed;
+		this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
+		if (!(tameable.getNavigation() instanceof MobNavigation) && !(tameable.getNavigation() instanceof BirdNavigation)) {
 			throw new IllegalArgumentException("Unsupported mob type for FollowOwnerGoal");
 		}
 	}
@@ -68,15 +68,15 @@ public class FollowOwnerGoal extends Goal {
 	@Override
 	public void start() {
 		this.updateCountdownTicks = 0;
-		this.oldWaterPathfindingPenalty = this.tameable.getPathfindingPenalty(PathNodeType.field_18);
-		this.tameable.setPathfindingPenalty(PathNodeType.field_18, 0.0F);
+		this.oldWaterPathfindingPenalty = this.tameable.getPathfindingPenalty(PathNodeType.WATER);
+		this.tameable.setPathfindingPenalty(PathNodeType.WATER, 0.0F);
 	}
 
 	@Override
 	public void stop() {
 		this.owner = null;
 		this.navigation.stop();
-		this.tameable.setPathfindingPenalty(PathNodeType.field_18, this.oldWaterPathfindingPenalty);
+		this.tameable.setPathfindingPenalty(PathNodeType.WATER, this.oldWaterPathfindingPenalty);
 	}
 
 	@Override
@@ -95,7 +95,7 @@ public class FollowOwnerGoal extends Goal {
 	}
 
 	private void tryTeleport() {
-		BlockPos blockPos = new BlockPos(this.owner);
+		BlockPos blockPos = this.owner.getBlockPos();
 
 		for (int i = 0; i < 10; i++) {
 			int j = this.getRandomInt(-3, 3);
@@ -108,34 +108,34 @@ public class FollowOwnerGoal extends Goal {
 		}
 	}
 
-	private boolean tryTeleportTo(int i, int j, int k) {
-		if (Math.abs((double)i - this.owner.getX()) < 2.0 && Math.abs((double)k - this.owner.getZ()) < 2.0) {
+	private boolean tryTeleportTo(int x, int y, int z) {
+		if (Math.abs((double)x - this.owner.getX()) < 2.0 && Math.abs((double)z - this.owner.getZ()) < 2.0) {
 			return false;
-		} else if (!this.canTeleportTo(new BlockPos(i, j, k))) {
+		} else if (!this.canTeleportTo(new BlockPos(x, y, z))) {
 			return false;
 		} else {
-			this.tameable.refreshPositionAndAngles((double)((float)i + 0.5F), (double)j, (double)((float)k + 0.5F), this.tameable.yaw, this.tameable.pitch);
+			this.tameable.refreshPositionAndAngles((double)x + 0.5, (double)y, (double)z + 0.5, this.tameable.yaw, this.tameable.pitch);
 			this.navigation.stop();
 			return true;
 		}
 	}
 
-	private boolean canTeleportTo(BlockPos blockPos) {
-		PathNodeType pathNodeType = LandPathNodeMaker.getPathNodeType(this.world, blockPos.getX(), blockPos.getY(), blockPos.getZ());
-		if (pathNodeType != PathNodeType.field_12) {
+	private boolean canTeleportTo(BlockPos pos) {
+		PathNodeType pathNodeType = LandPathNodeMaker.getLandNodeType(this.world, pos.mutableCopy());
+		if (pathNodeType != PathNodeType.WALKABLE) {
 			return false;
 		} else {
-			BlockState blockState = this.world.getBlockState(blockPos.down());
+			BlockState blockState = this.world.getBlockState(pos.down());
 			if (!this.leavesAllowed && blockState.getBlock() instanceof LeavesBlock) {
 				return false;
 			} else {
-				BlockPos blockPos2 = blockPos.subtract(new BlockPos(this.tameable));
-				return this.world.doesNotCollide(this.tameable, this.tameable.getBoundingBox().offset(blockPos2));
+				BlockPos blockPos = pos.subtract(this.tameable.getBlockPos());
+				return this.world.isSpaceEmpty(this.tameable, this.tameable.getBoundingBox().offset(blockPos));
 			}
 		}
 	}
 
-	private int getRandomInt(int i, int j) {
-		return this.tameable.getRandom().nextInt(j - i + 1) + i;
+	private int getRandomInt(int min, int max) {
+		return this.tameable.getRandom().nextInt(max - min + 1) + min;
 	}
 }

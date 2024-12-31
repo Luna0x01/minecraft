@@ -19,7 +19,7 @@ public class WitchHeldItemFeatureRenderer<T extends LivingEntity> extends Villag
 	) {
 		ItemStack itemStack = livingEntity.getMainHandStack();
 		matrixStack.push();
-		if (itemStack.getItem() == Items.field_8574) {
+		if (itemStack.getItem() == Items.POTION) {
 			this.getContextModel().getHead().rotate(matrixStack);
 			this.getContextModel().getNose().rotate(matrixStack);
 			matrixStack.translate(0.0625, 0.25, 0.0);

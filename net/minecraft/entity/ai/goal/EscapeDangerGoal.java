@@ -4,23 +4,24 @@ import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.TargetFinder;
-import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 
 public class EscapeDangerGoal extends Goal {
-	protected final MobEntityWithAi mob;
+	protected final PathAwareEntity mob;
 	protected final double speed;
 	protected double targetX;
 	protected double targetY;
 	protected double targetZ;
+	protected boolean active;
 
-	public EscapeDangerGoal(MobEntityWithAi mobEntityWithAi, double d) {
-		this.mob = mobEntityWithAi;
-		this.speed = d;
-		this.setControls(EnumSet.of(Goal.Control.field_18405));
+	public EscapeDangerGoal(PathAwareEntity mob, double speed) {
+		this.mob = mob;
+		this.speed = speed;
+		this.setControls(EnumSet.of(Goal.Control.MOVE));
 	}
 
 	@Override
@@ -54,9 +55,19 @@ public class EscapeDangerGoal extends Goal {
 		}
 	}
 
+	public boolean isActive() {
+		return this.active;
+	}
+
 	@Override
 	public void start() {
 		this.mob.getNavigation().startMovingTo(this.targetX, this.targetY, this.targetZ, this.speed);
+		this.active = true;
+	}
+
+	@Override
+	public void stop() {
+		this.active = false;
 	}
 
 	@Override
@@ -65,21 +76,21 @@ public class EscapeDangerGoal extends Goal {
 	}
 
 	@Nullable
-	protected BlockPos locateClosestWater(BlockView blockView, Entity entity, int i, int j) {
-		BlockPos blockPos = new BlockPos(entity);
-		int k = blockPos.getX();
-		int l = blockPos.getY();
-		int m = blockPos.getZ();
-		float f = (float)(i * i * j * 2);
+	protected BlockPos locateClosestWater(BlockView blockView, Entity entity, int rangeX, int rangeY) {
+		BlockPos blockPos = entity.getBlockPos();
+		int i = blockPos.getX();
+		int j = blockPos.getY();
+		int k = blockPos.getZ();
+		float f = (float)(rangeX * rangeX * rangeY * 2);
 		BlockPos blockPos2 = null;
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int n = k - i; n <= k + i; n++) {
-			for (int o = l - j; o <= l + j; o++) {
-				for (int p = m - i; p <= m + i; p++) {
-					mutable.set(n, o, p);
-					if (blockView.getFluidState(mutable).matches(FluidTags.field_15517)) {
-						float g = (float)((n - k) * (n - k) + (o - l) * (o - l) + (p - m) * (p - m));
+		for (int l = i - rangeX; l <= i + rangeX; l++) {
+			for (int m = j - rangeY; m <= j + rangeY; m++) {
+				for (int n = k - rangeX; n <= k + rangeX; n++) {
+					mutable.set(l, m, n);
+					if (blockView.getFluidState(mutable).isIn(FluidTags.WATER)) {
+						float g = (float)((l - i) * (l - i) + (m - j) * (m - j) + (n - k) * (n - k));
 						if (g < f) {
 							f = g;
 							blockPos2 = new BlockPos(mutable);

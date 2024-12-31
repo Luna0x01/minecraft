@@ -5,26 +5,26 @@ import java.util.List;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
+import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
 public class BuiltinBakedModel implements BakedModel {
 	private final ModelTransformation transformation;
-	private final ModelItemPropertyOverrideList itemPropertyOverrides;
+	private final ModelOverrideList itemPropertyOverrides;
 	private final Sprite sprite;
-	private final boolean field_21862;
+	private final boolean sideLit;
 
-	public BuiltinBakedModel(ModelTransformation modelTransformation, ModelItemPropertyOverrideList modelItemPropertyOverrideList, Sprite sprite, boolean bl) {
-		this.transformation = modelTransformation;
-		this.itemPropertyOverrides = modelItemPropertyOverrideList;
+	public BuiltinBakedModel(ModelTransformation transformation, ModelOverrideList itemPropertyOverrides, Sprite sprite, boolean sideLit) {
+		this.transformation = transformation;
+		this.itemPropertyOverrides = itemPropertyOverrides;
 		this.sprite = sprite;
-		this.field_21862 = bl;
+		this.sideLit = sideLit;
 	}
 
 	@Override
-	public List<BakedQuad> getQuads(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
+	public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction face, Random random) {
 		return Collections.emptyList();
 	}
 
@@ -40,7 +40,7 @@ public class BuiltinBakedModel implements BakedModel {
 
 	@Override
 	public boolean isSideLit() {
-		return this.field_21862;
+		return this.sideLit;
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public class BuiltinBakedModel implements BakedModel {
 	}
 
 	@Override
-	public ModelItemPropertyOverrideList getItemPropertyOverrides() {
+	public ModelOverrideList getOverrides() {
 		return this.itemPropertyOverrides;
 	}
 }

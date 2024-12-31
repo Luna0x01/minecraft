@@ -6,9 +6,9 @@ public class ZombieAttackGoal extends MeleeAttackGoal {
 	private final ZombieEntity zombie;
 	private int ticks;
 
-	public ZombieAttackGoal(ZombieEntity zombieEntity, double d, boolean bl) {
-		super(zombieEntity, d, bl);
-		this.zombie = zombieEntity;
+	public ZombieAttackGoal(ZombieEntity zombie, double speed, boolean pauseWhenMobIdle) {
+		super(zombie, speed, pauseWhenMobIdle);
+		this.zombie = zombie;
 	}
 
 	@Override
@@ -27,7 +27,7 @@ public class ZombieAttackGoal extends MeleeAttackGoal {
 	public void tick() {
 		super.tick();
 		this.ticks++;
-		if (this.ticks >= 5 && this.ticksUntilAttack < 10) {
+		if (this.ticks >= 5 && this.method_28348() < this.method_28349() / 2) {
 			this.zombie.setAttacking(true);
 		} else {
 			this.zombie.setAttacking(false);

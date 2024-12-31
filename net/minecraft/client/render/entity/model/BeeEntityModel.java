@@ -81,7 +81,7 @@ public class BeeEntityModel<T extends BeeEntity> extends AnimalModel<T> {
 		this.rightAntenna.pitch = 0.0F;
 		this.body.pitch = 0.0F;
 		this.body.pivotY = 19.0F;
-		boolean bl = beeEntity.onGround && beeEntity.getVelocity().lengthSquared() < 1.0E-7;
+		boolean bl = beeEntity.isOnGround() && beeEntity.getVelocity().lengthSquared() < 1.0E-7;
 		if (bl) {
 			this.rightWing.yaw = -0.2618F;
 			this.rightWing.roll = 0.0F;
@@ -106,7 +106,7 @@ public class BeeEntityModel<T extends BeeEntity> extends AnimalModel<T> {
 			this.body.roll = 0.0F;
 		}
 
-		if (!beeEntity.isAngry()) {
+		if (!beeEntity.hasAngerTime()) {
 			this.body.pitch = 0.0F;
 			this.body.yaw = 0.0F;
 			this.body.roll = 0.0F;

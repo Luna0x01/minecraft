@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 public class ListTag extends AbstractListTag<Tag> {
@@ -53,9 +54,9 @@ public class ListTag extends AbstractListTag<Tag> {
 	private final List<Tag> value;
 	private byte type;
 
-	private ListTag(List<Tag> list, byte b) {
+	private ListTag(List<Tag> list, byte type) {
 		this.value = list;
-		this.type = b;
+		this.type = type;
 	}
 
 	public ListTag() {
@@ -63,18 +64,18 @@ public class ListTag extends AbstractListTag<Tag> {
 	}
 
 	@Override
-	public void write(DataOutput dataOutput) throws IOException {
+	public void write(DataOutput output) throws IOException {
 		if (this.value.isEmpty()) {
 			this.type = 0;
 		} else {
 			this.type = ((Tag)this.value.get(0)).getType();
 		}
 
-		dataOutput.writeByte(this.type);
-		dataOutput.writeInt(this.value.size());
+		output.writeByte(this.type);
+		output.writeInt(this.value.size());
 
 		for (Tag tag : this.value) {
-			tag.write(dataOutput);
+			tag.write(output);
 		}
 	}
 
@@ -120,9 +121,9 @@ public class ListTag extends AbstractListTag<Tag> {
 		return this.value.isEmpty();
 	}
 
-	public CompoundTag getCompound(int i) {
-		if (i >= 0 && i < this.value.size()) {
-			Tag tag = (Tag)this.value.get(i);
+	public CompoundTag getCompound(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			Tag tag = (Tag)this.value.get(index);
 			if (tag.getType() == 10) {
 				return (CompoundTag)tag;
 			}
@@ -131,9 +132,9 @@ public class ListTag extends AbstractListTag<Tag> {
 		return new CompoundTag();
 	}
 
-	public ListTag getList(int i) {
-		if (i >= 0 && i < this.value.size()) {
-			Tag tag = (Tag)this.value.get(i);
+	public ListTag getList(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			Tag tag = (Tag)this.value.get(index);
 			if (tag.getType() == 9) {
 				return (ListTag)tag;
 			}
@@ -142,9 +143,9 @@ public class ListTag extends AbstractListTag<Tag> {
 		return new ListTag();
 	}
 
-	public short getShort(int i) {
-		if (i >= 0 && i < this.value.size()) {
-			Tag tag = (Tag)this.value.get(i);
+	public short getShort(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			Tag tag = (Tag)this.value.get(index);
 			if (tag.getType() == 2) {
 				return ((ShortTag)tag).getShort();
 			}
@@ -164,9 +165,9 @@ public class ListTag extends AbstractListTag<Tag> {
 		return 0;
 	}
 
-	public int[] getIntArray(int i) {
-		if (i >= 0 && i < this.value.size()) {
-			Tag tag = (Tag)this.value.get(i);
+	public int[] getIntArray(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			Tag tag = (Tag)this.value.get(index);
 			if (tag.getType() == 11) {
 				return ((IntArrayTag)tag).getIntArray();
 			}
@@ -175,9 +176,9 @@ public class ListTag extends AbstractListTag<Tag> {
 		return new int[0];
 	}
 
-	public double getDouble(int i) {
-		if (i >= 0 && i < this.value.size()) {
-			Tag tag = (Tag)this.value.get(i);
+	public double getDouble(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			Tag tag = (Tag)this.value.get(index);
 			if (tag.getType() == 6) {
 				return ((DoubleTag)tag).getDouble();
 			}
@@ -186,9 +187,9 @@ public class ListTag extends AbstractListTag<Tag> {
 		return 0.0;
 	}
 
-	public float getFloat(int i) {
-		if (i >= 0 && i < this.value.size()) {
-			Tag tag = (Tag)this.value.get(i);
+	public float getFloat(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			Tag tag = (Tag)this.value.get(index);
 			if (tag.getType() == 5) {
 				return ((FloatTag)tag).getFloat();
 			}
@@ -197,9 +198,9 @@ public class ListTag extends AbstractListTag<Tag> {
 		return 0.0F;
 	}
 
-	public String getString(int i) {
-		if (i >= 0 && i < this.value.size()) {
-			Tag tag = (Tag)this.value.get(i);
+	public String getString(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			Tag tag = (Tag)this.value.get(index);
 			return tag.getType() == 8 ? tag.asString() : tag.toString();
 		} else {
 			return "";
@@ -232,9 +233,9 @@ public class ListTag extends AbstractListTag<Tag> {
 	}
 
 	@Override
-	public boolean setTag(int i, Tag tag) {
+	public boolean setTag(int index, Tag tag) {
 		if (this.canAdd(tag)) {
-			this.value.set(i, tag);
+			this.value.set(index, tag);
 			return true;
 		} else {
 			return false;
@@ -242,9 +243,9 @@ public class ListTag extends AbstractListTag<Tag> {
 	}
 
 	@Override
-	public boolean addTag(int i, Tag tag) {
+	public boolean addTag(int index, Tag tag) {
 		if (this.canAdd(tag)) {
-			this.value.add(i, tag);
+			this.value.add(index, tag);
 			return true;
 		} else {
 			return false;
@@ -268,8 +269,8 @@ public class ListTag extends AbstractListTag<Tag> {
 		return new ListTag(list, this.type);
 	}
 
-	public boolean equals(Object object) {
-		return this == object ? true : object instanceof ListTag && Objects.equals(this.value, ((ListTag)object).value);
+	public boolean equals(Object o) {
+		return this == o ? true : o instanceof ListTag && Objects.equals(this.value, ((ListTag)o).value);
 	}
 
 	public int hashCode() {
@@ -277,51 +278,52 @@ public class ListTag extends AbstractListTag<Tag> {
 	}
 
 	@Override
-	public Text toText(String string, int i) {
+	public Text toText(String indent, int depth) {
 		if (this.isEmpty()) {
 			return new LiteralText("[]");
 		} else if (NBT_NUMBER_TYPES.contains(this.type) && this.size() <= 8) {
-			String string2 = ", ";
-			Text text = new LiteralText("[");
+			String string = ", ";
+			MutableText mutableText = new LiteralText("[");
+
+			for (int i = 0; i < this.value.size(); i++) {
+				if (i != 0) {
+					mutableText.append(", ");
+				}
+
+				mutableText.append(((Tag)this.value.get(i)).toText());
+			}
+
+			mutableText.append("]");
+			return mutableText;
+		} else {
+			MutableText mutableText2 = new LiteralText("[");
+			if (!indent.isEmpty()) {
+				mutableText2.append("\n");
+			}
+
+			String string2 = String.valueOf(',');
 
 			for (int j = 0; j < this.value.size(); j++) {
-				if (j != 0) {
-					text.append(", ");
+				MutableText mutableText3 = new LiteralText(Strings.repeat(indent, depth + 1));
+				mutableText3.append(((Tag)this.value.get(j)).toText(indent, depth + 1));
+				if (j != this.value.size() - 1) {
+					mutableText3.append(string2).append(indent.isEmpty() ? " " : "\n");
 				}
 
-				text.append(((Tag)this.value.get(j)).toText());
+				mutableText2.append(mutableText3);
 			}
 
-			text.append("]");
-			return text;
-		} else {
-			Text text2 = new LiteralText("[");
-			if (!string.isEmpty()) {
-				text2.append("\n");
+			if (!indent.isEmpty()) {
+				mutableText2.append("\n").append(Strings.repeat(indent, depth));
 			}
 
-			String string3 = String.valueOf(',');
-
-			for (int k = 0; k < this.value.size(); k++) {
-				Text text3 = new LiteralText(Strings.repeat(string, i + 1));
-				text3.append(((Tag)this.value.get(k)).toText(string, i + 1));
-				if (k != this.value.size() - 1) {
-					text3.append(string3).append(string.isEmpty() ? " " : "\n");
-				}
-
-				text2.append(text3);
-			}
-
-			if (!string.isEmpty()) {
-				text2.append("\n").append(Strings.repeat(string, i));
-			}
-
-			text2.append("]");
-			return text2;
+			mutableText2.append("]");
+			return mutableText2;
 		}
 	}
 
-	public int getElementType() {
+	@Override
+	public byte getElementType() {
 		return this.type;
 	}
 

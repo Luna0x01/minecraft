@@ -5,13 +5,13 @@ import net.minecraft.entity.mob.RavagerEntity;
 import net.minecraft.util.Identifier;
 
 public class RavagerEntityRenderer extends MobEntityRenderer<RavagerEntity, RavagerEntityModel> {
-	private static final Identifier SKIN = new Identifier("textures/entity/illager/ravager.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/ravager.png");
 
 	public RavagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new RavagerEntityModel(), 1.1F);
 	}
 
 	public Identifier getTexture(RavagerEntity ravagerEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

@@ -54,17 +54,17 @@ public class ChickenEntityModel<T extends Entity> extends AnimalModel<T> {
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		this.head.pitch = j * (float) (Math.PI / 180.0);
-		this.head.yaw = i * (float) (Math.PI / 180.0);
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		this.head.pitch = headPitch * (float) (Math.PI / 180.0);
+		this.head.yaw = headYaw * (float) (Math.PI / 180.0);
 		this.beak.pitch = this.head.pitch;
 		this.beak.yaw = this.head.yaw;
 		this.wattle.pitch = this.head.pitch;
 		this.wattle.yaw = this.head.yaw;
 		this.torso.pitch = (float) (Math.PI / 2);
-		this.rightLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
-		this.leftLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.rightWing.roll = h;
-		this.leftWing.roll = -h;
+		this.rightLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * 1.4F * limbDistance;
+		this.leftLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * 1.4F * limbDistance;
+		this.rightWing.roll = animationProgress;
+		this.leftWing.roll = -animationProgress;
 	}
 }

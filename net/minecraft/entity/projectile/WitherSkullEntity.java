@@ -28,12 +28,12 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 		super(entityType, world);
 	}
 
-	public WitherSkullEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
-		super(EntityType.field_6130, livingEntity, d, e, f, world);
+	public WitherSkullEntity(World world, LivingEntity owner, double directionX, double directionY, double directionZ) {
+		super(EntityType.WITHER_SKULL, owner, directionX, directionY, directionZ, world);
 	}
 
-	public WitherSkullEntity(World world, double d, double e, double f, double g, double h, double i) {
-		super(EntityType.field_6130, d, e, f, g, h, i, world);
+	public WitherSkullEntity(World world, double x, double y, double z, double directionX, double directionY, double directionZ) {
+		super(EntityType.WITHER_SKULL, x, y, z, directionX, directionY, directionZ, world);
 	}
 
 	@Override
@@ -47,47 +47,53 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 	}
 
 	@Override
-	public float getEffectiveExplosionResistance(
-		Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, FluidState fluidState, float f
-	) {
-		return this.isCharged() && WitherEntity.canDestroy(blockState) ? Math.min(0.8F, f) : f;
+	public float getEffectiveExplosionResistance(Explosion explosion, BlockView world, BlockPos pos, BlockState blockState, FluidState fluidState, float max) {
+		return this.isCharged() && WitherEntity.canDestroy(blockState) ? Math.min(0.8F, max) : max;
+	}
+
+	@Override
+	protected void onEntityHit(EntityHitResult entityHitResult) {
+		super.onEntityHit(entityHitResult);
+		if (!this.world.isClient) {
+			Entity entity = entityHitResult.getEntity();
+			Entity entity2 = this.getOwner();
+			boolean bl;
+			if (entity2 instanceof LivingEntity) {
+				LivingEntity livingEntity = (LivingEntity)entity2;
+				bl = entity.damage(DamageSource.witherSkull(this, livingEntity), 8.0F);
+				if (bl) {
+					if (entity.isAlive()) {
+						this.dealDamage(livingEntity, entity);
+					} else {
+						livingEntity.heal(5.0F);
+					}
+				}
+			} else {
+				bl = entity.damage(DamageSource.MAGIC, 5.0F);
+			}
+
+			if (bl && entity instanceof LivingEntity) {
+				int i = 0;
+				if (this.world.getDifficulty() == Difficulty.NORMAL) {
+					i = 10;
+				} else if (this.world.getDifficulty() == Difficulty.HARD) {
+					i = 40;
+				}
+
+				if (i > 0) {
+					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 20 * i, 1));
+				}
+			}
+		}
 	}
 
 	@Override
 	protected void onCollision(HitResult hitResult) {
 		super.onCollision(hitResult);
 		if (!this.world.isClient) {
-			if (hitResult.getType() == HitResult.Type.field_1331) {
-				Entity entity = ((EntityHitResult)hitResult).getEntity();
-				if (this.owner != null) {
-					if (entity.damage(DamageSource.mob(this.owner), 8.0F)) {
-						if (entity.isAlive()) {
-							this.dealDamage(this.owner, entity);
-						} else {
-							this.owner.heal(5.0F);
-						}
-					}
-				} else {
-					entity.damage(DamageSource.MAGIC, 5.0F);
-				}
-
-				if (entity instanceof LivingEntity) {
-					int i = 0;
-					if (this.world.getDifficulty() == Difficulty.field_5802) {
-						i = 10;
-					} else if (this.world.getDifficulty() == Difficulty.field_5807) {
-						i = 40;
-					}
-
-					if (i > 0) {
-						((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5920, 20 * i, 1));
-					}
-				}
-			}
-
-			Explosion.DestructionType destructionType = this.world.getGameRules().getBoolean(GameRules.field_19388)
-				? Explosion.DestructionType.field_18687
-				: Explosion.DestructionType.field_18685;
+			Explosion.DestructionType destructionType = this.world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)
+				? Explosion.DestructionType.DESTROY
+				: Explosion.DestructionType.NONE;
 			this.world.createExplosion(this, this.getX(), this.getY(), this.getZ(), 1.0F, false, destructionType);
 			this.remove();
 		}
@@ -99,7 +105,7 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
+	public boolean damage(DamageSource source, float amount) {
 		return false;
 	}
 
@@ -112,8 +118,8 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 		return this.dataTracker.get(CHARGED);
 	}
 
-	public void setCharged(boolean bl) {
-		this.dataTracker.set(CHARGED, bl);
+	public void setCharged(boolean charged) {
+		this.dataTracker.set(CHARGED, charged);
 	}
 
 	@Override

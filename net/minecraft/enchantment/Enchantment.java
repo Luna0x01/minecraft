@@ -9,6 +9,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
@@ -17,28 +18,27 @@ import net.minecraft.util.registry.Registry;
 
 public abstract class Enchantment {
 	private final EquipmentSlot[] slotTypes;
-	private final Enchantment.Weight weight;
-	@Nullable
-	public EnchantmentTarget type;
+	private final Enchantment.Rarity rarity;
+	public final EnchantmentTarget type;
 	@Nullable
 	protected String translationKey;
 
 	@Nullable
-	public static Enchantment byRawId(int i) {
-		return Registry.field_11160.get(i);
+	public static Enchantment byRawId(int id) {
+		return Registry.ENCHANTMENT.get(id);
 	}
 
-	protected Enchantment(Enchantment.Weight weight, EnchantmentTarget enchantmentTarget, EquipmentSlot[] equipmentSlots) {
-		this.weight = weight;
-		this.type = enchantmentTarget;
-		this.slotTypes = equipmentSlots;
+	protected Enchantment(Enchantment.Rarity weight, EnchantmentTarget type, EquipmentSlot[] slotTypes) {
+		this.rarity = weight;
+		this.type = type;
+		this.slotTypes = slotTypes;
 	}
 
-	public Map<EquipmentSlot, ItemStack> getEquipment(LivingEntity livingEntity) {
+	public Map<EquipmentSlot, ItemStack> getEquipment(LivingEntity entity) {
 		Map<EquipmentSlot, ItemStack> map = Maps.newEnumMap(EquipmentSlot.class);
 
 		for (EquipmentSlot equipmentSlot : this.slotTypes) {
-			ItemStack itemStack = livingEntity.getEquippedStack(equipmentSlot);
+			ItemStack itemStack = entity.getEquippedStack(equipmentSlot);
 			if (!itemStack.isEmpty()) {
 				map.put(equipmentSlot, itemStack);
 			}
@@ -47,45 +47,45 @@ public abstract class Enchantment {
 		return map;
 	}
 
-	public Enchantment.Weight getWeight() {
-		return this.weight;
+	public Enchantment.Rarity getRarity() {
+		return this.rarity;
 	}
 
-	public int getMinimumLevel() {
+	public int getMinLevel() {
 		return 1;
 	}
 
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 1;
 	}
 
-	public int getMinimumPower(int i) {
-		return 1 + i * 10;
+	public int getMinPower(int level) {
+		return 1 + level * 10;
 	}
 
-	public int getMaximumPower(int i) {
-		return this.getMinimumPower(i) + 5;
+	public int getMaxPower(int level) {
+		return this.getMinPower(level) + 5;
 	}
 
-	public int getProtectionAmount(int i, DamageSource damageSource) {
+	public int getProtectionAmount(int level, DamageSource source) {
 		return 0;
 	}
 
-	public float getAttackDamage(int i, EntityGroup entityGroup) {
+	public float getAttackDamage(int level, EntityGroup group) {
 		return 0.0F;
 	}
 
-	public final boolean isDifferent(Enchantment enchantment) {
-		return this.differs(enchantment) && enchantment.differs(this);
+	public final boolean canCombine(Enchantment other) {
+		return this.canAccept(other) && other.canAccept(this);
 	}
 
-	protected boolean differs(Enchantment enchantment) {
-		return this != enchantment;
+	protected boolean canAccept(Enchantment other) {
+		return this != other;
 	}
 
 	protected String getOrCreateTranslationKey() {
 		if (this.translationKey == null) {
-			this.translationKey = Util.createTranslationKey("enchantment", Registry.field_11160.getId(this));
+			this.translationKey = Util.createTranslationKey("enchantment", Registry.ENCHANTMENT.getId(this));
 		}
 
 		return this.translationKey;
@@ -95,29 +95,29 @@ public abstract class Enchantment {
 		return this.getOrCreateTranslationKey();
 	}
 
-	public Text getName(int i) {
-		Text text = new TranslatableText(this.getTranslationKey());
+	public Text getName(int level) {
+		MutableText mutableText = new TranslatableText(this.getTranslationKey());
 		if (this.isCursed()) {
-			text.formatted(Formatting.field_1061);
+			mutableText.formatted(Formatting.RED);
 		} else {
-			text.formatted(Formatting.field_1080);
+			mutableText.formatted(Formatting.GRAY);
 		}
 
-		if (i != 1 || this.getMaximumLevel() != 1) {
-			text.append(" ").append(new TranslatableText("enchantment.level." + i));
+		if (level != 1 || this.getMaxLevel() != 1) {
+			mutableText.append(" ").append(new TranslatableText("enchantment.level." + level));
 		}
 
-		return text;
+		return mutableText;
 	}
 
-	public boolean isAcceptableItem(ItemStack itemStack) {
-		return this.type.isAcceptableItem(itemStack.getItem());
+	public boolean isAcceptableItem(ItemStack stack) {
+		return this.type.isAcceptableItem(stack.getItem());
 	}
 
-	public void onTargetDamaged(LivingEntity livingEntity, Entity entity, int i) {
+	public void onTargetDamaged(LivingEntity user, Entity target, int level) {
 	}
 
-	public void onUserDamaged(LivingEntity livingEntity, Entity entity, int i) {
+	public void onUserDamaged(LivingEntity user, Entity attacker, int level) {
 	}
 
 	public boolean isTreasure() {
@@ -128,16 +128,24 @@ public abstract class Enchantment {
 		return false;
 	}
 
-	public static enum Weight {
-		field_9087(10),
-		field_9090(5),
-		field_9088(2),
-		field_9091(1);
+	public boolean isAvailableForEnchantedBookOffer() {
+		return true;
+	}
+
+	public boolean isAvailableForRandomSelection() {
+		return true;
+	}
+
+	public static enum Rarity {
+		COMMON(10),
+		UNCOMMON(5),
+		RARE(2),
+		VERY_RARE(1);
 
 		private final int weight;
 
-		private Weight(int j) {
-			this.weight = j;
+		private Rarity(int weight) {
+			this.weight = weight;
 		}
 
 		public int getWeight() {

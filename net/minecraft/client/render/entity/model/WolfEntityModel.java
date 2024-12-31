@@ -64,13 +64,13 @@ public class WolfEntityModel<T extends WolfEntity> extends TintableAnimalModel<T
 	}
 
 	public void animateModel(T wolfEntity, float f, float g, float h) {
-		if (wolfEntity.isAngry()) {
+		if (wolfEntity.hasAngerTime()) {
 			this.tail.yaw = 0.0F;
 		} else {
 			this.tail.yaw = MathHelper.cos(f * 0.6662F) * 1.4F * g;
 		}
 
-		if (wolfEntity.isSitting()) {
+		if (wolfEntity.isInSittingPose()) {
 			this.neck.setPivot(-1.0F, 16.0F, -3.0F);
 			this.neck.pitch = (float) (Math.PI * 2.0 / 5.0);
 			this.neck.yaw = 0.0F;

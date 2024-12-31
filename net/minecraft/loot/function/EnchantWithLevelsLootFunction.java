@@ -10,35 +10,39 @@ import net.minecraft.loot.LootTableRange;
 import net.minecraft.loot.LootTableRanges;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class EnchantWithLevelsLootFunction extends ConditionalLootFunction {
 	private final LootTableRange range;
 	private final boolean treasureEnchantmentsAllowed;
 
-	private EnchantWithLevelsLootFunction(LootCondition[] lootConditions, LootTableRange lootTableRange, boolean bl) {
-		super(lootConditions);
-		this.range = lootTableRange;
-		this.treasureEnchantmentsAllowed = bl;
+	private EnchantWithLevelsLootFunction(LootCondition[] conditions, LootTableRange range, boolean treasureEnchantmentsAllowed) {
+		super(conditions);
+		this.range = range;
+		this.treasureEnchantmentsAllowed = treasureEnchantmentsAllowed;
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		Random random = lootContext.getRandom();
-		return EnchantmentHelper.enchant(random, itemStack, this.range.next(random), this.treasureEnchantmentsAllowed);
+	public LootFunctionType getType() {
+		return LootFunctionTypes.ENCHANT_WITH_LEVELS;
 	}
 
-	public static EnchantWithLevelsLootFunction.Builder builder(LootTableRange lootTableRange) {
-		return new EnchantWithLevelsLootFunction.Builder(lootTableRange);
+	@Override
+	public ItemStack process(ItemStack stack, LootContext context) {
+		Random random = context.getRandom();
+		return EnchantmentHelper.enchant(random, stack, this.range.next(random), this.treasureEnchantmentsAllowed);
+	}
+
+	public static EnchantWithLevelsLootFunction.Builder builder(LootTableRange range) {
+		return new EnchantWithLevelsLootFunction.Builder(range);
 	}
 
 	public static class Builder extends ConditionalLootFunction.Builder<EnchantWithLevelsLootFunction.Builder> {
 		private final LootTableRange range;
 		private boolean treasureEnchantmentsAllowed;
 
-		public Builder(LootTableRange lootTableRange) {
-			this.range = lootTableRange;
+		public Builder(LootTableRange range) {
+			this.range = range;
 		}
 
 		protected EnchantWithLevelsLootFunction.Builder getThisBuilder() {
@@ -56,11 +60,7 @@ public class EnchantWithLevelsLootFunction extends ConditionalLootFunction {
 		}
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<EnchantWithLevelsLootFunction> {
-		public Factory() {
-			super(new Identifier("enchant_with_levels"), EnchantWithLevelsLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<EnchantWithLevelsLootFunction> {
 		public void toJson(JsonObject jsonObject, EnchantWithLevelsLootFunction enchantWithLevelsLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, enchantWithLevelsLootFunction, jsonSerializationContext);
 			jsonObject.add("levels", LootTableRanges.toJson(enchantWithLevelsLootFunction.range, jsonSerializationContext));

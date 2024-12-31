@@ -5,12 +5,11 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import java.util.Locale;
 import java.util.function.Function;
-import net.minecraft.command.arguments.IdentifierArgumentType;
-import net.minecraft.command.arguments.NbtPathArgumentType;
+import net.minecraft.command.argument.IdentifierArgumentType;
+import net.minecraft.command.argument.NbtPathArgumentType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.CommandSource;
 import net.minecraft.server.command.DataCommand;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
@@ -23,19 +22,20 @@ public class StorageDataObject implements DataCommandObject {
 		);
 	public static final Function<String, DataCommand.ObjectType> TYPE_FACTORY = string -> new DataCommand.ObjectType() {
 			@Override
-			public DataCommandObject getObject(CommandContext<ServerCommandSource> commandContext) {
-				return new StorageDataObject(StorageDataObject.of(commandContext), IdentifierArgumentType.getIdentifier(commandContext, string));
+			public DataCommandObject getObject(CommandContext<ServerCommandSource> context) {
+				return new StorageDataObject(StorageDataObject.of(context), IdentifierArgumentType.getIdentifier(context, string));
 			}
 
 			@Override
 			public ArgumentBuilder<ServerCommandSource, ?> addArgumentsToBuilder(
-				ArgumentBuilder<ServerCommandSource, ?> argumentBuilder,
-				Function<ArgumentBuilder<ServerCommandSource, ?>, ArgumentBuilder<ServerCommandSource, ?>> function
+				ArgumentBuilder<ServerCommandSource, ?> argument, Function<ArgumentBuilder<ServerCommandSource, ?>, ArgumentBuilder<ServerCommandSource, ?>> argumentAdder
 			) {
-				return argumentBuilder.then(
+				return argument.then(
 					CommandManager.literal("storage")
 						.then(
-							(ArgumentBuilder)function.apply(CommandManager.argument(string, IdentifierArgumentType.identifier()).suggests(StorageDataObject.SUGGESTION_PROVIDER))
+							(ArgumentBuilder)argumentAdder.apply(
+								CommandManager.argument(string, IdentifierArgumentType.identifier()).suggests(StorageDataObject.SUGGESTION_PROVIDER)
+							)
 						)
 				);
 			}
@@ -47,14 +47,14 @@ public class StorageDataObject implements DataCommandObject {
 		return ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getDataCommandStorage();
 	}
 
-	private StorageDataObject(DataCommandStorage dataCommandStorage, Identifier identifier) {
-		this.storage = dataCommandStorage;
-		this.id = identifier;
+	private StorageDataObject(DataCommandStorage storage, Identifier id) {
+		this.storage = storage;
+		this.id = id;
 	}
 
 	@Override
-	public void setTag(CompoundTag compoundTag) {
-		this.storage.set(this.id, compoundTag);
+	public void setTag(CompoundTag tag) {
+		this.storage.set(this.id, tag);
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public class StorageDataObject implements DataCommandObject {
 	}
 
 	@Override
-	public Text feedbackGet(NbtPathArgumentType.NbtPath nbtPath, double d, int i) {
-		return new TranslatableText("commands.data.storage.get", nbtPath, this.id, String.format(Locale.ROOT, "%.2f", d), i);
+	public Text feedbackGet(NbtPathArgumentType.NbtPath nbtPath, double scale, int result) {
+		return new TranslatableText("commands.data.storage.get", nbtPath, this.id, String.format(Locale.ROOT, "%.2f", scale), result);
 	}
 }

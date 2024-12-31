@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -37,16 +38,16 @@ public class LongArrayTag extends AbstractListTag<LongTag> {
 	};
 	private long[] value;
 
-	public LongArrayTag(long[] ls) {
-		this.value = ls;
+	public LongArrayTag(long[] value) {
+		this.value = value;
 	}
 
-	public LongArrayTag(LongSet longSet) {
-		this.value = longSet.toLongArray();
+	public LongArrayTag(LongSet value) {
+		this.value = value.toLongArray();
 	}
 
-	public LongArrayTag(List<Long> list) {
-		this(toArray(list));
+	public LongArrayTag(List<Long> value) {
+		this(toArray(value));
 	}
 
 	private static long[] toArray(List<Long> list) {
@@ -61,11 +62,11 @@ public class LongArrayTag extends AbstractListTag<LongTag> {
 	}
 
 	@Override
-	public void write(DataOutput dataOutput) throws IOException {
-		dataOutput.writeInt(this.value.length);
+	public void write(DataOutput output) throws IOException {
+		output.writeInt(this.value.length);
 
 		for (long l : this.value) {
-			dataOutput.writeLong(l);
+			output.writeLong(l);
 		}
 	}
 
@@ -100,8 +101,8 @@ public class LongArrayTag extends AbstractListTag<LongTag> {
 		return new LongArrayTag(ls);
 	}
 
-	public boolean equals(Object object) {
-		return this == object ? true : object instanceof LongArrayTag && Arrays.equals(this.value, ((LongArrayTag)object).value);
+	public boolean equals(Object o) {
+		return this == o ? true : o instanceof LongArrayTag && Arrays.equals(this.value, ((LongArrayTag)o).value);
 	}
 
 	public int hashCode() {
@@ -109,20 +110,20 @@ public class LongArrayTag extends AbstractListTag<LongTag> {
 	}
 
 	@Override
-	public Text toText(String string, int i) {
+	public Text toText(String indent, int depth) {
 		Text text = new LiteralText("L").formatted(RED);
-		Text text2 = new LiteralText("[").append(text).append(";");
+		MutableText mutableText = new LiteralText("[").append(text).append(";");
 
-		for (int j = 0; j < this.value.length; j++) {
-			Text text3 = new LiteralText(String.valueOf(this.value[j])).formatted(GOLD);
-			text2.append(" ").append(text3).append(text);
-			if (j != this.value.length - 1) {
-				text2.append(",");
+		for (int i = 0; i < this.value.length; i++) {
+			MutableText mutableText2 = new LiteralText(String.valueOf(this.value[i])).formatted(GOLD);
+			mutableText.append(" ").append(mutableText2).append(text);
+			if (i != this.value.length - 1) {
+				mutableText.append(",");
 			}
 		}
 
-		text2.append("]");
-		return text2;
+		mutableText.append("]");
+		return mutableText;
 	}
 
 	public long[] getLongArray() {
@@ -137,20 +138,20 @@ public class LongArrayTag extends AbstractListTag<LongTag> {
 		return LongTag.of(this.value[i]);
 	}
 
-	public LongTag set(int i, LongTag longTag) {
+	public LongTag method_10606(int i, LongTag longTag) {
 		long l = this.value[i];
 		this.value[i] = longTag.getLong();
 		return LongTag.of(l);
 	}
 
-	public void method_10531(int i, LongTag longTag) {
+	public void add(int i, LongTag longTag) {
 		this.value = ArrayUtils.add(this.value, i, longTag.getLong());
 	}
 
 	@Override
-	public boolean setTag(int i, Tag tag) {
+	public boolean setTag(int index, Tag tag) {
 		if (tag instanceof AbstractNumberTag) {
-			this.value[i] = ((AbstractNumberTag)tag).getLong();
+			this.value[index] = ((AbstractNumberTag)tag).getLong();
 			return true;
 		} else {
 			return false;
@@ -158,19 +159,24 @@ public class LongArrayTag extends AbstractListTag<LongTag> {
 	}
 
 	@Override
-	public boolean addTag(int i, Tag tag) {
+	public boolean addTag(int index, Tag tag) {
 		if (tag instanceof AbstractNumberTag) {
-			this.value = ArrayUtils.add(this.value, i, ((AbstractNumberTag)tag).getLong());
+			this.value = ArrayUtils.add(this.value, index, ((AbstractNumberTag)tag).getLong());
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public LongTag method_10536(int i) {
+	public LongTag remove(int i) {
 		long l = this.value[i];
 		this.value = ArrayUtils.remove(this.value, i);
 		return LongTag.of(l);
+	}
+
+	@Override
+	public byte getElementType() {
+		return 4;
 	}
 
 	public void clear() {

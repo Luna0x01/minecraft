@@ -9,9 +9,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 
 public class MooshroomEntityRenderer extends MobEntityRenderer<MooshroomEntity, CowEntityModel<MooshroomEntity>> {
-	private static final Map<MooshroomEntity.Type, Identifier> SKIN = Util.make(Maps.newHashMap(), hashMap -> {
-		hashMap.put(MooshroomEntity.Type.field_18110, new Identifier("textures/entity/cow/brown_mooshroom.png"));
-		hashMap.put(MooshroomEntity.Type.field_18109, new Identifier("textures/entity/cow/red_mooshroom.png"));
+	private static final Map<MooshroomEntity.Type, Identifier> TEXTURES = Util.make(Maps.newHashMap(), hashMap -> {
+		hashMap.put(MooshroomEntity.Type.BROWN, new Identifier("textures/entity/cow/brown_mooshroom.png"));
+		hashMap.put(MooshroomEntity.Type.RED, new Identifier("textures/entity/cow/red_mooshroom.png"));
 	});
 
 	public MooshroomEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
@@ -20,6 +20,6 @@ public class MooshroomEntityRenderer extends MobEntityRenderer<MooshroomEntity, 
 	}
 
 	public Identifier getTexture(MooshroomEntity mooshroomEntity) {
-		return (Identifier)SKIN.get(mooshroomEntity.getMooshroomType());
+		return (Identifier)TEXTURES.get(mooshroomEntity.getMooshroomType());
 	}
 }

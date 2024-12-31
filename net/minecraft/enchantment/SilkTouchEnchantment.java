@@ -3,27 +3,27 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class SilkTouchEnchantment extends Enchantment {
-	protected SilkTouchEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
-		super(weight, EnchantmentTarget.field_9069, equipmentSlots);
+	protected SilkTouchEnchantment(Enchantment.Rarity weight, EquipmentSlot... slotTypes) {
+		super(weight, EnchantmentTarget.DIGGER, slotTypes);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
+	public int getMinPower(int level) {
 		return 15;
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
-		return super.getMinimumPower(i) + 50;
+	public int getMaxPower(int level) {
+		return super.getMinPower(level) + 50;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 1;
 	}
 
 	@Override
-	public boolean differs(Enchantment enchantment) {
-		return super.differs(enchantment) && enchantment != Enchantments.field_9130;
+	public boolean canAccept(Enchantment other) {
+		return super.canAccept(other) && other != Enchantments.FORTUNE;
 	}
 }

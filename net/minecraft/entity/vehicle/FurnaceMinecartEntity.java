@@ -14,6 +14,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -27,19 +28,19 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	private int fuel;
 	public double pushX;
 	public double pushZ;
-	private static final Ingredient ACCEPTABLE_FUEL = Ingredient.ofItems(Items.field_8713, Items.field_8665);
+	private static final Ingredient ACCEPTABLE_FUEL = Ingredient.ofItems(Items.COAL, Items.CHARCOAL);
 
 	public FurnaceMinecartEntity(EntityType<? extends FurnaceMinecartEntity> entityType, World world) {
 		super(entityType, world);
 	}
 
-	public FurnaceMinecartEntity(World world, double d, double e, double f) {
-		super(EntityType.field_6080, world, d, e, f);
+	public FurnaceMinecartEntity(World world, double x, double y, double z) {
+		super(EntityType.FURNACE_MINECART, world, x, y, z);
 	}
 
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
-		return AbstractMinecartEntity.Type.field_7679;
+		return AbstractMinecartEntity.Type.FURNACE;
 	}
 
 	@Override
@@ -65,7 +66,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 		}
 
 		if (this.isLit() && this.random.nextInt(4) == 0) {
-			this.world.addParticle(ParticleTypes.field_11237, this.getX(), this.getY() + 0.8, this.getZ(), 0.0, 0.0, 0.0);
+			this.world.addParticle(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 0.8, this.getZ(), 0.0, 0.0, 0.0);
 		}
 	}
 
@@ -77,16 +78,16 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	public void dropItems(DamageSource damageSource) {
 		super.dropItems(damageSource);
-		if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean(GameRules.field_19393)) {
-			this.dropItem(Blocks.field_10181);
+		if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+			this.dropItem(Blocks.FURNACE);
 		}
 	}
 
 	@Override
-	protected void moveOnRail(BlockPos blockPos, BlockState blockState) {
+	protected void moveOnRail(BlockPos pos, BlockState state) {
 		double d = 1.0E-4;
 		double e = 0.001;
-		super.moveOnRail(blockPos, blockState);
+		super.moveOnRail(pos, state);
 		Vec3d vec3d = this.getVelocity();
 		double f = squaredHorizontalLength(vec3d);
 		double g = this.pushX * this.pushX + this.pushZ * this.pushZ;
@@ -114,10 +115,10 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean interact(PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
+	public ActionResult interact(PlayerEntity player, Hand hand) {
+		ItemStack itemStack = player.getStackInHand(hand);
 		if (ACCEPTABLE_FUEL.test(itemStack) && this.fuel + 3600 <= 32000) {
-			if (!playerEntity.abilities.creativeMode) {
+			if (!player.abilities.creativeMode) {
 				itemStack.decrement(1);
 			}
 
@@ -125,39 +126,39 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 		}
 
 		if (this.fuel > 0) {
-			this.pushX = this.getX() - playerEntity.getX();
-			this.pushZ = this.getZ() - playerEntity.getZ();
+			this.pushX = this.getX() - player.getX();
+			this.pushZ = this.getZ() - player.getZ();
 		}
 
-		return true;
+		return ActionResult.success(this.world.isClient);
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putDouble("PushX", this.pushX);
-		compoundTag.putDouble("PushZ", this.pushZ);
-		compoundTag.putShort("Fuel", (short)this.fuel);
+	protected void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putDouble("PushX", this.pushX);
+		tag.putDouble("PushZ", this.pushZ);
+		tag.putShort("Fuel", (short)this.fuel);
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.pushX = compoundTag.getDouble("PushX");
-		this.pushZ = compoundTag.getDouble("PushZ");
-		this.fuel = compoundTag.getShort("Fuel");
+	protected void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.pushX = tag.getDouble("PushX");
+		this.pushZ = tag.getDouble("PushZ");
+		this.fuel = tag.getShort("Fuel");
 	}
 
 	protected boolean isLit() {
 		return this.dataTracker.get(LIT);
 	}
 
-	protected void setLit(boolean bl) {
-		this.dataTracker.set(LIT, bl);
+	protected void setLit(boolean lit) {
+		this.dataTracker.set(LIT, lit);
 	}
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return Blocks.field_10181.getDefaultState().with(FurnaceBlock.FACING, Direction.field_11043).with(FurnaceBlock.LIT, Boolean.valueOf(this.isLit()));
+		return Blocks.FURNACE.getDefaultState().with(FurnaceBlock.FACING, Direction.NORTH).with(FurnaceBlock.LIT, Boolean.valueOf(this.isLit()));
 	}
 }

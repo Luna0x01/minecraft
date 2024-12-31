@@ -6,23 +6,23 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public enum SoundCategory {
-	field_15250("master"),
-	field_15253("music"),
-	field_15247("record"),
-	field_15252("weather"),
-	field_15245("block"),
-	field_15251("hostile"),
-	field_15254("neutral"),
+	MASTER("master"),
+	MUSIC("music"),
+	RECORDS("record"),
+	WEATHER("weather"),
+	BLOCKS("block"),
+	HOSTILE("hostile"),
+	NEUTRAL("neutral"),
 	PLAYERS("player"),
-	field_15256("ambient"),
-	field_15246("voice");
+	AMBIENT("ambient"),
+	VOICE("voice");
 
-	private static final Map<String, SoundCategory> NAME_MAP = (Map<String, SoundCategory>)Arrays.stream(values())
+	private static final Map<String, SoundCategory> BY_NAME = (Map<String, SoundCategory>)Arrays.stream(values())
 		.collect(Collectors.toMap(SoundCategory::getName, Function.identity()));
 	private final String name;
 
-	private SoundCategory(String string2) {
-		this.name = string2;
+	private SoundCategory(String name) {
+		this.name = name;
 	}
 
 	public String getName() {

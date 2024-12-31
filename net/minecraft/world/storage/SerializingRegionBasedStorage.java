@@ -3,9 +3,11 @@ package net.minecraft.world.storage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.DataFixer;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.OptionalDynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.OptionalDynamic;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -13,16 +15,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
 import net.minecraft.datafixer.DataFixTypes;
-import net.minecraft.datafixer.NbtOps;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import net.minecraft.util.DynamicSerializable;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -30,49 +30,49 @@ import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SerializingRegionBasedStorage<R extends DynamicSerializable> implements AutoCloseable {
+public class SerializingRegionBasedStorage<R> implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final StorageIoWorker worker;
 	private final Long2ObjectMap<Optional<R>> loadedElements = new Long2ObjectOpenHashMap();
 	private final LongLinkedOpenHashSet unsavedElements = new LongLinkedOpenHashSet();
-	private final BiFunction<Runnable, Dynamic<?>, R> deserializer;
+	private final Function<Runnable, Codec<R>> codecFactory;
 	private final Function<Runnable, R> factory;
 	private final DataFixer dataFixer;
 	private final DataFixTypes dataFixType;
 
 	public SerializingRegionBasedStorage(
-		File file, BiFunction<Runnable, Dynamic<?>, R> biFunction, Function<Runnable, R> function, DataFixer dataFixer, DataFixTypes dataFixTypes
+		File directory, Function<Runnable, Codec<R>> codecFactory, Function<Runnable, R> factory, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl
 	) {
-		this.deserializer = biFunction;
-		this.factory = function;
+		this.codecFactory = codecFactory;
+		this.factory = factory;
 		this.dataFixer = dataFixer;
 		this.dataFixType = dataFixTypes;
-		this.worker = new StorageIoWorker(new RegionBasedStorage(file), file.getName());
+		this.worker = new StorageIoWorker(directory, bl, directory.getName());
 	}
 
-	protected void tick(BooleanSupplier booleanSupplier) {
-		while (!this.unsavedElements.isEmpty() && booleanSupplier.getAsBoolean()) {
+	protected void tick(BooleanSupplier shouldKeepTicking) {
+		while (!this.unsavedElements.isEmpty() && shouldKeepTicking.getAsBoolean()) {
 			ChunkPos chunkPos = ChunkSectionPos.from(this.unsavedElements.firstLong()).toChunkPos();
 			this.save(chunkPos);
 		}
 	}
 
 	@Nullable
-	protected Optional<R> getIfLoaded(long l) {
-		return (Optional<R>)this.loadedElements.get(l);
+	protected Optional<R> getIfLoaded(long pos) {
+		return (Optional<R>)this.loadedElements.get(pos);
 	}
 
-	protected Optional<R> get(long l) {
-		ChunkSectionPos chunkSectionPos = ChunkSectionPos.from(l);
+	protected Optional<R> get(long pos) {
+		ChunkSectionPos chunkSectionPos = ChunkSectionPos.from(pos);
 		if (this.isPosInvalid(chunkSectionPos)) {
 			return Optional.empty();
 		} else {
-			Optional<R> optional = this.getIfLoaded(l);
+			Optional<R> optional = this.getIfLoaded(pos);
 			if (optional != null) {
 				return optional;
 			} else {
 				this.loadDataAt(chunkSectionPos.toChunkPos());
-				optional = this.getIfLoaded(l);
+				optional = this.getIfLoaded(pos);
 				if (optional == null) {
 					throw (IllegalStateException)Util.throwOrPause(new IllegalStateException());
 				} else {
@@ -82,42 +82,42 @@ public class SerializingRegionBasedStorage<R extends DynamicSerializable> implem
 		}
 	}
 
-	protected boolean isPosInvalid(ChunkSectionPos chunkSectionPos) {
-		return World.isHeightInvalid(ChunkSectionPos.getWorldCoord(chunkSectionPos.getSectionY()));
+	protected boolean isPosInvalid(ChunkSectionPos pos) {
+		return World.isOutOfBuildLimitVertically(ChunkSectionPos.getBlockCoord(pos.getSectionY()));
 	}
 
-	protected R getOrCreate(long l) {
-		Optional<R> optional = this.get(l);
+	protected R getOrCreate(long pos) {
+		Optional<R> optional = this.get(pos);
 		if (optional.isPresent()) {
 			return (R)optional.get();
 		} else {
-			R dynamicSerializable = (R)this.factory.apply((Runnable)() -> this.onUpdate(l));
-			this.loadedElements.put(l, Optional.of(dynamicSerializable));
-			return dynamicSerializable;
+			R object = (R)this.factory.apply((Runnable)() -> this.onUpdate(pos));
+			this.loadedElements.put(pos, Optional.of(object));
+			return object;
 		}
 	}
 
 	private void loadDataAt(ChunkPos chunkPos) {
-		this.method_20368(chunkPos, NbtOps.INSTANCE, this.method_20621(chunkPos));
+		this.update(chunkPos, NbtOps.INSTANCE, this.loadNbt(chunkPos));
 	}
 
 	@Nullable
-	private CompoundTag method_20621(ChunkPos chunkPos) {
+	private CompoundTag loadNbt(ChunkPos pos) {
 		try {
-			return this.worker.getNbt(chunkPos);
+			return this.worker.getNbt(pos);
 		} catch (IOException var3) {
-			LOGGER.error("Error reading chunk {} data from disk", chunkPos, var3);
+			LOGGER.error("Error reading chunk {} data from disk", pos, var3);
 			return null;
 		}
 	}
 
-	private <T> void method_20368(ChunkPos chunkPos, DynamicOps<T> dynamicOps, @Nullable T object) {
-		if (object == null) {
+	private <T> void update(ChunkPos pos, DynamicOps<T> dynamicOps, @Nullable T data) {
+		if (data == null) {
 			for (int i = 0; i < 16; i++) {
-				this.loadedElements.put(ChunkSectionPos.from(chunkPos, i).asLong(), Optional.empty());
+				this.loadedElements.put(ChunkSectionPos.from(pos, i).asLong(), Optional.empty());
 			}
 		} else {
-			Dynamic<T> dynamic = new Dynamic(dynamicOps, object);
+			Dynamic<T> dynamic = new Dynamic(dynamicOps, data);
 			int j = getDataVersion(dynamic);
 			int k = SharedConstants.getGameVersion().getWorldVersion();
 			boolean bl = j != k;
@@ -125,12 +125,12 @@ public class SerializingRegionBasedStorage<R extends DynamicSerializable> implem
 			OptionalDynamic<T> optionalDynamic = dynamic2.get("Sections");
 
 			for (int l = 0; l < 16; l++) {
-				long m = ChunkSectionPos.from(chunkPos, l).asLong();
+				long m = ChunkSectionPos.from(pos, l).asLong();
 				Optional<R> optional = optionalDynamic.get(Integer.toString(l))
-					.get()
-					.map(dynamicx -> (DynamicSerializable)this.deserializer.apply((Runnable)() -> this.onUpdate(m), dynamicx));
+					.result()
+					.flatMap(dynamicx -> ((Codec)this.codecFactory.apply((Runnable)() -> this.onUpdate(m))).parse(dynamicx).resultOrPartial(LOGGER::error));
 				this.loadedElements.put(m, optional);
-				optional.ifPresent(dynamicSerializable -> {
+				optional.ifPresent(object -> {
 					this.onLoad(m);
 					if (bl) {
 						this.onUpdate(m);
@@ -158,7 +158,9 @@ public class SerializingRegionBasedStorage<R extends DynamicSerializable> implem
 			this.unsavedElements.remove(l);
 			Optional<R> optional = (Optional<R>)this.loadedElements.get(l);
 			if (optional != null && optional.isPresent()) {
-				map.put(dynamicOps.createString(Integer.toString(i)), ((DynamicSerializable)optional.get()).serialize(dynamicOps));
+				DataResult<T> dataResult = ((Codec)this.codecFactory.apply((Runnable)() -> this.onUpdate(l))).encodeStart(dynamicOps, optional.get());
+				String string = Integer.toString(i);
+				dataResult.resultOrPartial(LOGGER::error).ifPresent(object -> map.put(dynamicOps.createString(string), object));
 			}
 		}
 
@@ -175,20 +177,20 @@ public class SerializingRegionBasedStorage<R extends DynamicSerializable> implem
 		);
 	}
 
-	protected void onLoad(long l) {
+	protected void onLoad(long pos) {
 	}
 
-	protected void onUpdate(long l) {
-		Optional<R> optional = (Optional<R>)this.loadedElements.get(l);
+	protected void onUpdate(long pos) {
+		Optional<R> optional = (Optional<R>)this.loadedElements.get(pos);
 		if (optional != null && optional.isPresent()) {
-			this.unsavedElements.add(l);
+			this.unsavedElements.add(pos);
 		} else {
-			LOGGER.warn("No data for position: {}", ChunkSectionPos.from(l));
+			LOGGER.warn("No data for position: {}", ChunkSectionPos.from(pos));
 		}
 	}
 
 	private static int getDataVersion(Dynamic<?> dynamic) {
-		return ((Number)dynamic.get("DataVersion").asNumber().orElse(1945)).intValue();
+		return dynamic.get("DataVersion").asInt(1945);
 	}
 
 	public void method_20436(ChunkPos chunkPos) {

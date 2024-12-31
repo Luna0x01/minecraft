@@ -35,15 +35,12 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.server.ServerAdvancementLoader;
-import net.minecraft.server.command.CommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.EntityTypeTags;
-import net.minecraft.tag.Tag;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
@@ -76,8 +73,8 @@ public class EntitySelectorOptions {
 		object -> new TranslatableText("argument.entity.options.type.invalid", object)
 	);
 
-	private static void putOption(String string, EntitySelectorOptions.SelectorHandler selectorHandler, Predicate<EntitySelectorReader> predicate, Text text) {
-		options.put(string, new EntitySelectorOptions.SelectorOption(selectorHandler, predicate, text));
+	private static void putOption(String id, EntitySelectorOptions.SelectorHandler handler, Predicate<EntitySelectorReader> condition, Text description) {
+		options.put(id, new EntitySelectorOptions.SelectorOption(handler, condition, description));
 	}
 
 	public static void register() {
@@ -96,7 +93,7 @@ public class EntitySelectorOptions {
 						entitySelectorReader.setSelectsName(true);
 					}
 
-					entitySelectorReader.setPredicate(entity -> entity.getName().asString().equals(string) != bl);
+					entitySelectorReader.setPredicate(entity -> entity.getName().getString().equals(string) != bl);
 				}
 			}, entitySelectorReader -> !entitySelectorReader.selectsName(), new TranslatableText("argument.entity.options.name.description"));
 			putOption("distance", entitySelectorReader -> {
@@ -221,7 +218,7 @@ public class EntitySelectorOptions {
 					}
 
 					for (GameMode gameModex : GameMode.values()) {
-						if (gameModex != GameMode.field_9218 && gameModex.getName().toLowerCase(Locale.ROOT).startsWith(stringx)) {
+						if (gameModex != GameMode.NOT_SET && gameModex.getName().toLowerCase(Locale.ROOT).startsWith(stringx)) {
 							if (bl2) {
 								suggestionsBuilder.suggest('!' + gameModex.getName());
 							}
@@ -241,8 +238,8 @@ public class EntitySelectorOptions {
 					throw INAPPLICABLE_OPTION_EXCEPTION.createWithContext(entitySelectorReader.getReader(), "gamemode");
 				} else {
 					String string = entitySelectorReader.getReader().readUnquotedString();
-					GameMode gameMode = GameMode.byName(string, GameMode.field_9218);
-					if (gameMode == GameMode.field_9218) {
+					GameMode gameMode = GameMode.byName(string, GameMode.NOT_SET);
+					if (gameMode == GameMode.NOT_SET) {
 						entitySelectorReader.getReader().setCursor(i);
 						throw INVALID_MODE_EXCEPTION.createWithContext(entitySelectorReader.getReader(), string);
 					} else {
@@ -281,53 +278,54 @@ public class EntitySelectorOptions {
 					entitySelectorReader.setSelectsTeam(true);
 				}
 			}, entitySelectorReader -> !entitySelectorReader.selectsTeam(), new TranslatableText("argument.entity.options.team.description"));
-			putOption("type", entitySelectorReader -> {
-				entitySelectorReader.setSuggestionProvider((suggestionsBuilder, consumer) -> {
-					CommandSource.suggestIdentifiers(Registry.field_11145.getIds(), suggestionsBuilder, String.valueOf('!'));
-					CommandSource.suggestIdentifiers(EntityTypeTags.getContainer().getKeys(), suggestionsBuilder, "!#");
-					if (!entitySelectorReader.excludesEntityType()) {
-						CommandSource.suggestIdentifiers(Registry.field_11145.getIds(), suggestionsBuilder);
-						CommandSource.suggestIdentifiers(EntityTypeTags.getContainer().getKeys(), suggestionsBuilder, String.valueOf('#'));
-					}
-
-					return suggestionsBuilder.buildFuture();
-				});
-				int i = entitySelectorReader.getReader().getCursor();
-				boolean bl = entitySelectorReader.readNegationCharacter();
-				if (entitySelectorReader.excludesEntityType() && !bl) {
-					entitySelectorReader.getReader().setCursor(i);
-					throw INAPPLICABLE_OPTION_EXCEPTION.createWithContext(entitySelectorReader.getReader(), "type");
-				} else {
-					if (bl) {
-						entitySelectorReader.setExcludesEntityType();
-					}
-
-					if (entitySelectorReader.readTagCharacter()) {
-						Identifier identifier = Identifier.fromCommandInput(entitySelectorReader.getReader());
-						Tag<EntityType<?>> tag = EntityTypeTags.getContainer().get(identifier);
-						if (tag == null) {
-							entitySelectorReader.getReader().setCursor(i);
-							throw INVALID_TYPE_EXCEPTION.createWithContext(entitySelectorReader.getReader(), identifier.toString());
+			putOption(
+				"type",
+				entitySelectorReader -> {
+					entitySelectorReader.setSuggestionProvider((suggestionsBuilder, consumer) -> {
+						CommandSource.suggestIdentifiers(Registry.ENTITY_TYPE.getIds(), suggestionsBuilder, String.valueOf('!'));
+						CommandSource.suggestIdentifiers(EntityTypeTags.getTagGroup().getTagIds(), suggestionsBuilder, "!#");
+						if (!entitySelectorReader.excludesEntityType()) {
+							CommandSource.suggestIdentifiers(Registry.ENTITY_TYPE.getIds(), suggestionsBuilder);
+							CommandSource.suggestIdentifiers(EntityTypeTags.getTagGroup().getTagIds(), suggestionsBuilder, String.valueOf('#'));
 						}
 
-						entitySelectorReader.setPredicate(entity -> tag.contains(entity.getType()) != bl);
+						return suggestionsBuilder.buildFuture();
+					});
+					int i = entitySelectorReader.getReader().getCursor();
+					boolean bl = entitySelectorReader.readNegationCharacter();
+					if (entitySelectorReader.excludesEntityType() && !bl) {
+						entitySelectorReader.getReader().setCursor(i);
+						throw INAPPLICABLE_OPTION_EXCEPTION.createWithContext(entitySelectorReader.getReader(), "type");
 					} else {
-						Identifier identifier2 = Identifier.fromCommandInput(entitySelectorReader.getReader());
-						EntityType<?> entityType = (EntityType<?>)Registry.field_11145.getOrEmpty(identifier2).orElseThrow(() -> {
-							entitySelectorReader.getReader().setCursor(i);
-							return INVALID_TYPE_EXCEPTION.createWithContext(entitySelectorReader.getReader(), identifier2.toString());
-						});
-						if (Objects.equals(EntityType.field_6097, entityType) && !bl) {
-							entitySelectorReader.setIncludesNonPlayers(false);
+						if (bl) {
+							entitySelectorReader.setExcludesEntityType();
 						}
 
-						entitySelectorReader.setPredicate(entity -> Objects.equals(entityType, entity.getType()) != bl);
-						if (!bl) {
-							entitySelectorReader.setEntityType(entityType);
+						if (entitySelectorReader.readTagCharacter()) {
+							Identifier identifier = Identifier.fromCommandInput(entitySelectorReader.getReader());
+							entitySelectorReader.setPredicate(
+								entity -> entity.getServer().getTagManager().getEntityTypes().getTagOrEmpty(identifier).contains(entity.getType()) != bl
+							);
+						} else {
+							Identifier identifier2 = Identifier.fromCommandInput(entitySelectorReader.getReader());
+							EntityType<?> entityType = (EntityType<?>)Registry.ENTITY_TYPE.getOrEmpty(identifier2).orElseThrow(() -> {
+								entitySelectorReader.getReader().setCursor(i);
+								return INVALID_TYPE_EXCEPTION.createWithContext(entitySelectorReader.getReader(), identifier2.toString());
+							});
+							if (Objects.equals(EntityType.PLAYER, entityType) && !bl) {
+								entitySelectorReader.setIncludesNonPlayers(false);
+							}
+
+							entitySelectorReader.setPredicate(entity -> Objects.equals(entityType, entity.getType()) != bl);
+							if (!bl) {
+								entitySelectorReader.setEntityType(entityType);
+							}
 						}
 					}
-				}
-			}, entitySelectorReader -> !entitySelectorReader.selectsEntityType(), new TranslatableText("argument.entity.options.type.description"));
+				},
+				entitySelectorReader -> !entitySelectorReader.selectsEntityType(),
+				new TranslatableText("argument.entity.options.type.description")
+			);
 			putOption(
 				"tag",
 				entitySelectorReader -> {
@@ -501,9 +499,9 @@ public class EntitySelectorOptions {
 									return false;
 								} else {
 									LootContext lootContext = new LootContext.Builder(serverWorld)
-										.put(LootContextParameters.field_1226, entity)
-										.put(LootContextParameters.field_1232, new BlockPos(entity))
-										.build(LootContextTypes.field_20762);
+										.parameter(LootContextParameters.THIS_ENTITY, entity)
+										.parameter(LootContextParameters.ORIGIN, entity.getPos())
+										.build(LootContextTypes.SELECTOR);
 									return bl ^ lootCondition.test(lootContext);
 								}
 							}
@@ -516,33 +514,32 @@ public class EntitySelectorOptions {
 		}
 	}
 
-	public static EntitySelectorOptions.SelectorHandler getHandler(EntitySelectorReader entitySelectorReader, String string, int i) throws CommandSyntaxException {
-		EntitySelectorOptions.SelectorOption selectorOption = (EntitySelectorOptions.SelectorOption)options.get(string);
+	public static EntitySelectorOptions.SelectorHandler getHandler(EntitySelectorReader reader, String option, int restoreCursor) throws CommandSyntaxException {
+		EntitySelectorOptions.SelectorOption selectorOption = (EntitySelectorOptions.SelectorOption)options.get(option);
 		if (selectorOption != null) {
-			if (selectorOption.condition.test(entitySelectorReader)) {
+			if (selectorOption.condition.test(reader)) {
 				return selectorOption.handler;
 			} else {
-				throw INAPPLICABLE_OPTION_EXCEPTION.createWithContext(entitySelectorReader.getReader(), string);
+				throw INAPPLICABLE_OPTION_EXCEPTION.createWithContext(reader.getReader(), option);
 			}
 		} else {
-			entitySelectorReader.getReader().setCursor(i);
-			throw UNKNOWN_OPTION_EXCEPTION.createWithContext(entitySelectorReader.getReader(), string);
+			reader.getReader().setCursor(restoreCursor);
+			throw UNKNOWN_OPTION_EXCEPTION.createWithContext(reader.getReader(), option);
 		}
 	}
 
-	public static void suggestOptions(EntitySelectorReader entitySelectorReader, SuggestionsBuilder suggestionsBuilder) {
-		String string = suggestionsBuilder.getRemaining().toLowerCase(Locale.ROOT);
+	public static void suggestOptions(EntitySelectorReader reader, SuggestionsBuilder suggestionBuilder) {
+		String string = suggestionBuilder.getRemaining().toLowerCase(Locale.ROOT);
 
 		for (Entry<String, EntitySelectorOptions.SelectorOption> entry : options.entrySet()) {
-			if (((EntitySelectorOptions.SelectorOption)entry.getValue()).condition.test(entitySelectorReader)
-				&& ((String)entry.getKey()).toLowerCase(Locale.ROOT).startsWith(string)) {
-				suggestionsBuilder.suggest((String)entry.getKey() + '=', ((EntitySelectorOptions.SelectorOption)entry.getValue()).description);
+			if (((EntitySelectorOptions.SelectorOption)entry.getValue()).condition.test(reader) && ((String)entry.getKey()).toLowerCase(Locale.ROOT).startsWith(string)) {
+				suggestionBuilder.suggest((String)entry.getKey() + '=', ((EntitySelectorOptions.SelectorOption)entry.getValue()).description);
 			}
 		}
 	}
 
 	public interface SelectorHandler {
-		void handle(EntitySelectorReader entitySelectorReader) throws CommandSyntaxException;
+		void handle(EntitySelectorReader reader) throws CommandSyntaxException;
 	}
 
 	static class SelectorOption {
@@ -550,10 +547,10 @@ public class EntitySelectorOptions {
 		public final Predicate<EntitySelectorReader> condition;
 		public final Text description;
 
-		private SelectorOption(EntitySelectorOptions.SelectorHandler selectorHandler, Predicate<EntitySelectorReader> predicate, Text text) {
-			this.handler = selectorHandler;
-			this.condition = predicate;
-			this.description = text;
+		private SelectorOption(EntitySelectorOptions.SelectorHandler handler, Predicate<EntitySelectorReader> condition, Text description) {
+			this.handler = handler;
+			this.condition = condition;
+			this.description = description;
 		}
 	}
 }

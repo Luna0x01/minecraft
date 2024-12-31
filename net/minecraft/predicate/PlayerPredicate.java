@@ -38,13 +38,13 @@ public class PlayerPredicate {
 	private final Object2BooleanMap<Identifier> recipes;
 	private final Map<Identifier, PlayerPredicate.AdvancementPredicate> advancements;
 
-	private static PlayerPredicate.AdvancementPredicate criterionFromJson(JsonElement jsonElement) {
-		if (jsonElement.isJsonPrimitive()) {
-			boolean bl = jsonElement.getAsBoolean();
+	private static PlayerPredicate.AdvancementPredicate criterionFromJson(JsonElement json) {
+		if (json.isJsonPrimitive()) {
+			boolean bl = json.getAsBoolean();
 			return new PlayerPredicate.CompletedAdvancementPredicate(bl);
 		} else {
 			Object2BooleanMap<String> object2BooleanMap = new Object2BooleanOpenHashMap();
-			JsonObject jsonObject = JsonHelper.asObject(jsonElement, "criterion data");
+			JsonObject jsonObject = JsonHelper.asObject(json, "criterion data");
 			jsonObject.entrySet().forEach(entry -> {
 				boolean bl = JsonHelper.asBoolean((JsonElement)entry.getValue(), "criterion test");
 				object2BooleanMap.put(entry.getKey(), bl);
@@ -54,17 +54,17 @@ public class PlayerPredicate {
 	}
 
 	private PlayerPredicate(
-		NumberRange.IntRange intRange,
-		GameMode gameMode,
-		Map<Stat<?>, NumberRange.IntRange> map,
-		Object2BooleanMap<Identifier> object2BooleanMap,
-		Map<Identifier, PlayerPredicate.AdvancementPredicate> map2
+		NumberRange.IntRange experienceLevel,
+		GameMode gamemode,
+		Map<Stat<?>, NumberRange.IntRange> stats,
+		Object2BooleanMap<Identifier> recipes,
+		Map<Identifier, PlayerPredicate.AdvancementPredicate> advancements
 	) {
-		this.experienceLevel = intRange;
-		this.gamemode = gameMode;
-		this.stats = map;
-		this.recipes = object2BooleanMap;
-		this.advancements = map2;
+		this.experienceLevel = experienceLevel;
+		this.gamemode = gamemode;
+		this.stats = stats;
+		this.recipes = recipes;
+		this.advancements = advancements;
 	}
 
 	public boolean test(Entity entity) {
@@ -76,7 +76,7 @@ public class PlayerPredicate {
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
 			if (!this.experienceLevel.test(serverPlayerEntity.experienceLevel)) {
 				return false;
-			} else if (this.gamemode != GameMode.field_9218 && this.gamemode != serverPlayerEntity.interactionManager.getGameMode()) {
+			} else if (this.gamemode != GameMode.NOT_SET && this.gamemode != serverPlayerEntity.interactionManager.getGameMode()) {
 				return false;
 			} else {
 				StatHandler statHandler = serverPlayerEntity.getStatHandler();
@@ -115,19 +115,19 @@ public class PlayerPredicate {
 		}
 	}
 
-	public static PlayerPredicate fromJson(@Nullable JsonElement jsonElement) {
-		if (jsonElement != null && !jsonElement.isJsonNull()) {
-			JsonObject jsonObject = JsonHelper.asObject(jsonElement, "player");
+	public static PlayerPredicate fromJson(@Nullable JsonElement json) {
+		if (json != null && !json.isJsonNull()) {
+			JsonObject jsonObject = JsonHelper.asObject(json, "player");
 			NumberRange.IntRange intRange = NumberRange.IntRange.fromJson(jsonObject.get("level"));
 			String string = JsonHelper.getString(jsonObject, "gamemode", "");
-			GameMode gameMode = GameMode.byName(string, GameMode.field_9218);
+			GameMode gameMode = GameMode.byName(string, GameMode.NOT_SET);
 			Map<Stat<?>, NumberRange.IntRange> map = Maps.newHashMap();
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "stats", null);
 			if (jsonArray != null) {
-				for (JsonElement jsonElement2 : jsonArray) {
-					JsonObject jsonObject2 = JsonHelper.asObject(jsonElement2, "stats entry");
+				for (JsonElement jsonElement : jsonArray) {
+					JsonObject jsonObject2 = JsonHelper.asObject(jsonElement, "stats entry");
 					Identifier identifier = new Identifier(JsonHelper.getString(jsonObject2, "type"));
-					StatType<?> statType = Registry.field_11152.get(identifier);
+					StatType<?> statType = Registry.STAT_TYPE.get(identifier);
 					if (statType == null) {
 						throw new JsonParseException("Invalid stat type: " + identifier);
 					}
@@ -163,13 +163,13 @@ public class PlayerPredicate {
 		}
 	}
 
-	private static <T> Stat<T> getStat(StatType<T> statType, Identifier identifier) {
-		Registry<T> registry = statType.getRegistry();
-		T object = registry.get(identifier);
+	private static <T> Stat<T> getStat(StatType<T> type, Identifier id) {
+		Registry<T> registry = type.getRegistry();
+		T object = registry.get(id);
 		if (object == null) {
-			throw new JsonParseException("Unknown object " + identifier + " for stat type " + Registry.field_11152.getId(statType));
+			throw new JsonParseException("Unknown object " + id + " for stat type " + Registry.STAT_TYPE.getId(type));
 		} else {
-			return statType.getOrCreateStat(object);
+			return type.getOrCreateStat(object);
 		}
 	}
 
@@ -183,7 +183,7 @@ public class PlayerPredicate {
 		} else {
 			JsonObject jsonObject = new JsonObject();
 			jsonObject.add("level", this.experienceLevel.toJson());
-			if (this.gamemode != GameMode.field_9218) {
+			if (this.gamemode != GameMode.NOT_SET) {
 				jsonObject.addProperty("gamemode", this.gamemode.getName());
 			}
 
@@ -191,7 +191,7 @@ public class PlayerPredicate {
 				JsonArray jsonArray = new JsonArray();
 				this.stats.forEach((stat, intRange) -> {
 					JsonObject jsonObjectx = new JsonObject();
-					jsonObjectx.addProperty("type", Registry.field_11152.getId(stat.getType()).toString());
+					jsonObjectx.addProperty("type", Registry.STAT_TYPE.getId(stat.getType()).toString());
 					jsonObjectx.addProperty("stat", getStatId(stat).toString());
 					jsonObjectx.add("value", intRange.toJson());
 					jsonArray.add(jsonObjectx);
@@ -201,13 +201,13 @@ public class PlayerPredicate {
 
 			if (!this.recipes.isEmpty()) {
 				JsonObject jsonObject2 = new JsonObject();
-				this.recipes.forEach((identifier, boolean_) -> jsonObject2.addProperty(identifier.toString(), boolean_));
+				this.recipes.forEach((id, present) -> jsonObject2.addProperty(id.toString(), present));
 				jsonObject.add("recipes", jsonObject2);
 			}
 
 			if (!this.advancements.isEmpty()) {
 				JsonObject jsonObject3 = new JsonObject();
-				this.advancements.forEach((identifier, advancementPredicate) -> jsonObject3.add(identifier.toString(), advancementPredicate.toJson()));
+				this.advancements.forEach((id, advancementPredicate) -> jsonObject3.add(id.toString(), advancementPredicate.toJson()));
 				jsonObject.add("advancements", jsonObject3);
 			}
 
@@ -218,8 +218,8 @@ public class PlayerPredicate {
 	static class AdvancementCriteriaPredicate implements PlayerPredicate.AdvancementPredicate {
 		private final Object2BooleanMap<String> criteria;
 
-		public AdvancementCriteriaPredicate(Object2BooleanMap<String> object2BooleanMap) {
-			this.criteria = object2BooleanMap;
+		public AdvancementCriteriaPredicate(Object2BooleanMap<String> criteria) {
+			this.criteria = criteria;
 		}
 
 		@Override
@@ -250,7 +250,7 @@ public class PlayerPredicate {
 
 	public static class Builder {
 		private NumberRange.IntRange experienceLevel = NumberRange.IntRange.ANY;
-		private GameMode gamemode = GameMode.field_9218;
+		private GameMode gamemode = GameMode.NOT_SET;
 		private final Map<Stat<?>, NumberRange.IntRange> stats = Maps.newHashMap();
 		private final Object2BooleanMap<Identifier> recipes = new Object2BooleanOpenHashMap();
 		private final Map<Identifier, PlayerPredicate.AdvancementPredicate> advancements = Maps.newHashMap();
@@ -263,8 +263,8 @@ public class PlayerPredicate {
 	static class CompletedAdvancementPredicate implements PlayerPredicate.AdvancementPredicate {
 		private final boolean done;
 
-		public CompletedAdvancementPredicate(boolean bl) {
-			this.done = bl;
+		public CompletedAdvancementPredicate(boolean done) {
+			this.done = done;
 		}
 
 		@Override

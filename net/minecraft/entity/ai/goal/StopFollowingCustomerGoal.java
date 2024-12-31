@@ -1,44 +1,44 @@
 package net.minecraft.entity.ai.goal;
 
 import java.util.EnumSet;
-import net.minecraft.entity.passive.AbstractTraderEntity;
+import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
 
 public class StopFollowingCustomerGoal extends Goal {
-	private final AbstractTraderEntity trader;
+	private final MerchantEntity merchant;
 
-	public StopFollowingCustomerGoal(AbstractTraderEntity abstractTraderEntity) {
-		this.trader = abstractTraderEntity;
-		this.setControls(EnumSet.of(Goal.Control.field_18407, Goal.Control.field_18405));
+	public StopFollowingCustomerGoal(MerchantEntity merchant) {
+		this.merchant = merchant;
+		this.setControls(EnumSet.of(Goal.Control.JUMP, Goal.Control.MOVE));
 	}
 
 	@Override
 	public boolean canStart() {
-		if (!this.trader.isAlive()) {
+		if (!this.merchant.isAlive()) {
 			return false;
-		} else if (this.trader.isTouchingWater()) {
+		} else if (this.merchant.isTouchingWater()) {
 			return false;
-		} else if (!this.trader.onGround) {
+		} else if (!this.merchant.isOnGround()) {
 			return false;
-		} else if (this.trader.velocityModified) {
+		} else if (this.merchant.velocityModified) {
 			return false;
 		} else {
-			PlayerEntity playerEntity = this.trader.getCurrentCustomer();
+			PlayerEntity playerEntity = this.merchant.getCurrentCustomer();
 			if (playerEntity == null) {
 				return false;
 			} else {
-				return this.trader.squaredDistanceTo(playerEntity) > 16.0 ? false : playerEntity.container != null;
+				return this.merchant.squaredDistanceTo(playerEntity) > 16.0 ? false : playerEntity.currentScreenHandler != null;
 			}
 		}
 	}
 
 	@Override
 	public void start() {
-		this.trader.getNavigation().stop();
+		this.merchant.getNavigation().stop();
 	}
 
 	@Override
 	public void stop() {
-		this.trader.setCurrentCustomer(null);
+		this.merchant.setCurrentCustomer(null);
 	}
 }

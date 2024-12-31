@@ -1,10 +1,11 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.predicate.NumberRange;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer;
 import net.minecraft.predicate.entity.DistancePredicate;
+import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -17,40 +18,40 @@ public class LevitationCriterion extends AbstractCriterion<LevitationCriterion.C
 		return ID;
 	}
 
-	public LevitationCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		DistancePredicate distancePredicate = DistancePredicate.deserialize(jsonObject.get("distance"));
+	public LevitationCriterion.Conditions conditionsFromJson(
+		JsonObject jsonObject, EntityPredicate.Extended extended, AdvancementEntityPredicateDeserializer advancementEntityPredicateDeserializer
+	) {
+		DistancePredicate distancePredicate = DistancePredicate.fromJson(jsonObject.get("distance"));
 		NumberRange.IntRange intRange = NumberRange.IntRange.fromJson(jsonObject.get("duration"));
-		return new LevitationCriterion.Conditions(distancePredicate, intRange);
+		return new LevitationCriterion.Conditions(extended, distancePredicate, intRange);
 	}
 
-	public void trigger(ServerPlayerEntity serverPlayerEntity, Vec3d vec3d, int i) {
-		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(serverPlayerEntity, vec3d, i));
+	public void trigger(ServerPlayerEntity player, Vec3d startPos, int duration) {
+		this.test(player, conditions -> conditions.matches(player, startPos, duration));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
 		private final DistancePredicate distance;
 		private final NumberRange.IntRange duration;
 
-		public Conditions(DistancePredicate distancePredicate, NumberRange.IntRange intRange) {
-			super(LevitationCriterion.ID);
-			this.distance = distancePredicate;
-			this.duration = intRange;
+		public Conditions(EntityPredicate.Extended player, DistancePredicate distance, NumberRange.IntRange duration) {
+			super(LevitationCriterion.ID, player);
+			this.distance = distance;
+			this.duration = duration;
 		}
 
-		public static LevitationCriterion.Conditions create(DistancePredicate distancePredicate) {
-			return new LevitationCriterion.Conditions(distancePredicate, NumberRange.IntRange.ANY);
+		public static LevitationCriterion.Conditions create(DistancePredicate distance) {
+			return new LevitationCriterion.Conditions(EntityPredicate.Extended.EMPTY, distance, NumberRange.IntRange.ANY);
 		}
 
-		public boolean matches(ServerPlayerEntity serverPlayerEntity, Vec3d vec3d, int i) {
-			return !this.distance.test(vec3d.x, vec3d.y, vec3d.z, serverPlayerEntity.getX(), serverPlayerEntity.getY(), serverPlayerEntity.getZ())
-				? false
-				: this.duration.test(i);
+		public boolean matches(ServerPlayerEntity player, Vec3d startPos, int duration) {
+			return !this.distance.test(startPos.x, startPos.y, startPos.z, player.getX(), player.getY(), player.getZ()) ? false : this.duration.test(duration);
 		}
 
 		@Override
-		public JsonElement toJson() {
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.add("distance", this.distance.serialize());
+		public JsonObject toJson(AdvancementEntityPredicateSerializer predicateSerializer) {
+			JsonObject jsonObject = super.toJson(predicateSerializer);
+			jsonObject.add("distance", this.distance.toJson());
 			jsonObject.add("duration", this.duration.toJson());
 			return jsonObject;
 		}

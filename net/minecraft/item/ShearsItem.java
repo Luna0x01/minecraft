@@ -1,6 +1,5 @@
 package net.minecraft.item;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EquipmentSlot;
@@ -15,37 +14,34 @@ public class ShearsItem extends Item {
 	}
 
 	@Override
-	public boolean postMine(ItemStack itemStack, World world, BlockState blockState, BlockPos blockPos, LivingEntity livingEntity) {
-		if (!world.isClient) {
-			itemStack.damage(1, livingEntity, livingEntityx -> livingEntityx.sendEquipmentBreakStatus(EquipmentSlot.field_6173));
+	public boolean postMine(ItemStack stack, World world, BlockState state, BlockPos pos, LivingEntity miner) {
+		if (!world.isClient && !state.getBlock().isIn(BlockTags.FIRE)) {
+			stack.damage(1, miner, e -> e.sendEquipmentBreakStatus(EquipmentSlot.MAINHAND));
 		}
 
-		Block block = blockState.getBlock();
-		return !blockState.matches(BlockTags.field_15503)
-				&& block != Blocks.field_10343
-				&& block != Blocks.field_10479
-				&& block != Blocks.field_10112
-				&& block != Blocks.field_10428
-				&& block != Blocks.field_10597
-				&& block != Blocks.field_10589
-				&& !block.matches(BlockTags.field_15481)
-			? super.postMine(itemStack, world, blockState, blockPos, livingEntity)
+		return !state.isIn(BlockTags.LEAVES)
+				&& !state.isOf(Blocks.COBWEB)
+				&& !state.isOf(Blocks.GRASS)
+				&& !state.isOf(Blocks.FERN)
+				&& !state.isOf(Blocks.DEAD_BUSH)
+				&& !state.isOf(Blocks.VINE)
+				&& !state.isOf(Blocks.TRIPWIRE)
+				&& !state.isIn(BlockTags.WOOL)
+			? super.postMine(stack, world, state, pos, miner)
 			: true;
 	}
 
 	@Override
-	public boolean isEffectiveOn(BlockState blockState) {
-		Block block = blockState.getBlock();
-		return block == Blocks.field_10343 || block == Blocks.field_10091 || block == Blocks.field_10589;
+	public boolean isEffectiveOn(BlockState state) {
+		return state.isOf(Blocks.COBWEB) || state.isOf(Blocks.REDSTONE_WIRE) || state.isOf(Blocks.TRIPWIRE);
 	}
 
 	@Override
-	public float getMiningSpeed(ItemStack itemStack, BlockState blockState) {
-		Block block = blockState.getBlock();
-		if (block == Blocks.field_10343 || blockState.matches(BlockTags.field_15503)) {
+	public float getMiningSpeedMultiplier(ItemStack stack, BlockState state) {
+		if (state.isOf(Blocks.COBWEB) || state.isIn(BlockTags.LEAVES)) {
 			return 15.0F;
 		} else {
-			return block.matches(BlockTags.field_15481) ? 5.0F : super.getMiningSpeed(itemStack, blockState);
+			return state.isIn(BlockTags.WOOL) ? 5.0F : super.getMiningSpeedMultiplier(stack, state);
 		}
 	}
 }

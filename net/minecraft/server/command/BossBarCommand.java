@@ -12,9 +12,10 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import java.util.Collection;
 import java.util.Collections;
-import net.minecraft.command.arguments.EntityArgumentType;
-import net.minecraft.command.arguments.IdentifierArgumentType;
-import net.minecraft.command.arguments.TextArgumentType;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.IdentifierArgumentType;
+import net.minecraft.command.argument.TextArgumentType;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.BossBarManager;
 import net.minecraft.entity.boss.CommandBossBar;
@@ -47,7 +48,7 @@ public class BossBarCommand {
 	private static final SimpleCommandExceptionType SET_VALUE_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.bossbar.set.value.unchanged")
 	);
-	private static final SimpleCommandExceptionType SETMAX_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
+	private static final SimpleCommandExceptionType SET_MAX_UNCHANGED_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.bossbar.set.max.unchanged")
 	);
 	private static final SimpleCommandExceptionType SET_VISIBILITY_UNCHANGED_HIDDEN_EXCEPTION = new SimpleCommandExceptionType(
@@ -56,12 +57,12 @@ public class BossBarCommand {
 	private static final SimpleCommandExceptionType SET_VISIBILITY_UNCHANGED_VISIBLE_EXCEPTION = new SimpleCommandExceptionType(
 		new TranslatableText("commands.bossbar.set.visibility.unchanged.visible")
 	);
-	public static final SuggestionProvider<ServerCommandSource> suggestionProvider = (commandContext, suggestionsBuilder) -> CommandSource.suggestIdentifiers(
+	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (commandContext, suggestionsBuilder) -> CommandSource.suggestIdentifiers(
 			((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getBossBarManager().getIds(), suggestionsBuilder
 		);
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal(
 										"bossbar"
 									)
@@ -86,8 +87,8 @@ public class BossBarCommand {
 								CommandManager.literal("remove")
 									.then(
 										CommandManager.argument("id", IdentifierArgumentType.identifier())
-											.suggests(suggestionProvider)
-											.executes(commandContext -> removeBossBar((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext)))
+											.suggests(SUGGESTION_PROVIDER)
+											.executes(commandContext -> removeBossBar((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext)))
 									)
 							))
 						.then(CommandManager.literal("list").executes(commandContext -> listBossBars((ServerCommandSource)commandContext.getSource()))))
@@ -97,14 +98,14 @@ public class BossBarCommand {
 								((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument(
 																"id", IdentifierArgumentType.identifier()
 															)
-															.suggests(suggestionProvider)
+															.suggests(SUGGESTION_PROVIDER)
 															.then(
 																CommandManager.literal("name")
 																	.then(
 																		CommandManager.argument("name", TextArgumentType.text())
 																			.executes(
 																				commandContext -> setName(
-																						(ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), TextArgumentType.getTextArgument(commandContext, "name")
+																						(ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), TextArgumentType.getTextArgument(commandContext, "name")
 																					)
 																			)
 																	)
@@ -115,76 +116,54 @@ public class BossBarCommand {
 																						)
 																						.then(
 																							CommandManager.literal("pink")
-																								.executes(
-																									commandContext -> setColor((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Color.field_5788)
-																								)
+																								.executes(commandContext -> setColor((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Color.PINK))
 																						))
 																					.then(
 																						CommandManager.literal("blue")
-																							.executes(
-																								commandContext -> setColor((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Color.field_5780)
-																							)
+																							.executes(commandContext -> setColor((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Color.BLUE))
 																					))
 																				.then(
 																					CommandManager.literal("red")
-																						.executes(
-																							commandContext -> setColor((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Color.field_5784)
-																						)
+																						.executes(commandContext -> setColor((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Color.RED))
 																				))
 																			.then(
 																				CommandManager.literal("green")
-																					.executes(
-																						commandContext -> setColor((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Color.field_5785)
-																					)
+																					.executes(commandContext -> setColor((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Color.GREEN))
 																			))
 																		.then(
 																			CommandManager.literal("yellow")
-																				.executes(
-																					commandContext -> setColor((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Color.field_5782)
-																				)
+																				.executes(commandContext -> setColor((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Color.YELLOW))
 																		))
 																	.then(
 																		CommandManager.literal("purple")
-																			.executes(
-																				commandContext -> setColor((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Color.field_5783)
-																			)
+																			.executes(commandContext -> setColor((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Color.PURPLE))
 																	))
 																.then(
 																	CommandManager.literal("white")
-																		.executes(
-																			commandContext -> setColor((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Color.field_5786)
-																		)
+																		.executes(commandContext -> setColor((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Color.WHITE))
 																)
 														))
 													.then(
 														((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("style")
 																			.then(
 																				CommandManager.literal("progress")
-																					.executes(
-																						commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Style.field_5795)
-																					)
+																					.executes(commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Style.PROGRESS))
 																			))
 																		.then(
 																			CommandManager.literal("notched_6")
-																				.executes(
-																					commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Style.field_5796)
-																				)
+																				.executes(commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Style.NOTCHED_6))
 																		))
 																	.then(
 																		CommandManager.literal("notched_10")
-																			.executes(
-																				commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Style.field_5791)
-																			)
+																			.executes(commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Style.NOTCHED_10))
 																	))
 																.then(
 																	CommandManager.literal("notched_12")
-																		.executes(
-																			commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Style.field_5793)
-																		)
+																		.executes(commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Style.NOTCHED_12))
 																))
 															.then(
 																CommandManager.literal("notched_20")
-																	.executes(commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BossBar.Style.field_5790))
+																	.executes(commandContext -> setStyle((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BossBar.Style.NOTCHED_20))
 															)
 													))
 												.then(
@@ -193,7 +172,7 @@ public class BossBarCommand {
 															CommandManager.argument("value", IntegerArgumentType.integer(0))
 																.executes(
 																	commandContext -> setValue(
-																			(ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), IntegerArgumentType.getInteger(commandContext, "value")
+																			(ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), IntegerArgumentType.getInteger(commandContext, "value")
 																		)
 																)
 														)
@@ -204,7 +183,7 @@ public class BossBarCommand {
 														CommandManager.argument("max", IntegerArgumentType.integer(1))
 															.executes(
 																commandContext -> setMaxValue(
-																		(ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), IntegerArgumentType.getInteger(commandContext, "max")
+																		(ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), IntegerArgumentType.getInteger(commandContext, "max")
 																	)
 															)
 													)
@@ -215,21 +194,19 @@ public class BossBarCommand {
 													CommandManager.argument("visible", BoolArgumentType.bool())
 														.executes(
 															commandContext -> setVisible(
-																	(ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), BoolArgumentType.getBool(commandContext, "visible")
+																	(ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), BoolArgumentType.getBool(commandContext, "visible")
 																)
 														)
 												)
 										))
 									.then(
 										((LiteralArgumentBuilder)CommandManager.literal("players")
-												.executes(commandContext -> setPlayers((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext), Collections.emptyList())))
+												.executes(commandContext -> setPlayers((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), Collections.emptyList())))
 											.then(
 												CommandManager.argument("targets", EntityArgumentType.players())
 													.executes(
 														commandContext -> setPlayers(
-																(ServerCommandSource)commandContext.getSource(),
-																createBossBar(commandContext),
-																EntityArgumentType.getOptionalPlayers(commandContext, "targets")
+																(ServerCommandSource)commandContext.getSource(), getBossBar(commandContext), EntityArgumentType.getOptionalPlayers(commandContext, "targets")
 															)
 													)
 											)
@@ -240,162 +217,158 @@ public class BossBarCommand {
 					CommandManager.literal("get")
 						.then(
 							((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)CommandManager.argument("id", IdentifierArgumentType.identifier())
-											.suggests(suggestionProvider)
+											.suggests(SUGGESTION_PROVIDER)
 											.then(
-												CommandManager.literal("value")
-													.executes(commandContext -> getValue((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext)))
+												CommandManager.literal("value").executes(commandContext -> getValue((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext)))
 											))
 										.then(
-											CommandManager.literal("max")
-												.executes(commandContext -> getMaxValue((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext)))
+											CommandManager.literal("max").executes(commandContext -> getMaxValue((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext)))
 										))
 									.then(
-										CommandManager.literal("visible")
-											.executes(commandContext -> isVisible((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext)))
+										CommandManager.literal("visible").executes(commandContext -> isVisible((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext)))
 									))
 								.then(
-									CommandManager.literal("players")
-										.executes(commandContext -> getPlayers((ServerCommandSource)commandContext.getSource(), createBossBar(commandContext)))
+									CommandManager.literal("players").executes(commandContext -> getPlayers((ServerCommandSource)commandContext.getSource(), getBossBar(commandContext)))
 								)
 						)
 				)
 		);
 	}
 
-	private static int getValue(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar) {
-		serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.get.value", commandBossBar.toHoverableText(), commandBossBar.getValue()), true);
-		return commandBossBar.getValue();
+	private static int getValue(ServerCommandSource source, CommandBossBar bossBar) {
+		source.sendFeedback(new TranslatableText("commands.bossbar.get.value", bossBar.toHoverableText(), bossBar.getValue()), true);
+		return bossBar.getValue();
 	}
 
-	private static int getMaxValue(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar) {
-		serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.get.max", commandBossBar.toHoverableText(), commandBossBar.getMaxValue()), true);
-		return commandBossBar.getMaxValue();
+	private static int getMaxValue(ServerCommandSource source, CommandBossBar bossBar) {
+		source.sendFeedback(new TranslatableText("commands.bossbar.get.max", bossBar.toHoverableText(), bossBar.getMaxValue()), true);
+		return bossBar.getMaxValue();
 	}
 
-	private static int isVisible(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar) {
-		if (commandBossBar.isVisible()) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.get.visible.visible", commandBossBar.toHoverableText()), true);
+	private static int isVisible(ServerCommandSource source, CommandBossBar bossBar) {
+		if (bossBar.isVisible()) {
+			source.sendFeedback(new TranslatableText("commands.bossbar.get.visible.visible", bossBar.toHoverableText()), true);
 			return 1;
 		} else {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.get.visible.hidden", commandBossBar.toHoverableText()), true);
+			source.sendFeedback(new TranslatableText("commands.bossbar.get.visible.hidden", bossBar.toHoverableText()), true);
 			return 0;
 		}
 	}
 
-	private static int getPlayers(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar) {
-		if (commandBossBar.getPlayers().isEmpty()) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.get.players.none", commandBossBar.toHoverableText()), true);
+	private static int getPlayers(ServerCommandSource source, CommandBossBar bossBar) {
+		if (bossBar.getPlayers().isEmpty()) {
+			source.sendFeedback(new TranslatableText("commands.bossbar.get.players.none", bossBar.toHoverableText()), true);
 		} else {
-			serverCommandSource.sendFeedback(
+			source.sendFeedback(
 				new TranslatableText(
 					"commands.bossbar.get.players.some",
-					commandBossBar.toHoverableText(),
-					commandBossBar.getPlayers().size(),
-					Texts.join(commandBossBar.getPlayers(), PlayerEntity::getDisplayName)
+					bossBar.toHoverableText(),
+					bossBar.getPlayers().size(),
+					Texts.join(bossBar.getPlayers(), PlayerEntity::getDisplayName)
 				),
 				true
 			);
 		}
 
-		return commandBossBar.getPlayers().size();
+		return bossBar.getPlayers().size();
 	}
 
-	private static int setVisible(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar, boolean bl) throws CommandSyntaxException {
-		if (commandBossBar.isVisible() == bl) {
-			if (bl) {
+	private static int setVisible(ServerCommandSource source, CommandBossBar bossBar, boolean visible) throws CommandSyntaxException {
+		if (bossBar.isVisible() == visible) {
+			if (visible) {
 				throw SET_VISIBILITY_UNCHANGED_VISIBLE_EXCEPTION.create();
 			} else {
 				throw SET_VISIBILITY_UNCHANGED_HIDDEN_EXCEPTION.create();
 			}
 		} else {
-			commandBossBar.setVisible(bl);
-			if (bl) {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.visible.success.visible", commandBossBar.toHoverableText()), true);
+			bossBar.setVisible(visible);
+			if (visible) {
+				source.sendFeedback(new TranslatableText("commands.bossbar.set.visible.success.visible", bossBar.toHoverableText()), true);
 			} else {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.visible.success.hidden", commandBossBar.toHoverableText()), true);
+				source.sendFeedback(new TranslatableText("commands.bossbar.set.visible.success.hidden", bossBar.toHoverableText()), true);
 			}
 
 			return 0;
 		}
 	}
 
-	private static int setValue(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar, int i) throws CommandSyntaxException {
-		if (commandBossBar.getValue() == i) {
+	private static int setValue(ServerCommandSource source, CommandBossBar bossBar, int value) throws CommandSyntaxException {
+		if (bossBar.getValue() == value) {
 			throw SET_VALUE_UNCHANGED_EXCEPTION.create();
 		} else {
-			commandBossBar.setValue(i);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.value.success", commandBossBar.toHoverableText(), i), true);
-			return i;
+			bossBar.setValue(value);
+			source.sendFeedback(new TranslatableText("commands.bossbar.set.value.success", bossBar.toHoverableText(), value), true);
+			return value;
 		}
 	}
 
-	private static int setMaxValue(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar, int i) throws CommandSyntaxException {
-		if (commandBossBar.getMaxValue() == i) {
-			throw SETMAX_UNCHANGED_EXCEPTION.create();
+	private static int setMaxValue(ServerCommandSource source, CommandBossBar bossBar, int value) throws CommandSyntaxException {
+		if (bossBar.getMaxValue() == value) {
+			throw SET_MAX_UNCHANGED_EXCEPTION.create();
 		} else {
-			commandBossBar.setMaxValue(i);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.max.success", commandBossBar.toHoverableText(), i), true);
-			return i;
+			bossBar.setMaxValue(value);
+			source.sendFeedback(new TranslatableText("commands.bossbar.set.max.success", bossBar.toHoverableText(), value), true);
+			return value;
 		}
 	}
 
-	private static int setColor(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar, BossBar.Color color) throws CommandSyntaxException {
-		if (commandBossBar.getColor().equals(color)) {
+	private static int setColor(ServerCommandSource source, CommandBossBar bossBar, BossBar.Color color) throws CommandSyntaxException {
+		if (bossBar.getColor().equals(color)) {
 			throw SET_COLOR_UNCHANGED_EXCEPTION.create();
 		} else {
-			commandBossBar.setColor(color);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.color.success", commandBossBar.toHoverableText()), true);
+			bossBar.setColor(color);
+			source.sendFeedback(new TranslatableText("commands.bossbar.set.color.success", bossBar.toHoverableText()), true);
 			return 0;
 		}
 	}
 
-	private static int setStyle(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar, BossBar.Style style) throws CommandSyntaxException {
-		if (commandBossBar.getOverlay().equals(style)) {
+	private static int setStyle(ServerCommandSource source, CommandBossBar bossBar, BossBar.Style style) throws CommandSyntaxException {
+		if (bossBar.getOverlay().equals(style)) {
 			throw SET_STYLE_UNCHANGED_EXCEPTION.create();
 		} else {
-			commandBossBar.setOverlay(style);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.style.success", commandBossBar.toHoverableText()), true);
+			bossBar.setOverlay(style);
+			source.sendFeedback(new TranslatableText("commands.bossbar.set.style.success", bossBar.toHoverableText()), true);
 			return 0;
 		}
 	}
 
-	private static int setName(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar, Text text) throws CommandSyntaxException {
-		Text text2 = Texts.parse(serverCommandSource, text, null, 0);
-		if (commandBossBar.getName().equals(text2)) {
+	private static int setName(ServerCommandSource source, CommandBossBar bossBar, Text name) throws CommandSyntaxException {
+		Text text = Texts.parse(source, name, null, 0);
+		if (bossBar.getName().equals(text)) {
 			throw SET_NAME_UNCHANGED_EXCEPTION.create();
 		} else {
-			commandBossBar.setName(text2);
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.name.success", commandBossBar.toHoverableText()), true);
+			bossBar.setName(text);
+			source.sendFeedback(new TranslatableText("commands.bossbar.set.name.success", bossBar.toHoverableText()), true);
 			return 0;
 		}
 	}
 
-	private static int setPlayers(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar, Collection<ServerPlayerEntity> collection) throws CommandSyntaxException {
-		boolean bl = commandBossBar.addPlayers(collection);
+	private static int setPlayers(ServerCommandSource source, CommandBossBar bossBar, Collection<ServerPlayerEntity> players) throws CommandSyntaxException {
+		boolean bl = bossBar.addPlayers(players);
 		if (!bl) {
 			throw SET_PLAYERS_UNCHANGED_EXCEPTION.create();
 		} else {
-			if (commandBossBar.getPlayers().isEmpty()) {
-				serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.set.players.success.none", commandBossBar.toHoverableText()), true);
+			if (bossBar.getPlayers().isEmpty()) {
+				source.sendFeedback(new TranslatableText("commands.bossbar.set.players.success.none", bossBar.toHoverableText()), true);
 			} else {
-				serverCommandSource.sendFeedback(
+				source.sendFeedback(
 					new TranslatableText(
-						"commands.bossbar.set.players.success.some", commandBossBar.toHoverableText(), collection.size(), Texts.join(collection, PlayerEntity::getDisplayName)
+						"commands.bossbar.set.players.success.some", bossBar.toHoverableText(), players.size(), Texts.join(players, PlayerEntity::getDisplayName)
 					),
 					true
 				);
 			}
 
-			return commandBossBar.getPlayers().size();
+			return bossBar.getPlayers().size();
 		}
 	}
 
-	private static int listBossBars(ServerCommandSource serverCommandSource) {
-		Collection<CommandBossBar> collection = serverCommandSource.getMinecraftServer().getBossBarManager().getAll();
+	private static int listBossBars(ServerCommandSource source) {
+		Collection<CommandBossBar> collection = source.getMinecraftServer().getBossBarManager().getAll();
 		if (collection.isEmpty()) {
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.list.bars.none"), false);
+			source.sendFeedback(new TranslatableText("commands.bossbar.list.bars.none"), false);
 		} else {
-			serverCommandSource.sendFeedback(
+			source.sendFeedback(
 				new TranslatableText("commands.bossbar.list.bars.some", collection.size(), Texts.join(collection, CommandBossBar::toHoverableText)), false
 			);
 		}
@@ -403,28 +376,28 @@ public class BossBarCommand {
 		return collection.size();
 	}
 
-	private static int addBossBar(ServerCommandSource serverCommandSource, Identifier identifier, Text text) throws CommandSyntaxException {
-		BossBarManager bossBarManager = serverCommandSource.getMinecraftServer().getBossBarManager();
-		if (bossBarManager.get(identifier) != null) {
-			throw CREATE_FAILED_EXCEPTION.create(identifier.toString());
+	private static int addBossBar(ServerCommandSource source, Identifier name, Text displayName) throws CommandSyntaxException {
+		BossBarManager bossBarManager = source.getMinecraftServer().getBossBarManager();
+		if (bossBarManager.get(name) != null) {
+			throw CREATE_FAILED_EXCEPTION.create(name.toString());
 		} else {
-			CommandBossBar commandBossBar = bossBarManager.add(identifier, Texts.parse(serverCommandSource, text, null, 0));
-			serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.create.success", commandBossBar.toHoverableText()), true);
+			CommandBossBar commandBossBar = bossBarManager.add(name, Texts.parse(source, displayName, null, 0));
+			source.sendFeedback(new TranslatableText("commands.bossbar.create.success", commandBossBar.toHoverableText()), true);
 			return bossBarManager.getAll().size();
 		}
 	}
 
-	private static int removeBossBar(ServerCommandSource serverCommandSource, CommandBossBar commandBossBar) {
-		BossBarManager bossBarManager = serverCommandSource.getMinecraftServer().getBossBarManager();
-		commandBossBar.clearPlayers();
-		bossBarManager.remove(commandBossBar);
-		serverCommandSource.sendFeedback(new TranslatableText("commands.bossbar.remove.success", commandBossBar.toHoverableText()), true);
+	private static int removeBossBar(ServerCommandSource source, CommandBossBar bossBar) {
+		BossBarManager bossBarManager = source.getMinecraftServer().getBossBarManager();
+		bossBar.clearPlayers();
+		bossBarManager.remove(bossBar);
+		source.sendFeedback(new TranslatableText("commands.bossbar.remove.success", bossBar.toHoverableText()), true);
 		return bossBarManager.getAll().size();
 	}
 
-	public static CommandBossBar createBossBar(CommandContext<ServerCommandSource> commandContext) throws CommandSyntaxException {
-		Identifier identifier = IdentifierArgumentType.getIdentifier(commandContext, "id");
-		CommandBossBar commandBossBar = ((ServerCommandSource)commandContext.getSource()).getMinecraftServer().getBossBarManager().get(identifier);
+	public static CommandBossBar getBossBar(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+		Identifier identifier = IdentifierArgumentType.getIdentifier(context, "id");
+		CommandBossBar commandBossBar = ((ServerCommandSource)context.getSource()).getMinecraftServer().getBossBarManager().get(identifier);
 		if (commandBossBar == null) {
 			throw UNKNOWN_EXCEPTION.create(identifier.toString());
 		} else {

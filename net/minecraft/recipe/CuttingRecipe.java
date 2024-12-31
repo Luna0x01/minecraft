@@ -3,10 +3,10 @@ package net.minecraft.recipe;
 import com.google.gson.JsonObject;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.registry.Registry;
 
 public abstract class CuttingRecipe implements Recipe<Inventory> {
@@ -17,15 +17,13 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 	protected final Identifier id;
 	protected final String group;
 
-	public CuttingRecipe(
-		RecipeType<?> recipeType, RecipeSerializer<?> recipeSerializer, Identifier identifier, String string, Ingredient ingredient, ItemStack itemStack
-	) {
-		this.type = recipeType;
-		this.serializer = recipeSerializer;
-		this.id = identifier;
-		this.group = string;
-		this.input = ingredient;
-		this.output = itemStack;
+	public CuttingRecipe(RecipeType<?> type, RecipeSerializer<?> serializer, Identifier id, String group, Ingredient input, ItemStack output) {
+		this.type = type;
+		this.serializer = serializer;
+		this.id = id;
+		this.group = group;
+		this.input = input;
+		this.output = output;
 	}
 
 	@Override
@@ -61,12 +59,12 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
+	public boolean fits(int width, int height) {
 		return true;
 	}
 
 	@Override
-	public ItemStack craft(Inventory inventory) {
+	public ItemStack craft(Inventory inv) {
 		return this.output.copy();
 	}
 
@@ -88,7 +86,7 @@ public abstract class CuttingRecipe implements Recipe<Inventory> {
 
 			String string2 = JsonHelper.getString(jsonObject, "result");
 			int i = JsonHelper.getInt(jsonObject, "count");
-			ItemStack itemStack = new ItemStack(Registry.field_11142.get(new Identifier(string2)), i);
+			ItemStack itemStack = new ItemStack(Registry.ITEM.get(new Identifier(string2)), i);
 			return this.recipeFactory.create(identifier, string, ingredient, itemStack);
 		}
 

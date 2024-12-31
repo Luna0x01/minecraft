@@ -17,8 +17,9 @@ import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.WorldChunk;
-import net.minecraft.world.dimension.DimensionType;
 
 public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 	private final MinecraftClient client;
@@ -32,13 +33,13 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 	}
 
 	@Override
-	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
-		double g = (double)Util.getMeasuringTimeNano();
-		if (g - this.lastUpdateTime > 3.0E9) {
-			this.lastUpdateTime = g;
+	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
+		double d = (double)Util.getMeasuringTimeNano();
+		if (d - this.lastUpdateTime > 3.0E9) {
+			this.lastUpdateTime = d;
 			IntegratedServer integratedServer = this.client.getServer();
 			if (integratedServer != null) {
-				this.loadingData = new ChunkLoadingDebugRenderer.ChunkLoadingStatus(integratedServer, d, f);
+				this.loadingData = new ChunkLoadingDebugRenderer.ChunkLoadingStatus(integratedServer, cameraX, cameraZ);
 			} else {
 				this.loadingData = null;
 			}
@@ -51,7 +52,7 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 			RenderSystem.disableTexture();
 			RenderSystem.depthMask(false);
 			Map<ChunkPos, String> map = (Map<ChunkPos, String>)this.loadingData.serverStates.getNow(null);
-			double h = this.client.gameRenderer.getCamera().getPos().y * 0.85;
+			double e = this.client.gameRenderer.getCamera().getPos().y * 0.85;
 
 			for (Entry<ChunkPos, String> entry : this.loadingData.clientStates.entrySet()) {
 				ChunkPos chunkPos = (ChunkPos)entry.getKey();
@@ -64,7 +65,7 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 				int i = 0;
 
 				for (String string2 : strings) {
-					DebugRenderer.drawString(string2, (double)((chunkPos.x << 4) + 8), h + (double)i, (double)((chunkPos.z << 4) + 8), -1, 0.15F);
+					DebugRenderer.drawString(string2, (double)((chunkPos.x << 4) + 8), e + (double)i, (double)((chunkPos.z << 4) + 8), -1, 0.15F);
 					i -= 2;
 				}
 			}
@@ -81,14 +82,7 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 
 		private ChunkLoadingStatus(IntegratedServer integratedServer, double d, double e) {
 			ClientWorld clientWorld = ChunkLoadingDebugRenderer.this.client.world;
-			DimensionType dimensionType = ChunkLoadingDebugRenderer.this.client.world.dimension.getType();
-			ServerWorld serverWorld;
-			if (integratedServer.getWorld(dimensionType) != null) {
-				serverWorld = integratedServer.getWorld(dimensionType);
-			} else {
-				serverWorld = null;
-			}
-
+			RegistryKey<World> registryKey = clientWorld.getRegistryKey();
 			int i = (int)d >> 4;
 			int j = (int)e >> 4;
 			Builder<ChunkPos, String> builder = ImmutableMap.builder();
@@ -113,17 +107,22 @@ public class ChunkLoadingDebugRenderer implements DebugRenderer.Renderer {
 
 			this.clientStates = builder.build();
 			this.serverStates = integratedServer.submit(() -> {
-				Builder<ChunkPos, String> builderx = ImmutableMap.builder();
-				ServerChunkManager serverChunkManager = serverWorld.getChunkManager();
+				ServerWorld serverWorld = integratedServer.getWorld(registryKey);
+				if (serverWorld == null) {
+					return ImmutableMap.of();
+				} else {
+					Builder<ChunkPos, String> builderx = ImmutableMap.builder();
+					ServerChunkManager serverChunkManager = serverWorld.getChunkManager();
 
-				for (int kx = i - 12; kx <= i + 12; kx++) {
-					for (int lx = j - 12; lx <= j + 12; lx++) {
-						ChunkPos chunkPosx = new ChunkPos(kx, lx);
-						builderx.put(chunkPosx, "Server: " + serverChunkManager.method_23273(chunkPosx));
+					for (int kx = i - 12; kx <= i + 12; kx++) {
+						for (int lx = j - 12; lx <= j + 12; lx++) {
+							ChunkPos chunkPosx = new ChunkPos(kx, lx);
+							builderx.put(chunkPosx, "Server: " + serverChunkManager.getChunkLoadingDebugInfo(chunkPosx));
+						}
 					}
-				}
 
-				return builderx.build();
+					return builderx.build();
+				}
 			});
 		}
 	}

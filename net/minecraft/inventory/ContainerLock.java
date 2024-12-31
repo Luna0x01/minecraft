@@ -9,21 +9,21 @@ public class ContainerLock {
 	public static final ContainerLock EMPTY = new ContainerLock("");
 	private final String key;
 
-	public ContainerLock(String string) {
-		this.key = string;
+	public ContainerLock(String key) {
+		this.key = key;
 	}
 
-	public boolean canOpen(ItemStack itemStack) {
-		return this.key.isEmpty() || !itemStack.isEmpty() && itemStack.hasCustomName() && this.key.equals(itemStack.getName().getString());
+	public boolean canOpen(ItemStack stack) {
+		return this.key.isEmpty() || !stack.isEmpty() && stack.hasCustomName() && this.key.equals(stack.getName().getString());
 	}
 
-	public void toTag(CompoundTag compoundTag) {
+	public void toTag(CompoundTag tag) {
 		if (!this.key.isEmpty()) {
-			compoundTag.putString("Lock", this.key);
+			tag.putString("Lock", this.key);
 		}
 	}
 
-	public static ContainerLock fromTag(CompoundTag compoundTag) {
-		return compoundTag.contains("Lock", 8) ? new ContainerLock(compoundTag.getString("Lock")) : EMPTY;
+	public static ContainerLock fromTag(CompoundTag tag) {
+		return tag.contains("Lock", 8) ? new ContainerLock(tag.getString("Lock")) : EMPTY;
 	}
 }

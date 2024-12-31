@@ -4,128 +4,100 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ProjectileUtil;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.Packet;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.RayTraceContext;
 import net.minecraft.world.World;
 
-public class ShulkerBulletEntity extends Entity {
-	private LivingEntity owner;
+public class ShulkerBulletEntity extends ProjectileEntity {
 	private Entity target;
 	@Nullable
 	private Direction direction;
-	private int field_7627;
-	private double field_7635;
-	private double field_7633;
-	private double field_7625;
-	@Nullable
-	private UUID ownerUuid;
-	private BlockPos ownerPos;
+	private int stepCount;
+	private double targetX;
+	private double targetY;
+	private double targetZ;
 	@Nullable
 	private UUID targetUuid;
-	private BlockPos targetPos;
 
 	public ShulkerBulletEntity(EntityType<? extends ShulkerBulletEntity> entityType, World world) {
 		super(entityType, world);
 		this.noClip = true;
 	}
 
-	public ShulkerBulletEntity(World world, double d, double e, double f, double g, double h, double i) {
-		this(EntityType.field_6100, world);
-		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
-		this.setVelocity(g, h, i);
+	public ShulkerBulletEntity(World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ) {
+		this(EntityType.SHULKER_BULLET, world);
+		this.refreshPositionAndAngles(x, y, z, this.yaw, this.pitch);
+		this.setVelocity(velocityX, velocityY, velocityZ);
 	}
 
-	public ShulkerBulletEntity(World world, LivingEntity livingEntity, Entity entity, Direction.Axis axis) {
-		this(EntityType.field_6100, world);
-		this.owner = livingEntity;
-		BlockPos blockPos = new BlockPos(livingEntity);
+	public ShulkerBulletEntity(World world, LivingEntity owner, Entity target, Direction.Axis axis) {
+		this(EntityType.SHULKER_BULLET, world);
+		this.setOwner(owner);
+		BlockPos blockPos = owner.getBlockPos();
 		double d = (double)blockPos.getX() + 0.5;
 		double e = (double)blockPos.getY() + 0.5;
 		double f = (double)blockPos.getZ() + 0.5;
 		this.refreshPositionAndAngles(d, e, f, this.yaw, this.pitch);
-		this.target = entity;
-		this.direction = Direction.field_11036;
+		this.target = target;
+		this.direction = Direction.UP;
 		this.method_7486(axis);
 	}
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return SoundCategory.field_15251;
+		return SoundCategory.HOSTILE;
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag compoundTag) {
-		if (this.owner != null) {
-			BlockPos blockPos = new BlockPos(this.owner);
-			CompoundTag compoundTag2 = NbtHelper.fromUuid(this.owner.getUuid());
-			compoundTag2.putInt("X", blockPos.getX());
-			compoundTag2.putInt("Y", blockPos.getY());
-			compoundTag2.putInt("Z", blockPos.getZ());
-			compoundTag.put("Owner", compoundTag2);
-		}
-
+	protected void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
 		if (this.target != null) {
-			BlockPos blockPos2 = new BlockPos(this.target);
-			CompoundTag compoundTag3 = NbtHelper.fromUuid(this.target.getUuid());
-			compoundTag3.putInt("X", blockPos2.getX());
-			compoundTag3.putInt("Y", blockPos2.getY());
-			compoundTag3.putInt("Z", blockPos2.getZ());
-			compoundTag.put("Target", compoundTag3);
+			tag.putUuid("Target", this.target.getUuid());
 		}
 
 		if (this.direction != null) {
-			compoundTag.putInt("Dir", this.direction.getId());
+			tag.putInt("Dir", this.direction.getId());
 		}
 
-		compoundTag.putInt("Steps", this.field_7627);
-		compoundTag.putDouble("TXD", this.field_7635);
-		compoundTag.putDouble("TYD", this.field_7633);
-		compoundTag.putDouble("TZD", this.field_7625);
+		tag.putInt("Steps", this.stepCount);
+		tag.putDouble("TXD", this.targetX);
+		tag.putDouble("TYD", this.targetY);
+		tag.putDouble("TZD", this.targetZ);
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag compoundTag) {
-		this.field_7627 = compoundTag.getInt("Steps");
-		this.field_7635 = compoundTag.getDouble("TXD");
-		this.field_7633 = compoundTag.getDouble("TYD");
-		this.field_7625 = compoundTag.getDouble("TZD");
-		if (compoundTag.contains("Dir", 99)) {
-			this.direction = Direction.byId(compoundTag.getInt("Dir"));
+	protected void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.stepCount = tag.getInt("Steps");
+		this.targetX = tag.getDouble("TXD");
+		this.targetY = tag.getDouble("TYD");
+		this.targetZ = tag.getDouble("TZD");
+		if (tag.contains("Dir", 99)) {
+			this.direction = Direction.byId(tag.getInt("Dir"));
 		}
 
-		if (compoundTag.contains("Owner", 10)) {
-			CompoundTag compoundTag2 = compoundTag.getCompound("Owner");
-			this.ownerUuid = NbtHelper.toUuid(compoundTag2);
-			this.ownerPos = new BlockPos(compoundTag2.getInt("X"), compoundTag2.getInt("Y"), compoundTag2.getInt("Z"));
-		}
-
-		if (compoundTag.contains("Target", 10)) {
-			CompoundTag compoundTag3 = compoundTag.getCompound("Target");
-			this.targetUuid = NbtHelper.toUuid(compoundTag3);
-			this.targetPos = new BlockPos(compoundTag3.getInt("X"), compoundTag3.getInt("Y"), compoundTag3.getInt("Z"));
+		if (tag.containsUuid("Target")) {
+			this.targetUuid = tag.getUuid("Target");
 		}
 	}
 
@@ -141,7 +113,7 @@ public class ShulkerBulletEntity extends Entity {
 		double d = 0.5;
 		BlockPos blockPos;
 		if (this.target == null) {
-			blockPos = new BlockPos(this).down();
+			blockPos = this.getBlockPos().down();
 		} else {
 			d = (double)this.target.getHeight() * 0.5;
 			blockPos = new BlockPos(this.target.getX(), this.target.getY() + d, this.target.getZ());
@@ -152,29 +124,29 @@ public class ShulkerBulletEntity extends Entity {
 		double g = (double)blockPos.getZ() + 0.5;
 		Direction direction = null;
 		if (!blockPos.isWithinDistance(this.getPos(), 2.0)) {
-			BlockPos blockPos3 = new BlockPos(this);
+			BlockPos blockPos3 = this.getBlockPos();
 			List<Direction> list = Lists.newArrayList();
-			if (axis != Direction.Axis.field_11048) {
+			if (axis != Direction.Axis.X) {
 				if (blockPos3.getX() < blockPos.getX() && this.world.isAir(blockPos3.east())) {
-					list.add(Direction.field_11034);
+					list.add(Direction.EAST);
 				} else if (blockPos3.getX() > blockPos.getX() && this.world.isAir(blockPos3.west())) {
-					list.add(Direction.field_11039);
+					list.add(Direction.WEST);
 				}
 			}
 
-			if (axis != Direction.Axis.field_11052) {
+			if (axis != Direction.Axis.Y) {
 				if (blockPos3.getY() < blockPos.getY() && this.world.isAir(blockPos3.up())) {
-					list.add(Direction.field_11036);
+					list.add(Direction.UP);
 				} else if (blockPos3.getY() > blockPos.getY() && this.world.isAir(blockPos3.down())) {
-					list.add(Direction.field_11033);
+					list.add(Direction.DOWN);
 				}
 			}
 
-			if (axis != Direction.Axis.field_11051) {
+			if (axis != Direction.Axis.Z) {
 				if (blockPos3.getZ() < blockPos.getZ() && this.world.isAir(blockPos3.south())) {
-					list.add(Direction.field_11035);
+					list.add(Direction.SOUTH);
 				} else if (blockPos3.getZ() > blockPos.getZ() && this.world.isAir(blockPos3.north())) {
-					list.add(Direction.field_11043);
+					list.add(Direction.NORTH);
 				}
 			}
 
@@ -198,22 +170,22 @@ public class ShulkerBulletEntity extends Entity {
 		double k = g - this.getZ();
 		double l = (double)MathHelper.sqrt(h * h + j * j + k * k);
 		if (l == 0.0) {
-			this.field_7635 = 0.0;
-			this.field_7633 = 0.0;
-			this.field_7625 = 0.0;
+			this.targetX = 0.0;
+			this.targetY = 0.0;
+			this.targetZ = 0.0;
 		} else {
-			this.field_7635 = h / l * 0.15;
-			this.field_7633 = j / l * 0.15;
-			this.field_7625 = k / l * 0.15;
+			this.targetX = h / l * 0.15;
+			this.targetY = j / l * 0.15;
+			this.targetZ = k / l * 0.15;
 		}
 
 		this.velocityDirty = true;
-		this.field_7627 = 10 + this.random.nextInt(5) * 10;
+		this.stepCount = 10 + this.random.nextInt(5) * 10;
 	}
 
 	@Override
 	public void checkDespawn() {
-		if (this.world.getDifficulty() == Difficulty.field_5801) {
+		if (this.world.getDifficulty() == Difficulty.PEACEFUL) {
 			this.remove();
 		}
 	}
@@ -223,27 +195,10 @@ public class ShulkerBulletEntity extends Entity {
 		super.tick();
 		if (!this.world.isClient) {
 			if (this.target == null && this.targetUuid != null) {
-				for (LivingEntity livingEntity : this.world
-					.getNonSpectatingEntities(LivingEntity.class, new Box(this.targetPos.add(-2, -2, -2), this.targetPos.add(2, 2, 2)))) {
-					if (livingEntity.getUuid().equals(this.targetUuid)) {
-						this.target = livingEntity;
-						break;
-					}
+				this.target = ((ServerWorld)this.world).getEntity(this.targetUuid);
+				if (this.target == null) {
+					this.targetUuid = null;
 				}
-
-				this.targetUuid = null;
-			}
-
-			if (this.owner == null && this.ownerUuid != null) {
-				for (LivingEntity livingEntity2 : this.world
-					.getNonSpectatingEntities(LivingEntity.class, new Box(this.ownerPos.add(-2, -2, -2), this.ownerPos.add(2, 2, 2)))) {
-					if (livingEntity2.getUuid().equals(this.ownerUuid)) {
-						this.owner = livingEntity2;
-						break;
-					}
-				}
-
-				this.ownerUuid = null;
 			}
 
 			if (this.target == null || !this.target.isAlive() || this.target instanceof PlayerEntity && ((PlayerEntity)this.target).isSpectator()) {
@@ -251,42 +206,43 @@ public class ShulkerBulletEntity extends Entity {
 					this.setVelocity(this.getVelocity().add(0.0, -0.04, 0.0));
 				}
 			} else {
-				this.field_7635 = MathHelper.clamp(this.field_7635 * 1.025, -1.0, 1.0);
-				this.field_7633 = MathHelper.clamp(this.field_7633 * 1.025, -1.0, 1.0);
-				this.field_7625 = MathHelper.clamp(this.field_7625 * 1.025, -1.0, 1.0);
+				this.targetX = MathHelper.clamp(this.targetX * 1.025, -1.0, 1.0);
+				this.targetY = MathHelper.clamp(this.targetY * 1.025, -1.0, 1.0);
+				this.targetZ = MathHelper.clamp(this.targetZ * 1.025, -1.0, 1.0);
 				Vec3d vec3d = this.getVelocity();
-				this.setVelocity(vec3d.add((this.field_7635 - vec3d.x) * 0.2, (this.field_7633 - vec3d.y) * 0.2, (this.field_7625 - vec3d.z) * 0.2));
+				this.setVelocity(vec3d.add((this.targetX - vec3d.x) * 0.2, (this.targetY - vec3d.y) * 0.2, (this.targetZ - vec3d.z) * 0.2));
 			}
 
-			HitResult hitResult = ProjectileUtil.getCollision(this, true, false, this.owner, RayTraceContext.ShapeType.field_17558);
-			if (hitResult.getType() != HitResult.Type.field_1333) {
-				this.onHit(hitResult);
+			HitResult hitResult = ProjectileUtil.getCollision(this, this::method_26958);
+			if (hitResult.getType() != HitResult.Type.MISS) {
+				this.onCollision(hitResult);
 			}
 		}
 
+		this.checkBlockCollision();
 		Vec3d vec3d2 = this.getVelocity();
 		this.updatePosition(this.getX() + vec3d2.x, this.getY() + vec3d2.y, this.getZ() + vec3d2.z);
 		ProjectileUtil.method_7484(this, 0.5F);
 		if (this.world.isClient) {
-			this.world.addParticle(ParticleTypes.field_11207, this.getX() - vec3d2.x, this.getY() - vec3d2.y + 0.15, this.getZ() - vec3d2.z, 0.0, 0.0, 0.0);
+			this.world.addParticle(ParticleTypes.END_ROD, this.getX() - vec3d2.x, this.getY() - vec3d2.y + 0.15, this.getZ() - vec3d2.z, 0.0, 0.0, 0.0);
 		} else if (this.target != null && !this.target.removed) {
-			if (this.field_7627 > 0) {
-				this.field_7627--;
-				if (this.field_7627 == 0) {
+			if (this.stepCount > 0) {
+				this.stepCount--;
+				if (this.stepCount == 0) {
 					this.method_7486(this.direction == null ? null : this.direction.getAxis());
 				}
 			}
 
 			if (this.direction != null) {
-				BlockPos blockPos = new BlockPos(this);
+				BlockPos blockPos = this.getBlockPos();
 				Direction.Axis axis = this.direction.getAxis();
 				if (this.world.isTopSolid(blockPos.offset(this.direction), this)) {
 					this.method_7486(axis);
 				} else {
-					BlockPos blockPos2 = new BlockPos(this.target);
-					if (axis == Direction.Axis.field_11048 && blockPos.getX() == blockPos2.getX()
-						|| axis == Direction.Axis.field_11051 && blockPos.getZ() == blockPos2.getZ()
-						|| axis == Direction.Axis.field_11052 && blockPos.getY() == blockPos2.getY()) {
+					BlockPos blockPos2 = this.target.getBlockPos();
+					if (axis == Direction.Axis.X && blockPos.getX() == blockPos2.getX()
+						|| axis == Direction.Axis.Z && blockPos.getZ() == blockPos2.getZ()
+						|| axis == Direction.Axis.Y && blockPos.getY() == blockPos2.getY()) {
 						this.method_7486(axis);
 					}
 				}
@@ -295,13 +251,18 @@ public class ShulkerBulletEntity extends Entity {
 	}
 
 	@Override
+	protected boolean method_26958(Entity entity) {
+		return super.method_26958(entity) && !entity.noClip;
+	}
+
+	@Override
 	public boolean isOnFire() {
 		return false;
 	}
 
 	@Override
-	public boolean shouldRender(double d) {
-		return d < 16384.0;
+	public boolean shouldRender(double distance) {
+		return distance < 16384.0;
 	}
 
 	@Override
@@ -309,21 +270,31 @@ public class ShulkerBulletEntity extends Entity {
 		return 1.0F;
 	}
 
-	protected void onHit(HitResult hitResult) {
-		if (hitResult.getType() == HitResult.Type.field_1331) {
-			Entity entity = ((EntityHitResult)hitResult).getEntity();
-			boolean bl = entity.damage(DamageSource.mobProjectile(this, this.owner).setProjectile(), 4.0F);
-			if (bl) {
-				this.dealDamage(this.owner, entity);
-				if (entity instanceof LivingEntity) {
-					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5902, 200));
-				}
+	@Override
+	protected void onEntityHit(EntityHitResult entityHitResult) {
+		super.onEntityHit(entityHitResult);
+		Entity entity = entityHitResult.getEntity();
+		Entity entity2 = this.getOwner();
+		LivingEntity livingEntity = entity2 instanceof LivingEntity ? (LivingEntity)entity2 : null;
+		boolean bl = entity.damage(DamageSource.mobProjectile(this, livingEntity).setProjectile(), 4.0F);
+		if (bl) {
+			this.dealDamage(livingEntity, entity);
+			if (entity instanceof LivingEntity) {
+				((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 200));
 			}
-		} else {
-			((ServerWorld)this.world).spawnParticles(ParticleTypes.field_11236, this.getX(), this.getY(), this.getZ(), 2, 0.2, 0.2, 0.2, 0.0);
-			this.playSound(SoundEvents.field_14895, 1.0F, 1.0F);
 		}
+	}
 
+	@Override
+	protected void onBlockHit(BlockHitResult blockHitResult) {
+		super.onBlockHit(blockHitResult);
+		((ServerWorld)this.world).spawnParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(), 2, 0.2, 0.2, 0.2, 0.0);
+		this.playSound(SoundEvents.ENTITY_SHULKER_BULLET_HIT, 1.0F, 1.0F);
+	}
+
+	@Override
+	protected void onCollision(HitResult hitResult) {
+		super.onCollision(hitResult);
 		this.remove();
 	}
 
@@ -333,10 +304,10 @@ public class ShulkerBulletEntity extends Entity {
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
+	public boolean damage(DamageSource source, float amount) {
 		if (!this.world.isClient) {
-			this.playSound(SoundEvents.field_14977, 1.0F, 1.0F);
-			((ServerWorld)this.world).spawnParticles(ParticleTypes.field_11205, this.getX(), this.getY(), this.getZ(), 15, 0.2, 0.2, 0.2, 0.0);
+			this.playSound(SoundEvents.ENTITY_SHULKER_BULLET_HURT, 1.0F, 1.0F);
+			((ServerWorld)this.world).spawnParticles(ParticleTypes.CRIT, this.getX(), this.getY(), this.getZ(), 15, 0.2, 0.2, 0.2, 0.0);
 			this.remove();
 		}
 

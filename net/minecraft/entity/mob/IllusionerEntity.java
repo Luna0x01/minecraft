@@ -7,8 +7,7 @@ import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ProjectileUtil;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.BowAttackGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -16,14 +15,16 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.passive.AbstractTraderEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
+import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.entity.raid.RaiderEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -31,13 +32,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
 public class IllusionerEntity extends SpellcastingIllagerEntity implements RangedAttackMob {
@@ -68,24 +68,23 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 		this.goalSelector.add(10, new LookAtEntityGoal(this, MobEntity.class, 8.0F));
 		this.targetSelector.add(1, new RevengeGoal(this, RaiderEntity.class).setGroupRevenge());
 		this.targetSelector.add(2, new FollowTargetGoal(this, PlayerEntity.class, true).setMaxTimeWithoutVisibility(300));
-		this.targetSelector.add(3, new FollowTargetGoal(this, AbstractTraderEntity.class, false).setMaxTimeWithoutVisibility(300));
+		this.targetSelector.add(3, new FollowTargetGoal(this, MerchantEntity.class, false).setMaxTimeWithoutVisibility(300));
 		this.targetSelector.add(3, new FollowTargetGoal(this, IronGolemEntity.class, false).setMaxTimeWithoutVisibility(300));
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.5);
-		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(18.0);
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(32.0);
+	public static DefaultAttributeContainer.Builder createIllusionerAttributes() {
+		return HostileEntity.createHostileAttributes()
+			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.5)
+			.add(EntityAttributes.GENERIC_FOLLOW_RANGE, 18.0)
+			.add(EntityAttributes.GENERIC_MAX_HEALTH, 32.0);
 	}
 
 	@Override
 	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
-		this.equipStack(EquipmentSlot.field_6173, new ItemStack(Items.field_8102));
-		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
+		this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
 	}
 
 	@Override
@@ -122,10 +121,10 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 				}
 
 				for (int k = 0; k < 16; k++) {
-					this.world.addParticle(ParticleTypes.field_11204, this.getParticleX(0.5), this.getRandomBodyY(), this.offsetZ(0.5), 0.0, 0.0, 0.0);
+					this.world.addParticle(ParticleTypes.CLOUD, this.getParticleX(0.5), this.getRandomBodyY(), this.offsetZ(0.5), 0.0, 0.0, 0.0);
 				}
 
-				this.world.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.field_14941, this.getSoundCategory(), 1.0F, 1.0F, false);
+				this.world.playSound(this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_ILLUSIONER_MIRROR_MOVE, this.getSoundCategory(), 1.0F, 1.0F, false);
 			} else if (this.hurtTime == this.maxHurtTime - 1) {
 				this.field_7296 = 3;
 
@@ -139,7 +138,7 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 
 	@Override
 	public SoundEvent getCelebratingSound() {
-		return SoundEvents.field_14644;
+		return SoundEvents.ENTITY_ILLUSIONER_AMBIENT;
 	}
 
 	public Vec3d[] method_7065(float f) {
@@ -159,59 +158,59 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 	}
 
 	@Override
-	public boolean isTeammate(Entity entity) {
-		if (super.isTeammate(entity)) {
+	public boolean isTeammate(Entity other) {
+		if (super.isTeammate(other)) {
 			return true;
 		} else {
-			return entity instanceof LivingEntity && ((LivingEntity)entity).getGroup() == EntityGroup.ILLAGER
-				? this.getScoreboardTeam() == null && entity.getScoreboardTeam() == null
+			return other instanceof LivingEntity && ((LivingEntity)other).getGroup() == EntityGroup.ILLAGER
+				? this.getScoreboardTeam() == null && other.getScoreboardTeam() == null
 				: false;
 		}
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_14644;
+		return SoundEvents.ENTITY_ILLUSIONER_AMBIENT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_15153;
+		return SoundEvents.ENTITY_ILLUSIONER_DEATH;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_15223;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_ILLUSIONER_HURT;
 	}
 
 	@Override
 	protected SoundEvent getCastSpellSound() {
-		return SoundEvents.field_14545;
+		return SoundEvents.ENTITY_ILLUSIONER_CAST_SPELL;
 	}
 
 	@Override
-	public void addBonusForWave(int i, boolean bl) {
+	public void addBonusForWave(int wave, boolean unused) {
 	}
 
 	@Override
-	public void attack(LivingEntity livingEntity, float f) {
-		ItemStack itemStack = this.getArrowType(this.getStackInHand(ProjectileUtil.getHandPossiblyHolding(this, Items.field_8102)));
-		ProjectileEntity projectileEntity = ProjectileUtil.createArrowProjectile(this, itemStack, f);
-		double d = livingEntity.getX() - this.getX();
-		double e = livingEntity.getBodyY(0.3333333333333333) - projectileEntity.getY();
-		double g = livingEntity.getZ() - this.getZ();
-		double h = (double)MathHelper.sqrt(d * d + g * g);
-		projectileEntity.setVelocity(d, e + h * 0.2F, g, 1.6F, (float)(14 - this.world.getDifficulty().getId() * 4));
-		this.playSound(SoundEvents.field_14633, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-		this.world.spawnEntity(projectileEntity);
+	public void attack(LivingEntity target, float pullProgress) {
+		ItemStack itemStack = this.getArrowType(this.getStackInHand(ProjectileUtil.getHandPossiblyHolding(this, Items.BOW)));
+		PersistentProjectileEntity persistentProjectileEntity = ProjectileUtil.createArrowProjectile(this, itemStack, pullProgress);
+		double d = target.getX() - this.getX();
+		double e = target.getBodyY(0.3333333333333333) - persistentProjectileEntity.getY();
+		double f = target.getZ() - this.getZ();
+		double g = (double)MathHelper.sqrt(d * d + f * f);
+		persistentProjectileEntity.setVelocity(d, e + g * 0.2F, f, 1.6F, (float)(14 - this.world.getDifficulty().getId() * 4));
+		this.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+		this.world.spawnEntity(persistentProjectileEntity);
 	}
 
 	@Override
 	public IllagerEntity.State getState() {
 		if (this.isSpellcasting()) {
-			return IllagerEntity.State.field_7212;
+			return IllagerEntity.State.SPELLCASTING;
 		} else {
-			return this.isAttacking() ? IllagerEntity.State.field_7208 : IllagerEntity.State.field_7207;
+			return this.isAttacking() ? IllagerEntity.State.BOW_AND_ARROW : IllagerEntity.State.CROSSED;
 		}
 	}
 
@@ -230,7 +229,7 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 			} else {
 				return IllusionerEntity.this.getTarget().getEntityId() == this.targetId
 					? false
-					: IllusionerEntity.this.world.getLocalDifficulty(new BlockPos(IllusionerEntity.this)).isHarderThan((float)Difficulty.field_5802.ordinal());
+					: IllusionerEntity.this.world.getLocalDifficulty(IllusionerEntity.this.getBlockPos()).isHarderThan((float)Difficulty.NORMAL.ordinal());
 			}
 		}
 
@@ -252,17 +251,17 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 
 		@Override
 		protected void castSpell() {
-			IllusionerEntity.this.getTarget().addStatusEffect(new StatusEffectInstance(StatusEffects.field_5919, 400));
+			IllusionerEntity.this.getTarget().addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 400));
 		}
 
 		@Override
 		protected SoundEvent getSoundPrepare() {
-			return SoundEvents.field_15019;
+			return SoundEvents.ENTITY_ILLUSIONER_PREPARE_BLINDNESS;
 		}
 
 		@Override
 		protected SpellcastingIllagerEntity.Spell getSpell() {
-			return SpellcastingIllagerEntity.Spell.field_7378;
+			return SpellcastingIllagerEntity.Spell.BLINDNESS;
 		}
 	}
 
@@ -272,7 +271,7 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 
 		@Override
 		public boolean canStart() {
-			return !super.canStart() ? false : !IllusionerEntity.this.hasStatusEffect(StatusEffects.field_5905);
+			return !super.canStart() ? false : !IllusionerEntity.this.hasStatusEffect(StatusEffects.INVISIBILITY);
 		}
 
 		@Override
@@ -287,18 +286,18 @@ public class IllusionerEntity extends SpellcastingIllagerEntity implements Range
 
 		@Override
 		protected void castSpell() {
-			IllusionerEntity.this.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5905, 1200));
+			IllusionerEntity.this.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 1200));
 		}
 
 		@Nullable
 		@Override
 		protected SoundEvent getSoundPrepare() {
-			return SoundEvents.field_14738;
+			return SoundEvents.ENTITY_ILLUSIONER_PREPARE_MIRROR;
 		}
 
 		@Override
 		protected SpellcastingIllagerEntity.Spell getSpell() {
-			return SpellcastingIllagerEntity.Spell.field_7382;
+			return SpellcastingIllagerEntity.Spell.DISAPPEAR;
 		}
 	}
 }

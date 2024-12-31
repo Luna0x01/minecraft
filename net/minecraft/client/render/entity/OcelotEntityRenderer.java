@@ -5,13 +5,13 @@ import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.util.Identifier;
 
 public class OcelotEntityRenderer extends MobEntityRenderer<OcelotEntity, OcelotEntityModel<OcelotEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/cat/ocelot.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/cat/ocelot.png");
 
 	public OcelotEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new OcelotEntityModel<>(0.0F), 0.4F);
 	}
 
 	public Identifier getTexture(OcelotEntity ocelotEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

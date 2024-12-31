@@ -9,18 +9,20 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
 import java.util.Objects;
 import net.minecraft.datafixer.TypeReferences;
-import net.minecraft.datafixer.schema.SchemaIdentifierNormalize;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public class BlockNameFlatteningFix extends DataFix {
-	public BlockNameFlatteningFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public BlockNameFlatteningFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public TypeRewriteRule makeRule() {
 		Type<?> type = this.getInputSchema().getType(TypeReferences.BLOCK_NAME);
 		Type<?> type2 = this.getOutputSchema().getType(TypeReferences.BLOCK_NAME);
-		Type<Pair<String, Either<Integer, String>>> type3 = DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), DSL.namespacedString()));
-		Type<Pair<String, String>> type4 = DSL.named(TypeReferences.BLOCK_NAME.typeName(), DSL.namespacedString());
+		Type<Pair<String, Either<Integer, String>>> type3 = DSL.named(
+			TypeReferences.BLOCK_NAME.typeName(), DSL.or(DSL.intType(), IdentifierNormalizingSchema.getIdentifierType())
+		);
+		Type<Pair<String, String>> type4 = DSL.named(TypeReferences.BLOCK_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType());
 		if (Objects.equals(type, type3) && Objects.equals(type2, type4)) {
 			return this.fixTypeEverywhere(
 				"BlockNameFlatteningFix",
@@ -28,7 +30,7 @@ public class BlockNameFlatteningFix extends DataFix {
 				type4,
 				dynamicOps -> pair -> pair.mapSecond(
 							either -> (String)either.map(
-									BlockStateFlattening::lookupStateBlock, string -> BlockStateFlattening.lookupBlock(SchemaIdentifierNormalize.normalize(string))
+									BlockStateFlattening::lookupStateBlock, string -> BlockStateFlattening.lookupBlock(IdentifierNormalizingSchema.normalize(string))
 								)
 						)
 			);

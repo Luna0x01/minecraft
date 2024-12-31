@@ -9,7 +9,7 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.util.Identifier;
 
 public class IronGolemEntityRenderer extends MobEntityRenderer<IronGolemEntity, IronGolemEntityModel<IronGolemEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/iron_golem/iron_golem.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/iron_golem/iron_golem.png");
 
 	public IronGolemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new IronGolemEntityModel<>(), 0.7F);
@@ -18,7 +18,7 @@ public class IronGolemEntityRenderer extends MobEntityRenderer<IronGolemEntity, 
 	}
 
 	public Identifier getTexture(IronGolemEntity ironGolemEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 
 	protected void setupTransforms(IronGolemEntity ironGolemEntity, MatrixStack matrixStack, float f, float g, float h) {

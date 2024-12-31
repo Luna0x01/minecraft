@@ -2,11 +2,11 @@ package net.minecraft.datafixer.fix;
 
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
+import com.mojang.serialization.Dynamic;
 import java.util.Optional;
 import net.minecraft.datafixer.TypeReferences;
 import net.minecraft.text.LiteralText;
@@ -14,19 +14,19 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 public class ItemCustomNameToComponentFix extends DataFix {
-	public ItemCustomNameToComponentFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ItemCustomNameToComponentFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	private Dynamic<?> fixCustomName(Dynamic<?> dynamic) {
-		Optional<? extends Dynamic<?>> optional = dynamic.get("display").get();
+		Optional<? extends Dynamic<?>> optional = dynamic.get("display").result();
 		if (optional.isPresent()) {
 			Dynamic<?> dynamic2 = (Dynamic<?>)optional.get();
-			Optional<String> optional2 = dynamic2.get("Name").asString();
+			Optional<String> optional2 = dynamic2.get("Name").asString().result();
 			if (optional2.isPresent()) {
 				dynamic2 = dynamic2.set("Name", dynamic2.createString(Text.Serializer.toJson(new LiteralText((String)optional2.get()))));
 			} else {
-				Optional<String> optional3 = dynamic2.get("LocName").asString();
+				Optional<String> optional3 = dynamic2.get("LocName").asString().result();
 				if (optional3.isPresent()) {
 					dynamic2 = dynamic2.set("Name", dynamic2.createString(Text.Serializer.toJson(new TranslatableText((String)optional3.get()))));
 					dynamic2 = dynamic2.remove("LocName");

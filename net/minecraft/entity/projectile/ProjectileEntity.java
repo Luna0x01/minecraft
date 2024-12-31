@@ -1,672 +1,168 @@
 package net.minecraft.entity.projectile;
 
-import com.google.common.collect.Lists;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.advancement.criterion.Criterions;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
-import net.minecraft.client.network.packet.GameStateChangeS2CPacket;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ProjectileUtil;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.network.Packet;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.RayTraceContext;
 import net.minecraft.world.World;
 
-public abstract class ProjectileEntity extends Entity implements Projectile {
-	private static final TrackedData<Byte> PROJECTILE_FLAGS = DataTracker.registerData(ProjectileEntity.class, TrackedDataHandlerRegistry.BYTE);
-	protected static final TrackedData<Optional<UUID>> OPTIONAL_UUID = DataTracker.registerData(ProjectileEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
-	private static final TrackedData<Byte> PIERCE_LEVEL = DataTracker.registerData(ProjectileEntity.class, TrackedDataHandlerRegistry.BYTE);
-	@Nullable
-	private BlockState inBlockState;
-	protected boolean inGround;
-	protected int inGroundTime;
-	public ProjectileEntity.PickupPermission pickupType = ProjectileEntity.PickupPermission.field_7592;
-	public int shake;
-	public UUID ownerUuid;
-	private int life;
-	private int flyingTick;
-	private double damage = 2.0;
-	private int punch;
-	private SoundEvent sound = this.getHitSound();
-	private IntOpenHashSet piercedEntities;
-	private List<Entity> piercingKilledEntities;
+public abstract class ProjectileEntity extends Entity {
+	private UUID ownerUuid;
+	private int ownerEntityId;
+	private boolean leftOwner;
 
-	protected ProjectileEntity(EntityType<? extends ProjectileEntity> entityType, World world) {
+	ProjectileEntity(EntityType<? extends ProjectileEntity> entityType, World world) {
 		super(entityType, world);
 	}
 
-	protected ProjectileEntity(EntityType<? extends ProjectileEntity> entityType, double d, double e, double f, World world) {
-		this(entityType, world);
-		this.updatePosition(d, e, f);
-	}
-
-	protected ProjectileEntity(EntityType<? extends ProjectileEntity> entityType, LivingEntity livingEntity, World world) {
-		this(entityType, livingEntity.getX(), livingEntity.getEyeY() - 0.1F, livingEntity.getZ(), world);
-		this.setOwner(livingEntity);
-		if (livingEntity instanceof PlayerEntity) {
-			this.pickupType = ProjectileEntity.PickupPermission.field_7593;
-		}
-	}
-
-	public void setSound(SoundEvent soundEvent) {
-		this.sound = soundEvent;
-	}
-
-	@Override
-	public boolean shouldRender(double d) {
-		double e = this.getBoundingBox().getAverageSideLength() * 10.0;
-		if (Double.isNaN(e)) {
-			e = 1.0;
-		}
-
-		e *= 64.0 * getRenderDistanceMultiplier();
-		return d < e * e;
-	}
-
-	@Override
-	protected void initDataTracker() {
-		this.dataTracker.startTracking(PROJECTILE_FLAGS, (byte)0);
-		this.dataTracker.startTracking(OPTIONAL_UUID, Optional.empty());
-		this.dataTracker.startTracking(PIERCE_LEVEL, (byte)0);
-	}
-
-	public void setProperties(Entity entity, float f, float g, float h, float i, float j) {
-		float k = -MathHelper.sin(g * (float) (Math.PI / 180.0)) * MathHelper.cos(f * (float) (Math.PI / 180.0));
-		float l = -MathHelper.sin(f * (float) (Math.PI / 180.0));
-		float m = MathHelper.cos(g * (float) (Math.PI / 180.0)) * MathHelper.cos(f * (float) (Math.PI / 180.0));
-		this.setVelocity((double)k, (double)l, (double)m, i, j);
-		this.setVelocity(this.getVelocity().add(entity.getVelocity().x, entity.onGround ? 0.0 : entity.getVelocity().y, entity.getVelocity().z));
-	}
-
-	@Override
-	public void setVelocity(double d, double e, double f, float g, float h) {
-		Vec3d vec3d = new Vec3d(d, e, f)
-			.normalize()
-			.add(this.random.nextGaussian() * 0.0075F * (double)h, this.random.nextGaussian() * 0.0075F * (double)h, this.random.nextGaussian() * 0.0075F * (double)h)
-			.multiply((double)g);
-		this.setVelocity(vec3d);
-		float i = MathHelper.sqrt(squaredHorizontalLength(vec3d));
-		this.yaw = (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI);
-		this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)i) * 180.0F / (float)Math.PI);
-		this.prevYaw = this.yaw;
-		this.prevPitch = this.pitch;
-		this.life = 0;
-	}
-
-	@Override
-	public void updateTrackedPositionAndAngles(double d, double e, double f, float g, float h, int i, boolean bl) {
-		this.updatePosition(d, e, f);
-		this.setRotation(g, h);
-	}
-
-	@Override
-	public void setVelocityClient(double d, double e, double f) {
-		this.setVelocity(d, e, f);
-		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
-			float g = MathHelper.sqrt(d * d + f * f);
-			this.pitch = (float)(MathHelper.atan2(e, (double)g) * 180.0F / (float)Math.PI);
-			this.yaw = (float)(MathHelper.atan2(d, f) * 180.0F / (float)Math.PI);
-			this.prevPitch = this.pitch;
-			this.prevYaw = this.yaw;
-			this.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
-			this.life = 0;
-		}
-	}
-
-	@Override
-	public void tick() {
-		super.tick();
-		boolean bl = this.isNoClip();
-		Vec3d vec3d = this.getVelocity();
-		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
-			float f = MathHelper.sqrt(squaredHorizontalLength(vec3d));
-			this.yaw = (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI);
-			this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)f) * 180.0F / (float)Math.PI);
-			this.prevYaw = this.yaw;
-			this.prevPitch = this.pitch;
-		}
-
-		BlockPos blockPos = new BlockPos(this);
-		BlockState blockState = this.world.getBlockState(blockPos);
-		if (!blockState.isAir() && !bl) {
-			VoxelShape voxelShape = blockState.getCollisionShape(this.world, blockPos);
-			if (!voxelShape.isEmpty()) {
-				Vec3d vec3d2 = this.getPos();
-
-				for (Box box : voxelShape.getBoundingBoxes()) {
-					if (box.offset(blockPos).contains(vec3d2)) {
-						this.inGround = true;
-						break;
-					}
-				}
-			}
-		}
-
-		if (this.shake > 0) {
-			this.shake--;
-		}
-
-		if (this.isTouchingWaterOrRain()) {
-			this.extinguish();
-		}
-
-		if (this.inGround && !bl) {
-			if (this.inBlockState != blockState && this.world.doesNotCollide(this.getBoundingBox().expand(0.06))) {
-				this.inGround = false;
-				this.setVelocity(
-					vec3d.multiply((double)(this.random.nextFloat() * 0.2F), (double)(this.random.nextFloat() * 0.2F), (double)(this.random.nextFloat() * 0.2F))
-				);
-				this.life = 0;
-				this.flyingTick = 0;
-			} else if (!this.world.isClient) {
-				this.age();
-			}
-
-			this.inGroundTime++;
-		} else {
-			this.inGroundTime = 0;
-			this.flyingTick++;
-			Vec3d vec3d3 = this.getPos();
-			Vec3d vec3d4 = vec3d3.add(vec3d);
-			HitResult hitResult = this.world
-				.rayTrace(new RayTraceContext(vec3d3, vec3d4, RayTraceContext.ShapeType.field_17558, RayTraceContext.FluidHandling.field_1348, this));
-			if (hitResult.getType() != HitResult.Type.field_1333) {
-				vec3d4 = hitResult.getPos();
-			}
-
-			while (!this.removed) {
-				EntityHitResult entityHitResult = this.getEntityCollision(vec3d3, vec3d4);
-				if (entityHitResult != null) {
-					hitResult = entityHitResult;
-				}
-
-				if (hitResult != null && hitResult.getType() == HitResult.Type.field_1331) {
-					Entity entity = ((EntityHitResult)hitResult).getEntity();
-					Entity entity2 = this.getOwner();
-					if (entity instanceof PlayerEntity && entity2 instanceof PlayerEntity && !((PlayerEntity)entity2).shouldDamagePlayer((PlayerEntity)entity)) {
-						hitResult = null;
-						entityHitResult = null;
-					}
-				}
-
-				if (hitResult != null && !bl) {
-					this.onHit(hitResult);
-					this.velocityDirty = true;
-				}
-
-				if (entityHitResult == null || this.getPierceLevel() <= 0) {
-					break;
-				}
-
-				hitResult = null;
-			}
-
-			vec3d = this.getVelocity();
-			double d = vec3d.x;
-			double e = vec3d.y;
-			double g = vec3d.z;
-			if (this.isCritical()) {
-				for (int i = 0; i < 4; i++) {
-					this.world
-						.addParticle(
-							ParticleTypes.field_11205, this.getX() + d * (double)i / 4.0, this.getY() + e * (double)i / 4.0, this.getZ() + g * (double)i / 4.0, -d, -e + 0.2, -g
-						);
-				}
-			}
-
-			double h = this.getX() + d;
-			double j = this.getY() + e;
-			double k = this.getZ() + g;
-			float l = MathHelper.sqrt(squaredHorizontalLength(vec3d));
-			if (bl) {
-				this.yaw = (float)(MathHelper.atan2(-d, -g) * 180.0F / (float)Math.PI);
-			} else {
-				this.yaw = (float)(MathHelper.atan2(d, g) * 180.0F / (float)Math.PI);
-			}
-
-			this.pitch = (float)(MathHelper.atan2(e, (double)l) * 180.0F / (float)Math.PI);
-
-			while (this.pitch - this.prevPitch < -180.0F) {
-				this.prevPitch -= 360.0F;
-			}
-
-			while (this.pitch - this.prevPitch >= 180.0F) {
-				this.prevPitch += 360.0F;
-			}
-
-			while (this.yaw - this.prevYaw < -180.0F) {
-				this.prevYaw -= 360.0F;
-			}
-
-			while (this.yaw - this.prevYaw >= 180.0F) {
-				this.prevYaw += 360.0F;
-			}
-
-			this.pitch = MathHelper.lerp(0.2F, this.prevPitch, this.pitch);
-			this.yaw = MathHelper.lerp(0.2F, this.prevYaw, this.yaw);
-			float m = 0.99F;
-			float n = 0.05F;
-			if (this.isTouchingWater()) {
-				for (int o = 0; o < 4; o++) {
-					float p = 0.25F;
-					this.world.addParticle(ParticleTypes.field_11247, h - d * 0.25, j - e * 0.25, k - g * 0.25, d, e, g);
-				}
-
-				m = this.getDragInWater();
-			}
-
-			this.setVelocity(vec3d.multiply((double)m));
-			if (!this.hasNoGravity() && !bl) {
-				Vec3d vec3d5 = this.getVelocity();
-				this.setVelocity(vec3d5.x, vec3d5.y - 0.05F, vec3d5.z);
-			}
-
-			this.updatePosition(h, j, k);
-			this.checkBlockCollision();
-		}
-	}
-
-	protected void age() {
-		this.life++;
-		if (this.life >= 1200) {
-			this.remove();
-		}
-	}
-
-	protected void onHit(HitResult hitResult) {
-		HitResult.Type type = hitResult.getType();
-		if (type == HitResult.Type.field_1331) {
-			this.onEntityHit((EntityHitResult)hitResult);
-		} else if (type == HitResult.Type.field_1332) {
-			BlockHitResult blockHitResult = (BlockHitResult)hitResult;
-			BlockState blockState = this.world.getBlockState(blockHitResult.getBlockPos());
-			this.inBlockState = blockState;
-			Vec3d vec3d = blockHitResult.getPos().subtract(this.getX(), this.getY(), this.getZ());
-			this.setVelocity(vec3d);
-			Vec3d vec3d2 = vec3d.normalize().multiply(0.05F);
-			this.setPos(this.getX() - vec3d2.x, this.getY() - vec3d2.y, this.getZ() - vec3d2.z);
-			this.playSound(this.getSound(), 1.0F, 1.2F / (this.random.nextFloat() * 0.2F + 0.9F));
-			this.inGround = true;
-			this.shake = 7;
-			this.setCritical(false);
-			this.setPierceLevel((byte)0);
-			this.setSound(SoundEvents.field_15151);
-			this.setShotFromCrossbow(false);
-			this.clearPiercingStatus();
-			blockState.onProjectileHit(this.world, blockState, blockHitResult, this);
-		}
-	}
-
-	private void clearPiercingStatus() {
-		if (this.piercingKilledEntities != null) {
-			this.piercingKilledEntities.clear();
-		}
-
-		if (this.piercedEntities != null) {
-			this.piercedEntities.clear();
-		}
-	}
-
-	protected void onEntityHit(EntityHitResult entityHitResult) {
-		Entity entity = entityHitResult.getEntity();
-		float f = (float)this.getVelocity().length();
-		int i = MathHelper.ceil(Math.max((double)f * this.damage, 0.0));
-		if (this.getPierceLevel() > 0) {
-			if (this.piercedEntities == null) {
-				this.piercedEntities = new IntOpenHashSet(5);
-			}
-
-			if (this.piercingKilledEntities == null) {
-				this.piercingKilledEntities = Lists.newArrayListWithCapacity(5);
-			}
-
-			if (this.piercedEntities.size() >= this.getPierceLevel() + 1) {
-				this.remove();
-				return;
-			}
-
-			this.piercedEntities.add(entity.getEntityId());
-		}
-
-		if (this.isCritical()) {
-			i += this.random.nextInt(i / 2 + 2);
-		}
-
-		Entity entity2 = this.getOwner();
-		DamageSource damageSource;
-		if (entity2 == null) {
-			damageSource = DamageSource.arrow(this, this);
-		} else {
-			damageSource = DamageSource.arrow(this, entity2);
-			if (entity2 instanceof LivingEntity) {
-				((LivingEntity)entity2).onAttacking(entity);
-			}
-		}
-
-		boolean bl = entity.getType() == EntityType.field_6091;
-		int j = entity.getFireTicks();
-		if (this.isOnFire() && !bl) {
-			entity.setOnFireFor(5);
-		}
-
-		if (entity.damage(damageSource, (float)i)) {
-			if (bl) {
-				return;
-			}
-
-			if (entity instanceof LivingEntity) {
-				LivingEntity livingEntity = (LivingEntity)entity;
-				if (!this.world.isClient && this.getPierceLevel() <= 0) {
-					livingEntity.setStuckArrowCount(livingEntity.getStuckArrowCount() + 1);
-				}
-
-				if (this.punch > 0) {
-					Vec3d vec3d = this.getVelocity().multiply(1.0, 0.0, 1.0).normalize().multiply((double)this.punch * 0.6);
-					if (vec3d.lengthSquared() > 0.0) {
-						livingEntity.addVelocity(vec3d.x, 0.1, vec3d.z);
-					}
-				}
-
-				if (!this.world.isClient && entity2 instanceof LivingEntity) {
-					EnchantmentHelper.onUserDamaged(livingEntity, entity2);
-					EnchantmentHelper.onTargetDamaged((LivingEntity)entity2, livingEntity);
-				}
-
-				this.onHit(livingEntity);
-				if (entity2 != null && livingEntity != entity2 && livingEntity instanceof PlayerEntity && entity2 instanceof ServerPlayerEntity) {
-					((ServerPlayerEntity)entity2).networkHandler.sendPacket(new GameStateChangeS2CPacket(6, 0.0F));
-				}
-
-				if (!entity.isAlive() && this.piercingKilledEntities != null) {
-					this.piercingKilledEntities.add(livingEntity);
-				}
-
-				if (!this.world.isClient && entity2 instanceof ServerPlayerEntity) {
-					ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity2;
-					if (this.piercingKilledEntities != null && this.isShotFromCrossbow()) {
-						Criterions.KILLED_BY_CROSSBOW.trigger(serverPlayerEntity, this.piercingKilledEntities, this.piercingKilledEntities.size());
-					} else if (!entity.isAlive() && this.isShotFromCrossbow()) {
-						Criterions.KILLED_BY_CROSSBOW.trigger(serverPlayerEntity, Arrays.asList(entity), 0);
-					}
-				}
-			}
-
-			this.playSound(this.sound, 1.0F, 1.2F / (this.random.nextFloat() * 0.2F + 0.9F));
-			if (this.getPierceLevel() <= 0) {
-				this.remove();
-			}
-		} else {
-			entity.setFireTicks(j);
-			this.setVelocity(this.getVelocity().multiply(-0.1));
-			this.yaw += 180.0F;
-			this.prevYaw += 180.0F;
-			this.flyingTick = 0;
-			if (!this.world.isClient && this.getVelocity().lengthSquared() < 1.0E-7) {
-				if (this.pickupType == ProjectileEntity.PickupPermission.field_7593) {
-					this.dropStack(this.asItemStack(), 0.1F);
-				}
-
-				this.remove();
-			}
-		}
-	}
-
-	protected SoundEvent getHitSound() {
-		return SoundEvents.field_15151;
-	}
-
-	protected final SoundEvent getSound() {
-		return this.sound;
-	}
-
-	protected void onHit(LivingEntity livingEntity) {
-	}
-
-	@Nullable
-	protected EntityHitResult getEntityCollision(Vec3d vec3d, Vec3d vec3d2) {
-		return ProjectileUtil.getEntityCollision(
-			this.world,
-			this,
-			vec3d,
-			vec3d2,
-			this.getBoundingBox().stretch(this.getVelocity()).expand(1.0),
-			entity -> !entity.isSpectator()
-					&& entity.isAlive()
-					&& entity.collides()
-					&& (entity != this.getOwner() || this.flyingTick >= 5)
-					&& (this.piercedEntities == null || !this.piercedEntities.contains(entity.getEntityId()))
-		);
-	}
-
-	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		compoundTag.putShort("life", (short)this.life);
-		if (this.inBlockState != null) {
-			compoundTag.put("inBlockState", NbtHelper.fromBlockState(this.inBlockState));
-		}
-
-		compoundTag.putByte("shake", (byte)this.shake);
-		compoundTag.putBoolean("inGround", this.inGround);
-		compoundTag.putByte("pickup", (byte)this.pickupType.ordinal());
-		compoundTag.putDouble("damage", this.damage);
-		compoundTag.putBoolean("crit", this.isCritical());
-		compoundTag.putByte("PierceLevel", this.getPierceLevel());
-		if (this.ownerUuid != null) {
-			compoundTag.putUuid("OwnerUUID", this.ownerUuid);
-		}
-
-		compoundTag.putString("SoundEvent", Registry.field_11156.getId(this.sound).toString());
-		compoundTag.putBoolean("ShotFromCrossbow", this.isShotFromCrossbow());
-	}
-
-	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		this.life = compoundTag.getShort("life");
-		if (compoundTag.contains("inBlockState", 10)) {
-			this.inBlockState = NbtHelper.toBlockState(compoundTag.getCompound("inBlockState"));
-		}
-
-		this.shake = compoundTag.getByte("shake") & 255;
-		this.inGround = compoundTag.getBoolean("inGround");
-		if (compoundTag.contains("damage", 99)) {
-			this.damage = compoundTag.getDouble("damage");
-		}
-
-		if (compoundTag.contains("pickup", 99)) {
-			this.pickupType = ProjectileEntity.PickupPermission.fromOrdinal(compoundTag.getByte("pickup"));
-		} else if (compoundTag.contains("player", 99)) {
-			this.pickupType = compoundTag.getBoolean("player") ? ProjectileEntity.PickupPermission.field_7593 : ProjectileEntity.PickupPermission.field_7592;
-		}
-
-		this.setCritical(compoundTag.getBoolean("crit"));
-		this.setPierceLevel(compoundTag.getByte("PierceLevel"));
-		if (compoundTag.containsUuid("OwnerUUID")) {
-			this.ownerUuid = compoundTag.getUuid("OwnerUUID");
-		}
-
-		if (compoundTag.contains("SoundEvent", 8)) {
-			this.sound = (SoundEvent)Registry.field_11156.getOrEmpty(new Identifier(compoundTag.getString("SoundEvent"))).orElse(this.getHitSound());
-		}
-
-		this.setShotFromCrossbow(compoundTag.getBoolean("ShotFromCrossbow"));
-	}
-
 	public void setOwner(@Nullable Entity entity) {
-		this.ownerUuid = entity == null ? null : entity.getUuid();
-		if (entity instanceof PlayerEntity) {
-			this.pickupType = ((PlayerEntity)entity).abilities.creativeMode
-				? ProjectileEntity.PickupPermission.field_7594
-				: ProjectileEntity.PickupPermission.field_7593;
+		if (entity != null) {
+			this.ownerUuid = entity.getUuid();
+			this.ownerEntityId = entity.getEntityId();
 		}
 	}
 
 	@Nullable
 	public Entity getOwner() {
-		return this.ownerUuid != null && this.world instanceof ServerWorld ? ((ServerWorld)this.world).getEntity(this.ownerUuid) : null;
-	}
-
-	@Override
-	public void onPlayerCollision(PlayerEntity playerEntity) {
-		if (!this.world.isClient && (this.inGround || this.isNoClip()) && this.shake <= 0) {
-			boolean bl = this.pickupType == ProjectileEntity.PickupPermission.field_7593
-				|| this.pickupType == ProjectileEntity.PickupPermission.field_7594 && playerEntity.abilities.creativeMode
-				|| this.isNoClip() && this.getOwner().getUuid() == playerEntity.getUuid();
-			if (this.pickupType == ProjectileEntity.PickupPermission.field_7593 && !playerEntity.inventory.insertStack(this.asItemStack())) {
-				bl = false;
-			}
-
-			if (bl) {
-				playerEntity.sendPickup(this, 1);
-				this.remove();
-			}
-		}
-	}
-
-	protected abstract ItemStack asItemStack();
-
-	@Override
-	protected boolean canClimb() {
-		return false;
-	}
-
-	public void setDamage(double d) {
-		this.damage = d;
-	}
-
-	public double getDamage() {
-		return this.damage;
-	}
-
-	public void setPunch(int i) {
-		this.punch = i;
-	}
-
-	@Override
-	public boolean isAttackable() {
-		return false;
-	}
-
-	@Override
-	protected float getEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		return 0.0F;
-	}
-
-	public void setCritical(boolean bl) {
-		this.setProjectileFlag(1, bl);
-	}
-
-	public void setPierceLevel(byte b) {
-		this.dataTracker.set(PIERCE_LEVEL, b);
-	}
-
-	private void setProjectileFlag(int i, boolean bl) {
-		byte b = this.dataTracker.get(PROJECTILE_FLAGS);
-		if (bl) {
-			this.dataTracker.set(PROJECTILE_FLAGS, (byte)(b | i));
+		if (this.ownerUuid != null && this.world instanceof ServerWorld) {
+			return ((ServerWorld)this.world).getEntity(this.ownerUuid);
 		} else {
-			this.dataTracker.set(PROJECTILE_FLAGS, (byte)(b & ~i));
+			return this.ownerEntityId != 0 ? this.world.getEntityById(this.ownerEntityId) : null;
 		}
-	}
-
-	public boolean isCritical() {
-		byte b = this.dataTracker.get(PROJECTILE_FLAGS);
-		return (b & 1) != 0;
-	}
-
-	public boolean isShotFromCrossbow() {
-		byte b = this.dataTracker.get(PROJECTILE_FLAGS);
-		return (b & 4) != 0;
-	}
-
-	public byte getPierceLevel() {
-		return this.dataTracker.get(PIERCE_LEVEL);
-	}
-
-	public void applyEnchantmentEffects(LivingEntity livingEntity, float f) {
-		int i = EnchantmentHelper.getEquipmentLevel(Enchantments.field_9103, livingEntity);
-		int j = EnchantmentHelper.getEquipmentLevel(Enchantments.field_9116, livingEntity);
-		this.setDamage((double)(f * 2.0F) + this.random.nextGaussian() * 0.25 + (double)((float)this.world.getDifficulty().getId() * 0.11F));
-		if (i > 0) {
-			this.setDamage(this.getDamage() + (double)i * 0.5 + 0.5);
-		}
-
-		if (j > 0) {
-			this.setPunch(j);
-		}
-
-		if (EnchantmentHelper.getEquipmentLevel(Enchantments.field_9126, livingEntity) > 0) {
-			this.setOnFireFor(100);
-		}
-	}
-
-	protected float getDragInWater() {
-		return 0.6F;
-	}
-
-	public void setNoClip(boolean bl) {
-		this.noClip = bl;
-		this.setProjectileFlag(2, bl);
-	}
-
-	public boolean isNoClip() {
-		return !this.world.isClient ? this.noClip : (this.dataTracker.get(PROJECTILE_FLAGS) & 2) != 0;
-	}
-
-	public void setShotFromCrossbow(boolean bl) {
-		this.setProjectileFlag(4, bl);
 	}
 
 	@Override
-	public Packet<?> createSpawnPacket() {
-		Entity entity = this.getOwner();
-		return new EntitySpawnS2CPacket(this, entity == null ? 0 : entity.getEntityId());
+	protected void writeCustomDataToTag(CompoundTag tag) {
+		if (this.ownerUuid != null) {
+			tag.putUuid("Owner", this.ownerUuid);
+		}
+
+		if (this.leftOwner) {
+			tag.putBoolean("LeftOwner", true);
+		}
 	}
 
-	public static enum PickupPermission {
-		field_7592,
-		field_7593,
-		field_7594;
-
-		public static ProjectileEntity.PickupPermission fromOrdinal(int i) {
-			if (i < 0 || i > values().length) {
-				i = 0;
-			}
-
-			return values()[i];
+	@Override
+	protected void readCustomDataFromTag(CompoundTag tag) {
+		if (tag.containsUuid("Owner")) {
+			this.ownerUuid = tag.getUuid("Owner");
 		}
+
+		this.leftOwner = tag.getBoolean("LeftOwner");
+	}
+
+	@Override
+	public void tick() {
+		if (!this.leftOwner) {
+			this.leftOwner = this.method_26961();
+		}
+
+		super.tick();
+	}
+
+	private boolean method_26961() {
+		Entity entity = this.getOwner();
+		if (entity != null) {
+			for (Entity entity2 : this.world
+				.getOtherEntities(this, this.getBoundingBox().stretch(this.getVelocity()).expand(1.0), entityx -> !entityx.isSpectator() && entityx.collides())) {
+				if (entity2.getRootVehicle() == entity.getRootVehicle()) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	public void setVelocity(double x, double y, double z, float speed, float divergence) {
+		Vec3d vec3d = new Vec3d(x, y, z)
+			.normalize()
+			.add(
+				this.random.nextGaussian() * 0.0075F * (double)divergence,
+				this.random.nextGaussian() * 0.0075F * (double)divergence,
+				this.random.nextGaussian() * 0.0075F * (double)divergence
+			)
+			.multiply((double)speed);
+		this.setVelocity(vec3d);
+		float f = MathHelper.sqrt(squaredHorizontalLength(vec3d));
+		this.yaw = (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI);
+		this.pitch = (float)(MathHelper.atan2(vec3d.y, (double)f) * 180.0F / (float)Math.PI);
+		this.prevYaw = this.yaw;
+		this.prevPitch = this.pitch;
+	}
+
+	public void setProperties(Entity user, float pitch, float yaw, float roll, float modifierZ, float modifierXYZ) {
+		float f = -MathHelper.sin(yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(pitch * (float) (Math.PI / 180.0));
+		float g = -MathHelper.sin((pitch + roll) * (float) (Math.PI / 180.0));
+		float h = MathHelper.cos(yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(pitch * (float) (Math.PI / 180.0));
+		this.setVelocity((double)f, (double)g, (double)h, modifierZ, modifierXYZ);
+		Vec3d vec3d = user.getVelocity();
+		this.setVelocity(this.getVelocity().add(vec3d.x, user.isOnGround() ? 0.0 : vec3d.y, vec3d.z));
+	}
+
+	protected void onCollision(HitResult hitResult) {
+		HitResult.Type type = hitResult.getType();
+		if (type == HitResult.Type.ENTITY) {
+			this.onEntityHit((EntityHitResult)hitResult);
+		} else if (type == HitResult.Type.BLOCK) {
+			this.onBlockHit((BlockHitResult)hitResult);
+		}
+	}
+
+	protected void onEntityHit(EntityHitResult entityHitResult) {
+	}
+
+	protected void onBlockHit(BlockHitResult blockHitResult) {
+		BlockState blockState = this.world.getBlockState(blockHitResult.getBlockPos());
+		blockState.onProjectileHit(this.world, blockState, blockHitResult, this);
+	}
+
+	@Override
+	public void setVelocityClient(double x, double y, double z) {
+		this.setVelocity(x, y, z);
+		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
+			float f = MathHelper.sqrt(x * x + z * z);
+			this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
+			this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
+			this.prevPitch = this.pitch;
+			this.prevYaw = this.yaw;
+			this.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), this.yaw, this.pitch);
+		}
+	}
+
+	protected boolean method_26958(Entity entity) {
+		if (!entity.isSpectator() && entity.isAlive() && entity.collides()) {
+			Entity entity2 = this.getOwner();
+			return entity2 == null || this.leftOwner || !entity2.isConnectedThroughVehicle(entity);
+		} else {
+			return false;
+		}
+	}
+
+	protected void method_26962() {
+		Vec3d vec3d = this.getVelocity();
+		float f = MathHelper.sqrt(squaredHorizontalLength(vec3d));
+		this.pitch = updateRotation(this.prevPitch, (float)(MathHelper.atan2(vec3d.y, (double)f) * 180.0F / (float)Math.PI));
+		this.yaw = updateRotation(this.prevYaw, (float)(MathHelper.atan2(vec3d.x, vec3d.z) * 180.0F / (float)Math.PI));
+	}
+
+	protected static float updateRotation(float f, float g) {
+		while (g - f < -180.0F) {
+			f -= 360.0F;
+		}
+
+		while (g - f >= 180.0F) {
+			f += 360.0F;
+		}
+
+		return MathHelper.lerp(0.2F, f, g);
 	}
 }

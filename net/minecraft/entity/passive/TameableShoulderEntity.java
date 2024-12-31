@@ -12,11 +12,11 @@ public abstract class TameableShoulderEntity extends TameableEntity {
 		super(entityType, world);
 	}
 
-	public boolean mountOnto(ServerPlayerEntity serverPlayerEntity) {
+	public boolean mountOnto(ServerPlayerEntity player) {
 		CompoundTag compoundTag = new CompoundTag();
 		compoundTag.putString("id", this.getSavedEntityId());
 		this.toTag(compoundTag);
-		if (serverPlayerEntity.addShoulderEntity(compoundTag)) {
+		if (player.addShoulderEntity(compoundTag)) {
 			this.remove();
 			return true;
 		} else {

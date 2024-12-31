@@ -4,19 +4,19 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Dynamic;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.datafixer.TypeReferences;
 
 public class PointOfInterestReorganizationFix extends DataFix {
-	public PointOfInterestReorganizationFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public PointOfInterestReorganizationFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	protected TypeRewriteRule makeRule() {
@@ -33,7 +33,7 @@ public class PointOfInterestReorganizationFix extends DataFix {
 
 		for (int i = 0; i < 16; i++) {
 			String string = String.valueOf(i);
-			Optional<Dynamic<T>> optional = dynamic.get(string).get();
+			Optional<Dynamic<T>> optional = dynamic.get(string).result();
 			if (optional.isPresent()) {
 				Dynamic<T> dynamic2 = (Dynamic<T>)optional.get();
 				Dynamic<T> dynamic3 = dynamic.createMap(ImmutableMap.of(dynamic.createString("Records"), dynamic2));

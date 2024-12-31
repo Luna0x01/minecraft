@@ -4,11 +4,11 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Optional;
 
-public class BooleanProperty extends AbstractProperty<Boolean> {
+public class BooleanProperty extends Property<Boolean> {
 	private final ImmutableSet<Boolean> values = ImmutableSet.of(true, false);
 
-	protected BooleanProperty(String string) {
-		super(string, Boolean.class);
+	protected BooleanProperty(String name) {
+		super(name, Boolean.class);
 	}
 
 	@Override
@@ -16,13 +16,13 @@ public class BooleanProperty extends AbstractProperty<Boolean> {
 		return this.values;
 	}
 
-	public static BooleanProperty of(String string) {
-		return new BooleanProperty(string);
+	public static BooleanProperty of(String name) {
+		return new BooleanProperty(name);
 	}
 
 	@Override
-	public Optional<Boolean> parse(String string) {
-		return !"true".equals(string) && !"false".equals(string) ? Optional.empty() : Optional.of(Boolean.valueOf(string));
+	public Optional<Boolean> parse(String name) {
+		return !"true".equals(name) && !"false".equals(name) ? Optional.empty() : Optional.of(Boolean.valueOf(name));
 	}
 
 	public String name(Boolean boolean_) {

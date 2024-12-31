@@ -10,13 +10,11 @@ import net.minecraft.util.Identifier;
 
 public class DonkeyEntityRenderer<T extends AbstractDonkeyEntity> extends HorseBaseEntityRenderer<T, DonkeyEntityModel<T>> {
 	private static final Map<EntityType<?>, Identifier> TEXTURES = Maps.newHashMap(
-		ImmutableMap.of(
-			EntityType.field_6067, new Identifier("textures/entity/horse/donkey.png"), EntityType.field_6057, new Identifier("textures/entity/horse/mule.png")
-		)
+		ImmutableMap.of(EntityType.DONKEY, new Identifier("textures/entity/horse/donkey.png"), EntityType.MULE, new Identifier("textures/entity/horse/mule.png"))
 	);
 
-	public DonkeyEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, float f) {
-		super(entityRenderDispatcher, new DonkeyEntityModel<>(0.0F), f);
+	public DonkeyEntityRenderer(EntityRenderDispatcher dispatcher, float scale) {
+		super(dispatcher, new DonkeyEntityModel<>(0.0F), scale);
 	}
 
 	public Identifier getTexture(T abstractDonkeyEntity) {

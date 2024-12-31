@@ -1,7 +1,6 @@
 package net.minecraft.entity;
 
 import java.util.Map.Entry;
-import net.minecraft.client.network.packet.ExperienceOrbSpawnS2CPacket;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.damage.DamageSource;
@@ -9,6 +8,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Packet;
+import net.minecraft.network.packet.s2c.play.ExperienceOrbSpawnS2CPacket;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
@@ -24,12 +24,12 @@ public class ExperienceOrbEntity extends Entity {
 	private PlayerEntity target;
 	private int lastTargetUpdateTick;
 
-	public ExperienceOrbEntity(World world, double d, double e, double f, int i) {
-		this(EntityType.field_6044, world);
-		this.updatePosition(d, e, f);
+	public ExperienceOrbEntity(World world, double x, double y, double z, int amount) {
+		this(EntityType.EXPERIENCE_ORB, world);
+		this.updatePosition(x, y, z);
 		this.yaw = (float)(this.random.nextDouble() * 360.0);
 		this.setVelocity((this.random.nextDouble() * 0.2F - 0.1F) * 2.0, this.random.nextDouble() * 0.2 * 2.0, (this.random.nextDouble() * 0.2F - 0.1F) * 2.0);
-		this.amount = i;
+		this.amount = amount;
 	}
 
 	public ExperienceOrbEntity(EntityType<? extends ExperienceOrbEntity> entityType, World world) {
@@ -55,21 +55,21 @@ public class ExperienceOrbEntity extends Entity {
 		this.prevX = this.getX();
 		this.prevY = this.getY();
 		this.prevZ = this.getZ();
-		if (this.isInFluid(FluidTags.field_15517)) {
+		if (this.isSubmergedIn(FluidTags.WATER)) {
 			this.applyWaterMovement();
 		} else if (!this.hasNoGravity()) {
 			this.setVelocity(this.getVelocity().add(0.0, -0.03, 0.0));
 		}
 
-		if (this.world.getFluidState(new BlockPos(this)).matches(FluidTags.field_15518)) {
+		if (this.world.getFluidState(this.getBlockPos()).isIn(FluidTags.LAVA)) {
 			this.setVelocity(
 				(double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F), 0.2F, (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F)
 			);
-			this.playSound(SoundEvents.field_14821, 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
+			this.playSound(SoundEvents.ENTITY_GENERIC_BURN, 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
 		}
 
-		if (!this.world.doesNotCollide(this.getBoundingBox())) {
-			this.pushOutOfBlocks(this.getX(), (this.getBoundingBox().y1 + this.getBoundingBox().y2) / 2.0, this.getZ());
+		if (!this.world.isSpaceEmpty(this.getBoundingBox())) {
+			this.pushOutOfBlocks(this.getX(), (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.getZ());
 		}
 
 		double d = 8.0;
@@ -96,7 +96,7 @@ public class ExperienceOrbEntity extends Entity {
 			}
 		}
 
-		this.move(MovementType.field_6308, this.getVelocity());
+		this.move(MovementType.SELF, this.getVelocity());
 		float g = 0.98F;
 		if (this.onGround) {
 			g = this.world.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0, this.getZ())).getBlock().getSlipperiness() * 0.98F;
@@ -124,17 +124,12 @@ public class ExperienceOrbEntity extends Entity {
 	}
 
 	@Override
-	protected void burn(int i) {
-		this.damage(DamageSource.IN_FIRE, (float)i);
-	}
-
-	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
 			this.scheduleVelocityUpdate();
-			this.health = (int)((float)this.health - f);
+			this.health = (int)((float)this.health - amount);
 			if (this.health <= 0) {
 				this.remove();
 			}
@@ -144,26 +139,26 @@ public class ExperienceOrbEntity extends Entity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		compoundTag.putShort("Health", (short)this.health);
-		compoundTag.putShort("Age", (short)this.orbAge);
-		compoundTag.putShort("Value", (short)this.amount);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		tag.putShort("Health", (short)this.health);
+		tag.putShort("Age", (short)this.orbAge);
+		tag.putShort("Value", (short)this.amount);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		this.health = compoundTag.getShort("Health");
-		this.orbAge = compoundTag.getShort("Age");
-		this.amount = compoundTag.getShort("Value");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		this.health = tag.getShort("Health");
+		this.orbAge = tag.getShort("Age");
+		this.amount = tag.getShort("Value");
 	}
 
 	@Override
-	public void onPlayerCollision(PlayerEntity playerEntity) {
+	public void onPlayerCollision(PlayerEntity player) {
 		if (!this.world.isClient) {
-			if (this.pickupDelay == 0 && playerEntity.experiencePickUpDelay == 0) {
-				playerEntity.experiencePickUpDelay = 2;
-				playerEntity.sendPickup(this, 1);
-				Entry<EquipmentSlot, ItemStack> entry = EnchantmentHelper.getRandomEnchantedEquipment(Enchantments.field_9101, playerEntity);
+			if (this.pickupDelay == 0 && player.experiencePickUpDelay == 0) {
+				player.experiencePickUpDelay = 2;
+				player.sendPickup(this, 1);
+				Entry<EquipmentSlot, ItemStack> entry = EnchantmentHelper.chooseEquipmentWith(Enchantments.MENDING, player, ItemStack::isDamaged);
 				if (entry != null) {
 					ItemStack itemStack = (ItemStack)entry.getValue();
 					if (!itemStack.isEmpty() && itemStack.isDamaged()) {
@@ -174,7 +169,7 @@ public class ExperienceOrbEntity extends Entity {
 				}
 
 				if (this.amount > 0) {
-					playerEntity.addExperience(this.amount);
+					player.addExperience(this.amount);
 				}
 
 				this.remove();
@@ -182,12 +177,12 @@ public class ExperienceOrbEntity extends Entity {
 		}
 	}
 
-	private int getMendingRepairCost(int i) {
-		return i / 2;
+	private int getMendingRepairCost(int repairAmount) {
+		return repairAmount / 2;
 	}
 
-	private int getMendingRepairAmount(int i) {
-		return i * 2;
+	private int getMendingRepairAmount(int experienceAmount) {
+		return experienceAmount * 2;
 	}
 
 	public int getExperienceAmount() {
@@ -218,27 +213,27 @@ public class ExperienceOrbEntity extends Entity {
 		}
 	}
 
-	public static int roundToOrbSize(int i) {
-		if (i >= 2477) {
+	public static int roundToOrbSize(int value) {
+		if (value >= 2477) {
 			return 2477;
-		} else if (i >= 1237) {
+		} else if (value >= 1237) {
 			return 1237;
-		} else if (i >= 617) {
+		} else if (value >= 617) {
 			return 617;
-		} else if (i >= 307) {
+		} else if (value >= 307) {
 			return 307;
-		} else if (i >= 149) {
+		} else if (value >= 149) {
 			return 149;
-		} else if (i >= 73) {
+		} else if (value >= 73) {
 			return 73;
-		} else if (i >= 37) {
+		} else if (value >= 37) {
 			return 37;
-		} else if (i >= 17) {
+		} else if (value >= 17) {
 			return 17;
-		} else if (i >= 7) {
+		} else if (value >= 7) {
 			return 7;
 		} else {
-			return i >= 3 ? 3 : 1;
+			return value >= 3 ? 3 : 1;
 		}
 	}
 

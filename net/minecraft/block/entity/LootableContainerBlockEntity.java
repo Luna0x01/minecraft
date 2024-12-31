@@ -2,7 +2,7 @@ package net.minecraft.block.entity;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.container.Container;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
@@ -12,10 +12,13 @@ import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 
 public abstract class LootableContainerBlockEntity extends LockableContainerBlockEntity {
@@ -27,10 +30,10 @@ public abstract class LootableContainerBlockEntity extends LockableContainerBloc
 		super(blockEntityType);
 	}
 
-	public static void setLootTable(BlockView blockView, Random random, BlockPos blockPos, Identifier identifier) {
-		BlockEntity blockEntity = blockView.getBlockEntity(blockPos);
+	public static void setLootTable(BlockView world, Random random, BlockPos pos, Identifier id) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof LootableContainerBlockEntity) {
-			((LootableContainerBlockEntity)blockEntity).setLootTable(identifier, random.nextLong());
+			((LootableContainerBlockEntity)blockEntity).setLootTable(id, random.nextLong());
 		}
 	}
 
@@ -57,42 +60,46 @@ public abstract class LootableContainerBlockEntity extends LockableContainerBloc
 		}
 	}
 
-	public void checkLootInteraction(@Nullable PlayerEntity playerEntity) {
+	public void checkLootInteraction(@Nullable PlayerEntity player) {
 		if (this.lootTableId != null && this.world.getServer() != null) {
-			LootTable lootTable = this.world.getServer().getLootManager().getSupplier(this.lootTableId);
-			this.lootTableId = null;
-			LootContext.Builder builder = new LootContext.Builder((ServerWorld)this.world)
-				.put(LootContextParameters.field_1232, new BlockPos(this.pos))
-				.setRandom(this.lootTableSeed);
-			if (playerEntity != null) {
-				builder.setLuck(playerEntity.getLuck()).put(LootContextParameters.field_1226, playerEntity);
+			LootTable lootTable = this.world.getServer().getLootManager().getTable(this.lootTableId);
+			if (player instanceof ServerPlayerEntity) {
+				Criteria.PLAYER_GENERATES_CONTAINER_LOOT.test((ServerPlayerEntity)player, this.lootTableId);
 			}
 
-			lootTable.supplyInventory(this, builder.build(LootContextTypes.field_1179));
+			this.lootTableId = null;
+			LootContext.Builder builder = new LootContext.Builder((ServerWorld)this.world)
+				.parameter(LootContextParameters.ORIGIN, Vec3d.ofCenter(this.pos))
+				.random(this.lootTableSeed);
+			if (player != null) {
+				builder.luck(player.getLuck()).parameter(LootContextParameters.THIS_ENTITY, player);
+			}
+
+			lootTable.supplyInventory(this, builder.build(LootContextTypes.CHEST));
 		}
 	}
 
-	public void setLootTable(Identifier identifier, long l) {
-		this.lootTableId = identifier;
-		this.lootTableSeed = l;
+	public void setLootTable(Identifier id, long seed) {
+		this.lootTableId = id;
+		this.lootTableSeed = seed;
 	}
 
 	@Override
-	public boolean isInvEmpty() {
+	public boolean isEmpty() {
 		this.checkLootInteraction(null);
 		return this.getInvStackList().stream().allMatch(ItemStack::isEmpty);
 	}
 
 	@Override
-	public ItemStack getInvStack(int i) {
+	public ItemStack getStack(int slot) {
 		this.checkLootInteraction(null);
-		return this.getInvStackList().get(i);
+		return this.getInvStackList().get(slot);
 	}
 
 	@Override
-	public ItemStack takeInvStack(int i, int j) {
+	public ItemStack removeStack(int slot, int amount) {
 		this.checkLootInteraction(null);
-		ItemStack itemStack = Inventories.splitStack(this.getInvStackList(), i, j);
+		ItemStack itemStack = Inventories.splitStack(this.getInvStackList(), slot, amount);
 		if (!itemStack.isEmpty()) {
 			this.markDirty();
 		}
@@ -101,27 +108,27 @@ public abstract class LootableContainerBlockEntity extends LockableContainerBloc
 	}
 
 	@Override
-	public ItemStack removeInvStack(int i) {
+	public ItemStack removeStack(int slot) {
 		this.checkLootInteraction(null);
-		return Inventories.removeStack(this.getInvStackList(), i);
+		return Inventories.removeStack(this.getInvStackList(), slot);
 	}
 
 	@Override
-	public void setInvStack(int i, ItemStack itemStack) {
+	public void setStack(int slot, ItemStack stack) {
 		this.checkLootInteraction(null);
-		this.getInvStackList().set(i, itemStack);
-		if (itemStack.getCount() > this.getInvMaxStackAmount()) {
-			itemStack.setCount(this.getInvMaxStackAmount());
+		this.getInvStackList().set(slot, stack);
+		if (stack.getCount() > this.getMaxCountPerStack()) {
+			stack.setCount(this.getMaxCountPerStack());
 		}
 
 		this.markDirty();
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity playerEntity) {
+	public boolean canPlayerUse(PlayerEntity player) {
 		return this.world.getBlockEntity(this.pos) != this
 			? false
-			: !(playerEntity.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
+			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
 	}
 
 	@Override
@@ -131,19 +138,19 @@ public abstract class LootableContainerBlockEntity extends LockableContainerBloc
 
 	protected abstract DefaultedList<ItemStack> getInvStackList();
 
-	protected abstract void setInvStackList(DefaultedList<ItemStack> defaultedList);
+	protected abstract void setInvStackList(DefaultedList<ItemStack> list);
 
 	@Override
-	public boolean checkUnlocked(PlayerEntity playerEntity) {
-		return super.checkUnlocked(playerEntity) && (this.lootTableId == null || !playerEntity.isSpectator());
+	public boolean checkUnlocked(PlayerEntity player) {
+		return super.checkUnlocked(player) && (this.lootTableId == null || !player.isSpectator());
 	}
 
 	@Nullable
 	@Override
-	public Container createMenu(int i, PlayerInventory playerInventory, PlayerEntity playerEntity) {
+	public ScreenHandler createMenu(int i, PlayerInventory playerInventory, PlayerEntity playerEntity) {
 		if (this.checkUnlocked(playerEntity)) {
 			this.checkLootInteraction(playerInventory.player);
-			return this.createContainer(i, playerInventory);
+			return this.createScreenHandler(i, playerInventory);
 		} else {
 			return null;
 		}

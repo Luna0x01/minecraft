@@ -1,55 +1,35 @@
 package net.minecraft.world.gen.decorator;
 
-import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
 import java.util.Random;
-import net.minecraft.util.Identifier;
+import java.util.stream.Stream;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
-import net.minecraft.world.gen.feature.ConfiguredFeature;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.FeatureConfig;
 
-public class ConfiguredDecorator<DC extends DecoratorConfig> {
-	public final Decorator<DC> decorator;
-	public final DC config;
+public class ConfiguredDecorator<DC extends DecoratorConfig> implements Decoratable<ConfiguredDecorator<?>> {
+	public static final Codec<ConfiguredDecorator<?>> CODEC = Registry.DECORATOR
+		.dispatch("type", configuredDecorator -> configuredDecorator.decorator, Decorator::getCodec);
+	private final Decorator<DC> decorator;
+	private final DC config;
 
-	public ConfiguredDecorator(Decorator<DC> decorator, Dynamic<?> dynamic) {
-		this(decorator, decorator.deserialize(dynamic));
-	}
-
-	public ConfiguredDecorator(Decorator<DC> decorator, DC decoratorConfig) {
+	public ConfiguredDecorator(Decorator<DC> decorator, DC config) {
 		this.decorator = decorator;
-		this.config = decoratorConfig;
+		this.config = config;
 	}
 
-	public <FC extends FeatureConfig, F extends Feature<FC>> boolean generate(
-		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, ConfiguredFeature<FC, F> configuredFeature
-	) {
-		return this.decorator.generate(iWorld, chunkGenerator, random, blockPos, this.config, configuredFeature);
+	public Stream<BlockPos> getPositions(DecoratorContext context, Random random, BlockPos pos) {
+		return this.decorator.getPositions(context, random, this.config, pos);
 	}
 
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		return new Dynamic(
-			dynamicOps,
-			dynamicOps.createMap(
-				ImmutableMap.of(
-					dynamicOps.createString("name"),
-					dynamicOps.createString(Registry.field_11148.getId(this.decorator).toString()),
-					dynamicOps.createString("config"),
-					this.config.serialize(dynamicOps).getValue()
-				)
-			)
-		);
+	public String toString() {
+		return String.format("[%s %s]", Registry.DECORATOR.getId(this.decorator), this.config);
 	}
 
-	public static <T> ConfiguredDecorator<?> deserialize(Dynamic<T> dynamic) {
-		Decorator<? extends DecoratorConfig> decorator = (Decorator<? extends DecoratorConfig>)Registry.field_11148
-			.get(new Identifier(dynamic.get("name").asString("")));
-		return new ConfiguredDecorator<>(decorator, dynamic.get("config").orElseEmptyMap());
+	public ConfiguredDecorator<?> decorate(ConfiguredDecorator<?> configuredDecorator) {
+		return new ConfiguredDecorator<>(Decorator.DECORATED, new DecoratedDecoratorConfig(configuredDecorator, this));
+	}
+
+	public DC getConfig() {
+		return this.config;
 	}
 }

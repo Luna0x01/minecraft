@@ -8,8 +8,8 @@ public class SitOnOwnerShoulderGoal extends Goal {
 	private ServerPlayerEntity owner;
 	private boolean mounted;
 
-	public SitOnOwnerShoulderGoal(TameableShoulderEntity tameableShoulderEntity) {
-		this.tameable = tameableShoulderEntity;
+	public SitOnOwnerShoulderGoal(TameableShoulderEntity tameable) {
+		this.tameable = tameable;
 	}
 
 	@Override
@@ -32,7 +32,7 @@ public class SitOnOwnerShoulderGoal extends Goal {
 
 	@Override
 	public void tick() {
-		if (!this.mounted && !this.tameable.isSitting() && !this.tameable.isLeashed()) {
+		if (!this.mounted && !this.tameable.isInSittingPose() && !this.tameable.isLeashed()) {
 			if (this.tameable.getBoundingBox().intersects(this.owner.getBoundingBox())) {
 				this.mounted = this.tameable.mountOnto(this.owner);
 			}

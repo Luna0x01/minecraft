@@ -7,7 +7,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import javax.annotation.Nullable;
 import net.minecraft.entity.EntityType;
-import net.minecraft.tag.EntityTypeTags;
+import net.minecraft.tag.ServerTagManagerHolder;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -16,7 +16,7 @@ import net.minecraft.util.registry.Registry;
 public abstract class EntityTypePredicate {
 	public static final EntityTypePredicate ANY = new EntityTypePredicate() {
 		@Override
-		public boolean matches(EntityType<?> entityType) {
+		public boolean matches(EntityType<?> type) {
 			return true;
 		}
 
@@ -27,23 +27,22 @@ public abstract class EntityTypePredicate {
 	};
 	private static final Joiner COMMA_JOINER = Joiner.on(", ");
 
-	public abstract boolean matches(EntityType<?> entityType);
+	public abstract boolean matches(EntityType<?> type);
 
 	public abstract JsonElement toJson();
 
-	public static EntityTypePredicate deserialize(@Nullable JsonElement jsonElement) {
-		if (jsonElement != null && !jsonElement.isJsonNull()) {
-			String string = JsonHelper.asString(jsonElement, "type");
+	public static EntityTypePredicate fromJson(@Nullable JsonElement json) {
+		if (json != null && !json.isJsonNull()) {
+			String string = JsonHelper.asString(json, "type");
 			if (string.startsWith("#")) {
 				Identifier identifier = new Identifier(string.substring(1));
-				Tag<EntityType<?>> tag = EntityTypeTags.getContainer().getOrCreate(identifier);
-				return new EntityTypePredicate.Tagged(tag);
+				return new EntityTypePredicate.Tagged(ServerTagManagerHolder.getTagManager().getEntityTypes().getTagOrEmpty(identifier));
 			} else {
 				Identifier identifier2 = new Identifier(string);
-				EntityType<?> entityType = (EntityType<?>)Registry.field_11145
+				EntityType<?> entityType = (EntityType<?>)Registry.ENTITY_TYPE
 					.getOrEmpty(identifier2)
 					.orElseThrow(
-						() -> new JsonSyntaxException("Unknown entity type '" + identifier2 + "', valid types are: " + COMMA_JOINER.join(Registry.field_11145.getIds()))
+						() -> new JsonSyntaxException("Unknown entity type '" + identifier2 + "', valid types are: " + COMMA_JOINER.join(Registry.ENTITY_TYPE.getIds()))
 					);
 				return new EntityTypePredicate.Single(entityType);
 			}
@@ -52,8 +51,8 @@ public abstract class EntityTypePredicate {
 		}
 	}
 
-	public static EntityTypePredicate create(EntityType<?> entityType) {
-		return new EntityTypePredicate.Single(entityType);
+	public static EntityTypePredicate create(EntityType<?> type) {
+		return new EntityTypePredicate.Single(type);
 	}
 
 	public static EntityTypePredicate create(Tag<EntityType<?>> tag) {
@@ -63,18 +62,18 @@ public abstract class EntityTypePredicate {
 	static class Single extends EntityTypePredicate {
 		private final EntityType<?> type;
 
-		public Single(EntityType<?> entityType) {
-			this.type = entityType;
+		public Single(EntityType<?> type) {
+			this.type = type;
 		}
 
 		@Override
-		public boolean matches(EntityType<?> entityType) {
-			return this.type == entityType;
+		public boolean matches(EntityType<?> type) {
+			return this.type == type;
 		}
 
 		@Override
 		public JsonElement toJson() {
-			return new JsonPrimitive(Registry.field_11145.getId(this.type).toString());
+			return new JsonPrimitive(Registry.ENTITY_TYPE.getId(this.type).toString());
 		}
 	}
 
@@ -86,13 +85,13 @@ public abstract class EntityTypePredicate {
 		}
 
 		@Override
-		public boolean matches(EntityType<?> entityType) {
-			return this.tag.contains(entityType);
+		public boolean matches(EntityType<?> type) {
+			return this.tag.contains(type);
 		}
 
 		@Override
 		public JsonElement toJson() {
-			return new JsonPrimitive("#" + this.tag.getId().toString());
+			return new JsonPrimitive("#" + ServerTagManagerHolder.getTagManager().getEntityTypes().getTagId(this.tag));
 		}
 	}
 }

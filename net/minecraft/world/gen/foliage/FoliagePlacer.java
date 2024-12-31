@@ -1,85 +1,140 @@
 package net.minecraft.world.gen.foliage;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.datafixers.Products.P2;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder.Instance;
+import com.mojang.serialization.codecs.RecordCodecBuilder.Mu;
 import java.util.Random;
 import java.util.Set;
-import net.minecraft.util.DynamicSerializable;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.ModifiableTestableWorld;
-import net.minecraft.world.gen.feature.AbstractTreeFeature;
-import net.minecraft.world.gen.feature.BranchedTreeFeatureConfig;
+import net.minecraft.world.gen.UniformIntDistribution;
+import net.minecraft.world.gen.feature.TreeFeature;
+import net.minecraft.world.gen.feature.TreeFeatureConfig;
 
-public abstract class FoliagePlacer implements DynamicSerializable {
-	protected final int radius;
-	protected final int randomRadius;
-	protected final FoliagePlacerType<?> type;
+public abstract class FoliagePlacer {
+	public static final Codec<FoliagePlacer> TYPE_CODEC = Registry.FOLIAGE_PLACER_TYPE.dispatch(FoliagePlacer::getType, FoliagePlacerType::getCodec);
+	protected final UniformIntDistribution radius;
+	protected final UniformIntDistribution offset;
 
-	public FoliagePlacer(int i, int j, FoliagePlacerType<?> foliagePlacerType) {
-		this.radius = i;
-		this.randomRadius = j;
-		this.type = foliagePlacerType;
+	protected static <P extends FoliagePlacer> P2<Mu<P>, UniformIntDistribution, UniformIntDistribution> fillFoliagePlacerFields(Instance<P> instance) {
+		return instance.group(
+			UniformIntDistribution.createValidatedCodec(0, 8, 8).fieldOf("radius").forGetter(foliagePlacer -> foliagePlacer.radius),
+			UniformIntDistribution.createValidatedCodec(0, 8, 8).fieldOf("offset").forGetter(foliagePlacer -> foliagePlacer.offset)
+		);
 	}
 
-	public abstract void generate(
-		ModifiableTestableWorld modifiableTestableWorld,
+	public FoliagePlacer(UniformIntDistribution radius, UniformIntDistribution offset) {
+		this.radius = radius;
+		this.offset = offset;
+	}
+
+	protected abstract FoliagePlacerType<?> getType();
+
+	public void generate(
+		ModifiableTestableWorld world,
 		Random random,
-		BranchedTreeFeatureConfig branchedTreeFeatureConfig,
-		int i,
-		int j,
-		int k,
-		BlockPos blockPos,
-		Set<BlockPos> set
+		TreeFeatureConfig config,
+		int trunkHeight,
+		FoliagePlacer.TreeNode treeNode,
+		int foliageHeight,
+		int radius,
+		Set<BlockPos> leaves,
+		BlockBox box
+	) {
+		this.generate(world, random, config, trunkHeight, treeNode, foliageHeight, radius, leaves, this.getRandomOffset(random), box);
+	}
+
+	protected abstract void generate(
+		ModifiableTestableWorld world,
+		Random random,
+		TreeFeatureConfig config,
+		int trunkHeight,
+		FoliagePlacer.TreeNode treeNode,
+		int foliageHeight,
+		int radius,
+		Set<BlockPos> leaves,
+		int offset,
+		BlockBox box
 	);
 
-	public abstract int getRadius(Random random, int i, int j, BranchedTreeFeatureConfig branchedTreeFeatureConfig);
+	public abstract int getRandomHeight(Random random, int trunkHeight, TreeFeatureConfig config);
 
-	protected abstract boolean method_23451(Random random, int i, int j, int k, int l, int m);
+	public int getRandomRadius(Random random, int baseHeight) {
+		return this.radius.getValue(random);
+	}
 
-	public abstract int method_23447(int i, int j, int k, int l);
+	private int getRandomOffset(Random random) {
+		return this.offset.getValue(random);
+	}
 
-	protected void generate(
-		ModifiableTestableWorld modifiableTestableWorld,
+	protected abstract boolean isInvalidForLeaves(Random random, int baseHeight, int dx, int y, int dz, boolean giantTrunk);
+
+	protected boolean isPositionInvalid(Random random, int dx, int y, int dz, int radius, boolean giantTrunk) {
+		int i;
+		int j;
+		if (giantTrunk) {
+			i = Math.min(Math.abs(dx), Math.abs(dx - 1));
+			j = Math.min(Math.abs(dz), Math.abs(dz - 1));
+		} else {
+			i = Math.abs(dx);
+			j = Math.abs(dz);
+		}
+
+		return this.isInvalidForLeaves(random, i, y, j, radius, giantTrunk);
+	}
+
+	protected void generateSquare(
+		ModifiableTestableWorld world,
 		Random random,
-		BranchedTreeFeatureConfig branchedTreeFeatureConfig,
-		int i,
-		BlockPos blockPos,
-		int j,
-		int k,
-		Set<BlockPos> set
+		TreeFeatureConfig config,
+		BlockPos pos,
+		int radius,
+		Set<BlockPos> leaves,
+		int y,
+		boolean giantTrunk,
+		BlockBox box
 	) {
+		int i = giantTrunk ? 1 : 0;
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int l = -k; l <= k; l++) {
-			for (int m = -k; m <= k; m++) {
-				if (!this.method_23451(random, i, l, j, m, k)) {
-					mutable.set(l + blockPos.getX(), j + blockPos.getY(), m + blockPos.getZ());
-					this.method_23450(modifiableTestableWorld, random, mutable, branchedTreeFeatureConfig, set);
+		for (int j = -radius; j <= radius + i; j++) {
+			for (int k = -radius; k <= radius + i; k++) {
+				if (!this.isPositionInvalid(random, j, y, k, radius, giantTrunk)) {
+					mutable.set(pos, j, y, k);
+					if (TreeFeature.canReplace(world, mutable)) {
+						world.setBlockState(mutable, config.leavesProvider.getBlockState(random, mutable), 19);
+						box.encompass(new BlockBox(mutable, mutable));
+						leaves.add(mutable.toImmutable());
+					}
 				}
 			}
 		}
 	}
 
-	protected void method_23450(
-		ModifiableTestableWorld modifiableTestableWorld, Random random, BlockPos blockPos, BranchedTreeFeatureConfig branchedTreeFeatureConfig, Set<BlockPos> set
-	) {
-		if (AbstractTreeFeature.isAirOrLeaves(modifiableTestableWorld, blockPos)
-			|| AbstractTreeFeature.isReplaceablePlant(modifiableTestableWorld, blockPos)
-			|| AbstractTreeFeature.isWater(modifiableTestableWorld, blockPos)) {
-			modifiableTestableWorld.setBlockState(blockPos, branchedTreeFeatureConfig.leavesProvider.getBlockState(random, blockPos), 19);
-			set.add(blockPos.toImmutable());
-		}
-	}
+	public static final class TreeNode {
+		private final BlockPos center;
+		private final int foliageRadius;
+		private final boolean giantTrunk;
 
-	@Override
-	public <T> T serialize(DynamicOps<T> dynamicOps) {
-		Builder<T, T> builder = ImmutableMap.builder();
-		builder.put(dynamicOps.createString("type"), dynamicOps.createString(Registry.field_21447.getId(this.type).toString()))
-			.put(dynamicOps.createString("radius"), dynamicOps.createInt(this.radius))
-			.put(dynamicOps.createString("radius_random"), dynamicOps.createInt(this.randomRadius));
-		return (T)new Dynamic(dynamicOps, dynamicOps.createMap(builder.build())).getValue();
+		public TreeNode(BlockPos center, int foliageRadius, boolean giantTrunk) {
+			this.center = center;
+			this.foliageRadius = foliageRadius;
+			this.giantTrunk = giantTrunk;
+		}
+
+		public BlockPos getCenter() {
+			return this.center;
+		}
+
+		public int getFoliageRadius() {
+			return this.foliageRadius;
+		}
+
+		public boolean isGiantTrunk() {
+			return this.giantTrunk;
+		}
 	}
 }

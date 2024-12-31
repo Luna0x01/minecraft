@@ -7,20 +7,24 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.util.Identifier;
 
 public class ExplosionDecayLootFunction extends ConditionalLootFunction {
-	private ExplosionDecayLootFunction(LootCondition[] lootConditions) {
-		super(lootConditions);
+	private ExplosionDecayLootFunction(LootCondition[] conditions) {
+		super(conditions);
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		Float float_ = lootContext.get(LootContextParameters.field_1225);
+	public LootFunctionType getType() {
+		return LootFunctionTypes.EXPLOSION_DECAY;
+	}
+
+	@Override
+	public ItemStack process(ItemStack stack, LootContext context) {
+		Float float_ = context.get(LootContextParameters.EXPLOSION_RADIUS);
 		if (float_ != null) {
-			Random random = lootContext.getRandom();
+			Random random = context.getRandom();
 			float f = 1.0F / float_;
-			int i = itemStack.getCount();
+			int i = stack.getCount();
 			int j = 0;
 
 			for (int k = 0; k < i; k++) {
@@ -29,21 +33,17 @@ public class ExplosionDecayLootFunction extends ConditionalLootFunction {
 				}
 			}
 
-			itemStack.setCount(j);
+			stack.setCount(j);
 		}
 
-		return itemStack;
+		return stack;
 	}
 
 	public static ConditionalLootFunction.Builder<?> builder() {
 		return builder(ExplosionDecayLootFunction::new);
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<ExplosionDecayLootFunction> {
-		protected Factory() {
-			super(new Identifier("explosion_decay"), ExplosionDecayLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<ExplosionDecayLootFunction> {
 		public ExplosionDecayLootFunction fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootCondition[] lootConditions) {
 			return new ExplosionDecayLootFunction(lootConditions);
 		}

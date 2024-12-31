@@ -1,11 +1,12 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import javax.annotation.Nullable;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer;
 import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
@@ -18,54 +19,71 @@ public class BredAnimalsCriterion extends AbstractCriterion<BredAnimalsCriterion
 		return ID;
 	}
 
-	public BredAnimalsCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		EntityPredicate entityPredicate = EntityPredicate.fromJson(jsonObject.get("parent"));
-		EntityPredicate entityPredicate2 = EntityPredicate.fromJson(jsonObject.get("partner"));
-		EntityPredicate entityPredicate3 = EntityPredicate.fromJson(jsonObject.get("child"));
-		return new BredAnimalsCriterion.Conditions(entityPredicate, entityPredicate2, entityPredicate3);
+	public BredAnimalsCriterion.Conditions conditionsFromJson(
+		JsonObject jsonObject, EntityPredicate.Extended extended, AdvancementEntityPredicateDeserializer advancementEntityPredicateDeserializer
+	) {
+		EntityPredicate.Extended extended2 = EntityPredicate.Extended.getInJson(jsonObject, "parent", advancementEntityPredicateDeserializer);
+		EntityPredicate.Extended extended3 = EntityPredicate.Extended.getInJson(jsonObject, "partner", advancementEntityPredicateDeserializer);
+		EntityPredicate.Extended extended4 = EntityPredicate.Extended.getInJson(jsonObject, "child", advancementEntityPredicateDeserializer);
+		return new BredAnimalsCriterion.Conditions(extended, extended2, extended3, extended4);
 	}
 
-	public void trigger(
-		ServerPlayerEntity serverPlayerEntity, AnimalEntity animalEntity, @Nullable AnimalEntity animalEntity2, @Nullable PassiveEntity passiveEntity
-	) {
-		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(serverPlayerEntity, animalEntity, animalEntity2, passiveEntity));
+	public void trigger(ServerPlayerEntity serverPlayerEntity, AnimalEntity animalEntity, AnimalEntity animalEntity2, @Nullable PassiveEntity passiveEntity) {
+		LootContext lootContext = EntityPredicate.createAdvancementEntityLootContext(serverPlayerEntity, animalEntity);
+		LootContext lootContext2 = EntityPredicate.createAdvancementEntityLootContext(serverPlayerEntity, animalEntity2);
+		LootContext lootContext3 = passiveEntity != null ? EntityPredicate.createAdvancementEntityLootContext(serverPlayerEntity, passiveEntity) : null;
+		this.test(serverPlayerEntity, conditions -> conditions.matches(lootContext, lootContext2, lootContext3));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
-		private final EntityPredicate parent;
-		private final EntityPredicate partner;
-		private final EntityPredicate child;
+		private final EntityPredicate.Extended parent;
+		private final EntityPredicate.Extended partner;
+		private final EntityPredicate.Extended child;
 
-		public Conditions(EntityPredicate entityPredicate, EntityPredicate entityPredicate2, EntityPredicate entityPredicate3) {
-			super(BredAnimalsCriterion.ID);
-			this.parent = entityPredicate;
-			this.partner = entityPredicate2;
-			this.child = entityPredicate3;
+		public Conditions(
+			EntityPredicate.Extended extended, EntityPredicate.Extended extended2, EntityPredicate.Extended extended3, EntityPredicate.Extended extended4
+		) {
+			super(BredAnimalsCriterion.ID, extended);
+			this.parent = extended2;
+			this.partner = extended3;
+			this.child = extended4;
 		}
 
 		public static BredAnimalsCriterion.Conditions any() {
-			return new BredAnimalsCriterion.Conditions(EntityPredicate.ANY, EntityPredicate.ANY, EntityPredicate.ANY);
+			return new BredAnimalsCriterion.Conditions(
+				EntityPredicate.Extended.EMPTY, EntityPredicate.Extended.EMPTY, EntityPredicate.Extended.EMPTY, EntityPredicate.Extended.EMPTY
+			);
 		}
 
 		public static BredAnimalsCriterion.Conditions create(EntityPredicate.Builder builder) {
-			return new BredAnimalsCriterion.Conditions(builder.build(), EntityPredicate.ANY, EntityPredicate.ANY);
+			return new BredAnimalsCriterion.Conditions(
+				EntityPredicate.Extended.EMPTY, EntityPredicate.Extended.EMPTY, EntityPredicate.Extended.EMPTY, EntityPredicate.Extended.ofLegacy(builder.build())
+			);
 		}
 
-		public boolean matches(
-			ServerPlayerEntity serverPlayerEntity, AnimalEntity animalEntity, @Nullable AnimalEntity animalEntity2, @Nullable PassiveEntity passiveEntity
+		public static BredAnimalsCriterion.Conditions method_29918(
+			EntityPredicate entityPredicate, EntityPredicate entityPredicate2, EntityPredicate entityPredicate3
 		) {
-			return !this.child.test(serverPlayerEntity, passiveEntity)
-				? false
-				: this.parent.test(serverPlayerEntity, animalEntity) && this.partner.test(serverPlayerEntity, animalEntity2)
-					|| this.parent.test(serverPlayerEntity, animalEntity2) && this.partner.test(serverPlayerEntity, animalEntity);
+			return new BredAnimalsCriterion.Conditions(
+				EntityPredicate.Extended.EMPTY,
+				EntityPredicate.Extended.ofLegacy(entityPredicate),
+				EntityPredicate.Extended.ofLegacy(entityPredicate2),
+				EntityPredicate.Extended.ofLegacy(entityPredicate3)
+			);
+		}
+
+		public boolean matches(LootContext lootContext, LootContext lootContext2, @Nullable LootContext lootContext3) {
+			return this.child == EntityPredicate.Extended.EMPTY || lootContext3 != null && this.child.test(lootContext3)
+				? this.parent.test(lootContext) && this.partner.test(lootContext2) || this.parent.test(lootContext2) && this.partner.test(lootContext)
+				: false;
 		}
 
 		@Override
-		public JsonElement toJson() {
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.add("parent", this.parent.serialize());
-			jsonObject.add("partner", this.partner.serialize());
-			jsonObject.add("child", this.child.serialize());
+		public JsonObject toJson(AdvancementEntityPredicateSerializer predicateSerializer) {
+			JsonObject jsonObject = super.toJson(predicateSerializer);
+			jsonObject.add("parent", this.parent.toJson(predicateSerializer));
+			jsonObject.add("partner", this.partner.toJson(predicateSerializer));
+			jsonObject.add("child", this.child.toJson(predicateSerializer));
 			return jsonObject;
 		}
 	}

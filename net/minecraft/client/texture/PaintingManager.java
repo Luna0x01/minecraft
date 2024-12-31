@@ -8,17 +8,17 @@ import net.minecraft.util.registry.Registry;
 public class PaintingManager extends SpriteAtlasHolder {
 	private static final Identifier PAINTING_BACK_ID = new Identifier("back");
 
-	public PaintingManager(TextureManager textureManager) {
-		super(textureManager, new Identifier("textures/atlas/paintings.png"), "painting");
+	public PaintingManager(TextureManager manager) {
+		super(manager, new Identifier("textures/atlas/paintings.png"), "painting");
 	}
 
 	@Override
 	protected Stream<Identifier> getSprites() {
-		return Stream.concat(Registry.field_11150.getIds().stream(), Stream.of(PAINTING_BACK_ID));
+		return Stream.concat(Registry.PAINTING_MOTIVE.getIds().stream(), Stream.of(PAINTING_BACK_ID));
 	}
 
-	public Sprite getPaintingSprite(PaintingMotive paintingMotive) {
-		return this.getSprite(Registry.field_11150.getId(paintingMotive));
+	public Sprite getPaintingSprite(PaintingMotive motive) {
+		return this.getSprite(Registry.PAINTING_MOTIVE.getId(motive));
 	}
 
 	public Sprite getBackSprite() {

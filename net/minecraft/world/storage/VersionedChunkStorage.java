@@ -10,9 +10,10 @@ import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.FeatureUpdater;
 import net.minecraft.world.PersistentStateManager;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 
 public class VersionedChunkStorage implements AutoCloseable {
 	private final StorageIoWorker worker;
@@ -20,35 +21,35 @@ public class VersionedChunkStorage implements AutoCloseable {
 	@Nullable
 	private FeatureUpdater featureUpdater;
 
-	public VersionedChunkStorage(File file, DataFixer dataFixer) {
+	public VersionedChunkStorage(File file, DataFixer dataFixer, boolean bl) {
 		this.dataFixer = dataFixer;
-		this.worker = new StorageIoWorker(new RegionBasedStorage(file), "chunk");
+		this.worker = new StorageIoWorker(file, bl, "chunk");
 	}
 
-	public CompoundTag updateChunkTag(DimensionType dimensionType, Supplier<PersistentStateManager> supplier, CompoundTag compoundTag) {
-		int i = getDataVersion(compoundTag);
+	public CompoundTag updateChunkTag(RegistryKey<World> registryKey, Supplier<PersistentStateManager> persistentStateManagerFactory, CompoundTag tag) {
+		int i = getDataVersion(tag);
 		int j = 1493;
 		if (i < 1493) {
-			compoundTag = NbtHelper.update(this.dataFixer, DataFixTypes.field_19214, compoundTag, i, 1493);
-			if (compoundTag.getCompound("Level").getBoolean("hasLegacyStructureData")) {
+			tag = NbtHelper.update(this.dataFixer, DataFixTypes.CHUNK, tag, i, 1493);
+			if (tag.getCompound("Level").getBoolean("hasLegacyStructureData")) {
 				if (this.featureUpdater == null) {
-					this.featureUpdater = FeatureUpdater.create(dimensionType, (PersistentStateManager)supplier.get());
+					this.featureUpdater = FeatureUpdater.create(registryKey, (PersistentStateManager)persistentStateManagerFactory.get());
 				}
 
-				compoundTag = this.featureUpdater.getUpdatedReferences(compoundTag);
+				tag = this.featureUpdater.getUpdatedReferences(tag);
 			}
 		}
 
-		compoundTag = NbtHelper.update(this.dataFixer, DataFixTypes.field_19214, compoundTag, Math.max(1493, i));
+		tag = NbtHelper.update(this.dataFixer, DataFixTypes.CHUNK, tag, Math.max(1493, i));
 		if (i < SharedConstants.getGameVersion().getWorldVersion()) {
-			compoundTag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
+			tag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
 		}
 
-		return compoundTag;
+		return tag;
 	}
 
-	public static int getDataVersion(CompoundTag compoundTag) {
-		return compoundTag.contains("DataVersion", 99) ? compoundTag.getInt("DataVersion") : -1;
+	public static int getDataVersion(CompoundTag tag) {
+		return tag.contains("DataVersion", 99) ? tag.getInt("DataVersion") : -1;
 	}
 
 	@Nullable

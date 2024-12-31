@@ -3,31 +3,15 @@ package net.minecraft.client.gui.screen.recipebook;
 import java.util.Set;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.item.Item;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public class BlastFurnaceRecipeBookScreen extends AbstractFurnaceRecipeBookScreen {
-	@Override
-	protected boolean isFilteringCraftable() {
-		return this.recipeBook.isBlastFurnaceFilteringCraftable();
-	}
+	private static final Text TOGGLE_BLASTABLE_RECIPES_TEXT = new TranslatableText("gui.recipebook.toggleRecipes.blastable");
 
 	@Override
-	protected void setFilteringCraftable(boolean bl) {
-		this.recipeBook.setBlastFurnaceFilteringCraftable(bl);
-	}
-
-	@Override
-	protected boolean isGuiOpen() {
-		return this.recipeBook.isBlastFurnaceGuiOpen();
-	}
-
-	@Override
-	protected void setGuiOpen(boolean bl) {
-		this.recipeBook.setBlastFurnaceGuiOpen(bl);
-	}
-
-	@Override
-	protected String getToggleCraftableButtonText() {
-		return "gui.recipebook.toggleRecipes.blastable";
+	protected Text getToggleCraftableButtonText() {
+		return TOGGLE_BLASTABLE_RECIPES_TEXT;
 	}
 
 	@Override

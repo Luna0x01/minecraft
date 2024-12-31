@@ -12,14 +12,14 @@ public class BreakDoorGoal extends DoorInteractGoal {
 	protected int prevBreakProgress = -1;
 	protected int maxProgress = -1;
 
-	public BreakDoorGoal(MobEntity mobEntity, Predicate<Difficulty> predicate) {
-		super(mobEntity);
-		this.difficultySufficientPredicate = predicate;
+	public BreakDoorGoal(MobEntity mob, Predicate<Difficulty> difficultySufficientPredicate) {
+		super(mob);
+		this.difficultySufficientPredicate = difficultySufficientPredicate;
 	}
 
-	public BreakDoorGoal(MobEntity mobEntity, int i, Predicate<Difficulty> predicate) {
-		this(mobEntity, predicate);
-		this.maxProgress = i;
+	public BreakDoorGoal(MobEntity mob, int maxProgress, Predicate<Difficulty> difficultySufficientPredicate) {
+		this(mob, difficultySufficientPredicate);
+		this.maxProgress = maxProgress;
 	}
 
 	protected int getMaxProgress() {
@@ -31,7 +31,7 @@ public class BreakDoorGoal extends DoorInteractGoal {
 		if (!super.canStart()) {
 			return false;
 		} else {
-			return !this.mob.world.getGameRules().getBoolean(GameRules.field_19388)
+			return !this.mob.world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)
 				? false
 				: this.isDifficultySufficient(this.mob.world.getDifficulty()) && !this.isDoorOpen();
 		}
@@ -61,8 +61,8 @@ public class BreakDoorGoal extends DoorInteractGoal {
 	public void tick() {
 		super.tick();
 		if (this.mob.getRandom().nextInt(20) == 0) {
-			this.mob.world.playLevelEvent(1019, this.doorPos, 0);
-			if (!this.mob.isHandSwinging) {
+			this.mob.world.syncWorldEvent(1019, this.doorPos, 0);
+			if (!this.mob.handSwinging) {
 				this.mob.swingHand(this.mob.getActiveHand());
 			}
 		}
@@ -76,8 +76,8 @@ public class BreakDoorGoal extends DoorInteractGoal {
 
 		if (this.breakProgress == this.getMaxProgress() && this.isDifficultySufficient(this.mob.world.getDifficulty())) {
 			this.mob.world.removeBlock(this.doorPos, false);
-			this.mob.world.playLevelEvent(1021, this.doorPos, 0);
-			this.mob.world.playLevelEvent(2001, this.doorPos, Block.getRawIdFromState(this.mob.world.getBlockState(this.doorPos)));
+			this.mob.world.syncWorldEvent(1021, this.doorPos, 0);
+			this.mob.world.syncWorldEvent(2001, this.doorPos, Block.getRawIdFromState(this.mob.world.getBlockState(this.doorPos)));
 		}
 	}
 

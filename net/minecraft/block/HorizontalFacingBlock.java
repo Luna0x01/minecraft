@@ -8,17 +8,17 @@ import net.minecraft.util.BlockRotation;
 public abstract class HorizontalFacingBlock extends Block {
 	public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
 
-	protected HorizontalFacingBlock(Block.Settings settings) {
+	protected HorizontalFacingBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
-		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
 	}
 
 	@Override
-	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
-		return blockState.rotate(blockMirror.getRotation(blockState.get(FACING)));
+	public BlockState mirror(BlockState state, BlockMirror mirror) {
+		return state.rotate(mirror.getRotation(state.get(FACING)));
 	}
 }

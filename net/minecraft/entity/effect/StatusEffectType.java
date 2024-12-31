@@ -3,14 +3,14 @@ package net.minecraft.entity.effect;
 import net.minecraft.util.Formatting;
 
 public enum StatusEffectType {
-	field_18271(Formatting.field_1078),
-	field_18272(Formatting.field_1061),
-	field_18273(Formatting.field_1078);
+	BENEFICIAL(Formatting.BLUE),
+	HARMFUL(Formatting.RED),
+	NEUTRAL(Formatting.BLUE);
 
 	private final Formatting formatting;
 
-	private StatusEffectType(Formatting formatting) {
-		this.formatting = formatting;
+	private StatusEffectType(Formatting format) {
+		this.formatting = format;
 	}
 
 	public Formatting getFormatting() {

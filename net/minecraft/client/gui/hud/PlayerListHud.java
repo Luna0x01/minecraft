@@ -12,12 +12,15 @@ import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.entity.PlayerModelPart;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
@@ -33,36 +36,40 @@ public class PlayerListHud extends DrawableHelper {
 	private long showTime;
 	private boolean visible;
 
-	public PlayerListHud(MinecraftClient minecraftClient, InGameHud inGameHud) {
-		this.client = minecraftClient;
+	public PlayerListHud(MinecraftClient client, InGameHud inGameHud) {
+		this.client = client;
 		this.inGameHud = inGameHud;
 	}
 
-	public Text getPlayerName(PlayerListEntry playerListEntry) {
-		return playerListEntry.getDisplayName() != null
-			? playerListEntry.getDisplayName()
-			: Team.modifyText(playerListEntry.getScoreboardTeam(), new LiteralText(playerListEntry.getProfile().getName()));
+	public Text getPlayerName(PlayerListEntry entry) {
+		return entry.getDisplayName() != null
+			? this.applyGameModeFormatting(entry, entry.getDisplayName().shallowCopy())
+			: this.applyGameModeFormatting(entry, Team.modifyText(entry.getScoreboardTeam(), new LiteralText(entry.getProfile().getName())));
 	}
 
-	public void tick(boolean bl) {
-		if (bl && !this.visible) {
+	private Text applyGameModeFormatting(PlayerListEntry entry, MutableText name) {
+		return entry.getGameMode() == GameMode.SPECTATOR ? name.formatted(Formatting.ITALIC) : name;
+	}
+
+	public void tick(boolean visible) {
+		if (visible && !this.visible) {
 			this.showTime = Util.getMeasuringTimeMs();
 		}
 
-		this.visible = bl;
+		this.visible = visible;
 	}
 
-	public void render(int i, Scoreboard scoreboard, @Nullable ScoreboardObjective scoreboardObjective) {
+	public void render(MatrixStack matrices, int i, Scoreboard scoreboard, @Nullable ScoreboardObjective objective) {
 		ClientPlayNetworkHandler clientPlayNetworkHandler = this.client.player.networkHandler;
 		List<PlayerListEntry> list = ENTRY_ORDERING.sortedCopy(clientPlayNetworkHandler.getPlayerList());
 		int j = 0;
 		int k = 0;
 
 		for (PlayerListEntry playerListEntry : list) {
-			int l = this.client.textRenderer.getStringWidth(this.getPlayerName(playerListEntry).asFormattedString());
+			int l = this.client.textRenderer.getWidth(this.getPlayerName(playerListEntry));
 			j = Math.max(j, l);
-			if (scoreboardObjective != null && scoreboardObjective.getRenderType() != ScoreboardCriterion.RenderType.field_1471) {
-				l = this.client.textRenderer.getStringWidth(" " + scoreboard.getPlayerScore(playerListEntry.getProfile().getName(), scoreboardObjective).getScore());
+			if (objective != null && objective.getRenderType() != ScoreboardCriterion.RenderType.HEARTS) {
+				l = this.client.textRenderer.getWidth(" " + scoreboard.getPlayerScore(playerListEntry.getProfile().getName(), objective).getScore());
 				k = Math.max(k, l);
 			}
 		}
@@ -78,8 +85,8 @@ public class PlayerListHud extends DrawableHelper {
 
 		boolean bl = this.client.isInSingleplayer() || this.client.getNetworkHandler().getConnection().isEncrypted();
 		int p;
-		if (scoreboardObjective != null) {
-			if (scoreboardObjective.getRenderType() == ScoreboardCriterion.RenderType.field_1471) {
+		if (objective != null) {
+			if (objective.getRenderType() == ScoreboardCriterion.RenderType.HEARTS) {
 				p = 90;
 			} else {
 				p = k;
@@ -92,37 +99,37 @@ public class PlayerListHud extends DrawableHelper {
 		int t = i / 2 - (s * o + (o - 1) * 5) / 2;
 		int u = 10;
 		int v = s * o + (o - 1) * 5;
-		List<String> list2 = null;
+		List<OrderedText> list2 = null;
 		if (this.header != null) {
-			list2 = this.client.textRenderer.wrapStringToWidthAsList(this.header.asFormattedString(), i - 50);
+			list2 = this.client.textRenderer.wrapLines(this.header, i - 50);
 
-			for (String string : list2) {
-				v = Math.max(v, this.client.textRenderer.getStringWidth(string));
+			for (OrderedText orderedText : list2) {
+				v = Math.max(v, this.client.textRenderer.getWidth(orderedText));
 			}
 		}
 
-		List<String> list3 = null;
+		List<OrderedText> list3 = null;
 		if (this.footer != null) {
-			list3 = this.client.textRenderer.wrapStringToWidthAsList(this.footer.asFormattedString(), i - 50);
+			list3 = this.client.textRenderer.wrapLines(this.footer, i - 50);
 
-			for (String string2 : list3) {
-				v = Math.max(v, this.client.textRenderer.getStringWidth(string2));
+			for (OrderedText orderedText2 : list3) {
+				v = Math.max(v, this.client.textRenderer.getWidth(orderedText2));
 			}
 		}
 
 		if (list2 != null) {
-			fill(i / 2 - v / 2 - 1, u - 1, i / 2 + v / 2 + 1, u + list2.size() * 9, Integer.MIN_VALUE);
+			fill(matrices, i / 2 - v / 2 - 1, u - 1, i / 2 + v / 2 + 1, u + list2.size() * 9, Integer.MIN_VALUE);
 
-			for (String string3 : list2) {
-				int w = this.client.textRenderer.getStringWidth(string3);
-				this.client.textRenderer.drawWithShadow(string3, (float)(i / 2 - w / 2), (float)u, -1);
+			for (OrderedText orderedText3 : list2) {
+				int w = this.client.textRenderer.getWidth(orderedText3);
+				this.client.textRenderer.drawWithShadow(matrices, orderedText3, (float)(i / 2 - w / 2), (float)u, -1);
 				u += 9;
 			}
 
 			u++;
 		}
 
-		fill(i / 2 - v / 2 - 1, u - 1, i / 2 + v / 2 + 1, u + n * 9, Integer.MIN_VALUE);
+		fill(matrices, i / 2 - v / 2 - 1, u - 1, i / 2 + v / 2 + 1, u + n * 9, Integer.MIN_VALUE);
 		int x = this.client.options.getTextBackgroundColor(553648127);
 
 		for (int y = 0; y < m; y++) {
@@ -130,7 +137,7 @@ public class PlayerListHud extends DrawableHelper {
 			int aa = y % n;
 			int ab = t + z * s + z * 5;
 			int ac = u + aa * 9;
-			fill(ab, ac, ab + s, ac + 8, x);
+			fill(matrices, ab, ac, ab + s, ac + 8, x);
 			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			RenderSystem.enableAlphaTest();
 			RenderSystem.enableBlend();
@@ -141,153 +148,150 @@ public class PlayerListHud extends DrawableHelper {
 				if (bl) {
 					PlayerEntity playerEntity = this.client.world.getPlayerByUuid(gameProfile.getId());
 					boolean bl2 = playerEntity != null
-						&& playerEntity.isPartVisible(PlayerModelPart.field_7559)
+						&& playerEntity.isPartVisible(PlayerModelPart.CAPE)
 						&& ("Dinnerbone".equals(gameProfile.getName()) || "Grumm".equals(gameProfile.getName()));
 					this.client.getTextureManager().bindTexture(playerListEntry2.getSkinTexture());
 					int ad = 8 + (bl2 ? 8 : 0);
 					int ae = 8 * (bl2 ? -1 : 1);
-					DrawableHelper.blit(ab, ac, 8, 8, 8.0F, (float)ad, 8, ae, 64, 64);
-					if (playerEntity != null && playerEntity.isPartVisible(PlayerModelPart.field_7563)) {
+					DrawableHelper.drawTexture(matrices, ab, ac, 8, 8, 8.0F, (float)ad, 8, ae, 64, 64);
+					if (playerEntity != null && playerEntity.isPartVisible(PlayerModelPart.HAT)) {
 						int af = 8 + (bl2 ? 8 : 0);
 						int ag = 8 * (bl2 ? -1 : 1);
-						DrawableHelper.blit(ab, ac, 8, 8, 40.0F, (float)af, 8, ag, 64, 64);
+						DrawableHelper.drawTexture(matrices, ab, ac, 8, 8, 40.0F, (float)af, 8, ag, 64, 64);
 					}
 
 					ab += 9;
 				}
 
-				String string4 = this.getPlayerName(playerListEntry2).asFormattedString();
-				if (playerListEntry2.getGameMode() == GameMode.field_9219) {
-					this.client.textRenderer.drawWithShadow(Formatting.field_1056 + string4, (float)ab, (float)ac, -1862270977);
-				} else {
-					this.client.textRenderer.drawWithShadow(string4, (float)ab, (float)ac, -1);
-				}
-
-				if (scoreboardObjective != null && playerListEntry2.getGameMode() != GameMode.field_9219) {
+				this.client
+					.textRenderer
+					.drawWithShadow(
+						matrices, this.getPlayerName(playerListEntry2), (float)ab, (float)ac, playerListEntry2.getGameMode() == GameMode.SPECTATOR ? -1862270977 : -1
+					);
+				if (objective != null && playerListEntry2.getGameMode() != GameMode.SPECTATOR) {
 					int ah = ab + j + 1;
 					int ai = ah + p;
 					if (ai - ah > 5) {
-						this.renderScoreboardObjective(scoreboardObjective, ac, gameProfile.getName(), ah, ai, playerListEntry2);
+						this.renderScoreboardObjective(objective, ac, gameProfile.getName(), ah, ai, playerListEntry2, matrices);
 					}
 				}
 
-				this.renderLatencyIcon(s, ab - (bl ? 9 : 0), ac, playerListEntry2);
+				this.renderLatencyIcon(matrices, s, ab - (bl ? 9 : 0), ac, playerListEntry2);
 			}
 		}
 
 		if (list3 != null) {
 			u += n * 9 + 1;
-			fill(i / 2 - v / 2 - 1, u - 1, i / 2 + v / 2 + 1, u + list3.size() * 9, Integer.MIN_VALUE);
+			fill(matrices, i / 2 - v / 2 - 1, u - 1, i / 2 + v / 2 + 1, u + list3.size() * 9, Integer.MIN_VALUE);
 
-			for (String string5 : list3) {
-				int aj = this.client.textRenderer.getStringWidth(string5);
-				this.client.textRenderer.drawWithShadow(string5, (float)(i / 2 - aj / 2), (float)u, -1);
+			for (OrderedText orderedText4 : list3) {
+				int aj = this.client.textRenderer.getWidth(orderedText4);
+				this.client.textRenderer.drawWithShadow(matrices, orderedText4, (float)(i / 2 - aj / 2), (float)u, -1);
 				u += 9;
 			}
 		}
 	}
 
-	protected void renderLatencyIcon(int i, int j, int k, PlayerListEntry playerListEntry) {
+	protected void renderLatencyIcon(MatrixStack matrices, int i, int j, int k, PlayerListEntry entry) {
 		RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		this.client.getTextureManager().bindTexture(GUI_ICONS_LOCATION);
+		this.client.getTextureManager().bindTexture(GUI_ICONS_TEXTURE);
 		int l = 0;
 		int m;
-		if (playerListEntry.getLatency() < 0) {
+		if (entry.getLatency() < 0) {
 			m = 5;
-		} else if (playerListEntry.getLatency() < 150) {
+		} else if (entry.getLatency() < 150) {
 			m = 0;
-		} else if (playerListEntry.getLatency() < 300) {
+		} else if (entry.getLatency() < 300) {
 			m = 1;
-		} else if (playerListEntry.getLatency() < 600) {
+		} else if (entry.getLatency() < 600) {
 			m = 2;
-		} else if (playerListEntry.getLatency() < 1000) {
+		} else if (entry.getLatency() < 1000) {
 			m = 3;
 		} else {
 			m = 4;
 		}
 
-		this.setBlitOffset(this.getBlitOffset() + 100);
-		this.blit(j + i - 11, k, 0, 176 + m * 8, 10, 8);
-		this.setBlitOffset(this.getBlitOffset() - 100);
+		this.setZOffset(this.getZOffset() + 100);
+		this.drawTexture(matrices, j + i - 11, k, 0, 176 + m * 8, 10, 8);
+		this.setZOffset(this.getZOffset() - 100);
 	}
 
-	private void renderScoreboardObjective(ScoreboardObjective scoreboardObjective, int i, String string, int j, int k, PlayerListEntry playerListEntry) {
-		int l = scoreboardObjective.getScoreboard().getPlayerScore(string, scoreboardObjective).getScore();
-		if (scoreboardObjective.getRenderType() == ScoreboardCriterion.RenderType.field_1471) {
-			this.client.getTextureManager().bindTexture(GUI_ICONS_LOCATION);
+	private void renderScoreboardObjective(ScoreboardObjective objective, int i, String string, int j, int k, PlayerListEntry entry, MatrixStack matrices) {
+		int l = objective.getScoreboard().getPlayerScore(string, objective).getScore();
+		if (objective.getRenderType() == ScoreboardCriterion.RenderType.HEARTS) {
+			this.client.getTextureManager().bindTexture(GUI_ICONS_TEXTURE);
 			long m = Util.getMeasuringTimeMs();
-			if (this.showTime == playerListEntry.method_2976()) {
-				if (l < playerListEntry.method_2973()) {
-					playerListEntry.method_2978(m);
-					playerListEntry.method_2975((long)(this.inGameHud.getTicks() + 20));
-				} else if (l > playerListEntry.method_2973()) {
-					playerListEntry.method_2978(m);
-					playerListEntry.method_2975((long)(this.inGameHud.getTicks() + 10));
+			if (this.showTime == entry.method_2976()) {
+				if (l < entry.method_2973()) {
+					entry.method_2978(m);
+					entry.method_2975((long)(this.inGameHud.getTicks() + 20));
+				} else if (l > entry.method_2973()) {
+					entry.method_2978(m);
+					entry.method_2975((long)(this.inGameHud.getTicks() + 10));
 				}
 			}
 
-			if (m - playerListEntry.method_2974() > 1000L || this.showTime != playerListEntry.method_2976()) {
-				playerListEntry.method_2972(l);
-				playerListEntry.method_2965(l);
-				playerListEntry.method_2978(m);
+			if (m - entry.method_2974() > 1000L || this.showTime != entry.method_2976()) {
+				entry.method_2972(l);
+				entry.method_2965(l);
+				entry.method_2978(m);
 			}
 
-			playerListEntry.method_2964(this.showTime);
-			playerListEntry.method_2972(l);
-			int n = MathHelper.ceil((float)Math.max(l, playerListEntry.method_2960()) / 2.0F);
-			int o = Math.max(MathHelper.ceil((float)(l / 2)), Math.max(MathHelper.ceil((float)(playerListEntry.method_2960() / 2)), 10));
-			boolean bl = playerListEntry.method_2961() > (long)this.inGameHud.getTicks()
-				&& (playerListEntry.method_2961() - (long)this.inGameHud.getTicks()) / 3L % 2L == 1L;
+			entry.method_2964(this.showTime);
+			entry.method_2972(l);
+			int n = MathHelper.ceil((float)Math.max(l, entry.method_2960()) / 2.0F);
+			int o = Math.max(MathHelper.ceil((float)(l / 2)), Math.max(MathHelper.ceil((float)(entry.method_2960() / 2)), 10));
+			boolean bl = entry.method_2961() > (long)this.inGameHud.getTicks() && (entry.method_2961() - (long)this.inGameHud.getTicks()) / 3L % 2L == 1L;
 			if (n > 0) {
 				int p = MathHelper.floor(Math.min((float)(k - j - 4) / (float)o, 9.0F));
 				if (p > 3) {
 					for (int q = n; q < o; q++) {
-						this.blit(j + q * p, i, bl ? 25 : 16, 0, 9, 9);
+						this.drawTexture(matrices, j + q * p, i, bl ? 25 : 16, 0, 9, 9);
 					}
 
 					for (int r = 0; r < n; r++) {
-						this.blit(j + r * p, i, bl ? 25 : 16, 0, 9, 9);
+						this.drawTexture(matrices, j + r * p, i, bl ? 25 : 16, 0, 9, 9);
 						if (bl) {
-							if (r * 2 + 1 < playerListEntry.method_2960()) {
-								this.blit(j + r * p, i, 70, 0, 9, 9);
+							if (r * 2 + 1 < entry.method_2960()) {
+								this.drawTexture(matrices, j + r * p, i, 70, 0, 9, 9);
 							}
 
-							if (r * 2 + 1 == playerListEntry.method_2960()) {
-								this.blit(j + r * p, i, 79, 0, 9, 9);
+							if (r * 2 + 1 == entry.method_2960()) {
+								this.drawTexture(matrices, j + r * p, i, 79, 0, 9, 9);
 							}
 						}
 
 						if (r * 2 + 1 < l) {
-							this.blit(j + r * p, i, r >= 10 ? 160 : 52, 0, 9, 9);
+							this.drawTexture(matrices, j + r * p, i, r >= 10 ? 160 : 52, 0, 9, 9);
 						}
 
 						if (r * 2 + 1 == l) {
-							this.blit(j + r * p, i, r >= 10 ? 169 : 61, 0, 9, 9);
+							this.drawTexture(matrices, j + r * p, i, r >= 10 ? 169 : 61, 0, 9, 9);
 						}
 					}
 				} else {
 					float f = MathHelper.clamp((float)l / 20.0F, 0.0F, 1.0F);
 					int s = (int)((1.0F - f) * 255.0F) << 16 | (int)(f * 255.0F) << 8;
 					String string2 = "" + (float)l / 2.0F;
-					if (k - this.client.textRenderer.getStringWidth(string2 + "hp") >= j) {
+					if (k - this.client.textRenderer.getWidth(string2 + "hp") >= j) {
 						string2 = string2 + "hp";
 					}
 
-					this.client.textRenderer.drawWithShadow(string2, (float)((k + j) / 2 - this.client.textRenderer.getStringWidth(string2) / 2), (float)i, s);
+					this.client.textRenderer.drawWithShadow(matrices, string2, (float)((k + j) / 2 - this.client.textRenderer.getWidth(string2) / 2), (float)i, s);
 				}
 			}
 		} else {
-			String string3 = Formatting.field_1054 + "" + l;
-			this.client.textRenderer.drawWithShadow(string3, (float)(k - this.client.textRenderer.getStringWidth(string3)), (float)i, 16777215);
+			String string3 = Formatting.YELLOW + "" + l;
+			this.client.textRenderer.drawWithShadow(matrices, string3, (float)(k - this.client.textRenderer.getWidth(string3)), (float)i, 16777215);
 		}
 	}
 
-	public void setFooter(@Nullable Text text) {
-		this.footer = text;
+	public void setFooter(@Nullable Text footer) {
+		this.footer = footer;
 	}
 
-	public void setHeader(@Nullable Text text) {
-		this.header = text;
+	public void setHeader(@Nullable Text header) {
+		this.header = header;
 	}
 
 	public void clear() {
@@ -303,7 +307,7 @@ public class PlayerListHud extends DrawableHelper {
 			Team team = playerListEntry.getScoreboardTeam();
 			Team team2 = playerListEntry2.getScoreboardTeam();
 			return ComparisonChain.start()
-				.compareTrueFirst(playerListEntry.getGameMode() != GameMode.field_9219, playerListEntry2.getGameMode() != GameMode.field_9219)
+				.compareTrueFirst(playerListEntry.getGameMode() != GameMode.SPECTATOR, playerListEntry2.getGameMode() != GameMode.SPECTATOR)
 				.compare(team != null ? team.getName() : "", team2 != null ? team2.getName() : "")
 				.compare(playerListEntry.getProfile().getName(), playerListEntry2.getProfile().getName(), String::compareToIgnoreCase)
 				.result();

@@ -5,7 +5,7 @@ import net.minecraft.entity.mob.AbstractSkeletonEntity;
 import net.minecraft.util.Identifier;
 
 public class StrayEntityRenderer extends SkeletonEntityRenderer {
-	private static final Identifier SKIN = new Identifier("textures/entity/skeleton/stray.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/skeleton/stray.png");
 
 	public StrayEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
@@ -14,6 +14,6 @@ public class StrayEntityRenderer extends SkeletonEntityRenderer {
 
 	@Override
 	public Identifier getTexture(AbstractSkeletonEntity abstractSkeletonEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

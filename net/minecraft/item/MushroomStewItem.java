@@ -10,8 +10,8 @@ public class MushroomStewItem extends Item {
 	}
 
 	@Override
-	public ItemStack finishUsing(ItemStack itemStack, World world, LivingEntity livingEntity) {
-		ItemStack itemStack2 = super.finishUsing(itemStack, world, livingEntity);
-		return livingEntity instanceof PlayerEntity && ((PlayerEntity)livingEntity).abilities.creativeMode ? itemStack2 : new ItemStack(Items.field_8428);
+	public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
+		ItemStack itemStack = super.finishUsing(stack, world, user);
+		return user instanceof PlayerEntity && ((PlayerEntity)user).abilities.creativeMode ? itemStack : new ItemStack(Items.BOWL);
 	}
 }

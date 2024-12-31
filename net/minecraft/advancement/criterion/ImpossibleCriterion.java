@@ -1,8 +1,9 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import net.minecraft.advancement.PlayerAdvancementTracker;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer;
 import net.minecraft.util.Identifier;
 
 public class ImpossibleCriterion implements Criterion<ImpossibleCriterion.Conditions> {
@@ -14,28 +15,30 @@ public class ImpossibleCriterion implements Criterion<ImpossibleCriterion.Condit
 	}
 
 	@Override
-	public void beginTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<ImpossibleCriterion.Conditions> conditionsContainer
-	) {
+	public void beginTrackingCondition(PlayerAdvancementTracker manager, Criterion.ConditionsContainer<ImpossibleCriterion.Conditions> conditionsContainer) {
 	}
 
 	@Override
-	public void endTrackingCondition(
-		PlayerAdvancementTracker playerAdvancementTracker, Criterion.ConditionsContainer<ImpossibleCriterion.Conditions> conditionsContainer
-	) {
+	public void endTrackingCondition(PlayerAdvancementTracker manager, Criterion.ConditionsContainer<ImpossibleCriterion.Conditions> conditionsContainer) {
 	}
 
 	@Override
-	public void endTracking(PlayerAdvancementTracker playerAdvancementTracker) {
+	public void endTracking(PlayerAdvancementTracker tracker) {
 	}
 
-	public ImpossibleCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+	public ImpossibleCriterion.Conditions conditionsFromJson(JsonObject jsonObject, AdvancementEntityPredicateDeserializer advancementEntityPredicateDeserializer) {
 		return new ImpossibleCriterion.Conditions();
 	}
 
-	public static class Conditions extends AbstractCriterionConditions {
-		public Conditions() {
-			super(ImpossibleCriterion.ID);
+	public static class Conditions implements CriterionConditions {
+		@Override
+		public Identifier getId() {
+			return ImpossibleCriterion.ID;
+		}
+
+		@Override
+		public JsonObject toJson(AdvancementEntityPredicateSerializer predicateSerializer) {
+			return new JsonObject();
 		}
 	}
 }

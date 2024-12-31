@@ -13,20 +13,20 @@ public class SuspiciousStewItem extends Item {
 		super(settings);
 	}
 
-	public static void addEffectToStew(ItemStack itemStack, StatusEffect statusEffect, int i) {
-		CompoundTag compoundTag = itemStack.getOrCreateTag();
+	public static void addEffectToStew(ItemStack stew, StatusEffect effect, int duration) {
+		CompoundTag compoundTag = stew.getOrCreateTag();
 		ListTag listTag = compoundTag.getList("Effects", 9);
 		CompoundTag compoundTag2 = new CompoundTag();
-		compoundTag2.putByte("EffectId", (byte)StatusEffect.getRawId(statusEffect));
-		compoundTag2.putInt("EffectDuration", i);
+		compoundTag2.putByte("EffectId", (byte)StatusEffect.getRawId(effect));
+		compoundTag2.putInt("EffectDuration", duration);
 		listTag.add(compoundTag2);
 		compoundTag.put("Effects", listTag);
 	}
 
 	@Override
-	public ItemStack finishUsing(ItemStack itemStack, World world, LivingEntity livingEntity) {
-		ItemStack itemStack2 = super.finishUsing(itemStack, world, livingEntity);
-		CompoundTag compoundTag = itemStack.getTag();
+	public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
+		ItemStack itemStack = super.finishUsing(stack, world, user);
+		CompoundTag compoundTag = stack.getTag();
 		if (compoundTag != null && compoundTag.contains("Effects", 9)) {
 			ListTag listTag = compoundTag.getList("Effects", 10);
 
@@ -39,11 +39,11 @@ public class SuspiciousStewItem extends Item {
 
 				StatusEffect statusEffect = StatusEffect.byRawId(compoundTag2.getByte("EffectId"));
 				if (statusEffect != null) {
-					livingEntity.addStatusEffect(new StatusEffectInstance(statusEffect, j));
+					user.addStatusEffect(new StatusEffectInstance(statusEffect, j));
 				}
 			}
 		}
 
-		return livingEntity instanceof PlayerEntity && ((PlayerEntity)livingEntity).abilities.creativeMode ? itemStack2 : new ItemStack(Items.field_8428);
+		return user instanceof PlayerEntity && ((PlayerEntity)user).abilities.creativeMode ? itemStack : new ItemStack(Items.BOWL);
 	}
 }

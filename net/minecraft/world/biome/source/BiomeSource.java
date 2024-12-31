@@ -1,54 +1,65 @@
 package net.minecraft.world.biome.source;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.mojang.serialization.Codec;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.feature.StructureFeature;
 
 public abstract class BiomeSource implements BiomeAccess.Storage {
-	private static final List<Biome> SPAWN_BIOMES = Lists.newArrayList(
-		new Biome[]{Biomes.field_9409, Biomes.field_9451, Biomes.field_9420, Biomes.field_9428, Biomes.field_9459, Biomes.field_9417, Biomes.field_9432}
-	);
+	public static final Codec<BiomeSource> CODEC = Registry.BIOME_SOURCE.dispatchStable(BiomeSource::getCodec, Function.identity());
 	protected final Map<StructureFeature<?>, Boolean> structureFeatures = Maps.newHashMap();
 	protected final Set<BlockState> topMaterials = Sets.newHashSet();
-	protected final Set<Biome> biomes;
+	protected final List<Biome> biomes;
 
-	protected BiomeSource(Set<Biome> set) {
-		this.biomes = set;
+	protected BiomeSource(Stream<Supplier<Biome>> stream) {
+		this((List<Biome>)stream.map(Supplier::get).collect(ImmutableList.toImmutableList()));
 	}
 
-	public List<Biome> getSpawnBiomes() {
-		return SPAWN_BIOMES;
+	protected BiomeSource(List<Biome> biomes) {
+		this.biomes = biomes;
 	}
 
-	public Set<Biome> getBiomesInArea(int i, int j, int k, int l) {
-		int m = i - l >> 2;
-		int n = j - l >> 2;
-		int o = k - l >> 2;
-		int p = i + l >> 2;
-		int q = j + l >> 2;
-		int r = k + l >> 2;
-		int s = p - m + 1;
-		int t = q - n + 1;
-		int u = r - o + 1;
+	protected abstract Codec<? extends BiomeSource> getCodec();
+
+	public abstract BiomeSource withSeed(long seed);
+
+	public List<Biome> getBiomes() {
+		return this.biomes;
+	}
+
+	public Set<Biome> getBiomesInArea(int x, int y, int z, int radius) {
+		int i = x - radius >> 2;
+		int j = y - radius >> 2;
+		int k = z - radius >> 2;
+		int l = x + radius >> 2;
+		int m = y + radius >> 2;
+		int n = z + radius >> 2;
+		int o = l - i + 1;
+		int p = m - j + 1;
+		int q = n - k + 1;
 		Set<Biome> set = Sets.newHashSet();
 
-		for (int v = 0; v < u; v++) {
-			for (int w = 0; w < s; w++) {
-				for (int x = 0; x < t; x++) {
-					int y = m + w;
-					int z = n + x;
-					int aa = o + v;
-					set.add(this.getBiomeForNoiseGen(y, z, aa));
+		for (int r = 0; r < q; r++) {
+			for (int s = 0; s < o; s++) {
+				for (int t = 0; t < p; t++) {
+					int u = i + s;
+					int v = j + t;
+					int w = k + r;
+					set.add(this.getBiomeForNoiseGen(u, v, w));
 				}
 			}
 		}
@@ -57,50 +68,74 @@ public abstract class BiomeSource implements BiomeAccess.Storage {
 	}
 
 	@Nullable
-	public BlockPos locateBiome(int i, int j, int k, int l, List<Biome> list, Random random) {
-		int m = i - l >> 2;
-		int n = k - l >> 2;
-		int o = i + l >> 2;
-		int p = k + l >> 2;
-		int q = o - m + 1;
-		int r = p - n + 1;
-		int s = j >> 2;
-		BlockPos blockPos = null;
-		int t = 0;
+	public BlockPos locateBiome(int x, int y, int z, int radius, Predicate<Biome> predicate, Random random) {
+		return this.locateBiome(x, y, z, radius, 1, predicate, random, false);
+	}
 
-		for (int u = 0; u < r; u++) {
-			for (int v = 0; v < q; v++) {
-				int w = m + v;
-				int x = n + u;
-				if (list.contains(this.getBiomeForNoiseGen(w, s, x))) {
-					if (blockPos == null || random.nextInt(t + 1) == 0) {
-						blockPos = new BlockPos(w << 2, j, x << 2);
+	@Nullable
+	public BlockPos locateBiome(int x, int y, int z, int radius, int i, Predicate<Biome> predicate, Random random, boolean bl) {
+		int j = x >> 2;
+		int k = z >> 2;
+		int l = radius >> 2;
+		int m = y >> 2;
+		BlockPos blockPos = null;
+		int n = 0;
+		int o = bl ? 0 : l;
+		int p = o;
+
+		while (p <= l) {
+			for (int q = -p; q <= p; q += i) {
+				boolean bl2 = Math.abs(q) == p;
+
+				for (int r = -p; r <= p; r += i) {
+					if (bl) {
+						boolean bl3 = Math.abs(r) == p;
+						if (!bl3 && !bl2) {
+							continue;
+						}
 					}
 
-					t++;
+					int s = j + r;
+					int t = k + q;
+					if (predicate.test(this.getBiomeForNoiseGen(s, m, t))) {
+						if (blockPos == null || random.nextInt(n + 1) == 0) {
+							blockPos = new BlockPos(s << 2, y, t << 2);
+							if (bl) {
+								return blockPos;
+							}
+						}
+
+						n++;
+					}
 				}
 			}
+
+			p += i;
 		}
 
 		return blockPos;
 	}
 
-	public float getNoiseRange(int i, int j) {
-		return 0.0F;
-	}
-
-	public boolean hasStructureFeature(StructureFeature<?> structureFeature) {
+	public boolean hasStructureFeature(StructureFeature<?> feature) {
 		return (Boolean)this.structureFeatures
-			.computeIfAbsent(structureFeature, structureFeaturex -> this.biomes.stream().anyMatch(biome -> biome.hasStructureFeature(structureFeaturex)));
+			.computeIfAbsent(feature, structureFeature -> this.biomes.stream().anyMatch(biome -> biome.getGenerationSettings().hasStructureFeature(structureFeature)));
 	}
 
 	public Set<BlockState> getTopMaterials() {
 		if (this.topMaterials.isEmpty()) {
 			for (Biome biome : this.biomes) {
-				this.topMaterials.add(biome.getSurfaceConfig().getTopMaterial());
+				this.topMaterials.add(biome.getGenerationSettings().getSurfaceConfig().getTopMaterial());
 			}
 		}
 
 		return this.topMaterials;
+	}
+
+	static {
+		Registry.register(Registry.BIOME_SOURCE, "fixed", FixedBiomeSource.CODEC);
+		Registry.register(Registry.BIOME_SOURCE, "multi_noise", MultiNoiseBiomeSource.CODEC);
+		Registry.register(Registry.BIOME_SOURCE, "checkerboard", CheckerboardBiomeSource.CODEC);
+		Registry.register(Registry.BIOME_SOURCE, "vanilla_layered", VanillaLayeredBiomeSource.CODEC);
+		Registry.register(Registry.BIOME_SOURCE, "the_end", TheEndBiomeSource.CODEC);
 	}
 }

@@ -12,12 +12,16 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.network.packet.CommandTreeS2CPacket;
 import net.minecraft.command.CommandException;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.argument.ArgumentTypes;
 import net.minecraft.command.suggestion.SuggestionProviders;
+import net.minecraft.network.packet.s2c.play.CommandTreeS2CPacket;
 import net.minecraft.server.dedicated.command.BanCommand;
 import net.minecraft.server.dedicated.command.BanIpCommand;
 import net.minecraft.server.dedicated.command.BanListCommand;
@@ -35,6 +39,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.minecraft.text.TranslatableText;
@@ -47,8 +52,9 @@ public class CommandManager {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final CommandDispatcher<ServerCommandSource> dispatcher = new CommandDispatcher();
 
-	public CommandManager(boolean bl) {
+	public CommandManager(CommandManager.RegistrationEnvironment environment) {
 		AdvancementCommand.register(this.dispatcher);
+		AttributeCommand.register(this.dispatcher);
 		ExecuteCommand.register(this.dispatcher);
 		BossBarCommand.register(this.dispatcher);
 		ClearCommand.register(this.dispatcher);
@@ -73,18 +79,18 @@ public class CommandManager {
 		KillCommand.register(this.dispatcher);
 		ListCommand.register(this.dispatcher);
 		LocateCommand.register(this.dispatcher);
+		LocateBiomeCommand.register(this.dispatcher);
 		LootCommand.register(this.dispatcher);
 		MessageCommand.register(this.dispatcher);
 		ParticleCommand.register(this.dispatcher);
 		PlaySoundCommand.register(this.dispatcher);
-		PublishCommand.register(this.dispatcher);
 		ReloadCommand.register(this.dispatcher);
 		RecipeCommand.register(this.dispatcher);
 		ReplaceItemCommand.register(this.dispatcher);
 		SayCommand.register(this.dispatcher);
 		ScheduleCommand.register(this.dispatcher);
 		ScoreboardCommand.register(this.dispatcher);
-		SeedCommand.register(this.dispatcher);
+		SeedCommand.register(this.dispatcher, environment != CommandManager.RegistrationEnvironment.INTEGRATED);
 		SetBlockCommand.register(this.dispatcher);
 		SpawnPointCommand.register(this.dispatcher);
 		SetWorldSpawnCommand.register(this.dispatcher);
@@ -94,7 +100,7 @@ public class CommandManager {
 		SummonCommand.register(this.dispatcher);
 		TagCommand.register(this.dispatcher);
 		TeamCommand.register(this.dispatcher);
-		TeammsgCommand.register(this.dispatcher);
+		TeamMsgCommand.register(this.dispatcher);
 		TeleportCommand.register(this.dispatcher);
 		TellRawCommand.register(this.dispatcher);
 		TimeCommand.register(this.dispatcher);
@@ -106,7 +112,7 @@ public class CommandManager {
 			TestCommand.register(this.dispatcher);
 		}
 
-		if (bl) {
+		if (environment.dedicated) {
 			BanIpCommand.register(this.dispatcher);
 			BanListCommand.register(this.dispatcher);
 			BanCommand.register(this.dispatcher);
@@ -122,59 +128,63 @@ public class CommandManager {
 			WhitelistCommand.register(this.dispatcher);
 		}
 
+		if (environment.integrated) {
+			PublishCommand.register(this.dispatcher);
+		}
+
 		this.dispatcher
 			.findAmbiguities(
 				(commandNode, commandNode2, commandNode3, collection) -> LOGGER.warn(
 						"Ambiguity between arguments {} and {} with inputs: {}", this.dispatcher.getPath(commandNode2), this.dispatcher.getPath(commandNode3), collection
 					)
 			);
-		this.dispatcher.setConsumer((commandContext, blx, i) -> ((ServerCommandSource)commandContext.getSource()).onCommandComplete(commandContext, blx, i));
+		this.dispatcher.setConsumer((commandContext, bl, i) -> ((ServerCommandSource)commandContext.getSource()).onCommandComplete(commandContext, bl, i));
 	}
 
-	public int execute(ServerCommandSource serverCommandSource, String string) {
-		StringReader stringReader = new StringReader(string);
+	public int execute(ServerCommandSource commandSource, String command) {
+		StringReader stringReader = new StringReader(command);
 		if (stringReader.canRead() && stringReader.peek() == '/') {
 			stringReader.skip();
 		}
 
-		serverCommandSource.getMinecraftServer().getProfiler().push(string);
+		commandSource.getMinecraftServer().getProfiler().push(command);
 
 		byte var20;
 		try {
-			return this.dispatcher.execute(stringReader, serverCommandSource);
+			return this.dispatcher.execute(stringReader, commandSource);
 		} catch (CommandException var13) {
-			serverCommandSource.sendError(var13.getTextMessage());
+			commandSource.sendError(var13.getTextMessage());
 			return 0;
 		} catch (CommandSyntaxException var14) {
-			serverCommandSource.sendError(Texts.toText(var14.getRawMessage()));
+			commandSource.sendError(Texts.toText(var14.getRawMessage()));
 			if (var14.getInput() != null && var14.getCursor() >= 0) {
 				int i = Math.min(var14.getInput().length(), var14.getCursor());
-				Text text = new LiteralText("")
-					.formatted(Formatting.field_1080)
-					.styled(style -> style.setClickEvent(new ClickEvent(ClickEvent.Action.field_11745, string)));
+				MutableText mutableText = new LiteralText("")
+					.formatted(Formatting.GRAY)
+					.styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, command)));
 				if (i > 10) {
-					text.append("...");
+					mutableText.append("...");
 				}
 
-				text.append(var14.getInput().substring(Math.max(0, i - 10), i));
+				mutableText.append(var14.getInput().substring(Math.max(0, i - 10), i));
 				if (i < var14.getInput().length()) {
-					Text text2 = new LiteralText(var14.getInput().substring(i)).formatted(new Formatting[]{Formatting.field_1061, Formatting.field_1073});
-					text.append(text2);
+					Text text = new LiteralText(var14.getInput().substring(i)).formatted(new Formatting[]{Formatting.RED, Formatting.UNDERLINE});
+					mutableText.append(text);
 				}
 
-				text.append(new TranslatableText("command.context.here").formatted(new Formatting[]{Formatting.field_1061, Formatting.field_1056}));
-				serverCommandSource.sendError(text);
+				mutableText.append(new TranslatableText("command.context.here").formatted(new Formatting[]{Formatting.RED, Formatting.ITALIC}));
+				commandSource.sendError(mutableText);
 			}
 
 			return 0;
 		} catch (Exception var15) {
-			Text text3 = new LiteralText(var15.getMessage() == null ? var15.getClass().getName() : var15.getMessage());
+			MutableText mutableText2 = new LiteralText(var15.getMessage() == null ? var15.getClass().getName() : var15.getMessage());
 			if (LOGGER.isDebugEnabled()) {
-				LOGGER.error("Command exception: {}", string, var15);
+				LOGGER.error("Command exception: {}", command, var15);
 				StackTraceElement[] stackTraceElements = var15.getStackTrace();
 
 				for (int j = 0; j < Math.min(stackTraceElements.length, 3); j++) {
-					text3.append("\n\n")
+					mutableText2.append("\n\n")
 						.append(stackTraceElements[j].getMethodName())
 						.append("\n ")
 						.append(stackTraceElements[j].getFileName())
@@ -183,39 +193,39 @@ public class CommandManager {
 				}
 			}
 
-			serverCommandSource.sendError(
-				new TranslatableText("command.failed").styled(style -> style.setHoverEvent(new HoverEvent(HoverEvent.Action.field_11762, text3)))
+			commandSource.sendError(
+				new TranslatableText("command.failed").styled(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, mutableText2)))
 			);
 			if (SharedConstants.isDevelopment) {
-				serverCommandSource.sendError(new LiteralText(Util.getInnermostMessage(var15)));
-				LOGGER.error("'" + string + "' threw an exception", var15);
+				commandSource.sendError(new LiteralText(Util.getInnermostMessage(var15)));
+				LOGGER.error("'" + command + "' threw an exception", var15);
 			}
 
 			var20 = 0;
 		} finally {
-			serverCommandSource.getMinecraftServer().getProfiler().pop();
+			commandSource.getMinecraftServer().getProfiler().pop();
 		}
 
 		return var20;
 	}
 
-	public void sendCommandTree(ServerPlayerEntity serverPlayerEntity) {
+	public void sendCommandTree(ServerPlayerEntity player) {
 		Map<CommandNode<ServerCommandSource>, CommandNode<CommandSource>> map = Maps.newHashMap();
 		RootCommandNode<CommandSource> rootCommandNode = new RootCommandNode();
 		map.put(this.dispatcher.getRoot(), rootCommandNode);
-		this.makeTreeForSource(this.dispatcher.getRoot(), rootCommandNode, serverPlayerEntity.getCommandSource(), map);
-		serverPlayerEntity.networkHandler.sendPacket(new CommandTreeS2CPacket(rootCommandNode));
+		this.makeTreeForSource(this.dispatcher.getRoot(), rootCommandNode, player.getCommandSource(), map);
+		player.networkHandler.sendPacket(new CommandTreeS2CPacket(rootCommandNode));
 	}
 
 	private void makeTreeForSource(
-		CommandNode<ServerCommandSource> commandNode,
-		CommandNode<CommandSource> commandNode2,
-		ServerCommandSource serverCommandSource,
-		Map<CommandNode<ServerCommandSource>, CommandNode<CommandSource>> map
+		CommandNode<ServerCommandSource> tree,
+		CommandNode<CommandSource> result,
+		ServerCommandSource source,
+		Map<CommandNode<ServerCommandSource>, CommandNode<CommandSource>> resultNodes
 	) {
-		for (CommandNode<ServerCommandSource> commandNode3 : commandNode.getChildren()) {
-			if (commandNode3.canUse(serverCommandSource)) {
-				ArgumentBuilder<CommandSource, ?> argumentBuilder = commandNode3.createBuilder();
+		for (CommandNode<ServerCommandSource> commandNode : tree.getChildren()) {
+			if (commandNode.canUse(source)) {
+				ArgumentBuilder<CommandSource, ?> argumentBuilder = commandNode.createBuilder();
 				argumentBuilder.requires(commandSource -> true);
 				if (argumentBuilder.getCommand() != null) {
 					argumentBuilder.executes(commandContext -> 0);
@@ -229,31 +239,31 @@ public class CommandManager {
 				}
 
 				if (argumentBuilder.getRedirect() != null) {
-					argumentBuilder.redirect((CommandNode)map.get(argumentBuilder.getRedirect()));
+					argumentBuilder.redirect((CommandNode)resultNodes.get(argumentBuilder.getRedirect()));
 				}
 
-				CommandNode<CommandSource> commandNode4 = argumentBuilder.build();
-				map.put(commandNode3, commandNode4);
-				commandNode2.addChild(commandNode4);
-				if (!commandNode3.getChildren().isEmpty()) {
-					this.makeTreeForSource(commandNode3, commandNode4, serverCommandSource, map);
+				CommandNode<CommandSource> commandNode2 = argumentBuilder.build();
+				resultNodes.put(commandNode, commandNode2);
+				result.addChild(commandNode2);
+				if (!commandNode.getChildren().isEmpty()) {
+					this.makeTreeForSource(commandNode, commandNode2, source, resultNodes);
 				}
 			}
 		}
 	}
 
-	public static LiteralArgumentBuilder<ServerCommandSource> literal(String string) {
-		return LiteralArgumentBuilder.literal(string);
+	public static LiteralArgumentBuilder<ServerCommandSource> literal(String literal) {
+		return LiteralArgumentBuilder.literal(literal);
 	}
 
-	public static <T> RequiredArgumentBuilder<ServerCommandSource, T> argument(String string, ArgumentType<T> argumentType) {
-		return RequiredArgumentBuilder.argument(string, argumentType);
+	public static <T> RequiredArgumentBuilder<ServerCommandSource, T> argument(String name, ArgumentType<T> type) {
+		return RequiredArgumentBuilder.argument(name, type);
 	}
 
-	public static Predicate<String> getCommandValidator(CommandManager.CommandParser commandParser) {
+	public static Predicate<String> getCommandValidator(CommandManager.CommandParser parser) {
 		return string -> {
 			try {
-				commandParser.parse(new StringReader(string));
+				parser.parse(new StringReader(string));
 				return true;
 			} catch (CommandSyntaxException var3) {
 				return false;
@@ -266,20 +276,46 @@ public class CommandManager {
 	}
 
 	@Nullable
-	public static <S> CommandSyntaxException getException(ParseResults<S> parseResults) {
-		if (!parseResults.getReader().canRead()) {
+	public static <S> CommandSyntaxException getException(ParseResults<S> parse) {
+		if (!parse.getReader().canRead()) {
 			return null;
-		} else if (parseResults.getExceptions().size() == 1) {
-			return (CommandSyntaxException)parseResults.getExceptions().values().iterator().next();
+		} else if (parse.getExceptions().size() == 1) {
+			return (CommandSyntaxException)parse.getExceptions().values().iterator().next();
 		} else {
-			return parseResults.getContext().getRange().isEmpty()
-				? CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().createWithContext(parseResults.getReader())
-				: CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(parseResults.getReader());
+			return parse.getContext().getRange().isEmpty()
+				? CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().createWithContext(parse.getReader())
+				: CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(parse.getReader());
+		}
+	}
+
+	public static void checkMissing() {
+		RootCommandNode<ServerCommandSource> rootCommandNode = new CommandManager(CommandManager.RegistrationEnvironment.ALL).getDispatcher().getRoot();
+		Set<ArgumentType<?>> set = ArgumentTypes.getAllArgumentTypes(rootCommandNode);
+		Set<ArgumentType<?>> set2 = (Set<ArgumentType<?>>)set.stream().filter(argumentType -> !ArgumentTypes.hasClass(argumentType)).collect(Collectors.toSet());
+		if (!set2.isEmpty()) {
+			LOGGER.warn(
+				"Missing type registration for following arguments:\n {}", set2.stream().map(argumentType -> "\t" + argumentType).collect(Collectors.joining(",\n"))
+			);
+			throw new IllegalStateException("Unregistered argument types");
 		}
 	}
 
 	@FunctionalInterface
 	public interface CommandParser {
 		void parse(StringReader stringReader) throws CommandSyntaxException;
+	}
+
+	public static enum RegistrationEnvironment {
+		ALL(true, true),
+		DEDICATED(false, true),
+		INTEGRATED(true, false);
+
+		private final boolean integrated;
+		private final boolean dedicated;
+
+		private RegistrationEnvironment(boolean integrated, boolean dedicated) {
+			this.integrated = integrated;
+			this.dedicated = dedicated;
+		}
 	}
 }

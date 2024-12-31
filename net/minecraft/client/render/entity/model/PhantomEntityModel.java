@@ -63,14 +63,14 @@ public class PhantomEntityModel<T extends Entity> extends CompositeEntityModel<T
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		float k = ((float)(entity.getEntityId() * 3) + h) * 0.13F;
-		float l = 16.0F;
-		this.leftWing.roll = MathHelper.cos(k) * 16.0F * (float) (Math.PI / 180.0);
-		this.leftWingTip.roll = MathHelper.cos(k) * 16.0F * (float) (Math.PI / 180.0);
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		float f = ((float)(entity.getEntityId() * 3) + animationProgress) * 0.13F;
+		float g = 16.0F;
+		this.leftWing.roll = MathHelper.cos(f) * 16.0F * (float) (Math.PI / 180.0);
+		this.leftWingTip.roll = MathHelper.cos(f) * 16.0F * (float) (Math.PI / 180.0);
 		this.rightWing.roll = -this.leftWing.roll;
 		this.rightWingTip.roll = -this.leftWingTip.roll;
-		this.tail.pitch = -(5.0F + MathHelper.cos(k * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
-		this.lowerTail.pitch = -(5.0F + MathHelper.cos(k * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
+		this.tail.pitch = -(5.0F + MathHelper.cos(f * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
+		this.lowerTail.pitch = -(5.0F + MathHelper.cos(f * 2.0F) * 5.0F) * (float) (Math.PI / 180.0);
 	}
 }

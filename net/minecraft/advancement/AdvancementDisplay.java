@@ -1,6 +1,5 @@
 package net.minecraft.advancement;
 
-import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -11,10 +10,10 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.registry.Registry;
 
 public class AdvancementDisplay {
@@ -30,21 +29,28 @@ public class AdvancementDisplay {
 	private float yPos;
 
 	public AdvancementDisplay(
-		ItemStack itemStack, Text text, Text text2, @Nullable Identifier identifier, AdvancementFrame advancementFrame, boolean bl, boolean bl2, boolean bl3
+		ItemStack icon,
+		Text title,
+		Text description,
+		@Nullable Identifier background,
+		AdvancementFrame frame,
+		boolean showToast,
+		boolean announceToChat,
+		boolean hidden
 	) {
-		this.title = text;
-		this.description = text2;
-		this.icon = itemStack;
-		this.background = identifier;
-		this.frame = advancementFrame;
-		this.showToast = bl;
-		this.announceToChat = bl2;
-		this.hidden = bl3;
+		this.title = title;
+		this.description = description;
+		this.icon = icon;
+		this.background = background;
+		this.frame = frame;
+		this.showToast = showToast;
+		this.announceToChat = announceToChat;
+		this.hidden = hidden;
 	}
 
-	public void setPosition(float f, float g) {
-		this.xPos = f;
-		this.yPos = g;
+	public void setPosition(float xPos, float yPos) {
+		this.xPos = xPos;
+		this.yPos = yPos;
 	}
 
 	public Text getTitle() {
@@ -88,36 +94,34 @@ public class AdvancementDisplay {
 		return this.hidden;
 	}
 
-	public static AdvancementDisplay fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		Text text = JsonHelper.deserialize(jsonObject, "title", jsonDeserializationContext, Text.class);
-		Text text2 = JsonHelper.deserialize(jsonObject, "description", jsonDeserializationContext, Text.class);
+	public static AdvancementDisplay fromJson(JsonObject obj) {
+		Text text = Text.Serializer.fromJson(obj.get("title"));
+		Text text2 = Text.Serializer.fromJson(obj.get("description"));
 		if (text != null && text2 != null) {
-			ItemStack itemStack = iconFromJson(JsonHelper.getObject(jsonObject, "icon"));
-			Identifier identifier = jsonObject.has("background") ? new Identifier(JsonHelper.getString(jsonObject, "background")) : null;
-			AdvancementFrame advancementFrame = jsonObject.has("frame")
-				? AdvancementFrame.forName(JsonHelper.getString(jsonObject, "frame"))
-				: AdvancementFrame.field_1254;
-			boolean bl = JsonHelper.getBoolean(jsonObject, "show_toast", true);
-			boolean bl2 = JsonHelper.getBoolean(jsonObject, "announce_to_chat", true);
-			boolean bl3 = JsonHelper.getBoolean(jsonObject, "hidden", false);
+			ItemStack itemStack = iconFromJson(JsonHelper.getObject(obj, "icon"));
+			Identifier identifier = obj.has("background") ? new Identifier(JsonHelper.getString(obj, "background")) : null;
+			AdvancementFrame advancementFrame = obj.has("frame") ? AdvancementFrame.forName(JsonHelper.getString(obj, "frame")) : AdvancementFrame.TASK;
+			boolean bl = JsonHelper.getBoolean(obj, "show_toast", true);
+			boolean bl2 = JsonHelper.getBoolean(obj, "announce_to_chat", true);
+			boolean bl3 = JsonHelper.getBoolean(obj, "hidden", false);
 			return new AdvancementDisplay(itemStack, text, text2, identifier, advancementFrame, bl, bl2, bl3);
 		} else {
 			throw new JsonSyntaxException("Both title and description must be set");
 		}
 	}
 
-	private static ItemStack iconFromJson(JsonObject jsonObject) {
-		if (!jsonObject.has("item")) {
+	private static ItemStack iconFromJson(JsonObject json) {
+		if (!json.has("item")) {
 			throw new JsonSyntaxException("Unsupported icon type, currently only items are supported (add 'item' key)");
 		} else {
-			Item item = JsonHelper.getItem(jsonObject, "item");
-			if (jsonObject.has("data")) {
+			Item item = JsonHelper.getItem(json, "item");
+			if (json.has("data")) {
 				throw new JsonParseException("Disallowed data tag found");
 			} else {
 				ItemStack itemStack = new ItemStack(item);
-				if (jsonObject.has("nbt")) {
+				if (json.has("nbt")) {
 					try {
-						CompoundTag compoundTag = StringNbtReader.parse(JsonHelper.asString(jsonObject.get("nbt"), "nbt"));
+						CompoundTag compoundTag = StringNbtReader.parse(JsonHelper.asString(json.get("nbt"), "nbt"));
 						itemStack.setTag(compoundTag);
 					} catch (CommandSyntaxException var4) {
 						throw new JsonSyntaxException("Invalid nbt tag: " + var4.getMessage());
@@ -129,11 +133,11 @@ public class AdvancementDisplay {
 		}
 	}
 
-	public void toPacket(PacketByteBuf packetByteBuf) {
-		packetByteBuf.writeText(this.title);
-		packetByteBuf.writeText(this.description);
-		packetByteBuf.writeItemStack(this.icon);
-		packetByteBuf.writeEnumConstant(this.frame);
+	public void toPacket(PacketByteBuf buf) {
+		buf.writeText(this.title);
+		buf.writeText(this.description);
+		buf.writeItemStack(this.icon);
+		buf.writeEnumConstant(this.frame);
 		int i = 0;
 		if (this.background != null) {
 			i |= 1;
@@ -147,26 +151,26 @@ public class AdvancementDisplay {
 			i |= 4;
 		}
 
-		packetByteBuf.writeInt(i);
+		buf.writeInt(i);
 		if (this.background != null) {
-			packetByteBuf.writeIdentifier(this.background);
+			buf.writeIdentifier(this.background);
 		}
 
-		packetByteBuf.writeFloat(this.xPos);
-		packetByteBuf.writeFloat(this.yPos);
+		buf.writeFloat(this.xPos);
+		buf.writeFloat(this.yPos);
 	}
 
-	public static AdvancementDisplay fromPacket(PacketByteBuf packetByteBuf) {
-		Text text = packetByteBuf.readText();
-		Text text2 = packetByteBuf.readText();
-		ItemStack itemStack = packetByteBuf.readItemStack();
-		AdvancementFrame advancementFrame = packetByteBuf.readEnumConstant(AdvancementFrame.class);
-		int i = packetByteBuf.readInt();
-		Identifier identifier = (i & 1) != 0 ? packetByteBuf.readIdentifier() : null;
+	public static AdvancementDisplay fromPacket(PacketByteBuf buf) {
+		Text text = buf.readText();
+		Text text2 = buf.readText();
+		ItemStack itemStack = buf.readItemStack();
+		AdvancementFrame advancementFrame = buf.readEnumConstant(AdvancementFrame.class);
+		int i = buf.readInt();
+		Identifier identifier = (i & 1) != 0 ? buf.readIdentifier() : null;
 		boolean bl = (i & 2) != 0;
 		boolean bl2 = (i & 4) != 0;
 		AdvancementDisplay advancementDisplay = new AdvancementDisplay(itemStack, text, text2, identifier, advancementFrame, bl, false, bl2);
-		advancementDisplay.setPosition(packetByteBuf.readFloat(), packetByteBuf.readFloat());
+		advancementDisplay.setPosition(buf.readFloat(), buf.readFloat());
 		return advancementDisplay;
 	}
 
@@ -188,7 +192,7 @@ public class AdvancementDisplay {
 
 	private JsonObject iconToJson() {
 		JsonObject jsonObject = new JsonObject();
-		jsonObject.addProperty("item", Registry.field_11142.getId(this.icon.getItem()).toString());
+		jsonObject.addProperty("item", Registry.ITEM.getId(this.icon.getItem()).toString());
 		if (this.icon.hasTag()) {
 			jsonObject.addProperty("nbt", this.icon.getTag().toString());
 		}

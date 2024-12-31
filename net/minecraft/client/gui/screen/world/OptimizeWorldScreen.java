@@ -1,40 +1,79 @@
 package net.minecraft.client.gui.screen.world;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.UnmodifiableIterator;
+import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
+import javax.annotation.Nullable;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ScreenTexts;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.util.registry.DynamicRegistryManager;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.world.SaveProperties;
+import net.minecraft.world.World;
+import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.storage.LevelStorage;
 import net.minecraft.world.updater.WorldUpdater;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class OptimizeWorldScreen extends Screen {
-	private static final Object2IntMap<DimensionType> DIMENSION_COLORS = Util.make(
+	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Object2IntMap<RegistryKey<World>> DIMENSION_COLORS = Util.make(
 		new Object2IntOpenCustomHashMap(Util.identityHashStrategy()), object2IntOpenCustomHashMap -> {
-			object2IntOpenCustomHashMap.put(DimensionType.field_13072, -13408734);
-			object2IntOpenCustomHashMap.put(DimensionType.field_13076, -10075085);
-			object2IntOpenCustomHashMap.put(DimensionType.field_13078, -8943531);
+			object2IntOpenCustomHashMap.put(World.OVERWORLD, -13408734);
+			object2IntOpenCustomHashMap.put(World.NETHER, -10075085);
+			object2IntOpenCustomHashMap.put(World.END, -8943531);
 			object2IntOpenCustomHashMap.defaultReturnValue(-2236963);
 		}
 	);
 	private final BooleanConsumer callback;
 	private final WorldUpdater updater;
 
-	public OptimizeWorldScreen(BooleanConsumer booleanConsumer, String string, LevelStorage levelStorage, boolean bl) {
-		super(new TranslatableText("optimizeWorld.title", levelStorage.getLevelProperties(string).getLevelName()));
-		this.callback = booleanConsumer;
-		this.updater = new WorldUpdater(string, levelStorage, levelStorage.getLevelProperties(string), bl);
+	@Nullable
+	public static OptimizeWorldScreen create(
+		MinecraftClient client, BooleanConsumer callback, DataFixer dataFixer, LevelStorage.Session storageSession, boolean eraseCache
+	) {
+		DynamicRegistryManager.Impl impl = DynamicRegistryManager.create();
+
+		try (MinecraftClient.IntegratedResourceManager integratedResourceManager = client.method_29604(
+				impl, MinecraftClient::method_29598, MinecraftClient::createSaveProperties, false, storageSession
+			)) {
+			SaveProperties saveProperties = integratedResourceManager.getSaveProperties();
+			storageSession.backupLevelDataFile(impl, saveProperties);
+			ImmutableSet<RegistryKey<World>> immutableSet = saveProperties.getGeneratorOptions().getWorlds();
+			return new OptimizeWorldScreen(callback, dataFixer, storageSession, saveProperties.getLevelInfo(), eraseCache, immutableSet);
+		} catch (Exception var22) {
+			LOGGER.warn("Failed to load datapacks, can't optimize world", var22);
+			return null;
+		}
+	}
+
+	private OptimizeWorldScreen(
+		BooleanConsumer callback,
+		DataFixer dataFixer,
+		LevelStorage.Session storageSession,
+		LevelInfo levelInfo,
+		boolean eraseCache,
+		ImmutableSet<RegistryKey<World>> worlds
+	) {
+		super(new TranslatableText("optimizeWorld.title", levelInfo.getLevelName()));
+		this.callback = callback;
+		this.updater = new WorldUpdater(storageSession, dataFixer, worlds, eraseCache);
 	}
 
 	@Override
 	protected void init() {
 		super.init();
-		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 150, 200, 20, I18n.translate("gui.cancel"), buttonWidget -> {
+		this.addButton(new ButtonWidget(this.width / 2 - 100, this.height / 4 + 150, 200, 20, ScreenTexts.CANCEL, buttonWidget -> {
 			this.updater.cancel();
 			this.callback.accept(false);
 		}));
@@ -48,37 +87,50 @@ public class OptimizeWorldScreen extends Screen {
 	}
 
 	@Override
+	public void onClose() {
+		this.callback.accept(false);
+	}
+
+	@Override
 	public void removed() {
 		this.updater.cancel();
 	}
 
 	@Override
-	public void render(int i, int j, float f) {
-		this.renderBackground();
-		this.drawCenteredString(this.font, this.title.asFormattedString(), this.width / 2, 20, 16777215);
-		int k = this.width / 2 - 150;
-		int l = this.width / 2 + 150;
-		int m = this.height / 4 + 100;
-		int n = m + 10;
-		this.drawCenteredString(this.font, this.updater.getStatus().asFormattedString(), this.width / 2, m - 9 - 2, 10526880);
+	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		this.renderBackground(matrices);
+		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 20, 16777215);
+		int i = this.width / 2 - 150;
+		int j = this.width / 2 + 150;
+		int k = this.height / 4 + 100;
+		int l = k + 10;
+		drawCenteredText(matrices, this.textRenderer, this.updater.getStatus(), this.width / 2, k - 9 - 2, 10526880);
 		if (this.updater.getTotalChunkCount() > 0) {
-			fill(k - 1, m - 1, l + 1, n + 1, -16777216);
-			this.drawString(this.font, I18n.translate("optimizeWorld.info.converted", this.updater.getUpgradedChunkCount()), k, 40, 10526880);
-			this.drawString(this.font, I18n.translate("optimizeWorld.info.skipped", this.updater.getSkippedChunkCount()), k, 40 + 9 + 3, 10526880);
-			this.drawString(this.font, I18n.translate("optimizeWorld.info.total", this.updater.getTotalChunkCount()), k, 40 + (9 + 3) * 2, 10526880);
-			int o = 0;
+			fill(matrices, i - 1, k - 1, j + 1, l + 1, -16777216);
+			drawTextWithShadow(matrices, this.textRenderer, new TranslatableText("optimizeWorld.info.converted", this.updater.getUpgradedChunkCount()), i, 40, 10526880);
+			drawTextWithShadow(
+				matrices, this.textRenderer, new TranslatableText("optimizeWorld.info.skipped", this.updater.getSkippedChunkCount()), i, 40 + 9 + 3, 10526880
+			);
+			drawTextWithShadow(
+				matrices, this.textRenderer, new TranslatableText("optimizeWorld.info.total", this.updater.getTotalChunkCount()), i, 40 + (9 + 3) * 2, 10526880
+			);
+			int m = 0;
+			UnmodifiableIterator o = this.updater.method_28304().iterator();
 
-			for (DimensionType dimensionType : DimensionType.getAll()) {
-				int p = MathHelper.floor(this.updater.getProgress(dimensionType) * (float)(l - k));
-				fill(k + o, m, k + o + p, n, DIMENSION_COLORS.getInt(dimensionType));
-				o += p;
+			while (o.hasNext()) {
+				RegistryKey<World> registryKey = (RegistryKey<World>)o.next();
+				int n = MathHelper.floor(this.updater.getProgress(registryKey) * (float)(j - i));
+				fill(matrices, i + m, k, i + m + n, l, DIMENSION_COLORS.getInt(registryKey));
+				m += n;
 			}
 
-			int q = this.updater.getUpgradedChunkCount() + this.updater.getSkippedChunkCount();
-			this.drawCenteredString(this.font, q + " / " + this.updater.getTotalChunkCount(), this.width / 2, m + 2 * 9 + 2, 10526880);
-			this.drawCenteredString(this.font, MathHelper.floor(this.updater.getProgress() * 100.0F) + "%", this.width / 2, m + (n - m) / 2 - 9 / 2, 10526880);
+			int ox = this.updater.getUpgradedChunkCount() + this.updater.getSkippedChunkCount();
+			drawCenteredString(matrices, this.textRenderer, ox + " / " + this.updater.getTotalChunkCount(), this.width / 2, k + 2 * 9 + 2, 10526880);
+			drawCenteredString(
+				matrices, this.textRenderer, MathHelper.floor(this.updater.getProgress() * 100.0F) + "%", this.width / 2, k + (l - k) / 2 - 9 / 2, 10526880
+			);
 		}
 
-		super.render(i, j, f);
+		super.render(matrices, mouseX, mouseY, delta);
 	}
 }

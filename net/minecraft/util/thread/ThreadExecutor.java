@@ -16,13 +16,13 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 	private final Queue<R> tasks = Queues.newConcurrentLinkedQueue();
 	private int executionsInProgress;
 
-	protected ThreadExecutor(String string) {
-		this.name = string;
+	protected ThreadExecutor(String name) {
+		this.name = name;
 	}
 
 	protected abstract R createTask(Runnable runnable);
 
-	protected abstract boolean canExecute(R runnable);
+	protected abstract boolean canExecute(R task);
 
 	public boolean isOnThread() {
 		return Thread.currentThread() == this.getThread();
@@ -43,8 +43,8 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 		return this.name;
 	}
 
-	public <V> CompletableFuture<V> submit(Supplier<V> supplier) {
-		return this.shouldExecuteAsync() ? CompletableFuture.supplyAsync(supplier, this) : CompletableFuture.completedFuture(supplier.get());
+	public <V> CompletableFuture<V> submit(Supplier<V> task) {
+		return this.shouldExecuteAsync() ? CompletableFuture.supplyAsync(task, this) : CompletableFuture.completedFuture(task.get());
 	}
 
 	private CompletableFuture<Void> submitAsync(Runnable runnable) {
@@ -54,11 +54,11 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 		}, this);
 	}
 
-	public CompletableFuture<Void> submit(Runnable runnable) {
+	public CompletableFuture<Void> submit(Runnable task) {
 		if (this.shouldExecuteAsync()) {
-			return this.submitAsync(runnable);
+			return this.submitAsync(task);
 		} else {
-			runnable.run();
+			task.run();
 			return CompletableFuture.completedFuture(null);
 		}
 	}
@@ -105,11 +105,11 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 		}
 	}
 
-	public void runTasks(BooleanSupplier booleanSupplier) {
+	public void runTasks(BooleanSupplier stopCondition) {
 		this.executionsInProgress++;
 
 		try {
-			while (!booleanSupplier.getAsBoolean()) {
+			while (!stopCondition.getAsBoolean()) {
 				if (!this.runTask()) {
 					this.waitForTasks();
 				}
@@ -124,9 +124,9 @@ public abstract class ThreadExecutor<R extends Runnable> implements MessageListe
 		LockSupport.parkNanos("waiting for tasks", 100000L);
 	}
 
-	protected void executeTask(R runnable) {
+	protected void executeTask(R task) {
 		try {
-			runnable.run();
+			task.run();
 		} catch (Exception var3) {
 			LOGGER.fatal("Error executing task on {}", this.getName(), var3);
 		}

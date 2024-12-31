@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import java.util.zip.Deflater;
-import net.minecraft.util.PacketByteBuf;
 
 public class PacketDeflater extends MessageToByteEncoder<ByteBuf> {
 	private final byte[] deflateBuffer = new byte[8192];
@@ -38,7 +37,7 @@ public class PacketDeflater extends MessageToByteEncoder<ByteBuf> {
 		}
 	}
 
-	public void setCompressionThreshold(int i) {
-		this.compressionThreshold = i;
+	public void setCompressionThreshold(int compressionThreshold) {
+		this.compressionThreshold = compressionThreshold;
 	}
 }

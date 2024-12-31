@@ -4,9 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.Brain;
-import net.minecraft.entity.raid.Raid;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.village.raid.Raid;
 
 public class EndRaidTask extends Task<LivingEntity> {
 	public EndRaidTask() {
@@ -14,17 +13,17 @@ public class EndRaidTask extends Task<LivingEntity> {
 	}
 
 	@Override
-	protected boolean shouldRun(ServerWorld serverWorld, LivingEntity livingEntity) {
-		return serverWorld.random.nextInt(20) == 0;
+	protected boolean shouldRun(ServerWorld world, LivingEntity entity) {
+		return world.random.nextInt(20) == 0;
 	}
 
 	@Override
-	protected void run(ServerWorld serverWorld, LivingEntity livingEntity, long l) {
-		Brain<?> brain = livingEntity.getBrain();
-		Raid raid = serverWorld.getRaidAt(new BlockPos(livingEntity));
+	protected void run(ServerWorld world, LivingEntity entity, long time) {
+		Brain<?> brain = entity.getBrain();
+		Raid raid = world.getRaidAt(entity.getBlockPos());
 		if (raid == null || raid.hasStopped() || raid.hasLost()) {
-			brain.setDefaultActivity(Activity.field_18595);
-			brain.refreshActivities(serverWorld.getTimeOfDay(), serverWorld.getTime());
+			brain.setDefaultActivity(Activity.IDLE);
+			brain.refreshActivities(world.getTimeOfDay(), world.getTime());
 		}
 	}
 }

@@ -1,20 +1,20 @@
 package net.minecraft.entity.ai.goal;
 
-import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public class MoveIntoWaterGoal extends Goal {
-	private final MobEntityWithAi mob;
+	private final PathAwareEntity mob;
 
-	public MoveIntoWaterGoal(MobEntityWithAi mobEntityWithAi) {
-		this.mob = mobEntityWithAi;
+	public MoveIntoWaterGoal(PathAwareEntity mob) {
+		this.mob = mob;
 	}
 
 	@Override
 	public boolean canStart() {
-		return this.mob.onGround && !this.mob.world.getFluidState(new BlockPos(this.mob)).matches(FluidTags.field_15517);
+		return this.mob.isOnGround() && !this.mob.world.getFluidState(this.mob.getBlockPos()).isIn(FluidTags.WATER);
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class MoveIntoWaterGoal extends Goal {
 			MathHelper.floor(this.mob.getY()),
 			MathHelper.floor(this.mob.getZ() + 2.0)
 		)) {
-			if (this.mob.world.getFluidState(blockPos2).matches(FluidTags.field_15517)) {
+			if (this.mob.world.getFluidState(blockPos2).isIn(FluidTags.WATER)) {
 				blockPos = blockPos2;
 				break;
 			}

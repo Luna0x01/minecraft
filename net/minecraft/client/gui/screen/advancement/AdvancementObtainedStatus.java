@@ -1,13 +1,13 @@
 package net.minecraft.client.gui.screen.advancement;
 
 public enum AdvancementObtainedStatus {
-	field_2701(0),
-	field_2699(1);
+	OBTAINED(0),
+	UNOBTAINED(1);
 
 	private final int spriteIndex;
 
-	private AdvancementObtainedStatus(int j) {
-		this.spriteIndex = j;
+	private AdvancementObtainedStatus(int spriteIndex) {
+		this.spriteIndex = spriteIndex;
 	}
 
 	public int getSpriteIndex() {

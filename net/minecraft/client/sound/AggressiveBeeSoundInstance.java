@@ -6,7 +6,7 @@ import net.minecraft.sound.SoundEvents;
 
 public class AggressiveBeeSoundInstance extends AbstractBeeSoundInstance {
 	public AggressiveBeeSoundInstance(BeeEntity beeEntity) {
-		super(beeEntity, SoundEvents.field_20604, SoundCategory.field_15254);
+		super(beeEntity, SoundEvents.ENTITY_BEE_LOOP_AGGRESSIVE, SoundCategory.NEUTRAL);
 		this.repeatDelay = 0;
 	}
 
@@ -17,6 +17,6 @@ public class AggressiveBeeSoundInstance extends AbstractBeeSoundInstance {
 
 	@Override
 	protected boolean shouldReplace() {
-		return !this.bee.isAngry();
+		return !this.bee.hasAngerTime();
 	}
 }

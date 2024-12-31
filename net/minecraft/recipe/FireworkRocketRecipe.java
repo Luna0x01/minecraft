@@ -9,9 +9,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
 public class FireworkRocketRecipe extends SpecialCraftingRecipe {
-	private static final Ingredient PAPER = Ingredient.ofItems(Items.field_8407);
-	private static final Ingredient DURATION_MODIFIER = Ingredient.ofItems(Items.field_8054);
-	private static final Ingredient FIREWORK_STAR = Ingredient.ofItems(Items.field_8450);
+	private static final Ingredient PAPER = Ingredient.ofItems(Items.PAPER);
+	private static final Ingredient DURATION_MODIFIER = Ingredient.ofItems(Items.GUNPOWDER);
+	private static final Ingredient FIREWORK_STAR = Ingredient.ofItems(Items.FIREWORK_STAR);
 
 	public FireworkRocketRecipe(Identifier identifier) {
 		super(identifier);
@@ -21,8 +21,8 @@ public class FireworkRocketRecipe extends SpecialCraftingRecipe {
 		boolean bl = false;
 		int i = 0;
 
-		for (int j = 0; j < craftingInventory.getInvSize(); j++) {
-			ItemStack itemStack = craftingInventory.getInvStack(j);
+		for (int j = 0; j < craftingInventory.size(); j++) {
+			ItemStack itemStack = craftingInventory.getStack(j);
 			if (!itemStack.isEmpty()) {
 				if (PAPER.test(itemStack)) {
 					if (bl) {
@@ -44,13 +44,13 @@ public class FireworkRocketRecipe extends SpecialCraftingRecipe {
 	}
 
 	public ItemStack craft(CraftingInventory craftingInventory) {
-		ItemStack itemStack = new ItemStack(Items.field_8639, 3);
+		ItemStack itemStack = new ItemStack(Items.FIREWORK_ROCKET, 3);
 		CompoundTag compoundTag = itemStack.getOrCreateSubTag("Fireworks");
 		ListTag listTag = new ListTag();
 		int i = 0;
 
-		for (int j = 0; j < craftingInventory.getInvSize(); j++) {
-			ItemStack itemStack2 = craftingInventory.getInvStack(j);
+		for (int j = 0; j < craftingInventory.size(); j++) {
+			ItemStack itemStack2 = craftingInventory.getStack(j);
 			if (!itemStack2.isEmpty()) {
 				if (DURATION_MODIFIER.test(itemStack2)) {
 					i++;
@@ -72,13 +72,13 @@ public class FireworkRocketRecipe extends SpecialCraftingRecipe {
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
-		return i * j >= 2;
+	public boolean fits(int width, int height) {
+		return width * height >= 2;
 	}
 
 	@Override
 	public ItemStack getOutput() {
-		return new ItemStack(Items.field_8639);
+		return new ItemStack(Items.FIREWORK_ROCKET);
 	}
 
 	@Override

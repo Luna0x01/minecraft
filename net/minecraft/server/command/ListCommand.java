@@ -12,27 +12,29 @@ import net.minecraft.text.Texts;
 import net.minecraft.text.TranslatableText;
 
 public class ListCommand {
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("list")
 					.executes(commandContext -> executeNames((ServerCommandSource)commandContext.getSource())))
 				.then(CommandManager.literal("uuids").executes(commandContext -> executeUuids((ServerCommandSource)commandContext.getSource())))
 		);
 	}
 
-	private static int executeNames(ServerCommandSource serverCommandSource) {
-		return execute(serverCommandSource, PlayerEntity::getDisplayName);
+	private static int executeNames(ServerCommandSource source) {
+		return execute(source, PlayerEntity::getDisplayName);
 	}
 
-	private static int executeUuids(ServerCommandSource serverCommandSource) {
-		return execute(serverCommandSource, PlayerEntity::getNameAndUuid);
+	private static int executeUuids(ServerCommandSource source) {
+		return execute(
+			source, serverPlayerEntity -> new TranslatableText("commands.list.nameAndId", serverPlayerEntity.getName(), serverPlayerEntity.getGameProfile().getId())
+		);
 	}
 
-	private static int execute(ServerCommandSource serverCommandSource, Function<ServerPlayerEntity, Text> function) {
-		PlayerManager playerManager = serverCommandSource.getMinecraftServer().getPlayerManager();
+	private static int execute(ServerCommandSource source, Function<ServerPlayerEntity, Text> nameProvider) {
+		PlayerManager playerManager = source.getMinecraftServer().getPlayerManager();
 		List<ServerPlayerEntity> list = playerManager.getPlayerList();
-		Text text = Texts.join(list, function);
-		serverCommandSource.sendFeedback(new TranslatableText("commands.list.players", list.size(), playerManager.getMaxPlayerCount(), text), false);
+		Text text = Texts.join(list, nameProvider);
+		source.sendFeedback(new TranslatableText("commands.list.players", list.size(), playerManager.getMaxPlayerCount(), text), false);
 		return list.size();
 	}
 }

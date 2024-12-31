@@ -2,6 +2,7 @@ package net.minecraft.block.entity;
 
 import java.util.Random;
 import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
@@ -25,24 +26,24 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Nameable,
 	private Text customName;
 
 	public EnchantingTableBlockEntity() {
-		super(BlockEntityType.field_11912);
+		super(BlockEntityType.ENCHANTING_TABLE);
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag compoundTag) {
-		super.toTag(compoundTag);
+	public CompoundTag toTag(CompoundTag tag) {
+		super.toTag(tag);
 		if (this.hasCustomName()) {
-			compoundTag.putString("CustomName", Text.Serializer.toJson(this.customName));
+			tag.putString("CustomName", Text.Serializer.toJson(this.customName));
 		}
 
-		return compoundTag;
+		return tag;
 	}
 
 	@Override
-	public void fromTag(CompoundTag compoundTag) {
-		super.fromTag(compoundTag);
-		if (compoundTag.contains("CustomName", 8)) {
-			this.customName = Text.Serializer.fromJson(compoundTag.getString("CustomName"));
+	public void fromTag(BlockState state, CompoundTag tag) {
+		super.fromTag(state, tag);
+		if (tag.contains("CustomName", 8)) {
+			this.customName = Text.Serializer.fromJson(tag.getString("CustomName"));
 		}
 	}
 
@@ -51,7 +52,7 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Nameable,
 		this.pageTurningSpeed = this.nextPageTurningSpeed;
 		this.field_11963 = this.field_11964;
 		PlayerEntity playerEntity = this.world
-			.getClosestPlayer((double)((float)this.pos.getX() + 0.5F), (double)((float)this.pos.getY() + 0.5F), (double)((float)this.pos.getZ() + 0.5F), 3.0, false);
+			.getClosestPlayer((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5, 3.0, false);
 		if (playerEntity != null) {
 			double d = playerEntity.getX() - ((double)this.pos.getX() + 0.5);
 			double e = playerEntity.getZ() - ((double)this.pos.getZ() + 0.5);
@@ -111,8 +112,8 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Nameable,
 		return (Text)(this.customName != null ? this.customName : new TranslatableText("container.enchant"));
 	}
 
-	public void setCustomName(@Nullable Text text) {
-		this.customName = text;
+	public void setCustomName(@Nullable Text value) {
+		this.customName = value;
 	}
 
 	@Nullable

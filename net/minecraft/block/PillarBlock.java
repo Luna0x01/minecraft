@@ -10,26 +10,26 @@ import net.minecraft.util.math.Direction;
 public class PillarBlock extends Block {
 	public static final EnumProperty<Direction.Axis> AXIS = Properties.AXIS;
 
-	public PillarBlock(Block.Settings settings) {
+	public PillarBlock(AbstractBlock.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.getDefaultState().with(AXIS, Direction.Axis.field_11052));
+		this.setDefaultState(this.getDefaultState().with(AXIS, Direction.Axis.Y));
 	}
 
 	@Override
-	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
-		switch (blockRotation) {
-			case field_11465:
-			case field_11463:
-				switch ((Direction.Axis)blockState.get(AXIS)) {
-					case field_11048:
-						return blockState.with(AXIS, Direction.Axis.field_11051);
-					case field_11051:
-						return blockState.with(AXIS, Direction.Axis.field_11048);
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case COUNTERCLOCKWISE_90:
+			case CLOCKWISE_90:
+				switch ((Direction.Axis)state.get(AXIS)) {
+					case X:
+						return state.with(AXIS, Direction.Axis.Z);
+					case Z:
+						return state.with(AXIS, Direction.Axis.X);
 					default:
-						return blockState;
+						return state;
 				}
 			default:
-				return blockState;
+				return state;
 		}
 	}
 
@@ -39,7 +39,7 @@ public class PillarBlock extends Block {
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		return this.getDefaultState().with(AXIS, itemPlacementContext.getSide().getAxis());
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		return this.getDefaultState().with(AXIS, ctx.getSide().getAxis());
 	}
 }

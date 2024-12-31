@@ -3,22 +3,22 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class VanishingCurseEnchantment extends Enchantment {
-	public VanishingCurseEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
-		super(weight, EnchantmentTarget.field_9075, equipmentSlots);
+	public VanishingCurseEnchantment(Enchantment.Rarity weight, EquipmentSlot... slotTypes) {
+		super(weight, EnchantmentTarget.VANISHABLE, slotTypes);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
+	public int getMinPower(int level) {
 		return 25;
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
+	public int getMaxPower(int level) {
 		return 50;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 1;
 	}
 

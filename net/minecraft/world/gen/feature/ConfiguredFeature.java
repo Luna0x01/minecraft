@@ -1,69 +1,54 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import java.util.List;
 import java.util.Random;
-import net.minecraft.util.Identifier;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import net.minecraft.util.dynamic.RegistryElementCodec;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
 import net.minecraft.world.gen.decorator.ConfiguredDecorator;
+import net.minecraft.world.gen.decorator.Decoratable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ConfiguredFeature<FC extends FeatureConfig, F extends Feature<FC>> {
-	public static final Logger log = LogManager.getLogger();
+public class ConfiguredFeature<FC extends FeatureConfig, F extends Feature<FC>> implements Decoratable<ConfiguredFeature<?, ?>> {
+	public static final Codec<ConfiguredFeature<?, ?>> CODEC = Registry.FEATURE.dispatch(configuredFeature -> configuredFeature.feature, Feature::getCodec);
+	public static final Codec<Supplier<ConfiguredFeature<?, ?>>> REGISTRY_CODEC = RegistryElementCodec.of(Registry.CONFIGURED_FEATURE_WORLDGEN, CODEC);
+	public static final Codec<List<Supplier<ConfiguredFeature<?, ?>>>> field_26756 = RegistryElementCodec.method_31194(Registry.CONFIGURED_FEATURE_WORLDGEN, CODEC);
+	public static final Logger LOGGER = LogManager.getLogger();
 	public final F feature;
 	public final FC config;
 
-	public ConfiguredFeature(F feature, FC featureConfig) {
+	public ConfiguredFeature(F feature, FC config) {
 		this.feature = feature;
-		this.config = featureConfig;
+		this.config = config;
 	}
 
-	public ConfiguredFeature(F feature, Dynamic<?> dynamic) {
-		this(feature, feature.deserializeConfig(dynamic));
+	public F getFeature() {
+		return this.feature;
 	}
 
-	public ConfiguredFeature<?, ?> createDecoratedFeature(ConfiguredDecorator<?> configuredDecorator) {
-		Feature<DecoratedFeatureConfig> feature = this.feature instanceof FlowerFeature ? Feature.field_13561 : Feature.field_21217;
-		return feature.configure(new DecoratedFeatureConfig(this, configuredDecorator));
+	public FC getConfig() {
+		return this.config;
 	}
 
-	public RandomFeatureEntry<FC> withChance(float f) {
-		return new RandomFeatureEntry<>(this, f);
+	public ConfiguredFeature<?, ?> decorate(ConfiguredDecorator<?> configuredDecorator) {
+		return Feature.DECORATED.configure(new DecoratedFeatureConfig(() -> this, configuredDecorator));
 	}
 
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		return new Dynamic(
-			dynamicOps,
-			dynamicOps.createMap(
-				ImmutableMap.of(
-					dynamicOps.createString("name"),
-					dynamicOps.createString(Registry.field_11138.getId(this.feature).toString()),
-					dynamicOps.createString("config"),
-					this.config.serialize(dynamicOps).getValue()
-				)
-			)
-		);
+	public RandomFeatureEntry withChance(float chance) {
+		return new RandomFeatureEntry(this, chance);
 	}
 
-	public boolean generate(IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos) {
-		return this.feature.generate(iWorld, chunkGenerator, random, blockPos, this.config);
+	public boolean generate(StructureWorldAccess world, ChunkGenerator chunkGenerator, Random random, BlockPos pos) {
+		return this.feature.generate(world, chunkGenerator, random, pos, this.config);
 	}
 
-	public static <T> ConfiguredFeature<?, ?> deserialize(Dynamic<T> dynamic) {
-		String string = dynamic.get("name").asString("");
-		Feature<? extends FeatureConfig> feature = (Feature<? extends FeatureConfig>)Registry.field_11138.get(new Identifier(string));
-
-		try {
-			return new ConfiguredFeature<>(feature, dynamic.get("config").orElseEmptyMap());
-		} catch (RuntimeException var4) {
-			log.warn("Error while deserializing {}", string);
-			return new ConfiguredFeature<>(Feature.field_21590, DefaultFeatureConfig.DEFAULT);
-		}
+	public Stream<ConfiguredFeature<?, ?>> method_30648() {
+		return Stream.concat(Stream.of(this), this.config.method_30649());
 	}
 }

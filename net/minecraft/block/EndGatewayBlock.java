@@ -11,49 +11,49 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EndGatewayBlock extends BlockWithEntity {
-	protected EndGatewayBlock(Block.Settings settings) {
+	protected EndGatewayBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView blockView) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new EndGatewayBlockEntity();
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof EndGatewayBlockEntity) {
 			int i = ((EndGatewayBlockEntity)blockEntity).getDrawnSidesCount();
 
 			for (int j = 0; j < i; j++) {
-				double d = (double)blockPos.getX() + (double)random.nextFloat();
-				double e = (double)blockPos.getY() + (double)random.nextFloat();
-				double f = (double)blockPos.getZ() + (double)random.nextFloat();
-				double g = ((double)random.nextFloat() - 0.5) * 0.5;
-				double h = ((double)random.nextFloat() - 0.5) * 0.5;
-				double k = ((double)random.nextFloat() - 0.5) * 0.5;
+				double d = (double)pos.getX() + random.nextDouble();
+				double e = (double)pos.getY() + random.nextDouble();
+				double f = (double)pos.getZ() + random.nextDouble();
+				double g = (random.nextDouble() - 0.5) * 0.5;
+				double h = (random.nextDouble() - 0.5) * 0.5;
+				double k = (random.nextDouble() - 0.5) * 0.5;
 				int l = random.nextInt(2) * 2 - 1;
 				if (random.nextBoolean()) {
-					f = (double)blockPos.getZ() + 0.5 + 0.25 * (double)l;
+					f = (double)pos.getZ() + 0.5 + 0.25 * (double)l;
 					k = (double)(random.nextFloat() * 2.0F * (float)l);
 				} else {
-					d = (double)blockPos.getX() + 0.5 + 0.25 * (double)l;
+					d = (double)pos.getX() + 0.5 + 0.25 * (double)l;
 					g = (double)(random.nextFloat() * 2.0F * (float)l);
 				}
 
-				world.addParticle(ParticleTypes.field_11214, d, e, f, g, h, k);
+				world.addParticle(ParticleTypes.PORTAL, d, e, f, g, h, k);
 			}
 		}
 	}
 
 	@Override
-	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state) {
 		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public boolean canBucketPlace(BlockState blockState, Fluid fluid) {
+	public boolean canBucketPlace(BlockState state, Fluid fluid) {
 		return false;
 	}
 }

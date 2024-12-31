@@ -6,7 +6,7 @@ import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.util.Identifier;
 
 public class SpiderEntityRenderer<T extends SpiderEntity> extends MobEntityRenderer<T, SpiderEntityModel<T>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/spider/spider.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/spider/spider.png");
 
 	public SpiderEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new SpiderEntityModel<>(), 0.8F);
@@ -18,6 +18,6 @@ public class SpiderEntityRenderer<T extends SpiderEntity> extends MobEntityRende
 	}
 
 	public Identifier getTexture(T spiderEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

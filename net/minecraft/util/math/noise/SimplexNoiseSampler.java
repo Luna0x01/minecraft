@@ -22,9 +22,9 @@ public class SimplexNoiseSampler {
 		{-1, 1, 0},
 		{0, -1, -1}
 	};
-	private static final double sqrt3 = Math.sqrt(3.0);
-	private static final double SKEW_FACTOR_2D = 0.5 * (sqrt3 - 1.0);
-	private static final double UNSKEW_FACTOR_2D = (3.0 - sqrt3) / 6.0;
+	private static final double SQRT_3 = Math.sqrt(3.0);
+	private static final double SKEW_FACTOR_2D = 0.5 * (SQRT_3 - 1.0);
+	private static final double UNSKEW_FACTOR_2D = (3.0 - SQRT_3) / 6.0;
 	private final int[] permutations = new int[512];
 	public final double originX;
 	public final double originY;
@@ -48,58 +48,58 @@ public class SimplexNoiseSampler {
 		}
 	}
 
-	private int getGradient(int i) {
-		return this.permutations[i & 0xFF];
+	private int getGradient(int hash) {
+		return this.permutations[hash & 0xFF];
 	}
 
-	protected static double dot(int[] is, double d, double e, double f) {
-		return (double)is[0] * d + (double)is[1] * e + (double)is[2] * f;
+	protected static double dot(int[] gArr, double x, double y, double z) {
+		return (double)gArr[0] * x + (double)gArr[1] * y + (double)gArr[2] * z;
 	}
 
-	private double grad(int i, double d, double e, double f, double g) {
-		double h = g - d * d - e * e - f * f;
-		double j;
-		if (h < 0.0) {
-			j = 0.0;
+	private double grad(int hash, double x, double y, double z, double d) {
+		double e = d - x * x - y * y - z * z;
+		double f;
+		if (e < 0.0) {
+			f = 0.0;
 		} else {
-			h *= h;
-			j = h * h * dot(gradients[i], d, e, f);
+			e *= e;
+			f = e * e * dot(gradients[hash], x, y, z);
 		}
 
-		return j;
+		return f;
 	}
 
-	public double sample(double d, double e) {
-		double f = (d + e) * SKEW_FACTOR_2D;
-		int i = MathHelper.floor(d + f);
-		int j = MathHelper.floor(e + f);
-		double g = (double)(i + j) * UNSKEW_FACTOR_2D;
-		double h = (double)i - g;
-		double k = (double)j - g;
-		double l = d - h;
-		double m = e - k;
-		int n;
-		int o;
-		if (l > m) {
-			n = 1;
-			o = 0;
+	public double sample(double x, double y) {
+		double d = (x + y) * SKEW_FACTOR_2D;
+		int i = MathHelper.floor(x + d);
+		int j = MathHelper.floor(y + d);
+		double e = (double)(i + j) * UNSKEW_FACTOR_2D;
+		double f = (double)i - e;
+		double g = (double)j - e;
+		double h = x - f;
+		double k = y - g;
+		int l;
+		int m;
+		if (h > k) {
+			l = 1;
+			m = 0;
 		} else {
-			n = 0;
-			o = 1;
+			l = 0;
+			m = 1;
 		}
 
-		double r = l - (double)n + UNSKEW_FACTOR_2D;
-		double s = m - (double)o + UNSKEW_FACTOR_2D;
-		double t = l - 1.0 + 2.0 * UNSKEW_FACTOR_2D;
-		double u = m - 1.0 + 2.0 * UNSKEW_FACTOR_2D;
-		int v = i & 0xFF;
-		int w = j & 0xFF;
-		int x = this.getGradient(v + this.getGradient(w)) % 12;
-		int y = this.getGradient(v + n + this.getGradient(w + o)) % 12;
-		int z = this.getGradient(v + 1 + this.getGradient(w + 1)) % 12;
-		double aa = this.grad(x, l, m, 0.0, 0.5);
-		double ab = this.grad(y, r, s, 0.0, 0.5);
-		double ac = this.grad(z, t, u, 0.0, 0.5);
+		double p = h - (double)l + UNSKEW_FACTOR_2D;
+		double q = k - (double)m + UNSKEW_FACTOR_2D;
+		double r = h - 1.0 + 2.0 * UNSKEW_FACTOR_2D;
+		double s = k - 1.0 + 2.0 * UNSKEW_FACTOR_2D;
+		int t = i & 0xFF;
+		int u = j & 0xFF;
+		int v = this.getGradient(t + this.getGradient(u)) % 12;
+		int w = this.getGradient(t + l + this.getGradient(u + m)) % 12;
+		int z = this.getGradient(t + 1 + this.getGradient(u + 1)) % 12;
+		double aa = this.grad(v, h, k, 0.0, 0.5);
+		double ab = this.grad(w, p, q, 0.0, 0.5);
+		double ac = this.grad(z, r, s, 0.0, 0.5);
 		return 70.0 * (aa + ab + ac);
 	}
 

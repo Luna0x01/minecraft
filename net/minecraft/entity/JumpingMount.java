@@ -1,11 +1,11 @@
 package net.minecraft.entity;
 
 public interface JumpingMount {
-	void setJumpStrength(int i);
+	void setJumpStrength(int strength);
 
 	boolean canJump();
 
-	void startJumping(int i);
+	void startJumping(int height);
 
 	void stopJumping();
 }

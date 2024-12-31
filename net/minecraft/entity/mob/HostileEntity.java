@@ -3,7 +3,8 @@ package net.minecraft.entity.mob;
 import java.util.Random;
 import java.util.function.Predicate;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,12 +16,13 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LightType;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
-public abstract class HostileEntity extends MobEntityWithAi implements Monster {
+public abstract class HostileEntity extends PathAwareEntity implements Monster {
 	protected HostileEntity(EntityType<? extends HostileEntity> entityType, World world) {
 		super(entityType, world);
 		this.experiencePoints = 5;
@@ -28,7 +30,7 @@ public abstract class HostileEntity extends MobEntityWithAi implements Monster {
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return SoundCategory.field_15251;
+		return SoundCategory.HOSTILE;
 	}
 
 	@Override
@@ -46,70 +48,70 @@ public abstract class HostileEntity extends MobEntityWithAi implements Monster {
 	}
 
 	@Override
-	protected boolean method_23734() {
+	protected boolean isDisallowedInPeaceful() {
 		return true;
 	}
 
 	@Override
 	protected SoundEvent getSwimSound() {
-		return SoundEvents.field_14630;
+		return SoundEvents.ENTITY_HOSTILE_SWIM;
 	}
 
 	@Override
 	protected SoundEvent getSplashSound() {
-		return SoundEvents.field_14836;
+		return SoundEvents.ENTITY_HOSTILE_SPLASH;
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		return this.isInvulnerableTo(damageSource) ? false : super.damage(damageSource, f);
+	public boolean damage(DamageSource source, float amount) {
+		return this.isInvulnerableTo(source) ? false : super.damage(source, amount);
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_14994;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_HOSTILE_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_14899;
+		return SoundEvents.ENTITY_HOSTILE_DEATH;
 	}
 
 	@Override
-	protected SoundEvent getFallSound(int i) {
-		return i > 4 ? SoundEvents.field_15157 : SoundEvents.field_14754;
+	protected SoundEvent getFallSound(int distance) {
+		return distance > 4 ? SoundEvents.ENTITY_HOSTILE_BIG_FALL : SoundEvents.ENTITY_HOSTILE_SMALL_FALL;
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos blockPos, WorldView worldView) {
-		return 0.5F - worldView.getBrightness(blockPos);
+	public float getPathfindingFavor(BlockPos pos, WorldView world) {
+		return 0.5F - world.getBrightness(pos);
 	}
 
-	public static boolean isSpawnDark(IWorld iWorld, BlockPos blockPos, Random random) {
-		if (iWorld.getLightLevel(LightType.field_9284, blockPos) > random.nextInt(32)) {
+	public static boolean isSpawnDark(ServerWorldAccess serverWorldAccess, BlockPos pos, Random random) {
+		if (serverWorldAccess.getLightLevel(LightType.SKY, pos) > random.nextInt(32)) {
 			return false;
 		} else {
-			int i = iWorld.getWorld().isThundering() ? iWorld.getLightLevel(blockPos, 10) : iWorld.getLightLevel(blockPos);
+			int i = serverWorldAccess.toServerWorld().isThundering() ? serverWorldAccess.getLightLevel(pos, 10) : serverWorldAccess.getLightLevel(pos);
 			return i <= random.nextInt(8);
 		}
 	}
 
-	public static boolean canSpawnInDark(EntityType<? extends HostileEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		return iWorld.getDifficulty() != Difficulty.field_5801
-			&& isSpawnDark(iWorld, blockPos, random)
-			&& canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
+	public static boolean canSpawnInDark(
+		EntityType<? extends HostileEntity> type, ServerWorldAccess serverWorldAccess, SpawnReason spawnReason, BlockPos pos, Random random
+	) {
+		return serverWorldAccess.getDifficulty() != Difficulty.PEACEFUL
+			&& isSpawnDark(serverWorldAccess, pos, random)
+			&& canMobSpawn(type, serverWorldAccess, spawnReason, pos, random);
 	}
 
 	public static boolean canSpawnIgnoreLightLevel(
-		EntityType<? extends HostileEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random
+		EntityType<? extends HostileEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random
 	) {
-		return iWorld.getDifficulty() != Difficulty.field_5801 && canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
+		return world.getDifficulty() != Difficulty.PEACEFUL && canMobSpawn(type, world, spawnReason, pos, random);
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributes().register(EntityAttributes.ATTACK_DAMAGE);
+	public static DefaultAttributeContainer.Builder createHostileAttributes() {
+		return MobEntity.createMobAttributes().add(EntityAttributes.GENERIC_ATTACK_DAMAGE);
 	}
 
 	@Override
@@ -117,16 +119,21 @@ public abstract class HostileEntity extends MobEntityWithAi implements Monster {
 		return true;
 	}
 
-	public boolean isAngryAt(PlayerEntity playerEntity) {
+	@Override
+	protected boolean shouldDropLoot() {
+		return true;
+	}
+
+	public boolean isAngryAt(PlayerEntity player) {
 		return true;
 	}
 
 	@Override
-	public ItemStack getArrowType(ItemStack itemStack) {
-		if (itemStack.getItem() instanceof RangedWeaponItem) {
-			Predicate<ItemStack> predicate = ((RangedWeaponItem)itemStack.getItem()).getHeldProjectiles();
-			ItemStack itemStack2 = RangedWeaponItem.getHeldProjectile(this, predicate);
-			return itemStack2.isEmpty() ? new ItemStack(Items.field_8107) : itemStack2;
+	public ItemStack getArrowType(ItemStack stack) {
+		if (stack.getItem() instanceof RangedWeaponItem) {
+			Predicate<ItemStack> predicate = ((RangedWeaponItem)stack.getItem()).getHeldProjectiles();
+			ItemStack itemStack = RangedWeaponItem.getHeldProjectile(this, predicate);
+			return itemStack.isEmpty() ? new ItemStack(Items.ARROW) : itemStack;
 		} else {
 			return ItemStack.EMPTY;
 		}

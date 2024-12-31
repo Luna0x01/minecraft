@@ -11,23 +11,23 @@ public class ScheduledTick<T> {
 	public final TickPriority priority;
 	private final long id;
 
-	public ScheduledTick(BlockPos blockPos, T object) {
-		this(blockPos, object, 0L, TickPriority.field_9314);
+	public ScheduledTick(BlockPos pos, T t) {
+		this(pos, t, 0L, TickPriority.NORMAL);
 	}
 
-	public ScheduledTick(BlockPos blockPos, T object, long l, TickPriority tickPriority) {
+	public ScheduledTick(BlockPos pos, T t, long time, TickPriority priority) {
 		this.id = idCounter++;
-		this.pos = blockPos.toImmutable();
-		this.object = object;
-		this.time = l;
-		this.priority = tickPriority;
+		this.pos = pos.toImmutable();
+		this.object = t;
+		this.time = time;
+		this.priority = priority;
 	}
 
-	public boolean equals(Object object) {
-		if (!(object instanceof ScheduledTick)) {
+	public boolean equals(Object o) {
+		if (!(o instanceof ScheduledTick)) {
 			return false;
 		} else {
-			ScheduledTick<?> scheduledTick = (ScheduledTick<?>)object;
+			ScheduledTick<?> scheduledTick = (ScheduledTick<?>)o;
 			return this.pos.equals(scheduledTick.pos) && this.object == scheduledTick.object;
 		}
 	}

@@ -3,13 +3,13 @@ package net.minecraft.block.enums;
 import net.minecraft.util.StringIdentifiable;
 
 public enum ComparatorMode implements StringIdentifiable {
-	field_12576("compare"),
-	field_12578("subtract");
+	COMPARE("compare"),
+	SUBTRACT("subtract");
 
 	private final String name;
 
-	private ComparatorMode(String string2) {
-		this.name = string2;
+	private ComparatorMode(String name) {
+		this.name = name;
 	}
 
 	public String toString() {

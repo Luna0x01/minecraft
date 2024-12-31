@@ -5,9 +5,8 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.enums.WallMountLocation;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
@@ -21,9 +20,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
+import net.minecraft.world.WorldAccess;
 
 public abstract class AbstractButtonBlock extends WallMountedBlock {
 	public static final BooleanProperty POWERED = Properties.POWERED;
@@ -45,45 +43,44 @@ public abstract class AbstractButtonBlock extends WallMountedBlock {
 	protected static final VoxelShape EAST_PRESSED_SHAPE = Block.createCuboidShape(0.0, 6.0, 5.0, 1.0, 10.0, 11.0);
 	private final boolean wooden;
 
-	protected AbstractButtonBlock(boolean bl, Block.Settings settings) {
+	protected AbstractButtonBlock(boolean wooden, AbstractBlock.Settings settings) {
 		super(settings);
 		this.setDefaultState(
-			this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(POWERED, Boolean.valueOf(false)).with(FACE, WallMountLocation.field_12471)
+			this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(POWERED, Boolean.valueOf(false)).with(FACE, WallMountLocation.WALL)
 		);
-		this.wooden = bl;
+		this.wooden = wooden;
 	}
 
-	@Override
-	public int getTickRate(WorldView worldView) {
+	private int getPressTicks() {
 		return this.wooden ? 30 : 20;
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		Direction direction = blockState.get(FACING);
-		boolean bl = (Boolean)blockState.get(POWERED);
-		switch ((WallMountLocation)blockState.get(FACE)) {
-			case field_12475:
-				if (direction.getAxis() == Direction.Axis.field_11048) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		Direction direction = state.get(FACING);
+		boolean bl = (Boolean)state.get(POWERED);
+		switch ((WallMountLocation)state.get(FACE)) {
+			case FLOOR:
+				if (direction.getAxis() == Direction.Axis.X) {
 					return bl ? FLOOR_X_PRESSED_SHAPE : FLOOR_X_SHAPE;
 				}
 
 				return bl ? FLOOR_Z_PRESSED_SHAPE : FLOOR_Z_SHAPE;
-			case field_12471:
+			case WALL:
 				switch (direction) {
-					case field_11034:
+					case EAST:
 						return bl ? EAST_PRESSED_SHAPE : EAST_SHAPE;
-					case field_11039:
+					case WEST:
 						return bl ? WEST_PRESSED_SHAPE : WEST_SHAPE;
-					case field_11035:
+					case SOUTH:
 						return bl ? SOUTH_PRESSED_SHAPE : SOUTH_SHAPE;
-					case field_11043:
+					case NORTH:
 					default:
 						return bl ? NORTH_PRESSED_SHAPE : NORTH_SHAPE;
 				}
-			case field_12473:
+			case CEILING:
 			default:
-				if (direction.getAxis() == Direction.Axis.field_11048) {
+				if (direction.getAxis() == Direction.Axis.X) {
 					return bl ? CEILING_X_PRESSED_SHAPE : CEILING_X_SHAPE;
 				} else {
 					return bl ? CEILING_Z_PRESSED_SHAPE : CEILING_Z_SHAPE;
@@ -92,94 +89,92 @@ public abstract class AbstractButtonBlock extends WallMountedBlock {
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		if ((Boolean)blockState.get(POWERED)) {
-			return ActionResult.field_21466;
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+		if ((Boolean)state.get(POWERED)) {
+			return ActionResult.CONSUME;
 		} else {
-			this.method_21845(blockState, world, blockPos);
-			this.playClickSound(playerEntity, world, blockPos, true);
-			return ActionResult.field_5812;
+			this.powerOn(state, world, pos);
+			this.playClickSound(player, world, pos, true);
+			return ActionResult.success(world.isClient);
 		}
 	}
 
-	public void method_21845(BlockState blockState, World world, BlockPos blockPos) {
-		world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(true)), 3);
-		this.updateNeighbors(blockState, world, blockPos);
-		world.getBlockTickScheduler().schedule(blockPos, this, this.getTickRate(world));
+	public void powerOn(BlockState state, World world, BlockPos pos) {
+		world.setBlockState(pos, state.with(POWERED, Boolean.valueOf(true)), 3);
+		this.updateNeighbors(state, world, pos);
+		world.getBlockTickScheduler().schedule(pos, this, this.getPressTicks());
 	}
 
-	protected void playClickSound(@Nullable PlayerEntity playerEntity, IWorld iWorld, BlockPos blockPos, boolean bl) {
-		iWorld.playSound(bl ? playerEntity : null, blockPos, this.getClickSound(bl), SoundCategory.field_15245, 0.3F, bl ? 0.6F : 0.5F);
+	protected void playClickSound(@Nullable PlayerEntity player, WorldAccess world, BlockPos pos, boolean powered) {
+		world.playSound(powered ? player : null, pos, this.getClickSound(powered), SoundCategory.BLOCKS, 0.3F, powered ? 0.6F : 0.5F);
 	}
 
-	protected abstract SoundEvent getClickSound(boolean bl);
+	protected abstract SoundEvent getClickSound(boolean powered);
 
 	@Override
-	public void onBlockRemoved(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
-		if (!bl && blockState.getBlock() != blockState2.getBlock()) {
-			if ((Boolean)blockState.get(POWERED)) {
-				this.updateNeighbors(blockState, world, blockPos);
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (!moved && !state.isOf(newState.getBlock())) {
+			if ((Boolean)state.get(POWERED)) {
+				this.updateNeighbors(state, world, pos);
 			}
 
-			super.onBlockRemoved(blockState, world, blockPos, blockState2, bl);
+			super.onStateReplaced(state, world, pos, newState, moved);
 		}
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
-		return blockState.get(POWERED) ? 15 : 0;
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return state.get(POWERED) ? 15 : 0;
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
-		return blockState.get(POWERED) && getDirection(blockState) == direction ? 15 : 0;
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return state.get(POWERED) && getDirection(state) == direction ? 15 : 0;
 	}
 
 	@Override
-	public boolean emitsRedstonePower(BlockState blockState) {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
-		if ((Boolean)blockState.get(POWERED)) {
+	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+		if ((Boolean)state.get(POWERED)) {
 			if (this.wooden) {
-				this.tryPowerWithProjectiles(blockState, serverWorld, blockPos);
+				this.tryPowerWithProjectiles(state, world, pos);
 			} else {
-				serverWorld.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(false)), 3);
-				this.updateNeighbors(blockState, serverWorld, blockPos);
-				this.playClickSound(null, serverWorld, blockPos, false);
+				world.setBlockState(pos, state.with(POWERED, Boolean.valueOf(false)), 3);
+				this.updateNeighbors(state, world, pos);
+				this.playClickSound(null, world, pos, false);
 			}
 		}
 	}
 
 	@Override
-	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
-		if (!world.isClient && this.wooden && !(Boolean)blockState.get(POWERED)) {
-			this.tryPowerWithProjectiles(blockState, world, blockPos);
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		if (!world.isClient && this.wooden && !(Boolean)state.get(POWERED)) {
+			this.tryPowerWithProjectiles(state, world, pos);
 		}
 	}
 
-	private void tryPowerWithProjectiles(BlockState blockState, World world, BlockPos blockPos) {
-		List<? extends Entity> list = world.getNonSpectatingEntities(
-			ProjectileEntity.class, blockState.getOutlineShape(world, blockPos).getBoundingBox().offset(blockPos)
-		);
+	private void tryPowerWithProjectiles(BlockState state, World world, BlockPos pos) {
+		List<? extends Entity> list = world.getNonSpectatingEntities(PersistentProjectileEntity.class, state.getOutlineShape(world, pos).getBoundingBox().offset(pos));
 		boolean bl = !list.isEmpty();
-		boolean bl2 = (Boolean)blockState.get(POWERED);
+		boolean bl2 = (Boolean)state.get(POWERED);
 		if (bl != bl2) {
-			world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(bl)), 3);
-			this.updateNeighbors(blockState, world, blockPos);
-			this.playClickSound(null, world, blockPos, bl);
+			world.setBlockState(pos, state.with(POWERED, Boolean.valueOf(bl)), 3);
+			this.updateNeighbors(state, world, pos);
+			this.playClickSound(null, world, pos, bl);
 		}
 
 		if (bl) {
-			world.getBlockTickScheduler().schedule(new BlockPos(blockPos), this, this.getTickRate(world));
+			world.getBlockTickScheduler().schedule(new BlockPos(pos), this, this.getPressTicks());
 		}
 	}
 
-	private void updateNeighbors(BlockState blockState, World world, BlockPos blockPos) {
-		world.updateNeighborsAlways(blockPos, this);
-		world.updateNeighborsAlways(blockPos.offset(getDirection(blockState).getOpposite()), this);
+	private void updateNeighbors(BlockState state, World world, BlockPos pos) {
+		world.updateNeighborsAlways(pos, this);
+		world.updateNeighborsAlways(pos.offset(getDirection(state).getOpposite()), this);
 	}
 
 	@Override

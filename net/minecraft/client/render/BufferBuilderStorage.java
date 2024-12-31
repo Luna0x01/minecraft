@@ -12,15 +12,20 @@ public class BufferBuilderStorage {
 		object2ObjectLinkedOpenHashMap.put(TexturedRenderLayers.getEntitySolid(), this.blockBuilders.get(RenderLayer.getSolid()));
 		object2ObjectLinkedOpenHashMap.put(TexturedRenderLayers.getEntityCutout(), this.blockBuilders.get(RenderLayer.getCutout()));
 		object2ObjectLinkedOpenHashMap.put(TexturedRenderLayers.getBannerPatterns(), this.blockBuilders.get(RenderLayer.getCutoutMipped()));
-		object2ObjectLinkedOpenHashMap.put(TexturedRenderLayers.getEntityTranslucent(), this.blockBuilders.get(RenderLayer.getTranslucent()));
+		object2ObjectLinkedOpenHashMap.put(TexturedRenderLayers.getEntityTranslucentCull(), this.blockBuilders.get(RenderLayer.getTranslucent()));
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, TexturedRenderLayers.getShieldPatterns());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, TexturedRenderLayers.getBeds());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, TexturedRenderLayers.getShulkerBoxes());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, TexturedRenderLayers.getSign());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, TexturedRenderLayers.getChest());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getTranslucentNoCrumbling());
+		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getArmorGlint());
+		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getArmorEntityGlint());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getGlint());
+		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getDirectGlint());
+		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.method_30676());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getEntityGlint());
+		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getDirectEntityGlint());
 		assignBufferBuilder(object2ObjectLinkedOpenHashMap, RenderLayer.getWaterMask());
 		ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.forEach(renderLayer -> assignBufferBuilder(object2ObjectLinkedOpenHashMap, renderLayer));
 	});
@@ -28,8 +33,8 @@ public class BufferBuilderStorage {
 	private final VertexConsumerProvider.Immediate effectVertexConsumers = VertexConsumerProvider.immediate(new BufferBuilder(256));
 	private final OutlineVertexConsumerProvider outlineVertexConsumers = new OutlineVertexConsumerProvider(this.entityVertexConsumers);
 
-	private static void assignBufferBuilder(Object2ObjectLinkedOpenHashMap<RenderLayer, BufferBuilder> object2ObjectLinkedOpenHashMap, RenderLayer renderLayer) {
-		object2ObjectLinkedOpenHashMap.put(renderLayer, new BufferBuilder(renderLayer.getExpectedBufferSize()));
+	private static void assignBufferBuilder(Object2ObjectLinkedOpenHashMap<RenderLayer, BufferBuilder> builderStorage, RenderLayer layer) {
+		builderStorage.put(layer, new BufferBuilder(layer.getExpectedBufferSize()));
 	}
 
 	public BlockBufferBuilderStorage getBlockBufferBuilders() {

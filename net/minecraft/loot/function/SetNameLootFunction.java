@@ -16,7 +16,6 @@ import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,10 +26,15 @@ public class SetNameLootFunction extends ConditionalLootFunction {
 	@Nullable
 	private final LootContext.EntityTarget entity;
 
-	private SetNameLootFunction(LootCondition[] lootConditions, @Nullable Text text, @Nullable LootContext.EntityTarget entityTarget) {
-		super(lootConditions);
-		this.name = text;
-		this.entity = entityTarget;
+	private SetNameLootFunction(LootCondition[] conditions, @Nullable Text name, @Nullable LootContext.EntityTarget entity) {
+		super(conditions);
+		this.name = name;
+		this.entity = entity;
+	}
+
+	@Override
+	public LootFunctionType getType() {
+		return LootFunctionTypes.SET_NAME;
 	}
 
 	@Override
@@ -38,39 +42,35 @@ public class SetNameLootFunction extends ConditionalLootFunction {
 		return this.entity != null ? ImmutableSet.of(this.entity.getParameter()) : ImmutableSet.of();
 	}
 
-	public static UnaryOperator<Text> applySourceEntity(LootContext lootContext, @Nullable LootContext.EntityTarget entityTarget) {
-		if (entityTarget != null) {
-			Entity entity = lootContext.get(entityTarget.getParameter());
+	public static UnaryOperator<Text> applySourceEntity(LootContext context, @Nullable LootContext.EntityTarget sourceEntity) {
+		if (sourceEntity != null) {
+			Entity entity = context.get(sourceEntity.getParameter());
 			if (entity != null) {
 				ServerCommandSource serverCommandSource = entity.getCommandSource().withLevel(2);
-				return text -> {
+				return textComponent -> {
 					try {
-						return Texts.parse(serverCommandSource, text, entity, 0);
+						return Texts.parse(serverCommandSource, textComponent, entity, 0);
 					} catch (CommandSyntaxException var4) {
 						LOGGER.warn("Failed to resolve text component", var4);
-						return text;
+						return textComponent;
 					}
 				};
 			}
 		}
 
-		return text -> text;
+		return textComponent -> textComponent;
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
+	public ItemStack process(ItemStack stack, LootContext context) {
 		if (this.name != null) {
-			itemStack.setCustomName((Text)applySourceEntity(lootContext, this.entity).apply(this.name));
+			stack.setCustomName((Text)applySourceEntity(context, this.entity).apply(this.name));
 		}
 
-		return itemStack;
+		return stack;
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<SetNameLootFunction> {
-		public Factory() {
-			super(new Identifier("set_name"), SetNameLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<SetNameLootFunction> {
 		public void toJson(JsonObject jsonObject, SetNameLootFunction setNameLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, setNameLootFunction, jsonSerializationContext);
 			if (setNameLootFunction.name != null) {

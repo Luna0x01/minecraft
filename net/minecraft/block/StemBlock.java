@@ -2,7 +2,6 @@ package net.minecraft.block;
 
 import java.util.Random;
 import javax.annotation.Nullable;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -31,42 +30,45 @@ public class StemBlock extends PlantBlock implements Fertilizable {
 	};
 	private final GourdBlock gourdBlock;
 
-	protected StemBlock(GourdBlock gourdBlock, Block.Settings settings) {
+	protected StemBlock(GourdBlock gourdBlock, AbstractBlock.Settings settings) {
 		super(settings);
 		this.gourdBlock = gourdBlock;
 		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, Integer.valueOf(0)));
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		return AGE_TO_SHAPE[blockState.get(AGE)];
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return AGE_TO_SHAPE[state.get(AGE)];
 	}
 
 	@Override
-	protected boolean canPlantOnTop(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return blockState.getBlock() == Blocks.field_10362;
+	protected boolean canPlantOnTop(BlockState floor, BlockView world, BlockPos pos) {
+		return floor.isOf(Blocks.FARMLAND);
 	}
 
 	@Override
-	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
-		super.scheduledTick(blockState, serverWorld, blockPos, random);
-		if (serverWorld.getBaseLightLevel(blockPos, 0) >= 9) {
-			float f = CropBlock.getAvailableMoisture(this, serverWorld, blockPos);
+	public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+		if (world.getBaseLightLevel(pos, 0) >= 9) {
+			float f = CropBlock.getAvailableMoisture(this, world, pos);
 			if (random.nextInt((int)(25.0F / f) + 1) == 0) {
-				int i = (Integer)blockState.get(AGE);
+				int i = (Integer)state.get(AGE);
 				if (i < 7) {
-					blockState = blockState.with(AGE, Integer.valueOf(i + 1));
-					serverWorld.setBlockState(blockPos, blockState, 2);
+					state = state.with(AGE, Integer.valueOf(i + 1));
+					world.setBlockState(pos, state, 2);
 				} else {
-					Direction direction = Direction.Type.field_11062.random(random);
-					BlockPos blockPos2 = blockPos.offset(direction);
-					Block block = serverWorld.getBlockState(blockPos2.down()).getBlock();
-					if (serverWorld.getBlockState(blockPos2).isAir()
+					Direction direction = Direction.Type.HORIZONTAL.random(random);
+					BlockPos blockPos = pos.offset(direction);
+					BlockState blockState = world.getBlockState(blockPos.down());
+					if (world.getBlockState(blockPos).isAir()
 						&& (
-							block == Blocks.field_10362 || block == Blocks.field_10566 || block == Blocks.field_10253 || block == Blocks.field_10520 || block == Blocks.field_10219
+							blockState.isOf(Blocks.FARMLAND)
+								|| blockState.isOf(Blocks.DIRT)
+								|| blockState.isOf(Blocks.COARSE_DIRT)
+								|| blockState.isOf(Blocks.PODZOL)
+								|| blockState.isOf(Blocks.GRASS_BLOCK)
 						)) {
-						serverWorld.setBlockState(blockPos2, this.gourdBlock.getDefaultState());
-						serverWorld.setBlockState(blockPos, this.gourdBlock.getAttachedStem().getDefaultState().with(HorizontalFacingBlock.FACING, direction));
+						world.setBlockState(blockPos, this.gourdBlock.getDefaultState());
+						world.setBlockState(pos, this.gourdBlock.getAttachedStem().getDefaultState().with(HorizontalFacingBlock.FACING, direction));
 					}
 				}
 			}
@@ -75,36 +77,36 @@ public class StemBlock extends PlantBlock implements Fertilizable {
 
 	@Nullable
 	protected Item getPickItem() {
-		if (this.gourdBlock == Blocks.field_10261) {
-			return Items.field_8706;
+		if (this.gourdBlock == Blocks.PUMPKIN) {
+			return Items.PUMPKIN_SEEDS;
 		} else {
-			return this.gourdBlock == Blocks.field_10545 ? Items.field_8188 : null;
+			return this.gourdBlock == Blocks.MELON ? Items.MELON_SEEDS : null;
 		}
 	}
 
 	@Override
-	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
+	public ItemStack getPickStack(BlockView world, BlockPos pos, BlockState state) {
 		Item item = this.getPickItem();
 		return item == null ? ItemStack.EMPTY : new ItemStack(item);
 	}
 
 	@Override
-	public boolean isFertilizable(BlockView blockView, BlockPos blockPos, BlockState blockState, boolean bl) {
-		return (Integer)blockState.get(AGE) != 7;
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
+		return (Integer)state.get(AGE) != 7;
 	}
 
 	@Override
-	public boolean canGrow(World world, Random random, BlockPos blockPos, BlockState blockState) {
+	public boolean canGrow(World world, Random random, BlockPos pos, BlockState state) {
 		return true;
 	}
 
 	@Override
-	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
-		int i = Math.min(7, (Integer)blockState.get(AGE) + MathHelper.nextInt(serverWorld.random, 2, 5));
-		BlockState blockState2 = blockState.with(AGE, Integer.valueOf(i));
-		serverWorld.setBlockState(blockPos, blockState2, 2);
+	public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
+		int i = Math.min(7, (Integer)state.get(AGE) + MathHelper.nextInt(world.random, 2, 5));
+		BlockState blockState = state.with(AGE, Integer.valueOf(i));
+		world.setBlockState(pos, blockState, 2);
 		if (i == 7) {
-			blockState2.scheduledTick(serverWorld, blockPos, serverWorld.random);
+			blockState.randomTick(world, pos, world.random);
 		}
 	}
 

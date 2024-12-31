@@ -9,9 +9,9 @@ public class LookAroundGoal extends Goal {
 	private double deltaZ;
 	private int lookTime;
 
-	public LookAroundGoal(MobEntity mobEntity) {
-		this.mob = mobEntity;
-		this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
+	public LookAroundGoal(MobEntity mob) {
+		this.mob = mob;
+		this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
 	}
 
 	@Override

@@ -9,11 +9,14 @@ import net.minecraft.structure.processor.BlockIgnoreStructureProcessor;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.feature.ShipwreckFeatureConfig;
 
@@ -56,17 +59,10 @@ public class ShipwreckGenerator {
 	};
 
 	public static void addParts(
-		StructureManager structureManager,
-		BlockPos blockPos,
-		BlockRotation blockRotation,
-		List<StructurePiece> list,
-		Random random,
-		ShipwreckFeatureConfig shipwreckFeatureConfig
+		StructureManager structureManager, BlockPos pos, BlockRotation rotation, List<StructurePiece> children, Random random, ShipwreckFeatureConfig config
 	) {
-		Identifier identifier = shipwreckFeatureConfig.isBeached
-			? BEACHED_TEMPLATES[random.nextInt(BEACHED_TEMPLATES.length)]
-			: REGULAR_TEMPLATES[random.nextInt(REGULAR_TEMPLATES.length)];
-		list.add(new ShipwreckGenerator.Piece(structureManager, identifier, blockPos, blockRotation, shipwreckFeatureConfig.isBeached));
+		Identifier identifier = Util.getRandom(config.isBeached ? BEACHED_TEMPLATES : REGULAR_TEMPLATES, random);
+		children.add(new ShipwreckGenerator.Piece(structureManager, identifier, pos, rotation, config.isBeached));
 	}
 
 	public static class Piece extends SimpleStructurePiece {
@@ -74,66 +70,74 @@ public class ShipwreckGenerator {
 		private final Identifier template;
 		private final boolean grounded;
 
-		public Piece(StructureManager structureManager, Identifier identifier, BlockPos blockPos, BlockRotation blockRotation, boolean bl) {
+		public Piece(StructureManager manager, Identifier identifier, BlockPos pos, BlockRotation rotation, boolean grounded) {
 			super(StructurePieceType.SHIPWRECK, 0);
-			this.pos = blockPos;
-			this.rotation = blockRotation;
+			this.pos = pos;
+			this.rotation = rotation;
 			this.template = identifier;
-			this.grounded = bl;
-			this.initializeStructureData(structureManager);
+			this.grounded = grounded;
+			this.initializeStructureData(manager);
 		}
 
-		public Piece(StructureManager structureManager, CompoundTag compoundTag) {
-			super(StructurePieceType.SHIPWRECK, compoundTag);
-			this.template = new Identifier(compoundTag.getString("Template"));
-			this.grounded = compoundTag.getBoolean("isBeached");
-			this.rotation = BlockRotation.valueOf(compoundTag.getString("Rot"));
-			this.initializeStructureData(structureManager);
+		public Piece(StructureManager manager, CompoundTag tag) {
+			super(StructurePieceType.SHIPWRECK, tag);
+			this.template = new Identifier(tag.getString("Template"));
+			this.grounded = tag.getBoolean("isBeached");
+			this.rotation = BlockRotation.valueOf(tag.getString("Rot"));
+			this.initializeStructureData(manager);
 		}
 
 		@Override
-		protected void toNbt(CompoundTag compoundTag) {
-			super.toNbt(compoundTag);
-			compoundTag.putString("Template", this.template.toString());
-			compoundTag.putBoolean("isBeached", this.grounded);
-			compoundTag.putString("Rot", this.rotation.name());
+		protected void toNbt(CompoundTag tag) {
+			super.toNbt(tag);
+			tag.putString("Template", this.template.toString());
+			tag.putBoolean("isBeached", this.grounded);
+			tag.putString("Rot", this.rotation.name());
 		}
 
-		private void initializeStructureData(StructureManager structureManager) {
-			Structure structure = structureManager.getStructureOrBlank(this.template);
+		private void initializeStructureData(StructureManager manager) {
+			Structure structure = manager.getStructureOrBlank(this.template);
 			StructurePlacementData structurePlacementData = new StructurePlacementData()
 				.setRotation(this.rotation)
-				.setMirrored(BlockMirror.field_11302)
+				.setMirror(BlockMirror.NONE)
 				.setPosition(ShipwreckGenerator.field_14536)
 				.addProcessor(BlockIgnoreStructureProcessor.IGNORE_AIR_AND_STRUCTURE_BLOCKS);
 			this.setStructureData(structure, this.pos, structurePlacementData);
 		}
 
 		@Override
-		protected void handleMetadata(String string, BlockPos blockPos, IWorld iWorld, Random random, BlockBox blockBox) {
-			if ("map_chest".equals(string)) {
-				LootableContainerBlockEntity.setLootTable(iWorld, random, blockPos.down(), LootTables.field_841);
-			} else if ("treasure_chest".equals(string)) {
-				LootableContainerBlockEntity.setLootTable(iWorld, random, blockPos.down(), LootTables.field_665);
-			} else if ("supply_chest".equals(string)) {
-				LootableContainerBlockEntity.setLootTable(iWorld, random, blockPos.down(), LootTables.field_880);
+		protected void handleMetadata(String metadata, BlockPos pos, ServerWorldAccess serverWorldAccess, Random random, BlockBox boundingBox) {
+			if ("map_chest".equals(metadata)) {
+				LootableContainerBlockEntity.setLootTable(serverWorldAccess, random, pos.down(), LootTables.SHIPWRECK_MAP_CHEST);
+			} else if ("treasure_chest".equals(metadata)) {
+				LootableContainerBlockEntity.setLootTable(serverWorldAccess, random, pos.down(), LootTables.SHIPWRECK_TREASURE_CHEST);
+			} else if ("supply_chest".equals(metadata)) {
+				LootableContainerBlockEntity.setLootTable(serverWorldAccess, random, pos.down(), LootTables.SHIPWRECK_SUPPLY_CHEST);
 			}
 		}
 
 		@Override
-		public boolean generate(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+		public boolean generate(
+			StructureWorldAccess structureWorldAccess,
+			StructureAccessor structureAccessor,
+			ChunkGenerator chunkGenerator,
+			Random random,
+			BlockBox boundingBox,
+			ChunkPos chunkPos,
+			BlockPos blockPos
+		) {
 			int i = 256;
 			int j = 0;
-			BlockPos blockPos = this.structure.getSize();
-			Heightmap.Type type = this.grounded ? Heightmap.Type.field_13194 : Heightmap.Type.field_13195;
-			int k = blockPos.getX() * blockPos.getZ();
+			BlockPos blockPos2 = this.structure.getSize();
+			Heightmap.Type type = this.grounded ? Heightmap.Type.WORLD_SURFACE_WG : Heightmap.Type.OCEAN_FLOOR_WG;
+			int k = blockPos2.getX() * blockPos2.getZ();
 			if (k == 0) {
-				j = iWorld.getTopY(type, this.pos.getX(), this.pos.getZ());
+				j = structureWorldAccess.getTopY(type, this.pos.getX(), this.pos.getZ());
 			} else {
-				BlockPos blockPos2 = this.pos.add(blockPos.getX() - 1, 0, blockPos.getZ() - 1);
+				BlockPos blockPos3 = this.pos.add(blockPos2.getX() - 1, 0, blockPos2.getZ() - 1);
 
-				for (BlockPos blockPos3 : BlockPos.iterate(this.pos, blockPos2)) {
-					int l = iWorld.getTopY(type, blockPos3.getX(), blockPos3.getZ());
+				for (BlockPos blockPos4 : BlockPos.iterate(this.pos, blockPos3)) {
+					int l = structureWorldAccess.getTopY(type, blockPos4.getX(), blockPos4.getZ());
 					j += l;
 					i = Math.min(i, l);
 				}
@@ -141,9 +145,9 @@ public class ShipwreckGenerator {
 				j /= k;
 			}
 
-			int m = this.grounded ? i - blockPos.getY() / 2 - random.nextInt(3) : j;
+			int m = this.grounded ? i - blockPos2.getY() / 2 - random.nextInt(3) : j;
 			this.pos = new BlockPos(this.pos.getX(), m, this.pos.getZ());
-			return super.generate(iWorld, chunkGenerator, random, blockBox, chunkPos);
+			return super.generate(structureWorldAccess, structureAccessor, chunkGenerator, random, boundingBox, chunkPos, blockPos);
 		}
 	}
 }

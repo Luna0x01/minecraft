@@ -6,12 +6,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class CobwebBlock extends Block {
-	public CobwebBlock(Block.Settings settings) {
+	public CobwebBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
-		entity.slowMovement(blockState, new Vec3d(0.25, 0.05F, 0.25));
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		entity.slowMovement(state, new Vec3d(0.25, 0.05F, 0.25));
 	}
 }

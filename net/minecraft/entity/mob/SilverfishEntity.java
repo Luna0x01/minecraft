@@ -9,13 +9,14 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityGroup;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.EntityDamageSource;
@@ -25,8 +26,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class SilverfishEntity extends HostileEntity {
@@ -53,21 +54,15 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		// $VF: Couldn't be decompiled
-		// Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
-		//
-		// Bytecode:
-		// 0: ldc 0.1
-		// 2: freturn
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
+		return 0.13F;
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(8.0);
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.25);
-		this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).setBaseValue(1.0);
+	public static DefaultAttributeContainer.Builder createSilverfishAttributes() {
+		return HostileEntity.createHostileAttributes()
+			.add(EntityAttributes.GENERIC_MAX_HEALTH, 8.0)
+			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25)
+			.add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 1.0);
 	}
 
 	@Override
@@ -77,34 +72,34 @@ public class SilverfishEntity extends HostileEntity {
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_14786;
+		return SoundEvents.ENTITY_SILVERFISH_AMBIENT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_14593;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_SILVERFISH_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_14673;
+		return SoundEvents.ENTITY_SILVERFISH_DEATH;
 	}
 
 	@Override
-	protected void playStepSound(BlockPos blockPos, BlockState blockState) {
-		this.playSound(SoundEvents.field_15084, 0.15F, 1.0F);
+	protected void playStepSound(BlockPos pos, BlockState state) {
+		this.playSound(SoundEvents.ENTITY_SILVERFISH_STEP, 0.15F, 1.0F);
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
-			if ((damageSource instanceof EntityDamageSource || damageSource == DamageSource.MAGIC) && this.callForHelpGoal != null) {
+			if ((source instanceof EntityDamageSource || source == DamageSource.MAGIC) && this.callForHelpGoal != null) {
 				this.callForHelpGoal.onHurt();
 			}
 
-			return super.damage(damageSource, f);
+			return super.damage(source, amount);
 		}
 	}
 
@@ -115,19 +110,19 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	@Override
-	public void setYaw(float f) {
-		this.yaw = f;
-		super.setYaw(f);
+	public void setYaw(float yaw) {
+		this.yaw = yaw;
+		super.setYaw(yaw);
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos blockPos, WorldView worldView) {
-		return InfestedBlock.isInfestable(worldView.getBlockState(blockPos.down())) ? 10.0F : super.getPathfindingFavor(blockPos, worldView);
+	public float getPathfindingFavor(BlockPos pos, WorldView world) {
+		return InfestedBlock.isInfestable(world.getBlockState(pos.down())) ? 10.0F : super.getPathfindingFavor(pos, world);
 	}
 
-	public static boolean canSpawn(EntityType<SilverfishEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		if (canSpawnIgnoreLightLevel(entityType, iWorld, spawnType, blockPos, random)) {
-			PlayerEntity playerEntity = iWorld.getClosestPlayer((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, 5.0, true);
+	public static boolean canSpawn(EntityType<SilverfishEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
+		if (canSpawnIgnoreLightLevel(type, world, spawnReason, pos, random)) {
+			PlayerEntity playerEntity = world.getClosestPlayer((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, 5.0, true);
 			return playerEntity == null;
 		} else {
 			return false;
@@ -143,8 +138,8 @@ public class SilverfishEntity extends HostileEntity {
 		private final SilverfishEntity silverfish;
 		private int delay;
 
-		public CallForHelpGoal(SilverfishEntity silverfishEntity) {
-			this.silverfish = silverfishEntity;
+		public CallForHelpGoal(SilverfishEntity silverfish) {
+			this.silverfish = silverfish;
 		}
 
 		public void onHurt() {
@@ -164,7 +159,7 @@ public class SilverfishEntity extends HostileEntity {
 			if (this.delay <= 0) {
 				World world = this.silverfish.world;
 				Random random = this.silverfish.getRandom();
-				BlockPos blockPos = new BlockPos(this.silverfish);
+				BlockPos blockPos = this.silverfish.getBlockPos();
 
 				for (int i = 0; i <= 5 && i >= -5; i = (i <= 0 ? 1 : 0) - i) {
 					for (int j = 0; j <= 10 && j >= -10; j = (j <= 0 ? 1 : 0) - j) {
@@ -173,7 +168,7 @@ public class SilverfishEntity extends HostileEntity {
 							BlockState blockState = world.getBlockState(blockPos2);
 							Block block = blockState.getBlock();
 							if (block instanceof InfestedBlock) {
-								if (world.getGameRules().getBoolean(GameRules.field_19388)) {
+								if (world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
 									world.breakBlock(blockPos2, true, this.silverfish);
 								} else {
 									world.setBlockState(blockPos2, ((InfestedBlock)block).getRegularBlock().getDefaultState(), 3);
@@ -194,9 +189,9 @@ public class SilverfishEntity extends HostileEntity {
 		private Direction direction;
 		private boolean canInfest;
 
-		public WanderAndInfestGoal(SilverfishEntity silverfishEntity) {
-			super(silverfishEntity, 1.0, 10);
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+		public WanderAndInfestGoal(SilverfishEntity silverfish) {
+			super(silverfish, 1.0, 10);
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -207,7 +202,7 @@ public class SilverfishEntity extends HostileEntity {
 				return false;
 			} else {
 				Random random = this.mob.getRandom();
-				if (this.mob.world.getGameRules().getBoolean(GameRules.field_19388) && random.nextInt(10) == 0) {
+				if (this.mob.world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING) && random.nextInt(10) == 0) {
 					this.direction = Direction.random(random);
 					BlockPos blockPos = new BlockPos(this.mob.getX(), this.mob.getY() + 0.5, this.mob.getZ()).offset(this.direction);
 					BlockState blockState = this.mob.world.getBlockState(blockPos);
@@ -232,11 +227,11 @@ public class SilverfishEntity extends HostileEntity {
 			if (!this.canInfest) {
 				super.start();
 			} else {
-				IWorld iWorld = this.mob.world;
+				WorldAccess worldAccess = this.mob.world;
 				BlockPos blockPos = new BlockPos(this.mob.getX(), this.mob.getY() + 0.5, this.mob.getZ()).offset(this.direction);
-				BlockState blockState = iWorld.getBlockState(blockPos);
+				BlockState blockState = worldAccess.getBlockState(blockPos);
 				if (InfestedBlock.isInfestable(blockState)) {
-					iWorld.setBlockState(blockPos, InfestedBlock.fromRegularBlock(blockState.getBlock()), 3);
+					worldAccess.setBlockState(blockPos, InfestedBlock.fromRegularBlock(blockState.getBlock()), 3);
 					this.mob.playSpawnEffects();
 					this.mob.remove();
 				}

@@ -10,16 +10,20 @@ import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.Nameable;
 
 public class CopyNameLootFunction extends ConditionalLootFunction {
 	private final CopyNameLootFunction.Source source;
 
-	private CopyNameLootFunction(LootCondition[] lootConditions, CopyNameLootFunction.Source source) {
-		super(lootConditions);
+	private CopyNameLootFunction(LootCondition[] conditions, CopyNameLootFunction.Source source) {
+		super(conditions);
 		this.source = source;
+	}
+
+	@Override
+	public LootFunctionType getType() {
+		return LootFunctionTypes.COPY_NAME;
 	}
 
 	@Override
@@ -28,27 +32,23 @@ public class CopyNameLootFunction extends ConditionalLootFunction {
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		Object object = lootContext.get(this.source.parameter);
+	public ItemStack process(ItemStack stack, LootContext context) {
+		Object object = context.get(this.source.parameter);
 		if (object instanceof Nameable) {
 			Nameable nameable = (Nameable)object;
 			if (nameable.hasCustomName()) {
-				itemStack.setCustomName(nameable.getDisplayName());
+				stack.setCustomName(nameable.getDisplayName());
 			}
 		}
 
-		return itemStack;
+		return stack;
 	}
 
 	public static ConditionalLootFunction.Builder<?> builder(CopyNameLootFunction.Source source) {
-		return builder(lootConditions -> new CopyNameLootFunction(lootConditions, source));
+		return builder(conditions -> new CopyNameLootFunction(conditions, source));
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<CopyNameLootFunction> {
-		public Factory() {
-			super(new Identifier("copy_name"), CopyNameLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<CopyNameLootFunction> {
 		public void toJson(JsonObject jsonObject, CopyNameLootFunction copyNameLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, copyNameLootFunction, jsonSerializationContext);
 			jsonObject.addProperty("source", copyNameLootFunction.source.name);
@@ -61,27 +61,27 @@ public class CopyNameLootFunction extends ConditionalLootFunction {
 	}
 
 	public static enum Source {
-		field_1022("this", LootContextParameters.field_1226),
-		field_1019("killer", LootContextParameters.field_1230),
-		field_1020("killer_player", LootContextParameters.field_1233),
-		field_1023("block_entity", LootContextParameters.field_1228);
+		THIS("this", LootContextParameters.THIS_ENTITY),
+		KILLER("killer", LootContextParameters.KILLER_ENTITY),
+		KILLER_PLAYER("killer_player", LootContextParameters.LAST_DAMAGE_PLAYER),
+		BLOCK_ENTITY("block_entity", LootContextParameters.BLOCK_ENTITY);
 
 		public final String name;
 		public final LootContextParameter<?> parameter;
 
-		private Source(String string2, LootContextParameter<?> lootContextParameter) {
-			this.name = string2;
-			this.parameter = lootContextParameter;
+		private Source(String name, LootContextParameter<?> parameter) {
+			this.name = name;
+			this.parameter = parameter;
 		}
 
-		public static CopyNameLootFunction.Source get(String string) {
+		public static CopyNameLootFunction.Source get(String name) {
 			for (CopyNameLootFunction.Source source : values()) {
-				if (source.name.equals(string)) {
+				if (source.name.equals(name)) {
 					return source;
 				}
 			}
 
-			throw new IllegalArgumentException("Invalid name source " + string);
+			throw new IllegalArgumentException("Invalid name source " + name);
 		}
 	}
 }

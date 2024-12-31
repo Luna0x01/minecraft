@@ -1,5 +1,5 @@
 package net.minecraft.client.block;
 
 public interface ChestAnimationProgress {
-	float getAnimationProgress(float f);
+	float getAnimationProgress(float tickDelta);
 }

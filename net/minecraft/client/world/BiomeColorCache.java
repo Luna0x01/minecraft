@@ -12,9 +12,9 @@ public class BiomeColorCache {
 	private final Long2ObjectLinkedOpenHashMap<int[]> colors = new Long2ObjectLinkedOpenHashMap(256, 0.25F);
 	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-	public int getBiomeColor(BlockPos blockPos, IntSupplier intSupplier) {
-		int i = blockPos.getX() >> 4;
-		int j = blockPos.getZ() >> 4;
+	public int getBiomeColor(BlockPos pos, IntSupplier colorFactory) {
+		int i = pos.getX() >> 4;
+		int j = pos.getZ() >> 4;
 		BiomeColorCache.Last last = (BiomeColorCache.Last)this.last.get();
 		if (last.x != i || last.z != j) {
 			last.x = i;
@@ -22,27 +22,27 @@ public class BiomeColorCache {
 			last.colors = this.getColorArray(i, j);
 		}
 
-		int k = blockPos.getX() & 15;
-		int l = blockPos.getZ() & 15;
+		int k = pos.getX() & 15;
+		int l = pos.getZ() & 15;
 		int m = l << 4 | k;
 		int n = last.colors[m];
 		if (n != -1) {
 			return n;
 		} else {
-			int o = intSupplier.getAsInt();
+			int o = colorFactory.getAsInt();
 			last.colors[m] = o;
 			return o;
 		}
 	}
 
-	public void reset(int i, int j) {
+	public void reset(int chunkX, int chunkZ) {
 		try {
 			this.lock.writeLock().lock();
 
-			for (int k = -1; k <= 1; k++) {
-				for (int l = -1; l <= 1; l++) {
-					long m = ChunkPos.toLong(i + k, j + l);
-					this.colors.remove(m);
+			for (int i = -1; i <= 1; i++) {
+				for (int j = -1; j <= 1; j++) {
+					long l = ChunkPos.toLong(chunkX + i, chunkZ + j);
+					this.colors.remove(l);
 				}
 			}
 		} finally {
@@ -59,8 +59,8 @@ public class BiomeColorCache {
 		}
 	}
 
-	private int[] getColorArray(int i, int j) {
-		long l = ChunkPos.toLong(i, j);
+	private int[] getColorArray(int chunkX, int chunkZ) {
+		long l = ChunkPos.toLong(chunkX, chunkZ);
 		this.lock.readLock().lock();
 
 		int[] is;

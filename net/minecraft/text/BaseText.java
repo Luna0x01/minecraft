@@ -1,20 +1,27 @@
 package net.minecraft.text;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Streams;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import net.minecraft.util.Language;
 
-public abstract class BaseText implements Text {
+public abstract class BaseText implements MutableText {
 	protected final List<Text> siblings = Lists.newArrayList();
-	private Style style;
+	private OrderedText orderedText = OrderedText.EMPTY;
+	@Nullable
+	private Language previousLanguage;
+	private Style style = Style.EMPTY;
 
 	@Override
-	public Text append(Text text) {
-		text.getStyle().setParent(this.getStyle());
+	public MutableText append(Text text) {
 		this.siblings.add(text);
 		return this;
+	}
+
+	@Override
+	public String asString() {
+		return "";
 	}
 
 	@Override
@@ -23,42 +30,45 @@ public abstract class BaseText implements Text {
 	}
 
 	@Override
-	public Text setStyle(Style style) {
+	public MutableText setStyle(Style style) {
 		this.style = style;
-
-		for (Text text : this.siblings) {
-			text.getStyle().setParent(this.getStyle());
-		}
-
 		return this;
 	}
 
 	@Override
 	public Style getStyle() {
-		if (this.style == null) {
-			this.style = new Style();
-
-			for (Text text : this.siblings) {
-				text.getStyle().setParent(this.style);
-			}
-		}
-
 		return this.style;
 	}
 
+	public abstract BaseText copy();
+
 	@Override
-	public Stream<Text> stream() {
-		return Streams.concat(new Stream[]{Stream.of(this), this.siblings.stream().flatMap(Text::stream)});
+	public final MutableText shallowCopy() {
+		BaseText baseText = this.copy();
+		baseText.siblings.addAll(this.siblings);
+		baseText.setStyle(this.style);
+		return baseText;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	@Override
+	public OrderedText asOrderedText() {
+		Language language = Language.getInstance();
+		if (this.previousLanguage != language) {
+			this.orderedText = language.reorder(this);
+			this.previousLanguage = language;
+		}
+
+		return this.orderedText;
+	}
+
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
-		} else if (!(object instanceof BaseText)) {
+		} else if (!(obj instanceof BaseText)) {
 			return false;
 		} else {
-			BaseText baseText = (BaseText)object;
-			return this.siblings.equals(baseText.siblings) && this.getStyle().equals(baseText.getStyle());
+			BaseText baseText = (BaseText)obj;
+			return this.siblings.equals(baseText.siblings) && Objects.equals(this.getStyle(), baseText.getStyle());
 		}
 	}
 

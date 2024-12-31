@@ -1,19 +1,19 @@
 package net.minecraft.server.network;
 
 import java.util.Objects;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.CommandBlock;
 import net.minecraft.block.JigsawBlock;
 import net.minecraft.block.StructureBlock;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.network.packet.PlayerActionResponseS2CPacket;
-import net.minecraft.client.network.packet.PlayerListS2CPacket;
-import net.minecraft.container.NameableContainerFactory;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
-import net.minecraft.server.network.packet.PlayerActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.s2c.play.PlayerActionResponseS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
+import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -30,7 +30,8 @@ public class ServerPlayerInteractionManager {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public ServerWorld world;
 	public ServerPlayerEntity player;
-	private GameMode gameMode = GameMode.field_9218;
+	private GameMode gameMode = GameMode.NOT_SET;
+	private GameMode previousGameMode = GameMode.NOT_SET;
 	private boolean mining;
 	private int startMiningTime;
 	private BlockPos miningPos = BlockPos.ORIGIN;
@@ -40,20 +41,29 @@ public class ServerPlayerInteractionManager {
 	private int failedStartMiningTime;
 	private int blockBreakingProgress = -1;
 
-	public ServerPlayerInteractionManager(ServerWorld serverWorld) {
-		this.world = serverWorld;
+	public ServerPlayerInteractionManager(ServerWorld world) {
+		this.world = world;
 	}
 
 	public void setGameMode(GameMode gameMode) {
+		this.setGameMode(gameMode, gameMode != this.gameMode ? this.gameMode : this.previousGameMode);
+	}
+
+	public void setGameMode(GameMode gameMode, GameMode previousGameMode) {
+		this.previousGameMode = previousGameMode;
 		this.gameMode = gameMode;
-		gameMode.setAbilitites(this.player.abilities);
+		gameMode.setAbilities(this.player.abilities);
 		this.player.sendAbilitiesUpdate();
-		this.player.server.getPlayerManager().sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.field_12375, this.player));
-		this.world.updatePlayersSleeping();
+		this.player.server.getPlayerManager().sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_GAME_MODE, this.player));
+		this.world.updateSleepingPlayers();
 	}
 
 	public GameMode getGameMode() {
 		return this.gameMode;
+	}
+
+	public GameMode getPreviousGameMode() {
+		return this.previousGameMode;
 	}
 
 	public boolean isSurvivalLike() {
@@ -65,7 +75,7 @@ public class ServerPlayerInteractionManager {
 	}
 
 	public void setGameModeIfNotPresent(GameMode gameMode) {
-		if (this.gameMode == GameMode.field_9218) {
+		if (this.gameMode == GameMode.NOT_SET) {
 			this.gameMode = gameMode;
 		}
 
@@ -97,62 +107,54 @@ public class ServerPlayerInteractionManager {
 		}
 	}
 
-	private float continueMining(BlockState blockState, BlockPos blockPos, int i) {
+	private float continueMining(BlockState state, BlockPos pos, int i) {
 		int j = this.tickCounter - i;
-		float f = blockState.calcBlockBreakingDelta(this.player, this.player.world, blockPos) * (float)(j + 1);
+		float f = state.calcBlockBreakingDelta(this.player, this.player.world, pos) * (float)(j + 1);
 		int k = (int)(f * 10.0F);
 		if (k != this.blockBreakingProgress) {
-			this.world.setBlockBreakingInfo(this.player.getEntityId(), blockPos, k);
+			this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, k);
 			this.blockBreakingProgress = k;
 		}
 
 		return f;
 	}
 
-	public void processBlockBreakingAction(BlockPos blockPos, PlayerActionC2SPacket.Action action, Direction direction, int i) {
-		double d = this.player.getX() - ((double)blockPos.getX() + 0.5);
-		double e = this.player.getY() - ((double)blockPos.getY() + 0.5) + 1.5;
-		double f = this.player.getZ() - ((double)blockPos.getZ() + 0.5);
+	public void processBlockBreakingAction(BlockPos pos, PlayerActionC2SPacket.Action action, Direction direction, int worldHeight) {
+		double d = this.player.getX() - ((double)pos.getX() + 0.5);
+		double e = this.player.getY() - ((double)pos.getY() + 0.5) + 1.5;
+		double f = this.player.getZ() - ((double)pos.getZ() + 0.5);
 		double g = d * d + e * e + f * f;
 		if (g > 36.0) {
-			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, false, "too far"));
-		} else if (blockPos.getY() >= i) {
-			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, false, "too high"));
+			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, false, "too far"));
+		} else if (pos.getY() >= worldHeight) {
+			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, false, "too high"));
 		} else {
-			if (action == PlayerActionC2SPacket.Action.field_12968) {
-				if (!this.world.canPlayerModifyAt(this.player, blockPos)) {
-					this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, false, "may not interact"));
+			if (action == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
+				if (!this.world.canPlayerModifyAt(this.player, pos)) {
+					this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, false, "may not interact"));
 					return;
 				}
 
 				if (this.isCreative()) {
-					if (!this.world.extinguishFire(null, blockPos, direction)) {
-						this.finishMining(blockPos, action, "creative destroy");
-					} else {
-						this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, true, "fire put out"));
-					}
-
+					this.finishMining(pos, action, "creative destroy");
 					return;
 				}
 
-				if (this.player.canMine(this.world, blockPos, this.gameMode)) {
-					this.player
-						.networkHandler
-						.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, false, "block action restricted"));
+				if (this.player.isBlockBreakingRestricted(this.world, pos, this.gameMode)) {
+					this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, false, "block action restricted"));
 					return;
 				}
 
-				this.world.extinguishFire(null, blockPos, direction);
 				this.startMiningTime = this.tickCounter;
 				float h = 1.0F;
-				BlockState blockState = this.world.getBlockState(blockPos);
+				BlockState blockState = this.world.getBlockState(pos);
 				if (!blockState.isAir()) {
-					blockState.onBlockBreakStart(this.world, blockPos, this.player);
-					h = blockState.calcBlockBreakingDelta(this.player, this.player.world, blockPos);
+					blockState.onBlockBreakStart(this.world, pos, this.player);
+					h = blockState.calcBlockBreakingDelta(this.player, this.player.world, pos);
 				}
 
 				if (!blockState.isAir() && h >= 1.0F) {
-					this.finishMining(blockPos, action, "insta mine");
+					this.finishMining(pos, action, "insta mine");
 				} else {
 					if (this.mining) {
 						this.player
@@ -161,7 +163,7 @@ public class ServerPlayerInteractionManager {
 								new PlayerActionResponseS2CPacket(
 									this.miningPos,
 									this.world.getBlockState(this.miningPos),
-									PlayerActionC2SPacket.Action.field_12968,
+									PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
 									false,
 									"abort destroying since another started (client insta mine, server disagreed)"
 								)
@@ -169,78 +171,76 @@ public class ServerPlayerInteractionManager {
 					}
 
 					this.mining = true;
-					this.miningPos = blockPos.toImmutable();
-					int j = (int)(h * 10.0F);
-					this.world.setBlockBreakingInfo(this.player.getEntityId(), blockPos, j);
-					this.player
-						.networkHandler
-						.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, true, "actual start of destroying"));
-					this.blockBreakingProgress = j;
+					this.miningPos = pos.toImmutable();
+					int i = (int)(h * 10.0F);
+					this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, i);
+					this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, true, "actual start of destroying"));
+					this.blockBreakingProgress = i;
 				}
-			} else if (action == PlayerActionC2SPacket.Action.field_12973) {
-				if (blockPos.equals(this.miningPos)) {
-					int k = this.tickCounter - this.startMiningTime;
-					BlockState blockState2 = this.world.getBlockState(blockPos);
+			} else if (action == PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK) {
+				if (pos.equals(this.miningPos)) {
+					int j = this.tickCounter - this.startMiningTime;
+					BlockState blockState2 = this.world.getBlockState(pos);
 					if (!blockState2.isAir()) {
-						float l = blockState2.calcBlockBreakingDelta(this.player, this.player.world, blockPos) * (float)(k + 1);
-						if (l >= 0.7F) {
+						float k = blockState2.calcBlockBreakingDelta(this.player, this.player.world, pos) * (float)(j + 1);
+						if (k >= 0.7F) {
 							this.mining = false;
-							this.world.setBlockBreakingInfo(this.player.getEntityId(), blockPos, -1);
-							this.finishMining(blockPos, action, "destroyed");
+							this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, -1);
+							this.finishMining(pos, action, "destroyed");
 							return;
 						}
 
 						if (!this.failedToMine) {
 							this.mining = false;
 							this.failedToMine = true;
-							this.failedMiningPos = blockPos;
+							this.failedMiningPos = pos;
 							this.failedStartMiningTime = this.startMiningTime;
 						}
 					}
 				}
 
-				this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, true, "stopped destroying"));
-			} else if (action == PlayerActionC2SPacket.Action.field_12971) {
+				this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, true, "stopped destroying"));
+			} else if (action == PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK) {
 				this.mining = false;
-				if (!Objects.equals(this.miningPos, blockPos)) {
-					LOGGER.warn("Mismatch in destroy block pos: " + this.miningPos + " " + blockPos);
+				if (!Objects.equals(this.miningPos, pos)) {
+					LOGGER.warn("Mismatch in destroy block pos: " + this.miningPos + " " + pos);
 					this.world.setBlockBreakingInfo(this.player.getEntityId(), this.miningPos, -1);
 					this.player
 						.networkHandler
 						.sendPacket(new PlayerActionResponseS2CPacket(this.miningPos, this.world.getBlockState(this.miningPos), action, true, "aborted mismatched destroying"));
 				}
 
-				this.world.setBlockBreakingInfo(this.player.getEntityId(), blockPos, -1);
-				this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, true, "aborted destroying"));
+				this.world.setBlockBreakingInfo(this.player.getEntityId(), pos, -1);
+				this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, true, "aborted destroying"));
 			}
 		}
 	}
 
-	public void finishMining(BlockPos blockPos, PlayerActionC2SPacket.Action action, String string) {
-		if (this.tryBreakBlock(blockPos)) {
-			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, true, string));
+	public void finishMining(BlockPos pos, PlayerActionC2SPacket.Action action, String reason) {
+		if (this.tryBreakBlock(pos)) {
+			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, true, reason));
 		} else {
-			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(blockPos, this.world.getBlockState(blockPos), action, false, string));
+			this.player.networkHandler.sendPacket(new PlayerActionResponseS2CPacket(pos, this.world.getBlockState(pos), action, false, reason));
 		}
 	}
 
-	public boolean tryBreakBlock(BlockPos blockPos) {
-		BlockState blockState = this.world.getBlockState(blockPos);
-		if (!this.player.getMainHandStack().getItem().canMine(blockState, this.world, blockPos, this.player)) {
+	public boolean tryBreakBlock(BlockPos pos) {
+		BlockState blockState = this.world.getBlockState(pos);
+		if (!this.player.getMainHandStack().getItem().canMine(blockState, this.world, pos, this.player)) {
 			return false;
 		} else {
-			BlockEntity blockEntity = this.world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = this.world.getBlockEntity(pos);
 			Block block = blockState.getBlock();
 			if ((block instanceof CommandBlock || block instanceof StructureBlock || block instanceof JigsawBlock) && !this.player.isCreativeLevelTwoOp()) {
-				this.world.updateListeners(blockPos, blockState, blockState, 3);
+				this.world.updateListeners(pos, blockState, blockState, 3);
 				return false;
-			} else if (this.player.canMine(this.world, blockPos, this.gameMode)) {
+			} else if (this.player.isBlockBreakingRestricted(this.world, pos, this.gameMode)) {
 				return false;
 			} else {
-				block.onBreak(this.world, blockPos, blockState, this.player);
-				boolean bl = this.world.removeBlock(blockPos, false);
+				block.onBreak(this.world, pos, blockState, this.player);
+				boolean bl = this.world.removeBlock(pos, false);
 				if (bl) {
-					block.onBroken(this.world, blockPos, blockState);
+					block.onBroken(this.world, pos, blockState);
 				}
 
 				if (this.isCreative()) {
@@ -249,9 +249,9 @@ public class ServerPlayerInteractionManager {
 					ItemStack itemStack = this.player.getMainHandStack();
 					ItemStack itemStack2 = itemStack.copy();
 					boolean bl2 = this.player.isUsingEffectiveTool(blockState);
-					itemStack.postMine(this.world, blockState, blockPos, this.player);
+					itemStack.postMine(this.world, blockState, pos, this.player);
 					if (bl && bl2) {
-						block.afterBreak(this.world, this.player, blockPos, blockState, blockEntity, itemStack2);
+						block.afterBreak(this.world, this.player, pos, blockState, blockEntity, itemStack2);
 					}
 
 					return true;
@@ -260,35 +260,35 @@ public class ServerPlayerInteractionManager {
 		}
 	}
 
-	public ActionResult interactItem(PlayerEntity playerEntity, World world, ItemStack itemStack, Hand hand) {
-		if (this.gameMode == GameMode.field_9219) {
-			return ActionResult.field_5811;
-		} else if (playerEntity.getItemCooldownManager().isCoolingDown(itemStack.getItem())) {
-			return ActionResult.field_5811;
+	public ActionResult interactItem(ServerPlayerEntity player, World world, ItemStack stack, Hand hand) {
+		if (this.gameMode == GameMode.SPECTATOR) {
+			return ActionResult.PASS;
+		} else if (player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+			return ActionResult.PASS;
 		} else {
-			int i = itemStack.getCount();
-			int j = itemStack.getDamage();
-			TypedActionResult<ItemStack> typedActionResult = itemStack.use(world, playerEntity, hand);
-			ItemStack itemStack2 = typedActionResult.getValue();
-			if (itemStack2 == itemStack && itemStack2.getCount() == i && itemStack2.getMaxUseTime() <= 0 && itemStack2.getDamage() == j) {
+			int i = stack.getCount();
+			int j = stack.getDamage();
+			TypedActionResult<ItemStack> typedActionResult = stack.use(world, player, hand);
+			ItemStack itemStack = typedActionResult.getValue();
+			if (itemStack == stack && itemStack.getCount() == i && itemStack.getMaxUseTime() <= 0 && itemStack.getDamage() == j) {
 				return typedActionResult.getResult();
-			} else if (typedActionResult.getResult() == ActionResult.field_5814 && itemStack2.getMaxUseTime() > 0 && !playerEntity.isUsingItem()) {
+			} else if (typedActionResult.getResult() == ActionResult.FAIL && itemStack.getMaxUseTime() > 0 && !player.isUsingItem()) {
 				return typedActionResult.getResult();
 			} else {
-				playerEntity.setStackInHand(hand, itemStack2);
+				player.setStackInHand(hand, itemStack);
 				if (this.isCreative()) {
-					itemStack2.setCount(i);
-					if (itemStack2.isDamageable() && itemStack2.getDamage() != j) {
-						itemStack2.setDamage(j);
+					itemStack.setCount(i);
+					if (itemStack.isDamageable() && itemStack.getDamage() != j) {
+						itemStack.setDamage(j);
 					}
 				}
 
-				if (itemStack2.isEmpty()) {
-					playerEntity.setStackInHand(hand, ItemStack.EMPTY);
+				if (itemStack.isEmpty()) {
+					player.setStackInHand(hand, ItemStack.EMPTY);
 				}
 
-				if (!playerEntity.isUsingItem()) {
-					((ServerPlayerEntity)playerEntity).openContainer(playerEntity.playerContainer);
+				if (!player.isUsingItem()) {
+					player.refreshScreenHandler(player.playerScreenHandler);
 				}
 
 				return typedActionResult.getResult();
@@ -296,44 +296,52 @@ public class ServerPlayerInteractionManager {
 		}
 	}
 
-	public ActionResult interactBlock(PlayerEntity playerEntity, World world, ItemStack itemStack, Hand hand, BlockHitResult blockHitResult) {
-		BlockPos blockPos = blockHitResult.getBlockPos();
+	public ActionResult interactBlock(ServerPlayerEntity player, World world, ItemStack stack, Hand hand, BlockHitResult hitResult) {
+		BlockPos blockPos = hitResult.getBlockPos();
 		BlockState blockState = world.getBlockState(blockPos);
-		if (this.gameMode == GameMode.field_9219) {
-			NameableContainerFactory nameableContainerFactory = blockState.createContainerFactory(world, blockPos);
-			if (nameableContainerFactory != null) {
-				playerEntity.openContainer(nameableContainerFactory);
-				return ActionResult.field_5812;
+		if (this.gameMode == GameMode.SPECTATOR) {
+			NamedScreenHandlerFactory namedScreenHandlerFactory = blockState.createScreenHandlerFactory(world, blockPos);
+			if (namedScreenHandlerFactory != null) {
+				player.openHandledScreen(namedScreenHandlerFactory);
+				return ActionResult.SUCCESS;
 			} else {
-				return ActionResult.field_5811;
+				return ActionResult.PASS;
 			}
 		} else {
-			boolean bl = !playerEntity.getMainHandStack().isEmpty() || !playerEntity.getOffHandStack().isEmpty();
-			boolean bl2 = playerEntity.shouldCancelInteraction() && bl;
+			boolean bl = !player.getMainHandStack().isEmpty() || !player.getOffHandStack().isEmpty();
+			boolean bl2 = player.shouldCancelInteraction() && bl;
+			ItemStack itemStack = stack.copy();
 			if (!bl2) {
-				ActionResult actionResult = blockState.onUse(world, playerEntity, hand, blockHitResult);
+				ActionResult actionResult = blockState.onUse(world, player, hand, hitResult);
 				if (actionResult.isAccepted()) {
+					Criteria.ITEM_USED_ON_BLOCK.test(player, blockPos, itemStack);
 					return actionResult;
 				}
 			}
 
-			if (!itemStack.isEmpty() && !playerEntity.getItemCooldownManager().isCoolingDown(itemStack.getItem())) {
-				ItemUsageContext itemUsageContext = new ItemUsageContext(playerEntity, hand, blockHitResult);
+			if (!stack.isEmpty() && !player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+				ItemUsageContext itemUsageContext = new ItemUsageContext(player, hand, hitResult);
+				ActionResult actionResult2;
 				if (this.isCreative()) {
-					int i = itemStack.getCount();
-					ActionResult actionResult2 = itemStack.useOnBlock(itemUsageContext);
-					itemStack.setCount(i);
-					return actionResult2;
+					int i = stack.getCount();
+					actionResult2 = stack.useOnBlock(itemUsageContext);
+					stack.setCount(i);
 				} else {
-					return itemStack.useOnBlock(itemUsageContext);
+					actionResult2 = stack.useOnBlock(itemUsageContext);
 				}
+
+				if (actionResult2.isAccepted()) {
+					Criteria.ITEM_USED_ON_BLOCK.test(player, blockPos, itemStack);
+				}
+
+				return actionResult2;
 			} else {
-				return ActionResult.field_5811;
+				return ActionResult.PASS;
 			}
 		}
 	}
 
-	public void setWorld(ServerWorld serverWorld) {
-		this.world = serverWorld;
+	public void setWorld(ServerWorld world) {
+		this.world = world;
 	}
 }

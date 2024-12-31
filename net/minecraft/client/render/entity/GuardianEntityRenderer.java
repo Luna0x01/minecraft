@@ -6,8 +6,6 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.GuardianEntityModel;
-import net.minecraft.client.util.math.Matrix3f;
-import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.LivingEntity;
@@ -15,19 +13,21 @@ import net.minecraft.entity.mob.GuardianEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix3f;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 
 public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity, GuardianEntityModel> {
-	private static final Identifier SKIN = new Identifier("textures/entity/guardian.png");
-	private static final Identifier EXPLOSION_BEAM_TEX = new Identifier("textures/entity/guardian_beam.png");
-	private static final RenderLayer field_21743 = RenderLayer.getEntityCutoutNoCull(EXPLOSION_BEAM_TEX);
+	private static final Identifier TEXTURE = new Identifier("textures/entity/guardian.png");
+	private static final Identifier EXPLOSION_BEAM_TEXTURE = new Identifier("textures/entity/guardian_beam.png");
+	private static final RenderLayer LAYER = RenderLayer.getEntityCutoutNoCull(EXPLOSION_BEAM_TEXTURE);
 
 	public GuardianEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		this(entityRenderDispatcher, 0.5F);
 	}
 
-	protected GuardianEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, float f) {
-		super(entityRenderDispatcher, new GuardianEntityModel(), f);
+	protected GuardianEntityRenderer(EntityRenderDispatcher dispatcher, float f) {
+		super(dispatcher, new GuardianEntityModel(), f);
 	}
 
 	public boolean shouldRender(GuardianEntity guardianEntity, Frustum frustum, double d, double e, double f) {
@@ -47,11 +47,11 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity, Gu
 		}
 	}
 
-	private Vec3d fromLerpedPosition(LivingEntity livingEntity, double d, float f) {
-		double e = MathHelper.lerp((double)f, livingEntity.lastRenderX, livingEntity.getX());
-		double g = MathHelper.lerp((double)f, livingEntity.lastRenderY, livingEntity.getY()) + d;
-		double h = MathHelper.lerp((double)f, livingEntity.lastRenderZ, livingEntity.getZ());
-		return new Vec3d(e, g, h);
+	private Vec3d fromLerpedPosition(LivingEntity entity, double yOffset, float delta) {
+		double d = MathHelper.lerp((double)delta, entity.lastRenderX, entity.getX());
+		double e = MathHelper.lerp((double)delta, entity.lastRenderY, entity.getY()) + yOffset;
+		double f = MathHelper.lerp((double)delta, entity.lastRenderZ, entity.getZ());
+		return new Vec3d(d, e, f);
 	}
 
 	public void render(GuardianEntity guardianEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
@@ -101,7 +101,7 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity, Gu
 			float ap = 0.4999F;
 			float aq = -1.0F + k;
 			float ar = m * 2.5F + aq;
-			VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(field_21743);
+			VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(LAYER);
 			MatrixStack.Entry entry = matrixStack.peek();
 			Matrix4f matrix4f = entry.getModel();
 			Matrix3f matrix3f = entry.getNormal();
@@ -139,6 +139,6 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity, Gu
 	}
 
 	public Identifier getTexture(GuardianEntity guardianEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

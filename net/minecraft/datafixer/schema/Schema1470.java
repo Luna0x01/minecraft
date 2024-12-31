@@ -7,13 +7,13 @@ import java.util.Map;
 import java.util.function.Supplier;
 import net.minecraft.datafixer.TypeReferences;
 
-public class Schema1470 extends SchemaIdentifierNormalize {
+public class Schema1470 extends IdentifierNormalizingSchema {
 	public Schema1470(int i, Schema schema) {
 		super(i, schema);
 	}
 
 	protected static void method_5280(Schema schema, Map<String, Supplier<TypeTemplate>> map, String string) {
-		schema.register(map, string, () -> Schema100.method_5196(schema));
+		schema.register(map, string, () -> Schema100.targetItems(schema));
 	}
 
 	public Map<String, Supplier<TypeTemplate>> registerEntities(Schema schema) {

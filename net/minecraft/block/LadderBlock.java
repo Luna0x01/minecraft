@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import javax.annotation.Nullable;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
@@ -15,7 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
 public class LadderBlock extends Block implements Waterloggable {
@@ -26,69 +25,66 @@ public class LadderBlock extends Block implements Waterloggable {
 	protected static final VoxelShape SOUTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 3.0);
 	protected static final VoxelShape NORTH_SHAPE = Block.createCuboidShape(0.0, 0.0, 13.0, 16.0, 16.0, 16.0);
 
-	protected LadderBlock(Block.Settings settings) {
+	protected LadderBlock(AbstractBlock.Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.field_11043).with(WATERLOGGED, Boolean.valueOf(false)));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(WATERLOGGED, Boolean.valueOf(false)));
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		switch ((Direction)blockState.get(FACING)) {
-			case field_11043:
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		switch ((Direction)state.get(FACING)) {
+			case NORTH:
 				return NORTH_SHAPE;
-			case field_11035:
+			case SOUTH:
 				return SOUTH_SHAPE;
-			case field_11039:
+			case WEST:
 				return WEST_SHAPE;
-			case field_11034:
+			case EAST:
 			default:
 				return EAST_SHAPE;
 		}
 	}
 
-	private boolean canPlaceOn(BlockView blockView, BlockPos blockPos, Direction direction) {
-		BlockState blockState = blockView.getBlockState(blockPos);
-		return !blockState.emitsRedstonePower() && blockState.isSideSolidFullSquare(blockView, blockPos, direction);
+	private boolean canPlaceOn(BlockView world, BlockPos pos, Direction side) {
+		BlockState blockState = world.getBlockState(pos);
+		return blockState.isSideSolidFullSquare(world, pos, side);
 	}
 
 	@Override
-	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
-		Direction direction = blockState.get(FACING);
-		return this.canPlaceOn(worldView, blockPos.offset(direction.getOpposite()), direction);
+	public boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+		Direction direction = state.get(FACING);
+		return this.canPlaceOn(world, pos.offset(direction.getOpposite()), direction);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if (direction.getOpposite() == blockState.get(FACING) && !blockState.canPlaceAt(iWorld, blockPos)) {
-			return Blocks.field_10124.getDefaultState();
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if (direction.getOpposite() == state.get(FACING) && !state.canPlaceAt(world, pos)) {
+			return Blocks.AIR.getDefaultState();
 		} else {
-			if ((Boolean)blockState.get(WATERLOGGED)) {
-				iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
+			if ((Boolean)state.get(WATERLOGGED)) {
+				world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 			}
 
-			return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+			return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 		}
 	}
 
 	@Nullable
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		if (!itemPlacementContext.canReplaceExisting()) {
-			BlockState blockState = itemPlacementContext.getWorld()
-				.getBlockState(itemPlacementContext.getBlockPos().offset(itemPlacementContext.getSide().getOpposite()));
-			if (blockState.getBlock() == this && blockState.get(FACING) == itemPlacementContext.getSide()) {
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		if (!ctx.canReplaceExisting()) {
+			BlockState blockState = ctx.getWorld().getBlockState(ctx.getBlockPos().offset(ctx.getSide().getOpposite()));
+			if (blockState.isOf(this) && blockState.get(FACING) == ctx.getSide()) {
 				return null;
 			}
 		}
 
 		BlockState blockState2 = this.getDefaultState();
-		WorldView worldView = itemPlacementContext.getWorld();
-		BlockPos blockPos = itemPlacementContext.getBlockPos();
-		FluidState fluidState = itemPlacementContext.getWorld().getFluidState(itemPlacementContext.getBlockPos());
+		WorldView worldView = ctx.getWorld();
+		BlockPos blockPos = ctx.getBlockPos();
+		FluidState fluidState = ctx.getWorld().getFluidState(ctx.getBlockPos());
 
-		for (Direction direction : itemPlacementContext.getPlacementDirections()) {
+		for (Direction direction : ctx.getPlacementDirections()) {
 			if (direction.getAxis().isHorizontal()) {
 				blockState2 = blockState2.with(FACING, direction.getOpposite());
 				if (blockState2.canPlaceAt(worldView, blockPos)) {
@@ -101,13 +97,13 @@ public class LadderBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
-		return blockState.with(FACING, blockRotation.rotate(blockState.get(FACING)));
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
 	}
 
 	@Override
-	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
-		return blockState.rotate(blockMirror.getRotation(blockState.get(FACING)));
+	public BlockState mirror(BlockState state, BlockMirror mirror) {
+		return state.rotate(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override
@@ -116,7 +112,7 @@ public class LadderBlock extends Block implements Waterloggable {
 	}
 
 	@Override
-	public FluidState getFluidState(BlockState blockState) {
-		return blockState.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(blockState);
+	public FluidState getFluidState(BlockState state) {
+		return state.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
 	}
 }

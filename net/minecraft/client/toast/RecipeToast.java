@@ -3,57 +3,60 @@ package net.minecraft.client.toast;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
-import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public class RecipeToast implements Toast {
+	private static final Text field_26533 = new TranslatableText("recipe.toast.title");
+	private static final Text field_26534 = new TranslatableText("recipe.toast.description");
 	private final List<Recipe<?>> recipes = Lists.newArrayList();
 	private long startTime;
 	private boolean justUpdated;
 
-	public RecipeToast(Recipe<?> recipe) {
-		this.recipes.add(recipe);
+	public RecipeToast(Recipe<?> recipes) {
+		this.recipes.add(recipes);
 	}
 
 	@Override
-	public Toast.Visibility draw(ToastManager toastManager, long l) {
+	public Toast.Visibility draw(MatrixStack matrices, ToastManager manager, long startTime) {
 		if (this.justUpdated) {
-			this.startTime = l;
+			this.startTime = startTime;
 			this.justUpdated = false;
 		}
 
 		if (this.recipes.isEmpty()) {
-			return Toast.Visibility.field_2209;
+			return Toast.Visibility.HIDE;
 		} else {
-			toastManager.getGame().getTextureManager().bindTexture(TOASTS_TEX);
+			manager.getGame().getTextureManager().bindTexture(TEXTURE);
 			RenderSystem.color3f(1.0F, 1.0F, 1.0F);
-			toastManager.blit(0, 0, 0, 32, 160, 32);
-			toastManager.getGame().textRenderer.draw(I18n.translate("recipe.toast.title"), 30.0F, 7.0F, -11534256);
-			toastManager.getGame().textRenderer.draw(I18n.translate("recipe.toast.description"), 30.0F, 18.0F, -16777216);
-			Recipe<?> recipe = (Recipe<?>)this.recipes.get((int)(l / (5000L / (long)this.recipes.size()) % (long)this.recipes.size()));
+			manager.drawTexture(matrices, 0, 0, 0, 32, this.getWidth(), this.getHeight());
+			manager.getGame().textRenderer.draw(matrices, field_26533, 30.0F, 7.0F, -11534256);
+			manager.getGame().textRenderer.draw(matrices, field_26534, 30.0F, 18.0F, -16777216);
+			Recipe<?> recipe = (Recipe<?>)this.recipes.get((int)(startTime / Math.max(1L, 5000L / (long)this.recipes.size()) % (long)this.recipes.size()));
 			ItemStack itemStack = recipe.getRecipeKindIcon();
 			RenderSystem.pushMatrix();
 			RenderSystem.scalef(0.6F, 0.6F, 1.0F);
-			toastManager.getGame().getItemRenderer().renderGuiItem(null, itemStack, 3, 3);
+			manager.getGame().getItemRenderer().renderInGui(itemStack, 3, 3);
 			RenderSystem.popMatrix();
-			toastManager.getGame().getItemRenderer().renderGuiItem(null, recipe.getOutput(), 8, 8);
-			return l - this.startTime >= 5000L ? Toast.Visibility.field_2209 : Toast.Visibility.field_2210;
+			manager.getGame().getItemRenderer().renderInGui(recipe.getOutput(), 8, 8);
+			return startTime - this.startTime >= 5000L ? Toast.Visibility.HIDE : Toast.Visibility.SHOW;
 		}
 	}
 
-	public void addRecipe(Recipe<?> recipe) {
-		if (this.recipes.add(recipe)) {
-			this.justUpdated = true;
-		}
+	private void addRecipes(Recipe<?> recipes) {
+		this.recipes.add(recipes);
+		this.justUpdated = true;
 	}
 
-	public static void show(ToastManager toastManager, Recipe<?> recipe) {
-		RecipeToast recipeToast = toastManager.getToast(RecipeToast.class, field_2208);
+	public static void show(ToastManager manager, Recipe<?> recipes) {
+		RecipeToast recipeToast = manager.getToast(RecipeToast.class, TYPE);
 		if (recipeToast == null) {
-			toastManager.add(new RecipeToast(recipe));
+			manager.add(new RecipeToast(recipes));
 		} else {
-			recipeToast.addRecipe(recipe);
+			recipeToast.addRecipes(recipes);
 		}
 	}
 }

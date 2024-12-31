@@ -18,8 +18,8 @@ public class PandaHeldItemFeatureRenderer extends FeatureRenderer<PandaEntity, P
 	public void render(
 		MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, PandaEntity pandaEntity, float f, float g, float h, float j, float k, float l
 	) {
-		ItemStack itemStack = pandaEntity.getEquippedStack(EquipmentSlot.field_6173);
-		if (pandaEntity.isScared() && !pandaEntity.method_6524()) {
+		ItemStack itemStack = pandaEntity.getEquippedStack(EquipmentSlot.MAINHAND);
+		if (pandaEntity.isScared() && !pandaEntity.isScaredByThunderstorm()) {
 			float m = -0.6F;
 			float n = 1.4F;
 			if (pandaEntity.isEating()) {
@@ -31,7 +31,7 @@ public class PandaHeldItemFeatureRenderer extends FeatureRenderer<PandaEntity, P
 			matrixStack.translate(0.1F, (double)n, (double)m);
 			MinecraftClient.getInstance()
 				.getHeldItemRenderer()
-				.renderItem(pandaEntity, itemStack, ModelTransformation.Mode.field_4318, false, matrixStack, vertexConsumerProvider, i);
+				.renderItem(pandaEntity, itemStack, ModelTransformation.Mode.GROUND, false, matrixStack, vertexConsumerProvider, i);
 			matrixStack.pop();
 		}
 	}

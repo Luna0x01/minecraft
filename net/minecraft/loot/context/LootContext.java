@@ -25,8 +25,8 @@ public class LootContext {
 	private final Random random;
 	private final float luck;
 	private final ServerWorld world;
-	private final Function<Identifier, LootTable> supplierGetter;
-	private final Set<LootTable> suppliers = Sets.newLinkedHashSet();
+	private final Function<Identifier, LootTable> tableGetter;
+	private final Set<LootTable> activeTables = Sets.newLinkedHashSet();
 	private final Function<Identifier, LootCondition> conditionGetter;
 	private final Set<LootCondition> conditions = Sets.newLinkedHashSet();
 	private final Map<LootContextParameter<?>, Object> parameters;
@@ -34,60 +34,60 @@ public class LootContext {
 
 	private LootContext(
 		Random random,
-		float f,
-		ServerWorld serverWorld,
-		Function<Identifier, LootTable> function,
-		Function<Identifier, LootCondition> function2,
-		Map<LootContextParameter<?>, Object> map,
-		Map<Identifier, LootContext.Dropper> map2
+		float luck,
+		ServerWorld world,
+		Function<Identifier, LootTable> tableGetter,
+		Function<Identifier, LootCondition> conditionSetter,
+		Map<LootContextParameter<?>, Object> parameters,
+		Map<Identifier, LootContext.Dropper> drops
 	) {
 		this.random = random;
-		this.luck = f;
-		this.world = serverWorld;
-		this.supplierGetter = function;
-		this.conditionGetter = function2;
-		this.parameters = ImmutableMap.copyOf(map);
-		this.drops = ImmutableMap.copyOf(map2);
+		this.luck = luck;
+		this.world = world;
+		this.tableGetter = tableGetter;
+		this.conditionGetter = conditionSetter;
+		this.parameters = ImmutableMap.copyOf(parameters);
+		this.drops = ImmutableMap.copyOf(drops);
 	}
 
-	public boolean hasParameter(LootContextParameter<?> lootContextParameter) {
-		return this.parameters.containsKey(lootContextParameter);
+	public boolean hasParameter(LootContextParameter<?> parameter) {
+		return this.parameters.containsKey(parameter);
 	}
 
-	public void drop(Identifier identifier, Consumer<ItemStack> consumer) {
-		LootContext.Dropper dropper = (LootContext.Dropper)this.drops.get(identifier);
+	public void drop(Identifier id, Consumer<ItemStack> lootConsumer) {
+		LootContext.Dropper dropper = (LootContext.Dropper)this.drops.get(id);
 		if (dropper != null) {
-			dropper.add(this, consumer);
+			dropper.add(this, lootConsumer);
 		}
 	}
 
 	@Nullable
-	public <T> T get(LootContextParameter<T> lootContextParameter) {
-		return (T)this.parameters.get(lootContextParameter);
+	public <T> T get(LootContextParameter<T> parameter) {
+		return (T)this.parameters.get(parameter);
 	}
 
-	public boolean addDrop(LootTable lootTable) {
-		return this.suppliers.add(lootTable);
+	public boolean markActive(LootTable table) {
+		return this.activeTables.add(table);
 	}
 
-	public void removeDrop(LootTable lootTable) {
-		this.suppliers.remove(lootTable);
+	public void markInactive(LootTable table) {
+		this.activeTables.remove(table);
 	}
 
-	public boolean addCondition(LootCondition lootCondition) {
-		return this.conditions.add(lootCondition);
+	public boolean addCondition(LootCondition condition) {
+		return this.conditions.add(condition);
 	}
 
-	public void removeCondition(LootCondition lootCondition) {
-		this.conditions.remove(lootCondition);
+	public void removeCondition(LootCondition condition) {
+		this.conditions.remove(condition);
 	}
 
-	public LootTable getSupplier(Identifier identifier) {
-		return (LootTable)this.supplierGetter.apply(identifier);
+	public LootTable getSupplier(Identifier id) {
+		return (LootTable)this.tableGetter.apply(id);
 	}
 
-	public LootCondition getCondition(Identifier identifier) {
-		return (LootCondition)this.conditionGetter.apply(identifier);
+	public LootCondition getCondition(Identifier id) {
+		return (LootCondition)this.conditionGetter.apply(id);
 	}
 
 	public Random getRandom() {
@@ -109,56 +109,56 @@ public class LootContext {
 		private Random random;
 		private float luck;
 
-		public Builder(ServerWorld serverWorld) {
-			this.world = serverWorld;
+		public Builder(ServerWorld world) {
+			this.world = world;
 		}
 
-		public LootContext.Builder setRandom(Random random) {
+		public LootContext.Builder random(Random random) {
 			this.random = random;
 			return this;
 		}
 
-		public LootContext.Builder setRandom(long l) {
-			if (l != 0L) {
-				this.random = new Random(l);
+		public LootContext.Builder random(long seed) {
+			if (seed != 0L) {
+				this.random = new Random(seed);
 			}
 
 			return this;
 		}
 
-		public LootContext.Builder setRandom(long l, Random random) {
-			if (l == 0L) {
+		public LootContext.Builder random(long seed, Random random) {
+			if (seed == 0L) {
 				this.random = random;
 			} else {
-				this.random = new Random(l);
+				this.random = new Random(seed);
 			}
 
 			return this;
 		}
 
-		public LootContext.Builder setLuck(float f) {
-			this.luck = f;
+		public LootContext.Builder luck(float luck) {
+			this.luck = luck;
 			return this;
 		}
 
-		public <T> LootContext.Builder put(LootContextParameter<T> lootContextParameter, T object) {
-			this.parameters.put(lootContextParameter, object);
+		public <T> LootContext.Builder parameter(LootContextParameter<T> key, T value) {
+			this.parameters.put(key, value);
 			return this;
 		}
 
-		public <T> LootContext.Builder putNullable(LootContextParameter<T> lootContextParameter, @Nullable T object) {
-			if (object == null) {
-				this.parameters.remove(lootContextParameter);
+		public <T> LootContext.Builder optionalParameter(LootContextParameter<T> key, @Nullable T value) {
+			if (value == null) {
+				this.parameters.remove(key);
 			} else {
-				this.parameters.put(lootContextParameter, object);
+				this.parameters.put(key, value);
 			}
 
 			return this;
 		}
 
-		public LootContext.Builder putDrop(Identifier identifier, LootContext.Dropper dropper) {
-			LootContext.Dropper dropper2 = (LootContext.Dropper)this.drops.put(identifier, dropper);
-			if (dropper2 != null) {
+		public LootContext.Builder putDrop(Identifier id, LootContext.Dropper value) {
+			LootContext.Dropper dropper = (LootContext.Dropper)this.drops.put(id, value);
+			if (dropper != null) {
 				throw new IllegalStateException("Duplicated dynamic drop '" + this.drops + "'");
 			} else {
 				return this;
@@ -169,26 +169,26 @@ public class LootContext {
 			return this.world;
 		}
 
-		public <T> T get(LootContextParameter<T> lootContextParameter) {
-			T object = (T)this.parameters.get(lootContextParameter);
+		public <T> T get(LootContextParameter<T> parameter) {
+			T object = (T)this.parameters.get(parameter);
 			if (object == null) {
-				throw new IllegalArgumentException("No parameter " + lootContextParameter);
+				throw new IllegalArgumentException("No parameter " + parameter);
 			} else {
 				return object;
 			}
 		}
 
 		@Nullable
-		public <T> T getNullable(LootContextParameter<T> lootContextParameter) {
-			return (T)this.parameters.get(lootContextParameter);
+		public <T> T getNullable(LootContextParameter<T> parameter) {
+			return (T)this.parameters.get(parameter);
 		}
 
-		public LootContext build(LootContextType lootContextType) {
-			Set<LootContextParameter<?>> set = Sets.difference(this.parameters.keySet(), lootContextType.getAllowed());
+		public LootContext build(LootContextType type) {
+			Set<LootContextParameter<?>> set = Sets.difference(this.parameters.keySet(), type.getAllowed());
 			if (!set.isEmpty()) {
 				throw new IllegalArgumentException("Parameters not allowed in this parameter set: " + set);
 			} else {
-				Set<LootContextParameter<?>> set2 = Sets.difference(lootContextType.getRequired(), this.parameters.keySet());
+				Set<LootContextParameter<?>> set2 = Sets.difference(type.getRequired(), this.parameters.keySet());
 				if (!set2.isEmpty()) {
 					throw new IllegalArgumentException("Missing required parameters: " + set2);
 				} else {
@@ -199,7 +199,7 @@ public class LootContext {
 
 					MinecraftServer minecraftServer = this.world.getServer();
 					return new LootContext(
-						random, this.luck, this.world, minecraftServer.getLootManager()::getSupplier, minecraftServer.getPredicateManager()::get, this.parameters, this.drops
+						random, this.luck, this.world, minecraftServer.getLootManager()::getTable, minecraftServer.getPredicateManager()::get, this.parameters, this.drops
 					);
 				}
 			}
@@ -208,35 +208,35 @@ public class LootContext {
 
 	@FunctionalInterface
 	public interface Dropper {
-		void add(LootContext lootContext, Consumer<ItemStack> consumer);
+		void add(LootContext context, Consumer<ItemStack> consumer);
 	}
 
 	public static enum EntityTarget {
-		field_935("this", LootContextParameters.field_1226),
-		field_936("killer", LootContextParameters.field_1230),
-		field_939("direct_killer", LootContextParameters.field_1227),
-		field_937("killer_player", LootContextParameters.field_1233);
+		THIS("this", LootContextParameters.THIS_ENTITY),
+		KILLER("killer", LootContextParameters.KILLER_ENTITY),
+		DIRECT_KILLER("direct_killer", LootContextParameters.DIRECT_KILLER_ENTITY),
+		KILLER_PLAYER("killer_player", LootContextParameters.LAST_DAMAGE_PLAYER);
 
 		private final String type;
 		private final LootContextParameter<? extends Entity> parameter;
 
-		private EntityTarget(String string2, LootContextParameter<? extends Entity> lootContextParameter) {
-			this.type = string2;
-			this.parameter = lootContextParameter;
+		private EntityTarget(String type, LootContextParameter<? extends Entity> parameter) {
+			this.type = type;
+			this.parameter = parameter;
 		}
 
 		public LootContextParameter<? extends Entity> getParameter() {
 			return this.parameter;
 		}
 
-		public static LootContext.EntityTarget fromString(String string) {
+		public static LootContext.EntityTarget fromString(String type) {
 			for (LootContext.EntityTarget entityTarget : values()) {
-				if (entityTarget.type.equals(string)) {
+				if (entityTarget.type.equals(type)) {
 					return entityTarget;
 				}
 			}
 
-			throw new IllegalArgumentException("Invalid entity target " + string);
+			throw new IllegalArgumentException("Invalid entity target " + type);
 		}
 
 		public static class Serializer extends TypeAdapter<LootContext.EntityTarget> {

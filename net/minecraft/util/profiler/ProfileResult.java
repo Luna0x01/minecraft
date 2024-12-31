@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.List;
 
 public interface ProfileResult {
-	List<ProfilerTiming> getTimings(String string);
+	List<ProfilerTiming> getTimings(String parentPath);
 
 	boolean save(File file);
 
@@ -24,7 +24,7 @@ public interface ProfileResult {
 		return this.getEndTick() - this.getStartTick();
 	}
 
-	static String getHumanReadableName(String string) {
-		return string.replace('\u001e', '.');
+	static String getHumanReadableName(String path) {
+		return path.replace('\u001e', '.');
 	}
 }

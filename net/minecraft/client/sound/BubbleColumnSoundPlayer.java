@@ -13,21 +13,24 @@ public class BubbleColumnSoundPlayer implements ClientPlayerTickable {
 	private boolean hasPlayedForCurrentColumn;
 	private boolean firstTick = true;
 
-	public BubbleColumnSoundPlayer(ClientPlayerEntity clientPlayerEntity) {
-		this.player = clientPlayerEntity;
+	public BubbleColumnSoundPlayer(ClientPlayerEntity player) {
+		this.player = player;
 	}
 
 	@Override
 	public void tick() {
 		World world = this.player.world;
-		BlockState blockState = world.getBlockState(this.player.getBoundingBox().expand(0.0, -0.4F, 0.0).contract(0.001), Blocks.field_10422);
+		BlockState blockState = (BlockState)world.method_29556(this.player.getBoundingBox().expand(0.0, -0.4F, 0.0).contract(0.001))
+			.filter(blockStatex -> blockStatex.isOf(Blocks.BUBBLE_COLUMN))
+			.findFirst()
+			.orElse(null);
 		if (blockState != null) {
-			if (!this.hasPlayedForCurrentColumn && !this.firstTick && blockState.getBlock() == Blocks.field_10422 && !this.player.isSpectator()) {
+			if (!this.hasPlayedForCurrentColumn && !this.firstTick && blockState.isOf(Blocks.BUBBLE_COLUMN) && !this.player.isSpectator()) {
 				boolean bl = (Boolean)blockState.get(BubbleColumnBlock.DRAG);
 				if (bl) {
-					this.player.playSound(SoundEvents.field_19196, 1.0F, 1.0F);
+					this.player.playSound(SoundEvents.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE, 1.0F, 1.0F);
 				} else {
-					this.player.playSound(SoundEvents.field_19195, 1.0F, 1.0F);
+					this.player.playSound(SoundEvents.BLOCK_BUBBLE_COLUMN_UPWARDS_INSIDE, 1.0F, 1.0F);
 				}
 			}
 

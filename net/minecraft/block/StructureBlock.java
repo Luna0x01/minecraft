@@ -8,6 +8,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
@@ -21,45 +22,45 @@ import net.minecraft.world.World;
 public class StructureBlock extends BlockWithEntity {
 	public static final EnumProperty<StructureBlockMode> MODE = Properties.STRUCTURE_BLOCK_MODE;
 
-	protected StructureBlock(Block.Settings settings) {
+	protected StructureBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView blockView) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new StructureBlockBlockEntity();
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof StructureBlockBlockEntity) {
-			return ((StructureBlockBlockEntity)blockEntity).openScreen(playerEntity) ? ActionResult.field_5812 : ActionResult.field_5811;
+			return ((StructureBlockBlockEntity)blockEntity).openScreen(player) ? ActionResult.success(world.isClient) : ActionResult.PASS;
 		} else {
-			return ActionResult.field_5811;
+			return ActionResult.PASS;
 		}
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, @Nullable LivingEntity livingEntity, ItemStack itemStack) {
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
 		if (!world.isClient) {
-			if (livingEntity != null) {
-				BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			if (placer != null) {
+				BlockEntity blockEntity = world.getBlockEntity(pos);
 				if (blockEntity instanceof StructureBlockBlockEntity) {
-					((StructureBlockBlockEntity)blockEntity).setAuthor(livingEntity);
+					((StructureBlockBlockEntity)blockEntity).setAuthor(placer);
 				}
 			}
 		}
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState blockState) {
-		return BlockRenderType.field_11458;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		return this.getDefaultState().with(MODE, StructureBlockMode.field_12696);
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		return this.getDefaultState().with(MODE, StructureBlockMode.DATA);
 	}
 
 	@Override
@@ -68,34 +69,34 @@ public class StructureBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void neighborUpdate(BlockState blockState, World world, BlockPos blockPos, Block block, BlockPos blockPos2, boolean bl) {
-		if (!world.isClient) {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
+		if (world instanceof ServerWorld) {
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof StructureBlockBlockEntity) {
 				StructureBlockBlockEntity structureBlockBlockEntity = (StructureBlockBlockEntity)blockEntity;
-				boolean bl2 = world.isReceivingRedstonePower(blockPos);
-				boolean bl3 = structureBlockBlockEntity.isPowered();
-				if (bl2 && !bl3) {
+				boolean bl = world.isReceivingRedstonePower(pos);
+				boolean bl2 = structureBlockBlockEntity.isPowered();
+				if (bl && !bl2) {
 					structureBlockBlockEntity.setPowered(true);
-					this.doAction(structureBlockBlockEntity);
-				} else if (!bl2 && bl3) {
+					this.doAction((ServerWorld)world, structureBlockBlockEntity);
+				} else if (!bl && bl2) {
 					structureBlockBlockEntity.setPowered(false);
 				}
 			}
 		}
 	}
 
-	private void doAction(StructureBlockBlockEntity structureBlockBlockEntity) {
+	private void doAction(ServerWorld serverWorld, StructureBlockBlockEntity structureBlockBlockEntity) {
 		switch (structureBlockBlockEntity.getMode()) {
-			case field_12695:
+			case SAVE:
 				structureBlockBlockEntity.saveStructure(false);
 				break;
-			case field_12697:
-				structureBlockBlockEntity.loadStructure(false);
+			case LOAD:
+				structureBlockBlockEntity.loadStructure(serverWorld, false);
 				break;
-			case field_12699:
+			case CORNER:
 				structureBlockBlockEntity.unloadStructure();
-			case field_12696:
+			case DATA:
 		}
 	}
 }

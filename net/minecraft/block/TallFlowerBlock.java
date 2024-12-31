@@ -9,27 +9,27 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class TallFlowerBlock extends TallPlantBlock implements Fertilizable {
-	public TallFlowerBlock(Block.Settings settings) {
+	public TallFlowerBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
-	public boolean canReplace(BlockState blockState, ItemPlacementContext itemPlacementContext) {
+	public boolean canReplace(BlockState state, ItemPlacementContext context) {
 		return false;
 	}
 
 	@Override
-	public boolean isFertilizable(BlockView blockView, BlockPos blockPos, BlockState blockState, boolean bl) {
+	public boolean isFertilizable(BlockView world, BlockPos pos, BlockState state, boolean isClient) {
 		return true;
 	}
 
 	@Override
-	public boolean canGrow(World world, Random random, BlockPos blockPos, BlockState blockState) {
+	public boolean canGrow(World world, Random random, BlockPos pos, BlockState state) {
 		return true;
 	}
 
 	@Override
-	public void grow(ServerWorld serverWorld, Random random, BlockPos blockPos, BlockState blockState) {
-		dropStack(serverWorld, blockPos, new ItemStack(this));
+	public void grow(ServerWorld world, Random random, BlockPos pos, BlockState state) {
+		dropStack(world, pos, new ItemStack(this));
 	}
 }

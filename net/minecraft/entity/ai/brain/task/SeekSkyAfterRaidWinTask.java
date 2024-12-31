@@ -1,9 +1,8 @@
 package net.minecraft.entity.ai.brain.task;
 
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.raid.Raid;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.village.raid.Raid;
 
 public class SeekSkyAfterRaidWinTask extends SeekSkyTask {
 	public SeekSkyAfterRaidWinTask(float f) {
@@ -11,8 +10,8 @@ public class SeekSkyAfterRaidWinTask extends SeekSkyTask {
 	}
 
 	@Override
-	protected boolean shouldRun(ServerWorld serverWorld, LivingEntity livingEntity) {
-		Raid raid = serverWorld.getRaidAt(new BlockPos(livingEntity));
-		return raid != null && raid.hasWon() && super.shouldRun(serverWorld, livingEntity);
+	protected boolean shouldRun(ServerWorld world, LivingEntity entity) {
+		Raid raid = world.getRaidAt(entity.getBlockPos());
+		return raid != null && raid.hasWon() && super.shouldRun(world, entity);
 	}
 }

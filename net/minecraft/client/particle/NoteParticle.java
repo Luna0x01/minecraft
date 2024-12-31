@@ -1,19 +1,19 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
 
 public class NoteParticle extends SpriteBillboardParticle {
-	private NoteParticle(World world, double d, double e, double f, double g) {
-		super(world, d, e, f, 0.0, 0.0, 0.0);
+	private NoteParticle(ClientWorld world, double x, double y, double z, double d) {
+		super(world, x, y, z, 0.0, 0.0, 0.0);
 		this.velocityX *= 0.01F;
 		this.velocityY *= 0.01F;
 		this.velocityZ *= 0.01F;
 		this.velocityY += 0.2;
-		this.colorRed = Math.max(0.0F, MathHelper.sin(((float)g + 0.0F) * (float) (Math.PI * 2)) * 0.65F + 0.35F);
-		this.colorGreen = Math.max(0.0F, MathHelper.sin(((float)g + 0.33333334F) * (float) (Math.PI * 2)) * 0.65F + 0.35F);
-		this.colorBlue = Math.max(0.0F, MathHelper.sin(((float)g + 0.6666667F) * (float) (Math.PI * 2)) * 0.65F + 0.35F);
+		this.colorRed = Math.max(0.0F, MathHelper.sin(((float)d + 0.0F) * (float) (Math.PI * 2)) * 0.65F + 0.35F);
+		this.colorGreen = Math.max(0.0F, MathHelper.sin(((float)d + 0.33333334F) * (float) (Math.PI * 2)) * 0.65F + 0.35F);
+		this.colorBlue = Math.max(0.0F, MathHelper.sin(((float)d + 0.6666667F) * (float) (Math.PI * 2)) * 0.65F + 0.35F);
 		this.scale *= 1.5F;
 		this.maxAge = 6;
 	}
@@ -24,8 +24,8 @@ public class NoteParticle extends SpriteBillboardParticle {
 	}
 
 	@Override
-	public float getSize(float f) {
-		return this.scale * MathHelper.clamp(((float)this.age + f) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
+	public float getSize(float tickDelta) {
+		return this.scale * MathHelper.clamp(((float)this.age + tickDelta) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
 	}
 
 	@Override
@@ -53,15 +53,15 @@ public class NoteParticle extends SpriteBillboardParticle {
 	}
 
 	public static class Factory implements ParticleFactory<DefaultParticleType> {
-		private final SpriteProvider field_17819;
+		private final SpriteProvider spriteProvider;
 
 		public Factory(SpriteProvider spriteProvider) {
-			this.field_17819 = spriteProvider;
+			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			NoteParticle noteParticle = new NoteParticle(world, d, e, f, g);
-			noteParticle.setSprite(this.field_17819);
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			NoteParticle noteParticle = new NoteParticle(clientWorld, d, e, f, g);
+			noteParticle.setSprite(this.spriteProvider);
 			return noteParticle;
 		}
 	}

@@ -4,17 +4,20 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FluidBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -23,8 +26,9 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.MobSpawnerLogic;
-import net.minecraft.world.RayTraceContext;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 public class SpawnEggItem extends Item {
@@ -33,26 +37,25 @@ public class SpawnEggItem extends Item {
 	private final int secondaryColor;
 	private final EntityType<?> type;
 
-	public SpawnEggItem(EntityType<?> entityType, int i, int j, Item.Settings settings) {
+	public SpawnEggItem(EntityType<?> type, int primaryColor, int secondaryColor, Item.Settings settings) {
 		super(settings);
-		this.type = entityType;
-		this.primaryColor = i;
-		this.secondaryColor = j;
-		SPAWN_EGGS.put(entityType, this);
+		this.type = type;
+		this.primaryColor = primaryColor;
+		this.secondaryColor = secondaryColor;
+		SPAWN_EGGS.put(type, this);
 	}
 
 	@Override
-	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
-		World world = itemUsageContext.getWorld();
-		if (world.isClient) {
-			return ActionResult.field_5812;
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		World world = context.getWorld();
+		if (!(world instanceof ServerWorld)) {
+			return ActionResult.SUCCESS;
 		} else {
-			ItemStack itemStack = itemUsageContext.getStack();
-			BlockPos blockPos = itemUsageContext.getBlockPos();
-			Direction direction = itemUsageContext.getSide();
+			ItemStack itemStack = context.getStack();
+			BlockPos blockPos = context.getBlockPos();
+			Direction direction = context.getSide();
 			BlockState blockState = world.getBlockState(blockPos);
-			Block block = blockState.getBlock();
-			if (block == Blocks.field_10260) {
+			if (blockState.isOf(Blocks.SPAWNER)) {
 				BlockEntity blockEntity = world.getBlockEntity(blockPos);
 				if (blockEntity instanceof MobSpawnerBlockEntity) {
 					MobSpawnerLogic mobSpawnerLogic = ((MobSpawnerBlockEntity)blockEntity).getLogic();
@@ -61,7 +64,7 @@ public class SpawnEggItem extends Item {
 					blockEntity.markDirty();
 					world.updateListeners(blockPos, blockState, blockState, 3);
 					itemStack.decrement(1);
-					return ActionResult.field_5812;
+					return ActionResult.CONSUME;
 				}
 			}
 
@@ -74,46 +77,46 @@ public class SpawnEggItem extends Item {
 
 			EntityType<?> entityType2 = this.getEntityType(itemStack.getTag());
 			if (entityType2.spawnFromItemStack(
-					world,
+					(ServerWorld)world,
 					itemStack,
-					itemUsageContext.getPlayer(),
+					context.getPlayer(),
 					blockPos2,
-					SpawnType.field_16465,
+					SpawnReason.SPAWN_EGG,
 					true,
-					!Objects.equals(blockPos, blockPos2) && direction == Direction.field_11036
+					!Objects.equals(blockPos, blockPos2) && direction == Direction.UP
 				)
 				!= null) {
 				itemStack.decrement(1);
 			}
 
-			return ActionResult.field_5812;
+			return ActionResult.CONSUME;
 		}
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		HitResult hitResult = rayTrace(world, playerEntity, RayTraceContext.FluidHandling.field_1345);
-		if (hitResult.getType() != HitResult.Type.field_1332) {
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+		ItemStack itemStack = user.getStackInHand(hand);
+		HitResult hitResult = raycast(world, user, RaycastContext.FluidHandling.SOURCE_ONLY);
+		if (hitResult.getType() != HitResult.Type.BLOCK) {
 			return TypedActionResult.pass(itemStack);
-		} else if (world.isClient) {
+		} else if (!(world instanceof ServerWorld)) {
 			return TypedActionResult.success(itemStack);
 		} else {
 			BlockHitResult blockHitResult = (BlockHitResult)hitResult;
 			BlockPos blockPos = blockHitResult.getBlockPos();
 			if (!(world.getBlockState(blockPos).getBlock() instanceof FluidBlock)) {
 				return TypedActionResult.pass(itemStack);
-			} else if (world.canPlayerModifyAt(playerEntity, blockPos) && playerEntity.canPlaceOn(blockPos, blockHitResult.getSide(), itemStack)) {
+			} else if (world.canPlayerModifyAt(user, blockPos) && user.canPlaceOn(blockPos, blockHitResult.getSide(), itemStack)) {
 				EntityType<?> entityType = this.getEntityType(itemStack.getTag());
-				if (entityType.spawnFromItemStack(world, itemStack, playerEntity, blockPos, SpawnType.field_16465, false, false) == null) {
+				if (entityType.spawnFromItemStack((ServerWorld)world, itemStack, user, blockPos, SpawnReason.SPAWN_EGG, false, false) == null) {
 					return TypedActionResult.pass(itemStack);
 				} else {
-					if (!playerEntity.abilities.creativeMode) {
+					if (!user.abilities.creativeMode) {
 						itemStack.decrement(1);
 					}
 
-					playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-					return TypedActionResult.success(itemStack);
+					user.incrementStat(Stats.USED.getOrCreateStat(this));
+					return TypedActionResult.consume(itemStack);
 				}
 			} else {
 				return TypedActionResult.fail(itemStack);
@@ -121,31 +124,67 @@ public class SpawnEggItem extends Item {
 		}
 	}
 
-	public boolean isOfSameEntityType(@Nullable CompoundTag compoundTag, EntityType<?> entityType) {
-		return Objects.equals(this.getEntityType(compoundTag), entityType);
+	public boolean isOfSameEntityType(@Nullable CompoundTag tag, EntityType<?> type) {
+		return Objects.equals(this.getEntityType(tag), type);
 	}
 
-	public int getColor(int i) {
-		return i == 0 ? this.primaryColor : this.secondaryColor;
+	public int getColor(int num) {
+		return num == 0 ? this.primaryColor : this.secondaryColor;
 	}
 
 	@Nullable
-	public static SpawnEggItem forEntity(@Nullable EntityType<?> entityType) {
-		return (SpawnEggItem)SPAWN_EGGS.get(entityType);
+	public static SpawnEggItem forEntity(@Nullable EntityType<?> type) {
+		return (SpawnEggItem)SPAWN_EGGS.get(type);
 	}
 
 	public static Iterable<SpawnEggItem> getAll() {
 		return Iterables.unmodifiableIterable(SPAWN_EGGS.values());
 	}
 
-	public EntityType<?> getEntityType(@Nullable CompoundTag compoundTag) {
-		if (compoundTag != null && compoundTag.contains("EntityTag", 10)) {
-			CompoundTag compoundTag2 = compoundTag.getCompound("EntityTag");
-			if (compoundTag2.contains("id", 8)) {
-				return (EntityType<?>)EntityType.get(compoundTag2.getString("id")).orElse(this.type);
+	public EntityType<?> getEntityType(@Nullable CompoundTag tag) {
+		if (tag != null && tag.contains("EntityTag", 10)) {
+			CompoundTag compoundTag = tag.getCompound("EntityTag");
+			if (compoundTag.contains("id", 8)) {
+				return (EntityType<?>)EntityType.get(compoundTag.getString("id")).orElse(this.type);
 			}
 		}
 
 		return this.type;
+	}
+
+	public Optional<MobEntity> spawnBaby(
+		PlayerEntity user, MobEntity mobEntity, EntityType<? extends MobEntity> entityType, ServerWorld serverWorld, Vec3d vec3d, ItemStack itemStack
+	) {
+		if (!this.isOfSameEntityType(itemStack.getTag(), entityType)) {
+			return Optional.empty();
+		} else {
+			MobEntity mobEntity2;
+			if (mobEntity instanceof PassiveEntity) {
+				mobEntity2 = ((PassiveEntity)mobEntity).createChild(serverWorld, (PassiveEntity)mobEntity);
+			} else {
+				mobEntity2 = entityType.create(serverWorld);
+			}
+
+			if (mobEntity2 == null) {
+				return Optional.empty();
+			} else {
+				mobEntity2.setBaby(true);
+				if (!mobEntity2.isBaby()) {
+					return Optional.empty();
+				} else {
+					mobEntity2.refreshPositionAndAngles(vec3d.getX(), vec3d.getY(), vec3d.getZ(), 0.0F, 0.0F);
+					serverWorld.spawnEntityAndPassengers(mobEntity2);
+					if (itemStack.hasCustomName()) {
+						mobEntity2.setCustomName(itemStack.getName());
+					}
+
+					if (!user.abilities.creativeMode) {
+						itemStack.decrement(1);
+					}
+
+					return Optional.of(mobEntity2);
+				}
+			}
+		}
 	}
 }

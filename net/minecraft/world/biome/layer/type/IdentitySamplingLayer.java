@@ -6,10 +6,10 @@ import net.minecraft.world.biome.layer.util.LayerSampleContext;
 import net.minecraft.world.biome.layer.util.LayerSampler;
 
 public interface IdentitySamplingLayer extends ParentedLayer, IdentityCoordinateTransformer {
-	int sample(LayerRandomnessSource layerRandomnessSource, int i);
+	int sample(LayerRandomnessSource context, int value);
 
 	@Override
-	default int sample(LayerSampleContext<?> layerSampleContext, LayerSampler layerSampler, int i, int j) {
-		return this.sample(layerSampleContext, layerSampler.sample(this.transformX(i), this.transformZ(j)));
+	default int sample(LayerSampleContext<?> context, LayerSampler parent, int x, int z) {
+		return this.sample(context, parent.sample(this.transformX(x), this.transformZ(z)));
 	}
 }

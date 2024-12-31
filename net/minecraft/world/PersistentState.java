@@ -1,7 +1,6 @@
 package net.minecraft.world;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import net.minecraft.SharedConstants;
 import net.minecraft.nbt.CompoundTag;
@@ -14,20 +13,20 @@ public abstract class PersistentState {
 	private final String key;
 	private boolean dirty;
 
-	public PersistentState(String string) {
-		this.key = string;
+	public PersistentState(String key) {
+		this.key = key;
 	}
 
-	public abstract void fromTag(CompoundTag compoundTag);
+	public abstract void fromTag(CompoundTag tag);
 
-	public abstract CompoundTag toTag(CompoundTag compoundTag);
+	public abstract CompoundTag toTag(CompoundTag tag);
 
 	public void markDirty() {
 		this.setDirty(true);
 	}
 
-	public void setDirty(boolean bl) {
-		this.dirty = bl;
+	public void setDirty(boolean dirty) {
+		this.dirty = dirty;
 	}
 
 	public boolean isDirty() {
@@ -45,29 +44,9 @@ public abstract class PersistentState {
 			compoundTag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
 
 			try {
-				FileOutputStream fileOutputStream = new FileOutputStream(file);
-				Throwable var4 = null;
-
-				try {
-					NbtIo.writeCompressed(compoundTag, fileOutputStream);
-				} catch (Throwable var14) {
-					var4 = var14;
-					throw var14;
-				} finally {
-					if (fileOutputStream != null) {
-						if (var4 != null) {
-							try {
-								fileOutputStream.close();
-							} catch (Throwable var13) {
-								var4.addSuppressed(var13);
-							}
-						} else {
-							fileOutputStream.close();
-						}
-					}
-				}
-			} catch (IOException var16) {
-				LOGGER.error("Could not save data {}", this, var16);
+				NbtIo.writeCompressed(compoundTag, file);
+			} catch (IOException var4) {
+				LOGGER.error("Could not save data {}", this, var4);
 			}
 
 			this.setDirty(false);

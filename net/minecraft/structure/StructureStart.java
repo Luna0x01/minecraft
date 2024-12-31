@@ -9,21 +9,32 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.ChunkRandom;
+import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.feature.FeatureConfig;
+import net.minecraft.world.gen.feature.MineshaftFeatureConfig;
 import net.minecraft.world.gen.feature.StructureFeature;
 
-public abstract class StructureStart {
-	public static final StructureStart DEFAULT = new StructureStart(Feature.MINESHAFT, 0, 0, BlockBox.empty(), 0, 0L) {
-		@Override
-		public void initialize(ChunkGenerator<?> chunkGenerator, StructureManager structureManager, int i, int j, Biome biome) {
+public abstract class StructureStart<C extends FeatureConfig> {
+	public static final StructureStart<?> DEFAULT = new StructureStart<MineshaftFeatureConfig>(StructureFeature.MINESHAFT, 0, 0, BlockBox.empty(), 0, 0L) {
+		public void init(
+			DynamicRegistryManager dynamicRegistryManager,
+			ChunkGenerator chunkGenerator,
+			StructureManager structureManager,
+			int i,
+			int j,
+			Biome biome,
+			MineshaftFeatureConfig mineshaftFeatureConfig
+		) {
 		}
 	};
-	private final StructureFeature<?> feature;
+	private final StructureFeature<C> feature;
 	protected final List<StructurePiece> children = Lists.newArrayList();
 	protected BlockBox boundingBox;
 	private final int chunkX;
@@ -31,17 +42,19 @@ public abstract class StructureStart {
 	private int references;
 	protected final ChunkRandom random;
 
-	public StructureStart(StructureFeature<?> structureFeature, int i, int j, BlockBox blockBox, int k, long l) {
-		this.feature = structureFeature;
-		this.chunkX = i;
-		this.chunkZ = j;
-		this.references = k;
+	public StructureStart(StructureFeature<C> feature, int chunkX, int chunkZ, BlockBox box, int references, long seed) {
+		this.feature = feature;
+		this.chunkX = chunkX;
+		this.chunkZ = chunkZ;
+		this.references = references;
 		this.random = new ChunkRandom();
-		this.random.setStructureSeed(l, i, j);
-		this.boundingBox = blockBox;
+		this.random.setCarverSeed(seed, chunkX, chunkZ);
+		this.boundingBox = box;
 	}
 
-	public abstract void initialize(ChunkGenerator<?> chunkGenerator, StructureManager structureManager, int i, int j, Biome biome);
+	public abstract void init(
+		DynamicRegistryManager registryManager, ChunkGenerator chunkGenerator, StructureManager manager, int chunkX, int chunkZ, Biome biome, C config
+	);
 
 	public BlockBox getBoundingBox() {
 		return this.boundingBox;
@@ -51,18 +64,27 @@ public abstract class StructureStart {
 		return this.children;
 	}
 
-	public void generateStructure(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
+	public void generateStructure(
+		StructureWorldAccess world, StructureAccessor structureAccessor, ChunkGenerator chunkGenerator, Random random, BlockBox box, ChunkPos chunkPos
+	) {
 		synchronized (this.children) {
-			Iterator<StructurePiece> iterator = this.children.iterator();
+			if (!this.children.isEmpty()) {
+				BlockBox blockBox = ((StructurePiece)this.children.get(0)).boundingBox;
+				Vec3i vec3i = blockBox.getCenter();
+				BlockPos blockPos = new BlockPos(vec3i.getX(), blockBox.minY, vec3i.getZ());
+				Iterator<StructurePiece> iterator = this.children.iterator();
 
-			while (iterator.hasNext()) {
-				StructurePiece structurePiece = (StructurePiece)iterator.next();
-				if (structurePiece.getBoundingBox().intersects(blockBox) && !structurePiece.generate(iWorld, chunkGenerator, random, blockBox, chunkPos)) {
-					iterator.remove();
+				while (iterator.hasNext()) {
+					StructurePiece structurePiece = (StructurePiece)iterator.next();
+					if (structurePiece.getBoundingBox().intersects(box) && !structurePiece.generate(world, structureAccessor, chunkGenerator, random, box, chunkPos, blockPos)
+						)
+					 {
+						iterator.remove();
+					}
 				}
-			}
 
-			this.setBoundingBoxFromChildren();
+				this.setBoundingBoxFromChildren();
+			}
 		}
 	}
 
@@ -74,12 +96,12 @@ public abstract class StructureStart {
 		}
 	}
 
-	public CompoundTag toTag(int i, int j) {
+	public CompoundTag toTag(int chunkX, int chunkZ) {
 		CompoundTag compoundTag = new CompoundTag();
 		if (this.hasChildren()) {
-			compoundTag.putString("id", Registry.field_16644.getId(this.getFeature()).toString());
-			compoundTag.putInt("ChunkX", i);
-			compoundTag.putInt("ChunkZ", j);
+			compoundTag.putString("id", Registry.STRUCTURE_FEATURE.getId(this.getFeature()).toString());
+			compoundTag.putInt("ChunkX", chunkX);
+			compoundTag.putInt("ChunkZ", chunkZ);
 			compoundTag.putInt("references", this.references);
 			compoundTag.put("BB", this.boundingBox.toNbt());
 			ListTag listTag = new ListTag();
@@ -97,35 +119,35 @@ public abstract class StructureStart {
 		}
 	}
 
-	protected void method_14978(int i, Random random, int j) {
-		int k = i - j;
-		int l = this.boundingBox.getBlockCountY() + 1;
-		if (l < k) {
-			l += random.nextInt(k - l);
+	protected void randomUpwardTranslation(int seaLevel, Random random, int minSeaLevelDistance) {
+		int i = seaLevel - minSeaLevelDistance;
+		int j = this.boundingBox.getBlockCountY() + 1;
+		if (j < i) {
+			j += random.nextInt(i - j);
 		}
 
-		int m = l - this.boundingBox.maxY;
-		this.boundingBox.offset(0, m, 0);
+		int k = j - this.boundingBox.maxY;
+		this.boundingBox.move(0, k, 0);
 
 		for (StructurePiece structurePiece : this.children) {
-			structurePiece.translate(0, m, 0);
+			structurePiece.translate(0, k, 0);
 		}
 	}
 
-	protected void method_14976(Random random, int i, int j) {
-		int k = j - i + 1 - this.boundingBox.getBlockCountY();
-		int l;
-		if (k > 1) {
-			l = i + random.nextInt(k);
+	protected void randomUpwardTranslation(Random random, int minY, int maxY) {
+		int i = maxY - minY + 1 - this.boundingBox.getBlockCountY();
+		int j;
+		if (i > 1) {
+			j = minY + random.nextInt(i);
 		} else {
-			l = i;
+			j = minY;
 		}
 
-		int n = l - this.boundingBox.minY;
-		this.boundingBox.offset(0, n, 0);
+		int l = j - this.boundingBox.minY;
+		this.boundingBox.move(0, l, 0);
 
 		for (StructurePiece structurePiece : this.children) {
-			structurePiece.translate(0, n, 0);
+			structurePiece.translate(0, l, 0);
 		}
 	}
 
@@ -153,7 +175,7 @@ public abstract class StructureStart {
 		this.references++;
 	}
 
-	public int method_23676() {
+	public int getReferences() {
 		return this.references;
 	}
 

@@ -1,8 +1,8 @@
 package net.minecraft.client.gui.widget;
 
-import com.google.common.base.Predicates;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -17,7 +17,12 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
@@ -26,7 +31,7 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 	private String text = "";
 	private int maxLength = 32;
 	private int focusedTicks;
-	private boolean focused = true;
+	private boolean drawsBackground = true;
 	private boolean focusUnlocked = true;
 	private boolean editable = true;
 	private boolean selecting;
@@ -37,27 +42,27 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 	private int uneditableColor = 7368816;
 	private String suggestion;
 	private Consumer<String> changedListener;
-	private Predicate<String> textPredicate = Predicates.alwaysTrue();
-	private BiFunction<String, Integer, String> renderTextProvider = (stringx, integer) -> stringx;
+	private Predicate<String> textPredicate = Objects::nonNull;
+	private BiFunction<String, Integer, OrderedText> renderTextProvider = (string, integer) -> OrderedText.styledString(string, Style.EMPTY);
 
-	public TextFieldWidget(TextRenderer textRenderer, int i, int j, int k, int l, String string) {
-		this(textRenderer, i, j, k, l, null, string);
+	public TextFieldWidget(TextRenderer textRenderer, int x, int y, int width, int height, Text text) {
+		this(textRenderer, x, y, width, height, null, text);
 	}
 
-	public TextFieldWidget(TextRenderer textRenderer, int i, int j, int k, int l, @Nullable TextFieldWidget textFieldWidget, String string) {
-		super(i, j, k, l, string);
+	public TextFieldWidget(TextRenderer textRenderer, int x, int y, int width, int height, @Nullable TextFieldWidget copyFrom, Text text) {
+		super(x, y, width, height, text);
 		this.textRenderer = textRenderer;
-		if (textFieldWidget != null) {
-			this.setText(textFieldWidget.getText());
+		if (copyFrom != null) {
+			this.setText(copyFrom.getText());
 		}
 	}
 
-	public void setChangedListener(Consumer<String> consumer) {
-		this.changedListener = consumer;
+	public void setChangedListener(Consumer<String> changedListener) {
+		this.changedListener = changedListener;
 	}
 
-	public void setRenderTextProvider(BiFunction<String, Integer, String> biFunction) {
-		this.renderTextProvider = biFunction;
+	public void setRenderTextProvider(BiFunction<String, Integer, OrderedText> renderTextProvider) {
+		this.renderTextProvider = renderTextProvider;
 	}
 
 	public void tick() {
@@ -65,22 +70,22 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 	}
 
 	@Override
-	protected String getNarrationMessage() {
-		String string = this.getMessage();
-		return string.isEmpty() ? "" : I18n.translate("gui.narrate.editBox", string, this.text);
+	protected MutableText getNarrationMessage() {
+		Text text = this.getMessage();
+		return new TranslatableText("gui.narrate.editBox", text, this.text);
 	}
 
-	public void setText(String string) {
-		if (this.textPredicate.test(string)) {
-			if (string.length() > this.maxLength) {
-				this.text = string.substring(0, this.maxLength);
+	public void setText(String text) {
+		if (this.textPredicate.test(text)) {
+			if (text.length() > this.maxLength) {
+				this.text = text.substring(0, this.maxLength);
 			} else {
-				this.text = string;
+				this.text = text;
 			}
 
 			this.setCursorToEnd();
 			this.setSelectionEnd(this.selectionStart);
-			this.onChanged(string);
+			this.onChanged(text);
 		}
 	}
 
@@ -94,140 +99,123 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 		return this.text.substring(i, j);
 	}
 
-	public void setTextPredicate(Predicate<String> predicate) {
-		this.textPredicate = predicate;
+	public void setTextPredicate(Predicate<String> textPredicate) {
+		this.textPredicate = textPredicate;
 	}
 
 	public void write(String string) {
-		String string2 = "";
-		String string3 = SharedConstants.stripInvalidChars(string);
 		int i = this.selectionStart < this.selectionEnd ? this.selectionStart : this.selectionEnd;
 		int j = this.selectionStart < this.selectionEnd ? this.selectionEnd : this.selectionStart;
 		int k = this.maxLength - this.text.length() - (i - j);
-		if (!this.text.isEmpty()) {
-			string2 = string2 + this.text.substring(0, i);
-		}
-
-		int l;
-		if (k < string3.length()) {
-			string2 = string2 + string3.substring(0, k);
+		String string2 = SharedConstants.stripInvalidChars(string);
+		int l = string2.length();
+		if (k < l) {
+			string2 = string2.substring(0, k);
 			l = k;
-		} else {
-			string2 = string2 + string3;
-			l = string3.length();
 		}
 
-		if (!this.text.isEmpty() && j < this.text.length()) {
-			string2 = string2 + this.text.substring(j);
-		}
-
-		if (this.textPredicate.test(string2)) {
-			this.text = string2;
+		String string3 = new StringBuilder(this.text).replace(i, j, string2).toString();
+		if (this.textPredicate.test(string3)) {
+			this.text = string3;
 			this.setSelectionStart(i + l);
 			this.setSelectionEnd(this.selectionStart);
 			this.onChanged(this.text);
 		}
 	}
 
-	private void onChanged(String string) {
+	private void onChanged(String newText) {
 		if (this.changedListener != null) {
-			this.changedListener.accept(string);
+			this.changedListener.accept(newText);
 		}
 
 		this.nextNarration = Util.getMeasuringTimeMs() + 500L;
 	}
 
-	private void erase(int i) {
+	private void erase(int offset) {
 		if (Screen.hasControlDown()) {
-			this.eraseWords(i);
+			this.eraseWords(offset);
 		} else {
-			this.eraseCharacters(i);
+			this.eraseCharacters(offset);
 		}
 	}
 
-	public void eraseWords(int i) {
+	public void eraseWords(int wordOffset) {
 		if (!this.text.isEmpty()) {
 			if (this.selectionEnd != this.selectionStart) {
 				this.write("");
 			} else {
-				this.eraseCharacters(this.getWordSkipPosition(i) - this.selectionStart);
+				this.eraseCharacters(this.getWordSkipPosition(wordOffset) - this.selectionStart);
 			}
 		}
 	}
 
-	public void eraseCharacters(int i) {
+	public void eraseCharacters(int characterOffset) {
 		if (!this.text.isEmpty()) {
 			if (this.selectionEnd != this.selectionStart) {
 				this.write("");
 			} else {
-				boolean bl = i < 0;
-				int j = bl ? this.selectionStart + i : this.selectionStart;
-				int k = bl ? this.selectionStart : this.selectionStart + i;
-				String string = "";
-				if (j >= 0) {
-					string = this.text.substring(0, j);
-				}
-
-				if (k < this.text.length()) {
-					string = string + this.text.substring(k);
-				}
-
-				if (this.textPredicate.test(string)) {
-					this.text = string;
-					if (bl) {
-						this.moveCursor(i);
+				int i = this.getCursorPosWithOffset(characterOffset);
+				int j = Math.min(i, this.selectionStart);
+				int k = Math.max(i, this.selectionStart);
+				if (j != k) {
+					String string = new StringBuilder(this.text).delete(j, k).toString();
+					if (this.textPredicate.test(string)) {
+						this.text = string;
+						this.setCursor(j);
 					}
-
-					this.onChanged(this.text);
 				}
 			}
 		}
 	}
 
-	public int getWordSkipPosition(int i) {
-		return this.getWordSkipPosition(i, this.getCursor());
+	public int getWordSkipPosition(int wordOffset) {
+		return this.getWordSkipPosition(wordOffset, this.getCursor());
 	}
 
-	private int getWordSkipPosition(int i, int j) {
-		return this.getWordSkipPosition(i, j, true);
+	private int getWordSkipPosition(int wordOffset, int cursorPosition) {
+		return this.getWordSkipPosition(wordOffset, cursorPosition, true);
 	}
 
-	private int getWordSkipPosition(int i, int j, boolean bl) {
-		int k = j;
-		boolean bl2 = i < 0;
-		int l = Math.abs(i);
+	private int getWordSkipPosition(int wordOffset, int cursorPosition, boolean skipOverSpaces) {
+		int i = cursorPosition;
+		boolean bl = wordOffset < 0;
+		int j = Math.abs(wordOffset);
 
-		for (int m = 0; m < l; m++) {
-			if (!bl2) {
-				int n = this.text.length();
-				k = this.text.indexOf(32, k);
-				if (k == -1) {
-					k = n;
+		for (int k = 0; k < j; k++) {
+			if (!bl) {
+				int l = this.text.length();
+				i = this.text.indexOf(32, i);
+				if (i == -1) {
+					i = l;
 				} else {
-					while (bl && k < n && this.text.charAt(k) == ' ') {
-						k++;
+					while (skipOverSpaces && i < l && this.text.charAt(i) == ' ') {
+						i++;
 					}
 				}
 			} else {
-				while (bl && k > 0 && this.text.charAt(k - 1) == ' ') {
-					k--;
+				while (skipOverSpaces && i > 0 && this.text.charAt(i - 1) == ' ') {
+					i--;
 				}
 
-				while (k > 0 && this.text.charAt(k - 1) != ' ') {
-					k--;
+				while (i > 0 && this.text.charAt(i - 1) != ' ') {
+					i--;
 				}
 			}
 		}
 
-		return k;
+		return i;
 	}
 
-	public void moveCursor(int i) {
-		this.setCursor(this.selectionStart + i);
+	public void moveCursor(int offset) {
+		this.setCursor(this.getCursorPosWithOffset(offset));
 	}
 
-	public void setCursor(int i) {
-		this.setSelectionStart(i);
+	private int getCursorPosWithOffset(int offset) {
+		return Util.moveCursor(this.text, this.selectionStart, offset);
+	}
+
+	public void setCursor(int cursor) {
+		this.setSelectionStart(cursor);
 		if (!this.selecting) {
 			this.setSelectionEnd(this.selectionStart);
 		}
@@ -235,8 +223,8 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 		this.onChanged(this.text);
 	}
 
-	public void setSelectionStart(int i) {
-		this.selectionStart = MathHelper.clamp(i, 0, this.text.length());
+	public void setSelectionStart(int cursor) {
+		this.selectionStart = MathHelper.clamp(cursor, 0, this.text.length());
 	}
 
 	public void setCursorToStart() {
@@ -248,25 +236,25 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 	}
 
 	@Override
-	public boolean keyPressed(int i, int j, int k) {
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
 		if (!this.isActive()) {
 			return false;
 		} else {
 			this.selecting = Screen.hasShiftDown();
-			if (Screen.isSelectAll(i)) {
+			if (Screen.isSelectAll(keyCode)) {
 				this.setCursorToEnd();
 				this.setSelectionEnd(0);
 				return true;
-			} else if (Screen.isCopy(i)) {
+			} else if (Screen.isCopy(keyCode)) {
 				MinecraftClient.getInstance().keyboard.setClipboard(this.getSelectedText());
 				return true;
-			} else if (Screen.isPaste(i)) {
+			} else if (Screen.isPaste(keyCode)) {
 				if (this.editable) {
 					this.write(MinecraftClient.getInstance().keyboard.getClipboard());
 				}
 
 				return true;
-			} else if (Screen.isCut(i)) {
+			} else if (Screen.isCut(keyCode)) {
 				MinecraftClient.getInstance().keyboard.setClipboard(this.getSelectedText());
 				if (this.editable) {
 					this.write("");
@@ -274,7 +262,7 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 
 				return true;
 			} else {
-				switch (i) {
+				switch (keyCode) {
 					case 259:
 						if (this.editable) {
 							this.selecting = false;
@@ -330,12 +318,12 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 	}
 
 	@Override
-	public boolean charTyped(char c, int i) {
+	public boolean charTyped(char chr, int modifiers) {
 		if (!this.isActive()) {
 			return false;
-		} else if (SharedConstants.isValidChar(c)) {
+		} else if (SharedConstants.isValidChar(chr)) {
 			if (this.editable) {
-				this.write(Character.toString(c));
+				this.write(Character.toString(chr));
 			}
 
 			return true;
@@ -345,23 +333,23 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 	}
 
 	@Override
-	public boolean mouseClicked(double d, double e, int i) {
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (!this.isVisible()) {
 			return false;
 		} else {
-			boolean bl = d >= (double)this.x && d < (double)(this.x + this.width) && e >= (double)this.y && e < (double)(this.y + this.height);
+			boolean bl = mouseX >= (double)this.x && mouseX < (double)(this.x + this.width) && mouseY >= (double)this.y && mouseY < (double)(this.y + this.height);
 			if (this.focusUnlocked) {
-				this.setSelected(bl);
+				this.setTextFieldFocused(bl);
 			}
 
-			if (this.isFocused() && bl && i == 0) {
-				int j = MathHelper.floor(d) - this.x;
-				if (this.focused) {
-					j -= 4;
+			if (this.isFocused() && bl && button == 0) {
+				int i = MathHelper.floor(mouseX) - this.x;
+				if (this.drawsBackground) {
+					i -= 4;
 				}
 
 				String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-				this.setCursor(this.textRenderer.trimToWidth(string, j).length() + this.firstCharacterIndex);
+				this.setCursor(this.textRenderer.trimToWidth(string, i).length() + this.firstCharacterIndex);
 				return true;
 			} else {
 				return false;
@@ -369,87 +357,88 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 		}
 	}
 
-	public void setSelected(boolean bl) {
-		super.setFocused(bl);
+	public void setTextFieldFocused(boolean focused) {
+		super.setFocused(focused);
 	}
 
 	@Override
-	public void renderButton(int i, int j, float f) {
+	public void renderButton(MatrixStack matrices, int mouseX, int mouseY, float delta) {
 		if (this.isVisible()) {
-			if (this.hasBorder()) {
-				fill(this.x - 1, this.y - 1, this.x + this.width + 1, this.y + this.height + 1, -6250336);
-				fill(this.x, this.y, this.x + this.width, this.y + this.height, -16777216);
+			if (this.drawsBackground()) {
+				int i = this.isFocused() ? -1 : -6250336;
+				fill(matrices, this.x - 1, this.y - 1, this.x + this.width + 1, this.y + this.height + 1, i);
+				fill(matrices, this.x, this.y, this.x + this.width, this.y + this.height, -16777216);
 			}
 
-			int k = this.editable ? this.editableColor : this.uneditableColor;
-			int l = this.selectionStart - this.firstCharacterIndex;
-			int m = this.selectionEnd - this.firstCharacterIndex;
+			int j = this.editable ? this.editableColor : this.uneditableColor;
+			int k = this.selectionStart - this.firstCharacterIndex;
+			int l = this.selectionEnd - this.firstCharacterIndex;
 			String string = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-			boolean bl = l >= 0 && l <= string.length();
+			boolean bl = k >= 0 && k <= string.length();
 			boolean bl2 = this.isFocused() && this.focusedTicks / 6 % 2 == 0 && bl;
-			int n = this.focused ? this.x + 4 : this.x;
-			int o = this.focused ? this.y + (this.height - 8) / 2 : this.y;
-			int p = n;
-			if (m > string.length()) {
-				m = string.length();
+			int m = this.drawsBackground ? this.x + 4 : this.x;
+			int n = this.drawsBackground ? this.y + (this.height - 8) / 2 : this.y;
+			int o = m;
+			if (l > string.length()) {
+				l = string.length();
 			}
 
 			if (!string.isEmpty()) {
-				String string2 = bl ? string.substring(0, l) : string;
-				p = this.textRenderer.drawWithShadow((String)this.renderTextProvider.apply(string2, this.firstCharacterIndex), (float)n, (float)o, k);
+				String string2 = bl ? string.substring(0, k) : string;
+				o = this.textRenderer.drawWithShadow(matrices, (OrderedText)this.renderTextProvider.apply(string2, this.firstCharacterIndex), (float)m, (float)n, j);
 			}
 
 			boolean bl3 = this.selectionStart < this.text.length() || this.text.length() >= this.getMaxLength();
-			int q = p;
+			int p = o;
 			if (!bl) {
-				q = l > 0 ? n + this.width : n;
+				p = k > 0 ? m + this.width : m;
 			} else if (bl3) {
-				q = p - 1;
-				p--;
+				p = o - 1;
+				o--;
 			}
 
-			if (!string.isEmpty() && bl && l < string.length()) {
-				this.textRenderer.drawWithShadow((String)this.renderTextProvider.apply(string.substring(l), this.selectionStart), (float)p, (float)o, k);
+			if (!string.isEmpty() && bl && k < string.length()) {
+				this.textRenderer.drawWithShadow(matrices, (OrderedText)this.renderTextProvider.apply(string.substring(k), this.selectionStart), (float)o, (float)n, j);
 			}
 
 			if (!bl3 && this.suggestion != null) {
-				this.textRenderer.drawWithShadow(this.suggestion, (float)(q - 1), (float)o, -8355712);
+				this.textRenderer.drawWithShadow(matrices, this.suggestion, (float)(p - 1), (float)n, -8355712);
 			}
 
 			if (bl2) {
 				if (bl3) {
-					DrawableHelper.fill(q, o - 1, q + 1, o + 1 + 9, -3092272);
+					DrawableHelper.fill(matrices, p, n - 1, p + 1, n + 1 + 9, -3092272);
 				} else {
-					this.textRenderer.drawWithShadow("_", (float)q, (float)o, k);
+					this.textRenderer.drawWithShadow(matrices, "_", (float)p, (float)n, j);
 				}
 			}
 
-			if (m != l) {
-				int r = n + this.textRenderer.getStringWidth(string.substring(0, m));
-				this.drawSelectionHighlight(q, o - 1, r - 1, o + 1 + 9);
+			if (l != k) {
+				int q = m + this.textRenderer.getWidth(string.substring(0, l));
+				this.drawSelectionHighlight(p, n - 1, q - 1, n + 1 + 9);
 			}
 		}
 	}
 
-	private void drawSelectionHighlight(int i, int j, int k, int l) {
-		if (i < k) {
-			int m = i;
-			i = k;
-			k = m;
+	private void drawSelectionHighlight(int x1, int y1, int x2, int y2) {
+		if (x1 < x2) {
+			int i = x1;
+			x1 = x2;
+			x2 = i;
 		}
 
-		if (j < l) {
-			int n = j;
-			j = l;
-			l = n;
+		if (y1 < y2) {
+			int j = y1;
+			y1 = y2;
+			y2 = j;
 		}
 
-		if (k > this.x + this.width) {
-			k = this.x + this.width;
+		if (x2 > this.x + this.width) {
+			x2 = this.x + this.width;
 		}
 
-		if (i > this.x + this.width) {
-			i = this.x + this.width;
+		if (x1 > this.x + this.width) {
+			x1 = this.x + this.width;
 		}
 
 		Tessellator tessellator = Tessellator.getInstance();
@@ -457,21 +446,21 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 		RenderSystem.color4f(0.0F, 0.0F, 255.0F, 255.0F);
 		RenderSystem.disableTexture();
 		RenderSystem.enableColorLogicOp();
-		RenderSystem.logicOp(GlStateManager.LogicOp.field_5110);
+		RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
 		bufferBuilder.begin(7, VertexFormats.POSITION);
-		bufferBuilder.vertex((double)i, (double)l, 0.0).next();
-		bufferBuilder.vertex((double)k, (double)l, 0.0).next();
-		bufferBuilder.vertex((double)k, (double)j, 0.0).next();
-		bufferBuilder.vertex((double)i, (double)j, 0.0).next();
+		bufferBuilder.vertex((double)x1, (double)y2, 0.0).next();
+		bufferBuilder.vertex((double)x2, (double)y2, 0.0).next();
+		bufferBuilder.vertex((double)x2, (double)y1, 0.0).next();
+		bufferBuilder.vertex((double)x1, (double)y1, 0.0).next();
 		tessellator.draw();
 		RenderSystem.disableColorLogicOp();
 		RenderSystem.enableTexture();
 	}
 
-	public void setMaxLength(int i) {
-		this.maxLength = i;
-		if (this.text.length() > i) {
-			this.text = this.text.substring(0, i);
+	public void setMaxLength(int maxLength) {
+		this.maxLength = maxLength;
+		if (this.text.length() > maxLength) {
+			this.text = this.text.substring(0, maxLength);
 			this.onChanged(this.text);
 		}
 	}
@@ -484,30 +473,34 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 		return this.selectionStart;
 	}
 
-	private boolean hasBorder() {
-		return this.focused;
+	private boolean drawsBackground() {
+		return this.drawsBackground;
 	}
 
-	public void setHasBorder(boolean bl) {
-		this.focused = bl;
+	public void setDrawsBackground(boolean drawsBackground) {
+		this.drawsBackground = drawsBackground;
 	}
 
-	public void setEditableColor(int i) {
-		this.editableColor = i;
+	public void setEditableColor(int color) {
+		this.editableColor = color;
 	}
 
-	public void setUneditableColor(int i) {
-		this.uneditableColor = i;
-	}
-
-	@Override
-	public boolean changeFocus(boolean bl) {
-		return this.visible && this.editable ? super.changeFocus(bl) : false;
+	public void setUneditableColor(int color) {
+		this.uneditableColor = color;
 	}
 
 	@Override
-	public boolean isMouseOver(double d, double e) {
-		return this.visible && d >= (double)this.x && d < (double)(this.x + this.width) && e >= (double)this.y && e < (double)(this.y + this.height);
+	public boolean changeFocus(boolean lookForwards) {
+		return this.visible && this.editable ? super.changeFocus(lookForwards) : false;
+	}
+
+	@Override
+	public boolean isMouseOver(double mouseX, double mouseY) {
+		return this.visible
+			&& mouseX >= (double)this.x
+			&& mouseX < (double)(this.x + this.width)
+			&& mouseY >= (double)this.y
+			&& mouseY < (double)(this.y + this.height);
 	}
 
 	@Override
@@ -521,12 +514,12 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 		return this.editable;
 	}
 
-	public void setEditable(boolean bl) {
-		this.editable = bl;
+	public void setEditable(boolean editable) {
+		this.editable = editable;
 	}
 
 	public int getInnerWidth() {
-		return this.hasBorder() ? this.width - 8 : this.width;
+		return this.drawsBackground() ? this.width - 8 : this.width;
 	}
 
 	public void setSelectionEnd(int i) {
@@ -554,27 +547,27 @@ public class TextFieldWidget extends AbstractButtonWidget implements Drawable, E
 		}
 	}
 
-	public void setFocusUnlocked(boolean bl) {
-		this.focusUnlocked = bl;
+	public void setFocusUnlocked(boolean focusUnlocked) {
+		this.focusUnlocked = focusUnlocked;
 	}
 
 	public boolean isVisible() {
 		return this.visible;
 	}
 
-	public void setVisible(boolean bl) {
-		this.visible = bl;
+	public void setVisible(boolean visible) {
+		this.visible = visible;
 	}
 
-	public void setSuggestion(@Nullable String string) {
-		this.suggestion = string;
+	public void setSuggestion(@Nullable String suggestion) {
+		this.suggestion = suggestion;
 	}
 
-	public int getCharacterX(int i) {
-		return i > this.text.length() ? this.x : this.x + this.textRenderer.getStringWidth(this.text.substring(0, i));
+	public int getCharacterX(int index) {
+		return index > this.text.length() ? this.x : this.x + this.textRenderer.getWidth(this.text.substring(0, index));
 	}
 
-	public void setX(int i) {
-		this.x = i;
+	public void setX(int x) {
+		this.x = x;
 	}
 }

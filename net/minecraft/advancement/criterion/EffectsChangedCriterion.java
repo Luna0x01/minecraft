@@ -1,10 +1,11 @@
 package net.minecraft.advancement.criterion;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer;
+import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer;
 import net.minecraft.predicate.entity.EntityEffectPredicate;
+import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
@@ -16,35 +17,37 @@ public class EffectsChangedCriterion extends AbstractCriterion<EffectsChangedCri
 		return ID;
 	}
 
-	public EffectsChangedCriterion.Conditions conditionsFromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-		EntityEffectPredicate entityEffectPredicate = EntityEffectPredicate.deserialize(jsonObject.get("effects"));
-		return new EffectsChangedCriterion.Conditions(entityEffectPredicate);
+	public EffectsChangedCriterion.Conditions conditionsFromJson(
+		JsonObject jsonObject, EntityPredicate.Extended extended, AdvancementEntityPredicateDeserializer advancementEntityPredicateDeserializer
+	) {
+		EntityEffectPredicate entityEffectPredicate = EntityEffectPredicate.fromJson(jsonObject.get("effects"));
+		return new EffectsChangedCriterion.Conditions(extended, entityEffectPredicate);
 	}
 
-	public void trigger(ServerPlayerEntity serverPlayerEntity) {
-		this.test(serverPlayerEntity.getAdvancementTracker(), conditions -> conditions.matches(serverPlayerEntity));
+	public void trigger(ServerPlayerEntity player) {
+		this.test(player, conditions -> conditions.matches(player));
 	}
 
 	public static class Conditions extends AbstractCriterionConditions {
 		private final EntityEffectPredicate effects;
 
-		public Conditions(EntityEffectPredicate entityEffectPredicate) {
-			super(EffectsChangedCriterion.ID);
-			this.effects = entityEffectPredicate;
+		public Conditions(EntityPredicate.Extended player, EntityEffectPredicate effects) {
+			super(EffectsChangedCriterion.ID, player);
+			this.effects = effects;
 		}
 
-		public static EffectsChangedCriterion.Conditions create(EntityEffectPredicate entityEffectPredicate) {
-			return new EffectsChangedCriterion.Conditions(entityEffectPredicate);
+		public static EffectsChangedCriterion.Conditions create(EntityEffectPredicate effects) {
+			return new EffectsChangedCriterion.Conditions(EntityPredicate.Extended.EMPTY, effects);
 		}
 
-		public boolean matches(ServerPlayerEntity serverPlayerEntity) {
-			return this.effects.test((LivingEntity)serverPlayerEntity);
+		public boolean matches(ServerPlayerEntity player) {
+			return this.effects.test((LivingEntity)player);
 		}
 
 		@Override
-		public JsonElement toJson() {
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.add("effects", this.effects.serialize());
+		public JsonObject toJson(AdvancementEntityPredicateSerializer predicateSerializer) {
+			JsonObject jsonObject = super.toJson(predicateSerializer);
+			jsonObject.add("effects", this.effects.toJson());
 			return jsonObject;
 		}
 	}

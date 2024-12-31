@@ -17,9 +17,9 @@ import net.minecraft.world.World;
 
 public class FireworkStarRecipe extends SpecialCraftingRecipe {
 	private static final Ingredient TYPE_MODIFIER = Ingredient.ofItems(
-		Items.field_8814,
-		Items.field_8153,
-		Items.field_8397,
+		Items.FIRE_CHARGE,
+		Items.FEATHER,
+		Items.GOLD_NUGGET,
 		Items.SKELETON_SKULL,
 		Items.WITHER_SKELETON_SKULL,
 		Items.CREEPER_HEAD,
@@ -27,20 +27,20 @@ public class FireworkStarRecipe extends SpecialCraftingRecipe {
 		Items.DRAGON_HEAD,
 		Items.ZOMBIE_HEAD
 	);
-	private static final Ingredient TRAIL_MODIFIER = Ingredient.ofItems(Items.field_8477);
-	private static final Ingredient FLICKER_MODIFIER = Ingredient.ofItems(Items.field_8601);
+	private static final Ingredient TRAIL_MODIFIER = Ingredient.ofItems(Items.DIAMOND);
+	private static final Ingredient FLICKER_MODIFIER = Ingredient.ofItems(Items.GLOWSTONE_DUST);
 	private static final Map<Item, FireworkItem.Type> TYPE_MODIFIER_MAP = Util.make(Maps.newHashMap(), hashMap -> {
-		hashMap.put(Items.field_8814, FireworkItem.Type.field_7977);
-		hashMap.put(Items.field_8153, FireworkItem.Type.field_7970);
-		hashMap.put(Items.field_8397, FireworkItem.Type.field_7973);
-		hashMap.put(Items.SKELETON_SKULL, FireworkItem.Type.field_7974);
-		hashMap.put(Items.WITHER_SKELETON_SKULL, FireworkItem.Type.field_7974);
-		hashMap.put(Items.CREEPER_HEAD, FireworkItem.Type.field_7974);
-		hashMap.put(Items.PLAYER_HEAD, FireworkItem.Type.field_7974);
-		hashMap.put(Items.DRAGON_HEAD, FireworkItem.Type.field_7974);
-		hashMap.put(Items.ZOMBIE_HEAD, FireworkItem.Type.field_7974);
+		hashMap.put(Items.FIRE_CHARGE, FireworkItem.Type.LARGE_BALL);
+		hashMap.put(Items.FEATHER, FireworkItem.Type.BURST);
+		hashMap.put(Items.GOLD_NUGGET, FireworkItem.Type.STAR);
+		hashMap.put(Items.SKELETON_SKULL, FireworkItem.Type.CREEPER);
+		hashMap.put(Items.WITHER_SKELETON_SKULL, FireworkItem.Type.CREEPER);
+		hashMap.put(Items.CREEPER_HEAD, FireworkItem.Type.CREEPER);
+		hashMap.put(Items.PLAYER_HEAD, FireworkItem.Type.CREEPER);
+		hashMap.put(Items.DRAGON_HEAD, FireworkItem.Type.CREEPER);
+		hashMap.put(Items.ZOMBIE_HEAD, FireworkItem.Type.CREEPER);
 	});
-	private static final Ingredient GUNPOWDER = Ingredient.ofItems(Items.field_8054);
+	private static final Ingredient GUNPOWDER = Ingredient.ofItems(Items.GUNPOWDER);
 
 	public FireworkStarRecipe(Identifier identifier) {
 		super(identifier);
@@ -53,8 +53,8 @@ public class FireworkStarRecipe extends SpecialCraftingRecipe {
 		boolean bl4 = false;
 		boolean bl5 = false;
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack = craftingInventory.getStack(i);
 			if (!itemStack.isEmpty()) {
 				if (TYPE_MODIFIER.test(itemStack)) {
 					if (bl3) {
@@ -94,13 +94,13 @@ public class FireworkStarRecipe extends SpecialCraftingRecipe {
 	}
 
 	public ItemStack craft(CraftingInventory craftingInventory) {
-		ItemStack itemStack = new ItemStack(Items.field_8450);
+		ItemStack itemStack = new ItemStack(Items.FIREWORK_STAR);
 		CompoundTag compoundTag = itemStack.getOrCreateSubTag("Explosion");
-		FireworkItem.Type type = FireworkItem.Type.field_7976;
+		FireworkItem.Type type = FireworkItem.Type.SMALL_BALL;
 		List<Integer> list = Lists.newArrayList();
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack2 = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack2 = craftingInventory.getStack(i);
 			if (!itemStack2.isEmpty()) {
 				if (TYPE_MODIFIER.test(itemStack2)) {
 					type = (FireworkItem.Type)TYPE_MODIFIER_MAP.get(itemStack2.getItem());
@@ -120,13 +120,13 @@ public class FireworkStarRecipe extends SpecialCraftingRecipe {
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
-		return i * j >= 2;
+	public boolean fits(int width, int height) {
+		return width * height >= 2;
 	}
 
 	@Override
 	public ItemStack getOutput() {
-		return new ItemStack(Items.field_8450);
+		return new ItemStack(Items.FIREWORK_STAR);
 	}
 
 	@Override

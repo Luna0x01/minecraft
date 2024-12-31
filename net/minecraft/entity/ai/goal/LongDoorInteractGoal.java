@@ -6,10 +6,10 @@ public class LongDoorInteractGoal extends DoorInteractGoal {
 	private final boolean delayedClose;
 	private int ticksLeft;
 
-	public LongDoorInteractGoal(MobEntity mobEntity, boolean bl) {
-		super(mobEntity);
-		this.mob = mobEntity;
-		this.delayedClose = bl;
+	public LongDoorInteractGoal(MobEntity mob, boolean delayedClose) {
+		super(mob);
+		this.mob = mob;
+		this.delayedClose = delayedClose;
 	}
 
 	@Override

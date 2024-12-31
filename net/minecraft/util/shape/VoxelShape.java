@@ -5,9 +5,8 @@ import com.google.common.math.DoubleMath;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.util.BooleanBiFunction;
-import net.minecraft.util.OffsetDoubleList;
 import net.minecraft.util.Util;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.AxisCycleDirection;
 import net.minecraft.util.math.BlockPos;
@@ -21,16 +20,16 @@ public abstract class VoxelShape {
 	@Nullable
 	private VoxelShape[] shapeCache;
 
-	VoxelShape(VoxelSet voxelSet) {
-		this.voxels = voxelSet;
+	VoxelShape(VoxelSet voxels) {
+		this.voxels = voxels;
 	}
 
-	public double getMinimum(Direction.Axis axis) {
+	public double getMin(Direction.Axis axis) {
 		int i = this.voxels.getMin(axis);
 		return i >= this.voxels.getSize(axis) ? Double.POSITIVE_INFINITY : this.getPointPosition(axis, i);
 	}
 
-	public double getMaximum(Direction.Axis axis) {
+	public double getMax(Direction.Axis axis) {
 		int i = this.voxels.getMax(axis);
 		return i <= 0 ? Double.NEGATIVE_INFINITY : this.getPointPosition(axis, i);
 	}
@@ -40,18 +39,18 @@ public abstract class VoxelShape {
 			throw (UnsupportedOperationException)Util.throwOrPause(new UnsupportedOperationException("No bounds for empty shape."));
 		} else {
 			return new Box(
-				this.getMinimum(Direction.Axis.field_11048),
-				this.getMinimum(Direction.Axis.field_11052),
-				this.getMinimum(Direction.Axis.field_11051),
-				this.getMaximum(Direction.Axis.field_11048),
-				this.getMaximum(Direction.Axis.field_11052),
-				this.getMaximum(Direction.Axis.field_11051)
+				this.getMin(Direction.Axis.X),
+				this.getMin(Direction.Axis.Y),
+				this.getMin(Direction.Axis.Z),
+				this.getMax(Direction.Axis.X),
+				this.getMax(Direction.Axis.Y),
+				this.getMax(Direction.Axis.Z)
 			);
 		}
 	}
 
-	protected double getPointPosition(Direction.Axis axis, int i) {
-		return this.getPointPositions(axis).getDouble(i);
+	protected double getPointPosition(Direction.Axis axis, int index) {
+		return this.getPointPositions(axis).getDouble(index);
 	}
 
 	protected abstract DoubleList getPointPositions(Direction.Axis axis);
@@ -60,14 +59,14 @@ public abstract class VoxelShape {
 		return this.voxels.isEmpty();
 	}
 
-	public VoxelShape offset(double d, double e, double f) {
+	public VoxelShape offset(double x, double y, double z) {
 		return (VoxelShape)(this.isEmpty()
 			? VoxelShapes.empty()
 			: new ArrayVoxelShape(
 				this.voxels,
-				new OffsetDoubleList(this.getPointPositions(Direction.Axis.field_11048), d),
-				new OffsetDoubleList(this.getPointPositions(Direction.Axis.field_11052), e),
-				new OffsetDoubleList(this.getPointPositions(Direction.Axis.field_11051), f)
+				new OffsetDoubleList(this.getPointPositions(Direction.Axis.X), x),
+				new OffsetDoubleList(this.getPointPositions(Direction.Axis.Y), y),
+				new OffsetDoubleList(this.getPointPositions(Direction.Axis.Z), z)
 			));
 	}
 
@@ -81,21 +80,21 @@ public abstract class VoxelShape {
 		this.voxels
 			.forEachEdge(
 				(i, j, k, l, m, n) -> boxConsumer.consume(
-						this.getPointPosition(Direction.Axis.field_11048, i),
-						this.getPointPosition(Direction.Axis.field_11052, j),
-						this.getPointPosition(Direction.Axis.field_11051, k),
-						this.getPointPosition(Direction.Axis.field_11048, l),
-						this.getPointPosition(Direction.Axis.field_11052, m),
-						this.getPointPosition(Direction.Axis.field_11051, n)
+						this.getPointPosition(Direction.Axis.X, i),
+						this.getPointPosition(Direction.Axis.Y, j),
+						this.getPointPosition(Direction.Axis.Z, k),
+						this.getPointPosition(Direction.Axis.X, l),
+						this.getPointPosition(Direction.Axis.Y, m),
+						this.getPointPosition(Direction.Axis.Z, n)
 					),
 				true
 			);
 	}
 
 	public void forEachBox(VoxelShapes.BoxConsumer boxConsumer) {
-		DoubleList doubleList = this.getPointPositions(Direction.Axis.field_11048);
-		DoubleList doubleList2 = this.getPointPositions(Direction.Axis.field_11052);
-		DoubleList doubleList3 = this.getPointPositions(Direction.Axis.field_11051);
+		DoubleList doubleList = this.getPointPositions(Direction.Axis.X);
+		DoubleList doubleList2 = this.getPointPositions(Direction.Axis.Y);
+		DoubleList doubleList3 = this.getPointPositions(Direction.Axis.Z);
 		this.voxels
 			.forEachBox(
 				(i, j, k, l, m, n) -> boxConsumer.consume(
@@ -111,62 +110,51 @@ public abstract class VoxelShape {
 		return list;
 	}
 
-	public double getBeginningCoord(Direction.Axis axis, double d, double e) {
-		Direction.Axis axis2 = AxisCycleDirection.field_10963.cycle(axis);
-		Direction.Axis axis3 = AxisCycleDirection.field_10965.cycle(axis);
-		int i = this.getCoordIndex(axis2, d);
-		int j = this.getCoordIndex(axis3, e);
-		int k = this.voxels.getBeginningAxisCoord(axis, i, j);
-		return k >= this.voxels.getSize(axis) ? Double.POSITIVE_INFINITY : this.getPointPosition(axis, k);
-	}
-
-	public double getEndingCoord(Direction.Axis axis, double d, double e) {
-		Direction.Axis axis2 = AxisCycleDirection.field_10963.cycle(axis);
-		Direction.Axis axis3 = AxisCycleDirection.field_10965.cycle(axis);
-		int i = this.getCoordIndex(axis2, d);
-		int j = this.getCoordIndex(axis3, e);
+	public double getEndingCoord(Direction.Axis axis, double from, double to) {
+		Direction.Axis axis2 = AxisCycleDirection.FORWARD.cycle(axis);
+		Direction.Axis axis3 = AxisCycleDirection.BACKWARD.cycle(axis);
+		int i = this.getCoordIndex(axis2, from);
+		int j = this.getCoordIndex(axis3, to);
 		int k = this.voxels.getEndingAxisCoord(axis, i, j);
 		return k <= 0 ? Double.NEGATIVE_INFINITY : this.getPointPosition(axis, k);
 	}
 
-	protected int getCoordIndex(Direction.Axis axis, double d) {
+	protected int getCoordIndex(Direction.Axis axis, double coord) {
 		return MathHelper.binarySearch(0, this.voxels.getSize(axis) + 1, i -> {
 			if (i < 0) {
 				return false;
 			} else {
-				return i > this.voxels.getSize(axis) ? true : d < this.getPointPosition(axis, i);
+				return i > this.voxels.getSize(axis) ? true : coord < this.getPointPosition(axis, i);
 			}
 		}) - 1;
 	}
 
-	protected boolean contains(double d, double e, double f) {
+	protected boolean contains(double x, double y, double z) {
 		return this.voxels
-			.inBoundsAndContains(
-				this.getCoordIndex(Direction.Axis.field_11048, d), this.getCoordIndex(Direction.Axis.field_11052, e), this.getCoordIndex(Direction.Axis.field_11051, f)
-			);
+			.inBoundsAndContains(this.getCoordIndex(Direction.Axis.X, x), this.getCoordIndex(Direction.Axis.Y, y), this.getCoordIndex(Direction.Axis.Z, z));
 	}
 
 	@Nullable
-	public BlockHitResult rayTrace(Vec3d vec3d, Vec3d vec3d2, BlockPos blockPos) {
+	public BlockHitResult raycast(Vec3d start, Vec3d end, BlockPos pos) {
 		if (this.isEmpty()) {
 			return null;
 		} else {
-			Vec3d vec3d3 = vec3d2.subtract(vec3d);
-			if (vec3d3.lengthSquared() < 1.0E-7) {
+			Vec3d vec3d = end.subtract(start);
+			if (vec3d.lengthSquared() < 1.0E-7) {
 				return null;
 			} else {
-				Vec3d vec3d4 = vec3d.add(vec3d3.multiply(0.001));
-				return this.contains(vec3d4.x - (double)blockPos.getX(), vec3d4.y - (double)blockPos.getY(), vec3d4.z - (double)blockPos.getZ())
-					? new BlockHitResult(vec3d4, Direction.getFacing(vec3d3.x, vec3d3.y, vec3d3.z).getOpposite(), blockPos, true)
-					: Box.rayTrace(this.getBoundingBoxes(), vec3d, vec3d2, blockPos);
+				Vec3d vec3d2 = start.add(vec3d.multiply(0.001));
+				return this.contains(vec3d2.x - (double)pos.getX(), vec3d2.y - (double)pos.getY(), vec3d2.z - (double)pos.getZ())
+					? new BlockHitResult(vec3d2, Direction.getFacing(vec3d.x, vec3d.y, vec3d.z).getOpposite(), pos, true)
+					: Box.raycast(this.getBoundingBoxes(), start, end, pos);
 			}
 		}
 	}
 
-	public VoxelShape getFace(Direction direction) {
+	public VoxelShape getFace(Direction facing) {
 		if (!this.isEmpty() && this != VoxelShapes.fullCube()) {
 			if (this.shapeCache != null) {
-				VoxelShape voxelShape = this.shapeCache[direction.ordinal()];
+				VoxelShape voxelShape = this.shapeCache[facing.ordinal()];
 				if (voxelShape != null) {
 					return voxelShape;
 				}
@@ -174,82 +162,82 @@ public abstract class VoxelShape {
 				this.shapeCache = new VoxelShape[6];
 			}
 
-			VoxelShape voxelShape2 = this.getUncachedFace(direction);
-			this.shapeCache[direction.ordinal()] = voxelShape2;
+			VoxelShape voxelShape2 = this.getUncachedFace(facing);
+			this.shapeCache[facing.ordinal()] = voxelShape2;
 			return voxelShape2;
 		} else {
 			return this;
 		}
 	}
 
-	private VoxelShape getUncachedFace(Direction direction) {
-		Direction.Axis axis = direction.getAxis();
-		Direction.AxisDirection axisDirection = direction.getDirection();
+	private VoxelShape getUncachedFace(Direction facing) {
+		Direction.Axis axis = facing.getAxis();
+		Direction.AxisDirection axisDirection = facing.getDirection();
 		DoubleList doubleList = this.getPointPositions(axis);
 		if (doubleList.size() == 2 && DoubleMath.fuzzyEquals(doubleList.getDouble(0), 0.0, 1.0E-7) && DoubleMath.fuzzyEquals(doubleList.getDouble(1), 1.0, 1.0E-7)) {
 			return this;
 		} else {
-			int i = this.getCoordIndex(axis, axisDirection == Direction.AxisDirection.field_11056 ? 0.9999999 : 1.0E-7);
+			int i = this.getCoordIndex(axis, axisDirection == Direction.AxisDirection.POSITIVE ? 0.9999999 : 1.0E-7);
 			return new SlicedVoxelShape(this, axis, i);
 		}
 	}
 
-	public double calculateMaxDistance(Direction.Axis axis, Box box, double d) {
-		return this.calculateMaxDistance(AxisCycleDirection.between(axis, Direction.Axis.field_11048), box, d);
+	public double calculateMaxDistance(Direction.Axis axis, Box box, double maxDist) {
+		return this.calculateMaxDistance(AxisCycleDirection.between(axis, Direction.Axis.X), box, maxDist);
 	}
 
-	protected double calculateMaxDistance(AxisCycleDirection axisCycleDirection, Box box, double d) {
+	protected double calculateMaxDistance(AxisCycleDirection axisCycle, Box box, double maxDist) {
 		if (this.isEmpty()) {
-			return d;
-		} else if (Math.abs(d) < 1.0E-7) {
+			return maxDist;
+		} else if (Math.abs(maxDist) < 1.0E-7) {
 			return 0.0;
 		} else {
-			AxisCycleDirection axisCycleDirection2 = axisCycleDirection.opposite();
-			Direction.Axis axis = axisCycleDirection2.cycle(Direction.Axis.field_11048);
-			Direction.Axis axis2 = axisCycleDirection2.cycle(Direction.Axis.field_11052);
-			Direction.Axis axis3 = axisCycleDirection2.cycle(Direction.Axis.field_11051);
-			double e = box.getMax(axis);
-			double f = box.getMin(axis);
-			int i = this.getCoordIndex(axis, f + 1.0E-7);
-			int j = this.getCoordIndex(axis, e - 1.0E-7);
+			AxisCycleDirection axisCycleDirection = axisCycle.opposite();
+			Direction.Axis axis = axisCycleDirection.cycle(Direction.Axis.X);
+			Direction.Axis axis2 = axisCycleDirection.cycle(Direction.Axis.Y);
+			Direction.Axis axis3 = axisCycleDirection.cycle(Direction.Axis.Z);
+			double d = box.getMax(axis);
+			double e = box.getMin(axis);
+			int i = this.getCoordIndex(axis, e + 1.0E-7);
+			int j = this.getCoordIndex(axis, d - 1.0E-7);
 			int k = Math.max(0, this.getCoordIndex(axis2, box.getMin(axis2) + 1.0E-7));
 			int l = Math.min(this.voxels.getSize(axis2), this.getCoordIndex(axis2, box.getMax(axis2) - 1.0E-7) + 1);
 			int m = Math.max(0, this.getCoordIndex(axis3, box.getMin(axis3) + 1.0E-7));
 			int n = Math.min(this.voxels.getSize(axis3), this.getCoordIndex(axis3, box.getMax(axis3) - 1.0E-7) + 1);
 			int o = this.voxels.getSize(axis);
-			if (d > 0.0) {
+			if (maxDist > 0.0) {
 				for (int p = j + 1; p < o; p++) {
 					for (int q = k; q < l; q++) {
 						for (int r = m; r < n; r++) {
-							if (this.voxels.inBoundsAndContains(axisCycleDirection2, p, q, r)) {
-								double g = this.getPointPosition(axis, p) - e;
-								if (g >= -1.0E-7) {
-									d = Math.min(d, g);
+							if (this.voxels.inBoundsAndContains(axisCycleDirection, p, q, r)) {
+								double f = this.getPointPosition(axis, p) - d;
+								if (f >= -1.0E-7) {
+									maxDist = Math.min(maxDist, f);
 								}
 
-								return d;
+								return maxDist;
 							}
 						}
 					}
 				}
-			} else if (d < 0.0) {
+			} else if (maxDist < 0.0) {
 				for (int s = i - 1; s >= 0; s--) {
 					for (int t = k; t < l; t++) {
 						for (int u = m; u < n; u++) {
-							if (this.voxels.inBoundsAndContains(axisCycleDirection2, s, t, u)) {
-								double h = this.getPointPosition(axis, s + 1) - f;
-								if (h <= 1.0E-7) {
-									d = Math.max(d, h);
+							if (this.voxels.inBoundsAndContains(axisCycleDirection, s, t, u)) {
+								double g = this.getPointPosition(axis, s + 1) - e;
+								if (g <= 1.0E-7) {
+									maxDist = Math.max(maxDist, g);
 								}
 
-								return d;
+								return maxDist;
 							}
 						}
 					}
 				}
 			}
 
-			return d;
+			return maxDist;
 		}
 	}
 

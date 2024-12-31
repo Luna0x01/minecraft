@@ -3,12 +3,12 @@ package net.minecraft.datafixer.fix;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Dynamic;
 import net.minecraft.datafixer.TypeReferences;
 
 public class ChunkStructuresTemplateRenameFix extends DataFix {
@@ -116,8 +116,8 @@ public class ChunkStructuresTemplateRenameFix extends DataFix {
 		)
 		.build();
 
-	public ChunkStructuresTemplateRenameFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ChunkStructuresTemplateRenameFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public TypeRewriteRule makeRule() {

@@ -1,28 +1,18 @@
 package net.minecraft.resource;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import javax.annotation.Nullable;
 import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.UncaughtExceptionLogger;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ResourceImpl implements Resource {
-	private static final Logger LOGGER = LogManager.getLogger();
-	public static final Executor RESOURCE_IO_EXECUTOR = Executors.newSingleThreadExecutor(
-		new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Resource IO {0}").setUncaughtExceptionHandler(new UncaughtExceptionLogger(LOGGER)).build()
-	);
 	private final String packName;
 	private final Identifier id;
 	private final InputStream inputStream;
@@ -30,11 +20,11 @@ public class ResourceImpl implements Resource {
 	private boolean readMetadata;
 	private JsonObject metadata;
 
-	public ResourceImpl(String string, Identifier identifier, InputStream inputStream, @Nullable InputStream inputStream2) {
-		this.packName = string;
-		this.id = identifier;
+	public ResourceImpl(String packName, Identifier id, InputStream inputStream, @Nullable InputStream metaInputStream) {
+		this.packName = packName;
+		this.id = id;
 		this.inputStream = inputStream;
-		this.metaInputStream = inputStream2;
+		this.metaInputStream = metaInputStream;
 	}
 
 	@Override
@@ -53,7 +43,7 @@ public class ResourceImpl implements Resource {
 
 	@Nullable
 	@Override
-	public <T> T getMetadata(ResourceMetadataReader<T> resourceMetadataReader) {
+	public <T> T getMetadata(ResourceMetadataReader<T> metaReader) {
 		if (!this.hasMetadata()) {
 			return null;
 		} else {
@@ -72,8 +62,8 @@ public class ResourceImpl implements Resource {
 			if (this.metadata == null) {
 				return null;
 			} else {
-				String string = resourceMetadataReader.getKey();
-				return this.metadata.has(string) ? resourceMetadataReader.fromJson(JsonHelper.getObject(this.metadata, string)) : null;
+				String string = metaReader.getKey();
+				return this.metadata.has(string) ? metaReader.fromJson(JsonHelper.getObject(this.metadata, string)) : null;
 			}
 		}
 	}
@@ -83,13 +73,13 @@ public class ResourceImpl implements Resource {
 		return this.packName;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (!(object instanceof ResourceImpl)) {
+		} else if (!(o instanceof ResourceImpl)) {
 			return false;
 		} else {
-			ResourceImpl resourceImpl = (ResourceImpl)object;
+			ResourceImpl resourceImpl = (ResourceImpl)o;
 			if (this.id != null ? this.id.equals(resourceImpl.id) : resourceImpl.id == null) {
 				return this.packName != null ? this.packName.equals(resourceImpl.packName) : resourceImpl.packName == null;
 			} else {

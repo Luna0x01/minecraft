@@ -2,8 +2,8 @@ package net.minecraft.structure;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.DynamicOps;
 import net.minecraft.structure.pool.StructurePool;
 
 public class JigsawJunction {
@@ -13,12 +13,12 @@ public class JigsawJunction {
 	private final int deltaY;
 	private final StructurePool.Projection destProjection;
 
-	public JigsawJunction(int i, int j, int k, int l, StructurePool.Projection projection) {
-		this.sourceX = i;
-		this.sourceGroundY = j;
-		this.sourceZ = k;
-		this.deltaY = l;
-		this.destProjection = projection;
+	public JigsawJunction(int sourceX, int sourceGroundY, int sourceZ, int deltaY, StructurePool.Projection destProjection) {
+		this.sourceX = sourceX;
+		this.sourceGroundY = sourceGroundY;
+		this.sourceZ = sourceZ;
+		this.deltaY = deltaY;
+		this.destProjection = destProjection;
 	}
 
 	public int getSourceX() {
@@ -43,7 +43,7 @@ public class JigsawJunction {
 		return new Dynamic(dynamicOps, dynamicOps.createMap(builder.build()));
 	}
 
-	public static <T> JigsawJunction deserialize(Dynamic<T> dynamic) {
+	public static <T> JigsawJunction method_28873(Dynamic<T> dynamic) {
 		return new JigsawJunction(
 			dynamic.get("source_x").asInt(0),
 			dynamic.get("source_ground_y").asInt(0),
@@ -53,11 +53,11 @@ public class JigsawJunction {
 		);
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (object != null && this.getClass() == object.getClass()) {
-			JigsawJunction jigsawJunction = (JigsawJunction)object;
+		} else if (o != null && this.getClass() == o.getClass()) {
+			JigsawJunction jigsawJunction = (JigsawJunction)o;
 			if (this.sourceX != jigsawJunction.sourceX) {
 				return false;
 			} else if (this.sourceZ != jigsawJunction.sourceZ) {

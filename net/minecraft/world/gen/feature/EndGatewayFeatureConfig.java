@@ -1,22 +1,28 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Optional;
 import net.minecraft.util.math.BlockPos;
 
 public class EndGatewayFeatureConfig implements FeatureConfig {
+	public static final Codec<EndGatewayFeatureConfig> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(
+					BlockPos.CODEC.optionalFieldOf("exit").forGetter(endGatewayFeatureConfig -> endGatewayFeatureConfig.exitPos),
+					Codec.BOOL.fieldOf("exact").forGetter(endGatewayFeatureConfig -> endGatewayFeatureConfig.exact)
+				)
+				.apply(instance, EndGatewayFeatureConfig::new)
+	);
 	private final Optional<BlockPos> exitPos;
 	private final boolean exact;
 
-	private EndGatewayFeatureConfig(Optional<BlockPos> optional, boolean bl) {
-		this.exitPos = optional;
-		this.exact = bl;
+	private EndGatewayFeatureConfig(Optional<BlockPos> exitPos, boolean exact) {
+		this.exitPos = exitPos;
+		this.exact = exact;
 	}
 
-	public static EndGatewayFeatureConfig createConfig(BlockPos blockPos, boolean bl) {
-		return new EndGatewayFeatureConfig(Optional.of(blockPos), bl);
+	public static EndGatewayFeatureConfig createConfig(BlockPos exitPortalPosition, boolean exitsAtSpawn) {
+		return new EndGatewayFeatureConfig(Optional.of(exitPortalPosition), exitsAtSpawn);
 	}
 
 	public static EndGatewayFeatureConfig createConfig() {
@@ -29,40 +35,5 @@ public class EndGatewayFeatureConfig implements FeatureConfig {
 
 	public boolean isExact() {
 		return this.exact;
-	}
-
-	@Override
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		return new Dynamic(
-			dynamicOps,
-			this.exitPos
-				.map(
-					blockPos -> dynamicOps.createMap(
-							ImmutableMap.of(
-								dynamicOps.createString("exit_x"),
-								dynamicOps.createInt(blockPos.getX()),
-								dynamicOps.createString("exit_y"),
-								dynamicOps.createInt(blockPos.getY()),
-								dynamicOps.createString("exit_z"),
-								dynamicOps.createInt(blockPos.getZ()),
-								dynamicOps.createString("exact"),
-								dynamicOps.createBoolean(this.exact)
-							)
-						)
-				)
-				.orElse(dynamicOps.emptyMap())
-		);
-	}
-
-	public static <T> EndGatewayFeatureConfig deserialize(Dynamic<T> dynamic) {
-		Optional<BlockPos> optional = dynamic.get("exit_x")
-			.asNumber()
-			.flatMap(
-				number -> dynamic.get("exit_y")
-						.asNumber()
-						.flatMap(number2 -> dynamic.get("exit_z").asNumber().map(number3 -> new BlockPos(number.intValue(), number2.intValue(), number3.intValue())))
-			);
-		boolean bl = dynamic.get("exact").asBoolean(false);
-		return new EndGatewayFeatureConfig(optional, bl);
 	}
 }

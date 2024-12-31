@@ -3,29 +3,30 @@ package net.minecraft.resource;
 import net.minecraft.SharedConstants;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.Formatting;
 
 public enum ResourcePackCompatibility {
-	field_14223("old"),
-	field_14220("new"),
-	field_14224("compatible");
+	TOO_OLD("old"),
+	TOO_NEW("new"),
+	COMPATIBLE("compatible");
 
 	private final Text notification;
 	private final Text confirmMessage;
 
-	private ResourcePackCompatibility(String string2) {
-		this.notification = new TranslatableText("resourcePack.incompatible." + string2);
-		this.confirmMessage = new TranslatableText("resourcePack.incompatible.confirm." + string2);
+	private ResourcePackCompatibility(String translationSuffix) {
+		this.notification = new TranslatableText("pack.incompatible." + translationSuffix).formatted(Formatting.GRAY);
+		this.confirmMessage = new TranslatableText("pack.incompatible.confirm." + translationSuffix);
 	}
 
 	public boolean isCompatible() {
-		return this == field_14224;
+		return this == COMPATIBLE;
 	}
 
-	public static ResourcePackCompatibility from(int i) {
-		if (i < SharedConstants.getGameVersion().getPackVersion()) {
-			return field_14223;
+	public static ResourcePackCompatibility from(int packVersion) {
+		if (packVersion < SharedConstants.getGameVersion().getPackVersion()) {
+			return TOO_OLD;
 		} else {
-			return i > SharedConstants.getGameVersion().getPackVersion() ? field_14220 : field_14224;
+			return packVersion > SharedConstants.getGameVersion().getPackVersion() ? TOO_NEW : COMPATIBLE;
 		}
 	}
 

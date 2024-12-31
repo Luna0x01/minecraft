@@ -21,7 +21,6 @@ import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.client.network.DebugRendererInfoManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityGroup;
@@ -29,6 +28,7 @@ import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.Flutterer;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.Durations;
 import net.minecraft.entity.ai.TargetFinder;
 import net.minecraft.entity.ai.control.FlightMoveControl;
 import net.minecraft.entity.ai.control.LookControl;
@@ -40,10 +40,12 @@ import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
+import net.minecraft.entity.ai.goal.UniversalAngerGoal;
 import net.minecraft.entity.ai.pathing.BirdNavigation;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.ai.pathing.PathNodeType;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -51,8 +53,9 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.MobEntityWithAi;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemStack;
@@ -61,6 +64,7 @@ import net.minecraft.nbt.NbtHelper;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -69,6 +73,7 @@ import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.IntRange;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
@@ -78,10 +83,11 @@ import net.minecraft.world.poi.PointOfInterest;
 import net.minecraft.world.poi.PointOfInterestStorage;
 import net.minecraft.world.poi.PointOfInterestType;
 
-public class BeeEntity extends AnimalEntity implements Flutterer {
-	private static final TrackedData<Byte> multipleByteTracker = DataTracker.registerData(BeeEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private static final TrackedData<Integer> anger = DataTracker.registerData(BeeEntity.class, TrackedDataHandlerRegistry.INTEGER);
-	private UUID targetPlayer;
+public class BeeEntity extends AnimalEntity implements Angerable, Flutterer {
+	private static final TrackedData<Byte> STATUS_TRACKER = DataTracker.registerData(BeeEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final TrackedData<Integer> ANGER = DataTracker.registerData(BeeEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final IntRange ANGER_TIME_RANGE = Durations.betweenSeconds(20, 39);
+	private UUID targetUuid;
 	private float currentPitch;
 	private float lastPitch;
 	private int ticksSinceSting;
@@ -103,21 +109,23 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		super(entityType, world);
 		this.moveControl = new FlightMoveControl(this, 20, true);
 		this.lookControl = new BeeEntity.BeeLookControl(this);
-		this.setPathfindingPenalty(PathNodeType.field_18, -1.0F);
-		this.setPathfindingPenalty(PathNodeType.field_21516, -1.0F);
-		this.setPathfindingPenalty(PathNodeType.field_10, -1.0F);
+		this.setPathfindingPenalty(PathNodeType.DANGER_FIRE, -1.0F);
+		this.setPathfindingPenalty(PathNodeType.WATER, -1.0F);
+		this.setPathfindingPenalty(PathNodeType.WATER_BORDER, 16.0F);
+		this.setPathfindingPenalty(PathNodeType.COCOA, -1.0F);
+		this.setPathfindingPenalty(PathNodeType.FENCE, -1.0F);
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.startTracking(multipleByteTracker, (byte)0);
-		this.dataTracker.startTracking(anger, 0);
+		this.dataTracker.startTracking(STATUS_TRACKER, (byte)0);
+		this.dataTracker.startTracking(ANGER, 0);
 	}
 
 	@Override
-	public float getPathfindingFavor(BlockPos blockPos, WorldView worldView) {
-		return worldView.getBlockState(blockPos).isAir() ? 10.0F : 0.0F;
+	public float getPathfindingFavor(BlockPos pos, WorldView world) {
+		return world.getBlockState(pos).isAir() ? 10.0F : 0.0F;
 	}
 
 	@Override
@@ -125,7 +133,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		this.goalSelector.add(0, new BeeEntity.StingGoal(this, 1.4F, true));
 		this.goalSelector.add(1, new BeeEntity.EnterHiveGoal());
 		this.goalSelector.add(2, new AnimalMateGoal(this, 1.0));
-		this.goalSelector.add(3, new TemptGoal(this, 1.25, Ingredient.fromTag(ItemTags.field_20344), false));
+		this.goalSelector.add(3, new TemptGoal(this, 1.25, Ingredient.fromTag(ItemTags.FLOWERS), false));
 		this.pollinateGoal = new BeeEntity.PollinateGoal();
 		this.goalSelector.add(4, this.pollinateGoal);
 		this.goalSelector.add(5, new FollowParentGoal(this, 1.25));
@@ -139,85 +147,71 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		this.goalSelector.add(9, new SwimGoal(this));
 		this.targetSelector.add(1, new BeeEntity.BeeRevengeGoal(this).setGroupRevenge(new Class[0]));
 		this.targetSelector.add(2, new BeeEntity.BeeFollowTargetGoal(this));
+		this.targetSelector.add(3, new UniversalAngerGoal<>(this, true));
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
 		if (this.hasHive()) {
-			compoundTag.put("HivePos", NbtHelper.fromBlockPos(this.getHivePos()));
+			tag.put("HivePos", NbtHelper.fromBlockPos(this.getHivePos()));
 		}
 
 		if (this.hasFlower()) {
-			compoundTag.put("FlowerPos", NbtHelper.fromBlockPos(this.getFlowerPos()));
+			tag.put("FlowerPos", NbtHelper.fromBlockPos(this.getFlowerPos()));
 		}
 
-		compoundTag.putBoolean("HasNectar", this.hasNectar());
-		compoundTag.putBoolean("HasStung", this.hasStung());
-		compoundTag.putInt("TicksSincePollination", this.ticksSincePollination);
-		compoundTag.putInt("CannotEnterHiveTicks", this.cannotEnterHiveTicks);
-		compoundTag.putInt("CropsGrownSincePollination", this.cropsGrownSincePollination);
-		compoundTag.putInt("Anger", this.getAnger());
-		if (this.targetPlayer != null) {
-			compoundTag.putString("HurtBy", this.targetPlayer.toString());
-		} else {
-			compoundTag.putString("HurtBy", "");
-		}
+		tag.putBoolean("HasNectar", this.hasNectar());
+		tag.putBoolean("HasStung", this.hasStung());
+		tag.putInt("TicksSincePollination", this.ticksSincePollination);
+		tag.putInt("CannotEnterHiveTicks", this.cannotEnterHiveTicks);
+		tag.putInt("CropsGrownSincePollination", this.cropsGrownSincePollination);
+		this.angerToTag(tag);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
+	public void readCustomDataFromTag(CompoundTag tag) {
 		this.hivePos = null;
-		if (compoundTag.contains("HivePos")) {
-			this.hivePos = NbtHelper.toBlockPos(compoundTag.getCompound("HivePos"));
+		if (tag.contains("HivePos")) {
+			this.hivePos = NbtHelper.toBlockPos(tag.getCompound("HivePos"));
 		}
 
 		this.flowerPos = null;
-		if (compoundTag.contains("FlowerPos")) {
-			this.flowerPos = NbtHelper.toBlockPos(compoundTag.getCompound("FlowerPos"));
+		if (tag.contains("FlowerPos")) {
+			this.flowerPos = NbtHelper.toBlockPos(tag.getCompound("FlowerPos"));
 		}
 
-		super.readCustomDataFromTag(compoundTag);
-		this.setHasNectar(compoundTag.getBoolean("HasNectar"));
-		this.setHasStung(compoundTag.getBoolean("HasStung"));
-		this.setAnger(compoundTag.getInt("Anger"));
-		this.ticksSincePollination = compoundTag.getInt("TicksSincePollination");
-		this.cannotEnterHiveTicks = compoundTag.getInt("CannotEnterHiveTicks");
-		this.cropsGrownSincePollination = compoundTag.getInt("CropsGrownSincePollination");
-		String string = compoundTag.getString("HurtBy");
-		if (!string.isEmpty()) {
-			this.targetPlayer = UUID.fromString(string);
-			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.targetPlayer);
-			this.setAttacker(playerEntity);
-			if (playerEntity != null) {
-				this.attackingPlayer = playerEntity;
-				this.playerHitTimer = this.getLastAttackedTime();
-			}
-		}
+		super.readCustomDataFromTag(tag);
+		this.setHasNectar(tag.getBoolean("HasNectar"));
+		this.setHasStung(tag.getBoolean("HasStung"));
+		this.ticksSincePollination = tag.getInt("TicksSincePollination");
+		this.cannotEnterHiveTicks = tag.getInt("CannotEnterHiveTicks");
+		this.cropsGrownSincePollination = tag.getInt("CropsGrownSincePollination");
+		this.angerFromTag((ServerWorld)this.world, tag);
 	}
 
 	@Override
-	public boolean tryAttack(Entity entity) {
-		boolean bl = entity.damage(DamageSource.sting(this), (float)((int)this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).getValue()));
+	public boolean tryAttack(Entity target) {
+		boolean bl = target.damage(DamageSource.sting(this), (float)((int)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE)));
 		if (bl) {
-			this.dealDamage(this, entity);
-			if (entity instanceof LivingEntity) {
-				((LivingEntity)entity).setStingerCount(((LivingEntity)entity).getStingerCount() + 1);
+			this.dealDamage(this, target);
+			if (target instanceof LivingEntity) {
+				((LivingEntity)target).setStingerCount(((LivingEntity)target).getStingerCount() + 1);
 				int i = 0;
-				if (this.world.getDifficulty() == Difficulty.field_5802) {
+				if (this.world.getDifficulty() == Difficulty.NORMAL) {
 					i = 10;
-				} else if (this.world.getDifficulty() == Difficulty.field_5807) {
+				} else if (this.world.getDifficulty() == Difficulty.HARD) {
 					i = 18;
 				}
 
 				if (i > 0) {
-					((LivingEntity)entity).addStatusEffect(new StatusEffectInstance(StatusEffects.field_5899, i * 20, 0));
+					((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, i * 20, 0));
 				}
 			}
 
 			this.setHasStung(true);
-			this.setTarget(null);
-			this.playSound(SoundEvents.field_20606, 1.0F, 1.0F);
+			this.stopAnger();
+			this.playSound(SoundEvents.ENTITY_BEE_STING, 1.0F, 1.0F);
 		}
 
 		return bl;
@@ -228,22 +222,24 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		super.tick();
 		if (this.hasNectar() && this.getCropsGrownSincePollination() < 10 && this.random.nextFloat() < 0.05F) {
 			for (int i = 0; i < this.random.nextInt(2) + 1; i++) {
-				this.addParticle(this.world, this.getX() - 0.3F, this.getX() + 0.3F, this.getZ() - 0.3F, this.getZ() + 0.3F, this.getBodyY(0.5), ParticleTypes.field_20537);
+				this.addParticle(
+					this.world, this.getX() - 0.3F, this.getX() + 0.3F, this.getZ() - 0.3F, this.getZ() + 0.3F, this.getBodyY(0.5), ParticleTypes.FALLING_NECTAR
+				);
 			}
 		}
 
 		this.updateBodyPitch();
 	}
 
-	private void addParticle(World world, double d, double e, double f, double g, double h, ParticleEffect particleEffect) {
-		world.addParticle(particleEffect, MathHelper.lerp(world.random.nextDouble(), d, e), h, MathHelper.lerp(world.random.nextDouble(), f, g), 0.0, 0.0, 0.0);
+	private void addParticle(World world, double lastX, double x, double lastZ, double z, double y, ParticleEffect effect) {
+		world.addParticle(effect, MathHelper.lerp(world.random.nextDouble(), lastX, x), y, MathHelper.lerp(world.random.nextDouble(), lastZ, z), 0.0, 0.0, 0.0);
 	}
 
-	private void startMovingTo(BlockPos blockPos) {
-		Vec3d vec3d = new Vec3d(blockPos);
+	private void startMovingTo(BlockPos pos) {
+		Vec3d vec3d = Vec3d.ofBottomCenter(pos);
 		int i = 0;
-		BlockPos blockPos2 = new BlockPos(this);
-		int j = (int)vec3d.y - blockPos2.getY();
+		BlockPos blockPos = this.getBlockPos();
+		int j = (int)vec3d.y - blockPos.getY();
 		if (j > 2) {
 			i = 4;
 		} else if (j < -2) {
@@ -252,7 +248,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 
 		int k = 6;
 		int l = 8;
-		int m = blockPos2.getManhattanDistance(blockPos);
+		int m = blockPos.getManhattanDistance(pos);
 		if (m < 15) {
 			k = m / 2;
 			l = m / 2;
@@ -274,8 +270,8 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		return this.flowerPos != null;
 	}
 
-	public void setFlowerPos(BlockPos blockPos) {
-		this.flowerPos = blockPos;
+	public void setFlowerPos(BlockPos pos) {
+		this.flowerPos = pos;
 	}
 
 	private boolean failedPollinatingTooLong() {
@@ -283,7 +279,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 	}
 
 	private boolean canEnterHive() {
-		if (this.cannotEnterHiveTicks <= 0 && !this.pollinateGoal.isRunning() && !this.hasStung()) {
+		if (this.cannotEnterHiveTicks <= 0 && !this.pollinateGoal.isRunning() && !this.hasStung() && this.getTarget() == null) {
 			boolean bl = this.failedPollinatingTooLong() || this.world.isRaining() || this.world.isNight() || this.hasNectar();
 			return bl && !this.isHiveNearFire();
 		} else {
@@ -291,12 +287,12 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		}
 	}
 
-	public void setCannotEnterHiveTicks(int i) {
-		this.cannotEnterHiveTicks = i;
+	public void setCannotEnterHiveTicks(int ticks) {
+		this.cannotEnterHiveTicks = ticks;
 	}
 
-	public float getBodyPitch(float f) {
-		return MathHelper.lerp(f, this.lastPitch, this.currentPitch);
+	public float getBodyPitch(float tickDelta) {
+		return MathHelper.lerp(tickDelta, this.lastPitch, this.currentPitch);
 	}
 
 	private void updateBodyPitch() {
@@ -305,14 +301,6 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 			this.currentPitch = Math.min(1.0F, this.currentPitch + 0.2F);
 		} else {
 			this.currentPitch = Math.max(0.0F, this.currentPitch - 0.24F);
-		}
-	}
-
-	@Override
-	public void setAttacker(@Nullable LivingEntity livingEntity) {
-		super.setAttacker(livingEntity);
-		if (livingEntity != null) {
-			this.targetPlayer = livingEntity.getUuid();
 		}
 	}
 
@@ -336,17 +324,12 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 			}
 		}
 
-		if (this.isAngry()) {
-			int i = this.getAnger();
-			this.setAnger(i - 1);
-			LivingEntity livingEntity = this.getTarget();
-			if (i == 0 && livingEntity != null) {
-				this.setBeeAttacker(livingEntity);
-			}
-		}
-
 		if (!this.hasNectar()) {
 			this.ticksSincePollination++;
+		}
+
+		if (!this.world.isClient) {
+			this.tickAngerLogic((ServerWorld)this.world, false);
 		}
 	}
 
@@ -363,20 +346,33 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		}
 	}
 
-	public boolean isAngry() {
-		return this.getAnger() > 0;
+	@Override
+	public int getAngerTime() {
+		return this.dataTracker.get(ANGER);
 	}
 
-	private int getAnger() {
-		return this.dataTracker.get(anger);
+	@Override
+	public void setAngerTime(int ticks) {
+		this.dataTracker.set(ANGER, ticks);
 	}
 
-	private void setAnger(int i) {
-		this.dataTracker.set(anger, i);
+	@Override
+	public UUID getAngryAt() {
+		return this.targetUuid;
 	}
 
-	private boolean doesHiveHaveSpace(BlockPos blockPos) {
-		BlockEntity blockEntity = this.world.getBlockEntity(blockPos);
+	@Override
+	public void setAngryAt(@Nullable UUID uuid) {
+		this.targetUuid = uuid;
+	}
+
+	@Override
+	public void chooseRandomAngerTime() {
+		this.setAngerTime(ANGER_TIME_RANGE.choose(this.random));
+	}
+
+	private boolean doesHiveHaveSpace(BlockPos pos) {
+		BlockEntity blockEntity = this.world.getBlockEntity(pos);
 		return blockEntity instanceof BeehiveBlockEntity ? !((BeehiveBlockEntity)blockEntity).isFullOfBees() : false;
 	}
 
@@ -392,7 +388,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 	@Override
 	protected void sendAiDebugData() {
 		super.sendAiDebugData();
-		DebugRendererInfoManager.sendBeeDebugData(this);
+		DebugInfoSender.sendBeeDebugData(this);
 	}
 
 	private int getCropsGrownSincePollination() {
@@ -423,7 +419,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 				this.ticksUntilCanPollinate--;
 			}
 
-			boolean bl = this.isAngry() && !this.hasStung() && this.getTarget() != null && this.getTarget().squaredDistanceTo(this) < 4.0;
+			boolean bl = this.hasAngerTime() && !this.hasStung() && this.getTarget() != null && this.getTarget().squaredDistanceTo(this) < 4.0;
 			this.setNearTarget(bl);
 			if (this.age % 20 == 0 && !this.isHiveValid()) {
 				this.hivePos = null;
@@ -436,7 +432,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 			return false;
 		} else {
 			BlockEntity blockEntity = this.world.getBlockEntity(this.hivePos);
-			return blockEntity != null && blockEntity.getType() == BlockEntityType.field_20431;
+			return blockEntity != null && blockEntity.getType() == BlockEntityType.BEEHIVE;
 		}
 	}
 
@@ -444,63 +440,61 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		return this.getBeeFlag(8);
 	}
 
-	private void setHasNectar(boolean bl) {
-		if (bl) {
+	private void setHasNectar(boolean hasNectar) {
+		if (hasNectar) {
 			this.resetPollinationTicks();
 		}
 
-		this.setBeeFlag(8, bl);
+		this.setBeeFlag(8, hasNectar);
 	}
 
 	public boolean hasStung() {
 		return this.getBeeFlag(4);
 	}
 
-	private void setHasStung(boolean bl) {
-		this.setBeeFlag(4, bl);
+	private void setHasStung(boolean hasStung) {
+		this.setBeeFlag(4, hasStung);
 	}
 
 	private boolean isNearTarget() {
 		return this.getBeeFlag(2);
 	}
 
-	private void setNearTarget(boolean bl) {
-		this.setBeeFlag(2, bl);
+	private void setNearTarget(boolean nearTarget) {
+		this.setBeeFlag(2, nearTarget);
 	}
 
-	private boolean isTooFar(BlockPos blockPos) {
-		return !this.isWithinDistance(blockPos, 48);
+	private boolean isTooFar(BlockPos pos) {
+		return !this.isWithinDistance(pos, 32);
 	}
 
-	private void setBeeFlag(int i, boolean bl) {
-		if (bl) {
-			this.dataTracker.set(multipleByteTracker, (byte)(this.dataTracker.get(multipleByteTracker) | i));
+	private void setBeeFlag(int bit, boolean value) {
+		if (value) {
+			this.dataTracker.set(STATUS_TRACKER, (byte)(this.dataTracker.get(STATUS_TRACKER) | bit));
 		} else {
-			this.dataTracker.set(multipleByteTracker, (byte)(this.dataTracker.get(multipleByteTracker) & ~i));
+			this.dataTracker.set(STATUS_TRACKER, (byte)(this.dataTracker.get(STATUS_TRACKER) & ~bit));
 		}
 	}
 
-	private boolean getBeeFlag(int i) {
-		return (this.dataTracker.get(multipleByteTracker) & i) != 0;
+	private boolean getBeeFlag(int location) {
+		return (this.dataTracker.get(STATUS_TRACKER) & location) != 0;
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributes().register(EntityAttributes.FLYING_SPEED);
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(10.0);
-		this.getAttributeInstance(EntityAttributes.FLYING_SPEED).setBaseValue(0.6F);
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.3F);
-		this.getAttributes().register(EntityAttributes.ATTACK_DAMAGE).setBaseValue(2.0);
-		this.getAttributeInstance(EntityAttributes.FOLLOW_RANGE).setBaseValue(48.0);
+	public static DefaultAttributeContainer.Builder createBeeAttributes() {
+		return MobEntity.createMobAttributes()
+			.add(EntityAttributes.GENERIC_MAX_HEALTH, 10.0)
+			.add(EntityAttributes.GENERIC_FLYING_SPEED, 0.6F)
+			.add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3F)
+			.add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 2.0)
+			.add(EntityAttributes.GENERIC_FOLLOW_RANGE, 48.0);
 	}
 
 	@Override
 	protected EntityNavigation createNavigation(World world) {
 		BirdNavigation birdNavigation = new BirdNavigation(this, world) {
 			@Override
-			public boolean isValidPosition(BlockPos blockPos) {
-				return !this.world.getBlockState(blockPos.down()).isAir();
+			public boolean isValidPosition(BlockPos pos) {
+				return !this.world.getBlockState(pos.down()).isAir();
 			}
 
 			@Override
@@ -517,16 +511,16 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 	}
 
 	@Override
-	public boolean isBreedingItem(ItemStack itemStack) {
-		return itemStack.getItem().isIn(ItemTags.field_20344);
+	public boolean isBreedingItem(ItemStack stack) {
+		return stack.getItem().isIn(ItemTags.FLOWERS);
 	}
 
-	private boolean isFlowers(BlockPos blockPos) {
-		return this.world.canSetBlock(blockPos) && this.world.getBlockState(blockPos).getBlock().matches(BlockTags.field_20339);
+	private boolean isFlowers(BlockPos pos) {
+		return this.world.canSetBlock(pos) && this.world.getBlockState(pos).getBlock().isIn(BlockTags.FLOWERS);
 	}
 
 	@Override
-	protected void playStepSound(BlockPos blockPos, BlockState blockState) {
+	protected void playStepSound(BlockPos pos, BlockState state) {
 	}
 
 	@Override
@@ -535,13 +529,13 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_20603;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_BEE_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_20602;
+		return SoundEvents.ENTITY_BEE_DEATH;
 	}
 
 	@Override
@@ -549,22 +543,22 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		return 0.4F;
 	}
 
-	public BeeEntity createChild(PassiveEntity passiveEntity) {
-		return EntityType.field_20346.create(this.world);
+	public BeeEntity createChild(ServerWorld serverWorld, PassiveEntity passiveEntity) {
+		return EntityType.BEE.create(serverWorld);
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		return this.isBaby() ? entityDimensions.height * 0.5F : entityDimensions.height * 0.5F;
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
+		return this.isBaby() ? dimensions.height * 0.5F : dimensions.height * 0.5F;
 	}
 
 	@Override
-	public boolean handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
 		return false;
 	}
 
 	@Override
-	protected void fall(double d, boolean bl, BlockState blockState, BlockPos blockPos) {
+	protected void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPosition) {
 	}
 
 	@Override
@@ -577,27 +571,17 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		this.resetCropCounter();
 	}
 
-	public boolean setBeeAttacker(Entity entity) {
-		this.setAnger(400 + this.random.nextInt(400));
-		if (entity instanceof LivingEntity) {
-			this.setAttacker((LivingEntity)entity);
-		}
-
-		return true;
-	}
-
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
-			Entity entity = damageSource.getAttacker();
-			if (!this.world.isClient && entity instanceof PlayerEntity && !((PlayerEntity)entity).isCreative() && this.canSee(entity) && !this.isAiDisabled()) {
+			Entity entity = source.getAttacker();
+			if (!this.world.isClient) {
 				this.pollinateGoal.cancel();
-				this.setBeeAttacker(entity);
 			}
 
-			return super.damage(damageSource, f);
+			return super.damage(source, amount);
 		}
 	}
 
@@ -607,17 +591,22 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 	}
 
 	@Override
-	protected void swimUpward(Tag<Fluid> tag) {
+	protected void swimUpward(Tag<Fluid> fluid) {
 		this.setVelocity(this.getVelocity().add(0.0, 0.01, 0.0));
 	}
 
-	private boolean isWithinDistance(BlockPos blockPos, int i) {
-		return blockPos.isWithinDistance(new BlockPos(this), (double)i);
+	@Override
+	public Vec3d method_29919() {
+		return new Vec3d(0.0, (double)(0.5F * this.getStandingEyeHeight()), (double)(this.getWidth() * 0.2F));
+	}
+
+	private boolean isWithinDistance(BlockPos pos, int distance) {
+		return pos.isWithinDistance(this.getBlockPos(), (double)distance);
 	}
 
 	static class BeeFollowTargetGoal extends FollowTargetGoal<PlayerEntity> {
-		BeeFollowTargetGoal(BeeEntity beeEntity) {
-			super(beeEntity, PlayerEntity.class, true);
+		BeeFollowTargetGoal(BeeEntity bee) {
+			super(bee, PlayerEntity.class, 10, true, false, bee::shouldAngerAt);
 		}
 
 		@Override
@@ -638,18 +627,18 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 
 		private boolean canSting() {
 			BeeEntity beeEntity = (BeeEntity)this.mob;
-			return beeEntity.isAngry() && !beeEntity.hasStung();
+			return beeEntity.hasAngerTime() && !beeEntity.hasStung();
 		}
 	}
 
 	class BeeLookControl extends LookControl {
-		BeeLookControl(MobEntity mobEntity) {
-			super(mobEntity);
+		BeeLookControl(MobEntity entity) {
+			super(entity);
 		}
 
 		@Override
 		public void tick() {
-			if (!BeeEntity.this.isAngry()) {
+			if (!BeeEntity.this.hasAngerTime()) {
 				super.tick();
 			}
 		}
@@ -661,21 +650,26 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 	}
 
 	class BeeRevengeGoal extends RevengeGoal {
-		BeeRevengeGoal(BeeEntity beeEntity2) {
-			super(beeEntity2);
+		BeeRevengeGoal(BeeEntity bee) {
+			super(bee);
 		}
 
 		@Override
-		protected void setMobEntityTarget(MobEntity mobEntity, LivingEntity livingEntity) {
-			if (mobEntity instanceof BeeEntity && this.mob.canSee(livingEntity) && ((BeeEntity)mobEntity).setBeeAttacker(livingEntity)) {
-				mobEntity.setTarget(livingEntity);
+		public boolean shouldContinue() {
+			return BeeEntity.this.hasAngerTime() && super.shouldContinue();
+		}
+
+		@Override
+		protected void setMobEntityTarget(MobEntity mob, LivingEntity target) {
+			if (mob instanceof BeeEntity && this.mob.canSee(target)) {
+				mob.setTarget(target);
 			}
 		}
 	}
 
 	class BeeWanderAroundGoal extends Goal {
 		BeeWanderAroundGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -685,7 +679,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 
 		@Override
 		public boolean shouldContinue() {
-			return BeeEntity.this.navigation.method_23966();
+			return BeeEntity.this.navigation.isFollowingPath();
 		}
 
 		@Override
@@ -699,8 +693,8 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		@Nullable
 		private Vec3d getRandomLocation() {
 			Vec3d vec3d2;
-			if (BeeEntity.this.isHiveValid() && !BeeEntity.this.isWithinDistance(BeeEntity.this.hivePos, 40)) {
-				Vec3d vec3d = new Vec3d(BeeEntity.this.hivePos);
+			if (BeeEntity.this.isHiveValid() && !BeeEntity.this.isWithinDistance(BeeEntity.this.hivePos, 22)) {
+				Vec3d vec3d = Vec3d.ofCenter(BeeEntity.this.hivePos);
 				vec3d2 = vec3d.subtract(BeeEntity.this.getPos()).normalize();
 			} else {
 				vec3d2 = BeeEntity.this.getRotationVec(0.0F);
@@ -780,13 +774,13 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		}
 
 		private List<BlockPos> getNearbyFreeHives() {
-			BlockPos blockPos = new BlockPos(BeeEntity.this);
+			BlockPos blockPos = BeeEntity.this.getBlockPos();
 			PointOfInterestStorage pointOfInterestStorage = ((ServerWorld)BeeEntity.this.world).getPointOfInterestStorage();
-			Stream<PointOfInterest> stream = pointOfInterestStorage.get(
-				pointOfInterestType -> pointOfInterestType == PointOfInterestType.field_20351 || pointOfInterestType == PointOfInterestType.field_20352,
+			Stream<PointOfInterest> stream = pointOfInterestStorage.getInCircle(
+				pointOfInterestType -> pointOfInterestType == PointOfInterestType.BEEHIVE || pointOfInterestType == PointOfInterestType.BEE_NEST,
 				blockPos,
 				20,
-				PointOfInterestStorage.OccupationStatus.field_18489
+				PointOfInterestStorage.OccupationStatus.ANY
 			);
 			return (List<BlockPos>)stream.map(PointOfInterest::getPos)
 				.filter(blockPosx -> BeeEntity.this.doesHiveHaveSpace(blockPosx))
@@ -817,12 +811,12 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		public void tick() {
 			if (BeeEntity.this.random.nextInt(30) == 0) {
 				for (int i = 1; i <= 2; i++) {
-					BlockPos blockPos = new BlockPos(BeeEntity.this).down(i);
+					BlockPos blockPos = BeeEntity.this.getBlockPos().down(i);
 					BlockState blockState = BeeEntity.this.world.getBlockState(blockPos);
 					Block block = blockState.getBlock();
 					boolean bl = false;
 					IntProperty intProperty = null;
-					if (block.matches(BlockTags.field_20342)) {
+					if (block.isIn(BlockTags.BEE_GROWABLES)) {
 						if (block instanceof CropBlock) {
 							CropBlock cropBlock = (CropBlock)block;
 							if (!cropBlock.isMature(blockState)) {
@@ -835,7 +829,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 								bl = true;
 								intProperty = StemBlock.AGE;
 							}
-						} else if (block == Blocks.field_16999) {
+						} else if (block == Blocks.SWEET_BERRY_BUSH) {
 							int k = (Integer)blockState.get(SweetBerryBushBlock.AGE);
 							if (k < 3) {
 								bl = true;
@@ -844,7 +838,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 						}
 
 						if (bl) {
-							BeeEntity.this.world.playLevelEvent(2005, blockPos, 0);
+							BeeEntity.this.world.syncWorldEvent(2005, blockPos, 0);
 							BeeEntity.this.world.setBlockState(blockPos, blockState.with(intProperty, Integer.valueOf((Integer)blockState.get(intProperty) + 1)));
 							BeeEntity.this.addCropCounter();
 						}
@@ -858,7 +852,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		private int ticks = BeeEntity.this.world.random.nextInt(10);
 
 		MoveToFlowerGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -894,7 +888,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 				this.ticks++;
 				if (this.ticks > 600) {
 					BeeEntity.this.flowerPos = null;
-				} else if (!BeeEntity.this.navigation.method_23966()) {
+				} else if (!BeeEntity.this.navigation.isFollowingPath()) {
 					if (BeeEntity.this.isTooFar(BeeEntity.this.flowerPos)) {
 						BeeEntity.this.flowerPos = null;
 					} else {
@@ -914,9 +908,10 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		private List<BlockPos> possibleHives = Lists.newArrayList();
 		@Nullable
 		private Path path = null;
+		private int ticksUntilLost;
 
 		MoveToHiveGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -925,7 +920,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 				&& !BeeEntity.this.hasPositionTarget()
 				&& BeeEntity.this.canEnterHive()
 				&& !this.isCloseEnough(BeeEntity.this.hivePos)
-				&& BeeEntity.this.world.getBlockState(BeeEntity.this.hivePos).matches(BlockTags.field_20340);
+				&& BeeEntity.this.world.getBlockState(BeeEntity.this.hivePos).isIn(BlockTags.BEEHIVES);
 		}
 
 		@Override
@@ -936,12 +931,14 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		@Override
 		public void start() {
 			this.ticks = 0;
+			this.ticksUntilLost = 0;
 			super.start();
 		}
 
 		@Override
 		public void stop() {
 			this.ticks = 0;
+			this.ticksUntilLost = 0;
 			BeeEntity.this.navigation.stop();
 			BeeEntity.this.navigation.resetRangeMultiplier();
 		}
@@ -952,10 +949,10 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 				this.ticks++;
 				if (this.ticks > 600) {
 					this.makeChosenHivePossibleHive();
-				} else if (!BeeEntity.this.navigation.method_23966()) {
+				} else if (!BeeEntity.this.navigation.isFollowingPath()) {
 					if (!BeeEntity.this.isWithinDistance(BeeEntity.this.hivePos, 16)) {
 						if (BeeEntity.this.isTooFar(BeeEntity.this.hivePos)) {
-							this.reset();
+							this.setLost();
 						} else {
 							BeeEntity.this.startMovingTo(BeeEntity.this.hivePos);
 						}
@@ -964,7 +961,11 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 						if (!bl) {
 							this.makeChosenHivePossibleHive();
 						} else if (this.path != null && BeeEntity.this.navigation.getCurrentPath().equalsPath(this.path)) {
-							this.reset();
+							this.ticksUntilLost++;
+							if (this.ticksUntilLost > 60) {
+								this.setLost();
+								this.ticksUntilLost = 0;
+							}
 						} else {
 							this.path = BeeEntity.this.navigation.getCurrentPath();
 						}
@@ -973,18 +974,18 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 			}
 		}
 
-		private boolean startMovingToFar(BlockPos blockPos) {
+		private boolean startMovingToFar(BlockPos pos) {
 			BeeEntity.this.navigation.setRangeMultiplier(10.0F);
-			BeeEntity.this.navigation.startMovingTo((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), 1.0);
+			BeeEntity.this.navigation.startMovingTo((double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), 1.0);
 			return BeeEntity.this.navigation.getCurrentPath() != null && BeeEntity.this.navigation.getCurrentPath().reachesTarget();
 		}
 
-		private boolean isPossibleHive(BlockPos blockPos) {
-			return this.possibleHives.contains(blockPos);
+		private boolean isPossibleHive(BlockPos pos) {
+			return this.possibleHives.contains(pos);
 		}
 
-		private void addPossibleHive(BlockPos blockPos) {
-			this.possibleHives.add(blockPos);
+		private void addPossibleHive(BlockPos pos) {
+			this.possibleHives.add(pos);
 
 			while (this.possibleHives.size() > 3) {
 				this.possibleHives.remove(0);
@@ -1000,20 +1001,20 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 				this.addPossibleHive(BeeEntity.this.hivePos);
 			}
 
-			this.reset();
+			this.setLost();
 		}
 
-		private void reset() {
+		private void setLost() {
 			BeeEntity.this.hivePos = null;
 			BeeEntity.this.ticksLeftToFindHive = 200;
 		}
 
-		private boolean isCloseEnough(BlockPos blockPos) {
-			if (BeeEntity.this.isWithinDistance(blockPos, 2)) {
+		private boolean isCloseEnough(BlockPos pos) {
+			if (BeeEntity.this.isWithinDistance(pos, 2)) {
 				return true;
 			} else {
 				Path path = BeeEntity.this.navigation.getCurrentPath();
-				return path != null && path.getTarget().equals(blockPos) && path.reachesTarget() && path.isFinished();
+				return path != null && path.getTarget().equals(pos) && path.reachesTarget() && path.isFinished();
 			}
 		}
 	}
@@ -1028,21 +1029,21 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 
 		@Override
 		public boolean canStart() {
-			return this.canBeeStart() && !BeeEntity.this.isAngry();
+			return this.canBeeStart() && !BeeEntity.this.hasAngerTime();
 		}
 
 		@Override
 		public boolean shouldContinue() {
-			return this.canBeeContinue() && !BeeEntity.this.isAngry();
+			return this.canBeeContinue() && !BeeEntity.this.hasAngerTime();
 		}
 	}
 
 	class PollinateGoal extends BeeEntity.NotAngryGoal {
 		private final Predicate<BlockState> flowerPredicate = blockState -> {
-			if (blockState.matches(BlockTags.field_20338)) {
-				return blockState.getBlock() == Blocks.field_10583 ? blockState.get(TallPlantBlock.HALF) == DoubleBlockHalf.field_12609 : true;
+			if (blockState.isIn(BlockTags.TALL_FLOWERS)) {
+				return blockState.isOf(Blocks.SUNFLOWER) ? blockState.get(TallPlantBlock.HALF) == DoubleBlockHalf.UPPER : true;
 			} else {
-				return blockState.matches(BlockTags.field_15480);
+				return blockState.isIn(BlockTags.SMALL_FLOWERS);
 			}
 		};
 		private int pollinationTicks = 0;
@@ -1052,7 +1053,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 		private int ticks = 0;
 
 		PollinateGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405));
+			this.setControls(EnumSet.of(Goal.Control.MOVE));
 		}
 
 		@Override
@@ -1136,7 +1137,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 			if (this.ticks > 600) {
 				BeeEntity.this.flowerPos = null;
 			} else {
-				Vec3d vec3d = new Vec3d(BeeEntity.this.flowerPos).add(0.5, 0.6F, 0.5);
+				Vec3d vec3d = Vec3d.ofBottomCenter(BeeEntity.this.flowerPos).add(0.0, 0.6F, 0.0);
 				if (vec3d.distanceTo(BeeEntity.this.getPos()) > 1.0) {
 					this.nextTarget = vec3d;
 					this.moveToNextTarget();
@@ -1151,7 +1152,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 						BeeEntity.this.flowerPos = null;
 					} else {
 						if (bl) {
-							boolean bl3 = BeeEntity.this.random.nextInt(100) == 0;
+							boolean bl3 = BeeEntity.this.random.nextInt(25) == 0;
 							if (bl3) {
 								this.nextTarget = new Vec3d(vec3d.getX() + (double)this.getRandomOffset(), vec3d.getY(), vec3d.getZ() + (double)this.getRandomOffset());
 								BeeEntity.this.navigation.stop();
@@ -1169,7 +1170,7 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 						this.pollinationTicks++;
 						if (BeeEntity.this.random.nextFloat() < 0.05F && this.pollinationTicks > this.lastPollinationTick + 60) {
 							this.lastPollinationTick = this.pollinationTicks;
-							BeeEntity.this.playSound(SoundEvents.field_20607, 1.0F, 1.0F);
+							BeeEntity.this.playSound(SoundEvents.ENTITY_BEE_POLLINATE, 1.0F, 1.0F);
 						}
 					}
 				}
@@ -1188,16 +1189,16 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 			return this.findFlower(this.flowerPredicate, 5.0);
 		}
 
-		private Optional<BlockPos> findFlower(Predicate<BlockState> predicate, double d) {
-			BlockPos blockPos = new BlockPos(BeeEntity.this);
+		private Optional<BlockPos> findFlower(Predicate<BlockState> predicate, double searchDistance) {
+			BlockPos blockPos = BeeEntity.this.getBlockPos();
 			BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-			for (int i = 0; (double)i <= d; i = i > 0 ? -i : 1 - i) {
-				for (int j = 0; (double)j < d; j++) {
+			for (int i = 0; (double)i <= searchDistance; i = i > 0 ? -i : 1 - i) {
+				for (int j = 0; (double)j < searchDistance; j++) {
 					for (int k = 0; k <= j; k = k > 0 ? -k : 1 - k) {
 						for (int l = k < j && k > -j ? j : 0; l <= j; l = l > 0 ? -l : 1 - l) {
-							mutable.set(blockPos).setOffset(k, i - 1, l);
-							if (blockPos.isWithinDistance(mutable, d) && predicate.test(BeeEntity.this.world.getBlockState(mutable))) {
+							mutable.set(blockPos, k, i - 1, l);
+							if (blockPos.isWithinDistance(mutable, searchDistance) && predicate.test(BeeEntity.this.world.getBlockState(mutable))) {
 								return Optional.of(mutable);
 							}
 						}
@@ -1210,18 +1211,18 @@ public class BeeEntity extends AnimalEntity implements Flutterer {
 	}
 
 	class StingGoal extends MeleeAttackGoal {
-		StingGoal(MobEntityWithAi mobEntityWithAi, double d, boolean bl) {
-			super(mobEntityWithAi, d, bl);
+		StingGoal(PathAwareEntity mob, double speed, boolean pauseWhenMobIdle) {
+			super(mob, speed, pauseWhenMobIdle);
 		}
 
 		@Override
 		public boolean canStart() {
-			return super.canStart() && BeeEntity.this.isAngry() && !BeeEntity.this.hasStung();
+			return super.canStart() && BeeEntity.this.hasAngerTime() && !BeeEntity.this.hasStung();
 		}
 
 		@Override
 		public boolean shouldContinue() {
-			return super.shouldContinue() && BeeEntity.this.isAngry() && !BeeEntity.this.hasStung();
+			return super.shouldContinue() && BeeEntity.this.hasAngerTime() && !BeeEntity.this.hasStung();
 		}
 	}
 }

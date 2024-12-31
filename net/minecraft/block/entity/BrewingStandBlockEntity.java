@@ -4,9 +4,6 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BrewingStandBlock;
-import net.minecraft.container.BrewingStandContainer;
-import net.minecraft.container.Container;
-import net.minecraft.container.PropertyDelegate;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
@@ -16,11 +13,14 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.recipe.BrewingRecipeRegistry;
+import net.minecraft.screen.BrewingStandScreenHandler;
+import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.DefaultedList;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -35,8 +35,8 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	private int fuel;
 	protected final PropertyDelegate propertyDelegate = new PropertyDelegate() {
 		@Override
-		public int get(int i) {
-			switch (i) {
+		public int get(int index) {
+			switch (index) {
 				case 0:
 					return BrewingStandBlockEntity.this.brewTime;
 				case 1:
@@ -47,13 +47,13 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		}
 
 		@Override
-		public void set(int i, int j) {
-			switch (i) {
+		public void set(int index, int value) {
+			switch (index) {
 				case 0:
-					BrewingStandBlockEntity.this.brewTime = j;
+					BrewingStandBlockEntity.this.brewTime = value;
 					break;
 				case 1:
-					BrewingStandBlockEntity.this.fuel = j;
+					BrewingStandBlockEntity.this.fuel = value;
 			}
 		}
 
@@ -64,7 +64,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	};
 
 	public BrewingStandBlockEntity() {
-		super(BlockEntityType.field_11894);
+		super(BlockEntityType.BREWING_STAND);
 	}
 
 	@Override
@@ -73,12 +73,12 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	}
 
 	@Override
-	public int getInvSize() {
+	public int size() {
 		return this.inventory.size();
 	}
 
 	@Override
-	public boolean isInvEmpty() {
+	public boolean isEmpty() {
 		for (ItemStack itemStack : this.inventory) {
 			if (!itemStack.isEmpty()) {
 				return false;
@@ -91,7 +91,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	@Override
 	public void tick() {
 		ItemStack itemStack = this.inventory.get(4);
-		if (this.fuel <= 0 && itemStack.getItem() == Items.field_8183) {
+		if (this.fuel <= 0 && itemStack.getItem() == Items.BLAZE_POWDER) {
 			this.fuel = 20;
 			itemStack.decrement(1);
 			this.markDirty();
@@ -187,85 +187,85 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 		}
 
 		this.inventory.set(3, itemStack);
-		this.world.playLevelEvent(1035, blockPos, 0);
+		this.world.syncWorldEvent(1035, blockPos, 0);
 	}
 
 	@Override
-	public void fromTag(CompoundTag compoundTag) {
-		super.fromTag(compoundTag);
-		this.inventory = DefaultedList.ofSize(this.getInvSize(), ItemStack.EMPTY);
-		Inventories.fromTag(compoundTag, this.inventory);
-		this.brewTime = compoundTag.getShort("BrewTime");
-		this.fuel = compoundTag.getByte("Fuel");
+	public void fromTag(BlockState state, CompoundTag tag) {
+		super.fromTag(state, tag);
+		this.inventory = DefaultedList.ofSize(this.size(), ItemStack.EMPTY);
+		Inventories.fromTag(tag, this.inventory);
+		this.brewTime = tag.getShort("BrewTime");
+		this.fuel = tag.getByte("Fuel");
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag compoundTag) {
-		super.toTag(compoundTag);
-		compoundTag.putShort("BrewTime", (short)this.brewTime);
-		Inventories.toTag(compoundTag, this.inventory);
-		compoundTag.putByte("Fuel", (byte)this.fuel);
-		return compoundTag;
+	public CompoundTag toTag(CompoundTag tag) {
+		super.toTag(tag);
+		tag.putShort("BrewTime", (short)this.brewTime);
+		Inventories.toTag(tag, this.inventory);
+		tag.putByte("Fuel", (byte)this.fuel);
+		return tag;
 	}
 
 	@Override
-	public ItemStack getInvStack(int i) {
-		return i >= 0 && i < this.inventory.size() ? this.inventory.get(i) : ItemStack.EMPTY;
+	public ItemStack getStack(int slot) {
+		return slot >= 0 && slot < this.inventory.size() ? this.inventory.get(slot) : ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemStack takeInvStack(int i, int j) {
-		return Inventories.splitStack(this.inventory, i, j);
+	public ItemStack removeStack(int slot, int amount) {
+		return Inventories.splitStack(this.inventory, slot, amount);
 	}
 
 	@Override
-	public ItemStack removeInvStack(int i) {
-		return Inventories.removeStack(this.inventory, i);
+	public ItemStack removeStack(int slot) {
+		return Inventories.removeStack(this.inventory, slot);
 	}
 
 	@Override
-	public void setInvStack(int i, ItemStack itemStack) {
-		if (i >= 0 && i < this.inventory.size()) {
-			this.inventory.set(i, itemStack);
+	public void setStack(int slot, ItemStack stack) {
+		if (slot >= 0 && slot < this.inventory.size()) {
+			this.inventory.set(slot, stack);
 		}
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity playerEntity) {
+	public boolean canPlayerUse(PlayerEntity player) {
 		return this.world.getBlockEntity(this.pos) != this
 			? false
-			: !(playerEntity.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
+			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
 	}
 
 	@Override
-	public boolean isValidInvStack(int i, ItemStack itemStack) {
-		if (i == 3) {
-			return BrewingRecipeRegistry.isValidIngredient(itemStack);
+	public boolean isValid(int slot, ItemStack stack) {
+		if (slot == 3) {
+			return BrewingRecipeRegistry.isValidIngredient(stack);
 		} else {
-			Item item = itemStack.getItem();
-			return i == 4
-				? item == Items.field_8183
-				: (item == Items.field_8574 || item == Items.field_8436 || item == Items.field_8150 || item == Items.field_8469) && this.getInvStack(i).isEmpty();
+			Item item = stack.getItem();
+			return slot == 4
+				? item == Items.BLAZE_POWDER
+				: (item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE) && this.getStack(slot).isEmpty();
 		}
 	}
 
 	@Override
-	public int[] getInvAvailableSlots(Direction direction) {
-		if (direction == Direction.field_11036) {
+	public int[] getAvailableSlots(Direction side) {
+		if (side == Direction.UP) {
 			return TOP_SLOTS;
 		} else {
-			return direction == Direction.field_11033 ? BOTTOM_SLOTS : SIDE_SLOTS;
+			return side == Direction.DOWN ? BOTTOM_SLOTS : SIDE_SLOTS;
 		}
 	}
 
 	@Override
-	public boolean canInsertInvStack(int i, ItemStack itemStack, @Nullable Direction direction) {
-		return this.isValidInvStack(i, itemStack);
+	public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
+		return this.isValid(slot, stack);
 	}
 
 	@Override
-	public boolean canExtractInvStack(int i, ItemStack itemStack, Direction direction) {
-		return i == 3 ? itemStack.getItem() == Items.field_8469 : true;
+	public boolean canExtract(int slot, ItemStack stack, Direction dir) {
+		return slot == 3 ? stack.getItem() == Items.GLASS_BOTTLE : true;
 	}
 
 	@Override
@@ -274,7 +274,7 @@ public class BrewingStandBlockEntity extends LockableContainerBlockEntity implem
 	}
 
 	@Override
-	protected Container createContainer(int i, PlayerInventory playerInventory) {
-		return new BrewingStandContainer(i, playerInventory, this, this.propertyDelegate);
+	protected ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
+		return new BrewingStandScreenHandler(syncId, playerInventory, this, this.propertyDelegate);
 	}
 }

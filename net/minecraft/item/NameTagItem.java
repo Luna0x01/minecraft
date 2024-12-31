@@ -3,6 +3,7 @@ package net.minecraft.item;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 
 public class NameTagItem extends Item {
@@ -11,20 +12,20 @@ public class NameTagItem extends Item {
 	}
 
 	@Override
-	public boolean useOnEntity(ItemStack itemStack, PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
-		if (itemStack.hasCustomName() && !(livingEntity instanceof PlayerEntity)) {
-			if (livingEntity.isAlive()) {
-				livingEntity.setCustomName(itemStack.getName());
-				if (livingEntity instanceof MobEntity) {
-					((MobEntity)livingEntity).setPersistent();
+	public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+		if (stack.hasCustomName() && !(entity instanceof PlayerEntity)) {
+			if (!user.world.isClient && entity.isAlive()) {
+				entity.setCustomName(stack.getName());
+				if (entity instanceof MobEntity) {
+					((MobEntity)entity).setPersistent();
 				}
 
-				itemStack.decrement(1);
+				stack.decrement(1);
 			}
 
-			return true;
+			return ActionResult.success(user.world.isClient);
 		} else {
-			return false;
+			return ActionResult.PASS;
 		}
 	}
 }

@@ -18,28 +18,28 @@ public class CreeperEntityModel<T extends Entity> extends CompositeEntityModel<T
 		this(0.0F);
 	}
 
-	public CreeperEntityModel(float f) {
+	public CreeperEntityModel(float scale) {
 		int i = 6;
 		this.head = new ModelPart(this, 0, 0);
-		this.head.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, f);
+		this.head.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, scale);
 		this.head.setPivot(0.0F, 6.0F, 0.0F);
 		this.helmet = new ModelPart(this, 32, 0);
-		this.helmet.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, f + 0.5F);
+		this.helmet.addCuboid(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, scale + 0.5F);
 		this.helmet.setPivot(0.0F, 6.0F, 0.0F);
 		this.torso = new ModelPart(this, 16, 16);
-		this.torso.addCuboid(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, f);
+		this.torso.addCuboid(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, scale);
 		this.torso.setPivot(0.0F, 6.0F, 0.0F);
 		this.rightBackLeg = new ModelPart(this, 0, 16);
-		this.rightBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.rightBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, scale);
 		this.rightBackLeg.setPivot(-2.0F, 18.0F, 4.0F);
 		this.leftBackLeg = new ModelPart(this, 0, 16);
-		this.leftBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.leftBackLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, scale);
 		this.leftBackLeg.setPivot(2.0F, 18.0F, 4.0F);
 		this.rightFrontLeg = new ModelPart(this, 0, 16);
-		this.rightFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.rightFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, scale);
 		this.rightFrontLeg.setPivot(-2.0F, 18.0F, -4.0F);
 		this.leftFrontLeg = new ModelPart(this, 0, 16);
-		this.leftFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, f);
+		this.leftFrontLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, scale);
 		this.leftFrontLeg.setPivot(2.0F, 18.0F, -4.0F);
 	}
 
@@ -49,12 +49,12 @@ public class CreeperEntityModel<T extends Entity> extends CompositeEntityModel<T
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		this.head.yaw = i * (float) (Math.PI / 180.0);
-		this.head.pitch = j * (float) (Math.PI / 180.0);
-		this.rightBackLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
-		this.leftBackLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.rightFrontLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.leftFrontLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		this.head.yaw = headYaw * (float) (Math.PI / 180.0);
+		this.head.pitch = headPitch * (float) (Math.PI / 180.0);
+		this.rightBackLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * 1.4F * limbDistance;
+		this.leftBackLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * 1.4F * limbDistance;
+		this.rightFrontLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * 1.4F * limbDistance;
+		this.leftFrontLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * 1.4F * limbDistance;
 	}
 }

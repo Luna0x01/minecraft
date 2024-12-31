@@ -1,26 +1,32 @@
 package net.minecraft.world.gen.feature;
 
-import com.mojang.datafixers.Dynamic;
+import com.mojang.serialization.Codec;
 import java.util.Random;
-import java.util.function.Function;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.ChunkGeneratorConfig;
+import net.minecraft.world.gen.decorator.DecoratorContext;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class DecoratedFeature extends Feature<DecoratedFeatureConfig> {
-	public DecoratedFeature(Function<Dynamic<?>, ? extends DecoratedFeatureConfig> function) {
-		super(function);
+	public DecoratedFeature(Codec<DecoratedFeatureConfig> codec) {
+		super(codec);
 	}
 
 	public boolean generate(
-		IWorld iWorld, ChunkGenerator<? extends ChunkGeneratorConfig> chunkGenerator, Random random, BlockPos blockPos, DecoratedFeatureConfig decoratedFeatureConfig
+		StructureWorldAccess structureWorldAccess, ChunkGenerator chunkGenerator, Random random, BlockPos blockPos, DecoratedFeatureConfig decoratedFeatureConfig
 	) {
-		return decoratedFeatureConfig.decorator.generate(iWorld, chunkGenerator, random, blockPos, decoratedFeatureConfig.feature);
+		MutableBoolean mutableBoolean = new MutableBoolean();
+		decoratedFeatureConfig.decorator.getPositions(new DecoratorContext(structureWorldAccess, chunkGenerator), random, blockPos).forEach(blockPosx -> {
+			if (((ConfiguredFeature)decoratedFeatureConfig.feature.get()).generate(structureWorldAccess, chunkGenerator, random, blockPosx)) {
+				mutableBoolean.setTrue();
+			}
+		});
+		return mutableBoolean.isTrue();
 	}
 
 	public String toString() {
-		return String.format("< %s [%s] >", this.getClass().getSimpleName(), Registry.field_11138.getId(this));
+		return String.format("< %s [%s] >", this.getClass().getSimpleName(), Registry.FEATURE.getId(this));
 	}
 }

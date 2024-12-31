@@ -5,9 +5,9 @@ import it.unimi.dsi.fastutil.doubles.DoubleList;
 interface PairList {
 	DoubleList getPairs();
 
-	boolean forEachPair(PairList.Consumer consumer);
+	boolean forEachPair(PairList.Consumer predicate);
 
 	public interface Consumer {
-		boolean merge(int i, int j, int k);
+		boolean merge(int x, int y, int index);
 	}
 }

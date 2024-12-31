@@ -1,6 +1,5 @@
 package net.minecraft.resource;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -10,19 +9,21 @@ import javax.annotation.Nullable;
 import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.util.Identifier;
 
-public interface ResourcePack extends Closeable {
-	InputStream openRoot(String string) throws IOException;
+public interface ResourcePack extends AutoCloseable {
+	InputStream openRoot(String fileName) throws IOException;
 
-	InputStream open(ResourceType resourceType, Identifier identifier) throws IOException;
+	InputStream open(ResourceType type, Identifier id) throws IOException;
 
-	Collection<Identifier> findResources(ResourceType resourceType, String string, String string2, int i, Predicate<String> predicate);
+	Collection<Identifier> findResources(ResourceType type, String namespace, String prefix, int maxDepth, Predicate<String> pathFilter);
 
-	boolean contains(ResourceType resourceType, Identifier identifier);
+	boolean contains(ResourceType type, Identifier id);
 
-	Set<String> getNamespaces(ResourceType resourceType);
+	Set<String> getNamespaces(ResourceType type);
 
 	@Nullable
-	<T> T parseMetadata(ResourceMetadataReader<T> resourceMetadataReader) throws IOException;
+	<T> T parseMetadata(ResourceMetadataReader<T> metaReader) throws IOException;
 
 	String getName();
+
+	void close();
 }

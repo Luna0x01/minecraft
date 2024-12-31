@@ -9,19 +9,20 @@ import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
 import com.mojang.datafixers.util.Pair;
 import java.util.Objects;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public abstract class EntityRenameFix extends DataFix {
 	private final String name;
 
-	public EntityRenameFix(String string, Schema schema, boolean bl) {
-		super(schema, bl);
-		this.name = string;
+	public EntityRenameFix(String name, Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
+		this.name = name;
 	}
 
 	public TypeRewriteRule makeRule() {
 		TaggedChoiceType<String> taggedChoiceType = this.getInputSchema().findChoiceType(TypeReferences.ENTITY);
 		TaggedChoiceType<String> taggedChoiceType2 = this.getOutputSchema().findChoiceType(TypeReferences.ENTITY);
-		Type<Pair<String, String>> type = DSL.named(TypeReferences.ENTITY_NAME.typeName(), DSL.namespacedString());
+		Type<Pair<String, String>> type = DSL.named(TypeReferences.ENTITY_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType());
 		if (!Objects.equals(this.getOutputSchema().getType(TypeReferences.ENTITY_NAME), type)) {
 			throw new IllegalStateException("Entity name type is not what was expected.");
 		} else {
@@ -38,5 +39,5 @@ public abstract class EntityRenameFix extends DataFix {
 		}
 	}
 
-	protected abstract String rename(String string);
+	protected abstract String rename(String oldName);
 }

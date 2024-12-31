@@ -2,7 +2,7 @@ package net.minecraft.client.util;
 
 import com.google.common.base.Charsets;
 import java.nio.ByteBuffer;
-import net.minecraft.SharedConstants;
+import net.minecraft.client.font.TextVisitFactory;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -12,10 +12,10 @@ import org.lwjgl.system.MemoryUtil;
 public class Clipboard {
 	private final ByteBuffer clipboardBuffer = BufferUtils.createByteBuffer(8192);
 
-	public String getClipboard(long l, GLFWErrorCallbackI gLFWErrorCallbackI) {
+	public String getClipboard(long window, GLFWErrorCallbackI gLFWErrorCallbackI) {
 		GLFWErrorCallback gLFWErrorCallback = GLFW.glfwSetErrorCallback(gLFWErrorCallbackI);
-		String string = GLFW.glfwGetClipboardString(l);
-		string = string != null ? SharedConstants.stripSupplementaryChars(string) : "";
+		String string = GLFW.glfwGetClipboardString(window);
+		string = string != null ? TextVisitFactory.validateSurrogates(string) : "";
 		GLFWErrorCallback gLFWErrorCallback2 = GLFW.glfwSetErrorCallback(gLFWErrorCallback);
 		if (gLFWErrorCallback2 != null) {
 			gLFWErrorCallback2.free();
@@ -32,16 +32,16 @@ public class Clipboard {
 		GLFW.glfwSetClipboardString(l, byteBuffer);
 	}
 
-	public void setClipboard(long l, String string) {
+	public void setClipboard(long window, String string) {
 		byte[] bs = string.getBytes(Charsets.UTF_8);
 		int i = bs.length + 1;
 		if (i < this.clipboardBuffer.capacity()) {
-			setClipboard(l, this.clipboardBuffer, bs);
+			setClipboard(window, this.clipboardBuffer, bs);
 		} else {
 			ByteBuffer byteBuffer = MemoryUtil.memAlloc(i);
 
 			try {
-				setClipboard(l, byteBuffer, bs);
+				setClipboard(window, byteBuffer, bs);
 			} finally {
 				MemoryUtil.memFree(byteBuffer);
 			}

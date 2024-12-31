@@ -12,6 +12,7 @@ import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public class ItemIdFix extends DataFix {
 	private static final Int2ObjectMap<String> NUMERICAL_ID_TO_STRING_ID_MAP = (Int2ObjectMap<String>)DataFixUtils.make(
@@ -335,17 +336,19 @@ public class ItemIdFix extends DataFix {
 		}
 	);
 
-	public ItemIdFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ItemIdFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
-	public static String fromId(int i) {
-		return (String)NUMERICAL_ID_TO_STRING_ID_MAP.get(i);
+	public static String fromId(int id) {
+		return (String)NUMERICAL_ID_TO_STRING_ID_MAP.get(id);
 	}
 
 	public TypeRewriteRule makeRule() {
-		Type<Either<Integer, Pair<String, String>>> type = DSL.or(DSL.intType(), DSL.named(TypeReferences.ITEM_NAME.typeName(), DSL.namespacedString()));
-		Type<Pair<String, String>> type2 = DSL.named(TypeReferences.ITEM_NAME.typeName(), DSL.namespacedString());
+		Type<Either<Integer, Pair<String, String>>> type = DSL.or(
+			DSL.intType(), DSL.named(TypeReferences.ITEM_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType())
+		);
+		Type<Pair<String, String>> type2 = DSL.named(TypeReferences.ITEM_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType());
 		OpticFinder<Either<Integer, Pair<String, String>>> opticFinder = DSL.fieldFinder("id", type);
 		return this.fixTypeEverywhereTyped(
 			"ItemIdFix",

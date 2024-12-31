@@ -17,157 +17,95 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map.Entry;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.LowercaseEnumTypeAdapterFactory;
 import net.minecraft.util.Util;
 
-public interface Text extends Message, Iterable<Text> {
-	Text setStyle(Style style);
-
+public interface Text extends Message, StringVisitable {
 	Style getStyle();
-
-	default Text append(String string) {
-		return this.append(new LiteralText(string));
-	}
-
-	Text append(Text text);
 
 	String asString();
 
+	@Override
 	default String getString() {
-		StringBuilder stringBuilder = new StringBuilder();
-		this.stream().forEach(text -> stringBuilder.append(text.asString()));
-		return stringBuilder.toString();
+		return StringVisitable.super.getString();
 	}
 
-	default String asTruncatedString(int i) {
+	default String asTruncatedString(int length) {
 		StringBuilder stringBuilder = new StringBuilder();
-		Iterator<Text> iterator = this.stream().iterator();
-
-		while (iterator.hasNext()) {
-			int j = i - stringBuilder.length();
+		this.visit(string -> {
+			int j = length - stringBuilder.length();
 			if (j <= 0) {
-				break;
+				return TERMINATE_VISIT;
+			} else {
+				stringBuilder.append(string.length() <= j ? string : string.substring(0, j));
+				return Optional.empty();
 			}
-
-			String string = ((Text)iterator.next()).asString();
-			stringBuilder.append(string.length() <= j ? string : string.substring(0, j));
-		}
-
-		return stringBuilder.toString();
-	}
-
-	default String asFormattedString() {
-		StringBuilder stringBuilder = new StringBuilder();
-		String string = "";
-		Iterator<Text> iterator = this.stream().iterator();
-
-		while (iterator.hasNext()) {
-			Text text = (Text)iterator.next();
-			String string2 = text.asString();
-			if (!string2.isEmpty()) {
-				String string3 = text.getStyle().asString();
-				if (!string3.equals(string)) {
-					if (!string.isEmpty()) {
-						stringBuilder.append(Formatting.field_1070);
-					}
-
-					stringBuilder.append(string3);
-					string = string3;
-				}
-
-				stringBuilder.append(string2);
-			}
-		}
-
-		if (!string.isEmpty()) {
-			stringBuilder.append(Formatting.field_1070);
-		}
-
+		});
 		return stringBuilder.toString();
 	}
 
 	List<Text> getSiblings();
 
-	Stream<Text> stream();
+	MutableText copy();
 
-	default Stream<Text> streamCopied() {
-		return this.stream().map(Text::copyWithoutChildren);
-	}
+	MutableText shallowCopy();
 
-	default Iterator<Text> iterator() {
-		return this.streamCopied().iterator();
-	}
+	OrderedText asOrderedText();
 
-	Text copy();
-
-	default Text deepCopy() {
-		Text text = this.copy();
-		text.setStyle(this.getStyle().deepCopy());
-
-		for (Text text2 : this.getSiblings()) {
-			text.append(text2.deepCopy());
-		}
-
-		return text;
-	}
-
-	default Text styled(Consumer<Style> consumer) {
-		consumer.accept(this.getStyle());
-		return this;
-	}
-
-	default Text formatted(Formatting... formattings) {
-		for (Formatting formatting : formattings) {
-			this.formatted(formatting);
-		}
-
-		return this;
-	}
-
-	default Text formatted(Formatting formatting) {
-		Style style = this.getStyle();
-		if (formatting.isColor()) {
-			style.setColor(formatting);
-		}
-
-		if (formatting.isModifier()) {
-			switch (formatting) {
-				case field_1051:
-					style.setObfuscated(true);
-					break;
-				case field_1067:
-					style.setBold(true);
-					break;
-				case field_1055:
-					style.setStrikethrough(true);
-					break;
-				case field_1073:
-					style.setUnderline(true);
-					break;
-				case field_1056:
-					style.setItalic(true);
+	@Override
+	default <T> Optional<T> visit(StringVisitable.StyledVisitor<T> styledVisitor, Style style) {
+		Style style2 = this.getStyle().withParent(style);
+		Optional<T> optional = this.visitSelf(styledVisitor, style2);
+		if (optional.isPresent()) {
+			return optional;
+		} else {
+			for (Text text : this.getSiblings()) {
+				Optional<T> optional2 = text.visit(styledVisitor, style2);
+				if (optional2.isPresent()) {
+					return optional2;
+				}
 			}
+
+			return Optional.empty();
 		}
-
-		return this;
 	}
 
-	static Text copyWithoutChildren(Text text) {
-		Text text2 = text.copy();
-		text2.setStyle(text.getStyle().copy());
-		return text2;
+	@Override
+	default <T> Optional<T> visit(StringVisitable.Visitor<T> visitor) {
+		Optional<T> optional = this.visitSelf(visitor);
+		if (optional.isPresent()) {
+			return optional;
+		} else {
+			for (Text text : this.getSiblings()) {
+				Optional<T> optional2 = text.visit(visitor);
+				if (optional2.isPresent()) {
+					return optional2;
+				}
+			}
+
+			return Optional.empty();
+		}
 	}
 
-	public static class Serializer implements JsonDeserializer<Text>, JsonSerializer<Text> {
+	default <T> Optional<T> visitSelf(StringVisitable.StyledVisitor<T> visitor, Style style) {
+		return visitor.accept(style, this.asString());
+	}
+
+	default <T> Optional<T> visitSelf(StringVisitable.Visitor<T> visitor) {
+		return visitor.accept(this.asString());
+	}
+
+	static Text of(@Nullable String string) {
+		return (Text)(string != null ? new LiteralText(string) : LiteralText.EMPTY);
+	}
+
+	public static class Serializer implements JsonDeserializer<MutableText>, JsonSerializer<Text> {
 		private static final Gson GSON = Util.make(() -> {
 			GsonBuilder gsonBuilder = new GsonBuilder();
 			gsonBuilder.disableHtmlEscaping();
@@ -197,32 +135,32 @@ public interface Text extends Message, Iterable<Text> {
 			}
 		});
 
-		public Text deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+		public MutableText deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonPrimitive()) {
 				return new LiteralText(jsonElement.getAsString());
 			} else if (!jsonElement.isJsonObject()) {
 				if (jsonElement.isJsonArray()) {
 					JsonArray jsonArray3 = jsonElement.getAsJsonArray();
-					Text text13 = null;
+					MutableText mutableText13 = null;
 
 					for (JsonElement jsonElement2 : jsonArray3) {
-						Text text14 = this.deserialize(jsonElement2, jsonElement2.getClass(), jsonDeserializationContext);
-						if (text13 == null) {
-							text13 = text14;
+						MutableText mutableText14 = this.deserialize(jsonElement2, jsonElement2.getClass(), jsonDeserializationContext);
+						if (mutableText13 == null) {
+							mutableText13 = mutableText14;
 						} else {
-							text13.append(text14);
+							mutableText13.append(mutableText14);
 						}
 					}
 
-					return text13;
+					return mutableText13;
 				} else {
 					throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 				}
 			} else {
 				JsonObject jsonObject = jsonElement.getAsJsonObject();
-				Text text;
+				MutableText mutableText;
 				if (jsonObject.has("text")) {
-					text = new LiteralText(JsonHelper.getString(jsonObject, "text"));
+					mutableText = new LiteralText(JsonHelper.getString(jsonObject, "text"));
 				} else if (jsonObject.has("translate")) {
 					String string = JsonHelper.getString(jsonObject, "translate");
 					if (jsonObject.has("with")) {
@@ -239,9 +177,9 @@ public interface Text extends Message, Iterable<Text> {
 							}
 						}
 
-						text = new TranslatableText(string, objects);
+						mutableText = new TranslatableText(string, objects);
 					} else {
-						text = new TranslatableText(string);
+						mutableText = new TranslatableText(string);
 					}
 				} else if (jsonObject.has("score")) {
 					JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "score");
@@ -249,14 +187,11 @@ public interface Text extends Message, Iterable<Text> {
 						throw new JsonParseException("A score component needs a least a name and an objective");
 					}
 
-					text = new ScoreText(JsonHelper.getString(jsonObject2, "name"), JsonHelper.getString(jsonObject2, "objective"));
-					if (jsonObject2.has("value")) {
-						((ScoreText)text).setScore(JsonHelper.getString(jsonObject2, "value"));
-					}
+					mutableText = new ScoreText(JsonHelper.getString(jsonObject2, "name"), JsonHelper.getString(jsonObject2, "objective"));
 				} else if (jsonObject.has("selector")) {
-					text = new SelectorText(JsonHelper.getString(jsonObject, "selector"));
+					mutableText = new SelectorText(JsonHelper.getString(jsonObject, "selector"));
 				} else if (jsonObject.has("keybind")) {
-					text = new KeybindText(JsonHelper.getString(jsonObject, "keybind"));
+					mutableText = new KeybindText(JsonHelper.getString(jsonObject, "keybind"));
 				} else {
 					if (!jsonObject.has("nbt")) {
 						throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
@@ -265,15 +200,15 @@ public interface Text extends Message, Iterable<Text> {
 					String string2 = JsonHelper.getString(jsonObject, "nbt");
 					boolean bl = JsonHelper.getBoolean(jsonObject, "interpret", false);
 					if (jsonObject.has("block")) {
-						text = new NbtText.BlockNbtText(string2, bl, JsonHelper.getString(jsonObject, "block"));
+						mutableText = new NbtText.BlockNbtText(string2, bl, JsonHelper.getString(jsonObject, "block"));
 					} else if (jsonObject.has("entity")) {
-						text = new NbtText.EntityNbtText(string2, bl, JsonHelper.getString(jsonObject, "entity"));
+						mutableText = new NbtText.EntityNbtText(string2, bl, JsonHelper.getString(jsonObject, "entity"));
 					} else {
 						if (!jsonObject.has("storage")) {
 							throw new JsonParseException("Don't know how to turn " + jsonElement + " into a Component");
 						}
 
-						text = new NbtText.StorageNbtText(string2, bl, new Identifier(JsonHelper.getString(jsonObject, "storage")));
+						mutableText = new NbtText.StorageNbtText(string2, bl, new Identifier(JsonHelper.getString(jsonObject, "storage")));
 					}
 				}
 
@@ -284,22 +219,22 @@ public interface Text extends Message, Iterable<Text> {
 					}
 
 					for (int j = 0; j < jsonArray2.size(); j++) {
-						text.append(this.deserialize(jsonArray2.get(j), type, jsonDeserializationContext));
+						mutableText.append(this.deserialize(jsonArray2.get(j), type, jsonDeserializationContext));
 					}
 				}
 
-				text.setStyle((Style)jsonDeserializationContext.deserialize(jsonElement, Style.class));
-				return text;
+				mutableText.setStyle((Style)jsonDeserializationContext.deserialize(jsonElement, Style.class));
+				return mutableText;
 			}
 		}
 
-		private void addStyle(Style style, JsonObject jsonObject, JsonSerializationContext jsonSerializationContext) {
-			JsonElement jsonElement = jsonSerializationContext.serialize(style);
+		private void addStyle(Style style, JsonObject json, JsonSerializationContext context) {
+			JsonElement jsonElement = context.serialize(style);
 			if (jsonElement.isJsonObject()) {
-				JsonObject jsonObject2 = (JsonObject)jsonElement;
+				JsonObject jsonObject = (JsonObject)jsonElement;
 
-				for (Entry<String, JsonElement> entry : jsonObject2.entrySet()) {
-					jsonObject.add((String)entry.getKey(), (JsonElement)entry.getValue());
+				for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+					json.add((String)entry.getKey(), (JsonElement)entry.getValue());
 				}
 			}
 		}
@@ -343,7 +278,6 @@ public interface Text extends Message, Iterable<Text> {
 				JsonObject jsonObject2 = new JsonObject();
 				jsonObject2.addProperty("name", scoreText.getName());
 				jsonObject2.addProperty("objective", scoreText.getObjective());
-				jsonObject2.addProperty("value", scoreText.asString());
 				jsonObject.add("score", jsonObject2);
 			} else if (text instanceof SelectorText) {
 				SelectorText selectorText = (SelectorText)text;
@@ -371,7 +305,7 @@ public interface Text extends Message, Iterable<Text> {
 					}
 
 					NbtText.StorageNbtText storageNbtText = (NbtText.StorageNbtText)text;
-					jsonObject.addProperty("storage", storageNbtText.method_23728().toString());
+					jsonObject.addProperty("storage", storageNbtText.getId().toString());
 				}
 			}
 
@@ -387,35 +321,35 @@ public interface Text extends Message, Iterable<Text> {
 		}
 
 		@Nullable
-		public static Text fromJson(String string) {
-			return JsonHelper.deserialize(GSON, string, Text.class, false);
+		public static MutableText fromJson(String json) {
+			return JsonHelper.deserialize(GSON, json, MutableText.class, false);
 		}
 
 		@Nullable
-		public static Text fromJson(JsonElement jsonElement) {
-			return (Text)GSON.fromJson(jsonElement, Text.class);
+		public static MutableText fromJson(JsonElement json) {
+			return (MutableText)GSON.fromJson(json, MutableText.class);
 		}
 
 		@Nullable
-		public static Text fromLenientJson(String string) {
-			return JsonHelper.deserialize(GSON, string, Text.class, true);
+		public static MutableText fromLenientJson(String json) {
+			return JsonHelper.deserialize(GSON, json, MutableText.class, true);
 		}
 
-		public static Text fromJson(com.mojang.brigadier.StringReader stringReader) {
+		public static MutableText fromJson(com.mojang.brigadier.StringReader reader) {
 			try {
-				JsonReader jsonReader = new JsonReader(new StringReader(stringReader.getRemaining()));
+				JsonReader jsonReader = new JsonReader(new StringReader(reader.getRemaining()));
 				jsonReader.setLenient(false);
-				Text text = (Text)GSON.getAdapter(Text.class).read(jsonReader);
-				stringReader.setCursor(stringReader.getCursor() + getPosition(jsonReader));
-				return text;
+				MutableText mutableText = (MutableText)GSON.getAdapter(MutableText.class).read(jsonReader);
+				reader.setCursor(reader.getCursor() + getPosition(jsonReader));
+				return mutableText;
 			} catch (StackOverflowError | IOException var3) {
 				throw new JsonParseException(var3);
 			}
 		}
 
-		private static int getPosition(JsonReader jsonReader) {
+		private static int getPosition(JsonReader reader) {
 			try {
-				return JSON_READER_POS.getInt(jsonReader) - JSON_READER_LINE_START.getInt(jsonReader) + 1;
+				return JSON_READER_POS.getInt(reader) - JSON_READER_LINE_START.getInt(reader) + 1;
 			} catch (IllegalAccessException var2) {
 				throw new IllegalStateException("Couldn't read position of JsonReader", var2);
 			}

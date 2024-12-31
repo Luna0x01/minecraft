@@ -1,61 +1,37 @@
 package net.minecraft.world.gen.feature;
 
-import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.util.math.BlockPos;
 
 public class EndSpikeFeatureConfig implements FeatureConfig {
+	public static final Codec<EndSpikeFeatureConfig> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(
+					Codec.BOOL.fieldOf("crystal_invulnerable").orElse(false).forGetter(endSpikeFeatureConfig -> endSpikeFeatureConfig.crystalInvulnerable),
+					EndSpikeFeature.Spike.CODEC.listOf().fieldOf("spikes").forGetter(endSpikeFeatureConfig -> endSpikeFeatureConfig.spikes),
+					BlockPos.CODEC.optionalFieldOf("crystal_beam_target").forGetter(endSpikeFeatureConfig -> Optional.ofNullable(endSpikeFeatureConfig.crystalBeamTarget))
+				)
+				.apply(instance, EndSpikeFeatureConfig::new)
+	);
 	private final boolean crystalInvulnerable;
 	private final List<EndSpikeFeature.Spike> spikes;
 	@Nullable
 	private final BlockPos crystalBeamTarget;
 
-	public EndSpikeFeatureConfig(boolean bl, List<EndSpikeFeature.Spike> list, @Nullable BlockPos blockPos) {
-		this.crystalInvulnerable = bl;
-		this.spikes = list;
-		this.crystalBeamTarget = blockPos;
+	public EndSpikeFeatureConfig(boolean crystalInvulnerable, List<EndSpikeFeature.Spike> spikes, @Nullable BlockPos crystalBeamTarget) {
+		this(crystalInvulnerable, spikes, Optional.ofNullable(crystalBeamTarget));
 	}
 
-	@Override
-	public <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps) {
-		return new Dynamic(
-			dynamicOps,
-			dynamicOps.createMap(
-				ImmutableMap.of(
-					dynamicOps.createString("crystalInvulnerable"),
-					dynamicOps.createBoolean(this.crystalInvulnerable),
-					dynamicOps.createString("spikes"),
-					dynamicOps.createList(this.spikes.stream().map(spike -> spike.serialize(dynamicOps).getValue())),
-					dynamicOps.createString("crystalBeamTarget"),
-					this.crystalBeamTarget == null
-						? dynamicOps.createList(Stream.empty())
-						: dynamicOps.createList(
-							IntStream.of(new int[]{this.crystalBeamTarget.getX(), this.crystalBeamTarget.getY(), this.crystalBeamTarget.getZ()}).mapToObj(dynamicOps::createInt)
-						)
-				)
-			)
-		);
+	private EndSpikeFeatureConfig(boolean crystalInvulnerable, List<EndSpikeFeature.Spike> spikes, Optional<BlockPos> crystalBeamTarget) {
+		this.crystalInvulnerable = crystalInvulnerable;
+		this.spikes = spikes;
+		this.crystalBeamTarget = (BlockPos)crystalBeamTarget.orElse(null);
 	}
 
-	public static <T> EndSpikeFeatureConfig deserialize(Dynamic<T> dynamic) {
-		List<EndSpikeFeature.Spike> list = dynamic.get("spikes").asList(EndSpikeFeature.Spike::deserialize);
-		List<Integer> list2 = dynamic.get("crystalBeamTarget").asList(dynamicx -> dynamicx.asInt(0));
-		BlockPos blockPos;
-		if (list2.size() == 3) {
-			blockPos = new BlockPos((Integer)list2.get(0), (Integer)list2.get(1), (Integer)list2.get(2));
-		} else {
-			blockPos = null;
-		}
-
-		return new EndSpikeFeatureConfig(dynamic.get("crystalInvulnerable").asBoolean(false), list, blockPos);
-	}
-
-	public boolean isCrystalInvulerable() {
+	public boolean isCrystalInvulnerable() {
 		return this.crystalInvulnerable;
 	}
 

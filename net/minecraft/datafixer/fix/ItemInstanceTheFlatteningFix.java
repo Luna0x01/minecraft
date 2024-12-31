@@ -5,19 +5,20 @@ import com.google.common.collect.Sets;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
 import com.mojang.datafixers.DataFixUtils;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.Typed;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.Dynamic;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public class ItemInstanceTheFlatteningFix extends DataFix {
 	private static final Map<String, String> FLATTENING_MAP = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
@@ -346,7 +347,7 @@ public class ItemInstanceTheFlatteningFix extends DataFix {
 		.stream()
 		.map(string -> string.substring(0, string.indexOf(46)))
 		.collect(Collectors.toSet());
-	private static final Set<String> DAMAGABLE_ITEMS = Sets.newHashSet(
+	private static final Set<String> DAMAGEABLE_ITEMS = Sets.newHashSet(
 		new String[]{
 			"minecraft:bow",
 			"minecraft:carrot_on_a_stick",
@@ -403,13 +404,15 @@ public class ItemInstanceTheFlatteningFix extends DataFix {
 		}
 	);
 
-	public ItemInstanceTheFlatteningFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ItemInstanceTheFlatteningFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public TypeRewriteRule makeRule() {
 		Type<?> type = this.getInputSchema().getType(TypeReferences.ITEM_STACK);
-		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder("id", DSL.named(TypeReferences.ITEM_NAME.typeName(), DSL.namespacedString()));
+		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder(
+			"id", DSL.named(TypeReferences.ITEM_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType())
+		);
 		OpticFinder<?> opticFinder2 = type.findField("tag");
 		return this.fixTypeEverywhereTyped("ItemInstanceTheFlatteningFix", type, typed -> {
 			Optional<Pair<String, String>> optional = typed.getOptional(opticFinder);
@@ -424,7 +427,7 @@ public class ItemInstanceTheFlatteningFix extends DataFix {
 					typed2 = typed.set(opticFinder, Pair.of(TypeReferences.ITEM_NAME.typeName(), string));
 				}
 
-				if (DAMAGABLE_ITEMS.contains(((Pair)optional.get()).getSecond())) {
+				if (DAMAGEABLE_ITEMS.contains(((Pair)optional.get()).getSecond())) {
 					Typed<?> typed3 = typed.getOrCreateTyped(opticFinder2);
 					Dynamic<?> dynamic2 = (Dynamic<?>)typed3.get(DSL.remainderFinder());
 					dynamic2 = dynamic2.set("Damage", dynamic2.createInt(i));
@@ -437,10 +440,10 @@ public class ItemInstanceTheFlatteningFix extends DataFix {
 	}
 
 	@Nullable
-	public static String getItem(@Nullable String string, int i) {
-		if (ORIGINAL_ITEM_NAMES.contains(string)) {
-			String string2 = (String)FLATTENING_MAP.get(string + '.' + i);
-			return string2 == null ? (String)FLATTENING_MAP.get(string + ".0") : string2;
+	public static String getItem(@Nullable String originalName, int damage) {
+		if (ORIGINAL_ITEM_NAMES.contains(originalName)) {
+			String string = (String)FLATTENING_MAP.get(originalName + '.' + damage);
+			return string == null ? (String)FLATTENING_MAP.get(originalName + ".0") : string;
 		} else {
 			return null;
 		}

@@ -2,7 +2,7 @@ package net.minecraft.entity.ai.brain.task;
 
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.entity.ai.brain.Brain;
-import net.minecraft.entity.ai.brain.EntityPosWrapper;
+import net.minecraft.entity.ai.brain.EntityLookTarget;
 import net.minecraft.entity.ai.brain.MemoryModuleState;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.WalkTarget;
@@ -13,11 +13,11 @@ import net.minecraft.server.world.ServerWorld;
 public class FollowCustomerTask extends Task<VillagerEntity> {
 	private final float speed;
 
-	public FollowCustomerTask(float f) {
+	public FollowCustomerTask(float speed) {
 		super(
-			ImmutableMap.of(MemoryModuleType.field_18445, MemoryModuleState.field_18458, MemoryModuleType.field_18446, MemoryModuleState.field_18458), Integer.MAX_VALUE
+			ImmutableMap.of(MemoryModuleType.WALK_TARGET, MemoryModuleState.REGISTERED, MemoryModuleType.LOOK_TARGET, MemoryModuleState.REGISTERED), Integer.MAX_VALUE
 		);
-		this.speed = f;
+		this.speed = speed;
 	}
 
 	protected boolean shouldRun(ServerWorld serverWorld, VillagerEntity villagerEntity) {
@@ -27,7 +27,7 @@ public class FollowCustomerTask extends Task<VillagerEntity> {
 			&& !villagerEntity.isTouchingWater()
 			&& !villagerEntity.velocityModified
 			&& villagerEntity.squaredDistanceTo(playerEntity) <= 16.0
-			&& playerEntity.container != null;
+			&& playerEntity.currentScreenHandler != null;
 	}
 
 	protected boolean shouldKeepRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
@@ -40,8 +40,8 @@ public class FollowCustomerTask extends Task<VillagerEntity> {
 
 	protected void finishRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		Brain<?> brain = villagerEntity.getBrain();
-		brain.forget(MemoryModuleType.field_18445);
-		brain.forget(MemoryModuleType.field_18446);
+		brain.forget(MemoryModuleType.WALK_TARGET);
+		brain.forget(MemoryModuleType.LOOK_TARGET);
 	}
 
 	protected void keepRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
@@ -49,14 +49,13 @@ public class FollowCustomerTask extends Task<VillagerEntity> {
 	}
 
 	@Override
-	protected boolean isTimeLimitExceeded(long l) {
+	protected boolean isTimeLimitExceeded(long time) {
 		return false;
 	}
 
-	private void update(VillagerEntity villagerEntity) {
-		EntityPosWrapper entityPosWrapper = new EntityPosWrapper(villagerEntity.getCurrentCustomer());
-		Brain<?> brain = villagerEntity.getBrain();
-		brain.putMemory(MemoryModuleType.field_18445, new WalkTarget(entityPosWrapper, this.speed, 2));
-		brain.putMemory(MemoryModuleType.field_18446, entityPosWrapper);
+	private void update(VillagerEntity villager) {
+		Brain<?> brain = villager.getBrain();
+		brain.remember(MemoryModuleType.WALK_TARGET, new WalkTarget(new EntityLookTarget(villager.getCurrentCustomer(), false), this.speed, 2));
+		brain.remember(MemoryModuleType.LOOK_TARGET, new EntityLookTarget(villager.getCurrentCustomer(), true));
 	}
 }

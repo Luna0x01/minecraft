@@ -3,27 +3,27 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class LoyaltyEnchantment extends Enchantment {
-	public LoyaltyEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
-		super(weight, EnchantmentTarget.field_9073, equipmentSlots);
+	public LoyaltyEnchantment(Enchantment.Rarity weight, EquipmentSlot... slotTypes) {
+		super(weight, EnchantmentTarget.TRIDENT, slotTypes);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
-		return 5 + i * 7;
+	public int getMinPower(int level) {
+		return 5 + level * 7;
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
+	public int getMaxPower(int level) {
 		return 50;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 3;
 	}
 
 	@Override
-	public boolean differs(Enchantment enchantment) {
-		return super.differs(enchantment);
+	public boolean canAccept(Enchantment other) {
+		return super.canAccept(other);
 	}
 }

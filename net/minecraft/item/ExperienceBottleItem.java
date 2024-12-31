@@ -1,7 +1,7 @@
 package net.minecraft.item;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.thrown.ThrownExperienceBottleEntity;
+import net.minecraft.entity.projectile.thrown.ExperienceBottleEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
@@ -15,35 +15,35 @@ public class ExperienceBottleItem extends Item {
 	}
 
 	@Override
-	public boolean hasEnchantmentGlint(ItemStack itemStack) {
+	public boolean hasGlint(ItemStack stack) {
 		return true;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+		ItemStack itemStack = user.getStackInHand(hand);
 		world.playSound(
 			null,
-			playerEntity.getX(),
-			playerEntity.getY(),
-			playerEntity.getZ(),
-			SoundEvents.field_14637,
-			SoundCategory.field_15254,
+			user.getX(),
+			user.getY(),
+			user.getZ(),
+			SoundEvents.ENTITY_EXPERIENCE_BOTTLE_THROW,
+			SoundCategory.NEUTRAL,
 			0.5F,
 			0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
 		);
 		if (!world.isClient) {
-			ThrownExperienceBottleEntity thrownExperienceBottleEntity = new ThrownExperienceBottleEntity(world, playerEntity);
-			thrownExperienceBottleEntity.setItem(itemStack);
-			thrownExperienceBottleEntity.setProperties(playerEntity, playerEntity.pitch, playerEntity.yaw, -20.0F, 0.7F, 1.0F);
-			world.spawnEntity(thrownExperienceBottleEntity);
+			ExperienceBottleEntity experienceBottleEntity = new ExperienceBottleEntity(world, user);
+			experienceBottleEntity.setItem(itemStack);
+			experienceBottleEntity.setProperties(user, user.pitch, user.yaw, -20.0F, 0.7F, 1.0F);
+			world.spawnEntity(experienceBottleEntity);
 		}
 
-		playerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
-		if (!playerEntity.abilities.creativeMode) {
+		user.incrementStat(Stats.USED.getOrCreateStat(this));
+		if (!user.abilities.creativeMode) {
 			itemStack.decrement(1);
 		}
 
-		return TypedActionResult.success(itemStack);
+		return TypedActionResult.success(itemStack, world.isClient());
 	}
 }

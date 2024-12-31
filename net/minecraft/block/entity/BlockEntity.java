@@ -2,8 +2,8 @@ package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
@@ -27,8 +27,8 @@ public abstract class BlockEntity {
 	private BlockState cachedState;
 	private boolean invalid;
 
-	public BlockEntity(BlockEntityType<?> blockEntityType) {
-		this.type = blockEntityType;
+	public BlockEntity(BlockEntityType<?> type) {
+		this.type = type;
 	}
 
 	@Nullable
@@ -36,40 +36,40 @@ public abstract class BlockEntity {
 		return this.world;
 	}
 
-	public void setLocation(World world, BlockPos blockPos) {
+	public void setLocation(World world, BlockPos pos) {
 		this.world = world;
-		this.pos = blockPos.toImmutable();
+		this.pos = pos.toImmutable();
 	}
 
 	public boolean hasWorld() {
 		return this.world != null;
 	}
 
-	public void fromTag(CompoundTag compoundTag) {
-		this.pos = new BlockPos(compoundTag.getInt("x"), compoundTag.getInt("y"), compoundTag.getInt("z"));
+	public void fromTag(BlockState state, CompoundTag tag) {
+		this.pos = new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z"));
 	}
 
-	public CompoundTag toTag(CompoundTag compoundTag) {
-		return this.writeIdentifyingData(compoundTag);
+	public CompoundTag toTag(CompoundTag tag) {
+		return this.writeIdentifyingData(tag);
 	}
 
-	private CompoundTag writeIdentifyingData(CompoundTag compoundTag) {
+	private CompoundTag writeIdentifyingData(CompoundTag tag) {
 		Identifier identifier = BlockEntityType.getId(this.getType());
 		if (identifier == null) {
 			throw new RuntimeException(this.getClass() + " is missing a mapping! This is a bug!");
 		} else {
-			compoundTag.putString("id", identifier.toString());
-			compoundTag.putInt("x", this.pos.getX());
-			compoundTag.putInt("y", this.pos.getY());
-			compoundTag.putInt("z", this.pos.getZ());
-			return compoundTag;
+			tag.putString("id", identifier.toString());
+			tag.putInt("x", this.pos.getX());
+			tag.putInt("y", this.pos.getY());
+			tag.putInt("z", this.pos.getZ());
+			return tag;
 		}
 	}
 
 	@Nullable
-	public static BlockEntity createFromTag(CompoundTag compoundTag) {
-		String string = compoundTag.getString("id");
-		return (BlockEntity)Registry.field_11137.getOrEmpty(new Identifier(string)).map(blockEntityType -> {
+	public static BlockEntity createFromTag(BlockState state, CompoundTag tag) {
+		String string = tag.getString("id");
+		return (BlockEntity)Registry.BLOCK_ENTITY_TYPE.getOrEmpty(new Identifier(string)).map(blockEntityType -> {
 			try {
 				return blockEntityType.instantiate();
 			} catch (Throwable var3) {
@@ -78,10 +78,10 @@ public abstract class BlockEntity {
 			}
 		}).map(blockEntity -> {
 			try {
-				blockEntity.fromTag(compoundTag);
+				blockEntity.fromTag(state, tag);
 				return blockEntity;
-			} catch (Throwable var4) {
-				LOGGER.error("Failed to load data for block entity {}", string, var4);
+			} catch (Throwable var5) {
+				LOGGER.error("Failed to load data for block entity {}", string, var5);
 				return null;
 			}
 		}).orElseGet(() -> {
@@ -95,20 +95,13 @@ public abstract class BlockEntity {
 			this.cachedState = this.world.getBlockState(this.pos);
 			this.world.markDirty(this.pos, this);
 			if (!this.cachedState.isAir()) {
-				this.world.updateHorizontalAdjacent(this.pos, this.cachedState.getBlock());
+				this.world.updateComparators(this.pos, this.cachedState.getBlock());
 			}
 		}
 	}
 
-	public double getSquaredDistance(double d, double e, double f) {
-		double g = (double)this.pos.getX() + 0.5 - d;
-		double h = (double)this.pos.getY() + 0.5 - e;
-		double i = (double)this.pos.getZ() + 0.5 - f;
-		return g * g + h * h + i * i;
-	}
-
-	public double getSquaredRenderDistance() {
-		return 4096.0;
+	public double getRenderDistance() {
+		return 64.0;
 	}
 
 	public BlockPos getPos() {
@@ -144,7 +137,7 @@ public abstract class BlockEntity {
 		this.removed = false;
 	}
 
-	public boolean onBlockAction(int i, int j) {
+	public boolean onSyncedBlockEvent(int type, int data) {
 		return false;
 	}
 
@@ -153,25 +146,25 @@ public abstract class BlockEntity {
 	}
 
 	public void populateCrashReport(CrashReportSection crashReportSection) {
-		crashReportSection.add("Name", (CrashCallable<String>)(() -> Registry.field_11137.getId(this.getType()) + " // " + this.getClass().getCanonicalName()));
+		crashReportSection.add("Name", (CrashCallable<String>)(() -> Registry.BLOCK_ENTITY_TYPE.getId(this.getType()) + " // " + this.getClass().getCanonicalName()));
 		if (this.world != null) {
 			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.getCachedState());
 			CrashReportSection.addBlockInfo(crashReportSection, this.pos, this.world.getBlockState(this.pos));
 		}
 	}
 
-	public void setPos(BlockPos blockPos) {
-		this.pos = blockPos.toImmutable();
+	public void setPos(BlockPos pos) {
+		this.pos = pos.toImmutable();
 	}
 
-	public boolean shouldNotCopyTagFromItem() {
+	public boolean copyItemDataRequiresOperator() {
 		return false;
 	}
 
-	public void applyRotation(BlockRotation blockRotation) {
+	public void applyRotation(BlockRotation rotation) {
 	}
 
-	public void applyMirror(BlockMirror blockMirror) {
+	public void applyMirror(BlockMirror mirror) {
 	}
 
 	public BlockEntityType<?> getType() {
@@ -181,7 +174,7 @@ public abstract class BlockEntity {
 	public void markInvalid() {
 		if (!this.invalid) {
 			this.invalid = true;
-			LOGGER.warn("Block entity invalid: {} @ {}", new Supplier[]{() -> Registry.field_11137.getId(this.getType()), this::getPos});
+			LOGGER.warn("Block entity invalid: {} @ {}", new Supplier[]{() -> Registry.BLOCK_ENTITY_TYPE.getId(this.getType()), this::getPos});
 		}
 	}
 }

@@ -8,7 +8,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.json.JsonUnbakedModel;
-import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
+import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
@@ -21,31 +21,31 @@ public class BasicBakedModel implements BakedModel {
 	protected final boolean isSideLit;
 	protected final Sprite sprite;
 	protected final ModelTransformation transformation;
-	protected final ModelItemPropertyOverrideList itemPropertyOverrides;
+	protected final ModelOverrideList itemPropertyOverrides;
 
 	public BasicBakedModel(
-		List<BakedQuad> list,
-		Map<Direction, List<BakedQuad>> map,
-		boolean bl,
-		boolean bl2,
-		boolean bl3,
+		List<BakedQuad> quads,
+		Map<Direction, List<BakedQuad>> faceQuads,
+		boolean usesAo,
+		boolean isSideLit,
+		boolean hasDepth,
 		Sprite sprite,
 		ModelTransformation modelTransformation,
-		ModelItemPropertyOverrideList modelItemPropertyOverrideList
+		ModelOverrideList modelOverrideList
 	) {
-		this.quads = list;
-		this.faceQuads = map;
-		this.usesAo = bl;
-		this.hasDepth = bl3;
-		this.isSideLit = bl2;
+		this.quads = quads;
+		this.faceQuads = faceQuads;
+		this.usesAo = usesAo;
+		this.hasDepth = hasDepth;
+		this.isSideLit = isSideLit;
 		this.sprite = sprite;
 		this.transformation = modelTransformation;
-		this.itemPropertyOverrides = modelItemPropertyOverrideList;
+		this.itemPropertyOverrides = modelOverrideList;
 	}
 
 	@Override
-	public List<BakedQuad> getQuads(@Nullable BlockState blockState, @Nullable Direction direction, Random random) {
-		return direction == null ? this.quads : (List)this.faceQuads.get(direction);
+	public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction face, Random random) {
+		return face == null ? this.quads : (List)this.faceQuads.get(face);
 	}
 
 	@Override
@@ -79,45 +79,43 @@ public class BasicBakedModel implements BakedModel {
 	}
 
 	@Override
-	public ModelItemPropertyOverrideList getItemPropertyOverrides() {
+	public ModelOverrideList getOverrides() {
 		return this.itemPropertyOverrides;
 	}
 
 	public static class Builder {
 		private final List<BakedQuad> quads = Lists.newArrayList();
 		private final Map<Direction, List<BakedQuad>> faceQuads = Maps.newEnumMap(Direction.class);
-		private final ModelItemPropertyOverrideList itemPropertyOverrides;
+		private final ModelOverrideList itemPropertyOverrides;
 		private final boolean usesAo;
 		private Sprite particleTexture;
 		private final boolean isSideLit;
 		private final boolean hasDepth;
 		private final ModelTransformation transformation;
 
-		public Builder(JsonUnbakedModel jsonUnbakedModel, ModelItemPropertyOverrideList modelItemPropertyOverrideList, boolean bl) {
-			this(
-				jsonUnbakedModel.useAmbientOcclusion(), jsonUnbakedModel.getGuiLight().isSide(), bl, jsonUnbakedModel.getTransformations(), modelItemPropertyOverrideList
-			);
+		public Builder(JsonUnbakedModel unbakedModel, ModelOverrideList itemPropertyOverrides, boolean hasDepth) {
+			this(unbakedModel.useAmbientOcclusion(), unbakedModel.getGuiLight().isSide(), hasDepth, unbakedModel.getTransformations(), itemPropertyOverrides);
 		}
 
-		private Builder(boolean bl, boolean bl2, boolean bl3, ModelTransformation modelTransformation, ModelItemPropertyOverrideList modelItemPropertyOverrideList) {
+		private Builder(boolean usesAo, boolean isSideLit, boolean hasDepth, ModelTransformation modelTransformation, ModelOverrideList modelOverrideList) {
 			for (Direction direction : Direction.values()) {
 				this.faceQuads.put(direction, Lists.newArrayList());
 			}
 
-			this.itemPropertyOverrides = modelItemPropertyOverrideList;
-			this.usesAo = bl;
-			this.isSideLit = bl2;
-			this.hasDepth = bl3;
+			this.itemPropertyOverrides = modelOverrideList;
+			this.usesAo = usesAo;
+			this.isSideLit = isSideLit;
+			this.hasDepth = hasDepth;
 			this.transformation = modelTransformation;
 		}
 
-		public BasicBakedModel.Builder addQuad(Direction direction, BakedQuad bakedQuad) {
-			((List)this.faceQuads.get(direction)).add(bakedQuad);
+		public BasicBakedModel.Builder addQuad(Direction side, BakedQuad quad) {
+			((List)this.faceQuads.get(side)).add(quad);
 			return this;
 		}
 
-		public BasicBakedModel.Builder addQuad(BakedQuad bakedQuad) {
-			this.quads.add(bakedQuad);
+		public BasicBakedModel.Builder addQuad(BakedQuad quad) {
+			this.quads.add(quad);
 			return this;
 		}
 

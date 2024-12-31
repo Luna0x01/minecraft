@@ -18,33 +18,33 @@ public class CraftPlanksTutorialStepHandler implements TutorialStepHandler {
 	private TutorialToast toast;
 	private int ticks;
 
-	public CraftPlanksTutorialStepHandler(TutorialManager tutorialManager) {
-		this.manager = tutorialManager;
+	public CraftPlanksTutorialStepHandler(TutorialManager manager) {
+		this.manager = manager;
 	}
 
 	@Override
 	public void tick() {
 		this.ticks++;
-		if (this.manager.getGameMode() != GameMode.field_9215) {
-			this.manager.setStep(TutorialStep.field_5653);
+		if (this.manager.getGameMode() != GameMode.SURVIVAL) {
+			this.manager.setStep(TutorialStep.NONE);
 		} else {
 			if (this.ticks == 1) {
 				ClientPlayerEntity clientPlayerEntity = this.manager.getClient().player;
 				if (clientPlayerEntity != null) {
-					if (clientPlayerEntity.inventory.contains(ItemTags.field_15537)) {
-						this.manager.setStep(TutorialStep.field_5653);
+					if (clientPlayerEntity.inventory.contains(ItemTags.PLANKS)) {
+						this.manager.setStep(TutorialStep.NONE);
 						return;
 					}
 
-					if (hasCrafted(clientPlayerEntity, ItemTags.field_15537)) {
-						this.manager.setStep(TutorialStep.field_5653);
+					if (hasCrafted(clientPlayerEntity, ItemTags.PLANKS)) {
+						this.manager.setStep(TutorialStep.NONE);
 						return;
 					}
 				}
 			}
 
 			if (this.ticks >= 1200 && this.toast == null) {
-				this.toast = new TutorialToast(TutorialToast.Type.field_2236, TITLE, DESCRIPTION, false);
+				this.toast = new TutorialToast(TutorialToast.Type.WOODEN_PLANKS, TITLE, DESCRIPTION, false);
 				this.manager.getClient().getToastManager().add(this.toast);
 			}
 		}
@@ -59,16 +59,16 @@ public class CraftPlanksTutorialStepHandler implements TutorialStepHandler {
 	}
 
 	@Override
-	public void onSlotUpdate(ItemStack itemStack) {
-		Item item = itemStack.getItem();
-		if (ItemTags.field_15537.contains(item)) {
-			this.manager.setStep(TutorialStep.field_5653);
+	public void onSlotUpdate(ItemStack stack) {
+		Item item = stack.getItem();
+		if (ItemTags.PLANKS.contains(item)) {
+			this.manager.setStep(TutorialStep.NONE);
 		}
 	}
 
-	public static boolean hasCrafted(ClientPlayerEntity clientPlayerEntity, Tag<Item> tag) {
+	public static boolean hasCrafted(ClientPlayerEntity player, Tag<Item> tag) {
 		for (Item item : tag.values()) {
-			if (clientPlayerEntity.getStatHandler().getStat(Stats.field_15370.getOrCreateStat(item)) > 0) {
+			if (player.getStatHandler().getStat(Stats.CRAFTED.getOrCreateStat(item)) > 0) {
 				return true;
 			}
 		}

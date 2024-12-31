@@ -1,5 +1,6 @@
 package net.minecraft.client.gui.screen.recipebook;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.List;
@@ -10,11 +11,34 @@ import net.minecraft.recipe.RecipeFinder;
 import net.minecraft.recipe.book.RecipeBook;
 
 public class RecipeResultCollection {
-	private final List<Recipe<?>> recipes = Lists.newArrayList();
+	private final List<Recipe<?>> recipes;
+	private final boolean singleOutput;
 	private final Set<Recipe<?>> craftableRecipes = Sets.newHashSet();
 	private final Set<Recipe<?>> fittingRecipes = Sets.newHashSet();
 	private final Set<Recipe<?>> unlockedRecipes = Sets.newHashSet();
-	private boolean singleOutput = true;
+
+	public RecipeResultCollection(List<Recipe<?>> list) {
+		this.recipes = ImmutableList.copyOf(list);
+		if (list.size() <= 1) {
+			this.singleOutput = true;
+		} else {
+			this.singleOutput = shouldHaveSingleOutput(list);
+		}
+	}
+
+	private static boolean shouldHaveSingleOutput(List<Recipe<?>> list) {
+		int i = list.size();
+		ItemStack itemStack = ((Recipe)list.get(0)).getOutput();
+
+		for (int j = 1; j < i; j++) {
+			ItemStack itemStack2 = ((Recipe)list.get(j)).getOutput();
+			if (!ItemStack.areItemsEqualIgnoreDamage(itemStack, itemStack2) || !ItemStack.areTagsEqual(itemStack, itemStack2)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 
 	public boolean isInitialized() {
 		return !this.unlockedRecipes.isEmpty();
@@ -28,10 +52,9 @@ public class RecipeResultCollection {
 		}
 	}
 
-	public void computeCraftables(RecipeFinder recipeFinder, int i, int j, RecipeBook recipeBook) {
-		for (int k = 0; k < this.recipes.size(); k++) {
-			Recipe<?> recipe = (Recipe<?>)this.recipes.get(k);
-			boolean bl = recipe.fits(i, j) && recipeBook.contains(recipe);
+	public void computeCraftables(RecipeFinder recipeFinder, int gridWidth, int gridHeight, RecipeBook recipeBook) {
+		for (Recipe<?> recipe : this.recipes) {
+			boolean bl = recipe.fits(gridWidth, gridHeight) && recipeBook.contains(recipe);
 			if (bl) {
 				this.fittingRecipes.add(recipe);
 			} else {
@@ -62,9 +85,9 @@ public class RecipeResultCollection {
 		return this.recipes;
 	}
 
-	public List<Recipe<?>> getResults(boolean bl) {
+	public List<Recipe<?>> getResults(boolean craftableOnly) {
 		List<Recipe<?>> list = Lists.newArrayList();
-		Set<Recipe<?>> set = bl ? this.craftableRecipes : this.fittingRecipes;
+		Set<Recipe<?>> set = craftableOnly ? this.craftableRecipes : this.fittingRecipes;
 
 		for (Recipe<?> recipe : this.recipes) {
 			if (set.contains(recipe)) {
@@ -75,25 +98,16 @@ public class RecipeResultCollection {
 		return list;
 	}
 
-	public List<Recipe<?>> getRecipes(boolean bl) {
+	public List<Recipe<?>> getRecipes(boolean craftable) {
 		List<Recipe<?>> list = Lists.newArrayList();
 
 		for (Recipe<?> recipe : this.recipes) {
-			if (this.fittingRecipes.contains(recipe) && this.craftableRecipes.contains(recipe) == bl) {
+			if (this.fittingRecipes.contains(recipe) && this.craftableRecipes.contains(recipe) == craftable) {
 				list.add(recipe);
 			}
 		}
 
 		return list;
-	}
-
-	public void addRecipe(Recipe<?> recipe) {
-		this.recipes.add(recipe);
-		if (this.singleOutput) {
-			ItemStack itemStack = ((Recipe)this.recipes.get(0)).getOutput();
-			ItemStack itemStack2 = recipe.getOutput();
-			this.singleOutput = ItemStack.areItemsEqualIgnoreDamage(itemStack, itemStack2) && ItemStack.areTagsEqual(itemStack, itemStack2);
-		}
 	}
 
 	public boolean hasSingleOutput() {

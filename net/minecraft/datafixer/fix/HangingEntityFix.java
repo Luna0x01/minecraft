@@ -2,31 +2,31 @@ package net.minecraft.datafixer.fix;
 
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
+import com.mojang.serialization.Dynamic;
 import net.minecraft.datafixer.TypeReferences;
 
 public class HangingEntityFix extends DataFix {
 	private static final int[][] OFFSETS = new int[][]{{0, 0, 1}, {-1, 0, 0}, {0, 0, -1}, {1, 0, 0}};
 
-	public HangingEntityFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public HangingEntityFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
-	private Dynamic<?> fixDecorationPosition(Dynamic<?> dynamic, boolean bl, boolean bl2) {
-		if ((bl || bl2) && !dynamic.get("Facing").asNumber().isPresent()) {
+	private Dynamic<?> fixDecorationPosition(Dynamic<?> dynamic, boolean isPainting, boolean isItemFrame) {
+		if ((isPainting || isItemFrame) && !dynamic.get("Facing").asNumber().result().isPresent()) {
 			int i;
-			if (dynamic.get("Direction").asNumber().isPresent()) {
+			if (dynamic.get("Direction").asNumber().result().isPresent()) {
 				i = dynamic.get("Direction").asByte((byte)0) % OFFSETS.length;
 				int[] is = OFFSETS[i];
 				dynamic = dynamic.set("TileX", dynamic.createInt(dynamic.get("TileX").asInt(0) + is[0]));
 				dynamic = dynamic.set("TileY", dynamic.createInt(dynamic.get("TileY").asInt(0) + is[1]));
 				dynamic = dynamic.set("TileZ", dynamic.createInt(dynamic.get("TileZ").asInt(0) + is[2]));
 				dynamic = dynamic.remove("Direction");
-				if (bl2 && dynamic.get("ItemRotation").asNumber().isPresent()) {
+				if (isItemFrame && dynamic.get("ItemRotation").asNumber().result().isPresent()) {
 					dynamic = dynamic.set("ItemRotation", dynamic.createByte((byte)(dynamic.get("ItemRotation").asByte((byte)0) * 2)));
 				}
 			} else {

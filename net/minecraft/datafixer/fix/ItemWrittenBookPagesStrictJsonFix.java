@@ -4,11 +4,11 @@ import com.google.gson.JsonParseException;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
 import com.mojang.datafixers.DataFixUtils;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.OpticFinder;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
 import com.mojang.datafixers.types.Type;
+import com.mojang.serialization.Dynamic;
 import net.minecraft.datafixer.TypeReferences;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -16,13 +16,13 @@ import net.minecraft.util.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
 
 public class ItemWrittenBookPagesStrictJsonFix extends DataFix {
-	public ItemWrittenBookPagesStrictJsonFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ItemWrittenBookPagesStrictJsonFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public Dynamic<?> fixBookPages(Dynamic<?> dynamic) {
 		return dynamic.update("pages", dynamic2 -> (Dynamic)DataFixUtils.orElse(dynamic2.asStreamOpt().map(stream -> stream.map(dynamicxx -> {
-					if (!dynamicxx.asString().isPresent()) {
+					if (!dynamicxx.asString().result().isPresent()) {
 						return dynamicxx;
 					} else {
 						String string = dynamicxx.asString("");
@@ -32,7 +32,7 @@ public class ItemWrittenBookPagesStrictJsonFix extends DataFix {
 								try {
 									text = JsonHelper.deserialize(BlockEntitySignTextStrictJsonFix.GSON, string, Text.class, true);
 									if (text == null) {
-										text = new LiteralText("");
+										text = LiteralText.EMPTY;
 									}
 								} catch (JsonParseException var6) {
 								}
@@ -58,12 +58,12 @@ public class ItemWrittenBookPagesStrictJsonFix extends DataFix {
 								text = new LiteralText(string);
 							}
 						} else {
-							text = new LiteralText("");
+							text = LiteralText.EMPTY;
 						}
 
 						return dynamicxx.createString(Text.Serializer.toJson(text));
 					}
-				})).map(dynamic::createList), dynamic.emptyList()));
+				})).map(dynamic::createList).result(), dynamic.emptyList()));
 	}
 
 	public TypeRewriteRule makeRule() {

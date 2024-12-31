@@ -1,6 +1,7 @@
 package net.minecraft.client.network;
 
 import com.mojang.authlib.GameProfile;
+import java.util.UUID;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.damage.DamageSource;
@@ -15,34 +16,25 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public boolean shouldRender(double d) {
-		double e = this.getBoundingBox().getAverageSideLength() * 10.0;
-		if (Double.isNaN(e)) {
-			e = 1.0;
+	public boolean shouldRender(double distance) {
+		double d = this.getBoundingBox().getAverageSideLength() * 10.0;
+		if (Double.isNaN(d)) {
+			d = 1.0;
 		}
 
-		e *= 64.0 * getRenderDistanceMultiplier();
-		return d < e * e;
+		d *= 64.0 * getRenderDistanceMultiplier();
+		return distance < d * d;
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
+	public boolean damage(DamageSource source, float amount) {
 		return true;
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		this.lastLimbDistance = this.limbDistance;
-		double d = this.getX() - this.prevX;
-		double e = this.getZ() - this.prevZ;
-		float f = MathHelper.sqrt(d * d + e * e) * 4.0F;
-		if (f > 1.0F) {
-			f = 1.0F;
-		}
-
-		this.limbDistance = this.limbDistance + (f - this.limbDistance) * 0.4F;
-		this.limbAngle = this.limbAngle + this.limbDistance;
+		this.method_29242(this, false);
 	}
 
 	@Override
@@ -63,22 +55,22 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 			this.headTrackingIncrements--;
 		}
 
-		this.field_7505 = this.field_7483;
+		this.prevStrideDistance = this.strideDistance;
 		this.tickHandSwing();
 		float h;
-		if (this.onGround && !(this.getHealth() <= 0.0F)) {
+		if (this.onGround && !this.isDead()) {
 			h = Math.min(0.1F, MathHelper.sqrt(squaredHorizontalLength(this.getVelocity())));
 		} else {
 			h = 0.0F;
 		}
 
-		if (!this.onGround && !(this.getHealth() <= 0.0F)) {
+		if (!this.onGround && !this.isDead()) {
 			float j = (float)Math.atan(-this.getVelocity().y * 0.2F) * 15.0F;
 		} else {
 			float i = 0.0F;
 		}
 
-		this.field_7483 = this.field_7483 + (h - this.field_7483) * 0.4F;
+		this.strideDistance = this.strideDistance + (h - this.strideDistance) * 0.4F;
 		this.world.getProfiler().push("push");
 		this.tickCramming();
 		this.world.getProfiler().pop();
@@ -89,7 +81,10 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 	}
 
 	@Override
-	public void sendMessage(Text text) {
-		MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(text);
+	public void sendSystemMessage(Text message, UUID senderUuid) {
+		MinecraftClient minecraftClient = MinecraftClient.getInstance();
+		if (!minecraftClient.shouldBlockMessages(senderUuid)) {
+			minecraftClient.inGameHud.getChatHud().addMessage(message);
+		}
 	}
 }

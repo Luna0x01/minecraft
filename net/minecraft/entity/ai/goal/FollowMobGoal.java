@@ -21,22 +21,22 @@ public class FollowMobGoal extends Goal {
 	private float oldWaterPathFindingPenalty;
 	private final float maxDistance;
 
-	public FollowMobGoal(MobEntity mobEntity, double d, float f, float g) {
-		this.mob = mobEntity;
-		this.targetPredicate = mobEntity2 -> mobEntity2 != null && mobEntity.getClass() != mobEntity2.getClass();
-		this.speed = d;
-		this.navigation = mobEntity.getNavigation();
-		this.minDistance = f;
-		this.maxDistance = g;
-		this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
-		if (!(mobEntity.getNavigation() instanceof MobNavigation) && !(mobEntity.getNavigation() instanceof BirdNavigation)) {
+	public FollowMobGoal(MobEntity mob, double speed, float minDistance, float maxDistance) {
+		this.mob = mob;
+		this.targetPredicate = mobEntity2 -> mobEntity2 != null && mob.getClass() != mobEntity2.getClass();
+		this.speed = speed;
+		this.navigation = mob.getNavigation();
+		this.minDistance = minDistance;
+		this.maxDistance = maxDistance;
+		this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
+		if (!(mob.getNavigation() instanceof MobNavigation) && !(mob.getNavigation() instanceof BirdNavigation)) {
 			throw new IllegalArgumentException("Unsupported mob type for FollowMobGoal");
 		}
 	}
 
 	@Override
 	public boolean canStart() {
-		List<MobEntity> list = this.mob.world.getEntities(MobEntity.class, this.mob.getBoundingBox().expand((double)this.maxDistance), this.targetPredicate);
+		List<MobEntity> list = this.mob.world.getEntitiesByClass(MobEntity.class, this.mob.getBoundingBox().expand((double)this.maxDistance), this.targetPredicate);
 		if (!list.isEmpty()) {
 			for (MobEntity mobEntity : list) {
 				if (!mobEntity.isInvisible()) {
@@ -57,15 +57,15 @@ public class FollowMobGoal extends Goal {
 	@Override
 	public void start() {
 		this.updateCountdownTicks = 0;
-		this.oldWaterPathFindingPenalty = this.mob.getPathfindingPenalty(PathNodeType.field_18);
-		this.mob.setPathfindingPenalty(PathNodeType.field_18, 0.0F);
+		this.oldWaterPathFindingPenalty = this.mob.getPathfindingPenalty(PathNodeType.WATER);
+		this.mob.setPathfindingPenalty(PathNodeType.WATER, 0.0F);
 	}
 
 	@Override
 	public void stop() {
 		this.target = null;
 		this.navigation.stop();
-		this.mob.setPathfindingPenalty(PathNodeType.field_18, this.oldWaterPathFindingPenalty);
+		this.mob.setPathfindingPenalty(PathNodeType.WATER, this.oldWaterPathFindingPenalty);
 	}
 
 	@Override

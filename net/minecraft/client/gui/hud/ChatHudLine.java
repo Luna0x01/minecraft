@@ -1,19 +1,17 @@
 package net.minecraft.client.gui.hud;
 
-import net.minecraft.text.Text;
-
-public class ChatHudLine {
+public class ChatHudLine<T> {
 	private final int creationTick;
-	private final Text text;
+	private final T text;
 	private final int id;
 
-	public ChatHudLine(int i, Text text, int j) {
+	public ChatHudLine(int creationTick, T text, int id) {
 		this.text = text;
-		this.creationTick = i;
-		this.id = j;
+		this.creationTick = creationTick;
+		this.id = id;
 	}
 
-	public Text getText() {
+	public T getText() {
 		return this.text;
 	}
 

@@ -15,33 +15,34 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.BuiltinBiomes;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.light.LightingProvider;
 
 public class EmptyChunk extends WorldChunk {
-	private static final Biome[] BIOMES = Util.make(new Biome[BiomeArray.DEFAULT_LENGTH], biomes -> Arrays.fill(biomes, Biomes.field_9451));
+	private static final Biome[] BIOMES = Util.make(new Biome[BiomeArray.DEFAULT_LENGTH], biomes -> Arrays.fill(biomes, BuiltinBiomes.PLAINS));
 
-	public EmptyChunk(World world, ChunkPos chunkPos) {
-		super(world, chunkPos, new BiomeArray(BIOMES));
+	public EmptyChunk(World world, ChunkPos pos) {
+		super(world, pos, new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), BIOMES));
 	}
 
 	@Override
-	public BlockState getBlockState(BlockPos blockPos) {
-		return Blocks.field_10243.getDefaultState();
+	public BlockState getBlockState(BlockPos pos) {
+		return Blocks.VOID_AIR.getDefaultState();
 	}
 
 	@Nullable
 	@Override
-	public BlockState setBlockState(BlockPos blockPos, BlockState blockState, boolean bl) {
+	public BlockState setBlockState(BlockPos pos, BlockState state, boolean moved) {
 		return null;
 	}
 
 	@Override
-	public FluidState getFluidState(BlockPos blockPos) {
-		return Fluids.field_15906.getDefaultState();
+	public FluidState getFluidState(BlockPos pos) {
+		return Fluids.EMPTY.getDefaultState();
 	}
 
 	@Nullable
@@ -51,7 +52,7 @@ public class EmptyChunk extends WorldChunk {
 	}
 
 	@Override
-	public int getLuminance(BlockPos blockPos) {
+	public int getLuminance(BlockPos pos) {
 		return 0;
 	}
 
@@ -64,12 +65,12 @@ public class EmptyChunk extends WorldChunk {
 	}
 
 	@Override
-	public void remove(Entity entity, int i) {
+	public void remove(Entity entity, int section) {
 	}
 
 	@Nullable
 	@Override
-	public BlockEntity getBlockEntity(BlockPos blockPos, WorldChunk.CreationType creationType) {
+	public BlockEntity getBlockEntity(BlockPos pos, WorldChunk.CreationType creationType) {
 		return null;
 	}
 
@@ -78,11 +79,11 @@ public class EmptyChunk extends WorldChunk {
 	}
 
 	@Override
-	public void setBlockEntity(BlockPos blockPos, BlockEntity blockEntity) {
+	public void setBlockEntity(BlockPos pos, BlockEntity blockEntity) {
 	}
 
 	@Override
-	public void removeBlockEntity(BlockPos blockPos) {
+	public void removeBlockEntity(BlockPos pos) {
 	}
 
 	@Override
@@ -90,11 +91,11 @@ public class EmptyChunk extends WorldChunk {
 	}
 
 	@Override
-	public void getEntities(@Nullable Entity entity, Box box, List<Entity> list, Predicate<? super Entity> predicate) {
+	public void collectOtherEntities(@Nullable Entity except, Box box, List<Entity> entityList, Predicate<? super Entity> predicate) {
 	}
 
 	@Override
-	public <T extends Entity> void getEntities(Class<? extends T> class_, Box box, List<T> list, Predicate<? super T> predicate) {
+	public <T extends Entity> void collectEntitiesByClass(Class<? extends T> entityClass, Box box, List<T> result, Predicate<? super T> predicate) {
 	}
 
 	@Override
@@ -103,12 +104,12 @@ public class EmptyChunk extends WorldChunk {
 	}
 
 	@Override
-	public boolean method_12228(int i, int j) {
+	public boolean areSectionsEmptyBetween(int lowerHeight, int upperHeight) {
 		return true;
 	}
 
 	@Override
 	public ChunkHolder.LevelType getLevelType() {
-		return ChunkHolder.LevelType.field_13876;
+		return ChunkHolder.LevelType.BORDER;
 	}
 }

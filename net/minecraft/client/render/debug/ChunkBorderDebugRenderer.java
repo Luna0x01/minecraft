@@ -12,12 +12,12 @@ import net.minecraft.entity.Entity;
 public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 	private final MinecraftClient client;
 
-	public ChunkBorderDebugRenderer(MinecraftClient minecraftClient) {
-		this.client = minecraftClient;
+	public ChunkBorderDebugRenderer(MinecraftClient client) {
+		this.client = client;
 	}
 
 	@Override
-	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
+	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
 		RenderSystem.enableDepthTest();
 		RenderSystem.shadeModel(7425);
 		RenderSystem.enableAlphaTest();
@@ -25,79 +25,79 @@ public class ChunkBorderDebugRenderer implements DebugRenderer.Renderer {
 		Entity entity = this.client.gameRenderer.getCamera().getFocusedEntity();
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
-		double g = 0.0 - e;
-		double h = 256.0 - e;
+		double d = 0.0 - cameraY;
+		double e = 256.0 - cameraY;
 		RenderSystem.disableTexture();
 		RenderSystem.disableBlend();
-		double i = (double)(entity.chunkX << 4) - d;
-		double j = (double)(entity.chunkZ << 4) - f;
+		double f = (double)(entity.chunkX << 4) - cameraX;
+		double g = (double)(entity.chunkZ << 4) - cameraZ;
 		RenderSystem.lineWidth(1.0F);
 		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
 
-		for (int k = -16; k <= 32; k += 16) {
-			for (int l = -16; l <= 32; l += 16) {
-				bufferBuilder.vertex(i + (double)k, g, j + (double)l).color(1.0F, 0.0F, 0.0F, 0.0F).next();
-				bufferBuilder.vertex(i + (double)k, g, j + (double)l).color(1.0F, 0.0F, 0.0F, 0.5F).next();
-				bufferBuilder.vertex(i + (double)k, h, j + (double)l).color(1.0F, 0.0F, 0.0F, 0.5F).next();
-				bufferBuilder.vertex(i + (double)k, h, j + (double)l).color(1.0F, 0.0F, 0.0F, 0.0F).next();
+		for (int i = -16; i <= 32; i += 16) {
+			for (int j = -16; j <= 32; j += 16) {
+				bufferBuilder.vertex(f + (double)i, d, g + (double)j).color(1.0F, 0.0F, 0.0F, 0.0F).next();
+				bufferBuilder.vertex(f + (double)i, d, g + (double)j).color(1.0F, 0.0F, 0.0F, 0.5F).next();
+				bufferBuilder.vertex(f + (double)i, e, g + (double)j).color(1.0F, 0.0F, 0.0F, 0.5F).next();
+				bufferBuilder.vertex(f + (double)i, e, g + (double)j).color(1.0F, 0.0F, 0.0F, 0.0F).next();
 			}
 		}
 
-		for (int m = 2; m < 16; m += 2) {
-			bufferBuilder.vertex(i + (double)m, g, j).color(1.0F, 1.0F, 0.0F, 0.0F).next();
-			bufferBuilder.vertex(i + (double)m, g, j).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + (double)m, h, j).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + (double)m, h, j).color(1.0F, 1.0F, 0.0F, 0.0F).next();
-			bufferBuilder.vertex(i + (double)m, g, j + 16.0).color(1.0F, 1.0F, 0.0F, 0.0F).next();
-			bufferBuilder.vertex(i + (double)m, g, j + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + (double)m, h, j + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + (double)m, h, j + 16.0).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+		for (int k = 2; k < 16; k += 2) {
+			bufferBuilder.vertex(f + (double)k, d, g).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+			bufferBuilder.vertex(f + (double)k, d, g).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + (double)k, e, g).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + (double)k, e, g).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+			bufferBuilder.vertex(f + (double)k, d, g + 16.0).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+			bufferBuilder.vertex(f + (double)k, d, g + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + (double)k, e, g + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + (double)k, e, g + 16.0).color(1.0F, 1.0F, 0.0F, 0.0F).next();
 		}
 
-		for (int n = 2; n < 16; n += 2) {
-			bufferBuilder.vertex(i, g, j + (double)n).color(1.0F, 1.0F, 0.0F, 0.0F).next();
-			bufferBuilder.vertex(i, g, j + (double)n).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i, h, j + (double)n).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i, h, j + (double)n).color(1.0F, 1.0F, 0.0F, 0.0F).next();
-			bufferBuilder.vertex(i + 16.0, g, j + (double)n).color(1.0F, 1.0F, 0.0F, 0.0F).next();
-			bufferBuilder.vertex(i + 16.0, g, j + (double)n).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + 16.0, h, j + (double)n).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + 16.0, h, j + (double)n).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+		for (int l = 2; l < 16; l += 2) {
+			bufferBuilder.vertex(f, d, g + (double)l).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+			bufferBuilder.vertex(f, d, g + (double)l).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f, e, g + (double)l).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f, e, g + (double)l).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+			bufferBuilder.vertex(f + 16.0, d, g + (double)l).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+			bufferBuilder.vertex(f + 16.0, d, g + (double)l).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + 16.0, e, g + (double)l).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + 16.0, e, g + (double)l).color(1.0F, 1.0F, 0.0F, 0.0F).next();
 		}
 
-		for (int o = 0; o <= 256; o += 2) {
-			double p = (double)o - e;
-			bufferBuilder.vertex(i, p, j).color(1.0F, 1.0F, 0.0F, 0.0F).next();
-			bufferBuilder.vertex(i, p, j).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i, p, j + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + 16.0, p, j + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i + 16.0, p, j).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i, p, j).color(1.0F, 1.0F, 0.0F, 1.0F).next();
-			bufferBuilder.vertex(i, p, j).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+		for (int m = 0; m <= 256; m += 2) {
+			double h = (double)m - cameraY;
+			bufferBuilder.vertex(f, h, g).color(1.0F, 1.0F, 0.0F, 0.0F).next();
+			bufferBuilder.vertex(f, h, g).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f, h, g + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + 16.0, h, g + 16.0).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f + 16.0, h, g).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f, h, g).color(1.0F, 1.0F, 0.0F, 1.0F).next();
+			bufferBuilder.vertex(f, h, g).color(1.0F, 1.0F, 0.0F, 0.0F).next();
 		}
 
 		tessellator.draw();
 		RenderSystem.lineWidth(2.0F);
 		bufferBuilder.begin(3, VertexFormats.POSITION_COLOR);
 
-		for (int q = 0; q <= 16; q += 16) {
-			for (int r = 0; r <= 16; r += 16) {
-				bufferBuilder.vertex(i + (double)q, g, j + (double)r).color(0.25F, 0.25F, 1.0F, 0.0F).next();
-				bufferBuilder.vertex(i + (double)q, g, j + (double)r).color(0.25F, 0.25F, 1.0F, 1.0F).next();
-				bufferBuilder.vertex(i + (double)q, h, j + (double)r).color(0.25F, 0.25F, 1.0F, 1.0F).next();
-				bufferBuilder.vertex(i + (double)q, h, j + (double)r).color(0.25F, 0.25F, 1.0F, 0.0F).next();
+		for (int n = 0; n <= 16; n += 16) {
+			for (int o = 0; o <= 16; o += 16) {
+				bufferBuilder.vertex(f + (double)n, d, g + (double)o).color(0.25F, 0.25F, 1.0F, 0.0F).next();
+				bufferBuilder.vertex(f + (double)n, d, g + (double)o).color(0.25F, 0.25F, 1.0F, 1.0F).next();
+				bufferBuilder.vertex(f + (double)n, e, g + (double)o).color(0.25F, 0.25F, 1.0F, 1.0F).next();
+				bufferBuilder.vertex(f + (double)n, e, g + (double)o).color(0.25F, 0.25F, 1.0F, 0.0F).next();
 			}
 		}
 
-		for (int s = 0; s <= 256; s += 16) {
-			double t = (double)s - e;
-			bufferBuilder.vertex(i, t, j).color(0.25F, 0.25F, 1.0F, 0.0F).next();
-			bufferBuilder.vertex(i, t, j).color(0.25F, 0.25F, 1.0F, 1.0F).next();
-			bufferBuilder.vertex(i, t, j + 16.0).color(0.25F, 0.25F, 1.0F, 1.0F).next();
-			bufferBuilder.vertex(i + 16.0, t, j + 16.0).color(0.25F, 0.25F, 1.0F, 1.0F).next();
-			bufferBuilder.vertex(i + 16.0, t, j).color(0.25F, 0.25F, 1.0F, 1.0F).next();
-			bufferBuilder.vertex(i, t, j).color(0.25F, 0.25F, 1.0F, 1.0F).next();
-			bufferBuilder.vertex(i, t, j).color(0.25F, 0.25F, 1.0F, 0.0F).next();
+		for (int p = 0; p <= 256; p += 16) {
+			double q = (double)p - cameraY;
+			bufferBuilder.vertex(f, q, g).color(0.25F, 0.25F, 1.0F, 0.0F).next();
+			bufferBuilder.vertex(f, q, g).color(0.25F, 0.25F, 1.0F, 1.0F).next();
+			bufferBuilder.vertex(f, q, g + 16.0).color(0.25F, 0.25F, 1.0F, 1.0F).next();
+			bufferBuilder.vertex(f + 16.0, q, g + 16.0).color(0.25F, 0.25F, 1.0F, 1.0F).next();
+			bufferBuilder.vertex(f + 16.0, q, g).color(0.25F, 0.25F, 1.0F, 1.0F).next();
+			bufferBuilder.vertex(f, q, g).color(0.25F, 0.25F, 1.0F, 1.0F).next();
+			bufferBuilder.vertex(f, q, g).color(0.25F, 0.25F, 1.0F, 0.0F).next();
 		}
 
 		tessellator.draw();

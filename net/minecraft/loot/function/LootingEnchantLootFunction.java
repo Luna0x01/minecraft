@@ -14,22 +14,26 @@ import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class LootingEnchantLootFunction extends ConditionalLootFunction {
 	private final UniformLootTableRange countRange;
 	private final int limit;
 
-	private LootingEnchantLootFunction(LootCondition[] lootConditions, UniformLootTableRange uniformLootTableRange, int i) {
-		super(lootConditions);
-		this.countRange = uniformLootTableRange;
-		this.limit = i;
+	private LootingEnchantLootFunction(LootCondition[] conditions, UniformLootTableRange countRange, int limit) {
+		super(conditions);
+		this.countRange = countRange;
+		this.limit = limit;
+	}
+
+	@Override
+	public LootFunctionType getType() {
+		return LootFunctionTypes.LOOTING_ENCHANT;
 	}
 
 	@Override
 	public Set<LootContextParameter<?>> getRequiredParameters() {
-		return ImmutableSet.of(LootContextParameters.field_1230);
+		return ImmutableSet.of(LootContextParameters.KILLER_ENTITY);
 	}
 
 	private boolean hasLimit() {
@@ -37,42 +41,42 @@ public class LootingEnchantLootFunction extends ConditionalLootFunction {
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		Entity entity = lootContext.get(LootContextParameters.field_1230);
+	public ItemStack process(ItemStack stack, LootContext context) {
+		Entity entity = context.get(LootContextParameters.KILLER_ENTITY);
 		if (entity instanceof LivingEntity) {
 			int i = EnchantmentHelper.getLooting((LivingEntity)entity);
 			if (i == 0) {
-				return itemStack;
+				return stack;
 			}
 
-			float f = (float)i * this.countRange.nextFloat(lootContext.getRandom());
-			itemStack.increment(Math.round(f));
-			if (this.hasLimit() && itemStack.getCount() > this.limit) {
-				itemStack.setCount(this.limit);
+			float f = (float)i * this.countRange.nextFloat(context.getRandom());
+			stack.increment(Math.round(f));
+			if (this.hasLimit() && stack.getCount() > this.limit) {
+				stack.setCount(this.limit);
 			}
 		}
 
-		return itemStack;
+		return stack;
 	}
 
-	public static LootingEnchantLootFunction.Builder builder(UniformLootTableRange uniformLootTableRange) {
-		return new LootingEnchantLootFunction.Builder(uniformLootTableRange);
+	public static LootingEnchantLootFunction.Builder builder(UniformLootTableRange countRange) {
+		return new LootingEnchantLootFunction.Builder(countRange);
 	}
 
 	public static class Builder extends ConditionalLootFunction.Builder<LootingEnchantLootFunction.Builder> {
 		private final UniformLootTableRange countRange;
 		private int limit = 0;
 
-		public Builder(UniformLootTableRange uniformLootTableRange) {
-			this.countRange = uniformLootTableRange;
+		public Builder(UniformLootTableRange countRange) {
+			this.countRange = countRange;
 		}
 
 		protected LootingEnchantLootFunction.Builder getThisBuilder() {
 			return this;
 		}
 
-		public LootingEnchantLootFunction.Builder withLimit(int i) {
-			this.limit = i;
+		public LootingEnchantLootFunction.Builder withLimit(int limit) {
+			this.limit = limit;
 			return this;
 		}
 
@@ -82,11 +86,7 @@ public class LootingEnchantLootFunction extends ConditionalLootFunction {
 		}
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<LootingEnchantLootFunction> {
-		protected Factory() {
-			super(new Identifier("looting_enchant"), LootingEnchantLootFunction.class);
-		}
-
+	public static class Serializer extends ConditionalLootFunction.Serializer<LootingEnchantLootFunction> {
 		public void toJson(JsonObject jsonObject, LootingEnchantLootFunction lootingEnchantLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, lootingEnchantLootFunction, jsonSerializationContext);
 			jsonObject.add("count", jsonSerializationContext.serialize(lootingEnchantLootFunction.countRange));

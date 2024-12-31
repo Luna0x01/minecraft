@@ -10,8 +10,8 @@ public class EntityHitResult extends HitResult {
 		this(entity, entity.getPos());
 	}
 
-	public EntityHitResult(Entity entity, Vec3d vec3d) {
-		super(vec3d);
+	public EntityHitResult(Entity entity, Vec3d pos) {
+		super(pos);
 		this.entity = entity;
 	}
 
@@ -21,6 +21,6 @@ public class EntityHitResult extends HitResult {
 
 	@Override
 	public HitResult.Type getType() {
-		return HitResult.Type.field_1331;
+		return HitResult.Type.ENTITY;
 	}
 }

@@ -9,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.hud.SpectatorHud;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.world.GameMode;
@@ -17,15 +18,17 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 	private static final Ordering<PlayerListEntry> ORDERING = Ordering.from(
 		(playerListEntry, playerListEntry2) -> ComparisonChain.start().compare(playerListEntry.getProfile().getId(), playerListEntry2.getProfile().getId()).result()
 	);
+	private static final Text TELEPORT_TEXT = new TranslatableText("spectatorMenu.teleport");
+	private static final Text PROMPT_TEXT = new TranslatableText("spectatorMenu.teleport.prompt");
 	private final List<SpectatorMenuCommand> elements = Lists.newArrayList();
 
 	public TeleportSpectatorMenu() {
 		this(ORDERING.sortedCopy(MinecraftClient.getInstance().getNetworkHandler().getPlayerList()));
 	}
 
-	public TeleportSpectatorMenu(Collection<PlayerListEntry> collection) {
-		for (PlayerListEntry playerListEntry : ORDERING.sortedCopy(collection)) {
-			if (playerListEntry.getGameMode() != GameMode.field_9219) {
+	public TeleportSpectatorMenu(Collection<PlayerListEntry> entries) {
+		for (PlayerListEntry playerListEntry : ORDERING.sortedCopy(entries)) {
+			if (playerListEntry.getGameMode() != GameMode.SPECTATOR) {
 				this.elements.add(new TeleportToSpecificPlayerSpectatorCommand(playerListEntry.getProfile()));
 			}
 		}
@@ -38,23 +41,23 @@ public class TeleportSpectatorMenu implements SpectatorMenuCommandGroup, Spectat
 
 	@Override
 	public Text getPrompt() {
-		return new TranslatableText("spectatorMenu.teleport.prompt");
+		return PROMPT_TEXT;
 	}
 
 	@Override
-	public void use(SpectatorMenu spectatorMenu) {
-		spectatorMenu.selectElement(this);
+	public void use(SpectatorMenu menu) {
+		menu.selectElement(this);
 	}
 
 	@Override
 	public Text getName() {
-		return new TranslatableText("spectatorMenu.teleport");
+		return TELEPORT_TEXT;
 	}
 
 	@Override
-	public void renderIcon(float f, int i) {
-		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEX);
-		DrawableHelper.blit(0, 0, 0.0F, 0.0F, 16, 16, 256, 256);
+	public void renderIcon(MatrixStack matrices, float f, int i) {
+		MinecraftClient.getInstance().getTextureManager().bindTexture(SpectatorHud.SPECTATOR_TEXTURE);
+		DrawableHelper.drawTexture(matrices, 0, 0, 0.0F, 0.0F, 16, 16, 256, 256);
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package net.minecraft.client.render.debug;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.Map.Entry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
@@ -8,64 +9,86 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.chunk.Chunk;
 
 public class HeightmapDebugRenderer implements DebugRenderer.Renderer {
 	private final MinecraftClient client;
 
-	public HeightmapDebugRenderer(MinecraftClient minecraftClient) {
-		this.client = minecraftClient;
+	public HeightmapDebugRenderer(MinecraftClient client) {
+		this.client = client;
 	}
 
 	@Override
-	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
-		IWorld iWorld = this.client.world;
+	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
+		WorldAccess worldAccess = this.client.world;
 		RenderSystem.pushMatrix();
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
+		RenderSystem.disableBlend();
 		RenderSystem.disableTexture();
-		BlockPos blockPos = new BlockPos(d, 0.0, f);
+		RenderSystem.enableDepthTest();
+		BlockPos blockPos = new BlockPos(cameraX, 0.0, cameraZ);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(5, VertexFormats.POSITION_COLOR);
 
-		for (BlockPos blockPos2 : BlockPos.iterate(blockPos.add(-40, 0, -40), blockPos.add(40, 0, 40))) {
-			int i = iWorld.getTopY(Heightmap.Type.field_13194, blockPos2.getX(), blockPos2.getZ());
-			if (iWorld.getBlockState(blockPos2.add(0, i, 0).down()).isAir()) {
-				WorldRenderer.drawBox(
-					bufferBuilder,
-					(double)((float)blockPos2.getX() + 0.25F) - d,
-					(double)i - e,
-					(double)((float)blockPos2.getZ() + 0.25F) - f,
-					(double)((float)blockPos2.getX() + 0.75F) - d,
-					(double)i + 0.09375 - e,
-					(double)((float)blockPos2.getZ() + 0.75F) - f,
-					0.0F,
-					0.0F,
-					1.0F,
-					0.5F
-				);
-			} else {
-				WorldRenderer.drawBox(
-					bufferBuilder,
-					(double)((float)blockPos2.getX() + 0.25F) - d,
-					(double)i - e,
-					(double)((float)blockPos2.getZ() + 0.25F) - f,
-					(double)((float)blockPos2.getX() + 0.75F) - d,
-					(double)i + 0.09375 - e,
-					(double)((float)blockPos2.getZ() + 0.75F) - f,
-					0.0F,
-					1.0F,
-					0.0F,
-					0.5F
-				);
+		for (int i = -32; i <= 32; i += 16) {
+			for (int j = -32; j <= 32; j += 16) {
+				Chunk chunk = worldAccess.getChunk(blockPos.add(i, 0, j));
+
+				for (Entry<Heightmap.Type, Heightmap> entry : chunk.getHeightmaps()) {
+					Heightmap.Type type = (Heightmap.Type)entry.getKey();
+					ChunkPos chunkPos = chunk.getPos();
+					Vector3f vector3f = this.method_27037(type);
+
+					for (int k = 0; k < 16; k++) {
+						for (int l = 0; l < 16; l++) {
+							int m = chunkPos.x * 16 + k;
+							int n = chunkPos.z * 16 + l;
+							float f = (float)((double)((float)worldAccess.getTopY(type, m, n) + (float)type.ordinal() * 0.09375F) - cameraY);
+							WorldRenderer.drawBox(
+								bufferBuilder,
+								(double)((float)m + 0.25F) - cameraX,
+								(double)f,
+								(double)((float)n + 0.25F) - cameraZ,
+								(double)((float)m + 0.75F) - cameraX,
+								(double)(f + 0.09375F),
+								(double)((float)n + 0.75F) - cameraZ,
+								vector3f.getX(),
+								vector3f.getY(),
+								vector3f.getZ(),
+								1.0F
+							);
+						}
+					}
+				}
 			}
 		}
 
 		tessellator.draw();
 		RenderSystem.enableTexture();
 		RenderSystem.popMatrix();
+	}
+
+	private Vector3f method_27037(Heightmap.Type type) {
+		switch (type) {
+			case WORLD_SURFACE_WG:
+				return new Vector3f(1.0F, 1.0F, 0.0F);
+			case OCEAN_FLOOR_WG:
+				return new Vector3f(1.0F, 0.0F, 1.0F);
+			case WORLD_SURFACE:
+				return new Vector3f(0.0F, 0.7F, 0.0F);
+			case OCEAN_FLOOR:
+				return new Vector3f(0.0F, 0.0F, 0.5F);
+			case MOTION_BLOCKING:
+				return new Vector3f(0.0F, 0.3F, 0.3F);
+			case MOTION_BLOCKING_NO_LEAVES:
+				return new Vector3f(0.0F, 0.5F, 0.5F);
+			default:
+				return new Vector3f(0.0F, 0.0F, 0.0F);
+		}
 	}
 }

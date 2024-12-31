@@ -1,78 +1,36 @@
 package net.minecraft.block;
 
-import java.util.Random;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.WorldView;
+import net.minecraft.world.WorldAccess;
 
-public class KelpPlantBlock extends Block implements FluidFillable {
-	private final KelpBlock kelpBlock;
-
-	protected KelpPlantBlock(KelpBlock kelpBlock, Block.Settings settings) {
-		super(settings);
-		this.kelpBlock = kelpBlock;
+public class KelpPlantBlock extends AbstractPlantBlock implements FluidFillable {
+	protected KelpPlantBlock(AbstractBlock.Settings settings) {
+		super(settings, Direction.UP, VoxelShapes.fullCube(), true);
 	}
 
 	@Override
-	public FluidState getFluidState(BlockState blockState) {
+	protected AbstractPlantStemBlock getStem() {
+		return (AbstractPlantStemBlock)Blocks.KELP;
+	}
+
+	@Override
+	public FluidState getFluidState(BlockState state) {
 		return Fluids.WATER.getStill(false);
 	}
 
 	@Override
-	public void scheduledTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
-		if (!blockState.canPlaceAt(serverWorld, blockPos)) {
-			serverWorld.breakBlock(blockPos, true);
-		}
-
-		super.scheduledTick(blockState, serverWorld, blockPos, random);
-	}
-
-	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if (direction == Direction.field_11033 && !blockState.canPlaceAt(iWorld, blockPos)) {
-			iWorld.getBlockTickScheduler().schedule(blockPos, this, 1);
-		}
-
-		if (direction == Direction.field_11036) {
-			Block block = blockState2.getBlock();
-			if (block != this && block != this.kelpBlock) {
-				return this.kelpBlock.getPlacementState(iWorld);
-			}
-		}
-
-		iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
-		return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
-	}
-
-	@Override
-	public boolean canPlaceAt(BlockState blockState, WorldView worldView, BlockPos blockPos) {
-		BlockPos blockPos2 = blockPos.down();
-		BlockState blockState2 = worldView.getBlockState(blockPos2);
-		Block block = blockState2.getBlock();
-		return block != Blocks.field_10092 && (block == this || blockState2.isSideSolidFullSquare(worldView, blockPos2, Direction.field_11036));
-	}
-
-	@Override
-	public ItemStack getPickStack(BlockView blockView, BlockPos blockPos, BlockState blockState) {
-		return new ItemStack(Blocks.field_9993);
-	}
-
-	@Override
-	public boolean canFillWithFluid(BlockView blockView, BlockPos blockPos, BlockState blockState, Fluid fluid) {
+	public boolean canFillWithFluid(BlockView world, BlockPos pos, BlockState state, Fluid fluid) {
 		return false;
 	}
 
 	@Override
-	public boolean tryFillWithFluid(IWorld iWorld, BlockPos blockPos, BlockState blockState, FluidState fluidState) {
+	public boolean tryFillWithFluid(WorldAccess world, BlockPos pos, BlockState state, FluidState fluidState) {
 		return false;
 	}
 }

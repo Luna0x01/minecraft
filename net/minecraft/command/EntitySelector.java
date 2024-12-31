@@ -9,14 +9,14 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.predicate.NumberRange;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Texts;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -41,33 +41,33 @@ public class EntitySelector {
 	private final boolean usesAt;
 
 	public EntitySelector(
-		int i,
-		boolean bl,
-		boolean bl2,
-		Predicate<Entity> predicate,
-		NumberRange.FloatRange floatRange,
-		Function<Vec3d, Vec3d> function,
+		int count,
+		boolean includesNonPlayers,
+		boolean localWorldOnly,
+		Predicate<Entity> basePredicate,
+		NumberRange.FloatRange distance,
+		Function<Vec3d, Vec3d> positionOffset,
 		@Nullable Box box,
-		BiConsumer<Vec3d, List<? extends Entity>> biConsumer,
-		boolean bl3,
-		@Nullable String string,
-		@Nullable UUID uUID,
-		@Nullable EntityType<?> entityType,
-		boolean bl4
+		BiConsumer<Vec3d, List<? extends Entity>> sorter,
+		boolean senderOnly,
+		@Nullable String playerName,
+		@Nullable UUID uuid,
+		@Nullable EntityType<?> type,
+		boolean usesAt
 	) {
-		this.limit = i;
-		this.includesNonPlayers = bl;
-		this.localWorldOnly = bl2;
-		this.basePredicate = predicate;
-		this.distance = floatRange;
-		this.positionOffset = function;
+		this.limit = count;
+		this.includesNonPlayers = includesNonPlayers;
+		this.localWorldOnly = localWorldOnly;
+		this.basePredicate = basePredicate;
+		this.distance = distance;
+		this.positionOffset = positionOffset;
 		this.box = box;
-		this.sorter = biConsumer;
-		this.senderOnly = bl3;
-		this.playerName = string;
-		this.uuid = uUID;
-		this.type = entityType;
-		this.usesAt = bl4;
+		this.sorter = sorter;
+		this.senderOnly = senderOnly;
+		this.playerName = playerName;
+		this.uuid = uuid;
+		this.type = type;
+		this.usesAt = usesAt;
 	}
 
 	public int getLimit() {
@@ -144,9 +144,9 @@ public class EntitySelector {
 
 	private void appendEntitiesFromWorld(List<Entity> list, ServerWorld serverWorld, Vec3d vec3d, Predicate<Entity> predicate) {
 		if (this.box != null) {
-			list.addAll(serverWorld.getEntities(this.type, this.box.offset(vec3d), predicate));
+			list.addAll(serverWorld.getEntitiesByType(this.type, this.box.offset(vec3d), predicate));
 		} else {
-			list.addAll(serverWorld.getEntities(this.type, predicate));
+			list.addAll(serverWorld.getEntitiesByType(this.type, predicate));
 		}
 	}
 
@@ -221,7 +221,7 @@ public class EntitySelector {
 		return list.subList(0, Math.min(this.limit, list.size()));
 	}
 
-	public static Text getNames(List<? extends Entity> list) {
+	public static MutableText getNames(List<? extends Entity> list) {
 		return Texts.join(list, Entity::getDisplayName);
 	}
 }

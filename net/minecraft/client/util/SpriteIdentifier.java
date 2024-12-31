@@ -7,6 +7,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.Identifier;
 
@@ -16,9 +17,9 @@ public class SpriteIdentifier {
 	@Nullable
 	private RenderLayer layer;
 
-	public SpriteIdentifier(Identifier identifier, Identifier identifier2) {
-		this.atlas = identifier;
-		this.texture = identifier2;
+	public SpriteIdentifier(Identifier atlas, Identifier texture) {
+		this.atlas = atlas;
+		this.texture = texture;
 	}
 
 	public Identifier getAtlasId() {
@@ -33,16 +34,21 @@ public class SpriteIdentifier {
 		return (Sprite)MinecraftClient.getInstance().getSpriteAtlas(this.getAtlasId()).apply(this.getTextureId());
 	}
 
-	public RenderLayer getRenderLayer(Function<Identifier, RenderLayer> function) {
+	public RenderLayer getRenderLayer(Function<Identifier, RenderLayer> layerFactory) {
 		if (this.layer == null) {
-			this.layer = (RenderLayer)function.apply(this.atlas);
+			this.layer = (RenderLayer)layerFactory.apply(this.atlas);
 		}
 
 		return this.layer;
 	}
 
-	public VertexConsumer getVertexConsumer(VertexConsumerProvider vertexConsumerProvider, Function<Identifier, RenderLayer> function) {
-		return this.getSprite().getTextureSpecificVertexConsumer(vertexConsumerProvider.getBuffer(this.getRenderLayer(function)));
+	public VertexConsumer getVertexConsumer(VertexConsumerProvider vertexConsumers, Function<Identifier, RenderLayer> layerFactory) {
+		return this.getSprite().getTextureSpecificVertexConsumer(vertexConsumers.getBuffer(this.getRenderLayer(layerFactory)));
+	}
+
+	public VertexConsumer method_30001(VertexConsumerProvider vertexConsumerProvider, Function<Identifier, RenderLayer> function, boolean bl) {
+		return this.getSprite()
+			.getTextureSpecificVertexConsumer(ItemRenderer.getDirectItemGlintConsumer(vertexConsumerProvider, this.getRenderLayer(function), true, bl));
 	}
 
 	public boolean equals(Object object) {

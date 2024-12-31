@@ -2,7 +2,6 @@ package net.minecraft.world.chunk;
 
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortList;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -16,7 +15,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.structure.StructureStart;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.BlockView;
@@ -24,14 +22,14 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureHolder;
 import net.minecraft.world.TickScheduler;
 import net.minecraft.world.biome.source.BiomeArray;
-import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.world.gen.feature.StructureFeature;
 import org.apache.logging.log4j.LogManager;
 
 public interface Chunk extends BlockView, StructureHolder {
 	@Nullable
-	BlockState setBlockState(BlockPos blockPos, BlockState blockState, boolean bl);
+	BlockState setBlockState(BlockPos pos, BlockState state, boolean moved);
 
-	void setBlockEntity(BlockPos blockPos, BlockEntity blockEntity);
+	void setBlockEntity(BlockPos pos, BlockEntity blockEntity);
 
 	void addEntity(Entity entity);
 
@@ -60,31 +58,31 @@ public interface Chunk extends BlockView, StructureHolder {
 
 	Collection<Entry<Heightmap.Type, Heightmap>> getHeightmaps();
 
-	void setHeightmap(Heightmap.Type type, long[] ls);
+	void setHeightmap(Heightmap.Type type, long[] heightmap);
 
 	Heightmap getHeightmap(Heightmap.Type type);
 
-	int sampleHeightmap(Heightmap.Type type, int i, int j);
+	int sampleHeightmap(Heightmap.Type type, int x, int z);
 
 	ChunkPos getPos();
 
-	void setLastSaveTime(long l);
+	void setLastSaveTime(long lastSaveTime);
 
-	Map<String, StructureStart> getStructureStarts();
+	Map<StructureFeature<?>, StructureStart<?>> getStructureStarts();
 
-	void setStructureStarts(Map<String, StructureStart> map);
+	void setStructureStarts(Map<StructureFeature<?>, StructureStart<?>> structureStarts);
 
-	default boolean method_12228(int i, int j) {
-		if (i < 0) {
-			i = 0;
+	default boolean areSectionsEmptyBetween(int lowerHeight, int upperHeight) {
+		if (lowerHeight < 0) {
+			lowerHeight = 0;
 		}
 
-		if (j >= 256) {
-			j = 255;
+		if (upperHeight >= 256) {
+			upperHeight = 255;
 		}
 
-		for (int k = i; k <= j; k += 16) {
-			if (!ChunkSection.isEmpty(this.getSectionArray()[k >> 4])) {
+		for (int i = lowerHeight; i <= upperHeight; i += 16) {
+			if (!ChunkSection.isEmpty(this.getSectionArray()[i >> 4])) {
 				return false;
 			}
 		}
@@ -95,16 +93,16 @@ public interface Chunk extends BlockView, StructureHolder {
 	@Nullable
 	BiomeArray getBiomeArray();
 
-	void setShouldSave(boolean bl);
+	void setShouldSave(boolean shouldSave);
 
 	boolean needsSaving();
 
 	ChunkStatus getStatus();
 
-	void removeBlockEntity(BlockPos blockPos);
+	void removeBlockEntity(BlockPos pos);
 
-	default void markBlockForPostProcessing(BlockPos blockPos) {
-		LogManager.getLogger().warn("Trying to mark a block for PostProcessing @ {}, but this operation is not supported.", blockPos);
+	default void markBlockForPostProcessing(BlockPos pos) {
+		LogManager.getLogger().warn("Trying to mark a block for PostProcessing @ {}, but this operation is not supported.", pos);
 	}
 
 	ShortList[] getPostProcessingLists();
@@ -113,15 +111,15 @@ public interface Chunk extends BlockView, StructureHolder {
 		getList(this.getPostProcessingLists(), i).add(s);
 	}
 
-	default void addPendingBlockEntityTag(CompoundTag compoundTag) {
+	default void addPendingBlockEntityTag(CompoundTag tag) {
 		LogManager.getLogger().warn("Trying to set a BlockEntity, but this operation is not supported.");
 	}
 
 	@Nullable
-	CompoundTag getBlockEntityTagAt(BlockPos blockPos);
+	CompoundTag getBlockEntityTag(BlockPos pos);
 
 	@Nullable
-	CompoundTag method_20598(BlockPos blockPos);
+	CompoundTag getPackedBlockEntityTag(BlockPos pos);
 
 	Stream<BlockPos> getLightSourcesStream();
 
@@ -129,25 +127,21 @@ public interface Chunk extends BlockView, StructureHolder {
 
 	TickScheduler<Fluid> getFluidTickScheduler();
 
-	default BitSet getCarvingMask(GenerationStep.Carver carver) {
-		throw (RuntimeException)Util.throwOrPause(new RuntimeException("Meaningless in this context"));
-	}
-
 	UpgradeData getUpgradeData();
 
-	void setInhabitedTime(long l);
+	void setInhabitedTime(long inhabitedTime);
 
 	long getInhabitedTime();
 
-	static ShortList getList(ShortList[] shortLists, int i) {
-		if (shortLists[i] == null) {
-			shortLists[i] = new ShortArrayList();
+	static ShortList getList(ShortList[] lists, int index) {
+		if (lists[index] == null) {
+			lists[index] = new ShortArrayList();
 		}
 
-		return shortLists[i];
+		return lists[index];
 	}
 
 	boolean isLightOn();
 
-	void setLightOn(boolean bl);
+	void setLightOn(boolean lightOn);
 }

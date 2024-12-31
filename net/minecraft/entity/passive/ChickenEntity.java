@@ -15,13 +15,16 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.ai.pathing.PathNodeType;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -30,18 +33,18 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class ChickenEntity extends AnimalEntity {
-	private static final Ingredient BREEDING_INGREDIENT = Ingredient.ofItems(Items.field_8317, Items.field_8188, Items.field_8706, Items.field_8309);
-	public float field_6741;
-	public float field_6743;
-	public float field_6738;
-	public float field_6736;
-	public float field_6737 = 1.0F;
+	private static final Ingredient BREEDING_INGREDIENT = Ingredient.ofItems(Items.WHEAT_SEEDS, Items.MELON_SEEDS, Items.PUMPKIN_SEEDS, Items.BEETROOT_SEEDS);
+	public float flapProgress;
+	public float maxWingDeviation;
+	public float prevMaxWingDeviation;
+	public float prevFlapProgress;
+	public float flapSpeed = 1.0F;
 	public int eggLayTime = this.random.nextInt(6000) + 6000;
 	public boolean jockey;
 
 	public ChickenEntity(EntityType<? extends ChickenEntity> entityType, World world) {
 		super(entityType, world);
-		this.setPathfindingPenalty(PathNodeType.field_18, 0.0F);
+		this.setPathfindingPenalty(PathNodeType.WATER, 0.0F);
 	}
 
 	@Override
@@ -57,112 +60,109 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		return this.isBaby() ? entityDimensions.height * 0.85F : entityDimensions.height * 0.92F;
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
+		return this.isBaby() ? dimensions.height * 0.85F : dimensions.height * 0.92F;
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue(4.0);
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue(0.25);
+	public static DefaultAttributeContainer.Builder createChickenAttributes() {
+		return MobEntity.createMobAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 4.0).add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25);
 	}
 
 	@Override
 	public void tickMovement() {
 		super.tickMovement();
-		this.field_6736 = this.field_6741;
-		this.field_6738 = this.field_6743;
-		this.field_6743 = (float)((double)this.field_6743 + (double)(this.onGround ? -1 : 4) * 0.3);
-		this.field_6743 = MathHelper.clamp(this.field_6743, 0.0F, 1.0F);
-		if (!this.onGround && this.field_6737 < 1.0F) {
-			this.field_6737 = 1.0F;
+		this.prevFlapProgress = this.flapProgress;
+		this.prevMaxWingDeviation = this.maxWingDeviation;
+		this.maxWingDeviation = (float)((double)this.maxWingDeviation + (double)(this.onGround ? -1 : 4) * 0.3);
+		this.maxWingDeviation = MathHelper.clamp(this.maxWingDeviation, 0.0F, 1.0F);
+		if (!this.onGround && this.flapSpeed < 1.0F) {
+			this.flapSpeed = 1.0F;
 		}
 
-		this.field_6737 = (float)((double)this.field_6737 * 0.9);
+		this.flapSpeed = (float)((double)this.flapSpeed * 0.9);
 		Vec3d vec3d = this.getVelocity();
 		if (!this.onGround && vec3d.y < 0.0) {
 			this.setVelocity(vec3d.multiply(1.0, 0.6, 1.0));
 		}
 
-		this.field_6741 = this.field_6741 + this.field_6737 * 2.0F;
+		this.flapProgress = this.flapProgress + this.flapSpeed * 2.0F;
 		if (!this.world.isClient && this.isAlive() && !this.isBaby() && !this.hasJockey() && --this.eggLayTime <= 0) {
-			this.playSound(SoundEvents.field_15219, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
-			this.dropItem(Items.field_8803);
+			this.playSound(SoundEvents.ENTITY_CHICKEN_EGG, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+			this.dropItem(Items.EGG);
 			this.eggLayTime = this.random.nextInt(6000) + 6000;
 		}
 	}
 
 	@Override
-	public boolean handleFallDamage(float f, float g) {
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
 		return false;
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.field_14871;
+		return SoundEvents.ENTITY_CHICKEN_AMBIENT;
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return SoundEvents.field_14601;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.ENTITY_CHICKEN_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.field_15140;
+		return SoundEvents.ENTITY_CHICKEN_DEATH;
 	}
 
 	@Override
-	protected void playStepSound(BlockPos blockPos, BlockState blockState) {
-		this.playSound(SoundEvents.field_14685, 0.15F, 1.0F);
+	protected void playStepSound(BlockPos pos, BlockState state) {
+		this.playSound(SoundEvents.ENTITY_CHICKEN_STEP, 0.15F, 1.0F);
 	}
 
-	public ChickenEntity createChild(PassiveEntity passiveEntity) {
-		return EntityType.field_6132.create(this.world);
-	}
-
-	@Override
-	public boolean isBreedingItem(ItemStack itemStack) {
-		return BREEDING_INGREDIENT.test(itemStack);
+	public ChickenEntity createChild(ServerWorld serverWorld, PassiveEntity passiveEntity) {
+		return EntityType.CHICKEN.create(serverWorld);
 	}
 
 	@Override
-	protected int getCurrentExperience(PlayerEntity playerEntity) {
-		return this.hasJockey() ? 10 : super.getCurrentExperience(playerEntity);
+	public boolean isBreedingItem(ItemStack stack) {
+		return BREEDING_INGREDIENT.test(stack);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.jockey = compoundTag.getBoolean("IsChickenJockey");
-		if (compoundTag.contains("EggLayTime")) {
-			this.eggLayTime = compoundTag.getInt("EggLayTime");
+	protected int getCurrentExperience(PlayerEntity player) {
+		return this.hasJockey() ? 10 : super.getCurrentExperience(player);
+	}
+
+	@Override
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.jockey = tag.getBoolean("IsChickenJockey");
+		if (tag.contains("EggLayTime")) {
+			this.eggLayTime = tag.getInt("EggLayTime");
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putBoolean("IsChickenJockey", this.jockey);
-		compoundTag.putInt("EggLayTime", this.eggLayTime);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putBoolean("IsChickenJockey", this.jockey);
+		tag.putInt("EggLayTime", this.eggLayTime);
 	}
 
 	@Override
-	public boolean canImmediatelyDespawn(double d) {
-		return this.hasJockey() && !this.hasPassengers();
+	public boolean canImmediatelyDespawn(double distanceSquared) {
+		return this.hasJockey();
 	}
 
 	@Override
-	public void updatePassengerPosition(Entity entity) {
-		super.updatePassengerPosition(entity);
+	public void updatePassengerPosition(Entity passenger) {
+		super.updatePassengerPosition(passenger);
 		float f = MathHelper.sin(this.bodyYaw * (float) (Math.PI / 180.0));
 		float g = MathHelper.cos(this.bodyYaw * (float) (Math.PI / 180.0));
 		float h = 0.1F;
 		float i = 0.0F;
-		entity.updatePosition(this.getX() + (double)(0.1F * f), this.getBodyY(0.5) + entity.getHeightOffset() + 0.0, this.getZ() - (double)(0.1F * g));
-		if (entity instanceof LivingEntity) {
-			((LivingEntity)entity).bodyYaw = this.bodyYaw;
+		passenger.updatePosition(this.getX() + (double)(0.1F * f), this.getBodyY(0.5) + passenger.getHeightOffset() + 0.0, this.getZ() - (double)(0.1F * g));
+		if (passenger instanceof LivingEntity) {
+			((LivingEntity)passenger).bodyYaw = this.bodyYaw;
 		}
 	}
 
@@ -170,7 +170,7 @@ public class ChickenEntity extends AnimalEntity {
 		return this.jockey;
 	}
 
-	public void setHasJockey(boolean bl) {
-		this.jockey = bl;
+	public void setHasJockey(boolean hasJockey) {
+		this.jockey = hasJockey;
 	}
 }

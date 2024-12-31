@@ -2,10 +2,11 @@ package net.minecraft.particle;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.arguments.ItemStackArgument;
-import net.minecraft.command.arguments.ItemStringReader;
+import com.mojang.serialization.Codec;
+import net.minecraft.command.argument.ItemStackArgument;
+import net.minecraft.command.argument.ItemStringReader;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.registry.Registry;
 
 public class ItemStackParticleEffect implements ParticleEffect {
@@ -24,19 +25,23 @@ public class ItemStackParticleEffect implements ParticleEffect {
 	private final ParticleType<ItemStackParticleEffect> type;
 	private final ItemStack stack;
 
-	public ItemStackParticleEffect(ParticleType<ItemStackParticleEffect> particleType, ItemStack itemStack) {
-		this.type = particleType;
-		this.stack = itemStack;
+	public static Codec<ItemStackParticleEffect> method_29136(ParticleType<ItemStackParticleEffect> particleType) {
+		return ItemStack.CODEC.xmap(itemStack -> new ItemStackParticleEffect(particleType, itemStack), itemStackParticleEffect -> itemStackParticleEffect.stack);
+	}
+
+	public ItemStackParticleEffect(ParticleType<ItemStackParticleEffect> type, ItemStack stack) {
+		this.type = type;
+		this.stack = stack;
 	}
 
 	@Override
-	public void write(PacketByteBuf packetByteBuf) {
-		packetByteBuf.writeItemStack(this.stack);
+	public void write(PacketByteBuf buf) {
+		buf.writeItemStack(this.stack);
 	}
 
 	@Override
 	public String asString() {
-		return Registry.field_11141.getId(this.getType()) + " " + new ItemStackArgument(this.stack.getItem(), this.stack.getTag()).asString();
+		return Registry.PARTICLE_TYPE.getId(this.getType()) + " " + new ItemStackArgument(this.stack.getItem(), this.stack.getTag()).asString();
 	}
 
 	@Override

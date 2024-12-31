@@ -4,9 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.Brain;
-import net.minecraft.entity.raid.Raid;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.village.raid.Raid;
 
 public class StartRaidTask extends Task<LivingEntity> {
 	public StartRaidTask() {
@@ -14,21 +13,21 @@ public class StartRaidTask extends Task<LivingEntity> {
 	}
 
 	@Override
-	protected boolean shouldRun(ServerWorld serverWorld, LivingEntity livingEntity) {
-		return serverWorld.random.nextInt(20) == 0;
+	protected boolean shouldRun(ServerWorld world, LivingEntity entity) {
+		return world.random.nextInt(20) == 0;
 	}
 
 	@Override
-	protected void run(ServerWorld serverWorld, LivingEntity livingEntity, long l) {
-		Brain<?> brain = livingEntity.getBrain();
-		Raid raid = serverWorld.getRaidAt(new BlockPos(livingEntity));
+	protected void run(ServerWorld world, LivingEntity entity, long time) {
+		Brain<?> brain = entity.getBrain();
+		Raid raid = world.getRaidAt(entity.getBlockPos());
 		if (raid != null) {
 			if (raid.hasSpawned() && !raid.isPreRaid()) {
-				brain.setDefaultActivity(Activity.field_19041);
-				brain.resetPossibleActivities(Activity.field_19041);
+				brain.setDefaultActivity(Activity.RAID);
+				brain.doExclusively(Activity.RAID);
 			} else {
-				brain.setDefaultActivity(Activity.field_19042);
-				brain.resetPossibleActivities(Activity.field_19042);
+				brain.setDefaultActivity(Activity.PRE_RAID);
+				brain.doExclusively(Activity.PRE_RAID);
 			}
 		}
 	}

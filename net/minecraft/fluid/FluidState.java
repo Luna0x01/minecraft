@@ -1,21 +1,15 @@
 package net.minecraft.fluid;
 
 import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
-import com.mojang.datafixers.util.Pair;
-import java.util.Map;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import java.util.Random;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.state.State;
-import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
 import net.minecraft.tag.Tag;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -24,35 +18,43 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public interface FluidState extends State<FluidState> {
-	Fluid getFluid();
+public final class FluidState extends State<Fluid, FluidState> {
+	public static final Codec<FluidState> CODEC = createCodec(Registry.FLUID, Fluid::getDefaultState).stable();
 
-	default boolean isStill() {
+	public FluidState(Fluid fluid, ImmutableMap<Property<?>, Comparable<?>> propertiesMap, MapCodec<FluidState> mapCodec) {
+		super(fluid, propertiesMap, mapCodec);
+	}
+
+	public Fluid getFluid() {
+		return this.owner;
+	}
+
+	public boolean isStill() {
 		return this.getFluid().isStill(this);
 	}
 
-	default boolean isEmpty() {
+	public boolean isEmpty() {
 		return this.getFluid().isEmpty();
 	}
 
-	default float getHeight(BlockView blockView, BlockPos blockPos) {
-		return this.getFluid().getHeight(this, blockView, blockPos);
+	public float getHeight(BlockView world, BlockPos pos) {
+		return this.getFluid().getHeight(this, world, pos);
 	}
 
-	default float getHeight() {
+	public float getHeight() {
 		return this.getFluid().getHeight(this);
 	}
 
-	default int getLevel() {
+	public int getLevel() {
 		return this.getFluid().getLevel(this);
 	}
 
-	default boolean method_15756(BlockView blockView, BlockPos blockPos) {
+	public boolean method_15756(BlockView world, BlockPos pos) {
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
-				BlockPos blockPos2 = blockPos.add(i, 0, j);
-				FluidState fluidState = blockView.getFluidState(blockPos2);
-				if (!fluidState.getFluid().matchesType(this.getFluid()) && !blockView.getBlockState(blockPos2).isFullOpaque(blockView, blockPos2)) {
+				BlockPos blockPos = pos.add(i, 0, j);
+				FluidState fluidState = world.getFluidState(blockPos);
+				if (!fluidState.getFluid().matchesType(this.getFluid()) && !world.getBlockState(blockPos).isOpaqueFullCube(world, blockPos)) {
 					return true;
 				}
 			}
@@ -61,97 +63,48 @@ public interface FluidState extends State<FluidState> {
 		return false;
 	}
 
-	default void onScheduledTick(World world, BlockPos blockPos) {
-		this.getFluid().onScheduledTick(world, blockPos, this);
+	public void onScheduledTick(World world, BlockPos pos) {
+		this.getFluid().onScheduledTick(world, pos, this);
 	}
 
-	default void randomDisplayTick(World world, BlockPos blockPos, Random random) {
-		this.getFluid().randomDisplayTick(world, blockPos, this, random);
+	public void randomDisplayTick(World world, BlockPos pos, Random random) {
+		this.getFluid().randomDisplayTick(world, pos, this, random);
 	}
 
-	default boolean hasRandomTicks() {
+	public boolean hasRandomTicks() {
 		return this.getFluid().hasRandomTicks();
 	}
 
-	default void onRandomTick(World world, BlockPos blockPos, Random random) {
-		this.getFluid().onRandomTick(world, blockPos, this, random);
+	public void onRandomTick(World world, BlockPos pos, Random random) {
+		this.getFluid().onRandomTick(world, pos, this, random);
 	}
 
-	default Vec3d getVelocity(BlockView blockView, BlockPos blockPos) {
-		return this.getFluid().getVelocity(blockView, blockPos, this);
+	public Vec3d getVelocity(BlockView world, BlockPos pos) {
+		return this.getFluid().getVelocity(world, pos, this);
 	}
 
-	default BlockState getBlockState() {
+	public BlockState getBlockState() {
 		return this.getFluid().toBlockState(this);
 	}
 
 	@Nullable
-	default ParticleEffect getParticle() {
+	public ParticleEffect getParticle() {
 		return this.getFluid().getParticle();
 	}
 
-	default boolean matches(Tag<Fluid> tag) {
-		return this.getFluid().matches(tag);
+	public boolean isIn(Tag<Fluid> tag) {
+		return this.getFluid().isIn(tag);
 	}
 
-	default float getBlastResistance() {
+	public float getBlastResistance() {
 		return this.getFluid().getBlastResistance();
 	}
 
-	default boolean method_15764(BlockView blockView, BlockPos blockPos, Fluid fluid, Direction direction) {
-		return this.getFluid().method_15777(this, blockView, blockPos, fluid, direction);
+	public boolean canBeReplacedWith(BlockView world, BlockPos pos, Fluid fluid, Direction direction) {
+		return this.getFluid().canBeReplacedWith(this, world, pos, fluid, direction);
 	}
 
-	static <T> Dynamic<T> serialize(DynamicOps<T> dynamicOps, FluidState fluidState) {
-		ImmutableMap<Property<?>, Comparable<?>> immutableMap = fluidState.getEntries();
-		T object;
-		if (immutableMap.isEmpty()) {
-			object = (T)dynamicOps.createMap(
-				ImmutableMap.of(dynamicOps.createString("Name"), dynamicOps.createString(Registry.field_11154.getId(fluidState.getFluid()).toString()))
-			);
-		} else {
-			object = (T)dynamicOps.createMap(
-				ImmutableMap.of(
-					dynamicOps.createString("Name"),
-					dynamicOps.createString(Registry.field_11154.getId(fluidState.getFluid()).toString()),
-					dynamicOps.createString("Properties"),
-					dynamicOps.createMap(
-						(Map)immutableMap.entrySet()
-							.stream()
-							.map(
-								entry -> Pair.of(
-										dynamicOps.createString(((Property)entry.getKey()).getName()),
-										dynamicOps.createString(State.nameValue((Property<T>)entry.getKey(), (Comparable<?>)entry.getValue()))
-									)
-							)
-							.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond))
-					)
-				)
-			);
-		}
-
-		return new Dynamic(dynamicOps, object);
-	}
-
-	static <T> FluidState deserialize(Dynamic<T> dynamic) {
-		Fluid fluid = Registry.field_11154
-			.get(new Identifier((String)dynamic.getElement("Name").flatMap(dynamic.getOps()::getStringValue).orElse("minecraft:empty")));
-		Map<String, String> map = dynamic.get("Properties").asMap(dynamicx -> dynamicx.asString(""), dynamicx -> dynamicx.asString(""));
-		FluidState fluidState = fluid.getDefaultState();
-		StateManager<Fluid, FluidState> stateManager = fluid.getStateManager();
-
-		for (Entry<String, String> entry : map.entrySet()) {
-			String string = (String)entry.getKey();
-			Property<?> property = stateManager.getProperty(string);
-			if (property != null) {
-				fluidState = State.tryRead(fluidState, property, string, dynamic.toString(), (String)entry.getValue());
-			}
-		}
-
-		return fluidState;
-	}
-
-	default VoxelShape getShape(BlockView blockView, BlockPos blockPos) {
-		return this.getFluid().getShape(this, blockView, blockPos);
+	public VoxelShape getShape(BlockView world, BlockPos pos) {
+		return this.getFluid().getShape(this, world, pos);
 	}
 }

@@ -6,7 +6,7 @@ import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.util.Identifier;
 
 public class PillagerEntityRenderer extends IllagerEntityRenderer<PillagerEntity> {
-	private static final Identifier SKIN = new Identifier("textures/entity/illager/pillager.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/illager/pillager.png");
 
 	public PillagerEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new IllagerEntityModel<>(0.0F, 0.0F, 64, 64), 0.5F);
@@ -14,6 +14,6 @@ public class PillagerEntityRenderer extends IllagerEntityRenderer<PillagerEntity
 	}
 
 	public Identifier getTexture(PillagerEntity pillagerEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

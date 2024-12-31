@@ -4,24 +4,24 @@ import net.minecraft.block.Blocks;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public interface Recipe<C extends Inventory> {
-	boolean matches(C inventory, World world);
+	boolean matches(C inv, World world);
 
-	ItemStack craft(C inventory);
+	ItemStack craft(C inv);
 
-	boolean fits(int i, int j);
+	boolean fits(int width, int height);
 
 	ItemStack getOutput();
 
 	default DefaultedList<ItemStack> getRemainingStacks(C inventory) {
-		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(inventory.getInvSize(), ItemStack.EMPTY);
+		DefaultedList<ItemStack> defaultedList = DefaultedList.ofSize(inventory.size(), ItemStack.EMPTY);
 
 		for (int i = 0; i < defaultedList.size(); i++) {
-			Item item = inventory.getInvStack(i).getItem();
+			Item item = inventory.getStack(i).getItem();
 			if (item.hasRecipeRemainder()) {
 				defaultedList.set(i, new ItemStack(item.getRecipeRemainder()));
 			}
@@ -43,7 +43,7 @@ public interface Recipe<C extends Inventory> {
 	}
 
 	default ItemStack getRecipeKindIcon() {
-		return new ItemStack(Blocks.field_9980);
+		return new ItemStack(Blocks.CRAFTING_TABLE);
 	}
 
 	Identifier getId();

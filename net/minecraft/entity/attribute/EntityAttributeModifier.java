@@ -4,27 +4,31 @@ import io.netty.util.internal.ThreadLocalRandom;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.MathHelper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class EntityAttributeModifier {
-	private final double amount;
+	private static final Logger LOGGER = LogManager.getLogger();
+	private final double value;
 	private final EntityAttributeModifier.Operation operation;
 	private final Supplier<String> nameGetter;
 	private final UUID uuid;
-	private boolean serialize = true;
 
-	public EntityAttributeModifier(String string, double d, EntityAttributeModifier.Operation operation) {
-		this(MathHelper.randomUuid(ThreadLocalRandom.current()), (Supplier<String>)(() -> string), d, operation);
+	public EntityAttributeModifier(String name, double value, EntityAttributeModifier.Operation operation) {
+		this(MathHelper.randomUuid(ThreadLocalRandom.current()), (Supplier<String>)(() -> name), value, operation);
 	}
 
-	public EntityAttributeModifier(UUID uUID, String string, double d, EntityAttributeModifier.Operation operation) {
-		this(uUID, (Supplier<String>)(() -> string), d, operation);
+	public EntityAttributeModifier(UUID uuid, String name, double value, EntityAttributeModifier.Operation operation) {
+		this(uuid, (Supplier<String>)(() -> name), value, operation);
 	}
 
-	public EntityAttributeModifier(UUID uUID, Supplier<String> supplier, double d, EntityAttributeModifier.Operation operation) {
-		this.uuid = uUID;
-		this.nameGetter = supplier;
-		this.amount = d;
+	public EntityAttributeModifier(UUID uuid, Supplier<String> nameGetter, double value, EntityAttributeModifier.Operation operation) {
+		this.uuid = uuid;
+		this.nameGetter = nameGetter;
+		this.value = value;
 		this.operation = operation;
 	}
 
@@ -40,24 +44,15 @@ public class EntityAttributeModifier {
 		return this.operation;
 	}
 
-	public double getAmount() {
-		return this.amount;
+	public double getValue() {
+		return this.value;
 	}
 
-	public boolean shouldSerialize() {
-		return this.serialize;
-	}
-
-	public EntityAttributeModifier setSerialize(boolean bl) {
-		this.serialize = bl;
-		return this;
-	}
-
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (object != null && this.getClass() == object.getClass()) {
-			EntityAttributeModifier entityAttributeModifier = (EntityAttributeModifier)object;
+		} else if (o != null && this.getClass() == o.getClass()) {
+			EntityAttributeModifier entityAttributeModifier = (EntityAttributeModifier)o;
 			return Objects.equals(this.uuid, entityAttributeModifier.uuid);
 		} else {
 			return false;
@@ -65,12 +60,12 @@ public class EntityAttributeModifier {
 	}
 
 	public int hashCode() {
-		return this.uuid != null ? this.uuid.hashCode() : 0;
+		return this.uuid.hashCode();
 	}
 
 	public String toString() {
 		return "AttributeModifier{amount="
-			+ this.amount
+			+ this.value
 			+ ", operation="
 			+ this.operation
 			+ ", name='"
@@ -78,32 +73,51 @@ public class EntityAttributeModifier {
 			+ '\''
 			+ ", id="
 			+ this.uuid
-			+ ", serialize="
-			+ this.serialize
 			+ '}';
 	}
 
-	public static enum Operation {
-		field_6328(0),
-		field_6330(1),
-		field_6331(2);
+	public CompoundTag toTag() {
+		CompoundTag compoundTag = new CompoundTag();
+		compoundTag.putString("Name", this.getName());
+		compoundTag.putDouble("Amount", this.value);
+		compoundTag.putInt("Operation", this.operation.getId());
+		compoundTag.putUuid("UUID", this.uuid);
+		return compoundTag;
+	}
 
-		private static final EntityAttributeModifier.Operation[] VALUES = new EntityAttributeModifier.Operation[]{field_6328, field_6330, field_6331};
+	@Nullable
+	public static EntityAttributeModifier fromTag(CompoundTag tag) {
+		try {
+			UUID uUID = tag.getUuid("UUID");
+			EntityAttributeModifier.Operation operation = EntityAttributeModifier.Operation.fromId(tag.getInt("Operation"));
+			return new EntityAttributeModifier(uUID, tag.getString("Name"), tag.getDouble("Amount"), operation);
+		} catch (Exception var3) {
+			LOGGER.warn("Unable to create attribute: {}", var3.getMessage());
+			return null;
+		}
+	}
+
+	public static enum Operation {
+		ADDITION(0),
+		MULTIPLY_BASE(1),
+		MULTIPLY_TOTAL(2);
+
+		private static final EntityAttributeModifier.Operation[] VALUES = new EntityAttributeModifier.Operation[]{ADDITION, MULTIPLY_BASE, MULTIPLY_TOTAL};
 		private final int id;
 
-		private Operation(int j) {
-			this.id = j;
+		private Operation(int id) {
+			this.id = id;
 		}
 
 		public int getId() {
 			return this.id;
 		}
 
-		public static EntityAttributeModifier.Operation fromId(int i) {
-			if (i >= 0 && i < VALUES.length) {
-				return VALUES[i];
+		public static EntityAttributeModifier.Operation fromId(int id) {
+			if (id >= 0 && id < VALUES.length) {
+				return VALUES[id];
 			} else {
-				throw new IllegalArgumentException("No operation with value " + i);
+				throw new IllegalArgumentException("No operation with value " + id);
 			}
 		}
 	}

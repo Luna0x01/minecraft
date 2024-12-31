@@ -3,13 +3,13 @@ package net.minecraft.block.enums;
 import net.minecraft.util.StringIdentifiable;
 
 public enum PistonType implements StringIdentifiable {
-	field_12637("normal"),
-	field_12634("sticky");
+	DEFAULT("normal"),
+	STICKY("sticky");
 
 	private final String name;
 
-	private PistonType(String string2) {
-		this.name = string2;
+	private PistonType(String name) {
+		this.name = name;
 	}
 
 	public String toString() {

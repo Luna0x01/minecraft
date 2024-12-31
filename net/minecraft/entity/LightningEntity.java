@@ -2,13 +2,14 @@ package net.minecraft.entity;
 
 import java.util.List;
 import javax.annotation.Nullable;
-import net.minecraft.advancement.criterion.Criterions;
+import net.minecraft.advancement.criterion.Criteria;
+import net.minecraft.block.AbstractFireBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.network.packet.EntitySpawnGlobalS2CPacket;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Packet;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -21,41 +22,55 @@ public class LightningEntity extends Entity {
 	private int ambientTick;
 	public long seed;
 	private int remainingActions;
-	private final boolean cosmetic;
+	private boolean cosmetic;
 	@Nullable
-	private ServerPlayerEntity channeller;
+	private ServerPlayerEntity channeler;
 
-	public LightningEntity(World world, double d, double e, double f, boolean bl) {
-		super(EntityType.field_6112, world);
+	public LightningEntity(EntityType<? extends LightningEntity> entityType, World world) {
+		super(entityType, world);
 		this.ignoreCameraFrustum = true;
-		this.refreshPositionAndAngles(d, e, f, 0.0F, 0.0F);
 		this.ambientTick = 2;
 		this.seed = this.random.nextLong();
 		this.remainingActions = this.random.nextInt(3) + 1;
-		this.cosmetic = bl;
-		Difficulty difficulty = world.getDifficulty();
-		if (difficulty == Difficulty.field_5802 || difficulty == Difficulty.field_5807) {
-			this.spawnFire(4);
-		}
+	}
+
+	public void setCosmetic(boolean cosmetic) {
+		this.cosmetic = cosmetic;
 	}
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return SoundCategory.field_15252;
+		return SoundCategory.WEATHER;
 	}
 
-	public void setChanneller(@Nullable ServerPlayerEntity serverPlayerEntity) {
-		this.channeller = serverPlayerEntity;
+	public void setChanneler(@Nullable ServerPlayerEntity channeler) {
+		this.channeler = channeler;
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
 		if (this.ambientTick == 2) {
+			Difficulty difficulty = this.world.getDifficulty();
+			if (difficulty == Difficulty.NORMAL || difficulty == Difficulty.HARD) {
+				this.spawnFire(4);
+			}
+
 			this.world
-				.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.field_14865, SoundCategory.field_15252, 10000.0F, 0.8F + this.random.nextFloat() * 0.2F);
+				.playSound(
+					null,
+					this.getX(),
+					this.getY(),
+					this.getZ(),
+					SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER,
+					SoundCategory.WEATHER,
+					10000.0F,
+					0.8F + this.random.nextFloat() * 0.2F
+				);
 			this.world
-				.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.field_14956, SoundCategory.field_15252, 2.0F, 0.5F + this.random.nextFloat() * 0.2F);
+				.playSound(
+					null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_LIGHTNING_BOLT_IMPACT, SoundCategory.WEATHER, 2.0F, 0.5F + this.random.nextFloat() * 0.2F
+				);
 		}
 
 		this.ambientTick--;
@@ -71,36 +86,37 @@ public class LightningEntity extends Entity {
 		}
 
 		if (this.ambientTick >= 0) {
-			if (this.world.isClient) {
+			if (!(this.world instanceof ServerWorld)) {
 				this.world.setLightningTicksLeft(2);
 			} else if (!this.cosmetic) {
 				double d = 3.0;
 				List<Entity> list = this.world
-					.getEntities(
+					.getOtherEntities(
 						this, new Box(this.getX() - 3.0, this.getY() - 3.0, this.getZ() - 3.0, this.getX() + 3.0, this.getY() + 6.0 + 3.0, this.getZ() + 3.0), Entity::isAlive
 					);
 
 				for (Entity entity : list) {
-					entity.onStruckByLightning(this);
+					entity.onStruckByLightning((ServerWorld)this.world, this);
 				}
 
-				if (this.channeller != null) {
-					Criterions.CHANNELED_LIGHTNING.trigger(this.channeller, list);
+				if (this.channeler != null) {
+					Criteria.CHANNELED_LIGHTNING.trigger(this.channeler, list);
 				}
 			}
 		}
 	}
 
-	private void spawnFire(int i) {
-		if (!this.cosmetic && !this.world.isClient && this.world.getGameRules().getBoolean(GameRules.field_19387)) {
-			BlockState blockState = Blocks.field_10036.getDefaultState();
-			BlockPos blockPos = new BlockPos(this);
+	private void spawnFire(int spreadAttempts) {
+		if (!this.cosmetic && !this.world.isClient && this.world.getGameRules().getBoolean(GameRules.DO_FIRE_TICK)) {
+			BlockPos blockPos = this.getBlockPos();
+			BlockState blockState = AbstractFireBlock.getState(this.world, blockPos);
 			if (this.world.getBlockState(blockPos).isAir() && blockState.canPlaceAt(this.world, blockPos)) {
 				this.world.setBlockState(blockPos, blockState);
 			}
 
-			for (int j = 0; j < i; j++) {
+			for (int i = 0; i < spreadAttempts; i++) {
 				BlockPos blockPos2 = blockPos.add(this.random.nextInt(3) - 1, this.random.nextInt(3) - 1, this.random.nextInt(3) - 1);
+				blockState = AbstractFireBlock.getState(this.world, blockPos2);
 				if (this.world.getBlockState(blockPos2).isAir() && blockState.canPlaceAt(this.world, blockPos2)) {
 					this.world.setBlockState(blockPos2, blockState);
 				}
@@ -109,9 +125,9 @@ public class LightningEntity extends Entity {
 	}
 
 	@Override
-	public boolean shouldRender(double d) {
-		double e = 64.0 * getRenderDistanceMultiplier();
-		return d < e * e;
+	public boolean shouldRender(double distance) {
+		double d = 64.0 * getRenderDistanceMultiplier();
+		return distance < d * d;
 	}
 
 	@Override
@@ -119,15 +135,15 @@ public class LightningEntity extends Entity {
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag compoundTag) {
+	protected void readCustomDataFromTag(CompoundTag tag) {
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag compoundTag) {
+	protected void writeCustomDataToTag(CompoundTag tag) {
 	}
 
 	@Override
 	public Packet<?> createSpawnPacket() {
-		return new EntitySpawnGlobalS2CPacket(this);
+		return new EntitySpawnS2CPacket(this);
 	}
 }

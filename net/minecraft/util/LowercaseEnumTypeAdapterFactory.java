@@ -48,7 +48,7 @@ public class LowercaseEnumTypeAdapterFactory implements TypeAdapterFactory {
 		}
 	}
 
-	private String getKey(Object object) {
-		return object instanceof Enum ? ((Enum)object).name().toLowerCase(Locale.ROOT) : object.toString().toLowerCase(Locale.ROOT);
+	private String getKey(Object o) {
+		return o instanceof Enum ? ((Enum)o).name().toLowerCase(Locale.ROOT) : o.toString().toLowerCase(Locale.ROOT);
 	}
 }

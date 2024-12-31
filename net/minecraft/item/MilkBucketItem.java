@@ -1,6 +1,6 @@
 package net.minecraft.item;
 
-import net.minecraft.advancement.criterion.Criterions;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -16,37 +16,36 @@ public class MilkBucketItem extends Item {
 	}
 
 	@Override
-	public ItemStack finishUsing(ItemStack itemStack, World world, LivingEntity livingEntity) {
-		if (livingEntity instanceof ServerPlayerEntity) {
-			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)livingEntity;
-			Criterions.CONSUME_ITEM.trigger(serverPlayerEntity, itemStack);
-			serverPlayerEntity.incrementStat(Stats.field_15372.getOrCreateStat(this));
+	public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
+		if (user instanceof ServerPlayerEntity) {
+			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)user;
+			Criteria.CONSUME_ITEM.trigger(serverPlayerEntity, stack);
+			serverPlayerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
 		}
 
-		if (livingEntity instanceof PlayerEntity && !((PlayerEntity)livingEntity).abilities.creativeMode) {
-			itemStack.decrement(1);
+		if (user instanceof PlayerEntity && !((PlayerEntity)user).abilities.creativeMode) {
+			stack.decrement(1);
 		}
 
 		if (!world.isClient) {
-			livingEntity.clearStatusEffects();
+			user.clearStatusEffects();
 		}
 
-		return itemStack.isEmpty() ? new ItemStack(Items.field_8550) : itemStack;
+		return stack.isEmpty() ? new ItemStack(Items.BUCKET) : stack;
 	}
 
 	@Override
-	public int getMaxUseTime(ItemStack itemStack) {
+	public int getMaxUseTime(ItemStack stack) {
 		return 32;
 	}
 
 	@Override
-	public UseAction getUseAction(ItemStack itemStack) {
-		return UseAction.field_8946;
+	public UseAction getUseAction(ItemStack stack) {
+		return UseAction.DRINK;
 	}
 
 	@Override
-	public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-		playerEntity.setCurrentHand(hand);
-		return TypedActionResult.success(playerEntity.getStackInHand(hand));
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+		return ItemUsage.consumeHeldItem(world, user, hand);
 	}
 }

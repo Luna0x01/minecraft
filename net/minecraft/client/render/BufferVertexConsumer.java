@@ -7,51 +7,51 @@ public interface BufferVertexConsumer extends VertexConsumer {
 
 	void nextElement();
 
-	void putByte(int i, byte b);
+	void putByte(int index, byte value);
 
-	void putShort(int i, short s);
+	void putShort(int index, short value);
 
-	void putFloat(int i, float f);
+	void putFloat(int index, float value);
 
 	@Override
-	default VertexConsumer vertex(double d, double e, double f) {
-		if (this.getCurrentElement().getFormat() != VertexFormatElement.Format.field_1623) {
+	default VertexConsumer vertex(double x, double y, double z) {
+		if (this.getCurrentElement().getFormat() != VertexFormatElement.Format.FLOAT) {
 			throw new IllegalStateException();
 		} else {
-			this.putFloat(0, (float)d);
-			this.putFloat(4, (float)e);
-			this.putFloat(8, (float)f);
+			this.putFloat(0, (float)x);
+			this.putFloat(4, (float)y);
+			this.putFloat(8, (float)z);
 			this.nextElement();
 			return this;
 		}
 	}
 
 	@Override
-	default VertexConsumer color(int i, int j, int k, int l) {
+	default VertexConsumer color(int red, int green, int blue, int alpha) {
 		VertexFormatElement vertexFormatElement = this.getCurrentElement();
-		if (vertexFormatElement.getType() != VertexFormatElement.Type.field_1632) {
+		if (vertexFormatElement.getType() != VertexFormatElement.Type.COLOR) {
 			return this;
-		} else if (vertexFormatElement.getFormat() != VertexFormatElement.Format.field_1624) {
+		} else if (vertexFormatElement.getFormat() != VertexFormatElement.Format.UBYTE) {
 			throw new IllegalStateException();
 		} else {
-			this.putByte(0, (byte)i);
-			this.putByte(1, (byte)j);
-			this.putByte(2, (byte)k);
-			this.putByte(3, (byte)l);
+			this.putByte(0, (byte)red);
+			this.putByte(1, (byte)green);
+			this.putByte(2, (byte)blue);
+			this.putByte(3, (byte)alpha);
 			this.nextElement();
 			return this;
 		}
 	}
 
 	@Override
-	default VertexConsumer texture(float f, float g) {
+	default VertexConsumer texture(float u, float v) {
 		VertexFormatElement vertexFormatElement = this.getCurrentElement();
-		if (vertexFormatElement.getType() == VertexFormatElement.Type.field_1636 && vertexFormatElement.getIndex() == 0) {
-			if (vertexFormatElement.getFormat() != VertexFormatElement.Format.field_1623) {
+		if (vertexFormatElement.getType() == VertexFormatElement.Type.UV && vertexFormatElement.getIndex() == 0) {
+			if (vertexFormatElement.getFormat() != VertexFormatElement.Format.FLOAT) {
 				throw new IllegalStateException();
 			} else {
-				this.putFloat(0, f);
-				this.putFloat(4, g);
+				this.putFloat(0, u);
+				this.putFloat(4, v);
 				this.nextElement();
 				return this;
 			}
@@ -61,40 +61,40 @@ public interface BufferVertexConsumer extends VertexConsumer {
 	}
 
 	@Override
-	default VertexConsumer overlay(int i, int j) {
-		return this.texture((short)i, (short)j, 1);
+	default VertexConsumer overlay(int u, int v) {
+		return this.texture((short)u, (short)v, 1);
 	}
 
 	@Override
-	default VertexConsumer light(int i, int j) {
-		return this.texture((short)i, (short)j, 2);
+	default VertexConsumer light(int u, int v) {
+		return this.texture((short)u, (short)v, 2);
 	}
 
-	default VertexConsumer texture(short s, short t, int i) {
+	default VertexConsumer texture(short u, short v, int index) {
 		VertexFormatElement vertexFormatElement = this.getCurrentElement();
-		if (vertexFormatElement.getType() != VertexFormatElement.Type.field_1636 || vertexFormatElement.getIndex() != i) {
+		if (vertexFormatElement.getType() != VertexFormatElement.Type.UV || vertexFormatElement.getIndex() != index) {
 			return this;
-		} else if (vertexFormatElement.getFormat() != VertexFormatElement.Format.field_1625) {
+		} else if (vertexFormatElement.getFormat() != VertexFormatElement.Format.SHORT) {
 			throw new IllegalStateException();
 		} else {
-			this.putShort(0, s);
-			this.putShort(2, t);
+			this.putShort(0, u);
+			this.putShort(2, v);
 			this.nextElement();
 			return this;
 		}
 	}
 
 	@Override
-	default VertexConsumer normal(float f, float g, float h) {
+	default VertexConsumer normal(float x, float y, float z) {
 		VertexFormatElement vertexFormatElement = this.getCurrentElement();
-		if (vertexFormatElement.getType() != VertexFormatElement.Type.field_1635) {
+		if (vertexFormatElement.getType() != VertexFormatElement.Type.NORMAL) {
 			return this;
-		} else if (vertexFormatElement.getFormat() != VertexFormatElement.Format.field_1621) {
+		} else if (vertexFormatElement.getFormat() != VertexFormatElement.Format.BYTE) {
 			throw new IllegalStateException();
 		} else {
-			this.putByte(0, method_24212(f));
-			this.putByte(1, method_24212(g));
-			this.putByte(2, method_24212(h));
+			this.putByte(0, method_24212(x));
+			this.putByte(1, method_24212(y));
+			this.putByte(2, method_24212(z));
 			this.nextElement();
 			return this;
 		}

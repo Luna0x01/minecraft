@@ -3,6 +3,7 @@ package net.minecraft.client.options;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import net.minecraft.text.Text;
 
 public class LogarithmicOption extends DoubleOption {
 	public LogarithmicOption(
@@ -12,18 +13,18 @@ public class LogarithmicOption extends DoubleOption {
 		float f,
 		Function<GameOptions, Double> function,
 		BiConsumer<GameOptions, Double> biConsumer,
-		BiFunction<GameOptions, DoubleOption, String> biFunction
+		BiFunction<GameOptions, DoubleOption, Text> biFunction
 	) {
 		super(string, d, e, f, function, biConsumer, biFunction);
 	}
 
 	@Override
-	public double getRatio(double d) {
-		return Math.log(d / this.min) / Math.log(this.max / this.min);
+	public double getRatio(double value) {
+		return Math.log(value / this.min) / Math.log(this.max / this.min);
 	}
 
 	@Override
-	public double getValue(double d) {
-		return this.min * Math.pow(Math.E, Math.log(this.max / this.min) * d);
+	public double getValue(double ratio) {
+		return this.min * Math.pow(Math.E, Math.log(this.max / this.min) * ratio);
 	}
 }

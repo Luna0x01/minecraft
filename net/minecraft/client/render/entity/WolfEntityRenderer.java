@@ -8,22 +8,22 @@ import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.util.Identifier;
 
 public class WolfEntityRenderer extends MobEntityRenderer<WolfEntity, WolfEntityModel<WolfEntity>> {
-	private static final Identifier WILD_SKIN = new Identifier("textures/entity/wolf/wolf.png");
-	private static final Identifier TAMED_SKIN = new Identifier("textures/entity/wolf/wolf_tame.png");
-	private static final Identifier ANGRY_SKIN = new Identifier("textures/entity/wolf/wolf_angry.png");
+	private static final Identifier WILD_TEXTURE = new Identifier("textures/entity/wolf/wolf.png");
+	private static final Identifier TAMED_TEXTURE = new Identifier("textures/entity/wolf/wolf_tame.png");
+	private static final Identifier ANGRY_TEXTURE = new Identifier("textures/entity/wolf/wolf_angry.png");
 
 	public WolfEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new WolfEntityModel<>(), 0.5F);
 		this.addFeature(new WolfCollarFeatureRenderer(this));
 	}
 
-	protected float getCustomAngle(WolfEntity wolfEntity, float f) {
-		return wolfEntity.method_6714();
+	protected float getAnimationProgress(WolfEntity wolfEntity, float f) {
+		return wolfEntity.getTailAngle();
 	}
 
 	public void render(WolfEntity wolfEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
 		if (wolfEntity.isFurWet()) {
-			float h = wolfEntity.getBrightnessAtEyes() * wolfEntity.getFurWetBrightnessMultiplier(g);
+			float h = wolfEntity.getFurWetBrightnessMultiplier(g);
 			this.model.setColorMultiplier(h, h, h);
 		}
 
@@ -35,9 +35,9 @@ public class WolfEntityRenderer extends MobEntityRenderer<WolfEntity, WolfEntity
 
 	public Identifier getTexture(WolfEntity wolfEntity) {
 		if (wolfEntity.isTamed()) {
-			return TAMED_SKIN;
+			return TAMED_TEXTURE;
 		} else {
-			return wolfEntity.isAngry() ? ANGRY_SKIN : WILD_SKIN;
+			return wolfEntity.hasAngerTime() ? ANGRY_TEXTURE : WILD_TEXTURE;
 		}
 	}
 }

@@ -12,7 +12,7 @@ public interface Resource extends Closeable {
 	InputStream getInputStream();
 
 	@Nullable
-	<T> T getMetadata(ResourceMetadataReader<T> resourceMetadataReader);
+	<T> T getMetadata(ResourceMetadataReader<T> metaReader);
 
 	String getResourcePackName();
 }

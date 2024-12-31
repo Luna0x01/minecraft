@@ -20,33 +20,24 @@ public class NeighborUpdateDebugRenderer implements DebugRenderer.Renderer {
 	private final MinecraftClient client;
 	private final Map<Long, Map<BlockPos, Integer>> neighborUpdates = Maps.newTreeMap(Ordering.natural().reverse());
 
-	NeighborUpdateDebugRenderer(MinecraftClient minecraftClient) {
-		this.client = minecraftClient;
+	NeighborUpdateDebugRenderer(MinecraftClient client) {
+		this.client = client;
 	}
 
-	public void addNeighborUpdate(long l, BlockPos blockPos) {
-		Map<BlockPos, Integer> map = (Map<BlockPos, Integer>)this.neighborUpdates.get(l);
-		if (map == null) {
-			map = Maps.newHashMap();
-			this.neighborUpdates.put(l, map);
-		}
-
-		Integer integer = (Integer)map.get(blockPos);
-		if (integer == null) {
-			integer = 0;
-		}
-
-		map.put(blockPos, integer + 1);
+	public void addNeighborUpdate(long time, BlockPos pos) {
+		Map<BlockPos, Integer> map = (Map<BlockPos, Integer>)this.neighborUpdates.computeIfAbsent(time, long_ -> Maps.newHashMap());
+		int i = (Integer)map.getOrDefault(pos, 0);
+		map.put(pos, i + 1);
 	}
 
 	@Override
-	public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, double d, double e, double f) {
+	public void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers, double cameraX, double cameraY, double cameraZ) {
 		long l = this.client.world.getTime();
 		int i = 200;
-		double g = 0.0025;
+		double d = 0.0025;
 		Set<BlockPos> set = Sets.newHashSet();
 		Map<BlockPos, Integer> map = Maps.newHashMap();
-		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getLines());
+		VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getLines());
 		Iterator<Entry<Long, Map<BlockPos, Integer>>> iterator = this.neighborUpdates.entrySet().iterator();
 
 		while (iterator.hasNext()) {
@@ -65,8 +56,8 @@ public class NeighborUpdateDebugRenderer implements DebugRenderer.Renderer {
 							.expand(0.002)
 							.contract(0.0025 * (double)m)
 							.offset((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ())
-							.offset(-d, -e, -f);
-						WorldRenderer.drawBox(vertexConsumer, box.x1, box.y1, box.z1, box.x2, box.y2, box.z2, 1.0F, 1.0F, 1.0F, 1.0F);
+							.offset(-cameraX, -cameraY, -cameraZ);
+						WorldRenderer.drawBox(matrices, vertexConsumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, 1.0F, 1.0F, 1.0F, 1.0F);
 						map.put(blockPos, integer);
 					}
 				}

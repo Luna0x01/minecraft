@@ -24,7 +24,7 @@ public class TextSearchableContainer<T> extends IdentifierSearchableContainer<T>
 	public void reload() {
 		this.byText = new SuffixArray<>();
 		super.reload();
-		this.byText.sort();
+		this.byText.build();
 	}
 
 	@Override
@@ -34,15 +34,15 @@ public class TextSearchableContainer<T> extends IdentifierSearchableContainer<T>
 	}
 
 	@Override
-	public List<T> findAll(String string) {
-		int i = string.indexOf(58);
+	public List<T> findAll(String text) {
+		int i = text.indexOf(58);
 		if (i < 0) {
-			return this.byText.findAll(string);
+			return this.byText.findAll(text);
 		} else {
-			List<T> list = this.byNamespace.findAll(string.substring(0, i).trim());
-			String string2 = string.substring(i + 1).trim();
-			List<T> list2 = this.byPath.findAll(string2);
-			List<T> list3 = this.byText.findAll(string2);
+			List<T> list = this.byNamespace.findAll(text.substring(0, i).trim());
+			String string = text.substring(i + 1).trim();
+			List<T> list2 = this.byPath.findAll(string);
+			List<T> list3 = this.byText.findAll(string);
 			return Lists.newArrayList(
 				new IdentifierSearchableContainer.Iterator(
 					list.iterator(), new TextSearchableContainer.Iterator<T>(list2.iterator(), list3.iterator(), this::compare), this::compare

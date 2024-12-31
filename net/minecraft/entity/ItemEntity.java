@@ -3,7 +3,6 @@ package net.minecraft.entity;
 import java.util.Objects;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import net.minecraft.client.network.packet.EntitySpawnS2CPacket;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -13,8 +12,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.Packet;
+import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.tag.FluidTags;
@@ -24,7 +24,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 
 public class ItemEntity extends Entity {
 	private static final TrackedData<ItemStack> STACK = DataTracker.registerData(ItemEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
@@ -33,22 +32,31 @@ public class ItemEntity extends Entity {
 	private int health = 5;
 	private UUID thrower;
 	private UUID owner;
-	public final float hoverHeight = (float)(Math.random() * Math.PI * 2.0);
+	public final float hoverHeight;
 
 	public ItemEntity(EntityType<? extends ItemEntity> entityType, World world) {
 		super(entityType, world);
+		this.hoverHeight = (float)(Math.random() * Math.PI * 2.0);
 	}
 
-	public ItemEntity(World world, double d, double e, double f) {
-		this(EntityType.field_6052, world);
-		this.updatePosition(d, e, f);
+	public ItemEntity(World world, double x, double y, double z) {
+		this(EntityType.ITEM, world);
+		this.updatePosition(x, y, z);
 		this.yaw = this.random.nextFloat() * 360.0F;
 		this.setVelocity(this.random.nextDouble() * 0.2 - 0.1, 0.2, this.random.nextDouble() * 0.2 - 0.1);
 	}
 
-	public ItemEntity(World world, double d, double e, double f, ItemStack itemStack) {
-		this(world, d, e, f);
-		this.setStack(itemStack);
+	public ItemEntity(World world, double x, double y, double z, ItemStack stack) {
+		this(world, x, y, z);
+		this.setStack(stack);
+	}
+
+	private ItemEntity(ItemEntity itemEntity) {
+		super(itemEntity.getType(), itemEntity.world);
+		this.setStack(itemEntity.getStack().copy());
+		this.copyPositionAndRotation(itemEntity);
+		this.age = itemEntity.age;
+		this.hoverHeight = itemEntity.hoverHeight;
 	}
 
 	@Override
@@ -75,8 +83,11 @@ public class ItemEntity extends Entity {
 			this.prevY = this.getY();
 			this.prevZ = this.getZ();
 			Vec3d vec3d = this.getVelocity();
-			if (this.isInFluid(FluidTags.field_15517)) {
+			float f = this.getStandingEyeHeight() - 0.11111111F;
+			if (this.isTouchingWater() && this.getFluidHeight(FluidTags.WATER) > (double)f) {
 				this.applyBuoyancy();
+			} else if (this.isInLava() && this.getFluidHeight(FluidTags.LAVA) > (double)f) {
+				this.method_24348();
 			} else if (!this.hasNoGravity()) {
 				this.setVelocity(this.getVelocity().add(0.0, -0.04, 0.0));
 			}
@@ -84,22 +95,25 @@ public class ItemEntity extends Entity {
 			if (this.world.isClient) {
 				this.noClip = false;
 			} else {
-				this.noClip = !this.world.doesNotCollide(this);
+				this.noClip = !this.world.isSpaceEmpty(this);
 				if (this.noClip) {
-					this.pushOutOfBlocks(this.getX(), (this.getBoundingBox().y1 + this.getBoundingBox().y2) / 2.0, this.getZ());
+					this.pushOutOfBlocks(this.getX(), (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.getZ());
 				}
 			}
 
 			if (!this.onGround || squaredHorizontalLength(this.getVelocity()) > 1.0E-5F || (this.age + this.getEntityId()) % 4 == 0) {
-				this.move(MovementType.field_6308, this.getVelocity());
-				float f = 0.98F;
+				this.move(MovementType.SELF, this.getVelocity());
+				float g = 0.98F;
 				if (this.onGround) {
-					f = this.world.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0, this.getZ())).getBlock().getSlipperiness() * 0.98F;
+					g = this.world.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0, this.getZ())).getBlock().getSlipperiness() * 0.98F;
 				}
 
-				this.setVelocity(this.getVelocity().multiply((double)f, 0.98, (double)f));
+				this.setVelocity(this.getVelocity().multiply((double)g, 0.98, (double)g));
 				if (this.onGround) {
-					this.setVelocity(this.getVelocity().multiply(1.0, -0.5, 1.0));
+					Vec3d vec3d2 = this.getVelocity();
+					if (vec3d2.y < 0.0) {
+						this.setVelocity(vec3d2.multiply(1.0, -0.5, 1.0));
+					}
 				}
 			}
 
@@ -108,11 +122,8 @@ public class ItemEntity extends Entity {
 				|| MathHelper.floor(this.prevZ) != MathHelper.floor(this.getZ());
 			int i = bl ? 2 : 40;
 			if (this.age % i == 0) {
-				if (this.world.getFluidState(new BlockPos(this)).matches(FluidTags.field_15518)) {
-					this.setVelocity(
-						(double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F), 0.2F, (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F)
-					);
-					this.playSound(SoundEvents.field_14821, 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
+				if (this.world.getFluidState(this.getBlockPos()).isIn(FluidTags.LAVA) && !this.isFireImmune()) {
+					this.playSound(SoundEvents.ENTITY_GENERIC_BURN, 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
 				}
 
 				if (!this.world.isClient && this.canMerge()) {
@@ -124,7 +135,7 @@ public class ItemEntity extends Entity {
 				this.age++;
 			}
 
-			this.velocityDirty = this.velocityDirty | this.checkWaterState();
+			this.velocityDirty = this.velocityDirty | this.updateWaterState();
 			if (!this.world.isClient) {
 				double d = this.getVelocity().subtract(vec3d).lengthSquared();
 				if (d > 0.01) {
@@ -143,10 +154,15 @@ public class ItemEntity extends Entity {
 		this.setVelocity(vec3d.x * 0.99F, vec3d.y + (double)(vec3d.y < 0.06F ? 5.0E-4F : 0.0F), vec3d.z * 0.99F);
 	}
 
+	private void method_24348() {
+		Vec3d vec3d = this.getVelocity();
+		this.setVelocity(vec3d.x * 0.95F, vec3d.y + (double)(vec3d.y < 0.06F ? 5.0E-4F : 0.0F), vec3d.z * 0.95F);
+	}
+
 	private void tryMerge() {
 		if (this.canMerge()) {
 			for (ItemEntity itemEntity : this.world
-				.getEntities(ItemEntity.class, this.getBoundingBox().expand(0.5, 0.0, 0.5), itemEntityx -> itemEntityx != this && itemEntityx.canMerge())) {
+				.getEntitiesByClass(ItemEntity.class, this.getBoundingBox().expand(0.5, 0.0, 0.5), itemEntityx -> itemEntityx != this && itemEntityx.canMerge())) {
 				if (itemEntity.canMerge()) {
 					this.tryMerge(itemEntity);
 					if (this.removed) {
@@ -162,64 +178,66 @@ public class ItemEntity extends Entity {
 		return this.isAlive() && this.pickupDelay != 32767 && this.age != -32768 && this.age < 6000 && itemStack.getCount() < itemStack.getMaxCount();
 	}
 
-	private void tryMerge(ItemEntity itemEntity) {
+	private void tryMerge(ItemEntity other) {
 		ItemStack itemStack = this.getStack();
-		ItemStack itemStack2 = itemEntity.getStack();
-		if (Objects.equals(this.getOwner(), itemEntity.getOwner()) && method_24017(itemStack, itemStack2)) {
+		ItemStack itemStack2 = other.getStack();
+		if (Objects.equals(this.getOwner(), other.getOwner()) && canMerge(itemStack, itemStack2)) {
 			if (itemStack2.getCount() < itemStack.getCount()) {
-				merge(this, itemStack, itemEntity, itemStack2);
+				merge(this, itemStack, other, itemStack2);
 			} else {
-				merge(itemEntity, itemStack2, this, itemStack);
+				merge(other, itemStack2, this, itemStack);
 			}
 		}
 	}
 
-	public static boolean method_24017(ItemStack itemStack, ItemStack itemStack2) {
-		if (itemStack2.getItem() != itemStack.getItem()) {
+	public static boolean canMerge(ItemStack stack1, ItemStack stack2) {
+		if (stack2.getItem() != stack1.getItem()) {
 			return false;
-		} else if (itemStack2.getCount() + itemStack.getCount() > itemStack2.getMaxCount()) {
+		} else if (stack2.getCount() + stack1.getCount() > stack2.getMaxCount()) {
 			return false;
 		} else {
-			return itemStack2.hasTag() ^ itemStack.hasTag() ? false : !itemStack2.hasTag() || itemStack2.getTag().equals(itemStack.getTag());
+			return stack2.hasTag() ^ stack1.hasTag() ? false : !stack2.hasTag() || stack2.getTag().equals(stack1.getTag());
 		}
 	}
 
-	public static ItemStack method_24018(ItemStack itemStack, ItemStack itemStack2, int i) {
-		int j = Math.min(Math.min(itemStack.getMaxCount(), i) - itemStack.getCount(), itemStack2.getCount());
-		ItemStack itemStack3 = itemStack.copy();
-		itemStack3.increment(j);
-		itemStack2.decrement(j);
-		return itemStack3;
+	public static ItemStack merge(ItemStack stack1, ItemStack stack2, int maxCount) {
+		int i = Math.min(Math.min(stack1.getMaxCount(), maxCount) - stack1.getCount(), stack2.getCount());
+		ItemStack itemStack = stack1.copy();
+		itemStack.increment(i);
+		stack2.decrement(i);
+		return itemStack;
 	}
 
-	private static void method_24016(ItemEntity itemEntity, ItemStack itemStack, ItemStack itemStack2) {
-		ItemStack itemStack3 = method_24018(itemStack, itemStack2, 64);
-		itemEntity.setStack(itemStack3);
+	private static void merge(ItemEntity targetEntity, ItemStack stack1, ItemStack stack2) {
+		ItemStack itemStack = merge(stack1, stack2, 64);
+		targetEntity.setStack(itemStack);
 	}
 
-	private static void merge(ItemEntity itemEntity, ItemStack itemStack, ItemEntity itemEntity2, ItemStack itemStack2) {
-		method_24016(itemEntity, itemStack, itemStack2);
-		itemEntity.pickupDelay = Math.max(itemEntity.pickupDelay, itemEntity2.pickupDelay);
-		itemEntity.age = Math.min(itemEntity.age, itemEntity2.age);
-		if (itemStack2.isEmpty()) {
-			itemEntity2.remove();
+	private static void merge(ItemEntity targetEntity, ItemStack targetStack, ItemEntity sourceEntity, ItemStack sourceStack) {
+		merge(targetEntity, targetStack, sourceStack);
+		targetEntity.pickupDelay = Math.max(targetEntity.pickupDelay, sourceEntity.pickupDelay);
+		targetEntity.age = Math.min(targetEntity.age, sourceEntity.age);
+		if (sourceStack.isEmpty()) {
+			sourceEntity.remove();
 		}
 	}
 
 	@Override
-	protected void burn(int i) {
-		this.damage(DamageSource.IN_FIRE, (float)i);
+	public boolean isFireImmune() {
+		return this.getStack().getItem().isFireproof() || super.isFireImmune();
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		if (this.isInvulnerableTo(damageSource)) {
+	public boolean damage(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
-		} else if (!this.getStack().isEmpty() && this.getStack().getItem() == Items.field_8137 && damageSource.isExplosive()) {
+		} else if (!this.getStack().isEmpty() && this.getStack().getItem() == Items.NETHER_STAR && source.isExplosive()) {
+			return false;
+		} else if (!this.getStack().getItem().damage(source)) {
 			return false;
 		} else {
 			this.scheduleVelocityUpdate();
-			this.health = (int)((float)this.health - f);
+			this.health = (int)((float)this.health - amount);
 			if (this.health <= 0) {
 				this.remove();
 			}
@@ -229,60 +247,61 @@ public class ItemEntity extends Entity {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		compoundTag.putShort("Health", (short)this.health);
-		compoundTag.putShort("Age", (short)this.age);
-		compoundTag.putShort("PickupDelay", (short)this.pickupDelay);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		tag.putShort("Health", (short)this.health);
+		tag.putShort("Age", (short)this.age);
+		tag.putShort("PickupDelay", (short)this.pickupDelay);
 		if (this.getThrower() != null) {
-			compoundTag.put("Thrower", NbtHelper.fromUuid(this.getThrower()));
+			tag.putUuid("Thrower", this.getThrower());
 		}
 
 		if (this.getOwner() != null) {
-			compoundTag.put("Owner", NbtHelper.fromUuid(this.getOwner()));
+			tag.putUuid("Owner", this.getOwner());
 		}
 
 		if (!this.getStack().isEmpty()) {
-			compoundTag.put("Item", this.getStack().toTag(new CompoundTag()));
+			tag.put("Item", this.getStack().toTag(new CompoundTag()));
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		this.health = compoundTag.getShort("Health");
-		this.age = compoundTag.getShort("Age");
-		if (compoundTag.contains("PickupDelay")) {
-			this.pickupDelay = compoundTag.getShort("PickupDelay");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		this.health = tag.getShort("Health");
+		this.age = tag.getShort("Age");
+		if (tag.contains("PickupDelay")) {
+			this.pickupDelay = tag.getShort("PickupDelay");
 		}
 
-		if (compoundTag.contains("Owner", 10)) {
-			this.owner = NbtHelper.toUuid(compoundTag.getCompound("Owner"));
+		if (tag.containsUuid("Owner")) {
+			this.owner = tag.getUuid("Owner");
 		}
 
-		if (compoundTag.contains("Thrower", 10)) {
-			this.thrower = NbtHelper.toUuid(compoundTag.getCompound("Thrower"));
+		if (tag.containsUuid("Thrower")) {
+			this.thrower = tag.getUuid("Thrower");
 		}
 
-		CompoundTag compoundTag2 = compoundTag.getCompound("Item");
-		this.setStack(ItemStack.fromTag(compoundTag2));
+		CompoundTag compoundTag = tag.getCompound("Item");
+		this.setStack(ItemStack.fromTag(compoundTag));
 		if (this.getStack().isEmpty()) {
 			this.remove();
 		}
 	}
 
 	@Override
-	public void onPlayerCollision(PlayerEntity playerEntity) {
+	public void onPlayerCollision(PlayerEntity player) {
 		if (!this.world.isClient) {
 			ItemStack itemStack = this.getStack();
 			Item item = itemStack.getItem();
 			int i = itemStack.getCount();
-			if (this.pickupDelay == 0 && (this.owner == null || this.owner.equals(playerEntity.getUuid())) && playerEntity.inventory.insertStack(itemStack)) {
-				playerEntity.sendPickup(this, i);
+			if (this.pickupDelay == 0 && (this.owner == null || this.owner.equals(player.getUuid())) && player.inventory.insertStack(itemStack)) {
+				player.sendPickup(this, i);
 				if (itemStack.isEmpty()) {
 					this.remove();
 					itemStack.setCount(i);
 				}
 
-				playerEntity.increaseStat(Stats.field_15392.getOrCreateStat(item), i);
+				player.increaseStat(Stats.PICKED_UP.getOrCreateStat(item), i);
+				player.method_29499(this);
 			}
 		}
 	}
@@ -300,8 +319,8 @@ public class ItemEntity extends Entity {
 
 	@Nullable
 	@Override
-	public Entity changeDimension(DimensionType dimensionType) {
-		Entity entity = super.changeDimension(dimensionType);
+	public Entity moveToWorld(ServerWorld destination) {
+		Entity entity = super.moveToWorld(destination);
 		if (!this.world.isClient && entity instanceof ItemEntity) {
 			((ItemEntity)entity).tryMerge();
 		}
@@ -313,8 +332,16 @@ public class ItemEntity extends Entity {
 		return this.getDataTracker().get(STACK);
 	}
 
-	public void setStack(ItemStack itemStack) {
-		this.getDataTracker().set(STACK, itemStack);
+	public void setStack(ItemStack stack) {
+		this.getDataTracker().set(STACK, stack);
+	}
+
+	@Override
+	public void onTrackedDataSet(TrackedData<?> data) {
+		super.onTrackedDataSet(data);
+		if (STACK.equals(data)) {
+			this.getStack().setHolder(this);
+		}
 	}
 
 	@Nullable
@@ -322,8 +349,8 @@ public class ItemEntity extends Entity {
 		return this.owner;
 	}
 
-	public void setOwner(@Nullable UUID uUID) {
-		this.owner = uUID;
+	public void setOwner(@Nullable UUID uuid) {
+		this.owner = uuid;
 	}
 
 	@Nullable
@@ -331,8 +358,8 @@ public class ItemEntity extends Entity {
 		return this.thrower;
 	}
 
-	public void setThrower(@Nullable UUID uUID) {
-		this.thrower = uUID;
+	public void setThrower(@Nullable UUID uuid) {
+		this.thrower = uuid;
 	}
 
 	public int getAge() {
@@ -351,8 +378,8 @@ public class ItemEntity extends Entity {
 		this.pickupDelay = 32767;
 	}
 
-	public void setPickupDelay(int i) {
-		this.pickupDelay = i;
+	public void setPickupDelay(int pickupDelay) {
+		this.pickupDelay = pickupDelay;
 	}
 
 	public boolean cannotPickup() {
@@ -368,8 +395,16 @@ public class ItemEntity extends Entity {
 		this.age = 5999;
 	}
 
+	public float method_27314(float f) {
+		return ((float)this.getAge() + f) / 20.0F + this.hoverHeight;
+	}
+
 	@Override
 	public Packet<?> createSpawnPacket() {
 		return new EntitySpawnS2CPacket(this);
+	}
+
+	public ItemEntity method_29271() {
+		return new ItemEntity(this);
 	}
 }

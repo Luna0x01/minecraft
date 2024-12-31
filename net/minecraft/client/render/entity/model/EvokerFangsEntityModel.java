@@ -22,18 +22,18 @@ public class EvokerFangsEntityModel<T extends Entity> extends CompositeEntityMod
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		float k = f * 2.0F;
-		if (k > 1.0F) {
-			k = 1.0F;
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		float f = limbAngle * 2.0F;
+		if (f > 1.0F) {
+			f = 1.0F;
 		}
 
-		k = 1.0F - k * k * k;
-		this.field_3376.roll = (float) Math.PI - k * 0.35F * (float) Math.PI;
-		this.field_3375.roll = (float) Math.PI + k * 0.35F * (float) Math.PI;
+		f = 1.0F - f * f * f;
+		this.field_3376.roll = (float) Math.PI - f * 0.35F * (float) Math.PI;
+		this.field_3375.roll = (float) Math.PI + f * 0.35F * (float) Math.PI;
 		this.field_3375.yaw = (float) Math.PI;
-		float l = (f + MathHelper.sin(f * 2.7F)) * 0.6F * 12.0F;
-		this.field_3376.pivotY = 24.0F - l;
+		float g = (limbAngle + MathHelper.sin(limbAngle * 2.7F)) * 0.6F * 12.0F;
+		this.field_3376.pivotY = 24.0F - g;
 		this.field_3375.pivotY = this.field_3376.pivotY;
 		this.field_3374.pivotY = this.field_3376.pivotY;
 	}

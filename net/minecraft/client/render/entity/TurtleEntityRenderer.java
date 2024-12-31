@@ -7,7 +7,7 @@ import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.util.Identifier;
 
 public class TurtleEntityRenderer extends MobEntityRenderer<TurtleEntity, TurtleEntityModel<TurtleEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/turtle/big_sea_turtle.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/turtle/big_sea_turtle.png");
 
 	public TurtleEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new TurtleEntityModel<>(0.0F), 0.7F);
@@ -15,13 +15,13 @@ public class TurtleEntityRenderer extends MobEntityRenderer<TurtleEntity, Turtle
 
 	public void render(TurtleEntity turtleEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
 		if (turtleEntity.isBaby()) {
-			this.shadowSize *= 0.5F;
+			this.shadowRadius *= 0.5F;
 		}
 
 		super.render(turtleEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
 	public Identifier getTexture(TurtleEntity turtleEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

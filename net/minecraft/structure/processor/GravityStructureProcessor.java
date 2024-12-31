@@ -1,9 +1,9 @@
 package net.minecraft.structure.processor;
 
-import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import javax.annotation.Nullable;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.Structure;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.util.math.BlockPos;
@@ -11,28 +11,48 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.WorldView;
 
 public class GravityStructureProcessor extends StructureProcessor {
+	public static final Codec<GravityStructureProcessor> CODEC = RecordCodecBuilder.create(
+		instance -> instance.group(
+					Heightmap.Type.CODEC
+						.fieldOf("heightmap")
+						.orElse(Heightmap.Type.WORLD_SURFACE_WG)
+						.forGetter(gravityStructureProcessor -> gravityStructureProcessor.heightmap),
+					Codec.INT.fieldOf("offset").orElse(0).forGetter(gravityStructureProcessor -> gravityStructureProcessor.offset)
+				)
+				.apply(instance, GravityStructureProcessor::new)
+	);
 	private final Heightmap.Type heightmap;
 	private final int offset;
 
-	public GravityStructureProcessor(Heightmap.Type type, int i) {
-		this.heightmap = type;
-		this.offset = i;
-	}
-
-	public GravityStructureProcessor(Dynamic<?> dynamic) {
-		this(Heightmap.Type.byName(dynamic.get("heightmap").asString(Heightmap.Type.field_13194.getName())), dynamic.get("offset").asInt(0));
+	public GravityStructureProcessor(Heightmap.Type heightmap, int offset) {
+		this.heightmap = heightmap;
+		this.offset = offset;
 	}
 
 	@Nullable
 	@Override
 	public Structure.StructureBlockInfo process(
 		WorldView worldView,
+		BlockPos pos,
 		BlockPos blockPos,
 		Structure.StructureBlockInfo structureBlockInfo,
 		Structure.StructureBlockInfo structureBlockInfo2,
 		StructurePlacementData structurePlacementData
 	) {
-		int i = worldView.getTopY(this.heightmap, structureBlockInfo2.pos.getX(), structureBlockInfo2.pos.getZ()) + this.offset;
+		Heightmap.Type type;
+		if (worldView instanceof ServerWorld) {
+			if (this.heightmap == Heightmap.Type.WORLD_SURFACE_WG) {
+				type = Heightmap.Type.WORLD_SURFACE;
+			} else if (this.heightmap == Heightmap.Type.OCEAN_FLOOR_WG) {
+				type = Heightmap.Type.OCEAN_FLOOR;
+			} else {
+				type = this.heightmap;
+			}
+		} else {
+			type = this.heightmap;
+		}
+
+		int i = worldView.getTopY(type, structureBlockInfo2.pos.getX(), structureBlockInfo2.pos.getZ()) + this.offset;
 		int j = structureBlockInfo.pos.getY();
 		return new Structure.StructureBlockInfo(
 			new BlockPos(structureBlockInfo2.pos.getX(), i + j, structureBlockInfo2.pos.getZ()), structureBlockInfo2.state, structureBlockInfo2.tag
@@ -40,22 +60,7 @@ public class GravityStructureProcessor extends StructureProcessor {
 	}
 
 	@Override
-	protected StructureProcessorType getType() {
-		return StructureProcessorType.field_16989;
-	}
-
-	@Override
-	protected <T> Dynamic<T> method_16666(DynamicOps<T> dynamicOps) {
-		return new Dynamic(
-			dynamicOps,
-			dynamicOps.createMap(
-				ImmutableMap.of(
-					dynamicOps.createString("heightmap"),
-					dynamicOps.createString(this.heightmap.getName()),
-					dynamicOps.createString("offset"),
-					dynamicOps.createInt(this.offset)
-				)
-			)
-		);
+	protected StructureProcessorType<?> getType() {
+		return StructureProcessorType.GRAVITY;
 	}
 }

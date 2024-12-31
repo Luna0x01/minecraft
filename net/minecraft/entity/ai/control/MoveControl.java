@@ -21,40 +21,40 @@ public class MoveControl {
 	protected double speed;
 	protected float forwardMovement;
 	protected float sidewaysMovement;
-	protected MoveControl.State state = MoveControl.State.field_6377;
+	protected MoveControl.State state = MoveControl.State.WAIT;
 
-	public MoveControl(MobEntity mobEntity) {
-		this.entity = mobEntity;
+	public MoveControl(MobEntity entity) {
+		this.entity = entity;
 	}
 
 	public boolean isMoving() {
-		return this.state == MoveControl.State.field_6378;
+		return this.state == MoveControl.State.MOVE_TO;
 	}
 
 	public double getSpeed() {
 		return this.speed;
 	}
 
-	public void moveTo(double d, double e, double f, double g) {
-		this.targetX = d;
-		this.targetY = e;
-		this.targetZ = f;
-		this.speed = g;
-		if (this.state != MoveControl.State.field_6379) {
-			this.state = MoveControl.State.field_6378;
+	public void moveTo(double x, double y, double z, double speed) {
+		this.targetX = x;
+		this.targetY = y;
+		this.targetZ = z;
+		this.speed = speed;
+		if (this.state != MoveControl.State.JUMPING) {
+			this.state = MoveControl.State.MOVE_TO;
 		}
 	}
 
-	public void strafeTo(float f, float g) {
-		this.state = MoveControl.State.field_6376;
-		this.forwardMovement = f;
-		this.sidewaysMovement = g;
+	public void strafeTo(float forward, float sideways) {
+		this.state = MoveControl.State.STRAFE;
+		this.forwardMovement = forward;
+		this.sidewaysMovement = sideways;
 		this.speed = 0.25;
 	}
 
 	public void tick() {
-		if (this.state == MoveControl.State.field_6376) {
-			float f = (float)this.entity.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue();
+		if (this.state == MoveControl.State.STRAFE) {
+			float f = (float)this.entity.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
 			float g = (float)this.speed * f;
 			float h = this.forwardMovement;
 			float i = this.sidewaysMovement;
@@ -70,29 +70,17 @@ public class MoveControl {
 			float l = MathHelper.cos(this.entity.yaw * (float) (Math.PI / 180.0));
 			float m = h * l - i * k;
 			float n = i * l + h * k;
-			EntityNavigation entityNavigation = this.entity.getNavigation();
-			if (entityNavigation != null) {
-				PathNodeMaker pathNodeMaker = entityNavigation.getNodeMaker();
-				if (pathNodeMaker != null
-					&& pathNodeMaker.getNodeType(
-							this.entity.world,
-							MathHelper.floor(this.entity.getX() + (double)m),
-							MathHelper.floor(this.entity.getY()),
-							MathHelper.floor(this.entity.getZ() + (double)n)
-						)
-						!= PathNodeType.field_12) {
-					this.forwardMovement = 1.0F;
-					this.sidewaysMovement = 0.0F;
-					g = f;
-				}
+			if (!this.method_25946(m, n)) {
+				this.forwardMovement = 1.0F;
+				this.sidewaysMovement = 0.0F;
 			}
 
 			this.entity.setMovementSpeed(g);
 			this.entity.setForwardSpeed(this.forwardMovement);
 			this.entity.setSidewaysSpeed(this.sidewaysMovement);
-			this.state = MoveControl.State.field_6377;
-		} else if (this.state == MoveControl.State.field_6378) {
-			this.state = MoveControl.State.field_6377;
+			this.state = MoveControl.State.WAIT;
+		} else if (this.state == MoveControl.State.MOVE_TO) {
+			this.state = MoveControl.State.WAIT;
 			double d = this.targetX - this.entity.getX();
 			double e = this.targetZ - this.entity.getZ();
 			double o = this.targetY - this.entity.getY();
@@ -104,47 +92,66 @@ public class MoveControl {
 
 			float q = (float)(MathHelper.atan2(e, d) * 180.0F / (float)Math.PI) - 90.0F;
 			this.entity.yaw = this.changeAngle(this.entity.yaw, q, 90.0F);
-			this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue()));
-			BlockPos blockPos = new BlockPos(this.entity);
+			this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED)));
+			BlockPos blockPos = this.entity.getBlockPos();
 			BlockState blockState = this.entity.world.getBlockState(blockPos);
 			Block block = blockState.getBlock();
 			VoxelShape voxelShape = blockState.getCollisionShape(this.entity.world, blockPos);
 			if (o > (double)this.entity.stepHeight && d * d + e * e < (double)Math.max(1.0F, this.entity.getWidth())
 				|| !voxelShape.isEmpty()
-					&& this.entity.getY() < voxelShape.getMaximum(Direction.Axis.field_11052) + (double)blockPos.getY()
-					&& !block.matches(BlockTags.field_15495)
-					&& !block.matches(BlockTags.field_16584)) {
+					&& this.entity.getY() < voxelShape.getMax(Direction.Axis.Y) + (double)blockPos.getY()
+					&& !block.isIn(BlockTags.DOORS)
+					&& !block.isIn(BlockTags.FENCES)) {
 				this.entity.getJumpControl().setActive();
-				this.state = MoveControl.State.field_6379;
+				this.state = MoveControl.State.JUMPING;
 			}
-		} else if (this.state == MoveControl.State.field_6379) {
-			this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue()));
-			if (this.entity.onGround) {
-				this.state = MoveControl.State.field_6377;
+		} else if (this.state == MoveControl.State.JUMPING) {
+			this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED)));
+			if (this.entity.isOnGround()) {
+				this.state = MoveControl.State.WAIT;
 			}
 		} else {
 			this.entity.setForwardSpeed(0.0F);
 		}
 	}
 
-	protected float changeAngle(float f, float g, float h) {
-		float i = MathHelper.wrapDegrees(g - f);
-		if (i > h) {
-			i = h;
+	private boolean method_25946(float f, float g) {
+		EntityNavigation entityNavigation = this.entity.getNavigation();
+		if (entityNavigation != null) {
+			PathNodeMaker pathNodeMaker = entityNavigation.getNodeMaker();
+			if (pathNodeMaker != null
+				&& pathNodeMaker.getDefaultNodeType(
+						this.entity.world,
+						MathHelper.floor(this.entity.getX() + (double)f),
+						MathHelper.floor(this.entity.getY()),
+						MathHelper.floor(this.entity.getZ() + (double)g)
+					)
+					!= PathNodeType.WALKABLE) {
+				return false;
+			}
 		}
 
-		if (i < -h) {
-			i = -h;
+		return true;
+	}
+
+	protected float changeAngle(float from, float to, float max) {
+		float f = MathHelper.wrapDegrees(to - from);
+		if (f > max) {
+			f = max;
 		}
 
-		float j = f + i;
-		if (j < 0.0F) {
-			j += 360.0F;
-		} else if (j > 360.0F) {
-			j -= 360.0F;
+		if (f < -max) {
+			f = -max;
 		}
 
-		return j;
+		float g = from + f;
+		if (g < 0.0F) {
+			g += 360.0F;
+		} else if (g > 360.0F) {
+			g -= 360.0F;
+		}
+
+		return g;
 	}
 
 	public double getTargetX() {
@@ -160,9 +167,9 @@ public class MoveControl {
 	}
 
 	public static enum State {
-		field_6377,
-		field_6378,
-		field_6376,
-		field_6379;
+		WAIT,
+		MOVE_TO,
+		STRAFE,
+		JUMPING;
 	}
 }

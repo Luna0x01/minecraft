@@ -1,6 +1,5 @@
 package net.minecraft.block;
 
-import net.minecraft.entity.EntityContext;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -17,34 +16,34 @@ public class SkullBlock extends AbstractSkullBlock {
 	public static final IntProperty ROTATION = Properties.ROTATION;
 	protected static final VoxelShape SHAPE = Block.createCuboidShape(4.0, 0.0, 4.0, 12.0, 8.0, 12.0);
 
-	protected SkullBlock(SkullBlock.SkullType skullType, Block.Settings settings) {
+	protected SkullBlock(SkullBlock.SkullType skullType, AbstractBlock.Settings settings) {
 		super(skullType, settings);
 		this.setDefaultState(this.stateManager.getDefaultState().with(ROTATION, Integer.valueOf(0)));
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return SHAPE;
 	}
 
 	@Override
-	public VoxelShape getCullingShape(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public VoxelShape getCullingShape(BlockState state, BlockView world, BlockPos pos) {
 		return VoxelShapes.empty();
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		return this.getDefaultState().with(ROTATION, Integer.valueOf(MathHelper.floor((double)(itemPlacementContext.getPlayerYaw() * 16.0F / 360.0F) + 0.5) & 15));
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		return this.getDefaultState().with(ROTATION, Integer.valueOf(MathHelper.floor((double)(ctx.getPlayerYaw() * 16.0F / 360.0F) + 0.5) & 15));
 	}
 
 	@Override
-	public BlockState rotate(BlockState blockState, BlockRotation blockRotation) {
-		return blockState.with(ROTATION, Integer.valueOf(blockRotation.rotate((Integer)blockState.get(ROTATION), 16)));
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		return state.with(ROTATION, Integer.valueOf(rotation.rotate((Integer)state.get(ROTATION), 16)));
 	}
 
 	@Override
-	public BlockState mirror(BlockState blockState, BlockMirror blockMirror) {
-		return blockState.with(ROTATION, Integer.valueOf(blockMirror.mirror((Integer)blockState.get(ROTATION), 16)));
+	public BlockState mirror(BlockState state, BlockMirror mirror) {
+		return state.with(ROTATION, Integer.valueOf(mirror.mirror((Integer)state.get(ROTATION), 16)));
 	}
 
 	@Override
@@ -56,11 +55,11 @@ public class SkullBlock extends AbstractSkullBlock {
 	}
 
 	public static enum Type implements SkullBlock.SkullType {
-		field_11512,
-		field_11513,
-		field_11510,
-		field_11508,
-		field_11507,
-		field_11511;
+		SKELETON,
+		WITHER_SKELETON,
+		PLAYER,
+		ZOMBIE,
+		CREEPER,
+		DRAGON;
 	}
 }

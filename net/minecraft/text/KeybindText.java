@@ -1,24 +1,38 @@
 package net.minecraft.text;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class KeybindText extends BaseText {
-	public static Function<String, Supplier<String>> i18n = string -> () -> string;
+	private static Function<String, Supplier<Text>> translator = key -> () -> new LiteralText(key);
 	private final String key;
-	private Supplier<String> name;
+	private Supplier<Text> translated;
 
-	public KeybindText(String string) {
-		this.key = string;
+	public KeybindText(String key) {
+		this.key = key;
+	}
+
+	public static void setTranslator(Function<String, Supplier<Text>> translator) {
+		KeybindText.translator = translator;
+	}
+
+	private Text getTranslated() {
+		if (this.translated == null) {
+			this.translated = (Supplier<Text>)translator.apply(this.key);
+		}
+
+		return (Text)this.translated.get();
 	}
 
 	@Override
-	public String asString() {
-		if (this.name == null) {
-			this.name = (Supplier<String>)i18n.apply(this.key);
-		}
+	public <T> Optional<T> visitSelf(StringVisitable.Visitor<T> visitor) {
+		return this.getTranslated().visit(visitor);
+	}
 
-		return (String)this.name.get();
+	@Override
+	public <T> Optional<T> visitSelf(StringVisitable.StyledVisitor<T> visitor, Style style) {
+		return this.getTranslated().visit(visitor, style);
 	}
 
 	public KeybindText copy() {

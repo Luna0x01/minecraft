@@ -3,25 +3,34 @@ package net.minecraft.loot.entry;
 import net.minecraft.loot.condition.LootCondition;
 
 public class SequenceEntry extends CombinedEntry {
-	SequenceEntry(LootEntry[] lootEntrys, LootCondition[] lootConditions) {
-		super(lootEntrys, lootConditions);
+	SequenceEntry(LootPoolEntry[] lootPoolEntrys, LootCondition[] lootConditions) {
+		super(lootPoolEntrys, lootConditions);
 	}
 
 	@Override
-	protected EntryCombiner combine(EntryCombiner[] entryCombiners) {
-		switch (entryCombiners.length) {
+	public LootPoolEntryType getType() {
+		return LootPoolEntryTypes.GROUP;
+	}
+
+	@Override
+	protected EntryCombiner combine(EntryCombiner[] children) {
+		switch (children.length) {
 			case 0:
 				return ALWAYS_TRUE;
 			case 1:
-				return entryCombiners[0];
+				return children[0];
 			case 2:
-				return entryCombiners[0].and(entryCombiners[1]);
-			default:
+				EntryCombiner entryCombiner = children[0];
+				EntryCombiner entryCombiner2 = children[1];
 				return (lootContext, consumer) -> {
-					for (EntryCombiner entryCombiner : entryCombiners) {
-						if (!entryCombiner.expand(lootContext, consumer)) {
-							return false;
-						}
+					entryCombiner.expand(lootContext, consumer);
+					entryCombiner2.expand(lootContext, consumer);
+					return true;
+				};
+			default:
+				return (context, lootChoiceExpander) -> {
+					for (EntryCombiner entryCombinerx : children) {
+						entryCombinerx.expand(context, lootChoiceExpander);
 					}
 
 					return true;

@@ -1,6 +1,7 @@
 package net.minecraft.server.function;
 
 import com.google.common.collect.Lists;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -16,8 +17,8 @@ public class CommandFunction {
 	private final CommandFunction.Element[] elements;
 	private final Identifier id;
 
-	public CommandFunction(Identifier identifier, CommandFunction.Element[] elements) {
-		this.id = identifier;
+	public CommandFunction(Identifier id, CommandFunction.Element[] elements) {
+		this.id = id;
 		this.elements = elements;
 	}
 
@@ -29,7 +30,9 @@ public class CommandFunction {
 		return this.elements;
 	}
 
-	public static CommandFunction create(Identifier identifier, CommandFunctionManager commandFunctionManager, List<String> list) {
+	public static CommandFunction create(
+		Identifier id, CommandDispatcher<ServerCommandSource> commandDispatcher, ServerCommandSource serverCommandSource, List<String> list
+	) {
 		List<CommandFunction.Element> list2 = Lists.newArrayListWithCapacity(list.size());
 
 		for (int i = 0; i < list.size(); i++) {
@@ -50,37 +53,31 @@ public class CommandFunction {
 				}
 
 				try {
-					ParseResults<ServerCommandSource> parseResults = commandFunctionManager.getServer()
-						.getCommandManager()
-						.getDispatcher()
-						.parse(stringReader, commandFunctionManager.getCommandFunctionSource());
+					ParseResults<ServerCommandSource> parseResults = commandDispatcher.parse(stringReader, serverCommandSource);
 					if (parseResults.getReader().canRead()) {
 						throw CommandManager.getException(parseResults);
 					}
 
 					list2.add(new CommandFunction.CommandElement(parseResults));
-				} catch (CommandSyntaxException var9) {
-					throw new IllegalArgumentException("Whilst parsing command on line " + j + ": " + var9.getMessage());
+				} catch (CommandSyntaxException var10) {
+					throw new IllegalArgumentException("Whilst parsing command on line " + j + ": " + var10.getMessage());
 				}
 			}
 		}
 
-		return new CommandFunction(identifier, (CommandFunction.Element[])list2.toArray(new CommandFunction.Element[0]));
+		return new CommandFunction(id, (CommandFunction.Element[])list2.toArray(new CommandFunction.Element[0]));
 	}
 
 	public static class CommandElement implements CommandFunction.Element {
 		private final ParseResults<ServerCommandSource> parsed;
 
-		public CommandElement(ParseResults<ServerCommandSource> parseResults) {
-			this.parsed = parseResults;
+		public CommandElement(ParseResults<ServerCommandSource> parsed) {
+			this.parsed = parsed;
 		}
 
 		@Override
-		public void execute(
-			CommandFunctionManager commandFunctionManager, ServerCommandSource serverCommandSource, ArrayDeque<CommandFunctionManager.Entry> arrayDeque, int i
-		) throws CommandSyntaxException {
-			commandFunctionManager.getDispatcher()
-				.execute(new ParseResults(this.parsed.getContext().withSource(serverCommandSource), this.parsed.getReader(), this.parsed.getExceptions()));
+		public void execute(CommandFunctionManager manager, ServerCommandSource source, ArrayDeque<CommandFunctionManager.Entry> stack, int maxChainLength) throws CommandSyntaxException {
+			manager.getDispatcher().execute(new ParseResults(this.parsed.getContext().withSource(source), this.parsed.getReader(), this.parsed.getExceptions()));
 		}
 
 		public String toString() {
@@ -89,9 +86,7 @@ public class CommandFunction {
 	}
 
 	public interface Element {
-		void execute(
-			CommandFunctionManager commandFunctionManager, ServerCommandSource serverCommandSource, ArrayDeque<CommandFunctionManager.Entry> arrayDeque, int i
-		) throws CommandSyntaxException;
+		void execute(CommandFunctionManager manager, ServerCommandSource source, ArrayDeque<CommandFunctionManager.Entry> stack, int maxChainLength) throws CommandSyntaxException;
 	}
 
 	public static class FunctionElement implements CommandFunction.Element {
@@ -102,16 +97,14 @@ public class CommandFunction {
 		}
 
 		@Override
-		public void execute(
-			CommandFunctionManager commandFunctionManager, ServerCommandSource serverCommandSource, ArrayDeque<CommandFunctionManager.Entry> arrayDeque, int i
-		) {
-			this.function.get(commandFunctionManager).ifPresent(commandFunction -> {
+		public void execute(CommandFunctionManager manager, ServerCommandSource source, ArrayDeque<CommandFunctionManager.Entry> stack, int maxChainLength) {
+			this.function.get(manager).ifPresent(commandFunction -> {
 				CommandFunction.Element[] elements = commandFunction.getElements();
-				int j = i - arrayDeque.size();
+				int j = maxChainLength - stack.size();
 				int k = Math.min(elements.length, j);
 
 				for (int l = k - 1; l >= 0; l--) {
-					arrayDeque.addFirst(new CommandFunctionManager.Entry(commandFunctionManager, serverCommandSource, elements[l]));
+					stack.addFirst(new CommandFunctionManager.Entry(manager, source, elements[l]));
 				}
 			});
 		}
@@ -128,20 +121,20 @@ public class CommandFunction {
 		private boolean initialized;
 		private Optional<CommandFunction> function = Optional.empty();
 
-		public LazyContainer(@Nullable Identifier identifier) {
-			this.id = identifier;
+		public LazyContainer(@Nullable Identifier id) {
+			this.id = id;
 		}
 
-		public LazyContainer(CommandFunction commandFunction) {
+		public LazyContainer(CommandFunction function) {
 			this.initialized = true;
 			this.id = null;
-			this.function = Optional.of(commandFunction);
+			this.function = Optional.of(function);
 		}
 
-		public Optional<CommandFunction> get(CommandFunctionManager commandFunctionManager) {
+		public Optional<CommandFunction> get(CommandFunctionManager manager) {
 			if (!this.initialized) {
 				if (this.id != null) {
-					this.function = commandFunctionManager.getFunction(this.id);
+					this.function = manager.getFunction(this.id);
 				}
 
 				this.initialized = true;

@@ -7,8 +7,8 @@ public class ArmorStandArmorEntityModel extends BipedEntityModel<ArmorStandEntit
 		this(f, 64, 32);
 	}
 
-	protected ArmorStandArmorEntityModel(float f, int i, int j) {
-		super(f, 0.0F, i, j);
+	protected ArmorStandArmorEntityModel(float scale, int textureWidth, int textureHeight) {
+		super(scale, 0.0F, textureWidth, textureHeight);
 	}
 
 	public void setAngles(ArmorStandEntity armorStandEntity, float f, float g, float h, float i, float j) {

@@ -4,7 +4,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.EntityContext;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.WorldView;
@@ -12,22 +12,22 @@ import net.minecraft.world.WorldView;
 public class WallStandingBlockItem extends BlockItem {
 	protected final Block wallBlock;
 
-	public WallStandingBlockItem(Block block, Block block2, Item.Settings settings) {
-		super(block, settings);
-		this.wallBlock = block2;
+	public WallStandingBlockItem(Block standingBlock, Block wallBlock, Item.Settings settings) {
+		super(standingBlock, settings);
+		this.wallBlock = wallBlock;
 	}
 
 	@Nullable
 	@Override
-	protected BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		BlockState blockState = this.wallBlock.getPlacementState(itemPlacementContext);
+	protected BlockState getPlacementState(ItemPlacementContext context) {
+		BlockState blockState = this.wallBlock.getPlacementState(context);
 		BlockState blockState2 = null;
-		WorldView worldView = itemPlacementContext.getWorld();
-		BlockPos blockPos = itemPlacementContext.getBlockPos();
+		WorldView worldView = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
 
-		for (Direction direction : itemPlacementContext.getPlacementDirections()) {
-			if (direction != Direction.field_11036) {
-				BlockState blockState3 = direction == Direction.field_11033 ? this.getBlock().getPlacementState(itemPlacementContext) : blockState;
+		for (Direction direction : context.getPlacementDirections()) {
+			if (direction != Direction.UP) {
+				BlockState blockState3 = direction == Direction.DOWN ? this.getBlock().getPlacementState(context) : blockState;
 				if (blockState3 != null && blockState3.canPlaceAt(worldView, blockPos)) {
 					blockState2 = blockState3;
 					break;
@@ -35,7 +35,7 @@ public class WallStandingBlockItem extends BlockItem {
 			}
 		}
 
-		return blockState2 != null && worldView.canPlace(blockState2, blockPos, EntityContext.absent()) ? blockState2 : null;
+		return blockState2 != null && worldView.canPlace(blockState2, blockPos, ShapeContext.absent()) ? blockState2 : null;
 	}
 
 	@Override

@@ -12,10 +12,11 @@ public interface RecipeType<T extends Recipe<?>> {
 	RecipeType<BlastingRecipe> BLASTING = register("blasting");
 	RecipeType<SmokingRecipe> SMOKING = register("smoking");
 	RecipeType<CampfireCookingRecipe> CAMPFIRE_COOKING = register("campfire_cooking");
-	RecipeType<StonecuttingRecipe> field_17641 = register("stonecutting");
+	RecipeType<StonecuttingRecipe> STONECUTTING = register("stonecutting");
+	RecipeType<SmithingRecipe> SMITHING = register("smithing");
 
 	static <T extends Recipe<?>> RecipeType<T> register(String string) {
-		return Registry.register(Registry.field_17597, new Identifier(string), new RecipeType<T>() {
+		return Registry.register(Registry.RECIPE_TYPE, new Identifier(string), new RecipeType<T>() {
 			public String toString() {
 				return string;
 			}

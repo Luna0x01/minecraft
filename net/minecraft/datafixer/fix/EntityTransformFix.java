@@ -4,18 +4,18 @@ import com.mojang.datafixers.DataFix;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.Typed;
 import com.mojang.datafixers.schemas.Schema;
-import com.mojang.datafixers.types.DynamicOps;
 import com.mojang.datafixers.types.Type;
 import com.mojang.datafixers.types.templates.TaggedChoice.TaggedChoiceType;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.DynamicOps;
 import net.minecraft.datafixer.TypeReferences;
 
 public abstract class EntityTransformFix extends DataFix {
 	protected final String name;
 
-	public EntityTransformFix(String string, Schema schema, boolean bl) {
-		super(schema, bl);
-		this.name = string;
+	public EntityTransformFix(String name, Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
+		this.name = name;
 	}
 
 	public TypeRewriteRule makeRule() {
@@ -38,5 +38,5 @@ public abstract class EntityTransformFix extends DataFix {
 		return new Typed(type, dynamicOps, object);
 	}
 
-	protected abstract Pair<String, Typed<?>> transform(String string, Typed<?> typed);
+	protected abstract Pair<String, Typed<?>> transform(String choice, Typed<?> typed);
 }

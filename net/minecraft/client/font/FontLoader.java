@@ -5,5 +5,5 @@ import net.minecraft.resource.ResourceManager;
 
 public interface FontLoader {
 	@Nullable
-	Font load(ResourceManager resourceManager);
+	Font load(ResourceManager manager);
 }

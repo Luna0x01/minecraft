@@ -1,35 +1,27 @@
 package net.minecraft.world.biome.layer;
 
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.biome.layer.type.MergingLayer;
 import net.minecraft.world.biome.layer.util.IdentityCoordinateTransformer;
 import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
 import net.minecraft.world.biome.layer.util.LayerSampler;
 
 public enum AddRiversLayer implements MergingLayer, IdentityCoordinateTransformer {
-	field_16161;
-
-	private static final int FROZEN_RIVER_ID = Registry.field_11153.getRawId(Biomes.field_9463);
-	private static final int SNOWY_TUNDRA_ID = Registry.field_11153.getRawId(Biomes.field_9452);
-	private static final int MUSHROOM_FIELDS_ID = Registry.field_11153.getRawId(Biomes.field_9462);
-	private static final int MUSHROOM_FIELD_SHORE_ID = Registry.field_11153.getRawId(Biomes.field_9407);
-	private static final int RIVER_ID = Registry.field_11153.getRawId(Biomes.field_9438);
+	INSTANCE;
 
 	@Override
-	public int sample(LayerRandomnessSource layerRandomnessSource, LayerSampler layerSampler, LayerSampler layerSampler2, int i, int j) {
-		int k = layerSampler.sample(this.transformX(i), this.transformZ(j));
-		int l = layerSampler2.sample(this.transformX(i), this.transformZ(j));
-		if (BiomeLayers.isOcean(k)) {
-			return k;
-		} else if (l == RIVER_ID) {
-			if (k == SNOWY_TUNDRA_ID) {
-				return FROZEN_RIVER_ID;
+	public int sample(LayerRandomnessSource context, LayerSampler sampler1, LayerSampler sampler2, int x, int z) {
+		int i = sampler1.sample(this.transformX(x), this.transformZ(z));
+		int j = sampler2.sample(this.transformX(x), this.transformZ(z));
+		if (BiomeLayers.isOcean(i)) {
+			return i;
+		} else if (j == 7) {
+			if (i == 12) {
+				return 11;
 			} else {
-				return k != MUSHROOM_FIELDS_ID && k != MUSHROOM_FIELD_SHORE_ID ? l & 0xFF : MUSHROOM_FIELD_SHORE_ID;
+				return i != 14 && i != 15 ? j & 0xFF : 15;
 			}
 		} else {
-			return k;
+			return i;
 		}
 	}
 }

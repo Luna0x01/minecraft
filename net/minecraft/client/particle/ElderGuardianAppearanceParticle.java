@@ -11,16 +11,16 @@ import net.minecraft.client.render.entity.ElderGuardianEntityRenderer;
 import net.minecraft.client.render.entity.model.GuardianEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
 
 public class ElderGuardianAppearanceParticle extends Particle {
-	private final Model field_21793 = new GuardianEntityModel();
-	private final RenderLayer field_21792 = RenderLayer.getEntityTranslucent(ElderGuardianEntityRenderer.SKIN);
+	private final Model model = new GuardianEntityModel();
+	private final RenderLayer LAYER = RenderLayer.getEntityTranslucent(ElderGuardianEntityRenderer.TEXTURE);
 
-	private ElderGuardianAppearanceParticle(World world, double d, double e, double f) {
-		super(world, d, e, f);
+	private ElderGuardianAppearanceParticle(ClientWorld world, double x, double y, double z) {
+		super(world, x, y, z);
 		this.gravityStrength = 0.0F;
 		this.maxAge = 30;
 	}
@@ -31,23 +31,23 @@ public class ElderGuardianAppearanceParticle extends Particle {
 	}
 
 	@Override
-	public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float f) {
-		float g = ((float)this.age + f) / (float)this.maxAge;
-		float h = 0.05F + 0.5F * MathHelper.sin(g * (float) Math.PI);
+	public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
+		float f = ((float)this.age + tickDelta) / (float)this.maxAge;
+		float g = 0.05F + 0.5F * MathHelper.sin(f * (float) Math.PI);
 		MatrixStack matrixStack = new MatrixStack();
 		matrixStack.multiply(camera.getRotation());
-		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(150.0F * g - 60.0F));
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(150.0F * f - 60.0F));
 		matrixStack.scale(-1.0F, -1.0F, 1.0F);
 		matrixStack.translate(0.0, -1.101F, 1.5);
 		VertexConsumerProvider.Immediate immediate = MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers();
-		VertexConsumer vertexConsumer2 = immediate.getBuffer(this.field_21792);
-		this.field_21793.render(matrixStack, vertexConsumer2, 15728880, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, h);
+		VertexConsumer vertexConsumer2 = immediate.getBuffer(this.LAYER);
+		this.model.render(matrixStack, vertexConsumer2, 15728880, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, g);
 		immediate.draw();
 	}
 
 	public static class Factory implements ParticleFactory<DefaultParticleType> {
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			return new ElderGuardianAppearanceParticle(world, d, e, f);
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			return new ElderGuardianAppearanceParticle(clientWorld, d, e, f);
 		}
 	}
 }

@@ -1,20 +1,21 @@
 package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
-import net.minecraft.container.Container;
-import net.minecraft.container.NameableContainerFactory;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.ContainerLock;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Nameable;
 
-public abstract class LockableContainerBlockEntity extends BlockEntity implements Inventory, NameableContainerFactory, Nameable {
+public abstract class LockableContainerBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory, Nameable {
 	private ContainerLock lock = ContainerLock.EMPTY;
 	private Text customName;
 
@@ -23,27 +24,27 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 	}
 
 	@Override
-	public void fromTag(CompoundTag compoundTag) {
-		super.fromTag(compoundTag);
-		this.lock = ContainerLock.fromTag(compoundTag);
-		if (compoundTag.contains("CustomName", 8)) {
-			this.customName = Text.Serializer.fromJson(compoundTag.getString("CustomName"));
+	public void fromTag(BlockState state, CompoundTag tag) {
+		super.fromTag(state, tag);
+		this.lock = ContainerLock.fromTag(tag);
+		if (tag.contains("CustomName", 8)) {
+			this.customName = Text.Serializer.fromJson(tag.getString("CustomName"));
 		}
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag compoundTag) {
-		super.toTag(compoundTag);
-		this.lock.toTag(compoundTag);
+	public CompoundTag toTag(CompoundTag tag) {
+		super.toTag(tag);
+		this.lock.toTag(tag);
 		if (this.customName != null) {
-			compoundTag.putString("CustomName", Text.Serializer.toJson(this.customName));
+			tag.putString("CustomName", Text.Serializer.toJson(this.customName));
 		}
 
-		return compoundTag;
+		return tag;
 	}
 
-	public void setCustomName(Text text) {
-		this.customName = text;
+	public void setCustomName(Text customName) {
+		this.customName = customName;
 	}
 
 	@Override
@@ -64,14 +65,14 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 
 	protected abstract Text getContainerName();
 
-	public boolean checkUnlocked(PlayerEntity playerEntity) {
-		return checkUnlocked(playerEntity, this.lock, this.getDisplayName());
+	public boolean checkUnlocked(PlayerEntity player) {
+		return checkUnlocked(player, this.lock, this.getDisplayName());
 	}
 
-	public static boolean checkUnlocked(PlayerEntity playerEntity, ContainerLock containerLock, Text text) {
-		if (!playerEntity.isSpectator() && !containerLock.canOpen(playerEntity.getMainHandStack())) {
-			playerEntity.addChatMessage(new TranslatableText("container.isLocked", text), true);
-			playerEntity.playSound(SoundEvents.field_14731, SoundCategory.field_15245, 1.0F, 1.0F);
+	public static boolean checkUnlocked(PlayerEntity player, ContainerLock lock, Text containerName) {
+		if (!player.isSpectator() && !lock.canOpen(player.getMainHandStack())) {
+			player.sendMessage(new TranslatableText("container.isLocked", containerName), true);
+			player.playSound(SoundEvents.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, 1.0F, 1.0F);
 			return false;
 		} else {
 			return true;
@@ -80,9 +81,9 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 
 	@Nullable
 	@Override
-	public Container createMenu(int i, PlayerInventory playerInventory, PlayerEntity playerEntity) {
-		return this.checkUnlocked(playerEntity) ? this.createContainer(i, playerInventory) : null;
+	public ScreenHandler createMenu(int i, PlayerInventory playerInventory, PlayerEntity playerEntity) {
+		return this.checkUnlocked(playerEntity) ? this.createScreenHandler(i, playerInventory) : null;
 	}
 
-	protected abstract Container createContainer(int i, PlayerInventory playerInventory);
+	protected abstract ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory);
 }

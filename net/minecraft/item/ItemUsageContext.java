@@ -10,22 +10,27 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class ItemUsageContext {
-	protected final PlayerEntity player;
-	protected final Hand hand;
-	protected final BlockHitResult hit;
-	protected final World world;
-	protected final ItemStack stack;
+	@Nullable
+	private final PlayerEntity player;
+	private final Hand hand;
+	private final BlockHitResult hit;
+	private final World world;
+	private final ItemStack stack;
 
-	public ItemUsageContext(PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
-		this(playerEntity.world, playerEntity, hand, playerEntity.getStackInHand(hand), blockHitResult);
+	public ItemUsageContext(PlayerEntity player, Hand hand, BlockHitResult hit) {
+		this(player.world, player, hand, player.getStackInHand(hand), hit);
 	}
 
-	protected ItemUsageContext(World world, @Nullable PlayerEntity playerEntity, Hand hand, ItemStack itemStack, BlockHitResult blockHitResult) {
-		this.player = playerEntity;
+	protected ItemUsageContext(World world, @Nullable PlayerEntity player, Hand hand, ItemStack stack, BlockHitResult hit) {
+		this.player = player;
 		this.hand = hand;
-		this.hit = blockHitResult;
-		this.stack = itemStack;
+		this.hit = hit;
+		this.stack = stack;
 		this.world = world;
+	}
+
+	protected final BlockHitResult getHitResult() {
+		return this.hit;
 	}
 
 	public BlockPos getBlockPos() {
@@ -62,7 +67,7 @@ public class ItemUsageContext {
 	}
 
 	public Direction getPlayerFacing() {
-		return this.player == null ? Direction.field_11043 : this.player.getHorizontalFacing();
+		return this.player == null ? Direction.NORTH : this.player.getHorizontalFacing();
 	}
 
 	public boolean shouldCancelInteraction() {

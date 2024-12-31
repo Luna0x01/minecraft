@@ -17,28 +17,29 @@ import net.minecraft.util.registry.Registry;
 public class ItemEntry extends LeafEntry {
 	private final Item item;
 
-	private ItemEntry(Item item, int i, int j, LootCondition[] lootConditions, LootFunction[] lootFunctions) {
-		super(i, j, lootConditions, lootFunctions);
+	private ItemEntry(Item item, int weight, int quality, LootCondition[] conditions, LootFunction[] functions) {
+		super(weight, quality, conditions, functions);
 		this.item = item;
 	}
 
 	@Override
-	public void drop(Consumer<ItemStack> consumer, LootContext lootContext) {
-		consumer.accept(new ItemStack(this.item));
+	public LootPoolEntryType getType() {
+		return LootPoolEntryTypes.ITEM;
 	}
 
-	public static LeafEntry.Builder<?> builder(ItemConvertible itemConvertible) {
-		return builder((i, j, lootConditions, lootFunctions) -> new ItemEntry(itemConvertible.asItem(), i, j, lootConditions, lootFunctions));
+	@Override
+	public void generateLoot(Consumer<ItemStack> lootConsumer, LootContext context) {
+		lootConsumer.accept(new ItemStack(this.item));
+	}
+
+	public static LeafEntry.Builder<?> builder(ItemConvertible drop) {
+		return builder((weight, quality, conditions, functions) -> new ItemEntry(drop.asItem(), weight, quality, conditions, functions));
 	}
 
 	public static class Serializer extends LeafEntry.Serializer<ItemEntry> {
-		public Serializer() {
-			super(new Identifier("item"), ItemEntry.class);
-		}
-
-		public void toJson(JsonObject jsonObject, ItemEntry itemEntry, JsonSerializationContext jsonSerializationContext) {
-			super.toJson(jsonObject, itemEntry, jsonSerializationContext);
-			Identifier identifier = Registry.field_11142.getId(itemEntry.item);
+		public void addEntryFields(JsonObject jsonObject, ItemEntry itemEntry, JsonSerializationContext jsonSerializationContext) {
+			super.addEntryFields(jsonObject, itemEntry, jsonSerializationContext);
+			Identifier identifier = Registry.ITEM.getId(itemEntry.item);
 			if (identifier == null) {
 				throw new IllegalArgumentException("Can't serialize unknown item " + itemEntry.item);
 			} else {

@@ -2,6 +2,7 @@ package net.minecraft.entity.vehicle;
 
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
@@ -10,28 +11,26 @@ public class MinecartEntity extends AbstractMinecartEntity {
 		super(entityType, world);
 	}
 
-	public MinecartEntity(World world, double d, double e, double f) {
-		super(EntityType.field_6096, world, d, e, f);
+	public MinecartEntity(World world, double x, double y, double z) {
+		super(EntityType.MINECART, world, x, y, z);
 	}
 
 	@Override
-	public boolean interact(PlayerEntity playerEntity, Hand hand) {
-		if (playerEntity.shouldCancelInteraction()) {
-			return false;
+	public ActionResult interact(PlayerEntity player, Hand hand) {
+		if (player.shouldCancelInteraction()) {
+			return ActionResult.PASS;
 		} else if (this.hasPassengers()) {
-			return true;
+			return ActionResult.PASS;
+		} else if (!this.world.isClient) {
+			return player.startRiding(this) ? ActionResult.CONSUME : ActionResult.PASS;
 		} else {
-			if (!this.world.isClient) {
-				playerEntity.startRiding(this);
-			}
-
-			return true;
+			return ActionResult.SUCCESS;
 		}
 	}
 
 	@Override
-	public void onActivatorRail(int i, int j, int k, boolean bl) {
-		if (bl) {
+	public void onActivatorRail(int x, int y, int z, boolean powered) {
+		if (powered) {
 			if (this.hasPassengers()) {
 				this.removeAllPassengers();
 			}
@@ -47,6 +46,6 @@ public class MinecartEntity extends AbstractMinecartEntity {
 
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
-		return AbstractMinecartEntity.Type.field_7674;
+		return AbstractMinecartEntity.Type.RIDEABLE;
 	}
 }

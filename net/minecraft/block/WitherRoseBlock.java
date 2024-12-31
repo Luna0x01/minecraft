@@ -2,7 +2,6 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffect;
@@ -17,45 +16,38 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 
 public class WitherRoseBlock extends FlowerBlock {
-	public WitherRoseBlock(StatusEffect statusEffect, Block.Settings settings) {
-		super(statusEffect, 8, settings);
+	public WitherRoseBlock(StatusEffect effect, AbstractBlock.Settings settings) {
+		super(effect, 8, settings);
 	}
 
 	@Override
-	protected boolean canPlantOnTop(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		Block block = blockState.getBlock();
-		return super.canPlantOnTop(blockState, blockView, blockPos) || block == Blocks.field_10515 || block == Blocks.field_10114;
+	protected boolean canPlantOnTop(BlockState floor, BlockView world, BlockPos pos) {
+		return super.canPlantOnTop(floor, world, pos) || floor.isOf(Blocks.NETHERRACK) || floor.isOf(Blocks.SOUL_SAND) || floor.isOf(Blocks.SOUL_SOIL);
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		VoxelShape voxelShape = this.getOutlineShape(blockState, world, blockPos, EntityContext.absent());
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		VoxelShape voxelShape = this.getOutlineShape(state, world, pos, ShapeContext.absent());
 		Vec3d vec3d = voxelShape.getBoundingBox().getCenter();
-		double d = (double)blockPos.getX() + vec3d.x;
-		double e = (double)blockPos.getZ() + vec3d.z;
+		double d = (double)pos.getX() + vec3d.x;
+		double e = (double)pos.getZ() + vec3d.z;
 
 		for (int i = 0; i < 3; i++) {
 			if (random.nextBoolean()) {
 				world.addParticle(
-					ParticleTypes.field_11251,
-					d + (double)(random.nextFloat() / 5.0F),
-					(double)blockPos.getY() + (0.5 - (double)random.nextFloat()),
-					e + (double)(random.nextFloat() / 5.0F),
-					0.0,
-					0.0,
-					0.0
+					ParticleTypes.SMOKE, d + random.nextDouble() / 5.0, (double)pos.getY() + (0.5 - random.nextDouble()), e + random.nextDouble() / 5.0, 0.0, 0.0, 0.0
 				);
 			}
 		}
 	}
 
 	@Override
-	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
-		if (!world.isClient && world.getDifficulty() != Difficulty.field_5801) {
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		if (!world.isClient && world.getDifficulty() != Difficulty.PEACEFUL) {
 			if (entity instanceof LivingEntity) {
 				LivingEntity livingEntity = (LivingEntity)entity;
 				if (!livingEntity.isInvulnerableTo(DamageSource.WITHER)) {
-					livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.field_5920, 40));
+					livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 40));
 				}
 			}
 		}

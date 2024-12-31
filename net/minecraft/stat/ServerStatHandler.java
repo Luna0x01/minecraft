@@ -20,11 +20,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Map.Entry;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.network.packet.StatisticsS2CPacket;
 import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.network.packet.s2c.play.StatisticsS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
@@ -41,12 +41,12 @@ public class ServerStatHandler extends StatHandler {
 	private final Set<Stat<?>> pendingStats = Sets.newHashSet();
 	private int lastStatsUpdate = -300;
 
-	public ServerStatHandler(MinecraftServer minecraftServer, File file) {
-		this.server = minecraftServer;
+	public ServerStatHandler(MinecraftServer server, File file) {
+		this.server = server;
 		this.file = file;
 		if (file.isFile()) {
 			try {
-				this.parse(minecraftServer.getDataFixer(), FileUtils.readFileToString(file));
+				this.parse(server.getDataFixer(), FileUtils.readFileToString(file));
 			} catch (IOException var4) {
 				LOGGER.error("Couldn't read statistics file {}", file, var4);
 			} catch (JsonParseException var5) {
@@ -64,8 +64,8 @@ public class ServerStatHandler extends StatHandler {
 	}
 
 	@Override
-	public void setStat(PlayerEntity playerEntity, Stat<?> stat, int i) {
-		super.setStat(playerEntity, stat, i);
+	public void setStat(PlayerEntity player, Stat<?> stat, int value) {
+		super.setStat(player, stat, value);
 		this.pendingStats.add(stat);
 	}
 
@@ -75,9 +75,9 @@ public class ServerStatHandler extends StatHandler {
 		return set;
 	}
 
-	public void parse(DataFixer dataFixer, String string) {
+	public void parse(DataFixer dataFixer, String json) {
 		try {
-			JsonReader jsonReader = new JsonReader(new StringReader(string));
+			JsonReader jsonReader = new JsonReader(new StringReader(json));
 			Throwable var4 = null;
 
 			try {
@@ -89,30 +89,30 @@ public class ServerStatHandler extends StatHandler {
 						compoundTag.putInt("DataVersion", 1343);
 					}
 
-					compoundTag = NbtHelper.update(dataFixer, DataFixTypes.field_19218, compoundTag, compoundTag.getInt("DataVersion"));
+					compoundTag = NbtHelper.update(dataFixer, DataFixTypes.STATS, compoundTag, compoundTag.getInt("DataVersion"));
 					if (compoundTag.contains("stats", 10)) {
 						CompoundTag compoundTag2 = compoundTag.getCompound("stats");
 
-						for (String string2 : compoundTag2.getKeys()) {
-							if (compoundTag2.contains(string2, 10)) {
+						for (String string : compoundTag2.getKeys()) {
+							if (compoundTag2.contains(string, 10)) {
 								Util.ifPresentOrElse(
-									Registry.field_11152.getOrEmpty(new Identifier(string2)),
+									Registry.STAT_TYPE.getOrEmpty(new Identifier(string)),
 									statType -> {
-										CompoundTag compoundTag2x = compoundTag2.getCompound(string2);
+										CompoundTag compoundTag2x = compoundTag2.getCompound(string);
 
-										for (String string2x : compoundTag2x.getKeys()) {
-											if (compoundTag2x.contains(string2x, 99)) {
+										for (String string2 : compoundTag2x.getKeys()) {
+											if (compoundTag2x.contains(string2, 99)) {
 												Util.ifPresentOrElse(
-													this.createStat(statType, string2x),
-													stat -> this.statMap.put(stat, compoundTag2x.getInt(string2x)),
-													() -> LOGGER.warn("Invalid statistic in {}: Don't know what {} is", this.file, string2x)
+													this.createStat(statType, string2),
+													stat -> this.statMap.put(stat, compoundTag2x.getInt(string2)),
+													() -> LOGGER.warn("Invalid statistic in {}: Don't know what {} is", this.file, string2)
 												);
 											} else {
-												LOGGER.warn("Invalid statistic value in {}: Don't know what {} is for key {}", this.file, compoundTag2x.get(string2x), string2x);
+												LOGGER.warn("Invalid statistic value in {}: Don't know what {} is for key {}", this.file, compoundTag2x.get(string2), string2);
 											}
 										}
 									},
-									() -> LOGGER.warn("Invalid statistic type in {}: Don't know what {} is", this.file, string2)
+									() -> LOGGER.warn("Invalid statistic type in {}: Don't know what {} is", this.file, string)
 								);
 							}
 						}
@@ -143,8 +143,8 @@ public class ServerStatHandler extends StatHandler {
 		}
 	}
 
-	private <T> Optional<Stat<T>> createStat(StatType<T> statType, String string) {
-		return Optional.ofNullable(Identifier.tryParse(string)).flatMap(statType.getRegistry()::getOrEmpty).map(statType::getOrCreateStat);
+	private <T> Optional<Stat<T>> createStat(StatType<T> type, String id) {
+		return Optional.ofNullable(Identifier.tryParse(id)).flatMap(type.getRegistry()::getOrEmpty).map(type::getOrCreateStat);
 	}
 
 	private static CompoundTag jsonToCompound(JsonObject jsonObject) {
@@ -178,7 +178,7 @@ public class ServerStatHandler extends StatHandler {
 		JsonObject jsonObjectx = new JsonObject();
 
 		for (Entry<StatType<?>, JsonObject> entry2 : map.entrySet()) {
-			jsonObjectx.add(Registry.field_11152.getId((StatType<?>)entry2.getKey()).toString(), (JsonElement)entry2.getValue());
+			jsonObjectx.add(Registry.STAT_TYPE.getId((StatType<?>)entry2.getKey()).toString(), (JsonElement)entry2.getValue());
 		}
 
 		JsonObject jsonObject2 = new JsonObject();
@@ -195,7 +195,7 @@ public class ServerStatHandler extends StatHandler {
 		this.pendingStats.addAll(this.statMap.keySet());
 	}
 
-	public void sendStats(ServerPlayerEntity serverPlayerEntity) {
+	public void sendStats(ServerPlayerEntity player) {
 		int i = this.server.getTicks();
 		Object2IntMap<Stat<?>> object2IntMap = new Object2IntOpenHashMap();
 		if (i - this.lastStatsUpdate > 300) {
@@ -206,6 +206,6 @@ public class ServerStatHandler extends StatHandler {
 			}
 		}
 
-		serverPlayerEntity.networkHandler.sendPacket(new StatisticsS2CPacket(object2IntMap));
+		player.networkHandler.sendPacket(new StatisticsS2CPacket(object2IntMap));
 	}
 }

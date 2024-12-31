@@ -1,14 +1,16 @@
 package net.minecraft.entity.ai.pathing;
 
-import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
+import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import java.util.EnumSet;
-import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockPlacementEnvironment;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.CampfireBlock;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.FenceGateBlock;
 import net.minecraft.block.LeavesBlock;
@@ -22,266 +24,304 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.chunk.ChunkCache;
 
 public class LandPathNodeMaker extends PathNodeMaker {
 	protected float waterPathNodeTypeWeight;
+	private final Long2ObjectMap<PathNodeType> field_25190 = new Long2ObjectOpenHashMap();
+	private final Object2BooleanMap<Box> field_25191 = new Object2BooleanOpenHashMap();
 
 	@Override
-	public void init(ChunkCache chunkCache, MobEntity mobEntity) {
-		super.init(chunkCache, mobEntity);
-		this.waterPathNodeTypeWeight = mobEntity.getPathfindingPenalty(PathNodeType.field_18);
+	public void init(ChunkCache cachedWorld, MobEntity entity) {
+		super.init(cachedWorld, entity);
+		this.waterPathNodeTypeWeight = entity.getPathfindingPenalty(PathNodeType.WATER);
 	}
 
 	@Override
 	public void clear() {
-		this.entity.setPathfindingPenalty(PathNodeType.field_18, this.waterPathNodeTypeWeight);
+		this.entity.setPathfindingPenalty(PathNodeType.WATER, this.waterPathNodeTypeWeight);
+		this.field_25190.clear();
+		this.field_25191.clear();
 		super.clear();
 	}
 
 	@Override
 	public PathNode getStart() {
-		int i;
-		if (this.canSwim() && this.entity.isTouchingWater()) {
-			i = MathHelper.floor(this.entity.getY());
-			BlockPos.Mutable mutable = new BlockPos.Mutable(this.entity.getX(), (double)i, this.entity.getZ());
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		int i = MathHelper.floor(this.entity.getY());
+		BlockState blockState = this.cachedWorld.getBlockState(mutable.set(this.entity.getX(), (double)i, this.entity.getZ()));
+		if (!this.entity.canWalkOnFluid(blockState.getFluidState().getFluid())) {
+			if (this.canSwim() && this.entity.isTouchingWater()) {
+				while (true) {
+					if (blockState.getBlock() != Blocks.WATER && blockState.getFluidState() != Fluids.WATER.getStill(false)) {
+						i--;
+						break;
+					}
 
-			for (BlockState blockState = this.field_20622.getBlockState(mutable);
-				blockState.getBlock() == Blocks.field_10382 || blockState.getFluidState() == Fluids.WATER.getStill(false);
-				blockState = this.field_20622.getBlockState(mutable)
-			) {
-				mutable.set(this.entity.getX(), (double)(++i), this.entity.getZ());
+					blockState = this.cachedWorld.getBlockState(mutable.set(this.entity.getX(), (double)(++i), this.entity.getZ()));
+				}
+			} else if (this.entity.isOnGround()) {
+				i = MathHelper.floor(this.entity.getY() + 0.5);
+			} else {
+				BlockPos blockPos = this.entity.getBlockPos();
+
+				while (
+					(
+							this.cachedWorld.getBlockState(blockPos).isAir()
+								|| this.cachedWorld.getBlockState(blockPos).canPathfindThrough(this.cachedWorld, blockPos, NavigationType.LAND)
+						)
+						&& blockPos.getY() > 0
+				) {
+					blockPos = blockPos.down();
+				}
+
+				i = blockPos.up().getY();
+			}
+		} else {
+			while (this.entity.canWalkOnFluid(blockState.getFluidState().getFluid())) {
+				blockState = this.cachedWorld.getBlockState(mutable.set(this.entity.getX(), (double)(++i), this.entity.getZ()));
 			}
 
 			i--;
-		} else if (this.entity.onGround) {
-			i = MathHelper.floor(this.entity.getY() + 0.5);
-		} else {
-			BlockPos blockPos = new BlockPos(this.entity);
-
-			while (
-				(
-						this.field_20622.getBlockState(blockPos).isAir()
-							|| this.field_20622.getBlockState(blockPos).canPlaceAtSide(this.field_20622, blockPos, BlockPlacementEnvironment.field_50)
-					)
-					&& blockPos.getY() > 0
-			) {
-				blockPos = blockPos.down();
-			}
-
-			i = blockPos.up().getY();
 		}
 
-		BlockPos blockPos2 = new BlockPos(this.entity);
-		PathNodeType pathNodeType = this.getNodeType(this.entity, blockPos2.getX(), i, blockPos2.getZ());
+		BlockPos blockPos2 = this.entity.getBlockPos();
+		PathNodeType pathNodeType = this.method_29303(this.entity, blockPos2.getX(), i, blockPos2.getZ());
 		if (this.entity.getPathfindingPenalty(pathNodeType) < 0.0F) {
-			Set<BlockPos> set = Sets.newHashSet();
-			set.add(new BlockPos(this.entity.getBoundingBox().x1, (double)i, this.entity.getBoundingBox().z1));
-			set.add(new BlockPos(this.entity.getBoundingBox().x1, (double)i, this.entity.getBoundingBox().z2));
-			set.add(new BlockPos(this.entity.getBoundingBox().x2, (double)i, this.entity.getBoundingBox().z1));
-			set.add(new BlockPos(this.entity.getBoundingBox().x2, (double)i, this.entity.getBoundingBox().z2));
-
-			for (BlockPos blockPos3 : set) {
-				PathNodeType pathNodeType2 = this.getNodeType(this.entity, blockPos3);
-				if (this.entity.getPathfindingPenalty(pathNodeType2) >= 0.0F) {
-					return this.getNode(blockPos3.getX(), blockPos3.getY(), blockPos3.getZ());
-				}
+			Box box = this.entity.getBoundingBox();
+			if (this.method_27139(mutable.set(box.minX, (double)i, box.minZ))
+				|| this.method_27139(mutable.set(box.minX, (double)i, box.maxZ))
+				|| this.method_27139(mutable.set(box.maxX, (double)i, box.minZ))
+				|| this.method_27139(mutable.set(box.maxX, (double)i, box.maxZ))) {
+				PathNode pathNode = this.method_27137(mutable);
+				pathNode.type = this.getNodeType(this.entity, pathNode.getPos());
+				pathNode.penalty = this.entity.getPathfindingPenalty(pathNode.type);
+				return pathNode;
 			}
 		}
 
-		return this.getNode(blockPos2.getX(), i, blockPos2.getZ());
+		PathNode pathNode2 = this.getNode(blockPos2.getX(), i, blockPos2.getZ());
+		pathNode2.type = this.getNodeType(this.entity, pathNode2.getPos());
+		pathNode2.penalty = this.entity.getPathfindingPenalty(pathNode2.type);
+		return pathNode2;
+	}
+
+	private boolean method_27139(BlockPos blockPos) {
+		PathNodeType pathNodeType = this.getNodeType(this.entity, blockPos);
+		return this.entity.getPathfindingPenalty(pathNodeType) >= 0.0F;
 	}
 
 	@Override
-	public TargetPathNode getNode(double d, double e, double f) {
-		return new TargetPathNode(this.getNode(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f)));
+	public TargetPathNode getNode(double x, double y, double z) {
+		return new TargetPathNode(this.getNode(MathHelper.floor(x), MathHelper.floor(y), MathHelper.floor(z)));
 	}
 
 	@Override
-	public int getSuccessors(PathNode[] pathNodes, PathNode pathNode) {
+	public int getSuccessors(PathNode[] successors, PathNode node) {
 		int i = 0;
 		int j = 0;
-		PathNodeType pathNodeType = this.getNodeType(this.entity, pathNode.x, pathNode.y + 1, pathNode.z);
-		if (this.entity.getPathfindingPenalty(pathNodeType) >= 0.0F) {
-			PathNodeType pathNodeType2 = this.getNodeType(this.entity, pathNode.x, pathNode.y, pathNode.z);
-			if (pathNodeType2 == PathNodeType.field_21326) {
-				j = 0;
-			} else {
-				j = MathHelper.floor(Math.max(1.0F, this.entity.stepHeight));
-			}
+		PathNodeType pathNodeType = this.method_29303(this.entity, node.x, node.y + 1, node.z);
+		PathNodeType pathNodeType2 = this.method_29303(this.entity, node.x, node.y, node.z);
+		if (this.entity.getPathfindingPenalty(pathNodeType) >= 0.0F && pathNodeType2 != PathNodeType.STICKY_HONEY) {
+			j = MathHelper.floor(Math.max(1.0F, this.entity.stepHeight));
 		}
 
-		double d = getHeight(this.field_20622, new BlockPos(pathNode.x, pathNode.y, pathNode.z));
-		PathNode pathNode2 = this.getPathNode(pathNode.x, pathNode.y, pathNode.z + 1, j, d, Direction.field_11035);
-		if (pathNode2 != null && !pathNode2.visited && pathNode2.penalty >= 0.0F) {
-			pathNodes[i++] = pathNode2;
+		double d = getFeetY(this.cachedWorld, new BlockPos(node.x, node.y, node.z));
+		PathNode pathNode = this.getPathNode(node.x, node.y, node.z + 1, j, d, Direction.SOUTH, pathNodeType2);
+		if (this.isValidDiagonalSuccessor(pathNode, node)) {
+			successors[i++] = pathNode;
 		}
 
-		PathNode pathNode3 = this.getPathNode(pathNode.x - 1, pathNode.y, pathNode.z, j, d, Direction.field_11039);
-		if (pathNode3 != null && !pathNode3.visited && pathNode3.penalty >= 0.0F) {
-			pathNodes[i++] = pathNode3;
+		PathNode pathNode2 = this.getPathNode(node.x - 1, node.y, node.z, j, d, Direction.WEST, pathNodeType2);
+		if (this.isValidDiagonalSuccessor(pathNode2, node)) {
+			successors[i++] = pathNode2;
 		}
 
-		PathNode pathNode4 = this.getPathNode(pathNode.x + 1, pathNode.y, pathNode.z, j, d, Direction.field_11034);
-		if (pathNode4 != null && !pathNode4.visited && pathNode4.penalty >= 0.0F) {
-			pathNodes[i++] = pathNode4;
+		PathNode pathNode3 = this.getPathNode(node.x + 1, node.y, node.z, j, d, Direction.EAST, pathNodeType2);
+		if (this.isValidDiagonalSuccessor(pathNode3, node)) {
+			successors[i++] = pathNode3;
 		}
 
-		PathNode pathNode5 = this.getPathNode(pathNode.x, pathNode.y, pathNode.z - 1, j, d, Direction.field_11043);
-		if (pathNode5 != null && !pathNode5.visited && pathNode5.penalty >= 0.0F) {
-			pathNodes[i++] = pathNode5;
+		PathNode pathNode4 = this.getPathNode(node.x, node.y, node.z - 1, j, d, Direction.NORTH, pathNodeType2);
+		if (this.isValidDiagonalSuccessor(pathNode4, node)) {
+			successors[i++] = pathNode4;
 		}
 
-		PathNode pathNode6 = this.getPathNode(pathNode.x - 1, pathNode.y, pathNode.z - 1, j, d, Direction.field_11043);
-		if (this.isValidDiagonalSuccessor(pathNode, pathNode3, pathNode5, pathNode6)) {
-			pathNodes[i++] = pathNode6;
+		PathNode pathNode5 = this.getPathNode(node.x - 1, node.y, node.z - 1, j, d, Direction.NORTH, pathNodeType2);
+		if (this.method_29579(node, pathNode2, pathNode4, pathNode5)) {
+			successors[i++] = pathNode5;
 		}
 
-		PathNode pathNode7 = this.getPathNode(pathNode.x + 1, pathNode.y, pathNode.z - 1, j, d, Direction.field_11043);
-		if (this.isValidDiagonalSuccessor(pathNode, pathNode4, pathNode5, pathNode7)) {
-			pathNodes[i++] = pathNode7;
+		PathNode pathNode6 = this.getPathNode(node.x + 1, node.y, node.z - 1, j, d, Direction.NORTH, pathNodeType2);
+		if (this.method_29579(node, pathNode3, pathNode4, pathNode6)) {
+			successors[i++] = pathNode6;
 		}
 
-		PathNode pathNode8 = this.getPathNode(pathNode.x - 1, pathNode.y, pathNode.z + 1, j, d, Direction.field_11035);
-		if (this.isValidDiagonalSuccessor(pathNode, pathNode3, pathNode2, pathNode8)) {
-			pathNodes[i++] = pathNode8;
+		PathNode pathNode7 = this.getPathNode(node.x - 1, node.y, node.z + 1, j, d, Direction.SOUTH, pathNodeType2);
+		if (this.method_29579(node, pathNode2, pathNode, pathNode7)) {
+			successors[i++] = pathNode7;
 		}
 
-		PathNode pathNode9 = this.getPathNode(pathNode.x + 1, pathNode.y, pathNode.z + 1, j, d, Direction.field_11035);
-		if (this.isValidDiagonalSuccessor(pathNode, pathNode4, pathNode2, pathNode9)) {
-			pathNodes[i++] = pathNode9;
+		PathNode pathNode8 = this.getPathNode(node.x + 1, node.y, node.z + 1, j, d, Direction.SOUTH, pathNodeType2);
+		if (this.method_29579(node, pathNode3, pathNode, pathNode8)) {
+			successors[i++] = pathNode8;
 		}
 
 		return i;
 	}
 
-	private boolean isValidDiagonalSuccessor(PathNode pathNode, @Nullable PathNode pathNode2, @Nullable PathNode pathNode3, @Nullable PathNode pathNode4) {
+	private boolean isValidDiagonalSuccessor(PathNode node, PathNode successor1) {
+		return node != null && !node.visited && (node.penalty >= 0.0F || successor1.penalty < 0.0F);
+	}
+
+	private boolean method_29579(PathNode pathNode, @Nullable PathNode pathNode2, @Nullable PathNode pathNode3, @Nullable PathNode pathNode4) {
 		if (pathNode4 == null || pathNode3 == null || pathNode2 == null) {
 			return false;
 		} else if (pathNode4.visited) {
 			return false;
+		} else if (pathNode3.y > pathNode.y || pathNode2.y > pathNode.y) {
+			return false;
+		} else if (pathNode2.type != PathNodeType.WALKABLE_DOOR && pathNode3.type != PathNodeType.WALKABLE_DOOR && pathNode4.type != PathNodeType.WALKABLE_DOOR) {
+			boolean bl = pathNode3.type == PathNodeType.FENCE && pathNode2.type == PathNodeType.FENCE && (double)this.entity.getWidth() < 0.5;
+			return pathNode4.penalty >= 0.0F
+				&& (pathNode3.y < pathNode.y || pathNode3.penalty >= 0.0F || bl)
+				&& (pathNode2.y < pathNode.y || pathNode2.penalty >= 0.0F || bl);
 		} else {
-			return pathNode3.y <= pathNode.y && pathNode2.y <= pathNode.y
-				? pathNode4.penalty >= 0.0F && (pathNode3.y < pathNode.y || pathNode3.penalty >= 0.0F) && (pathNode2.y < pathNode.y || pathNode2.penalty >= 0.0F)
-				: false;
+			return false;
 		}
 	}
 
-	public static double getHeight(BlockView blockView, BlockPos blockPos) {
-		BlockPos blockPos2 = blockPos.down();
-		VoxelShape voxelShape = blockView.getBlockState(blockPos2).getCollisionShape(blockView, blockPos2);
-		return (double)blockPos2.getY() + (voxelShape.isEmpty() ? 0.0 : voxelShape.getMaximum(Direction.Axis.field_11052));
+	private boolean method_29578(PathNode pathNode) {
+		Vec3d vec3d = new Vec3d((double)pathNode.x - this.entity.getX(), (double)pathNode.y - this.entity.getY(), (double)pathNode.z - this.entity.getZ());
+		Box box = this.entity.getBoundingBox();
+		int i = MathHelper.ceil(vec3d.length() / box.getAverageSideLength());
+		vec3d = vec3d.multiply((double)(1.0F / (float)i));
+
+		for (int j = 1; j <= i; j++) {
+			box = box.offset(vec3d);
+			if (this.method_29304(box)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public static double getFeetY(BlockView world, BlockPos pos) {
+		BlockPos blockPos = pos.down();
+		VoxelShape voxelShape = world.getBlockState(blockPos).getCollisionShape(world, blockPos);
+		return (double)blockPos.getY() + (voxelShape.isEmpty() ? 0.0 : voxelShape.getMax(Direction.Axis.Y));
 	}
 
 	@Nullable
-	private PathNode getPathNode(int i, int j, int k, int l, double d, Direction direction) {
+	private PathNode getPathNode(int x, int y, int z, int maxYStep, double prevFeetY, Direction direction, PathNodeType pathNodeType) {
 		PathNode pathNode = null;
-		BlockPos blockPos = new BlockPos(i, j, k);
-		double e = getHeight(this.field_20622, blockPos);
-		if (e - d > 1.125) {
+		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		double d = getFeetY(this.cachedWorld, mutable.set(x, y, z));
+		if (d - prevFeetY > 1.125) {
 			return null;
 		} else {
-			PathNodeType pathNodeType = this.getNodeType(this.entity, i, j, k);
-			float f = this.entity.getPathfindingPenalty(pathNodeType);
-			double g = (double)this.entity.getWidth() / 2.0;
+			PathNodeType pathNodeType2 = this.method_29303(this.entity, x, y, z);
+			float f = this.entity.getPathfindingPenalty(pathNodeType2);
+			double e = (double)this.entity.getWidth() / 2.0;
 			if (f >= 0.0F) {
-				pathNode = this.getNode(i, j, k);
-				pathNode.type = pathNodeType;
+				pathNode = this.getNode(x, y, z);
+				pathNode.type = pathNodeType2;
 				pathNode.penalty = Math.max(pathNode.penalty, f);
 			}
 
-			if (pathNodeType == PathNodeType.field_12) {
+			if (pathNodeType == PathNodeType.FENCE && pathNode != null && pathNode.penalty >= 0.0F && !this.method_29578(pathNode)) {
+				pathNode = null;
+			}
+
+			if (pathNodeType2 == PathNodeType.WALKABLE) {
 				return pathNode;
 			} else {
-				if ((pathNode == null || pathNode.penalty < 0.0F) && l > 0 && pathNodeType != PathNodeType.field_10 && pathNodeType != PathNodeType.field_19) {
-					pathNode = this.getPathNode(i, j + 1, k, l - 1, d, direction);
-					if (pathNode != null && (pathNode.type == PathNodeType.field_7 || pathNode.type == PathNodeType.field_12) && this.entity.getWidth() < 1.0F) {
-						double h = (double)(i - direction.getOffsetX()) + 0.5;
-						double m = (double)(k - direction.getOffsetZ()) + 0.5;
+				if ((pathNode == null || pathNode.penalty < 0.0F)
+					&& maxYStep > 0
+					&& pathNodeType2 != PathNodeType.FENCE
+					&& pathNodeType2 != PathNodeType.UNPASSABLE_RAIL
+					&& pathNodeType2 != PathNodeType.TRAPDOOR) {
+					pathNode = this.getPathNode(x, y + 1, z, maxYStep - 1, prevFeetY, direction, pathNodeType);
+					if (pathNode != null && (pathNode.type == PathNodeType.OPEN || pathNode.type == PathNodeType.WALKABLE) && this.entity.getWidth() < 1.0F) {
+						double g = (double)(x - direction.getOffsetX()) + 0.5;
+						double h = (double)(z - direction.getOffsetZ()) + 0.5;
 						Box box = new Box(
-							h - g,
-							getHeight(this.field_20622, new BlockPos(h, (double)(j + 1), m)) + 0.001,
-							m - g,
-							h + g,
-							(double)this.entity.getHeight() + getHeight(this.field_20622, new BlockPos(pathNode.x, pathNode.y, pathNode.z)) - 0.002,
-							m + g
+							g - e,
+							getFeetY(this.cachedWorld, mutable.set(g, (double)(y + 1), h)) + 0.001,
+							h - e,
+							g + e,
+							(double)this.entity.getHeight() + getFeetY(this.cachedWorld, mutable.set((double)pathNode.x, (double)pathNode.y, (double)pathNode.z)) - 0.002,
+							h + e
 						);
-						if (!this.field_20622.doesNotCollide(this.entity, box)) {
+						if (this.method_29304(box)) {
 							pathNode = null;
 						}
 					}
 				}
 
-				if (pathNodeType == PathNodeType.field_18 && !this.canSwim()) {
-					if (this.getNodeType(this.entity, i, j - 1, k) != PathNodeType.field_18) {
+				if (pathNodeType2 == PathNodeType.WATER && !this.canSwim()) {
+					if (this.method_29303(this.entity, x, y - 1, z) != PathNodeType.WATER) {
 						return pathNode;
 					}
 
-					while (j > 0) {
-						pathNodeType = this.getNodeType(this.entity, i, --j, k);
-						if (pathNodeType != PathNodeType.field_18) {
+					while (y > 0) {
+						pathNodeType2 = this.method_29303(this.entity, x, --y, z);
+						if (pathNodeType2 != PathNodeType.WATER) {
 							return pathNode;
 						}
 
-						pathNode = this.getNode(i, j, k);
-						pathNode.type = pathNodeType;
-						pathNode.penalty = Math.max(pathNode.penalty, this.entity.getPathfindingPenalty(pathNodeType));
+						pathNode = this.getNode(x, y, z);
+						pathNode.type = pathNodeType2;
+						pathNode.penalty = Math.max(pathNode.penalty, this.entity.getPathfindingPenalty(pathNodeType2));
 					}
 				}
 
-				if (pathNodeType == PathNodeType.field_7) {
-					Box box2 = new Box(
-						(double)i - g + 0.5, (double)j + 0.001, (double)k - g + 0.5, (double)i + g + 0.5, (double)((float)j + this.entity.getHeight()), (double)k + g + 0.5
-					);
-					if (!this.field_20622.doesNotCollide(this.entity, box2)) {
-						return null;
-					}
+				if (pathNodeType2 == PathNodeType.OPEN) {
+					int i = 0;
+					int j = y;
 
-					if (this.entity.getWidth() >= 1.0F) {
-						PathNodeType pathNodeType2 = this.getNodeType(this.entity, i, j - 1, k);
-						if (pathNodeType2 == PathNodeType.field_22) {
-							pathNode = this.getNode(i, j, k);
-							pathNode.type = PathNodeType.field_12;
-							pathNode.penalty = Math.max(pathNode.penalty, f);
-							return pathNode;
-						}
-					}
-
-					int n = 0;
-					int o = j;
-
-					while (pathNodeType == PathNodeType.field_7) {
-						if (--j < 0) {
-							PathNode pathNode2 = this.getNode(i, o, k);
-							pathNode2.type = PathNodeType.field_22;
+					while (pathNodeType2 == PathNodeType.OPEN) {
+						if (--y < 0) {
+							PathNode pathNode2 = this.getNode(x, j, z);
+							pathNode2.type = PathNodeType.BLOCKED;
 							pathNode2.penalty = -1.0F;
 							return pathNode2;
 						}
 
-						PathNode pathNode3 = this.getNode(i, j, k);
-						if (n++ >= this.entity.getSafeFallDistance()) {
-							pathNode3.type = PathNodeType.field_22;
+						if (i++ >= this.entity.getSafeFallDistance()) {
+							PathNode pathNode3 = this.getNode(x, y, z);
+							pathNode3.type = PathNodeType.BLOCKED;
 							pathNode3.penalty = -1.0F;
 							return pathNode3;
 						}
 
-						pathNodeType = this.getNodeType(this.entity, i, j, k);
-						f = this.entity.getPathfindingPenalty(pathNodeType);
-						if (pathNodeType != PathNodeType.field_7 && f >= 0.0F) {
-							pathNode = pathNode3;
-							pathNode3.type = pathNodeType;
-							pathNode3.penalty = Math.max(pathNode3.penalty, f);
+						pathNodeType2 = this.method_29303(this.entity, x, y, z);
+						f = this.entity.getPathfindingPenalty(pathNodeType2);
+						if (pathNodeType2 != PathNodeType.OPEN && f >= 0.0F) {
+							pathNode = this.getNode(x, y, z);
+							pathNode.type = pathNodeType2;
+							pathNode.penalty = Math.max(pathNode.penalty, f);
 							break;
 						}
 
 						if (f < 0.0F) {
-							pathNode3.type = PathNodeType.field_22;
-							pathNode3.penalty = -1.0F;
-							return pathNode3;
+							PathNode pathNode4 = this.getNode(x, y, z);
+							pathNode4.type = PathNodeType.BLOCKED;
+							pathNode4.penalty = -1.0F;
+							return pathNode4;
 						}
 					}
+				}
+
+				if (pathNodeType2 == PathNodeType.FENCE) {
+					pathNode = this.getNode(x, y, z);
+					pathNode.visited = true;
+					pathNode.type = pathNodeType2;
+					pathNode.penalty = pathNodeType2.getDefaultPenalty();
 				}
 
 				return pathNode;
@@ -289,150 +329,176 @@ public class LandPathNodeMaker extends PathNodeMaker {
 		}
 	}
 
+	private boolean method_29304(Box box) {
+		return (Boolean)this.field_25191.computeIfAbsent(box, box2 -> !this.cachedWorld.isSpaceEmpty(this.entity, box));
+	}
+
 	@Override
-	public PathNodeType getNodeType(BlockView blockView, int i, int j, int k, MobEntity mobEntity, int l, int m, int n, boolean bl, boolean bl2) {
+	public PathNodeType getNodeType(
+		BlockView world, int x, int y, int z, MobEntity mob, int sizeX, int sizeY, int sizeZ, boolean canOpenDoors, boolean canEnterOpenDoors
+	) {
 		EnumSet<PathNodeType> enumSet = EnumSet.noneOf(PathNodeType.class);
-		PathNodeType pathNodeType = PathNodeType.field_22;
-		double d = (double)mobEntity.getWidth() / 2.0;
-		BlockPos blockPos = new BlockPos(mobEntity);
-		pathNodeType = this.getNodeType(blockView, i, j, k, l, m, n, bl, bl2, enumSet, pathNodeType, blockPos);
-		if (enumSet.contains(PathNodeType.field_10)) {
-			return PathNodeType.field_10;
+		PathNodeType pathNodeType = PathNodeType.BLOCKED;
+		BlockPos blockPos = mob.getBlockPos();
+		pathNodeType = this.findNearbyNodeTypes(world, x, y, z, sizeX, sizeY, sizeZ, canOpenDoors, canEnterOpenDoors, enumSet, pathNodeType, blockPos);
+		if (enumSet.contains(PathNodeType.FENCE)) {
+			return PathNodeType.FENCE;
+		} else if (enumSet.contains(PathNodeType.UNPASSABLE_RAIL)) {
+			return PathNodeType.UNPASSABLE_RAIL;
 		} else {
-			PathNodeType pathNodeType2 = PathNodeType.field_22;
+			PathNodeType pathNodeType2 = PathNodeType.BLOCKED;
 
 			for (PathNodeType pathNodeType3 : enumSet) {
-				if (mobEntity.getPathfindingPenalty(pathNodeType3) < 0.0F) {
+				if (mob.getPathfindingPenalty(pathNodeType3) < 0.0F) {
 					return pathNodeType3;
 				}
 
-				if (mobEntity.getPathfindingPenalty(pathNodeType3) >= mobEntity.getPathfindingPenalty(pathNodeType2)) {
+				if (mob.getPathfindingPenalty(pathNodeType3) >= mob.getPathfindingPenalty(pathNodeType2)) {
 					pathNodeType2 = pathNodeType3;
 				}
 			}
 
-			return pathNodeType == PathNodeType.field_7 && mobEntity.getPathfindingPenalty(pathNodeType2) == 0.0F ? PathNodeType.field_7 : pathNodeType2;
+			return pathNodeType == PathNodeType.OPEN && mob.getPathfindingPenalty(pathNodeType2) == 0.0F && sizeX <= 1 ? PathNodeType.OPEN : pathNodeType2;
 		}
 	}
 
-	public PathNodeType getNodeType(
-		BlockView blockView,
-		int i,
-		int j,
-		int k,
-		int l,
-		int m,
-		int n,
-		boolean bl,
-		boolean bl2,
-		EnumSet<PathNodeType> enumSet,
-		PathNodeType pathNodeType,
-		BlockPos blockPos
+	public PathNodeType findNearbyNodeTypes(
+		BlockView world,
+		int x,
+		int y,
+		int z,
+		int sizeX,
+		int sizeY,
+		int sizeZ,
+		boolean canOpenDoors,
+		boolean canEnterOpenDoors,
+		EnumSet<PathNodeType> nearbyTypes,
+		PathNodeType type,
+		BlockPos pos
 	) {
-		for (int o = 0; o < l; o++) {
-			for (int p = 0; p < m; p++) {
-				for (int q = 0; q < n; q++) {
-					int r = o + i;
-					int s = p + j;
-					int t = q + k;
-					PathNodeType pathNodeType2 = this.getNodeType(blockView, r, s, t);
-					pathNodeType2 = this.adjustNodeType(blockView, bl, bl2, blockPos, pathNodeType2);
-					if (o == 0 && p == 0 && q == 0) {
-						pathNodeType = pathNodeType2;
+		for (int i = 0; i < sizeX; i++) {
+			for (int j = 0; j < sizeY; j++) {
+				for (int k = 0; k < sizeZ; k++) {
+					int l = i + x;
+					int m = j + y;
+					int n = k + z;
+					PathNodeType pathNodeType = this.getDefaultNodeType(world, l, m, n);
+					pathNodeType = this.adjustNodeType(world, canOpenDoors, canEnterOpenDoors, pos, pathNodeType);
+					if (i == 0 && j == 0 && k == 0) {
+						type = pathNodeType;
 					}
 
-					enumSet.add(pathNodeType2);
+					nearbyTypes.add(pathNodeType);
 				}
 			}
 		}
 
-		return pathNodeType;
+		return type;
 	}
 
-	protected PathNodeType adjustNodeType(BlockView blockView, boolean bl, boolean bl2, BlockPos blockPos, PathNodeType pathNodeType) {
-		if (pathNodeType == PathNodeType.field_23 && bl && bl2) {
-			pathNodeType = PathNodeType.field_12;
+	protected PathNodeType adjustNodeType(BlockView world, boolean canOpenDoors, boolean canEnterOpenDoors, BlockPos pos, PathNodeType type) {
+		if (type == PathNodeType.DOOR_WOOD_CLOSED && canOpenDoors && canEnterOpenDoors) {
+			type = PathNodeType.WALKABLE_DOOR;
 		}
 
-		if (pathNodeType == PathNodeType.field_15 && !bl2) {
-			pathNodeType = PathNodeType.field_22;
+		if (type == PathNodeType.DOOR_OPEN && !canEnterOpenDoors) {
+			type = PathNodeType.BLOCKED;
 		}
 
-		if (pathNodeType == PathNodeType.field_21
-			&& !(blockView.getBlockState(blockPos).getBlock() instanceof AbstractRailBlock)
-			&& !(blockView.getBlockState(blockPos.down()).getBlock() instanceof AbstractRailBlock)) {
-			pathNodeType = PathNodeType.field_10;
+		if (type == PathNodeType.RAIL
+			&& !(world.getBlockState(pos).getBlock() instanceof AbstractRailBlock)
+			&& !(world.getBlockState(pos.down()).getBlock() instanceof AbstractRailBlock)) {
+			type = PathNodeType.UNPASSABLE_RAIL;
 		}
 
-		if (pathNodeType == PathNodeType.field_6) {
-			pathNodeType = PathNodeType.field_22;
+		if (type == PathNodeType.LEAVES) {
+			type = PathNodeType.BLOCKED;
 		}
 
-		return pathNodeType;
+		return type;
 	}
 
-	private PathNodeType getNodeType(MobEntity mobEntity, BlockPos blockPos) {
-		return this.getNodeType(mobEntity, blockPos.getX(), blockPos.getY(), blockPos.getZ());
+	private PathNodeType getNodeType(MobEntity entity, BlockPos pos) {
+		return this.method_29303(entity, pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	private PathNodeType getNodeType(MobEntity mobEntity, int i, int j, int k) {
-		return this.getNodeType(this.field_20622, i, j, k, mobEntity, this.field_31, this.field_30, this.field_28, this.canOpenDoors(), this.canEnterOpenDoors());
+	private PathNodeType method_29303(MobEntity mobEntity, int i, int j, int k) {
+		return (PathNodeType)this.field_25190
+			.computeIfAbsent(
+				BlockPos.asLong(i, j, k),
+				l -> this.getNodeType(
+						this.cachedWorld, i, j, k, mobEntity, this.entityBlockXSize, this.entityBlockYSize, this.entityBlockZSize, this.canOpenDoors(), this.canEnterOpenDoors()
+					)
+			);
 	}
 
 	@Override
-	public PathNodeType getNodeType(BlockView blockView, int i, int j, int k) {
-		return getPathNodeType(blockView, i, j, k);
+	public PathNodeType getDefaultNodeType(BlockView world, int x, int y, int z) {
+		return getLandNodeType(world, new BlockPos.Mutable(x, y, z));
 	}
 
-	public static PathNodeType getPathNodeType(BlockView blockView, int i, int j, int k) {
-		PathNodeType pathNodeType = getBasicPathNodeType(blockView, i, j, k);
-		if (pathNodeType == PathNodeType.field_7 && j >= 1) {
-			Block block = blockView.getBlockState(new BlockPos(i, j - 1, k)).getBlock();
-			PathNodeType pathNodeType2 = getBasicPathNodeType(blockView, i, j - 1, k);
-			pathNodeType = pathNodeType2 != PathNodeType.field_12
-					&& pathNodeType2 != PathNodeType.field_7
-					&& pathNodeType2 != PathNodeType.field_18
-					&& pathNodeType2 != PathNodeType.field_14
-				? PathNodeType.field_12
-				: PathNodeType.field_7;
-			if (pathNodeType2 == PathNodeType.field_3 || block == Blocks.field_10092 || block == Blocks.field_17350) {
-				pathNodeType = PathNodeType.field_3;
+	public static PathNodeType getLandNodeType(BlockView blockView, BlockPos.Mutable mutable) {
+		int i = mutable.getX();
+		int j = mutable.getY();
+		int k = mutable.getZ();
+		PathNodeType pathNodeType = getCommonNodeType(blockView, mutable);
+		if (pathNodeType == PathNodeType.OPEN && j >= 1) {
+			PathNodeType pathNodeType2 = getCommonNodeType(blockView, mutable.set(i, j - 1, k));
+			pathNodeType = pathNodeType2 != PathNodeType.WALKABLE
+					&& pathNodeType2 != PathNodeType.OPEN
+					&& pathNodeType2 != PathNodeType.WATER
+					&& pathNodeType2 != PathNodeType.LAVA
+				? PathNodeType.WALKABLE
+				: PathNodeType.OPEN;
+			if (pathNodeType2 == PathNodeType.DAMAGE_FIRE) {
+				pathNodeType = PathNodeType.DAMAGE_FIRE;
 			}
 
-			if (pathNodeType2 == PathNodeType.field_11) {
-				pathNodeType = PathNodeType.field_11;
+			if (pathNodeType2 == PathNodeType.DAMAGE_CACTUS) {
+				pathNodeType = PathNodeType.DAMAGE_CACTUS;
 			}
 
-			if (pathNodeType2 == PathNodeType.field_17) {
-				pathNodeType = PathNodeType.field_17;
+			if (pathNodeType2 == PathNodeType.DAMAGE_OTHER) {
+				pathNodeType = PathNodeType.DAMAGE_OTHER;
 			}
 
-			if (pathNodeType2 == PathNodeType.field_21326) {
-				pathNodeType = PathNodeType.field_21326;
+			if (pathNodeType2 == PathNodeType.STICKY_HONEY) {
+				pathNodeType = PathNodeType.STICKY_HONEY;
 			}
 		}
 
-		if (pathNodeType == PathNodeType.field_12) {
-			pathNodeType = method_59(blockView, i, j, k, pathNodeType);
+		if (pathNodeType == PathNodeType.WALKABLE) {
+			pathNodeType = getNodeTypeFromNeighbors(blockView, mutable.set(i, j, k), pathNodeType);
 		}
 
 		return pathNodeType;
 	}
 
-	public static PathNodeType method_59(BlockView blockView, int i, int j, int k, PathNodeType pathNodeType) {
-		try (BlockPos.PooledMutable pooledMutable = BlockPos.PooledMutable.get()) {
-			for (int l = -1; l <= 1; l++) {
-				for (int m = -1; m <= 1; m++) {
-					for (int n = -1; n <= 1; n++) {
-						if (l != 0 || n != 0) {
-							Block block = blockView.getBlockState(pooledMutable.set(l + i, m + j, n + k)).getBlock();
-							if (block == Blocks.field_10029) {
-								pathNodeType = PathNodeType.field_20;
-							} else if (block == Blocks.field_10036 || block == Blocks.field_10164) {
-								pathNodeType = PathNodeType.field_9;
-							} else if (block == Blocks.field_16999) {
-								pathNodeType = PathNodeType.field_5;
-							}
+	public static PathNodeType getNodeTypeFromNeighbors(BlockView blockView, BlockPos.Mutable mutable, PathNodeType pathNodeType) {
+		int i = mutable.getX();
+		int j = mutable.getY();
+		int k = mutable.getZ();
+
+		for (int l = -1; l <= 1; l++) {
+			for (int m = -1; m <= 1; m++) {
+				for (int n = -1; n <= 1; n++) {
+					if (l != 0 || n != 0) {
+						mutable.set(i + l, j + m, k + n);
+						BlockState blockState = blockView.getBlockState(mutable);
+						if (blockState.isOf(Blocks.CACTUS)) {
+							return PathNodeType.DANGER_CACTUS;
+						}
+
+						if (blockState.isOf(Blocks.SWEET_BERRY_BUSH)) {
+							return PathNodeType.DANGER_OTHER;
+						}
+
+						if (method_27138(blockState)) {
+							return PathNodeType.DANGER_FIRE;
+						}
+
+						if (blockView.getFluidState(mutable).isIn(FluidTags.WATER)) {
+							return PathNodeType.WATER_BORDER;
 						}
 					}
 				}
@@ -442,48 +508,51 @@ public class LandPathNodeMaker extends PathNodeMaker {
 		return pathNodeType;
 	}
 
-	protected static PathNodeType getBasicPathNodeType(BlockView blockView, int i, int j, int k) {
-		BlockPos blockPos = new BlockPos(i, j, k);
+	protected static PathNodeType getCommonNodeType(BlockView blockView, BlockPos blockPos) {
 		BlockState blockState = blockView.getBlockState(blockPos);
 		Block block = blockState.getBlock();
 		Material material = blockState.getMaterial();
 		if (blockState.isAir()) {
-			return PathNodeType.field_7;
-		} else if (block.matches(BlockTags.field_15487) || block == Blocks.field_10588) {
-			return PathNodeType.field_19;
-		} else if (block == Blocks.field_10036) {
-			return PathNodeType.field_3;
-		} else if (block == Blocks.field_10029) {
-			return PathNodeType.field_11;
-		} else if (block == Blocks.field_16999) {
-			return PathNodeType.field_17;
-		} else if (block == Blocks.field_21211) {
-			return PathNodeType.field_21326;
-		} else if (block == Blocks.field_10302) {
-			return PathNodeType.field_21516;
-		} else if (block instanceof DoorBlock && material == Material.WOOD && !(Boolean)blockState.get(DoorBlock.OPEN)) {
-			return PathNodeType.field_23;
-		} else if (block instanceof DoorBlock && material == Material.METAL && !(Boolean)blockState.get(DoorBlock.OPEN)) {
-			return PathNodeType.field_8;
-		} else if (block instanceof DoorBlock && (Boolean)blockState.get(DoorBlock.OPEN)) {
-			return PathNodeType.field_15;
-		} else if (block instanceof AbstractRailBlock) {
-			return PathNodeType.field_21;
-		} else if (block instanceof LeavesBlock) {
-			return PathNodeType.field_6;
-		} else if (!block.matches(BlockTags.field_16584)
-			&& !block.matches(BlockTags.field_15504)
-			&& (!(block instanceof FenceGateBlock) || (Boolean)blockState.get(FenceGateBlock.OPEN))) {
-			FluidState fluidState = blockView.getFluidState(blockPos);
-			if (fluidState.matches(FluidTags.field_15517)) {
-				return PathNodeType.field_18;
-			} else if (fluidState.matches(FluidTags.field_15518)) {
-				return PathNodeType.field_14;
-			} else {
-				return blockState.canPlaceAtSide(blockView, blockPos, BlockPlacementEnvironment.field_50) ? PathNodeType.field_7 : PathNodeType.field_22;
-			}
+			return PathNodeType.OPEN;
+		} else if (blockState.isIn(BlockTags.TRAPDOORS) || blockState.isOf(Blocks.LILY_PAD)) {
+			return PathNodeType.TRAPDOOR;
+		} else if (blockState.isOf(Blocks.CACTUS)) {
+			return PathNodeType.DAMAGE_CACTUS;
+		} else if (blockState.isOf(Blocks.SWEET_BERRY_BUSH)) {
+			return PathNodeType.DAMAGE_OTHER;
+		} else if (blockState.isOf(Blocks.HONEY_BLOCK)) {
+			return PathNodeType.STICKY_HONEY;
+		} else if (blockState.isOf(Blocks.COCOA)) {
+			return PathNodeType.COCOA;
 		} else {
-			return PathNodeType.field_10;
+			FluidState fluidState = blockView.getFluidState(blockPos);
+			if (fluidState.isIn(FluidTags.WATER)) {
+				return PathNodeType.WATER;
+			} else if (fluidState.isIn(FluidTags.LAVA)) {
+				return PathNodeType.LAVA;
+			} else if (method_27138(blockState)) {
+				return PathNodeType.DAMAGE_FIRE;
+			} else if (DoorBlock.isWoodenDoor(blockState) && !(Boolean)blockState.get(DoorBlock.OPEN)) {
+				return PathNodeType.DOOR_WOOD_CLOSED;
+			} else if (block instanceof DoorBlock && material == Material.METAL && !(Boolean)blockState.get(DoorBlock.OPEN)) {
+				return PathNodeType.DOOR_IRON_CLOSED;
+			} else if (block instanceof DoorBlock && (Boolean)blockState.get(DoorBlock.OPEN)) {
+				return PathNodeType.DOOR_OPEN;
+			} else if (block instanceof AbstractRailBlock) {
+				return PathNodeType.RAIL;
+			} else if (block instanceof LeavesBlock) {
+				return PathNodeType.LEAVES;
+			} else if (!block.isIn(BlockTags.FENCES)
+				&& !block.isIn(BlockTags.WALLS)
+				&& (!(block instanceof FenceGateBlock) || (Boolean)blockState.get(FenceGateBlock.OPEN))) {
+				return !blockState.canPathfindThrough(blockView, blockPos, NavigationType.LAND) ? PathNodeType.BLOCKED : PathNodeType.OPEN;
+			} else {
+				return PathNodeType.FENCE;
+			}
 		}
+	}
+
+	private static boolean method_27138(BlockState blockState) {
+		return blockState.isIn(BlockTags.FIRE) || blockState.isOf(Blocks.LAVA) || blockState.isOf(Blocks.MAGMA_BLOCK) || CampfireBlock.isLitCampfire(blockState);
 	}
 }

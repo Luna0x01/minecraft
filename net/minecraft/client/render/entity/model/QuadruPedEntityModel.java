@@ -13,25 +13,34 @@ public class QuadrupedEntityModel<T extends Entity> extends AnimalModel<T> {
 	protected ModelPart frontRightLeg;
 	protected ModelPart frontLeftLeg;
 
-	public QuadrupedEntityModel(int i, float f, boolean bl, float g, float h, float j, float k, int l) {
-		super(bl, g, h, j, k, (float)l);
-		this.head.addCuboid(-4.0F, -4.0F, -8.0F, 8.0F, 8.0F, 8.0F, f);
-		this.head.setPivot(0.0F, (float)(18 - i), -6.0F);
+	public QuadrupedEntityModel(
+		int legHeight,
+		float scale,
+		boolean headScaled,
+		float childHeadYOffset,
+		float childHeadZOffset,
+		float invertedChildHeadScale,
+		float invertedChildBodyScale,
+		int childBodyYOffset
+	) {
+		super(headScaled, childHeadYOffset, childHeadZOffset, invertedChildHeadScale, invertedChildBodyScale, (float)childBodyYOffset);
+		this.head.addCuboid(-4.0F, -4.0F, -8.0F, 8.0F, 8.0F, 8.0F, scale);
+		this.head.setPivot(0.0F, (float)(18 - legHeight), -6.0F);
 		this.torso = new ModelPart(this, 28, 8);
-		this.torso.addCuboid(-5.0F, -10.0F, -7.0F, 10.0F, 16.0F, 8.0F, f);
-		this.torso.setPivot(0.0F, (float)(17 - i), 2.0F);
+		this.torso.addCuboid(-5.0F, -10.0F, -7.0F, 10.0F, 16.0F, 8.0F, scale);
+		this.torso.setPivot(0.0F, (float)(17 - legHeight), 2.0F);
 		this.backRightLeg = new ModelPart(this, 0, 16);
-		this.backRightLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)i, 4.0F, f);
-		this.backRightLeg.setPivot(-3.0F, (float)(24 - i), 7.0F);
+		this.backRightLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)legHeight, 4.0F, scale);
+		this.backRightLeg.setPivot(-3.0F, (float)(24 - legHeight), 7.0F);
 		this.backLeftLeg = new ModelPart(this, 0, 16);
-		this.backLeftLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)i, 4.0F, f);
-		this.backLeftLeg.setPivot(3.0F, (float)(24 - i), 7.0F);
+		this.backLeftLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)legHeight, 4.0F, scale);
+		this.backLeftLeg.setPivot(3.0F, (float)(24 - legHeight), 7.0F);
 		this.frontRightLeg = new ModelPart(this, 0, 16);
-		this.frontRightLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)i, 4.0F, f);
-		this.frontRightLeg.setPivot(-3.0F, (float)(24 - i), -5.0F);
+		this.frontRightLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)legHeight, 4.0F, scale);
+		this.frontRightLeg.setPivot(-3.0F, (float)(24 - legHeight), -5.0F);
 		this.frontLeftLeg = new ModelPart(this, 0, 16);
-		this.frontLeftLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)i, 4.0F, f);
-		this.frontLeftLeg.setPivot(3.0F, (float)(24 - i), -5.0F);
+		this.frontLeftLeg.addCuboid(-2.0F, 0.0F, -2.0F, 4.0F, (float)legHeight, 4.0F, scale);
+		this.frontLeftLeg.setPivot(3.0F, (float)(24 - legHeight), -5.0F);
 	}
 
 	@Override
@@ -45,13 +54,13 @@ public class QuadrupedEntityModel<T extends Entity> extends AnimalModel<T> {
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		this.head.pitch = j * (float) (Math.PI / 180.0);
-		this.head.yaw = i * (float) (Math.PI / 180.0);
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		this.head.pitch = headPitch * (float) (Math.PI / 180.0);
+		this.head.yaw = headYaw * (float) (Math.PI / 180.0);
 		this.torso.pitch = (float) (Math.PI / 2);
-		this.backRightLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
-		this.backLeftLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.frontRightLeg.pitch = MathHelper.cos(f * 0.6662F + (float) Math.PI) * 1.4F * g;
-		this.frontLeftLeg.pitch = MathHelper.cos(f * 0.6662F) * 1.4F * g;
+		this.backRightLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * 1.4F * limbDistance;
+		this.backLeftLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * 1.4F * limbDistance;
+		this.frontRightLeg.pitch = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI) * 1.4F * limbDistance;
+		this.frontLeftLeg.pitch = MathHelper.cos(limbAngle * 0.6662F) * 1.4F * limbDistance;
 	}
 }

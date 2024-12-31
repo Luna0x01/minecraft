@@ -2,7 +2,7 @@ package net.minecraft.block;
 
 public class MaterialColor {
 	public static final MaterialColor[] COLORS = new MaterialColor[64];
-	public static final MaterialColor AIR = new MaterialColor(0, 0);
+	public static final MaterialColor CLEAR = new MaterialColor(0, 0);
 	public static final MaterialColor GRASS = new MaterialColor(1, 8368696);
 	public static final MaterialColor SAND = new MaterialColor(2, 16247203);
 	public static final MaterialColor WEB = new MaterialColor(3, 13092807);
@@ -54,40 +54,47 @@ public class MaterialColor {
 	public static final MaterialColor GREEN_TERRACOTTA = new MaterialColor(49, 5001770);
 	public static final MaterialColor RED_TERRACOTTA = new MaterialColor(50, 9321518);
 	public static final MaterialColor BLACK_TERRACOTTA = new MaterialColor(51, 2430480);
+	public static final MaterialColor field_25702 = new MaterialColor(52, 12398641);
+	public static final MaterialColor field_25703 = new MaterialColor(53, 9715553);
+	public static final MaterialColor field_25704 = new MaterialColor(54, 6035741);
+	public static final MaterialColor field_25705 = new MaterialColor(55, 1474182);
+	public static final MaterialColor field_25706 = new MaterialColor(56, 3837580);
+	public static final MaterialColor field_25707 = new MaterialColor(57, 5647422);
+	public static final MaterialColor field_25708 = new MaterialColor(58, 1356933);
 	public final int color;
 	public final int id;
 
-	private MaterialColor(int i, int j) {
-		if (i >= 0 && i <= 63) {
-			this.id = i;
-			this.color = j;
-			COLORS[i] = this;
+	private MaterialColor(int id, int color) {
+		if (id >= 0 && id <= 63) {
+			this.id = id;
+			this.color = color;
+			COLORS[id] = this;
 		} else {
 			throw new IndexOutOfBoundsException("Map colour ID must be between 0 and 63 (inclusive)");
 		}
 	}
 
-	public int getRenderColor(int i) {
-		int j = 220;
-		if (i == 3) {
-			j = 135;
+	public int getRenderColor(int shade) {
+		int i = 220;
+		if (shade == 3) {
+			i = 135;
 		}
 
-		if (i == 2) {
-			j = 255;
+		if (shade == 2) {
+			i = 255;
 		}
 
-		if (i == 1) {
-			j = 220;
+		if (shade == 1) {
+			i = 220;
 		}
 
-		if (i == 0) {
-			j = 180;
+		if (shade == 0) {
+			i = 180;
 		}
 
-		int k = (this.color >> 16 & 0xFF) * j / 255;
-		int l = (this.color >> 8 & 0xFF) * j / 255;
-		int m = (this.color & 0xFF) * j / 255;
-		return 0xFF000000 | m << 16 | l << 8 | k;
+		int j = (this.color >> 16 & 0xFF) * i / 255;
+		int k = (this.color >> 8 & 0xFF) * i / 255;
+		int l = (this.color & 0xFF) * i / 255;
+		return 0xFF000000 | l << 16 | k << 8 | j;
 	}
 }

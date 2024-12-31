@@ -17,7 +17,7 @@ import net.minecraft.world.World;
 public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 	private static final TrackedData<Byte> SPELL = DataTracker.registerData(SpellcastingIllagerEntity.class, TrackedDataHandlerRegistry.BYTE);
 	protected int spellTicks;
-	private SpellcastingIllagerEntity.Spell spell = SpellcastingIllagerEntity.Spell.field_7377;
+	private SpellcastingIllagerEntity.Spell spell = SpellcastingIllagerEntity.Spell.NONE;
 
 	protected SpellcastingIllagerEntity(EntityType<? extends SpellcastingIllagerEntity> entityType, World world) {
 		super(entityType, world);
@@ -30,23 +30,23 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.spellTicks = compoundTag.getInt("SpellTicks");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.spellTicks = tag.getInt("SpellTicks");
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("SpellTicks", this.spellTicks);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("SpellTicks", this.spellTicks);
 	}
 
 	@Override
 	public IllagerEntity.State getState() {
 		if (this.isSpellcasting()) {
-			return IllagerEntity.State.field_7212;
+			return IllagerEntity.State.SPELLCASTING;
 		} else {
-			return this.isCelebrating() ? IllagerEntity.State.field_19012 : IllagerEntity.State.field_7207;
+			return this.isCelebrating() ? IllagerEntity.State.CELEBRATING : IllagerEntity.State.CROSSED;
 		}
 	}
 
@@ -82,8 +82,8 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 			float g = this.bodyYaw * (float) (Math.PI / 180.0) + MathHelper.cos((float)this.age * 0.6662F) * 0.25F;
 			float h = MathHelper.cos(g);
 			float i = MathHelper.sin(g);
-			this.world.addParticle(ParticleTypes.field_11226, this.getX() + (double)h * 0.6, this.getY() + 1.8, this.getZ() + (double)i * 0.6, d, e, f);
-			this.world.addParticle(ParticleTypes.field_11226, this.getX() - (double)h * 0.6, this.getY() + 1.8, this.getZ() - (double)i * 0.6, d, e, f);
+			this.world.addParticle(ParticleTypes.ENTITY_EFFECT, this.getX() + (double)h * 0.6, this.getY() + 1.8, this.getZ() + (double)i * 0.6, d, e, f);
+			this.world.addParticle(ParticleTypes.ENTITY_EFFECT, this.getX() - (double)h * 0.6, this.getY() + 1.8, this.getZ() - (double)i * 0.6, d, e, f);
 		}
 	}
 
@@ -156,7 +156,7 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 
 	public class LookAtTargetGoal extends Goal {
 		public LookAtTargetGoal() {
-			this.setControls(EnumSet.of(Goal.Control.field_18405, Goal.Control.field_18406));
+			this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.LOOK));
 		}
 
 		@Override
@@ -173,7 +173,7 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 		@Override
 		public void stop() {
 			super.stop();
-			SpellcastingIllagerEntity.this.setSpell(SpellcastingIllagerEntity.Spell.field_7377);
+			SpellcastingIllagerEntity.this.setSpell(SpellcastingIllagerEntity.Spell.NONE);
 		}
 
 		@Override
@@ -190,29 +190,29 @@ public abstract class SpellcastingIllagerEntity extends IllagerEntity {
 	}
 
 	public static enum Spell {
-		field_7377(0, 0.0, 0.0, 0.0),
-		field_7379(1, 0.7, 0.7, 0.8),
-		field_7380(2, 0.4, 0.3, 0.35),
-		field_7381(3, 0.7, 0.5, 0.2),
-		field_7382(4, 0.3, 0.3, 0.8),
-		field_7378(5, 0.1, 0.1, 0.2);
+		NONE(0, 0.0, 0.0, 0.0),
+		SUMMON_VEX(1, 0.7, 0.7, 0.8),
+		FANGS(2, 0.4, 0.3, 0.35),
+		WOLOLO(3, 0.7, 0.5, 0.2),
+		DISAPPEAR(4, 0.3, 0.3, 0.8),
+		BLINDNESS(5, 0.1, 0.1, 0.2);
 
 		private final int id;
 		private final double[] particleVelocity;
 
-		private Spell(int j, double d, double e, double f) {
-			this.id = j;
-			this.particleVelocity = new double[]{d, e, f};
+		private Spell(int id, double particleVelocityX, double particleVelocityY, double particleVelocityZ) {
+			this.id = id;
+			this.particleVelocity = new double[]{particleVelocityX, particleVelocityY, particleVelocityZ};
 		}
 
-		public static SpellcastingIllagerEntity.Spell byId(int i) {
+		public static SpellcastingIllagerEntity.Spell byId(int id) {
 			for (SpellcastingIllagerEntity.Spell spell : values()) {
-				if (i == spell.id) {
+				if (id == spell.id) {
 					return spell;
 				}
 			}
 
-			return field_7377;
+			return NONE;
 		}
 	}
 }

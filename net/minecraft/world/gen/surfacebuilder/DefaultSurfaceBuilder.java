@@ -1,8 +1,7 @@
 package net.minecraft.world.gen.surfacebuilder;
 
-import com.mojang.datafixers.Dynamic;
+import com.mojang.serialization.Codec;
 import java.util.Random;
-import java.util.function.Function;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
@@ -10,8 +9,8 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
 
 public class DefaultSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> {
-	public DefaultSurfaceBuilder(Function<Dynamic<?>, ? extends TernarySurfaceConfig> function) {
-		super(function);
+	public DefaultSurfaceBuilder(Codec<TernarySurfaceConfig> codec) {
+		super(codec);
 	}
 
 	public void generate(
@@ -49,66 +48,66 @@ public class DefaultSurfaceBuilder extends SurfaceBuilder<TernarySurfaceConfig> 
 		Random random,
 		Chunk chunk,
 		Biome biome,
-		int i,
-		int j,
-		int k,
-		double d,
-		BlockState blockState,
-		BlockState blockState2,
-		BlockState blockState3,
-		BlockState blockState4,
-		BlockState blockState5,
-		int l
+		int x,
+		int z,
+		int height,
+		double noise,
+		BlockState defaultBlock,
+		BlockState fluidBlock,
+		BlockState topBlock,
+		BlockState underBlock,
+		BlockState underwaterBlock,
+		int seaLevel
 	) {
-		BlockState blockState6 = blockState3;
-		BlockState blockState7 = blockState4;
+		BlockState blockState = topBlock;
+		BlockState blockState2 = underBlock;
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
-		int m = -1;
-		int n = (int)(d / 3.0 + 3.0 + random.nextDouble() * 0.25);
-		int o = i & 15;
-		int p = j & 15;
+		int i = -1;
+		int j = (int)(noise / 3.0 + 3.0 + random.nextDouble() * 0.25);
+		int k = x & 15;
+		int l = z & 15;
 
-		for (int q = k; q >= 0; q--) {
-			mutable.set(o, q, p);
-			BlockState blockState8 = chunk.getBlockState(mutable);
-			if (blockState8.isAir()) {
-				m = -1;
-			} else if (blockState8.getBlock() == blockState.getBlock()) {
-				if (m == -1) {
-					if (n <= 0) {
-						blockState6 = Blocks.field_10124.getDefaultState();
-						blockState7 = blockState;
-					} else if (q >= l - 4 && q <= l + 1) {
-						blockState6 = blockState3;
-						blockState7 = blockState4;
+		for (int m = height; m >= 0; m--) {
+			mutable.set(k, m, l);
+			BlockState blockState3 = chunk.getBlockState(mutable);
+			if (blockState3.isAir()) {
+				i = -1;
+			} else if (blockState3.isOf(defaultBlock.getBlock())) {
+				if (i == -1) {
+					if (j <= 0) {
+						blockState = Blocks.AIR.getDefaultState();
+						blockState2 = defaultBlock;
+					} else if (m >= seaLevel - 4 && m <= seaLevel + 1) {
+						blockState = topBlock;
+						blockState2 = underBlock;
 					}
 
-					if (q < l && (blockState6 == null || blockState6.isAir())) {
-						if (biome.getTemperature(mutable.set(i, q, j)) < 0.15F) {
-							blockState6 = Blocks.field_10295.getDefaultState();
+					if (m < seaLevel && (blockState == null || blockState.isAir())) {
+						if (biome.getTemperature(mutable.set(x, m, z)) < 0.15F) {
+							blockState = Blocks.ICE.getDefaultState();
 						} else {
-							blockState6 = blockState2;
+							blockState = fluidBlock;
 						}
 
-						mutable.set(o, q, p);
+						mutable.set(k, m, l);
 					}
 
-					m = n;
-					if (q >= l - 1) {
-						chunk.setBlockState(mutable, blockState6, false);
-					} else if (q < l - 7 - n) {
-						blockState6 = Blocks.field_10124.getDefaultState();
-						blockState7 = blockState;
-						chunk.setBlockState(mutable, blockState5, false);
+					i = j;
+					if (m >= seaLevel - 1) {
+						chunk.setBlockState(mutable, blockState, false);
+					} else if (m < seaLevel - 7 - j) {
+						blockState = Blocks.AIR.getDefaultState();
+						blockState2 = defaultBlock;
+						chunk.setBlockState(mutable, underwaterBlock, false);
 					} else {
-						chunk.setBlockState(mutable, blockState7, false);
+						chunk.setBlockState(mutable, blockState2, false);
 					}
-				} else if (m > 0) {
-					m--;
-					chunk.setBlockState(mutable, blockState7, false);
-					if (m == 0 && blockState7.getBlock() == Blocks.field_10102 && n > 1) {
-						m = random.nextInt(4) + Math.max(0, q - 63);
-						blockState7 = blockState7.getBlock() == Blocks.field_10534 ? Blocks.field_10344.getDefaultState() : Blocks.field_9979.getDefaultState();
+				} else if (i > 0) {
+					i--;
+					chunk.setBlockState(mutable, blockState2, false);
+					if (i == 0 && blockState2.isOf(Blocks.SAND) && j > 1) {
+						i = random.nextInt(4) + Math.max(0, m - 63);
+						blockState2 = blockState2.isOf(Blocks.RED_SAND) ? Blocks.RED_SANDSTONE.getDefaultState() : Blocks.SANDSTONE.getDefaultState();
 					}
 				}
 			}

@@ -1,11 +1,11 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.DefaultParticleType;
-import net.minecraft.world.World;
 
 public class SpitParticle extends ExplosionSmokeParticle {
-	private SpitParticle(World world, double d, double e, double f, double g, double h, double i, SpriteProvider spriteProvider) {
-		super(world, d, e, f, g, h, i, spriteProvider);
+	private SpitParticle(ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, SpriteProvider spriteProvider) {
+		super(world, x, y, z, velocityX, velocityY, velocityZ, spriteProvider);
 		this.gravityStrength = 0.5F;
 	}
 
@@ -22,8 +22,8 @@ public class SpitParticle extends ExplosionSmokeParticle {
 			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			return new SpitParticle(world, d, e, f, g, h, i, this.spriteProvider);
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			return new SpitParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider);
 		}
 	}
 }

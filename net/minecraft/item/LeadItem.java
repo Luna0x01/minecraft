@@ -1,7 +1,7 @@
 package net.minecraft.item;
 
 import net.minecraft.block.Block;
-import net.minecraft.entity.decoration.LeadKnotEntity;
+import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.tag.BlockTags;
@@ -16,24 +16,24 @@ public class LeadItem extends Item {
 	}
 
 	@Override
-	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
-		World world = itemUsageContext.getWorld();
-		BlockPos blockPos = itemUsageContext.getBlockPos();
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
 		Block block = world.getBlockState(blockPos).getBlock();
-		if (block.matches(BlockTags.field_16584)) {
-			PlayerEntity playerEntity = itemUsageContext.getPlayer();
+		if (block.isIn(BlockTags.FENCES)) {
+			PlayerEntity playerEntity = context.getPlayer();
 			if (!world.isClient && playerEntity != null) {
 				attachHeldMobsToBlock(playerEntity, world, blockPos);
 			}
 
-			return ActionResult.field_5812;
+			return ActionResult.success(world.isClient);
 		} else {
-			return ActionResult.field_5811;
+			return ActionResult.PASS;
 		}
 	}
 
 	public static ActionResult attachHeldMobsToBlock(PlayerEntity playerEntity, World world, BlockPos blockPos) {
-		LeadKnotEntity leadKnotEntity = null;
+		LeashKnotEntity leashKnotEntity = null;
 		boolean bl = false;
 		double d = 7.0;
 		int i = blockPos.getX();
@@ -44,15 +44,15 @@ public class LeadItem extends Item {
 			MobEntity.class, new Box((double)i - 7.0, (double)j - 7.0, (double)k - 7.0, (double)i + 7.0, (double)j + 7.0, (double)k + 7.0)
 		)) {
 			if (mobEntity.getHoldingEntity() == playerEntity) {
-				if (leadKnotEntity == null) {
-					leadKnotEntity = LeadKnotEntity.getOrCreate(world, blockPos);
+				if (leashKnotEntity == null) {
+					leashKnotEntity = LeashKnotEntity.getOrCreate(world, blockPos);
 				}
 
-				mobEntity.attachLeash(leadKnotEntity, true);
+				mobEntity.attachLeash(leashKnotEntity, true);
 				bl = true;
 			}
 		}
 
-		return bl ? ActionResult.field_5812 : ActionResult.field_5811;
+		return bl ? ActionResult.SUCCESS : ActionResult.PASS;
 	}
 }

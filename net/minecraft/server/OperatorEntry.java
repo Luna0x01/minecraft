@@ -8,16 +8,16 @@ public class OperatorEntry extends ServerConfigEntry<GameProfile> {
 	private final int permissionLevel;
 	private final boolean bypassPlayerLimit;
 
-	public OperatorEntry(GameProfile gameProfile, int i, boolean bl) {
-		super(gameProfile);
-		this.permissionLevel = i;
-		this.bypassPlayerLimit = bl;
+	public OperatorEntry(GameProfile profile, int permissionLevel, boolean bypassPlayerLimit) {
+		super(profile);
+		this.permissionLevel = permissionLevel;
+		this.bypassPlayerLimit = bypassPlayerLimit;
 	}
 
-	public OperatorEntry(JsonObject jsonObject) {
-		super(getProfileFromJson(jsonObject), jsonObject);
-		this.permissionLevel = jsonObject.has("level") ? jsonObject.get("level").getAsInt() : 0;
-		this.bypassPlayerLimit = jsonObject.has("bypassesPlayerLimit") && jsonObject.get("bypassesPlayerLimit").getAsBoolean();
+	public OperatorEntry(JsonObject json) {
+		super(getProfileFromJson(json));
+		this.permissionLevel = json.has("level") ? json.get("level").getAsInt() : 0;
+		this.bypassPlayerLimit = json.has("bypassesPlayerLimit") && json.get("bypassesPlayerLimit").getAsBoolean();
 	}
 
 	public int getPermissionLevel() {
@@ -29,19 +29,18 @@ public class OperatorEntry extends ServerConfigEntry<GameProfile> {
 	}
 
 	@Override
-	protected void serialize(JsonObject jsonObject) {
+	protected void fromJson(JsonObject json) {
 		if (this.getKey() != null) {
-			jsonObject.addProperty("uuid", this.getKey().getId() == null ? "" : this.getKey().getId().toString());
-			jsonObject.addProperty("name", this.getKey().getName());
-			super.serialize(jsonObject);
-			jsonObject.addProperty("level", this.permissionLevel);
-			jsonObject.addProperty("bypassesPlayerLimit", this.bypassPlayerLimit);
+			json.addProperty("uuid", this.getKey().getId() == null ? "" : this.getKey().getId().toString());
+			json.addProperty("name", this.getKey().getName());
+			json.addProperty("level", this.permissionLevel);
+			json.addProperty("bypassesPlayerLimit", this.bypassPlayerLimit);
 		}
 	}
 
-	private static GameProfile getProfileFromJson(JsonObject jsonObject) {
-		if (jsonObject.has("uuid") && jsonObject.has("name")) {
-			String string = jsonObject.get("uuid").getAsString();
+	private static GameProfile getProfileFromJson(JsonObject json) {
+		if (json.has("uuid") && json.has("name")) {
+			String string = json.get("uuid").getAsString();
 
 			UUID uUID;
 			try {
@@ -50,7 +49,7 @@ public class OperatorEntry extends ServerConfigEntry<GameProfile> {
 				return null;
 			}
 
-			return new GameProfile(uUID, jsonObject.get("name").getAsString());
+			return new GameProfile(uUID, json.get("name").getAsString());
 		} else {
 			return null;
 		}

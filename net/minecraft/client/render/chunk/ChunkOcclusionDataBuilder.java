@@ -32,17 +32,17 @@ public class ChunkOcclusionDataBuilder {
 	});
 	private int openCount = 4096;
 
-	public void markClosed(BlockPos blockPos) {
-		this.closed.set(pack(blockPos), true);
+	public void markClosed(BlockPos pos) {
+		this.closed.set(pack(pos), true);
 		this.openCount--;
 	}
 
-	private static int pack(BlockPos blockPos) {
-		return pack(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
+	private static int pack(BlockPos pos) {
+		return pack(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
 	}
 
-	private static int pack(int i, int j, int k) {
-		return i << 0 | j << 8 | k << 4;
+	private static int pack(int x, int y, int z) {
+		return x << 0 | y << 8 | z << 4;
 	}
 
 	public ChunkOcclusionData build() {
@@ -62,25 +62,21 @@ public class ChunkOcclusionDataBuilder {
 		return chunkOcclusionData;
 	}
 
-	public Set<Direction> getOpenFaces(BlockPos blockPos) {
-		return this.getOpenFaces(pack(blockPos));
-	}
-
-	private Set<Direction> getOpenFaces(int i) {
+	private Set<Direction> getOpenFaces(int pos) {
 		Set<Direction> set = EnumSet.noneOf(Direction.class);
 		IntPriorityQueue intPriorityQueue = new IntArrayFIFOQueue();
-		intPriorityQueue.enqueue(i);
-		this.closed.set(i, true);
+		intPriorityQueue.enqueue(pos);
+		this.closed.set(pos, true);
 
 		while (!intPriorityQueue.isEmpty()) {
-			int j = intPriorityQueue.dequeueInt();
-			this.addEdgeFaces(j, set);
+			int i = intPriorityQueue.dequeueInt();
+			this.addEdgeFaces(i, set);
 
 			for (Direction direction : DIRECTIONS) {
-				int k = this.offset(j, direction);
-				if (k >= 0 && !this.closed.get(k)) {
-					this.closed.set(k, true);
-					intPriorityQueue.enqueue(k);
+				int j = this.offset(i, direction);
+				if (j >= 0 && !this.closed.get(j)) {
+					this.closed.set(j, true);
+					intPriorityQueue.enqueue(j);
 				}
 			}
 		}
@@ -88,67 +84,67 @@ public class ChunkOcclusionDataBuilder {
 		return set;
 	}
 
-	private void addEdgeFaces(int i, Set<Direction> set) {
-		int j = i >> 0 & 15;
+	private void addEdgeFaces(int pos, Set<Direction> openFaces) {
+		int i = pos >> 0 & 15;
+		if (i == 0) {
+			openFaces.add(Direction.WEST);
+		} else if (i == 15) {
+			openFaces.add(Direction.EAST);
+		}
+
+		int j = pos >> 8 & 15;
 		if (j == 0) {
-			set.add(Direction.field_11039);
+			openFaces.add(Direction.DOWN);
 		} else if (j == 15) {
-			set.add(Direction.field_11034);
+			openFaces.add(Direction.UP);
 		}
 
-		int k = i >> 8 & 15;
+		int k = pos >> 4 & 15;
 		if (k == 0) {
-			set.add(Direction.field_11033);
+			openFaces.add(Direction.NORTH);
 		} else if (k == 15) {
-			set.add(Direction.field_11036);
-		}
-
-		int l = i >> 4 & 15;
-		if (l == 0) {
-			set.add(Direction.field_11043);
-		} else if (l == 15) {
-			set.add(Direction.field_11035);
+			openFaces.add(Direction.SOUTH);
 		}
 	}
 
-	private int offset(int i, Direction direction) {
+	private int offset(int pos, Direction direction) {
 		switch (direction) {
-			case field_11033:
-				if ((i >> 8 & 15) == 0) {
+			case DOWN:
+				if ((pos >> 8 & 15) == 0) {
 					return -1;
 				}
 
-				return i - STEP_Y;
-			case field_11036:
-				if ((i >> 8 & 15) == 15) {
+				return pos - STEP_Y;
+			case UP:
+				if ((pos >> 8 & 15) == 15) {
 					return -1;
 				}
 
-				return i + STEP_Y;
-			case field_11043:
-				if ((i >> 4 & 15) == 0) {
+				return pos + STEP_Y;
+			case NORTH:
+				if ((pos >> 4 & 15) == 0) {
 					return -1;
 				}
 
-				return i - STEP_Z;
-			case field_11035:
-				if ((i >> 4 & 15) == 15) {
+				return pos - STEP_Z;
+			case SOUTH:
+				if ((pos >> 4 & 15) == 15) {
 					return -1;
 				}
 
-				return i + STEP_Z;
-			case field_11039:
-				if ((i >> 0 & 15) == 0) {
+				return pos + STEP_Z;
+			case WEST:
+				if ((pos >> 0 & 15) == 0) {
 					return -1;
 				}
 
-				return i - STEP_X;
-			case field_11034:
-				if ((i >> 0 & 15) == 15) {
+				return pos - STEP_X;
+			case EAST:
+				if ((pos >> 0 & 15) == 15) {
 					return -1;
 				}
 
-				return i + STEP_X;
+				return pos + STEP_X;
 			default:
 				return -1;
 		}

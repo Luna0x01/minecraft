@@ -33,10 +33,10 @@ public class TexturedRenderLayers {
 	private static final RenderLayer SHIELD_PATTERNS_RENDER_LAYER = RenderLayer.getEntityNoOutline(SHIELD_PATTERNS_ATLAS_TEXTURE);
 	private static final RenderLayer SIGN_RENDER_LAYER = RenderLayer.getEntityCutoutNoCull(SIGNS_ATLAS_TEXTURE);
 	private static final RenderLayer CHEST_RENDER_LAYER = RenderLayer.getEntityCutout(CHEST_ATLAS_TEXTURE);
-	private static final RenderLayer ENTITY_SOLID = RenderLayer.getEntitySolid(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-	private static final RenderLayer ENTITY_CUTOUT = RenderLayer.getEntityCutout(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-	private static final RenderLayer ENTITY_TRANSLUCENT = RenderLayer.getEntityTranslucent(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-	private static final RenderLayer ENTITY_TRANSLUCENT_CULL = RenderLayer.getEntityTranslucentCull(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
+	private static final RenderLayer ENTITY_SOLID = RenderLayer.getEntitySolid(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+	private static final RenderLayer ENTITY_CUTOUT = RenderLayer.getEntityCutout(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+	private static final RenderLayer ITEM_ENTITY_TRANSLUCENT_CULL = RenderLayer.getItemEntityTranslucentCull(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+	private static final RenderLayer ENTITY_TRANSLUCENT_CULL = RenderLayer.getEntityTranslucentCull(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
 	public static final SpriteIdentifier SHULKER_TEXTURE_ID = new SpriteIdentifier(SHULKER_BOXES_ATLAS_TEXTURE, new Identifier("entity/shulker/shulker"));
 	public static final List<SpriteIdentifier> COLORED_SHULKER_BOXES_TEXTURES = (List<SpriteIdentifier>)Stream.of(
 			"white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black"
@@ -49,16 +49,16 @@ public class TexturedRenderLayers {
 		.sorted(Comparator.comparingInt(DyeColor::getId))
 		.map(dyeColor -> new SpriteIdentifier(BEDS_ATLAS_TEXTURE, new Identifier("entity/bed/" + dyeColor.getName())))
 		.toArray(SpriteIdentifier[]::new);
-	public static final SpriteIdentifier field_21714 = getChestTextureId("trapped");
-	public static final SpriteIdentifier field_21715 = getChestTextureId("trapped_left");
-	public static final SpriteIdentifier field_21716 = getChestTextureId("trapped_right");
-	public static final SpriteIdentifier field_21717 = getChestTextureId("christmas");
-	public static final SpriteIdentifier field_21718 = getChestTextureId("christmas_left");
-	public static final SpriteIdentifier field_21719 = getChestTextureId("christmas_right");
-	public static final SpriteIdentifier field_21720 = getChestTextureId("normal");
-	public static final SpriteIdentifier field_21721 = getChestTextureId("normal_left");
-	public static final SpriteIdentifier field_21722 = getChestTextureId("normal_right");
-	public static final SpriteIdentifier field_21723 = getChestTextureId("ender");
+	public static final SpriteIdentifier TRAPPED = getChestTextureId("trapped");
+	public static final SpriteIdentifier TRAPPED_LEFT = getChestTextureId("trapped_left");
+	public static final SpriteIdentifier TRAPPED_RIGHT = getChestTextureId("trapped_right");
+	public static final SpriteIdentifier CHRISTMAS = getChestTextureId("christmas");
+	public static final SpriteIdentifier CHRISTMAS_LEFT = getChestTextureId("christmas_left");
+	public static final SpriteIdentifier CHRISTMAS_RIGHT = getChestTextureId("christmas_right");
+	public static final SpriteIdentifier NORMAL = getChestTextureId("normal");
+	public static final SpriteIdentifier NORMAL_LEFT = getChestTextureId("normal_left");
+	public static final SpriteIdentifier NORMAL_RIGHT = getChestTextureId("normal_right");
+	public static final SpriteIdentifier ENDER = getChestTextureId("ender");
 
 	public static RenderLayer getBannerPatterns() {
 		return BANNER_PATTERNS_RENDER_LAYER;
@@ -92,70 +92,68 @@ public class TexturedRenderLayers {
 		return ENTITY_CUTOUT;
 	}
 
-	public static RenderLayer getEntityTranslucent() {
-		return ENTITY_TRANSLUCENT;
+	public static RenderLayer getItemEntityTranslucentCull() {
+		return ITEM_ENTITY_TRANSLUCENT_CULL;
 	}
 
 	public static RenderLayer getEntityTranslucentCull() {
 		return ENTITY_TRANSLUCENT_CULL;
 	}
 
-	public static void addDefaultTextures(Consumer<SpriteIdentifier> consumer) {
-		consumer.accept(SHULKER_TEXTURE_ID);
-		COLORED_SHULKER_BOXES_TEXTURES.forEach(consumer);
+	public static void addDefaultTextures(Consumer<SpriteIdentifier> adder) {
+		adder.accept(SHULKER_TEXTURE_ID);
+		COLORED_SHULKER_BOXES_TEXTURES.forEach(adder);
 
 		for (BannerPattern bannerPattern : BannerPattern.values()) {
-			consumer.accept(new SpriteIdentifier(BANNER_PATTERNS_ATLAS_TEXTURE, bannerPattern.getSpriteId(true)));
-			consumer.accept(new SpriteIdentifier(SHIELD_PATTERNS_ATLAS_TEXTURE, bannerPattern.getSpriteId(false)));
+			adder.accept(new SpriteIdentifier(BANNER_PATTERNS_ATLAS_TEXTURE, bannerPattern.getSpriteId(true)));
+			adder.accept(new SpriteIdentifier(SHIELD_PATTERNS_ATLAS_TEXTURE, bannerPattern.getSpriteId(false)));
 		}
 
-		WOOD_TYPE_TEXTURES.values().forEach(consumer);
+		WOOD_TYPE_TEXTURES.values().forEach(adder);
 
 		for (SpriteIdentifier spriteIdentifier : BED_TEXTURES) {
-			consumer.accept(spriteIdentifier);
+			adder.accept(spriteIdentifier);
 		}
 
-		consumer.accept(field_21714);
-		consumer.accept(field_21715);
-		consumer.accept(field_21716);
-		consumer.accept(field_21717);
-		consumer.accept(field_21718);
-		consumer.accept(field_21719);
-		consumer.accept(field_21720);
-		consumer.accept(field_21721);
-		consumer.accept(field_21722);
-		consumer.accept(field_21723);
+		adder.accept(TRAPPED);
+		adder.accept(TRAPPED_LEFT);
+		adder.accept(TRAPPED_RIGHT);
+		adder.accept(CHRISTMAS);
+		adder.accept(CHRISTMAS_LEFT);
+		adder.accept(CHRISTMAS_RIGHT);
+		adder.accept(NORMAL);
+		adder.accept(NORMAL_LEFT);
+		adder.accept(NORMAL_RIGHT);
+		adder.accept(ENDER);
 	}
 
-	public static SpriteIdentifier getSignTextureId(SignType signType) {
-		return new SpriteIdentifier(SIGNS_ATLAS_TEXTURE, new Identifier("entity/signs/" + signType.getName()));
+	public static SpriteIdentifier getSignTextureId(SignType type) {
+		return new SpriteIdentifier(SIGNS_ATLAS_TEXTURE, new Identifier("entity/signs/" + type.getName()));
 	}
 
-	private static SpriteIdentifier getChestTextureId(String string) {
-		return new SpriteIdentifier(CHEST_ATLAS_TEXTURE, new Identifier("entity/chest/" + string));
+	private static SpriteIdentifier getChestTextureId(String variant) {
+		return new SpriteIdentifier(CHEST_ATLAS_TEXTURE, new Identifier("entity/chest/" + variant));
 	}
 
-	public static SpriteIdentifier getChestTexture(BlockEntity blockEntity, ChestType chestType, boolean bl) {
-		if (bl) {
-			return getChestTexture(chestType, field_21717, field_21718, field_21719);
+	public static SpriteIdentifier getChestTexture(BlockEntity blockEntity, ChestType type, boolean christmas) {
+		if (christmas) {
+			return getChestTexture(type, CHRISTMAS, CHRISTMAS_LEFT, CHRISTMAS_RIGHT);
 		} else if (blockEntity instanceof TrappedChestBlockEntity) {
-			return getChestTexture(chestType, field_21714, field_21715, field_21716);
+			return getChestTexture(type, TRAPPED, TRAPPED_LEFT, TRAPPED_RIGHT);
 		} else {
-			return blockEntity instanceof EnderChestBlockEntity ? field_21723 : getChestTexture(chestType, field_21720, field_21721, field_21722);
+			return blockEntity instanceof EnderChestBlockEntity ? ENDER : getChestTexture(type, NORMAL, NORMAL_LEFT, NORMAL_RIGHT);
 		}
 	}
 
-	private static SpriteIdentifier getChestTexture(
-		ChestType chestType, SpriteIdentifier spriteIdentifier, SpriteIdentifier spriteIdentifier2, SpriteIdentifier spriteIdentifier3
-	) {
-		switch (chestType) {
-			case field_12574:
-				return spriteIdentifier2;
-			case field_12571:
-				return spriteIdentifier3;
-			case field_12569:
+	private static SpriteIdentifier getChestTexture(ChestType type, SpriteIdentifier single, SpriteIdentifier left, SpriteIdentifier right) {
+		switch (type) {
+			case LEFT:
+				return left;
+			case RIGHT:
+				return right;
+			case SINGLE:
 			default:
-				return spriteIdentifier;
+				return single;
 		}
 	}
 }

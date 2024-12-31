@@ -26,19 +26,19 @@ import net.minecraft.util.Identifier;
 public class WeightedUnbakedModel implements UnbakedModel {
 	private final List<ModelVariant> variants;
 
-	public WeightedUnbakedModel(List<ModelVariant> list) {
-		this.variants = list;
+	public WeightedUnbakedModel(List<ModelVariant> variants) {
+		this.variants = variants;
 	}
 
 	public List<ModelVariant> getVariants() {
 		return this.variants;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (object instanceof WeightedUnbakedModel) {
-			WeightedUnbakedModel weightedUnbakedModel = (WeightedUnbakedModel)object;
+		} else if (o instanceof WeightedUnbakedModel) {
+			WeightedUnbakedModel weightedUnbakedModel = (WeightedUnbakedModel)o;
 			return this.variants.equals(weightedUnbakedModel.variants);
 		} else {
 			return false;
@@ -55,25 +55,27 @@ public class WeightedUnbakedModel implements UnbakedModel {
 	}
 
 	@Override
-	public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> function, Set<Pair<String, String>> set) {
+	public Collection<SpriteIdentifier> getTextureDependencies(
+		Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences
+	) {
 		return (Collection<SpriteIdentifier>)this.getVariants()
 			.stream()
 			.map(ModelVariant::getLocation)
 			.distinct()
-			.flatMap(identifier -> ((UnbakedModel)function.apply(identifier)).getTextureDependencies(function, set).stream())
+			.flatMap(identifier -> ((UnbakedModel)unbakedModelGetter.apply(identifier)).getTextureDependencies(unbakedModelGetter, unresolvedTextureReferences).stream())
 			.collect(Collectors.toSet());
 	}
 
 	@Nullable
 	@Override
-	public BakedModel bake(ModelLoader modelLoader, Function<SpriteIdentifier, Sprite> function, ModelBakeSettings modelBakeSettings, Identifier identifier) {
+	public BakedModel bake(ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
 		if (this.getVariants().isEmpty()) {
 			return null;
 		} else {
 			WeightedBakedModel.Builder builder = new WeightedBakedModel.Builder();
 
 			for (ModelVariant modelVariant : this.getVariants()) {
-				BakedModel bakedModel = modelLoader.bake(modelVariant.getLocation(), modelVariant);
+				BakedModel bakedModel = loader.bake(modelVariant.getLocation(), modelVariant);
 				builder.add(bakedModel, modelVariant.getWeight());
 			}
 

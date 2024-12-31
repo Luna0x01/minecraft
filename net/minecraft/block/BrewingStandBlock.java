@@ -3,12 +3,12 @@ package net.minecraft.block;
 import java.util.Random;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BrewingStandBlockEntity;
-import net.minecraft.container.Container;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
@@ -29,7 +29,7 @@ public class BrewingStandBlock extends BlockWithEntity {
 		Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 2.0, 15.0), Block.createCuboidShape(7.0, 0.0, 7.0, 9.0, 14.0, 9.0)
 	);
 
-	public BrewingStandBlock(Block.Settings settings) {
+	public BrewingStandBlock(AbstractBlock.Settings settings) {
 		super(settings);
 		this.setDefaultState(
 			this.stateManager
@@ -41,39 +41,39 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState blockState) {
-		return BlockRenderType.field_11458;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView blockView) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new BrewingStandBlockEntity();
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return SHAPE;
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
 		if (world.isClient) {
-			return ActionResult.field_5812;
+			return ActionResult.SUCCESS;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
-				playerEntity.openContainer((BrewingStandBlockEntity)blockEntity);
-				playerEntity.incrementStat(Stats.field_15407);
+				player.openHandledScreen((BrewingStandBlockEntity)blockEntity);
+				player.incrementStat(Stats.INTERACT_WITH_BREWINGSTAND);
 			}
 
-			return ActionResult.field_5812;
+			return ActionResult.CONSUME;
 		}
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, LivingEntity livingEntity, ItemStack itemStack) {
+	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
 		if (itemStack.hasCustomName()) {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
 				((BrewingStandBlockEntity)blockEntity).setCustomName(itemStack.getName());
 			}
@@ -81,33 +81,33 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void randomDisplayTick(BlockState blockState, World world, BlockPos blockPos, Random random) {
-		double d = (double)blockPos.getX() + 0.4 + (double)random.nextFloat() * 0.2;
-		double e = (double)blockPos.getY() + 0.7 + (double)random.nextFloat() * 0.3;
-		double f = (double)blockPos.getZ() + 0.4 + (double)random.nextFloat() * 0.2;
-		world.addParticle(ParticleTypes.field_11251, d, e, f, 0.0, 0.0, 0.0);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		double d = (double)pos.getX() + 0.4 + (double)random.nextFloat() * 0.2;
+		double e = (double)pos.getY() + 0.7 + (double)random.nextFloat() * 0.3;
+		double f = (double)pos.getZ() + 0.4 + (double)random.nextFloat() * 0.2;
+		world.addParticle(ParticleTypes.SMOKE, d, e, f, 0.0, 0.0, 0.0);
 	}
 
 	@Override
-	public void onBlockRemoved(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
-		if (blockState.getBlock() != blockState2.getBlock()) {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+		if (!state.isOf(newState.getBlock())) {
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
-				ItemScatterer.spawn(world, blockPos, (BrewingStandBlockEntity)blockEntity);
+				ItemScatterer.spawn(world, pos, (BrewingStandBlockEntity)blockEntity);
 			}
 
-			super.onBlockRemoved(blockState, world, blockPos, blockState2, bl);
+			super.onStateReplaced(state, world, pos, newState, moved);
 		}
 	}
 
 	@Override
-	public boolean hasComparatorOutput(BlockState blockState) {
+	public boolean hasComparatorOutput(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(BlockState blockState, World world, BlockPos blockPos) {
-		return Container.calculateComparatorOutput(world.getBlockEntity(blockPos));
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+		return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
 	}
 
 	@Override
@@ -116,7 +116,7 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
 		return false;
 	}
 }

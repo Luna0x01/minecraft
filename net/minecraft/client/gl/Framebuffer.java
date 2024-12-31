@@ -15,14 +15,14 @@ public class Framebuffer {
 	public int viewportHeight;
 	public final boolean useDepthAttachment;
 	public int fbo;
-	public int colorAttachment;
-	public int depthAttachment;
+	private int colorAttachment;
+	private int depthAttachment;
 	public final float[] clearColor;
 	public int texFilter;
 
-	public Framebuffer(int i, int j, boolean bl, boolean bl2) {
+	public Framebuffer(int width, int height, boolean useDepth, boolean getError) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
-		this.useDepthAttachment = bl;
+		this.useDepthAttachment = useDepth;
 		this.fbo = -1;
 		this.colorAttachment = -1;
 		this.depthAttachment = -1;
@@ -31,25 +31,25 @@ public class Framebuffer {
 		this.clearColor[1] = 1.0F;
 		this.clearColor[2] = 1.0F;
 		this.clearColor[3] = 0.0F;
-		this.resize(i, j, bl2);
+		this.resize(width, height, getError);
 	}
 
-	public void resize(int i, int j, boolean bl) {
+	public void resize(int width, int height, boolean getError) {
 		if (!RenderSystem.isOnRenderThread()) {
-			RenderSystem.recordRenderCall(() -> this.resizeInternal(i, j, bl));
+			RenderSystem.recordRenderCall(() -> this.resizeInternal(width, height, getError));
 		} else {
-			this.resizeInternal(i, j, bl);
+			this.resizeInternal(width, height, getError);
 		}
 	}
 
-	private void resizeInternal(int i, int j, boolean bl) {
+	private void resizeInternal(int width, int height, boolean getError) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
 		GlStateManager.enableDepthTest();
 		if (this.fbo >= 0) {
 			this.delete();
 		}
 
-		this.initFbo(i, j, bl);
+		this.initFbo(width, height, getError);
 		GlStateManager.bindFramebuffer(FramebufferInfo.FRAME_BUFFER, 0);
 	}
 
@@ -58,12 +58,12 @@ public class Framebuffer {
 		this.endRead();
 		this.endWrite();
 		if (this.depthAttachment > -1) {
-			GlStateManager.deleteRenderbuffers(this.depthAttachment);
+			TextureUtil.deleteId(this.depthAttachment);
 			this.depthAttachment = -1;
 		}
 
 		if (this.colorAttachment > -1) {
-			TextureUtil.releaseTextureId(this.colorAttachment);
+			TextureUtil.deleteId(this.colorAttachment);
 			this.colorAttachment = -1;
 		}
 
@@ -74,16 +74,46 @@ public class Framebuffer {
 		}
 	}
 
-	public void initFbo(int i, int j, boolean bl) {
+	public void copyDepthFrom(Framebuffer framebuffer) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
-		this.viewportWidth = i;
-		this.viewportHeight = j;
-		this.textureWidth = i;
-		this.textureHeight = j;
+		if (GlStateManager.supportsGl30()) {
+			GlStateManager.bindFramebuffer(36008, framebuffer.fbo);
+			GlStateManager.bindFramebuffer(36009, this.fbo);
+			GlStateManager.blitFramebuffer(0, 0, framebuffer.textureWidth, framebuffer.textureHeight, 0, 0, this.textureWidth, this.textureHeight, 256, 9728);
+		} else {
+			GlStateManager.bindFramebuffer(FramebufferInfo.FRAME_BUFFER, this.fbo);
+			int i = GlStateManager.getFramebufferDepthAttachment();
+			if (i != 0) {
+				int j = GlStateManager.getActiveBoundTexture();
+				GlStateManager.bindTexture(i);
+				GlStateManager.bindFramebuffer(FramebufferInfo.FRAME_BUFFER, framebuffer.fbo);
+				GlStateManager.copyTexSubImage2d(
+					3553, 0, 0, 0, 0, 0, Math.min(this.textureWidth, framebuffer.textureWidth), Math.min(this.textureHeight, framebuffer.textureHeight)
+				);
+				GlStateManager.bindTexture(j);
+			}
+		}
+
+		GlStateManager.bindFramebuffer(FramebufferInfo.FRAME_BUFFER, 0);
+	}
+
+	public void initFbo(int width, int height, boolean getError) {
+		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
+		this.viewportWidth = width;
+		this.viewportHeight = height;
+		this.textureWidth = width;
+		this.textureHeight = height;
 		this.fbo = GlStateManager.genFramebuffers();
-		this.colorAttachment = TextureUtil.generateTextureId();
+		this.colorAttachment = TextureUtil.generateId();
 		if (this.useDepthAttachment) {
-			this.depthAttachment = GlStateManager.genRenderbuffers();
+			this.depthAttachment = TextureUtil.generateId();
+			GlStateManager.bindTexture(this.depthAttachment);
+			GlStateManager.texParameter(3553, 10241, 9728);
+			GlStateManager.texParameter(3553, 10240, 9728);
+			GlStateManager.texParameter(3553, 10242, 10496);
+			GlStateManager.texParameter(3553, 10243, 10496);
+			GlStateManager.texParameter(3553, 34892, 0);
+			GlStateManager.texImage2D(3553, 0, 6402, this.textureWidth, this.textureHeight, 0, 6402, 5126, null);
 		}
 
 		this.setTexFilter(9728);
@@ -92,13 +122,11 @@ public class Framebuffer {
 		GlStateManager.bindFramebuffer(FramebufferInfo.FRAME_BUFFER, this.fbo);
 		GlStateManager.framebufferTexture2D(FramebufferInfo.FRAME_BUFFER, FramebufferInfo.COLOR_ATTACHMENT, 3553, this.colorAttachment, 0);
 		if (this.useDepthAttachment) {
-			GlStateManager.bindRenderbuffer(FramebufferInfo.RENDER_BUFFER, this.depthAttachment);
-			GlStateManager.renderbufferStorage(FramebufferInfo.RENDER_BUFFER, 33190, this.textureWidth, this.textureHeight);
-			GlStateManager.framebufferRenderbuffer(FramebufferInfo.FRAME_BUFFER, FramebufferInfo.DEPTH_ATTACHMENT, FramebufferInfo.RENDER_BUFFER, this.depthAttachment);
+			GlStateManager.framebufferTexture2D(FramebufferInfo.FRAME_BUFFER, FramebufferInfo.DEPTH_ATTACHMENT, 3553, this.depthAttachment, 0);
 		}
 
 		this.checkFramebufferStatus();
-		this.clear(bl);
+		this.clear(getError);
 		this.endRead();
 	}
 
@@ -141,18 +169,18 @@ public class Framebuffer {
 		GlStateManager.bindTexture(0);
 	}
 
-	public void beginWrite(boolean bl) {
+	public void beginWrite(boolean setViewport) {
 		if (!RenderSystem.isOnRenderThread()) {
-			RenderSystem.recordRenderCall(() -> this.bind(bl));
+			RenderSystem.recordRenderCall(() -> this.bind(setViewport));
 		} else {
-			this.bind(bl);
+			this.bind(setViewport);
 		}
 	}
 
-	private void bind(boolean bl) {
+	private void bind(boolean updateViewport) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
 		GlStateManager.bindFramebuffer(FramebufferInfo.FRAME_BUFFER, this.fbo);
-		if (bl) {
+		if (updateViewport) {
 			GlStateManager.viewport(0, 0, this.viewportWidth, this.viewportHeight);
 		}
 	}
@@ -165,38 +193,38 @@ public class Framebuffer {
 		}
 	}
 
-	public void setClearColor(float f, float g, float h, float i) {
-		this.clearColor[0] = f;
+	public void setClearColor(float r, float g, float b, float a) {
+		this.clearColor[0] = r;
 		this.clearColor[1] = g;
-		this.clearColor[2] = h;
-		this.clearColor[3] = i;
+		this.clearColor[2] = b;
+		this.clearColor[3] = a;
 	}
 
-	public void draw(int i, int j) {
-		this.draw(i, j, true);
+	public void draw(int width, int height) {
+		this.draw(width, height, true);
 	}
 
-	public void draw(int i, int j, boolean bl) {
+	public void draw(int width, int height, boolean bl) {
 		RenderSystem.assertThread(RenderSystem::isOnGameThreadOrInit);
 		if (!RenderSystem.isInInitPhase()) {
-			RenderSystem.recordRenderCall(() -> this.drawInternal(i, j, bl));
+			RenderSystem.recordRenderCall(() -> this.drawInternal(width, height, bl));
 		} else {
-			this.drawInternal(i, j, bl);
+			this.drawInternal(width, height, bl);
 		}
 	}
 
-	private void drawInternal(int i, int j, boolean bl) {
+	private void drawInternal(int width, int height, boolean bl) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThread);
 		GlStateManager.colorMask(true, true, true, false);
 		GlStateManager.disableDepthTest();
 		GlStateManager.depthMask(false);
 		GlStateManager.matrixMode(5889);
 		GlStateManager.loadIdentity();
-		GlStateManager.ortho(0.0, (double)i, (double)j, 0.0, 1000.0, 3000.0);
+		GlStateManager.ortho(0.0, (double)width, (double)height, 0.0, 1000.0, 3000.0);
 		GlStateManager.matrixMode(5888);
 		GlStateManager.loadIdentity();
 		GlStateManager.translatef(0.0F, 0.0F, -2000.0F);
-		GlStateManager.viewport(0, 0, i, j);
+		GlStateManager.viewport(0, 0, width, height);
 		GlStateManager.enableTexture();
 		GlStateManager.disableLighting();
 		GlStateManager.disableAlphaTest();
@@ -207,24 +235,24 @@ public class Framebuffer {
 
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.beginRead();
-		float f = (float)i;
-		float g = (float)j;
+		float f = (float)width;
+		float g = (float)height;
 		float h = (float)this.viewportWidth / (float)this.textureWidth;
-		float k = (float)this.viewportHeight / (float)this.textureHeight;
+		float i = (float)this.viewportHeight / (float)this.textureHeight;
 		Tessellator tessellator = RenderSystem.renderThreadTesselator();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 		bufferBuilder.vertex(0.0, (double)g, 0.0).texture(0.0F, 0.0F).color(255, 255, 255, 255).next();
 		bufferBuilder.vertex((double)f, (double)g, 0.0).texture(h, 0.0F).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex((double)f, 0.0, 0.0).texture(h, k).color(255, 255, 255, 255).next();
-		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0F, k).color(255, 255, 255, 255).next();
+		bufferBuilder.vertex((double)f, 0.0, 0.0).texture(h, i).color(255, 255, 255, 255).next();
+		bufferBuilder.vertex(0.0, 0.0, 0.0).texture(0.0F, i).color(255, 255, 255, 255).next();
 		tessellator.draw();
 		this.endRead();
 		GlStateManager.depthMask(true);
 		GlStateManager.colorMask(true, true, true, true);
 	}
 
-	public void clear(boolean bl) {
+	public void clear(boolean getError) {
 		RenderSystem.assertThread(RenderSystem::isOnRenderThreadOrInit);
 		this.beginWrite(true);
 		GlStateManager.clearColor(this.clearColor[0], this.clearColor[1], this.clearColor[2], this.clearColor[3]);
@@ -234,7 +262,15 @@ public class Framebuffer {
 			i |= 256;
 		}
 
-		GlStateManager.clear(i, bl);
+		GlStateManager.clear(i, getError);
 		this.endWrite();
+	}
+
+	public int getColorAttachment() {
+		return this.colorAttachment;
+	}
+
+	public int getDepthAttachment() {
+		return this.depthAttachment;
 	}
 }

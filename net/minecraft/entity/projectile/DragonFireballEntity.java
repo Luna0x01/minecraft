@@ -2,6 +2,7 @@ package net.minecraft.entity.projectile;
 
 import java.util.List;
 import net.minecraft.entity.AreaEffectCloudEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -11,7 +12,6 @@ import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class DragonFireballEntity extends ExplosiveProjectileEntity {
@@ -19,27 +19,31 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 		super(entityType, world);
 	}
 
-	public DragonFireballEntity(World world, double d, double e, double f, double g, double h, double i) {
-		super(EntityType.field_6129, d, e, f, g, h, i, world);
+	public DragonFireballEntity(World world, double x, double y, double z, double directionX, double directionY, double directionZ) {
+		super(EntityType.DRAGON_FIREBALL, x, y, z, directionX, directionY, directionZ, world);
 	}
 
-	public DragonFireballEntity(World world, LivingEntity livingEntity, double d, double e, double f) {
-		super(EntityType.field_6129, livingEntity, d, e, f, world);
+	public DragonFireballEntity(World world, LivingEntity owner, double directionX, double directionY, double directionZ) {
+		super(EntityType.DRAGON_FIREBALL, owner, directionX, directionY, directionZ, world);
 	}
 
 	@Override
 	protected void onCollision(HitResult hitResult) {
 		super.onCollision(hitResult);
-		if (hitResult.getType() != HitResult.Type.field_1331 || !((EntityHitResult)hitResult).getEntity().isPartOf(this.owner)) {
+		Entity entity = this.getOwner();
+		if (hitResult.getType() != HitResult.Type.ENTITY || !((EntityHitResult)hitResult).getEntity().isPartOf(entity)) {
 			if (!this.world.isClient) {
 				List<LivingEntity> list = this.world.getNonSpectatingEntities(LivingEntity.class, this.getBoundingBox().expand(4.0, 2.0, 4.0));
 				AreaEffectCloudEntity areaEffectCloudEntity = new AreaEffectCloudEntity(this.world, this.getX(), this.getY(), this.getZ());
-				areaEffectCloudEntity.setOwner(this.owner);
-				areaEffectCloudEntity.setParticleType(ParticleTypes.field_11216);
+				if (entity instanceof LivingEntity) {
+					areaEffectCloudEntity.setOwner((LivingEntity)entity);
+				}
+
+				areaEffectCloudEntity.setParticleType(ParticleTypes.DRAGON_BREATH);
 				areaEffectCloudEntity.setRadius(3.0F);
 				areaEffectCloudEntity.setDuration(600);
 				areaEffectCloudEntity.setRadiusGrowth((7.0F - areaEffectCloudEntity.getRadius()) / (float)areaEffectCloudEntity.getDuration());
-				areaEffectCloudEntity.addEffect(new StatusEffectInstance(StatusEffects.field_5921, 1, 1));
+				areaEffectCloudEntity.addEffect(new StatusEffectInstance(StatusEffects.INSTANT_DAMAGE, 1, 1));
 				if (!list.isEmpty()) {
 					for (LivingEntity livingEntity : list) {
 						double d = this.squaredDistanceTo(livingEntity);
@@ -50,7 +54,7 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 					}
 				}
 
-				this.world.playLevelEvent(2006, new BlockPos(this), 0);
+				this.world.syncWorldEvent(2006, this.getBlockPos(), this.isSilent() ? -1 : 1);
 				this.world.spawnEntity(areaEffectCloudEntity);
 				this.remove();
 			}
@@ -63,13 +67,13 @@ public class DragonFireballEntity extends ExplosiveProjectileEntity {
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
+	public boolean damage(DamageSource source, float amount) {
 		return false;
 	}
 
 	@Override
 	protected ParticleEffect getParticleType() {
-		return ParticleTypes.field_11216;
+		return ParticleTypes.DRAGON_BREATH;
 	}
 
 	@Override

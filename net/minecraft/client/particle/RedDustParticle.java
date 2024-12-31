@@ -1,27 +1,35 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
 
 public class RedDustParticle extends SpriteBillboardParticle {
 	private final SpriteProvider spriteProvider;
 
 	private RedDustParticle(
-		World world, double d, double e, double f, double g, double h, double i, DustParticleEffect dustParticleEffect, SpriteProvider spriteProvider
+		ClientWorld world,
+		double x,
+		double y,
+		double z,
+		double velocityX,
+		double velocityY,
+		double velocityZ,
+		DustParticleEffect dustParticleEffect,
+		SpriteProvider spriteProvider
 	) {
-		super(world, d, e, f, g, h, i);
+		super(world, x, y, z, velocityX, velocityY, velocityZ);
 		this.spriteProvider = spriteProvider;
 		this.velocityX *= 0.1F;
 		this.velocityY *= 0.1F;
 		this.velocityZ *= 0.1F;
-		float j = (float)Math.random() * 0.4F + 0.6F;
-		this.colorRed = ((float)(Math.random() * 0.2F) + 0.8F) * dustParticleEffect.getRed() * j;
-		this.colorGreen = ((float)(Math.random() * 0.2F) + 0.8F) * dustParticleEffect.getGreen() * j;
-		this.colorBlue = ((float)(Math.random() * 0.2F) + 0.8F) * dustParticleEffect.getBlue() * j;
+		float f = (float)Math.random() * 0.4F + 0.6F;
+		this.colorRed = ((float)(Math.random() * 0.2F) + 0.8F) * dustParticleEffect.getRed() * f;
+		this.colorGreen = ((float)(Math.random() * 0.2F) + 0.8F) * dustParticleEffect.getGreen() * f;
+		this.colorBlue = ((float)(Math.random() * 0.2F) + 0.8F) * dustParticleEffect.getBlue() * f;
 		this.scale = this.scale * 0.75F * dustParticleEffect.getScale();
-		int k = (int)(8.0 / (Math.random() * 0.8 + 0.2));
-		this.maxAge = (int)Math.max((float)k * dustParticleEffect.getScale(), 1.0F);
+		int i = (int)(8.0 / (Math.random() * 0.8 + 0.2));
+		this.maxAge = (int)Math.max((float)i * dustParticleEffect.getScale(), 1.0F);
 		this.setSpriteForAge(spriteProvider);
 	}
 
@@ -31,8 +39,8 @@ public class RedDustParticle extends SpriteBillboardParticle {
 	}
 
 	@Override
-	public float getSize(float f) {
-		return this.scale * MathHelper.clamp(((float)this.age + f) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
+	public float getSize(float tickDelta) {
+		return this.scale * MathHelper.clamp(((float)this.age + tickDelta) / (float)this.maxAge * 32.0F, 0.0F, 1.0F);
 	}
 
 	@Override
@@ -67,8 +75,8 @@ public class RedDustParticle extends SpriteBillboardParticle {
 			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle createParticle(DustParticleEffect dustParticleEffect, World world, double d, double e, double f, double g, double h, double i) {
-			return new RedDustParticle(world, d, e, f, g, h, i, dustParticleEffect, this.spriteProvider);
+		public Particle createParticle(DustParticleEffect dustParticleEffect, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			return new RedDustParticle(clientWorld, d, e, f, g, h, i, dustParticleEffect, this.spriteProvider);
 		}
 	}
 }

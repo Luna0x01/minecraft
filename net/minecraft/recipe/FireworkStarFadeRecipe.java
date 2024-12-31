@@ -11,7 +11,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
 public class FireworkStarFadeRecipe extends SpecialCraftingRecipe {
-	private static final Ingredient INPUT_STAR = Ingredient.ofItems(Items.field_8450);
+	private static final Ingredient INPUT_STAR = Ingredient.ofItems(Items.FIREWORK_STAR);
 
 	public FireworkStarFadeRecipe(Identifier identifier) {
 		super(identifier);
@@ -21,8 +21,8 @@ public class FireworkStarFadeRecipe extends SpecialCraftingRecipe {
 		boolean bl = false;
 		boolean bl2 = false;
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack = craftingInventory.getStack(i);
 			if (!itemStack.isEmpty()) {
 				if (itemStack.getItem() instanceof DyeItem) {
 					bl = true;
@@ -47,8 +47,8 @@ public class FireworkStarFadeRecipe extends SpecialCraftingRecipe {
 		List<Integer> list = Lists.newArrayList();
 		ItemStack itemStack = null;
 
-		for (int i = 0; i < craftingInventory.getInvSize(); i++) {
-			ItemStack itemStack2 = craftingInventory.getInvStack(i);
+		for (int i = 0; i < craftingInventory.size(); i++) {
+			ItemStack itemStack2 = craftingInventory.getStack(i);
 			Item item = itemStack2.getItem();
 			if (item instanceof DyeItem) {
 				list.add(((DyeItem)item).getColor().getFireworkColor());
@@ -67,8 +67,8 @@ public class FireworkStarFadeRecipe extends SpecialCraftingRecipe {
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
-		return i * j >= 2;
+	public boolean fits(int width, int height) {
+		return width * height >= 2;
 	}
 
 	@Override

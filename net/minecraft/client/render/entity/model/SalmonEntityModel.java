@@ -53,14 +53,14 @@ public class SalmonEntityModel<T extends Entity> extends CompositeEntityModel<T>
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
-		float k = 1.0F;
-		float l = 1.0F;
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+		float f = 1.0F;
+		float g = 1.0F;
 		if (!entity.isTouchingWater()) {
-			k = 1.3F;
-			l = 1.7F;
+			f = 1.3F;
+			g = 1.7F;
 		}
 
-		this.tail.yaw = -k * 0.25F * MathHelper.sin(l * 0.6F * h);
+		this.tail.yaw = -f * 0.25F * MathHelper.sin(g * 0.6F * animationProgress);
 	}
 }

@@ -1,53 +1,84 @@
 package net.minecraft.inventory;
 
 import java.util.List;
+import java.util.function.Predicate;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.util.collection.DefaultedList;
 
 public class Inventories {
-	public static ItemStack splitStack(List<ItemStack> list, int i, int j) {
-		return i >= 0 && i < list.size() && !((ItemStack)list.get(i)).isEmpty() && j > 0 ? ((ItemStack)list.get(i)).split(j) : ItemStack.EMPTY;
+	public static ItemStack splitStack(List<ItemStack> stacks, int slot, int amount) {
+		return slot >= 0 && slot < stacks.size() && !((ItemStack)stacks.get(slot)).isEmpty() && amount > 0
+			? ((ItemStack)stacks.get(slot)).split(amount)
+			: ItemStack.EMPTY;
 	}
 
-	public static ItemStack removeStack(List<ItemStack> list, int i) {
-		return i >= 0 && i < list.size() ? (ItemStack)list.set(i, ItemStack.EMPTY) : ItemStack.EMPTY;
+	public static ItemStack removeStack(List<ItemStack> stacks, int slot) {
+		return slot >= 0 && slot < stacks.size() ? (ItemStack)stacks.set(slot, ItemStack.EMPTY) : ItemStack.EMPTY;
 	}
 
-	public static CompoundTag toTag(CompoundTag compoundTag, DefaultedList<ItemStack> defaultedList) {
-		return toTag(compoundTag, defaultedList, true);
+	public static CompoundTag toTag(CompoundTag tag, DefaultedList<ItemStack> stacks) {
+		return toTag(tag, stacks, true);
 	}
 
-	public static CompoundTag toTag(CompoundTag compoundTag, DefaultedList<ItemStack> defaultedList, boolean bl) {
+	public static CompoundTag toTag(CompoundTag tag, DefaultedList<ItemStack> stacks, boolean setIfEmpty) {
 		ListTag listTag = new ListTag();
 
-		for (int i = 0; i < defaultedList.size(); i++) {
-			ItemStack itemStack = defaultedList.get(i);
+		for (int i = 0; i < stacks.size(); i++) {
+			ItemStack itemStack = stacks.get(i);
 			if (!itemStack.isEmpty()) {
-				CompoundTag compoundTag2 = new CompoundTag();
-				compoundTag2.putByte("Slot", (byte)i);
-				itemStack.toTag(compoundTag2);
-				listTag.add(compoundTag2);
+				CompoundTag compoundTag = new CompoundTag();
+				compoundTag.putByte("Slot", (byte)i);
+				itemStack.toTag(compoundTag);
+				listTag.add(compoundTag);
 			}
 		}
 
-		if (!listTag.isEmpty() || bl) {
-			compoundTag.put("Items", listTag);
+		if (!listTag.isEmpty() || setIfEmpty) {
+			tag.put("Items", listTag);
 		}
 
-		return compoundTag;
+		return tag;
 	}
 
-	public static void fromTag(CompoundTag compoundTag, DefaultedList<ItemStack> defaultedList) {
-		ListTag listTag = compoundTag.getList("Items", 10);
+	public static void fromTag(CompoundTag tag, DefaultedList<ItemStack> stacks) {
+		ListTag listTag = tag.getList("Items", 10);
 
 		for (int i = 0; i < listTag.size(); i++) {
-			CompoundTag compoundTag2 = listTag.getCompound(i);
-			int j = compoundTag2.getByte("Slot") & 255;
-			if (j >= 0 && j < defaultedList.size()) {
-				defaultedList.set(j, ItemStack.fromTag(compoundTag2));
+			CompoundTag compoundTag = listTag.getCompound(i);
+			int j = compoundTag.getByte("Slot") & 255;
+			if (j >= 0 && j < stacks.size()) {
+				stacks.set(j, ItemStack.fromTag(compoundTag));
 			}
+		}
+	}
+
+	public static int remove(Inventory inventory, Predicate<ItemStack> shouldRemove, int maxCount, boolean dryRun) {
+		int i = 0;
+
+		for (int j = 0; j < inventory.size(); j++) {
+			ItemStack itemStack = inventory.getStack(j);
+			int k = remove(itemStack, shouldRemove, maxCount - i, dryRun);
+			if (k > 0 && !dryRun && itemStack.isEmpty()) {
+				inventory.setStack(j, ItemStack.EMPTY);
+			}
+
+			i += k;
+		}
+
+		return i;
+	}
+
+	public static int remove(ItemStack stack, Predicate<ItemStack> shouldRemove, int maxCount, boolean dryRun) {
+		if (stack.isEmpty() || !shouldRemove.test(stack)) {
+			return 0;
+		} else if (dryRun) {
+			return stack.getCount();
+		} else {
+			int i = maxCount < 0 ? stack.getCount() : Math.min(maxCount, stack.getCount());
+			stack.decrement(i);
+			return i;
 		}
 	}
 }

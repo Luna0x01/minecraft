@@ -1,23 +1,23 @@
 package net.minecraft.entity;
 
 public enum EquipmentSlot {
-	field_6173(EquipmentSlot.Type.field_6177, 0, 0, "mainhand"),
-	field_6171(EquipmentSlot.Type.field_6177, 1, 5, "offhand"),
-	field_6166(EquipmentSlot.Type.field_6178, 0, 1, "feet"),
-	field_6172(EquipmentSlot.Type.field_6178, 1, 2, "legs"),
-	field_6174(EquipmentSlot.Type.field_6178, 2, 3, "chest"),
-	field_6169(EquipmentSlot.Type.field_6178, 3, 4, "head");
+	MAINHAND(EquipmentSlot.Type.HAND, 0, 0, "mainhand"),
+	OFFHAND(EquipmentSlot.Type.HAND, 1, 5, "offhand"),
+	FEET(EquipmentSlot.Type.ARMOR, 0, 1, "feet"),
+	LEGS(EquipmentSlot.Type.ARMOR, 1, 2, "legs"),
+	CHEST(EquipmentSlot.Type.ARMOR, 2, 3, "chest"),
+	HEAD(EquipmentSlot.Type.ARMOR, 3, 4, "head");
 
 	private final EquipmentSlot.Type type;
 	private final int entityId;
 	private final int armorStandId;
 	private final String name;
 
-	private EquipmentSlot(EquipmentSlot.Type type, int j, int k, String string2) {
+	private EquipmentSlot(EquipmentSlot.Type type, int entityId, int armorStandId, String name) {
 		this.type = type;
-		this.entityId = j;
-		this.armorStandId = k;
-		this.name = string2;
+		this.entityId = entityId;
+		this.armorStandId = armorStandId;
+		this.name = name;
 	}
 
 	public EquipmentSlot.Type getType() {
@@ -36,28 +36,28 @@ public enum EquipmentSlot {
 		return this.name;
 	}
 
-	public static EquipmentSlot byName(String string) {
+	public static EquipmentSlot byName(String name) {
 		for (EquipmentSlot equipmentSlot : values()) {
-			if (equipmentSlot.getName().equals(string)) {
+			if (equipmentSlot.getName().equals(name)) {
 				return equipmentSlot;
 			}
 		}
 
-		throw new IllegalArgumentException("Invalid slot '" + string + "'");
+		throw new IllegalArgumentException("Invalid slot '" + name + "'");
 	}
 
-	public static EquipmentSlot fromTypeIndex(EquipmentSlot.Type type, int i) {
+	public static EquipmentSlot fromTypeIndex(EquipmentSlot.Type type, int index) {
 		for (EquipmentSlot equipmentSlot : values()) {
-			if (equipmentSlot.getType() == type && equipmentSlot.getEntitySlotId() == i) {
+			if (equipmentSlot.getType() == type && equipmentSlot.getEntitySlotId() == index) {
 				return equipmentSlot;
 			}
 		}
 
-		throw new IllegalArgumentException("Invalid slot '" + type + "': " + i);
+		throw new IllegalArgumentException("Invalid slot '" + type + "': " + index);
 	}
 
 	public static enum Type {
-		field_6177,
-		field_6178;
+		HAND,
+		ARMOR;
 	}
 }

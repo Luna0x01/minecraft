@@ -5,7 +5,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleTypes;
@@ -25,18 +25,18 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		super(entityType, world);
 	}
 
-	public TntMinecartEntity(World world, double d, double e, double f) {
-		super(EntityType.field_6053, world, d, e, f);
+	public TntMinecartEntity(World world, double x, double y, double z) {
+		super(EntityType.TNT_MINECART, world, x, y, z);
 	}
 
 	@Override
 	public AbstractMinecartEntity.Type getMinecartType() {
-		return AbstractMinecartEntity.Type.field_7675;
+		return AbstractMinecartEntity.Type.TNT;
 	}
 
 	@Override
 	public BlockState getDefaultContainedBlock() {
-		return Blocks.field_10375.getDefaultState();
+		return Blocks.TNT.getDefaultState();
 	}
 
 	@Override
@@ -44,7 +44,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		super.tick();
 		if (this.fuseTicks > 0) {
 			this.fuseTicks--;
-			this.world.addParticle(ParticleTypes.field_11251, this.getX(), this.getY() + 0.5, this.getZ(), 0.0, 0.0, 0.0);
+			this.world.addParticle(ParticleTypes.SMOKE, this.getX(), this.getY() + 0.5, this.getZ(), 0.0, 0.0, 0.0);
 		} else if (this.fuseTicks == 0) {
 			this.explode(squaredHorizontalLength(this.getVelocity()));
 		}
@@ -58,16 +58,16 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean damage(DamageSource damageSource, float f) {
-		Entity entity = damageSource.getSource();
-		if (entity instanceof ProjectileEntity) {
-			ProjectileEntity projectileEntity = (ProjectileEntity)entity;
-			if (projectileEntity.isOnFire()) {
-				this.explode(projectileEntity.getVelocity().lengthSquared());
+	public boolean damage(DamageSource source, float amount) {
+		Entity entity = source.getSource();
+		if (entity instanceof PersistentProjectileEntity) {
+			PersistentProjectileEntity persistentProjectileEntity = (PersistentProjectileEntity)entity;
+			if (persistentProjectileEntity.isOnFire()) {
+				this.explode(persistentProjectileEntity.getVelocity().lengthSquared());
 			}
 		}
 
-		return super.damage(damageSource, f);
+		return super.damage(source, amount);
 	}
 
 	@Override
@@ -75,8 +75,8 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		double d = squaredHorizontalLength(this.getVelocity());
 		if (!damageSource.isFire() && !damageSource.isExplosive() && !(d >= 0.01F)) {
 			super.dropItems(damageSource);
-			if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean(GameRules.field_19393)) {
-				this.dropItem(Blocks.field_10375);
+			if (!damageSource.isExplosive() && this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+				this.dropItem(Blocks.TNT);
 			}
 		} else {
 			if (this.fuseTicks < 0) {
@@ -86,42 +86,41 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		}
 	}
 
-	protected void explode(double d) {
+	protected void explode(double velocity) {
 		if (!this.world.isClient) {
-			double e = Math.sqrt(d);
-			if (e > 5.0) {
-				e = 5.0;
+			double d = Math.sqrt(velocity);
+			if (d > 5.0) {
+				d = 5.0;
 			}
 
-			this.world
-				.createExplosion(this, this.getX(), this.getY(), this.getZ(), (float)(4.0 + this.random.nextDouble() * 1.5 * e), Explosion.DestructionType.field_18686);
+			this.world.createExplosion(this, this.getX(), this.getY(), this.getZ(), (float)(4.0 + this.random.nextDouble() * 1.5 * d), Explosion.DestructionType.BREAK);
 			this.remove();
 		}
 	}
 
 	@Override
-	public boolean handleFallDamage(float f, float g) {
-		if (f >= 3.0F) {
-			float h = f / 10.0F;
-			this.explode((double)(h * h));
+	public boolean handleFallDamage(float fallDistance, float damageMultiplier) {
+		if (fallDistance >= 3.0F) {
+			float f = fallDistance / 10.0F;
+			this.explode((double)(f * f));
 		}
 
-		return super.handleFallDamage(f, g);
+		return super.handleFallDamage(fallDistance, damageMultiplier);
 	}
 
 	@Override
-	public void onActivatorRail(int i, int j, int k, boolean bl) {
-		if (bl && this.fuseTicks < 0) {
+	public void onActivatorRail(int x, int y, int z, boolean powered) {
+		if (powered && this.fuseTicks < 0) {
 			this.prime();
 		}
 	}
 
 	@Override
-	public void handleStatus(byte b) {
-		if (b == 10) {
+	public void handleStatus(byte status) {
+		if (status == 10) {
 			this.prime();
 		} else {
-			super.handleStatus(b);
+			super.handleStatus(status);
 		}
 	}
 
@@ -130,7 +129,7 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 		if (!this.world.isClient) {
 			this.world.sendEntityStatus(this, (byte)10);
 			if (!this.isSilent()) {
-				this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.field_15079, SoundCategory.field_15245, 1.0F, 1.0F);
+				this.world.playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_TNT_PRIMED, SoundCategory.BLOCKS, 1.0F, 1.0F);
 			}
 		}
 	}
@@ -144,32 +143,30 @@ public class TntMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public float getEffectiveExplosionResistance(
-		Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, FluidState fluidState, float f
-	) {
-		return !this.isPrimed() || !blockState.matches(BlockTags.field_15463) && !blockView.getBlockState(blockPos.up()).matches(BlockTags.field_15463)
-			? super.getEffectiveExplosionResistance(explosion, blockView, blockPos, blockState, fluidState, f)
+	public float getEffectiveExplosionResistance(Explosion explosion, BlockView world, BlockPos pos, BlockState blockState, FluidState fluidState, float max) {
+		return !this.isPrimed() || !blockState.isIn(BlockTags.RAILS) && !world.getBlockState(pos.up()).isIn(BlockTags.RAILS)
+			? super.getEffectiveExplosionResistance(explosion, world, pos, blockState, fluidState, max)
 			: 0.0F;
 	}
 
 	@Override
-	public boolean canExplosionDestroyBlock(Explosion explosion, BlockView blockView, BlockPos blockPos, BlockState blockState, float f) {
-		return !this.isPrimed() || !blockState.matches(BlockTags.field_15463) && !blockView.getBlockState(blockPos.up()).matches(BlockTags.field_15463)
-			? super.canExplosionDestroyBlock(explosion, blockView, blockPos, blockState, f)
+	public boolean canExplosionDestroyBlock(Explosion explosion, BlockView world, BlockPos pos, BlockState state, float explosionPower) {
+		return !this.isPrimed() || !state.isIn(BlockTags.RAILS) && !world.getBlockState(pos.up()).isIn(BlockTags.RAILS)
+			? super.canExplosionDestroyBlock(explosion, world, pos, state, explosionPower)
 			: false;
 	}
 
 	@Override
-	protected void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.contains("TNTFuse", 99)) {
-			this.fuseTicks = compoundTag.getInt("TNTFuse");
+	protected void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("TNTFuse", 99)) {
+			this.fuseTicks = tag.getInt("TNTFuse");
 		}
 	}
 
 	@Override
-	protected void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("TNTFuse", this.fuseTicks);
+	protected void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("TNTFuse", this.fuseTicks);
 	}
 }

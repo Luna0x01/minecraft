@@ -7,8 +7,8 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Function;
-import net.minecraft.command.arguments.EntityArgumentType;
-import net.minecraft.command.arguments.NbtPathArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.NbtPathArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
@@ -24,17 +24,16 @@ public class EntityDataObject implements DataCommandObject {
 	private static final SimpleCommandExceptionType INVALID_ENTITY_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.data.entity.invalid"));
 	public static final Function<String, DataCommand.ObjectType> TYPE_FACTORY = string -> new DataCommand.ObjectType() {
 			@Override
-			public DataCommandObject getObject(CommandContext<ServerCommandSource> commandContext) throws CommandSyntaxException {
-				return new EntityDataObject(EntityArgumentType.getEntity(commandContext, string));
+			public DataCommandObject getObject(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+				return new EntityDataObject(EntityArgumentType.getEntity(context, string));
 			}
 
 			@Override
 			public ArgumentBuilder<ServerCommandSource, ?> addArgumentsToBuilder(
-				ArgumentBuilder<ServerCommandSource, ?> argumentBuilder,
-				Function<ArgumentBuilder<ServerCommandSource, ?>, ArgumentBuilder<ServerCommandSource, ?>> function
+				ArgumentBuilder<ServerCommandSource, ?> argument, Function<ArgumentBuilder<ServerCommandSource, ?>, ArgumentBuilder<ServerCommandSource, ?>> argumentAdder
 			) {
-				return argumentBuilder.then(
-					CommandManager.literal("entity").then((ArgumentBuilder)function.apply(CommandManager.argument(string, EntityArgumentType.entity())))
+				return argument.then(
+					CommandManager.literal("entity").then((ArgumentBuilder)argumentAdder.apply(CommandManager.argument(string, EntityArgumentType.entity())))
 				);
 			}
 		};
@@ -45,12 +44,12 @@ public class EntityDataObject implements DataCommandObject {
 	}
 
 	@Override
-	public void setTag(CompoundTag compoundTag) throws CommandSyntaxException {
+	public void setTag(CompoundTag tag) throws CommandSyntaxException {
 		if (this.entity instanceof PlayerEntity) {
 			throw INVALID_ENTITY_EXCEPTION.create();
 		} else {
 			UUID uUID = this.entity.getUuid();
-			this.entity.fromTag(compoundTag);
+			this.entity.fromTag(tag);
 			this.entity.setUuid(uUID);
 		}
 	}
@@ -71,7 +70,7 @@ public class EntityDataObject implements DataCommandObject {
 	}
 
 	@Override
-	public Text feedbackGet(NbtPathArgumentType.NbtPath nbtPath, double d, int i) {
-		return new TranslatableText("commands.data.entity.get", nbtPath, this.entity.getDisplayName(), String.format(Locale.ROOT, "%.2f", d), i);
+	public Text feedbackGet(NbtPathArgumentType.NbtPath nbtPath, double scale, int result) {
+		return new TranslatableText("commands.data.entity.get", nbtPath, this.entity.getDisplayName(), String.format(Locale.ROOT, "%.2f", scale), result);
 	}
 }

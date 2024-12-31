@@ -45,15 +45,15 @@ public class PlayerAbilities {
 		return this.flySpeed;
 	}
 
-	public void setFlySpeed(float f) {
-		this.flySpeed = f;
+	public void setFlySpeed(float flySpeed) {
+		this.flySpeed = flySpeed;
 	}
 
 	public float getWalkSpeed() {
 		return this.walkSpeed;
 	}
 
-	public void setWalkSpeed(float f) {
-		this.walkSpeed = f;
+	public void setWalkSpeed(float walkSpeed) {
+		this.walkSpeed = walkSpeed;
 	}
 }

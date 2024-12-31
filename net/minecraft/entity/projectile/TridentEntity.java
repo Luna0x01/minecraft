@@ -23,10 +23,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public class TridentEntity extends ProjectileEntity {
+public class TridentEntity extends PersistentProjectileEntity {
 	private static final TrackedData<Byte> LOYALTY = DataTracker.registerData(TridentEntity.class, TrackedDataHandlerRegistry.BYTE);
-	private static final TrackedData<Boolean> field_21514 = DataTracker.registerData(TridentEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-	private ItemStack tridentStack = new ItemStack(Items.field_8547);
+	private static final TrackedData<Boolean> ENCHANTED = DataTracker.registerData(TridentEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private ItemStack tridentStack = new ItemStack(Items.TRIDENT);
 	private boolean dealtDamage;
 	public int returnTimer;
 
@@ -34,22 +34,22 @@ public class TridentEntity extends ProjectileEntity {
 		super(entityType, world);
 	}
 
-	public TridentEntity(World world, LivingEntity livingEntity, ItemStack itemStack) {
-		super(EntityType.field_6127, livingEntity, world);
-		this.tridentStack = itemStack.copy();
-		this.dataTracker.set(LOYALTY, (byte)EnchantmentHelper.getLoyalty(itemStack));
-		this.dataTracker.set(field_21514, itemStack.hasEnchantmentGlint());
+	public TridentEntity(World world, LivingEntity owner, ItemStack stack) {
+		super(EntityType.TRIDENT, owner, world);
+		this.tridentStack = stack.copy();
+		this.dataTracker.set(LOYALTY, (byte)EnchantmentHelper.getLoyalty(stack));
+		this.dataTracker.set(ENCHANTED, stack.hasGlint());
 	}
 
-	public TridentEntity(World world, double d, double e, double f) {
-		super(EntityType.field_6127, d, e, f, world);
+	public TridentEntity(World world, double x, double y, double z) {
+		super(EntityType.TRIDENT, x, y, z, world);
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(LOYALTY, (byte)0);
-		this.dataTracker.startTracking(field_21514, false);
+		this.dataTracker.startTracking(ENCHANTED, false);
 	}
 
 	@Override
@@ -62,7 +62,7 @@ public class TridentEntity extends ProjectileEntity {
 		if ((this.dealtDamage || this.isNoClip()) && entity != null) {
 			int i = this.dataTracker.get(LOYALTY);
 			if (i > 0 && !this.isOwnerAlive()) {
-				if (!this.world.isClient && this.pickupType == ProjectileEntity.PickupPermission.field_7593) {
+				if (!this.world.isClient && this.pickupType == PersistentProjectileEntity.PickupPermission.ALLOWED) {
 					this.dropStack(this.asItemStack(), 0.1F);
 				}
 
@@ -78,7 +78,7 @@ public class TridentEntity extends ProjectileEntity {
 				double d = 0.05 * (double)i;
 				this.setVelocity(this.getVelocity().multiply(0.95).add(vec3d.normalize().multiply(d)));
 				if (this.returnTimer == 0) {
-					this.playSound(SoundEvents.field_14698, 10.0F, 1.0F);
+					this.playSound(SoundEvents.ITEM_TRIDENT_RETURN, 10.0F, 1.0F);
 				}
 
 				this.returnTimer++;
@@ -98,14 +98,14 @@ public class TridentEntity extends ProjectileEntity {
 		return this.tridentStack.copy();
 	}
 
-	public boolean method_23751() {
-		return this.dataTracker.get(field_21514);
+	public boolean isEnchanted() {
+		return this.dataTracker.get(ENCHANTED);
 	}
 
 	@Nullable
 	@Override
-	protected EntityHitResult getEntityCollision(Vec3d vec3d, Vec3d vec3d2) {
-		return this.dealtDamage ? null : super.getEntityCollision(vec3d, vec3d2);
+	protected EntityHitResult getEntityCollision(Vec3d currentPosition, Vec3d nextPosition) {
+		return this.dealtDamage ? null : super.getEntityCollision(currentPosition, nextPosition);
 	}
 
 	@Override
@@ -120,9 +120,9 @@ public class TridentEntity extends ProjectileEntity {
 		Entity entity2 = this.getOwner();
 		DamageSource damageSource = DamageSource.trident(this, (Entity)(entity2 == null ? this : entity2));
 		this.dealtDamage = true;
-		SoundEvent soundEvent = SoundEvents.field_15213;
+		SoundEvent soundEvent = SoundEvents.ITEM_TRIDENT_HIT;
 		if (entity.damage(damageSource, f)) {
-			if (entity.getType() == EntityType.field_6091) {
+			if (entity.getType() == EntityType.ENDERMAN) {
 				return;
 			}
 
@@ -142,12 +142,11 @@ public class TridentEntity extends ProjectileEntity {
 		if (this.world instanceof ServerWorld && this.world.isThundering() && EnchantmentHelper.hasChanneling(this.tridentStack)) {
 			BlockPos blockPos = entity.getBlockPos();
 			if (this.world.isSkyVisible(blockPos)) {
-				LightningEntity lightningEntity = new LightningEntity(
-					this.world, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, false
-				);
-				lightningEntity.setChanneller(entity2 instanceof ServerPlayerEntity ? (ServerPlayerEntity)entity2 : null);
-				((ServerWorld)this.world).addLightning(lightningEntity);
-				soundEvent = SoundEvents.field_14896;
+				LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(this.world);
+				lightningEntity.refreshPositionAfterTeleport(Vec3d.ofBottomCenter(blockPos));
+				lightningEntity.setChanneler(entity2 instanceof ServerPlayerEntity ? (ServerPlayerEntity)entity2 : null);
+				this.world.spawnEntity(lightningEntity);
+				soundEvent = SoundEvents.ITEM_TRIDENT_THUNDER;
 				g = 5.0F;
 			}
 		}
@@ -157,39 +156,39 @@ public class TridentEntity extends ProjectileEntity {
 
 	@Override
 	protected SoundEvent getHitSound() {
-		return SoundEvents.field_15104;
+		return SoundEvents.ITEM_TRIDENT_HIT_GROUND;
 	}
 
 	@Override
-	public void onPlayerCollision(PlayerEntity playerEntity) {
+	public void onPlayerCollision(PlayerEntity player) {
 		Entity entity = this.getOwner();
-		if (entity == null || entity.getUuid() == playerEntity.getUuid()) {
-			super.onPlayerCollision(playerEntity);
+		if (entity == null || entity.getUuid() == player.getUuid()) {
+			super.onPlayerCollision(player);
 		}
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		if (compoundTag.contains("Trident", 10)) {
-			this.tridentStack = ItemStack.fromTag(compoundTag.getCompound("Trident"));
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		if (tag.contains("Trident", 10)) {
+			this.tridentStack = ItemStack.fromTag(tag.getCompound("Trident"));
 		}
 
-		this.dealtDamage = compoundTag.getBoolean("DealtDamage");
+		this.dealtDamage = tag.getBoolean("DealtDamage");
 		this.dataTracker.set(LOYALTY, (byte)EnchantmentHelper.getLoyalty(this.tridentStack));
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.put("Trident", this.tridentStack.toTag(new CompoundTag()));
-		compoundTag.putBoolean("DealtDamage", this.dealtDamage);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.put("Trident", this.tridentStack.toTag(new CompoundTag()));
+		tag.putBoolean("DealtDamage", this.dealtDamage);
 	}
 
 	@Override
 	public void age() {
 		int i = this.dataTracker.get(LOYALTY);
-		if (this.pickupType != ProjectileEntity.PickupPermission.field_7593 || i <= 0) {
+		if (this.pickupType != PersistentProjectileEntity.PickupPermission.ALLOWED || i <= 0) {
 			super.age();
 		}
 	}
@@ -200,7 +199,7 @@ public class TridentEntity extends ProjectileEntity {
 	}
 
 	@Override
-	public boolean shouldRender(double d, double e, double f) {
+	public boolean shouldRender(double cameraX, double cameraY, double cameraZ) {
 		return true;
 	}
 }

@@ -1,24 +1,21 @@
 package net.minecraft.entity.passive;
 
 import javax.annotation.Nullable;
+import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntityWithAi;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.SpawnEggItem;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.Hand;
-import net.minecraft.world.IWorld;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 
-public abstract class PassiveEntity extends MobEntityWithAi {
+public abstract class PassiveEntity extends PathAwareEntity {
 	private static final TrackedData<Boolean> CHILD = DataTracker.registerData(PassiveEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	protected int breedingAge;
 	protected int forcedAge;
@@ -29,60 +26,33 @@ public abstract class PassiveEntity extends MobEntityWithAi {
 	}
 
 	@Override
-	public net.minecraft.entity.EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable net.minecraft.entity.EntityData entityData, @Nullable CompoundTag compoundTag
+	public EntityData initialize(
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
 		if (entityData == null) {
-			entityData = new PassiveEntity.EntityData();
+			entityData = new PassiveEntity.PassiveData(true);
 		}
 
-		PassiveEntity.EntityData entityData2 = (PassiveEntity.EntityData)entityData;
-		if (entityData2.canSpawnBaby() && entityData2.getSpawnedCount() > 0 && this.random.nextFloat() <= entityData2.getBabyChance()) {
+		PassiveEntity.PassiveData passiveData = (PassiveEntity.PassiveData)entityData;
+		if (passiveData.canSpawnBaby() && passiveData.getSpawnedCount() > 0 && this.random.nextFloat() <= passiveData.getBabyChance()) {
 			this.setBreedingAge(-24000);
 		}
 
-		entityData2.countSpawned();
-		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
+		passiveData.countSpawned();
+		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
 	}
 
 	@Nullable
-	public abstract PassiveEntity createChild(PassiveEntity passiveEntity);
-
-	protected void onPlayerSpawnedChild(PlayerEntity playerEntity, PassiveEntity passiveEntity) {
-	}
-
-	@Override
-	public boolean interactMob(PlayerEntity playerEntity, Hand hand) {
-		ItemStack itemStack = playerEntity.getStackInHand(hand);
-		Item item = itemStack.getItem();
-		if (item instanceof SpawnEggItem && ((SpawnEggItem)item).isOfSameEntityType(itemStack.getTag(), this.getType())) {
-			if (!this.world.isClient) {
-				PassiveEntity passiveEntity = this.createChild(this);
-				if (passiveEntity != null) {
-					passiveEntity.setBreedingAge(-24000);
-					passiveEntity.refreshPositionAndAngles(this.getX(), this.getY(), this.getZ(), 0.0F, 0.0F);
-					this.world.spawnEntity(passiveEntity);
-					if (itemStack.hasCustomName()) {
-						passiveEntity.setCustomName(itemStack.getName());
-					}
-
-					this.onPlayerSpawnedChild(playerEntity, passiveEntity);
-					if (!playerEntity.abilities.creativeMode) {
-						itemStack.decrement(1);
-					}
-				}
-			}
-
-			return true;
-		} else {
-			return false;
-		}
-	}
+	public abstract PassiveEntity createChild(ServerWorld world, PassiveEntity entity);
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
 		this.dataTracker.startTracking(CHILD, false);
+	}
+
+	public boolean isReadyToBreed() {
+		return false;
 	}
 
 	public int getBreedingAge() {
@@ -93,17 +63,17 @@ public abstract class PassiveEntity extends MobEntityWithAi {
 		}
 	}
 
-	public void growUp(int i, boolean bl) {
-		int j = this.getBreedingAge();
-		j += i * 20;
-		if (j > 0) {
-			j = 0;
+	public void growUp(int age, boolean overGrow) {
+		int i = this.getBreedingAge();
+		i += age * 20;
+		if (i > 0) {
+			i = 0;
 		}
 
-		int l = j - j;
-		this.setBreedingAge(j);
-		if (bl) {
-			this.forcedAge += l;
+		int k = i - i;
+		this.setBreedingAge(i);
+		if (overGrow) {
+			this.forcedAge += k;
 			if (this.happyTicksRemaining == 0) {
 				this.happyTicksRemaining = 40;
 			}
@@ -114,40 +84,40 @@ public abstract class PassiveEntity extends MobEntityWithAi {
 		}
 	}
 
-	public void growUp(int i) {
-		this.growUp(i, false);
+	public void growUp(int age) {
+		this.growUp(age, false);
 	}
 
-	public void setBreedingAge(int i) {
-		int j = this.breedingAge;
-		this.breedingAge = i;
-		if (j < 0 && i >= 0 || j >= 0 && i < 0) {
-			this.dataTracker.set(CHILD, i < 0);
+	public void setBreedingAge(int age) {
+		int i = this.breedingAge;
+		this.breedingAge = age;
+		if (i < 0 && age >= 0 || i >= 0 && age < 0) {
+			this.dataTracker.set(CHILD, age < 0);
 			this.onGrowUp();
 		}
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("Age", this.getBreedingAge());
-		compoundTag.putInt("ForcedAge", this.forcedAge);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("Age", this.getBreedingAge());
+		tag.putInt("ForcedAge", this.forcedAge);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		super.readCustomDataFromTag(compoundTag);
-		this.setBreedingAge(compoundTag.getInt("Age"));
-		this.forcedAge = compoundTag.getInt("ForcedAge");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		super.readCustomDataFromTag(tag);
+		this.setBreedingAge(tag.getInt("Age"));
+		this.forcedAge = tag.getInt("ForcedAge");
 	}
 
 	@Override
-	public void onTrackedDataSet(TrackedData<?> trackedData) {
-		if (CHILD.equals(trackedData)) {
+	public void onTrackedDataSet(TrackedData<?> data) {
+		if (CHILD.equals(data)) {
 			this.calculateDimensions();
 		}
 
-		super.onTrackedDataSet(trackedData);
+		super.onTrackedDataSet(data);
 	}
 
 	@Override
@@ -156,7 +126,7 @@ public abstract class PassiveEntity extends MobEntityWithAi {
 		if (this.world.isClient) {
 			if (this.happyTicksRemaining > 0) {
 				if (this.happyTicksRemaining % 4 == 0) {
-					this.world.addParticle(ParticleTypes.field_11211, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), 0.0, 0.0, 0.0);
+					this.world.addParticle(ParticleTypes.HAPPY_VILLAGER, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), 0.0, 0.0, 0.0);
 				}
 
 				this.happyTicksRemaining--;
@@ -179,10 +149,28 @@ public abstract class PassiveEntity extends MobEntityWithAi {
 		return this.getBreedingAge() < 0;
 	}
 
-	public static class EntityData implements net.minecraft.entity.EntityData {
+	@Override
+	public void setBaby(boolean baby) {
+		this.setBreedingAge(baby ? -24000 : 0);
+	}
+
+	public static class PassiveData implements EntityData {
 		private int spawnCount;
-		private boolean babyAllowed = true;
-		private float babyChance = 0.05F;
+		private final boolean babyAllowed;
+		private final float babyChance;
+
+		private PassiveData(boolean bl, float f) {
+			this.babyAllowed = bl;
+			this.babyChance = f;
+		}
+
+		public PassiveData(boolean bl) {
+			this(bl, 0.05F);
+		}
+
+		public PassiveData(float f) {
+			this(true, f);
+		}
 
 		public int getSpawnedCount() {
 			return this.spawnCount;
@@ -196,16 +184,8 @@ public abstract class PassiveEntity extends MobEntityWithAi {
 			return this.babyAllowed;
 		}
 
-		public void setBabyAllowed(boolean bl) {
-			this.babyAllowed = bl;
-		}
-
 		public float getBabyChance() {
 			return this.babyChance;
-		}
-
-		public void setBabyChance(float f) {
-			this.babyChance = f;
 		}
 	}
 }

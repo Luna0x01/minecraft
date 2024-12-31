@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import net.minecraft.datafixer.TypeReferences;
 
-public class Schema1929 extends SchemaIdentifierNormalize {
+public class Schema1929 extends IdentifierNormalizingSchema {
 	public Schema1929(int i, Schema schema) {
 		super(i, schema);
 	}
@@ -29,7 +29,7 @@ public class Schema1929 extends SchemaIdentifierNormalize {
 							)
 						)
 					),
-					Schema100.method_5196(schema)
+					Schema100.targetItems(schema)
 				)
 		);
 		schema.register(
@@ -42,7 +42,7 @@ public class Schema1929 extends SchemaIdentifierNormalize {
 					TypeReferences.ITEM_STACK.in(schema),
 					"DecorItem",
 					TypeReferences.ITEM_STACK.in(schema),
-					Schema100.method_5196(schema)
+					Schema100.targetItems(schema)
 				)
 		);
 		return map;

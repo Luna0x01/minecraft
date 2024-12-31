@@ -10,46 +10,50 @@ import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.predicate.entity.EntityPredicate;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.JsonSerializer;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityPropertiesLootCondition implements LootCondition {
 	private final EntityPredicate predicate;
 	private final LootContext.EntityTarget entity;
 
-	private EntityPropertiesLootCondition(EntityPredicate entityPredicate, LootContext.EntityTarget entityTarget) {
-		this.predicate = entityPredicate;
-		this.entity = entityTarget;
+	private EntityPropertiesLootCondition(EntityPredicate predicate, LootContext.EntityTarget entity) {
+		this.predicate = predicate;
+		this.entity = entity;
+	}
+
+	@Override
+	public LootConditionType getType() {
+		return LootConditionTypes.ENTITY_PROPERTIES;
 	}
 
 	@Override
 	public Set<LootContextParameter<?>> getRequiredParameters() {
-		return ImmutableSet.of(LootContextParameters.field_1232, this.entity.getParameter());
+		return ImmutableSet.of(LootContextParameters.ORIGIN, this.entity.getParameter());
 	}
 
 	public boolean test(LootContext lootContext) {
 		Entity entity = lootContext.get(this.entity.getParameter());
-		BlockPos blockPos = lootContext.get(LootContextParameters.field_1232);
-		return this.predicate.test(lootContext.getWorld(), blockPos != null ? new Vec3d(blockPos) : null, entity);
+		Vec3d vec3d = lootContext.get(LootContextParameters.ORIGIN);
+		return this.predicate.test(lootContext.getWorld(), vec3d, entity);
 	}
 
-	public static LootCondition.Builder create(LootContext.EntityTarget entityTarget) {
-		return builder(entityTarget, EntityPredicate.Builder.create());
+	public static LootCondition.Builder create(LootContext.EntityTarget entity) {
+		return builder(entity, EntityPredicate.Builder.create());
 	}
 
-	public static LootCondition.Builder builder(LootContext.EntityTarget entityTarget, EntityPredicate.Builder builder) {
-		return () -> new EntityPropertiesLootCondition(builder.build(), entityTarget);
+	public static LootCondition.Builder builder(LootContext.EntityTarget entity, EntityPredicate.Builder predicateBuilder) {
+		return () -> new EntityPropertiesLootCondition(predicateBuilder.build(), entity);
 	}
 
-	public static class Factory extends LootCondition.Factory<EntityPropertiesLootCondition> {
-		protected Factory() {
-			super(new Identifier("entity_properties"), EntityPropertiesLootCondition.class);
-		}
+	public static LootCondition.Builder builder(LootContext.EntityTarget entity, EntityPredicate predicate) {
+		return () -> new EntityPropertiesLootCondition(predicate, entity);
+	}
 
+	public static class Serializer implements JsonSerializer<EntityPropertiesLootCondition> {
 		public void toJson(JsonObject jsonObject, EntityPropertiesLootCondition entityPropertiesLootCondition, JsonSerializationContext jsonSerializationContext) {
-			jsonObject.add("predicate", entityPropertiesLootCondition.predicate.serialize());
+			jsonObject.add("predicate", entityPropertiesLootCondition.predicate.toJson());
 			jsonObject.add("entity", jsonSerializationContext.serialize(entityPropertiesLootCondition.entity));
 		}
 

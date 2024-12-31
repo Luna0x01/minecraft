@@ -20,7 +20,7 @@ import org.apache.logging.log4j.Logger;
 public class ResourcePackProfile implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final PackResourceMetadata BROKEN_PACK_META = new PackResourceMetadata(
-		new TranslatableText("resourcePack.broken_assets").formatted(new Formatting[]{Formatting.field_1061, Formatting.field_1056}),
+		new TranslatableText("resourcePack.broken_assets").formatted(new Formatting[]{Formatting.RED, Formatting.ITALIC}),
 		SharedConstants.getGameVersion().getPackVersion()
 	);
 	private final String name;
@@ -31,92 +31,79 @@ public class ResourcePackProfile implements AutoCloseable {
 	private final ResourcePackProfile.InsertionPosition position;
 	private final boolean alwaysEnabled;
 	private final boolean pinned;
+	private final ResourcePackSource source;
 
 	@Nullable
-	public static <T extends ResourcePackProfile> T of(
-		String string, boolean bl, Supplier<ResourcePack> supplier, ResourcePackProfile.Factory<T> factory, ResourcePackProfile.InsertionPosition insertionPosition
+	public static ResourcePackProfile of(
+		String name,
+		boolean alwaysEnabled,
+		Supplier<ResourcePack> packFactory,
+		ResourcePackProfile.Factory containerFactory,
+		ResourcePackProfile.InsertionPosition insertionPosition,
+		ResourcePackSource resourcePackSource
 	) {
-		try {
-			ResourcePack resourcePack = (ResourcePack)supplier.get();
-			Throwable var6 = null;
-
-			ResourcePackProfile var8;
-			try {
-				PackResourceMetadata packResourceMetadata = resourcePack.parseMetadata(PackResourceMetadata.READER);
-				if (bl && packResourceMetadata == null) {
-					LOGGER.error(
-						"Broken/missing pack.mcmeta detected, fudging it into existance. Please check that your launcher has downloaded all assets for the game correctly!"
-					);
-					packResourceMetadata = BROKEN_PACK_META;
-				}
-
-				if (packResourceMetadata == null) {
-					LOGGER.warn("Couldn't find pack meta for pack {}", string);
-					return null;
-				}
-
-				var8 = factory.create(string, bl, supplier, resourcePack, packResourceMetadata, insertionPosition);
-			} catch (Throwable var19) {
-				var6 = var19;
-				throw var19;
-			} finally {
-				if (resourcePack != null) {
-					if (var6 != null) {
-						try {
-							resourcePack.close();
-						} catch (Throwable var18) {
-							var6.addSuppressed(var18);
-						}
-					} else {
-						resourcePack.close();
-					}
-				}
+		try (ResourcePack resourcePack = (ResourcePack)packFactory.get()) {
+			PackResourceMetadata packResourceMetadata = resourcePack.parseMetadata(PackResourceMetadata.READER);
+			if (alwaysEnabled && packResourceMetadata == null) {
+				LOGGER.error(
+					"Broken/missing pack.mcmeta detected, fudging it into existance. Please check that your launcher has downloaded all assets for the game correctly!"
+				);
+				packResourceMetadata = BROKEN_PACK_META;
 			}
 
-			return (T)var8;
-		} catch (IOException var21) {
-			LOGGER.warn("Couldn't get pack info for: {}", var21.toString());
-			return null;
+			if (packResourceMetadata != null) {
+				return containerFactory.create(name, alwaysEnabled, packFactory, resourcePack, packResourceMetadata, insertionPosition, resourcePackSource);
+			}
+
+			LOGGER.warn("Couldn't find pack meta for pack {}", name);
+		} catch (IOException var22) {
+			LOGGER.warn("Couldn't get pack info for: {}", var22.toString());
 		}
+
+		return null;
 	}
 
 	public ResourcePackProfile(
-		String string,
-		boolean bl,
-		Supplier<ResourcePack> supplier,
-		Text text,
-		Text text2,
-		ResourcePackCompatibility resourcePackCompatibility,
-		ResourcePackProfile.InsertionPosition insertionPosition,
-		boolean bl2
+		String name,
+		boolean alwaysEnabled,
+		Supplier<ResourcePack> packFactory,
+		Text displayName,
+		Text description,
+		ResourcePackCompatibility compatibility,
+		ResourcePackProfile.InsertionPosition direction,
+		boolean pinned,
+		ResourcePackSource source
 	) {
-		this.name = string;
-		this.packGetter = supplier;
-		this.displayName = text;
-		this.description = text2;
-		this.compatibility = resourcePackCompatibility;
-		this.alwaysEnabled = bl;
-		this.position = insertionPosition;
-		this.pinned = bl2;
+		this.name = name;
+		this.packGetter = packFactory;
+		this.displayName = displayName;
+		this.description = description;
+		this.compatibility = compatibility;
+		this.alwaysEnabled = alwaysEnabled;
+		this.position = direction;
+		this.pinned = pinned;
+		this.source = source;
 	}
 
 	public ResourcePackProfile(
-		String string,
-		boolean bl,
-		Supplier<ResourcePack> supplier,
-		ResourcePack resourcePack,
-		PackResourceMetadata packResourceMetadata,
-		ResourcePackProfile.InsertionPosition insertionPosition
+		String name,
+		boolean alwaysEnabled,
+		Supplier<ResourcePack> packFactory,
+		ResourcePack pack,
+		PackResourceMetadata metadata,
+		ResourcePackProfile.InsertionPosition direction,
+		ResourcePackSource source
 	) {
 		this(
-			string,
-			bl,
-			supplier,
-			new LiteralText(resourcePack.getName()),
-			packResourceMetadata.getDescription(),
-			ResourcePackCompatibility.from(packResourceMetadata.getPackFormat()),
-			insertionPosition,
-			false
+			name,
+			alwaysEnabled,
+			packFactory,
+			new LiteralText(pack.getName()),
+			metadata.getDescription(),
+			ResourcePackCompatibility.from(metadata.getPackFormat()),
+			direction,
+			false,
+			source
 		);
 	}
 
@@ -128,12 +115,12 @@ public class ResourcePackProfile implements AutoCloseable {
 		return this.description;
 	}
 
-	public Text getInformationText(boolean bl) {
-		return Texts.bracketed(new LiteralText(this.name))
+	public Text getInformationText(boolean enabled) {
+		return Texts.bracketed(this.source.decorate(new LiteralText(this.name)))
 			.styled(
-				style -> style.setColor(bl ? Formatting.field_1060 : Formatting.field_1061)
-						.setInsertion(StringArgumentType.escapeIfRequired(this.name))
-						.setHoverEvent(new HoverEvent(HoverEvent.Action.field_11762, new LiteralText("").append(this.displayName).append("\n").append(this.description)))
+				style -> style.withColor(enabled ? Formatting.GREEN : Formatting.RED)
+						.withInsertion(StringArgumentType.escapeIfRequired(this.name))
+						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText("").append(this.displayName).append("\n").append(this.description)))
 			);
 	}
 
@@ -161,13 +148,17 @@ public class ResourcePackProfile implements AutoCloseable {
 		return this.position;
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public ResourcePackSource getSource() {
+		return this.source;
+	}
+
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (!(object instanceof ResourcePackProfile)) {
+		} else if (!(o instanceof ResourcePackProfile)) {
 			return false;
 		} else {
-			ResourcePackProfile resourcePackProfile = (ResourcePackProfile)object;
+			ResourcePackProfile resourcePackProfile = (ResourcePackProfile)o;
 			return this.name.equals(resourcePackProfile.name);
 		}
 	}
@@ -180,51 +171,52 @@ public class ResourcePackProfile implements AutoCloseable {
 	}
 
 	@FunctionalInterface
-	public interface Factory<T extends ResourcePackProfile> {
+	public interface Factory {
 		@Nullable
-		T create(
-			String string,
-			boolean bl,
-			Supplier<ResourcePack> supplier,
-			ResourcePack resourcePack,
-			PackResourceMetadata packResourceMetadata,
-			ResourcePackProfile.InsertionPosition insertionPosition
+		ResourcePackProfile create(
+			String name,
+			boolean alwaysEnabled,
+			Supplier<ResourcePack> packFactory,
+			ResourcePack pack,
+			PackResourceMetadata metadata,
+			ResourcePackProfile.InsertionPosition initialPosition,
+			ResourcePackSource source
 		);
 	}
 
 	public static enum InsertionPosition {
-		field_14280,
-		field_14281;
+		TOP,
+		BOTTOM;
 
-		public <T, P extends ResourcePackProfile> int insert(List<T> list, T object, Function<T, P> function, boolean bl) {
-			ResourcePackProfile.InsertionPosition insertionPosition = bl ? this.inverse() : this;
-			if (insertionPosition == field_14281) {
+		public <T> int insert(List<T> items, T item, Function<T, ResourcePackProfile> profileGetter, boolean listInverted) {
+			ResourcePackProfile.InsertionPosition insertionPosition = listInverted ? this.inverse() : this;
+			if (insertionPosition == BOTTOM) {
 				int i;
-				for (i = 0; i < list.size(); i++) {
-					P resourcePackProfile = (P)function.apply(list.get(i));
+				for (i = 0; i < items.size(); i++) {
+					ResourcePackProfile resourcePackProfile = (ResourcePackProfile)profileGetter.apply(items.get(i));
 					if (!resourcePackProfile.isPinned() || resourcePackProfile.getInitialPosition() != this) {
 						break;
 					}
 				}
 
-				list.add(i, object);
+				items.add(i, item);
 				return i;
 			} else {
 				int j;
-				for (j = list.size() - 1; j >= 0; j--) {
-					P resourcePackProfile2 = (P)function.apply(list.get(j));
+				for (j = items.size() - 1; j >= 0; j--) {
+					ResourcePackProfile resourcePackProfile2 = (ResourcePackProfile)profileGetter.apply(items.get(j));
 					if (!resourcePackProfile2.isPinned() || resourcePackProfile2.getInitialPosition() != this) {
 						break;
 					}
 				}
 
-				list.add(j + 1, object);
+				items.add(j + 1, item);
 				return j + 1;
 			}
 		}
 
 		public ResourcePackProfile.InsertionPosition inverse() {
-			return this == field_14280 ? field_14281 : field_14280;
+			return this == TOP ? BOTTOM : TOP;
 		}
 	}
 }

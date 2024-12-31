@@ -18,36 +18,36 @@ public class Transformation {
 	public final Vector3f translation;
 	public final Vector3f scale;
 
-	public Transformation(Vector3f vector3f, Vector3f vector3f2, Vector3f vector3f3) {
-		this.rotation = vector3f.copy();
-		this.translation = vector3f2.copy();
-		this.scale = vector3f3.copy();
+	public Transformation(Vector3f rotation, Vector3f translation, Vector3f scale) {
+		this.rotation = rotation.copy();
+		this.translation = translation.copy();
+		this.scale = scale.copy();
 	}
 
-	public void apply(boolean bl, MatrixStack matrixStack) {
+	public void apply(boolean leftHanded, MatrixStack matrices) {
 		if (this != IDENTITY) {
 			float f = this.rotation.getX();
 			float g = this.rotation.getY();
 			float h = this.rotation.getZ();
-			if (bl) {
+			if (leftHanded) {
 				g = -g;
 				h = -h;
 			}
 
-			int i = bl ? -1 : 1;
-			matrixStack.translate((double)((float)i * this.translation.getX()), (double)this.translation.getY(), (double)this.translation.getZ());
-			matrixStack.multiply(new Quaternion(f, g, h, true));
-			matrixStack.scale(this.scale.getX(), this.scale.getY(), this.scale.getZ());
+			int i = leftHanded ? -1 : 1;
+			matrices.translate((double)((float)i * this.translation.getX()), (double)this.translation.getY(), (double)this.translation.getZ());
+			matrices.multiply(new Quaternion(f, g, h, true));
+			matrices.scale(this.scale.getX(), this.scale.getY(), this.scale.getZ());
 		}
 	}
 
-	public boolean equals(Object object) {
-		if (this == object) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
-		} else if (this.getClass() != object.getClass()) {
+		} else if (this.getClass() != o.getClass()) {
 			return false;
 		} else {
-			Transformation transformation = (Transformation)object;
+			Transformation transformation = (Transformation)o;
 			return this.rotation.equals(transformation.rotation) && this.scale.equals(transformation.scale) && this.translation.equals(transformation.translation);
 		}
 	}
@@ -59,7 +59,7 @@ public class Transformation {
 	}
 
 	public static class Deserializer implements JsonDeserializer<Transformation> {
-		private static final Vector3f DEFAULT_ROATATION = new Vector3f(0.0F, 0.0F, 0.0F);
+		private static final Vector3f DEFAULT_ROTATION = new Vector3f(0.0F, 0.0F, 0.0F);
 		private static final Vector3f DEFAULT_TRANSLATION = new Vector3f(0.0F, 0.0F, 0.0F);
 		private static final Vector3f DEFAULT_SCALE = new Vector3f(1.0F, 1.0F, 1.0F);
 
@@ -68,7 +68,7 @@ public class Transformation {
 
 		public Transformation deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			Vector3f vector3f = this.parseVector3f(jsonObject, "rotation", DEFAULT_ROATATION);
+			Vector3f vector3f = this.parseVector3f(jsonObject, "rotation", DEFAULT_ROTATION);
 			Vector3f vector3f2 = this.parseVector3f(jsonObject, "translation", DEFAULT_TRANSLATION);
 			vector3f2.scale(0.0625F);
 			vector3f2.clamp(-5.0F, 5.0F);
@@ -77,18 +77,18 @@ public class Transformation {
 			return new Transformation(vector3f, vector3f2, vector3f3);
 		}
 
-		private Vector3f parseVector3f(JsonObject jsonObject, String string, Vector3f vector3f) {
-			if (!jsonObject.has(string)) {
-				return vector3f;
+		private Vector3f parseVector3f(JsonObject json, String key, Vector3f fallback) {
+			if (!json.has(key)) {
+				return fallback;
 			} else {
-				JsonArray jsonArray = JsonHelper.getArray(jsonObject, string);
+				JsonArray jsonArray = JsonHelper.getArray(json, key);
 				if (jsonArray.size() != 3) {
-					throw new JsonParseException("Expected 3 " + string + " values, found: " + jsonArray.size());
+					throw new JsonParseException("Expected 3 " + key + " values, found: " + jsonArray.size());
 				} else {
 					float[] fs = new float[3];
 
 					for (int i = 0; i < fs.length; i++) {
-						fs[i] = JsonHelper.asFloat(jsonArray.get(i), string + "[" + i + "]");
+						fs[i] = JsonHelper.asFloat(jsonArray.get(i), key + "[" + i + "]");
 					}
 
 					return new Vector3f(fs[0], fs[1], fs[2]);

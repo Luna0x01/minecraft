@@ -10,7 +10,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.ServerTagManagerHolder;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -26,20 +26,20 @@ public class BlockPredicate {
 	private final StatePredicate state;
 	private final NbtPredicate nbt;
 
-	public BlockPredicate(@Nullable Tag<Block> tag, @Nullable Block block, StatePredicate statePredicate, NbtPredicate nbtPredicate) {
+	public BlockPredicate(@Nullable Tag<Block> tag, @Nullable Block block, StatePredicate state, NbtPredicate nbt) {
 		this.tag = tag;
 		this.block = block;
-		this.state = statePredicate;
-		this.nbt = nbtPredicate;
+		this.state = state;
+		this.nbt = nbt;
 	}
 
-	public boolean test(ServerWorld serverWorld, BlockPos blockPos) {
+	public boolean test(ServerWorld world, BlockPos pos) {
 		if (this == ANY) {
 			return true;
-		} else if (!serverWorld.canSetBlock(blockPos)) {
+		} else if (!world.canSetBlock(pos)) {
 			return false;
 		} else {
-			BlockState blockState = serverWorld.getBlockState(blockPos);
+			BlockState blockState = world.getBlockState(pos);
 			Block block = blockState.getBlock();
 			if (this.tag != null && !this.tag.contains(block)) {
 				return false;
@@ -49,7 +49,7 @@ public class BlockPredicate {
 				return false;
 			} else {
 				if (this.nbt != NbtPredicate.ANY) {
-					BlockEntity blockEntity = serverWorld.getBlockEntity(blockPos);
+					BlockEntity blockEntity = world.getBlockEntity(pos);
 					if (blockEntity == null || !this.nbt.test(blockEntity.toTag(new CompoundTag()))) {
 						return false;
 					}
@@ -60,20 +60,20 @@ public class BlockPredicate {
 		}
 	}
 
-	public static BlockPredicate fromJson(@Nullable JsonElement jsonElement) {
-		if (jsonElement != null && !jsonElement.isJsonNull()) {
-			JsonObject jsonObject = JsonHelper.asObject(jsonElement, "block");
+	public static BlockPredicate fromJson(@Nullable JsonElement json) {
+		if (json != null && !json.isJsonNull()) {
+			JsonObject jsonObject = JsonHelper.asObject(json, "block");
 			NbtPredicate nbtPredicate = NbtPredicate.fromJson(jsonObject.get("nbt"));
 			Block block = null;
 			if (jsonObject.has("block")) {
 				Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "block"));
-				block = Registry.field_11146.get(identifier);
+				block = Registry.BLOCK.get(identifier);
 			}
 
 			Tag<Block> tag = null;
 			if (jsonObject.has("tag")) {
 				Identifier identifier2 = new Identifier(JsonHelper.getString(jsonObject, "tag"));
-				tag = BlockTags.getContainer().get(identifier2);
+				tag = ServerTagManagerHolder.getTagManager().getBlocks().getTag(identifier2);
 				if (tag == null) {
 					throw new JsonSyntaxException("Unknown block tag '" + identifier2 + "'");
 				}
@@ -92,11 +92,11 @@ public class BlockPredicate {
 		} else {
 			JsonObject jsonObject = new JsonObject();
 			if (this.block != null) {
-				jsonObject.addProperty("block", Registry.field_11146.getId(this.block).toString());
+				jsonObject.addProperty("block", Registry.BLOCK.getId(this.block).toString());
 			}
 
 			if (this.tag != null) {
-				jsonObject.addProperty("tag", this.tag.getId().toString());
+				jsonObject.addProperty("tag", ServerTagManagerHolder.getTagManager().getBlocks().getTagId(this.tag).toString());
 			}
 
 			jsonObject.add("nbt", this.nbt.toJson());
@@ -120,8 +120,18 @@ public class BlockPredicate {
 			return new BlockPredicate.Builder();
 		}
 
-		public BlockPredicate.Builder tag(Tag<Block> tag) {
+		public BlockPredicate.Builder block(Block block) {
+			this.block = block;
+			return this;
+		}
+
+		public BlockPredicate.Builder method_29233(Tag<Block> tag) {
 			this.tag = tag;
+			return this;
+		}
+
+		public BlockPredicate.Builder state(StatePredicate state) {
+			this.state = state;
 			return this;
 		}
 

@@ -1,6 +1,5 @@
 package net.minecraft.client.render.entity.feature;
 
-import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -38,19 +37,10 @@ public class ShulkerHeadFeatureRenderer extends FeatureRenderer<ShulkerEntity, S
 		matrixStack.multiply(quaternion);
 		matrixStack.scale(-1.0F, -1.0F, 1.0F);
 		matrixStack.translate(0.0, -1.0, 0.0);
-		ModelPart modelPart = this.getContextModel().getHead();
-		modelPart.yaw = k * (float) (Math.PI / 180.0);
-		modelPart.pitch = l * (float) (Math.PI / 180.0);
 		DyeColor dyeColor = shulkerEntity.getColor();
-		Identifier identifier;
-		if (dyeColor == null) {
-			identifier = ShulkerEntityRenderer.SKIN;
-		} else {
-			identifier = ShulkerEntityRenderer.SKIN_COLOR[dyeColor.getId()];
-		}
-
+		Identifier identifier = dyeColor == null ? ShulkerEntityRenderer.TEXTURE : ShulkerEntityRenderer.COLORED_TEXTURES[dyeColor.getId()];
 		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getEntitySolid(identifier));
-		modelPart.render(matrixStack, vertexConsumer, i, LivingEntityRenderer.getOverlay(shulkerEntity, 0.0F));
+		this.getContextModel().getHead().render(matrixStack, vertexConsumer, i, LivingEntityRenderer.getOverlay(shulkerEntity, 0.0F));
 		matrixStack.pop();
 	}
 }

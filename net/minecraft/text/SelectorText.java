@@ -16,15 +16,15 @@ public class SelectorText extends BaseText implements ParsableText {
 	@Nullable
 	private final EntitySelector selector;
 
-	public SelectorText(String string) {
-		this.pattern = string;
+	public SelectorText(String pattern) {
+		this.pattern = pattern;
 		EntitySelector entitySelector = null;
 
 		try {
-			EntitySelectorReader entitySelectorReader = new EntitySelectorReader(new StringReader(string));
+			EntitySelectorReader entitySelectorReader = new EntitySelectorReader(new StringReader(pattern));
 			entitySelector = entitySelectorReader.read();
 		} catch (CommandSyntaxException var4) {
-			LOGGER.warn("Invalid selector component: {}", string, var4.getMessage());
+			LOGGER.warn("Invalid selector component: {}", pattern, var4.getMessage());
 		}
 
 		this.selector = entitySelector;
@@ -35,10 +35,8 @@ public class SelectorText extends BaseText implements ParsableText {
 	}
 
 	@Override
-	public Text parse(@Nullable ServerCommandSource serverCommandSource, @Nullable Entity entity, int i) throws CommandSyntaxException {
-		return (Text)(serverCommandSource != null && this.selector != null
-			? EntitySelector.getNames(this.selector.getEntities(serverCommandSource))
-			: new LiteralText(""));
+	public MutableText parse(@Nullable ServerCommandSource source, @Nullable Entity sender, int depth) throws CommandSyntaxException {
+		return (MutableText)(source != null && this.selector != null ? EntitySelector.getNames(this.selector.getEntities(source)) : new LiteralText(""));
 	}
 
 	@Override

@@ -5,10 +5,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 
 public class ShapelessRecipe implements CraftingRecipe {
@@ -17,11 +17,11 @@ public class ShapelessRecipe implements CraftingRecipe {
 	private final ItemStack output;
 	private final DefaultedList<Ingredient> input;
 
-	public ShapelessRecipe(Identifier identifier, String string, ItemStack itemStack, DefaultedList<Ingredient> defaultedList) {
-		this.id = identifier;
-		this.group = string;
-		this.output = itemStack;
-		this.input = defaultedList;
+	public ShapelessRecipe(Identifier id, String group, ItemStack output, DefaultedList<Ingredient> input) {
+		this.id = id;
+		this.group = group;
+		this.output = output;
+		this.input = input;
 	}
 
 	@Override
@@ -53,8 +53,8 @@ public class ShapelessRecipe implements CraftingRecipe {
 		RecipeFinder recipeFinder = new RecipeFinder();
 		int i = 0;
 
-		for (int j = 0; j < craftingInventory.getInvSize(); j++) {
-			ItemStack itemStack = craftingInventory.getInvStack(j);
+		for (int j = 0; j < craftingInventory.size(); j++) {
+			ItemStack itemStack = craftingInventory.getStack(j);
 			if (!itemStack.isEmpty()) {
 				i++;
 				recipeFinder.method_20478(itemStack, 1);
@@ -69,8 +69,8 @@ public class ShapelessRecipe implements CraftingRecipe {
 	}
 
 	@Override
-	public boolean fits(int i, int j) {
-		return i * j >= this.input.size();
+	public boolean fits(int width, int height) {
+		return width * height >= this.input.size();
 	}
 
 	public static class Serializer implements RecipeSerializer<ShapelessRecipe> {
@@ -87,11 +87,11 @@ public class ShapelessRecipe implements CraftingRecipe {
 			}
 		}
 
-		private static DefaultedList<Ingredient> getIngredients(JsonArray jsonArray) {
+		private static DefaultedList<Ingredient> getIngredients(JsonArray json) {
 			DefaultedList<Ingredient> defaultedList = DefaultedList.of();
 
-			for (int i = 0; i < jsonArray.size(); i++) {
-				Ingredient ingredient = Ingredient.fromJson(jsonArray.get(i));
+			for (int i = 0; i < json.size(); i++) {
+				Ingredient ingredient = Ingredient.fromJson(json.get(i));
 				if (!ingredient.isEmpty()) {
 					defaultedList.add(ingredient);
 				}

@@ -11,8 +11,8 @@ import net.minecraft.text.TranslatableText;
 public class SaveOffCommand {
 	private static final SimpleCommandExceptionType ALREADY_OFF_EXCEPTION = new SimpleCommandExceptionType(new TranslatableText("commands.save.alreadyOff"));
 
-	public static void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
-		commandDispatcher.register(
+	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+		dispatcher.register(
 			(LiteralArgumentBuilder)((LiteralArgumentBuilder)CommandManager.literal("save-off")
 					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)))
 				.executes(commandContext -> {

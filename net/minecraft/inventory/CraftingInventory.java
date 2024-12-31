@@ -1,32 +1,32 @@
 package net.minecraft.inventory;
 
-import net.minecraft.container.Container;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeFinder;
 import net.minecraft.recipe.RecipeInputProvider;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.util.collection.DefaultedList;
 
 public class CraftingInventory implements Inventory, RecipeInputProvider {
 	private final DefaultedList<ItemStack> stacks;
 	private final int width;
 	private final int height;
-	private final Container container;
+	private final ScreenHandler handler;
 
-	public CraftingInventory(Container container, int i, int j) {
-		this.stacks = DefaultedList.ofSize(i * j, ItemStack.EMPTY);
-		this.container = container;
-		this.width = i;
-		this.height = j;
+	public CraftingInventory(ScreenHandler handler, int width, int height) {
+		this.stacks = DefaultedList.ofSize(width * height, ItemStack.EMPTY);
+		this.handler = handler;
+		this.width = width;
+		this.height = height;
 	}
 
 	@Override
-	public int getInvSize() {
+	public int size() {
 		return this.stacks.size();
 	}
 
 	@Override
-	public boolean isInvEmpty() {
+	public boolean isEmpty() {
 		for (ItemStack itemStack : this.stacks) {
 			if (!itemStack.isEmpty()) {
 				return false;
@@ -37,29 +37,29 @@ public class CraftingInventory implements Inventory, RecipeInputProvider {
 	}
 
 	@Override
-	public ItemStack getInvStack(int i) {
-		return i >= this.getInvSize() ? ItemStack.EMPTY : this.stacks.get(i);
+	public ItemStack getStack(int slot) {
+		return slot >= this.size() ? ItemStack.EMPTY : this.stacks.get(slot);
 	}
 
 	@Override
-	public ItemStack removeInvStack(int i) {
-		return Inventories.removeStack(this.stacks, i);
+	public ItemStack removeStack(int slot) {
+		return Inventories.removeStack(this.stacks, slot);
 	}
 
 	@Override
-	public ItemStack takeInvStack(int i, int j) {
-		ItemStack itemStack = Inventories.splitStack(this.stacks, i, j);
+	public ItemStack removeStack(int slot, int amount) {
+		ItemStack itemStack = Inventories.splitStack(this.stacks, slot, amount);
 		if (!itemStack.isEmpty()) {
-			this.container.onContentChanged(this);
+			this.handler.onContentChanged(this);
 		}
 
 		return itemStack;
 	}
 
 	@Override
-	public void setInvStack(int i, ItemStack itemStack) {
-		this.stacks.set(i, itemStack);
-		this.container.onContentChanged(this);
+	public void setStack(int slot, ItemStack stack) {
+		this.stacks.set(slot, stack);
+		this.handler.onContentChanged(this);
 	}
 
 	@Override
@@ -67,7 +67,7 @@ public class CraftingInventory implements Inventory, RecipeInputProvider {
 	}
 
 	@Override
-	public boolean canPlayerUseInv(PlayerEntity playerEntity) {
+	public boolean canPlayerUse(PlayerEntity player) {
 		return true;
 	}
 
@@ -85,9 +85,9 @@ public class CraftingInventory implements Inventory, RecipeInputProvider {
 	}
 
 	@Override
-	public void provideRecipeInputs(RecipeFinder recipeFinder) {
+	public void provideRecipeInputs(RecipeFinder finder) {
 		for (ItemStack itemStack : this.stacks) {
-			recipeFinder.addNormalItem(itemStack);
+			finder.addNormalItem(itemStack);
 		}
 	}
 }

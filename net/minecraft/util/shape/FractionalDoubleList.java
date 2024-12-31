@@ -5,12 +5,12 @@ import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 public class FractionalDoubleList extends AbstractDoubleList {
 	private final int sectionCount;
 
-	FractionalDoubleList(int i) {
-		this.sectionCount = i;
+	FractionalDoubleList(int sectionCount) {
+		this.sectionCount = sectionCount;
 	}
 
-	public double getDouble(int i) {
-		return (double)i / (double)this.sectionCount;
+	public double getDouble(int position) {
+		return (double)position / (double)this.sectionCount;
 	}
 
 	public int size() {

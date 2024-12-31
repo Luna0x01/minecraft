@@ -18,6 +18,7 @@ import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class BlockEntityRenderDispatcher {
@@ -31,25 +32,25 @@ public class BlockEntityRenderDispatcher {
 	public HitResult crosshairTarget;
 
 	private BlockEntityRenderDispatcher() {
-		this.register(BlockEntityType.field_11911, new SignBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11889, new MobSpawnerBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11897, new PistonBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11914, new ChestBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.field_11901, new ChestBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.field_11891, new ChestBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.field_11912, new EnchantingTableBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_16412, new LecternBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11898, new EndPortalBlockEntityRenderer<>(this));
-		this.register(BlockEntityType.field_11906, new EndGatewayBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11890, new BeaconBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11913, new SkullBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11905, new BannerBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11895, new StructureBlockBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11896, new ShulkerBoxBlockEntityRenderer(new ShulkerEntityModel(), this));
-		this.register(BlockEntityType.field_11910, new BedBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_11902, new ConduitBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_16413, new BellBlockEntityRenderer(this));
-		this.register(BlockEntityType.field_17380, new CampfireBlockEntityRenderer(this));
+		this.register(BlockEntityType.SIGN, new SignBlockEntityRenderer(this));
+		this.register(BlockEntityType.MOB_SPAWNER, new MobSpawnerBlockEntityRenderer(this));
+		this.register(BlockEntityType.PISTON, new PistonBlockEntityRenderer(this));
+		this.register(BlockEntityType.CHEST, new ChestBlockEntityRenderer<>(this));
+		this.register(BlockEntityType.ENDER_CHEST, new ChestBlockEntityRenderer<>(this));
+		this.register(BlockEntityType.TRAPPED_CHEST, new ChestBlockEntityRenderer<>(this));
+		this.register(BlockEntityType.ENCHANTING_TABLE, new EnchantingTableBlockEntityRenderer(this));
+		this.register(BlockEntityType.LECTERN, new LecternBlockEntityRenderer(this));
+		this.register(BlockEntityType.END_PORTAL, new EndPortalBlockEntityRenderer<>(this));
+		this.register(BlockEntityType.END_GATEWAY, new EndGatewayBlockEntityRenderer(this));
+		this.register(BlockEntityType.BEACON, new BeaconBlockEntityRenderer(this));
+		this.register(BlockEntityType.SKULL, new SkullBlockEntityRenderer(this));
+		this.register(BlockEntityType.BANNER, new BannerBlockEntityRenderer(this));
+		this.register(BlockEntityType.STRUCTURE_BLOCK, new StructureBlockBlockEntityRenderer(this));
+		this.register(BlockEntityType.SHULKER_BOX, new ShulkerBoxBlockEntityRenderer(new ShulkerEntityModel(), this));
+		this.register(BlockEntityType.BED, new BedBlockEntityRenderer(this));
+		this.register(BlockEntityType.CONDUIT, new ConduitBlockEntityRenderer(this));
+		this.register(BlockEntityType.BELL, new BellBlockEntityRenderer(this));
+		this.register(BlockEntityType.CAMPFIRE, new CampfireBlockEntityRenderer(this));
 	}
 
 	private <E extends BlockEntity> void register(BlockEntityType<E> blockEntityType, BlockEntityRenderer<E> blockEntityRenderer) {
@@ -61,7 +62,7 @@ public class BlockEntityRenderDispatcher {
 		return (BlockEntityRenderer<E>)this.renderers.get(blockEntity.getType());
 	}
 
-	public void configure(World world, TextureManager textureManager, TextRenderer textRenderer, Camera camera, HitResult hitResult) {
+	public void configure(World world, TextureManager textureManager, TextRenderer textRenderer, Camera camera, HitResult crosshairTarget) {
 		if (this.world != world) {
 			this.setWorld(world);
 		}
@@ -69,22 +70,22 @@ public class BlockEntityRenderDispatcher {
 		this.textureManager = textureManager;
 		this.camera = camera;
 		this.textRenderer = textRenderer;
-		this.crosshairTarget = hitResult;
+		this.crosshairTarget = crosshairTarget;
 	}
 
-	public <E extends BlockEntity> void render(E blockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider) {
-		if (blockEntity.getSquaredDistance(this.camera.getPos().x, this.camera.getPos().y, this.camera.getPos().z) < blockEntity.getSquaredRenderDistance()) {
+	public <E extends BlockEntity> void render(E blockEntity, float tickDelta, MatrixStack matrix, VertexConsumerProvider vertexConsumerProvider) {
+		if (Vec3d.ofCenter(blockEntity.getPos()).isInRange(this.camera.getPos(), blockEntity.getRenderDistance())) {
 			BlockEntityRenderer<E> blockEntityRenderer = this.get(blockEntity);
 			if (blockEntityRenderer != null) {
 				if (blockEntity.hasWorld() && blockEntity.getType().supports(blockEntity.getCachedState().getBlock())) {
-					runReported(blockEntity, () -> render(blockEntityRenderer, blockEntity, f, matrixStack, vertexConsumerProvider));
+					runReported(blockEntity, () -> render(blockEntityRenderer, blockEntity, tickDelta, matrix, vertexConsumerProvider));
 				}
 			}
 		}
 	}
 
 	private static <T extends BlockEntity> void render(
-		BlockEntityRenderer<T> blockEntityRenderer, T blockEntity, float f, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider
+		BlockEntityRenderer<T> renderer, T blockEntity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers
 	) {
 		World world = blockEntity.getWorld();
 		int i;
@@ -94,15 +95,15 @@ public class BlockEntityRenderDispatcher {
 			i = 15728880;
 		}
 
-		blockEntityRenderer.render(blockEntity, f, matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV);
+		renderer.render(blockEntity, tickDelta, matrices, vertexConsumers, i, OverlayTexture.DEFAULT_UV);
 	}
 
-	public <E extends BlockEntity> boolean renderEntity(E blockEntity, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, int j) {
-		BlockEntityRenderer<E> blockEntityRenderer = this.get(blockEntity);
+	public <E extends BlockEntity> boolean renderEntity(E entity, MatrixStack matrix, VertexConsumerProvider vertexConsumerProvider, int light, int overlay) {
+		BlockEntityRenderer<E> blockEntityRenderer = this.get(entity);
 		if (blockEntityRenderer == null) {
 			return true;
 		} else {
-			runReported(blockEntity, () -> blockEntityRenderer.render(blockEntity, 0.0F, matrixStack, vertexConsumerProvider, i, j));
+			runReported(entity, () -> blockEntityRenderer.render(entity, 0.0F, matrix, vertexConsumerProvider, light, overlay));
 			return false;
 		}
 	}

@@ -10,12 +10,12 @@ import net.minecraft.world.World;
 public abstract class AbstractChestBlock<E extends BlockEntity> extends BlockWithEntity {
 	protected final Supplier<BlockEntityType<? extends E>> entityTypeRetriever;
 
-	protected AbstractChestBlock(Block.Settings settings, Supplier<BlockEntityType<? extends E>> supplier) {
+	protected AbstractChestBlock(AbstractBlock.Settings settings, Supplier<BlockEntityType<? extends E>> entityTypeSupplier) {
 		super(settings);
-		this.entityTypeRetriever = supplier;
+		this.entityTypeRetriever = entityTypeSupplier;
 	}
 
 	public abstract DoubleBlockProperties.PropertySource<? extends ChestBlockEntity> getBlockEntitySource(
-		BlockState blockState, World world, BlockPos blockPos, boolean bl
+		BlockState state, World world, BlockPos pos, boolean ignoreBlocked
 	);
 }

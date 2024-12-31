@@ -6,7 +6,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class ParrotEntityRenderer extends MobEntityRenderer<ParrotEntity, ParrotEntityModel> {
-	public static final Identifier[] SKINS = new Identifier[]{
+	public static final Identifier[] TEXTURES = new Identifier[]{
 		new Identifier("textures/entity/parrot/parrot_red_blue.png"),
 		new Identifier("textures/entity/parrot/parrot_blue.png"),
 		new Identifier("textures/entity/parrot/parrot_green.png"),
@@ -19,12 +19,12 @@ public class ParrotEntityRenderer extends MobEntityRenderer<ParrotEntity, Parrot
 	}
 
 	public Identifier getTexture(ParrotEntity parrotEntity) {
-		return SKINS[parrotEntity.getVariant()];
+		return TEXTURES[parrotEntity.getVariant()];
 	}
 
-	public float getCustomAngle(ParrotEntity parrotEntity, float f) {
-		float g = MathHelper.lerp(f, parrotEntity.field_6829, parrotEntity.field_6818);
-		float h = MathHelper.lerp(f, parrotEntity.field_6827, parrotEntity.field_6819);
+	public float getAnimationProgress(ParrotEntity parrotEntity, float f) {
+		float g = MathHelper.lerp(f, parrotEntity.prevFlapProgress, parrotEntity.flapProgress);
+		float h = MathHelper.lerp(f, parrotEntity.prevMaxWingDeviation, parrotEntity.maxWingDeviation);
 		return (MathHelper.sin(g) + 1.0F) * h;
 	}
 }

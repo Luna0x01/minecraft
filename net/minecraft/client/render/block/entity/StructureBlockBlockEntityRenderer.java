@@ -25,7 +25,7 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 			BlockPos blockPos = structureBlockBlockEntity.getOffset();
 			BlockPos blockPos2 = structureBlockBlockEntity.getSize();
 			if (blockPos2.getX() >= 1 && blockPos2.getY() >= 1 && blockPos2.getZ() >= 1) {
-				if (structureBlockBlockEntity.getMode() == StructureBlockMode.field_12695 || structureBlockBlockEntity.getMode() == StructureBlockMode.field_12697) {
+				if (structureBlockBlockEntity.getMode() == StructureBlockMode.SAVE || structureBlockBlockEntity.getMode() == StructureBlockMode.LOAD) {
 					double d = (double)blockPos.getX();
 					double e = (double)blockPos.getZ();
 					double g = (double)blockPos.getY();
@@ -33,11 +33,11 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 					double k;
 					double l;
 					switch (structureBlockBlockEntity.getMirror()) {
-						case field_11300:
+						case LEFT_RIGHT:
 							k = (double)blockPos2.getX();
 							l = (double)(-blockPos2.getZ());
 							break;
-						case field_11301:
+						case FRONT_BACK:
 							k = (double)(-blockPos2.getX());
 							l = (double)blockPos2.getZ();
 							break;
@@ -51,19 +51,19 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 					double ae;
 					double af;
 					switch (structureBlockBlockEntity.getRotation()) {
-						case field_11463:
+						case CLOCKWISE_90:
 							ac = l < 0.0 ? d : d + 1.0;
 							ad = k < 0.0 ? e + 1.0 : e;
 							ae = ac - l;
 							af = ad + k;
 							break;
-						case field_11464:
+						case CLOCKWISE_180:
 							ac = k < 0.0 ? d : d + 1.0;
 							ad = l < 0.0 ? e : e + 1.0;
 							ae = ac - k;
 							af = ad - l;
 							break;
-						case field_11465:
+						case COUNTERCLOCKWISE_90:
 							ac = l < 0.0 ? d + 1.0 : d;
 							ad = k < 0.0 ? e : e + 1.0;
 							ae = ac + l;
@@ -80,11 +80,11 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 					float ah = 0.9F;
 					float ai = 0.5F;
 					VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(RenderLayer.getLines());
-					if (structureBlockBlockEntity.getMode() == StructureBlockMode.field_12695 || structureBlockBlockEntity.shouldShowBoundingBox()) {
+					if (structureBlockBlockEntity.getMode() == StructureBlockMode.SAVE || structureBlockBlockEntity.shouldShowBoundingBox()) {
 						WorldRenderer.drawBox(matrixStack, vertexConsumer, ac, g, ad, ae, h, af, 0.9F, 0.9F, 0.9F, 1.0F, 0.5F, 0.5F, 0.5F);
 					}
 
-					if (structureBlockBlockEntity.getMode() == StructureBlockMode.field_12695 && structureBlockBlockEntity.shouldShowAir()) {
+					if (structureBlockBlockEntity.getMode() == StructureBlockMode.SAVE && structureBlockBlockEntity.shouldShowAir()) {
 						this.method_3585(structureBlockBlockEntity, vertexConsumer, blockPos, true, matrixStack);
 						this.method_3585(structureBlockBlockEntity, vertexConsumer, blockPos, false, matrixStack);
 					}
@@ -103,7 +103,7 @@ public class StructureBlockBlockEntityRenderer extends BlockEntityRenderer<Struc
 		for (BlockPos blockPos4 : BlockPos.iterate(blockPos3, blockPos3.add(structureBlockBlockEntity.getSize()).add(-1, -1, -1))) {
 			BlockState blockState = blockView.getBlockState(blockPos4);
 			boolean bl2 = blockState.isAir();
-			boolean bl3 = blockState.getBlock() == Blocks.field_10369;
+			boolean bl3 = blockState.isOf(Blocks.STRUCTURE_VOID);
 			if (bl2 || bl3) {
 				float f = bl2 ? 0.05F : 0.0F;
 				double d = (double)((float)(blockPos4.getX() - blockPos2.getX()) + 0.45F - f);

@@ -11,7 +11,7 @@ import net.minecraft.loot.LootChoice;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.function.LootFunction;
-import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.ServerTagManagerHolder;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -20,26 +20,31 @@ public class TagEntry extends LeafEntry {
 	private final Tag<Item> name;
 	private final boolean expand;
 
-	private TagEntry(Tag<Item> tag, boolean bl, int i, int j, LootCondition[] lootConditions, LootFunction[] lootFunctions) {
-		super(i, j, lootConditions, lootFunctions);
-		this.name = tag;
-		this.expand = bl;
+	private TagEntry(Tag<Item> name, boolean expand, int weight, int quality, LootCondition[] conditions, LootFunction[] functions) {
+		super(weight, quality, conditions, functions);
+		this.name = name;
+		this.expand = expand;
 	}
 
 	@Override
-	public void drop(Consumer<ItemStack> consumer, LootContext lootContext) {
-		this.name.values().forEach(item -> consumer.accept(new ItemStack(item)));
+	public LootPoolEntryType getType() {
+		return LootPoolEntryTypes.TAG;
 	}
 
-	private boolean grow(LootContext lootContext, Consumer<LootChoice> consumer) {
-		if (!this.test(lootContext)) {
+	@Override
+	public void generateLoot(Consumer<ItemStack> lootConsumer, LootContext context) {
+		this.name.values().forEach(item -> lootConsumer.accept(new ItemStack(item)));
+	}
+
+	private boolean grow(LootContext context, Consumer<LootChoice> lootChoiceExpander) {
+		if (!this.test(context)) {
 			return false;
 		} else {
 			for (final Item item : this.name.values()) {
-				consumer.accept(new LeafEntry.Choice() {
+				lootChoiceExpander.accept(new LeafEntry.Choice() {
 					@Override
-					public void drop(Consumer<ItemStack> consumer, LootContext lootContext) {
-						consumer.accept(new ItemStack(item));
+					public void generateLoot(Consumer<ItemStack> lootConsumer, LootContext context) {
+						lootConsumer.accept(new ItemStack(item));
 					}
 				});
 			}
@@ -53,18 +58,14 @@ public class TagEntry extends LeafEntry {
 		return this.expand ? this.grow(lootContext, consumer) : super.expand(lootContext, consumer);
 	}
 
-	public static LeafEntry.Builder<?> builder(Tag<Item> tag) {
-		return builder((i, j, lootConditions, lootFunctions) -> new TagEntry(tag, true, i, j, lootConditions, lootFunctions));
+	public static LeafEntry.Builder<?> builder(Tag<Item> name) {
+		return builder((weight, quality, conditions, functions) -> new TagEntry(name, true, weight, quality, conditions, functions));
 	}
 
 	public static class Serializer extends LeafEntry.Serializer<TagEntry> {
-		public Serializer() {
-			super(new Identifier("tag"), TagEntry.class);
-		}
-
-		public void toJson(JsonObject jsonObject, TagEntry tagEntry, JsonSerializationContext jsonSerializationContext) {
-			super.toJson(jsonObject, tagEntry, jsonSerializationContext);
-			jsonObject.addProperty("name", tagEntry.name.getId().toString());
+		public void addEntryFields(JsonObject jsonObject, TagEntry tagEntry, JsonSerializationContext jsonSerializationContext) {
+			super.addEntryFields(jsonObject, tagEntry, jsonSerializationContext);
+			jsonObject.addProperty("name", ServerTagManagerHolder.getTagManager().getItems().getTagId(tagEntry.name).toString());
 			jsonObject.addProperty("expand", tagEntry.expand);
 		}
 
@@ -72,7 +73,7 @@ public class TagEntry extends LeafEntry {
 			JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, int i, int j, LootCondition[] lootConditions, LootFunction[] lootFunctions
 		) {
 			Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "name"));
-			Tag<Item> tag = ItemTags.getContainer().get(identifier);
+			Tag<Item> tag = ServerTagManagerHolder.getTagManager().getItems().getTag(identifier);
 			if (tag == null) {
 				throw new JsonParseException("Can't find tag: " + identifier);
 			} else {

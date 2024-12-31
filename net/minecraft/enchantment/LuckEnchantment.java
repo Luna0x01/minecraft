@@ -3,27 +3,27 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class LuckEnchantment extends Enchantment {
-	protected LuckEnchantment(Enchantment.Weight weight, EnchantmentTarget enchantmentTarget, EquipmentSlot... equipmentSlots) {
-		super(weight, enchantmentTarget, equipmentSlots);
+	protected LuckEnchantment(Enchantment.Rarity rarity, EnchantmentTarget enchantmentTarget, EquipmentSlot... equipmentSlots) {
+		super(rarity, enchantmentTarget, equipmentSlots);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
-		return 15 + (i - 1) * 9;
+	public int getMinPower(int level) {
+		return 15 + (level - 1) * 9;
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
-		return super.getMinimumPower(i) + 50;
+	public int getMaxPower(int level) {
+		return super.getMinPower(level) + 50;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 3;
 	}
 
 	@Override
-	public boolean differs(Enchantment enchantment) {
-		return super.differs(enchantment) && enchantment != Enchantments.field_9099;
+	public boolean canAccept(Enchantment other) {
+		return super.canAccept(other) && other != Enchantments.SILK_TOUCH;
 	}
 }

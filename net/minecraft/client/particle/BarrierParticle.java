@@ -2,13 +2,13 @@ package net.minecraft.client.particle;
 
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.particle.DefaultParticleType;
-import net.minecraft.world.World;
 
 public class BarrierParticle extends SpriteBillboardParticle {
-	private BarrierParticle(World world, double d, double e, double f, ItemConvertible itemConvertible) {
-		super(world, d, e, f);
+	private BarrierParticle(ClientWorld world, double x, double y, double z, ItemConvertible itemConvertible) {
+		super(world, x, y, z);
 		this.setSprite(MinecraftClient.getInstance().getItemRenderer().getModels().getSprite(itemConvertible));
 		this.gravityStrength = 0.0F;
 		this.maxAge = 80;
@@ -21,13 +21,13 @@ public class BarrierParticle extends SpriteBillboardParticle {
 	}
 
 	@Override
-	public float getSize(float f) {
+	public float getSize(float tickDelta) {
 		return 0.5F;
 	}
 
 	public static class Factory implements ParticleFactory<DefaultParticleType> {
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			return new BarrierParticle(world, d, e, f, Blocks.field_10499.asItem());
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			return new BarrierParticle(clientWorld, d, e, f, Blocks.BARRIER.asItem());
 		}
 	}
 }

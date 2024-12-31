@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.datafixer.TypeReferences;
+import net.minecraft.datafixer.schema.IdentifierNormalizingSchema;
 
 public class ItemInstanceSpawnEggFix extends DataFix {
 	private static final Map<String, String> ENTITY_SPAWN_EGGS = (Map<String, String>)DataFixUtils.make(Maps.newHashMap(), hashMap -> {
@@ -64,14 +65,16 @@ public class ItemInstanceSpawnEggFix extends DataFix {
 		hashMap.put("minecraft:zombie_villager", "minecraft:zombie_villager_spawn_egg");
 	});
 
-	public ItemInstanceSpawnEggFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public ItemInstanceSpawnEggFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public TypeRewriteRule makeRule() {
 		Type<?> type = this.getInputSchema().getType(TypeReferences.ITEM_STACK);
-		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder("id", DSL.named(TypeReferences.ITEM_NAME.typeName(), DSL.namespacedString()));
-		OpticFinder<String> opticFinder2 = DSL.fieldFinder("id", DSL.namespacedString());
+		OpticFinder<Pair<String, String>> opticFinder = DSL.fieldFinder(
+			"id", DSL.named(TypeReferences.ITEM_NAME.typeName(), IdentifierNormalizingSchema.getIdentifierType())
+		);
+		OpticFinder<String> opticFinder2 = DSL.fieldFinder("id", IdentifierNormalizingSchema.getIdentifierType());
 		OpticFinder<?> opticFinder3 = type.findField("tag");
 		OpticFinder<?> opticFinder4 = opticFinder3.type().findField("EntityTag");
 		return this.fixTypeEverywhereTyped("ItemInstanceSpawnEggFix", type, typed -> {

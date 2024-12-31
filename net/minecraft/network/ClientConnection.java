@@ -30,16 +30,17 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.Queue;
 import javax.annotation.Nullable;
-import javax.crypto.SecretKey;
-import net.minecraft.client.network.packet.DisconnectS2CPacket;
+import javax.crypto.Cipher;
 import net.minecraft.network.encryption.PacketDecryptor;
 import net.minecraft.network.encryption.PacketEncryptor;
 import net.minecraft.network.listener.PacketListener;
+import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
 import net.minecraft.server.network.ServerLoginNetworkHandler;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Lazy;
+import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,7 +62,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		() -> new DefaultEventLoopGroup(0, new ThreadFactoryBuilder().setNameFormat("Netty Local Client IO #%d").setDaemon(true).build())
 	);
 	private final NetworkSide side;
-	private final Queue<ClientConnection.PacketWrapper> packetQueue = Queues.newConcurrentLinkedQueue();
+	private final Queue<ClientConnection.QueuedPacket> packetQueue = Queues.newConcurrentLinkedQueue();
 	private Channel channel;
 	private SocketAddress address;
 	private PacketListener packetListener;
@@ -73,10 +74,10 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 	private float avgPacketsReceived;
 	private float avgPacketsSent;
 	private int ticks;
-	private boolean field_11640;
+	private boolean errored;
 
-	public ClientConnection(NetworkSide networkSide) {
-		this.side = networkSide;
+	public ClientConnection(NetworkSide side) {
+		this.side = side;
 	}
 
 	public void channelActive(ChannelHandlerContext channelHandlerContext) throws Exception {
@@ -85,14 +86,14 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		this.address = this.channel.remoteAddress();
 
 		try {
-			this.setState(NetworkState.field_20590);
+			this.setState(NetworkState.HANDSHAKING);
 		} catch (Throwable var3) {
 			LOGGER.fatal(var3);
 		}
 	}
 
-	public void setState(NetworkState networkState) {
-		this.channel.attr(ATTR_KEY_PROTOCOL).set(networkState);
+	public void setState(NetworkState state) {
+		this.channel.attr(ATTR_KEY_PROTOCOL).set(state);
 		this.channel.config().setAutoRead(true);
 		LOGGER.debug("Enabled auto read");
 	}
@@ -105,8 +106,8 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		if (throwable instanceof PacketEncoderException) {
 			LOGGER.debug("Skipping packet due to errors", throwable.getCause());
 		} else {
-			boolean bl = !this.field_11640;
-			this.field_11640 = true;
+			boolean bl = !this.errored;
+			this.errored = true;
 			if (this.channel.isOpen()) {
 				if (throwable instanceof TimeoutException) {
 					LOGGER.debug("Timeout", throwable);
@@ -137,30 +138,29 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		}
 	}
 
-	private static <T extends PacketListener> void handlePacket(Packet<T> packet, PacketListener packetListener) {
-		packet.apply((T)packetListener);
+	private static <T extends PacketListener> void handlePacket(Packet<T> packet, PacketListener listener) {
+		packet.apply((T)listener);
 	}
 
-	public void setPacketListener(PacketListener packetListener) {
-		Validate.notNull(packetListener, "packetListener", new Object[0]);
-		LOGGER.debug("Set listener of {} to {}", this, packetListener);
-		this.packetListener = packetListener;
+	public void setPacketListener(PacketListener listener) {
+		Validate.notNull(listener, "packetListener", new Object[0]);
+		this.packetListener = listener;
 	}
 
 	public void send(Packet<?> packet) {
 		this.send(packet, null);
 	}
 
-	public void send(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> genericFutureListener) {
+	public void send(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> callback) {
 		if (this.isOpen()) {
 			this.sendQueuedPackets();
-			this.sendImmediately(packet, genericFutureListener);
+			this.sendImmediately(packet, callback);
 		} else {
-			this.packetQueue.add(new ClientConnection.PacketWrapper(packet, genericFutureListener));
+			this.packetQueue.add(new ClientConnection.QueuedPacket(packet, callback));
 		}
 	}
 
-	private void sendImmediately(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> genericFutureListener) {
+	private void sendImmediately(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> callback) {
 		NetworkState networkState = NetworkState.getPacketHandlerState(packet);
 		NetworkState networkState2 = (NetworkState)this.channel.attr(ATTR_KEY_PROTOCOL).get();
 		this.packetsSentCounter++;
@@ -175,8 +175,8 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 			}
 
 			ChannelFuture channelFuture = this.channel.writeAndFlush(packet);
-			if (genericFutureListener != null) {
-				channelFuture.addListener(genericFutureListener);
+			if (callback != null) {
+				channelFuture.addListener(callback);
 			}
 
 			channelFuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -187,8 +187,8 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 				}
 
 				ChannelFuture channelFuturex = this.channel.writeAndFlush(packet);
-				if (genericFutureListener != null) {
-					channelFuturex.addListener(genericFutureListener);
+				if (callback != null) {
+					channelFuturex.addListener(callback);
 				}
 
 				channelFuturex.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -199,9 +199,9 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 	private void sendQueuedPackets() {
 		if (this.channel != null && this.channel.isOpen()) {
 			synchronized (this.packetQueue) {
-				ClientConnection.PacketWrapper packetWrapper;
-				while ((packetWrapper = (ClientConnection.PacketWrapper)this.packetQueue.poll()) != null) {
-					this.sendImmediately(packetWrapper.packet, packetWrapper.listener);
+				ClientConnection.QueuedPacket queuedPacket;
+				while ((queuedPacket = (ClientConnection.QueuedPacket)this.packetQueue.poll()) != null) {
+					this.sendImmediately(queuedPacket.packet, queuedPacket.callback);
 				}
 			}
 		}
@@ -222,21 +222,25 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		}
 
 		if (this.ticks++ % 20 == 0) {
-			this.avgPacketsSent = this.avgPacketsSent * 0.75F + (float)this.packetsSentCounter * 0.25F;
-			this.avgPacketsReceived = this.avgPacketsReceived * 0.75F + (float)this.packetsReceivedCounter * 0.25F;
-			this.packetsSentCounter = 0;
-			this.packetsReceivedCounter = 0;
+			this.updateStats();
 		}
+	}
+
+	protected void updateStats() {
+		this.avgPacketsSent = MathHelper.lerp(0.75F, (float)this.packetsSentCounter, this.avgPacketsSent);
+		this.avgPacketsReceived = MathHelper.lerp(0.75F, (float)this.packetsReceivedCounter, this.avgPacketsReceived);
+		this.packetsSentCounter = 0;
+		this.packetsReceivedCounter = 0;
 	}
 
 	public SocketAddress getAddress() {
 		return this.address;
 	}
 
-	public void disconnect(Text text) {
+	public void disconnect(Text disconnectReason) {
 		if (this.channel.isOpen()) {
 			this.channel.close().awaitUninterruptibly();
-			this.disconnectReason = text;
+			this.disconnectReason = disconnectReason;
 		}
 	}
 
@@ -244,11 +248,11 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		return this.channel instanceof LocalChannel || this.channel instanceof LocalServerChannel;
 	}
 
-	public static ClientConnection connect(InetAddress inetAddress, int i, boolean bl) {
-		final ClientConnection clientConnection = new ClientConnection(NetworkSide.field_11942);
+	public static ClientConnection connect(InetAddress address, int port, boolean shouldUseNativeTransport) {
+		final ClientConnection clientConnection = new ClientConnection(NetworkSide.CLIENTBOUND);
 		Class<? extends SocketChannel> class_;
 		Lazy<? extends EventLoopGroup> lazy;
-		if (Epoll.isAvailable() && bl) {
+		if (Epoll.isAvailable() && shouldUseNativeTransport) {
 			class_ = EpollSocketChannel.class;
 			lazy = CLIENT_IO_GROUP_EPOLL;
 		} else {
@@ -268,33 +272,33 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 								channel.pipeline()
 									.addLast("timeout", new ReadTimeoutHandler(30))
 									.addLast("splitter", new SplitterHandler())
-									.addLast("decoder", new DecoderHandler(NetworkSide.field_11942))
+									.addLast("decoder", new DecoderHandler(NetworkSide.CLIENTBOUND))
 									.addLast("prepender", new SizePrepender())
-									.addLast("encoder", new PacketEncoder(NetworkSide.field_11941))
+									.addLast("encoder", new PacketEncoder(NetworkSide.SERVERBOUND))
 									.addLast("packet_handler", clientConnection);
 							}
 						}
 					))
 				.channel(class_))
-			.connect(inetAddress, i)
+			.connect(address, port)
 			.syncUninterruptibly();
 		return clientConnection;
 	}
 
-	public static ClientConnection connectLocal(SocketAddress socketAddress) {
-		final ClientConnection clientConnection = new ClientConnection(NetworkSide.field_11942);
+	public static ClientConnection connectLocal(SocketAddress address) {
+		final ClientConnection clientConnection = new ClientConnection(NetworkSide.CLIENTBOUND);
 		((Bootstrap)((Bootstrap)((Bootstrap)new Bootstrap().group((EventLoopGroup)CLIENT_IO_GROUP_LOCAL.get())).handler(new ChannelInitializer<Channel>() {
 			protected void initChannel(Channel channel) throws Exception {
 				channel.pipeline().addLast("packet_handler", clientConnection);
 			}
-		})).channel(LocalChannel.class)).connect(socketAddress).syncUninterruptibly();
+		})).channel(LocalChannel.class)).connect(address).syncUninterruptibly();
 		return clientConnection;
 	}
 
-	public void setupEncryption(SecretKey secretKey) {
+	public void setupEncryption(Cipher cipher, Cipher cipher2) {
 		this.encrypted = true;
-		this.channel.pipeline().addBefore("splitter", "decrypt", new PacketDecryptor(NetworkEncryptionUtils.cipherFromKey(2, secretKey)));
-		this.channel.pipeline().addBefore("prepender", "encrypt", new PacketEncryptor(NetworkEncryptionUtils.cipherFromKey(1, secretKey)));
+		this.channel.pipeline().addBefore("splitter", "decrypt", new PacketDecryptor(cipher));
+		this.channel.pipeline().addBefore("prepender", "encrypt", new PacketEncryptor(cipher2));
 	}
 
 	public boolean isEncrypted() {
@@ -322,18 +326,18 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		this.channel.config().setAutoRead(false);
 	}
 
-	public void setMinCompressedSize(int i) {
-		if (i >= 0) {
+	public void setCompressionThreshold(int compressionThreshold) {
+		if (compressionThreshold >= 0) {
 			if (this.channel.pipeline().get("decompress") instanceof PacketInflater) {
-				((PacketInflater)this.channel.pipeline().get("decompress")).setCompressionThreshold(i);
+				((PacketInflater)this.channel.pipeline().get("decompress")).setCompressionThreshold(compressionThreshold);
 			} else {
-				this.channel.pipeline().addBefore("decoder", "decompress", new PacketInflater(i));
+				this.channel.pipeline().addBefore("decoder", "decompress", new PacketInflater(compressionThreshold));
 			}
 
 			if (this.channel.pipeline().get("compress") instanceof PacketDeflater) {
-				((PacketDeflater)this.channel.pipeline().get("compress")).setCompressionThreshold(i);
+				((PacketDeflater)this.channel.pipeline().get("compress")).setCompressionThreshold(compressionThreshold);
 			} else {
-				this.channel.pipeline().addBefore("encoder", "compress", new PacketDeflater(i));
+				this.channel.pipeline().addBefore("encoder", "compress", new PacketDeflater(compressionThreshold));
 			}
 		} else {
 			if (this.channel.pipeline().get("decompress") instanceof PacketInflater) {
@@ -369,14 +373,14 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 		return this.avgPacketsSent;
 	}
 
-	static class PacketWrapper {
+	static class QueuedPacket {
 		private final Packet<?> packet;
 		@Nullable
-		private final GenericFutureListener<? extends Future<? super Void>> listener;
+		private final GenericFutureListener<? extends Future<? super Void>> callback;
 
-		public PacketWrapper(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> genericFutureListener) {
+		public QueuedPacket(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> callback) {
 			this.packet = packet;
-			this.listener = genericFutureListener;
+			this.callback = callback;
 		}
 	}
 }

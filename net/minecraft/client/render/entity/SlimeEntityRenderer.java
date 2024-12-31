@@ -9,7 +9,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class SlimeEntityRenderer extends MobEntityRenderer<SlimeEntity, SlimeEntityModel<SlimeEntity>> {
-	private static final Identifier SKIN = new Identifier("textures/entity/slime/slime.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/slime/slime.png");
 
 	public SlimeEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new SlimeEntityModel<>(16), 0.25F);
@@ -17,7 +17,7 @@ public class SlimeEntityRenderer extends MobEntityRenderer<SlimeEntity, SlimeEnt
 	}
 
 	public void render(SlimeEntity slimeEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
-		this.shadowSize = 0.25F * (float)slimeEntity.getSize();
+		this.shadowRadius = 0.25F * (float)slimeEntity.getSize();
 		super.render(slimeEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
@@ -32,6 +32,6 @@ public class SlimeEntityRenderer extends MobEntityRenderer<SlimeEntity, SlimeEnt
 	}
 
 	public Identifier getTexture(SlimeEntity slimeEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 }

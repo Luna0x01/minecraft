@@ -16,11 +16,11 @@ public class ModelElementFace {
 	public final String textureId;
 	public final ModelElementTexture textureData;
 
-	public ModelElementFace(@Nullable Direction direction, int i, String string, ModelElementTexture modelElementTexture) {
-		this.cullFace = direction;
-		this.tintIndex = i;
-		this.textureId = string;
-		this.textureData = modelElementTexture;
+	public ModelElementFace(@Nullable Direction cullFace, int tintIndex, String textureId, ModelElementTexture textureData) {
+		this.cullFace = cullFace;
+		this.tintIndex = tintIndex;
+		this.textureId = textureId;
+		this.textureData = textureData;
 	}
 
 	public static class Deserializer implements JsonDeserializer<ModelElementFace> {
@@ -36,17 +36,17 @@ public class ModelElementFace {
 			return new ModelElementFace(direction, i, string, modelElementTexture);
 		}
 
-		protected int deserializeTintIndex(JsonObject jsonObject) {
-			return JsonHelper.getInt(jsonObject, "tintindex", -1);
+		protected int deserializeTintIndex(JsonObject object) {
+			return JsonHelper.getInt(object, "tintindex", -1);
 		}
 
-		private String deserializeTexture(JsonObject jsonObject) {
-			return JsonHelper.getString(jsonObject, "texture");
+		private String deserializeTexture(JsonObject object) {
+			return JsonHelper.getString(object, "texture");
 		}
 
 		@Nullable
-		private Direction deserializeCullFace(JsonObject jsonObject) {
-			String string = JsonHelper.getString(jsonObject, "cullface", "");
+		private Direction deserializeCullFace(JsonObject object) {
+			String string = JsonHelper.getString(object, "cullface", "");
 			return Direction.byName(string);
 		}
 	}

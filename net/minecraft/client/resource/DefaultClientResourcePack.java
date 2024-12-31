@@ -21,9 +21,9 @@ public class DefaultClientResourcePack extends DefaultResourcePack {
 
 	@Nullable
 	@Override
-	protected InputStream findInputStream(ResourceType resourceType, Identifier identifier) {
-		if (resourceType == ResourceType.field_14188) {
-			File file = this.index.getResource(identifier);
+	protected InputStream findInputStream(ResourceType type, Identifier id) {
+		if (type == ResourceType.CLIENT_RESOURCES) {
+			File file = this.index.getResource(id);
 			if (file != null && file.exists()) {
 				try {
 					return new FileInputStream(file);
@@ -32,25 +32,25 @@ public class DefaultClientResourcePack extends DefaultResourcePack {
 			}
 		}
 
-		return super.findInputStream(resourceType, identifier);
+		return super.findInputStream(type, id);
 	}
 
 	@Override
-	public boolean contains(ResourceType resourceType, Identifier identifier) {
-		if (resourceType == ResourceType.field_14188) {
-			File file = this.index.getResource(identifier);
+	public boolean contains(ResourceType type, Identifier id) {
+		if (type == ResourceType.CLIENT_RESOURCES) {
+			File file = this.index.getResource(id);
 			if (file != null && file.exists()) {
 				return true;
 			}
 		}
 
-		return super.contains(resourceType, identifier);
+		return super.contains(type, id);
 	}
 
 	@Nullable
 	@Override
-	protected InputStream getInputStream(String string) {
-		File file = this.index.findFile(string);
+	protected InputStream getInputStream(String path) {
+		File file = this.index.findFile(path);
 		if (file != null && file.exists()) {
 			try {
 				return new FileInputStream(file);
@@ -58,13 +58,13 @@ public class DefaultClientResourcePack extends DefaultResourcePack {
 			}
 		}
 
-		return super.getInputStream(string);
+		return super.getInputStream(path);
 	}
 
 	@Override
-	public Collection<Identifier> findResources(ResourceType resourceType, String string, String string2, int i, Predicate<String> predicate) {
-		Collection<Identifier> collection = super.findResources(resourceType, string, string2, i, predicate);
-		collection.addAll(this.index.getFilesRecursively(string2, string, i, predicate));
+	public Collection<Identifier> findResources(ResourceType type, String namespace, String prefix, int maxDepth, Predicate<String> pathFilter) {
+		Collection<Identifier> collection = super.findResources(type, namespace, prefix, maxDepth, pathFilter);
+		collection.addAll(this.index.getFilesRecursively(prefix, namespace, maxDepth, pathFilter));
 		return collection;
 	}
 }

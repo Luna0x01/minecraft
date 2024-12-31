@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import net.minecraft.datafixer.TypeReferences;
 
-public class Schema1451v3 extends SchemaIdentifierNormalize {
+public class Schema1451v3 extends IdentifierNormalizingSchema {
 	public Schema1451v3(int i, Schema schema) {
 		super(i, schema);
 	}
@@ -24,7 +24,7 @@ public class Schema1451v3 extends SchemaIdentifierNormalize {
 		schema.registerSimple(map, "minecraft:xp_bottle");
 		schema.register(map, "minecraft:arrow", () -> DSL.optionalFields("inBlockState", TypeReferences.BLOCK_STATE.in(schema)));
 		schema.register(
-			map, "minecraft:enderman", () -> DSL.optionalFields("carriedBlockState", TypeReferences.BLOCK_STATE.in(schema), Schema100.method_5196(schema))
+			map, "minecraft:enderman", () -> DSL.optionalFields("carriedBlockState", TypeReferences.BLOCK_STATE.in(schema), Schema100.targetItems(schema))
 		);
 		schema.register(
 			map,

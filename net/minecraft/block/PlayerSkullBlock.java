@@ -13,14 +13,14 @@ import net.minecraft.world.World;
 import org.apache.commons.lang3.StringUtils;
 
 public class PlayerSkullBlock extends SkullBlock {
-	protected PlayerSkullBlock(Block.Settings settings) {
-		super(SkullBlock.Type.field_11510, settings);
+	protected PlayerSkullBlock(AbstractBlock.Settings settings) {
+		super(SkullBlock.Type.PLAYER, settings);
 	}
 
 	@Override
-	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, @Nullable LivingEntity livingEntity, ItemStack itemStack) {
-		super.onPlaced(world, blockPos, blockState, livingEntity, itemStack);
-		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+		super.onPlaced(world, pos, state, placer, itemStack);
+		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof SkullBlockEntity) {
 			SkullBlockEntity skullBlockEntity = (SkullBlockEntity)blockEntity;
 			GameProfile gameProfile = null;

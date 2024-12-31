@@ -7,9 +7,9 @@ import java.util.function.Function;
 import net.minecraft.util.Util;
 
 public enum FontType {
-	field_2312("bitmap", TextureFont.Loader::fromJson),
-	field_2317("ttf", TrueTypeFontLoader::fromJson),
-	field_2313("legacy_unicode", UnicodeTextureFont.Loader::fromJson);
+	BITMAP("bitmap", BitmapFont.Loader::fromJson),
+	TTF("ttf", TrueTypeFontLoader::fromJson),
+	LEGACY_UNICODE("legacy_unicode", UnicodeTextureFont.Loader::fromJson);
 
 	private static final Map<String, FontType> REGISTRY = Util.make(Maps.newHashMap(), hashMap -> {
 		for (FontType fontType : values()) {
@@ -19,21 +19,21 @@ public enum FontType {
 	private final String id;
 	private final Function<JsonObject, FontLoader> loaderFactory;
 
-	private FontType(String string2, Function<JsonObject, FontLoader> function) {
-		this.id = string2;
-		this.loaderFactory = function;
+	private FontType(String id, Function<JsonObject, FontLoader> factory) {
+		this.id = id;
+		this.loaderFactory = factory;
 	}
 
-	public static FontType byId(String string) {
-		FontType fontType = (FontType)REGISTRY.get(string);
+	public static FontType byId(String id) {
+		FontType fontType = (FontType)REGISTRY.get(id);
 		if (fontType == null) {
-			throw new IllegalArgumentException("Invalid type: " + string);
+			throw new IllegalArgumentException("Invalid type: " + id);
 		} else {
 			return fontType;
 		}
 	}
 
-	public FontLoader createLoader(JsonObject jsonObject) {
-		return (FontLoader)this.loaderFactory.apply(jsonObject);
+	public FontLoader createLoader(JsonObject json) {
+		return (FontLoader)this.loaderFactory.apply(json);
 	}
 }

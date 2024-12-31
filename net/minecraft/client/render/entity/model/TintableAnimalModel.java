@@ -9,14 +9,14 @@ public abstract class TintableAnimalModel<E extends Entity> extends AnimalModel<
 	private float greenMultiplier = 1.0F;
 	private float blueMultiplier = 1.0F;
 
-	public void setColorMultiplier(float f, float g, float h) {
-		this.redMultiplier = f;
-		this.greenMultiplier = g;
-		this.blueMultiplier = h;
+	public void setColorMultiplier(float red, float green, float blue) {
+		this.redMultiplier = red;
+		this.greenMultiplier = green;
+		this.blueMultiplier = blue;
 	}
 
 	@Override
-	public void render(MatrixStack matrixStack, VertexConsumer vertexConsumer, int i, int j, float f, float g, float h, float k) {
-		super.render(matrixStack, vertexConsumer, i, j, this.redMultiplier * f, this.greenMultiplier * g, this.blueMultiplier * h, k);
+	public void render(MatrixStack matrices, VertexConsumer vertices, int light, int overlay, float red, float green, float blue, float alpha) {
+		super.render(matrices, vertices, light, overlay, this.redMultiplier * red, this.greenMultiplier * green, this.blueMultiplier * blue, alpha);
 	}
 }

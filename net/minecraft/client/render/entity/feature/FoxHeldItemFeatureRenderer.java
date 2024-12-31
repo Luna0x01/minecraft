@@ -53,10 +53,10 @@ public class FoxHeldItemFeatureRenderer extends FeatureRenderer<FoxEntity, FoxEn
 			matrixStack.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(90.0F));
 		}
 
-		ItemStack itemStack = foxEntity.getEquippedStack(EquipmentSlot.field_6173);
+		ItemStack itemStack = foxEntity.getEquippedStack(EquipmentSlot.MAINHAND);
 		MinecraftClient.getInstance()
 			.getHeldItemRenderer()
-			.renderItem(foxEntity, itemStack, ModelTransformation.Mode.field_4318, false, matrixStack, vertexConsumerProvider, i);
+			.renderItem(foxEntity, itemStack, ModelTransformation.Mode.GROUND, false, matrixStack, vertexConsumerProvider, i);
 		matrixStack.pop();
 	}
 }

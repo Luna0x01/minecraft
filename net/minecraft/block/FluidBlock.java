@@ -4,9 +4,8 @@ import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityContext;
-import net.minecraft.fluid.BaseFluid;
+import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.fluid.FlowableFluid;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -22,123 +21,124 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
+import net.minecraft.world.WorldAccess;
 
 public class FluidBlock extends Block implements FluidDrainable {
 	public static final IntProperty LEVEL = Properties.LEVEL_15;
-	protected final BaseFluid fluid;
+	protected final FlowableFluid fluid;
 	private final List<FluidState> statesByLevel;
+	public static final VoxelShape COLLISION_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
 
-	protected FluidBlock(BaseFluid baseFluid, Block.Settings settings) {
+	protected FluidBlock(FlowableFluid fluid, AbstractBlock.Settings settings) {
 		super(settings);
-		this.fluid = baseFluid;
+		this.fluid = fluid;
 		this.statesByLevel = Lists.newArrayList();
-		this.statesByLevel.add(baseFluid.getStill(false));
+		this.statesByLevel.add(fluid.getStill(false));
 
 		for (int i = 1; i < 8; i++) {
-			this.statesByLevel.add(baseFluid.getFlowing(8 - i, false));
+			this.statesByLevel.add(fluid.getFlowing(8 - i, false));
 		}
 
-		this.statesByLevel.add(baseFluid.getFlowing(8, true));
+		this.statesByLevel.add(fluid.getFlowing(8, true));
 		this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, Integer.valueOf(0)));
 	}
 
 	@Override
-	public void randomTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, Random random) {
-		serverWorld.getFluidState(blockPos).onRandomTick(serverWorld, blockPos, random);
+	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return context.isAbove(COLLISION_SHAPE, pos, true) && state.get(LEVEL) == 0 && context.method_27866(world.getFluidState(pos.up()), this.fluid)
+			? COLLISION_SHAPE
+			: VoxelShapes.empty();
 	}
 
 	@Override
-	public boolean isTranslucent(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+	public boolean hasRandomTicks(BlockState state) {
+		return state.getFluidState().hasRandomTicks();
+	}
+
+	@Override
+	public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+		state.getFluidState().onRandomTick(world, pos, random);
+	}
+
+	@Override
+	public boolean isTranslucent(BlockState state, BlockView world, BlockPos pos) {
 		return false;
 	}
 
 	@Override
-	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
-		return !this.fluid.matches(FluidTags.field_15518);
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
+		return !this.fluid.isIn(FluidTags.LAVA);
 	}
 
 	@Override
-	public FluidState getFluidState(BlockState blockState) {
-		int i = (Integer)blockState.get(LEVEL);
+	public FluidState getFluidState(BlockState state) {
+		int i = (Integer)state.get(LEVEL);
 		return (FluidState)this.statesByLevel.get(Math.min(i, 8));
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockState blockState, BlockState blockState2, Direction direction) {
-		return blockState2.getFluidState().getFluid().matchesType(this.fluid);
+	public boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
+		return stateFrom.getFluidState().getFluid().matchesType(this.fluid);
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState blockState) {
-		return BlockRenderType.field_11455;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.INVISIBLE;
 	}
 
 	@Override
-	public List<ItemStack> getDroppedStacks(BlockState blockState, LootContext.Builder builder) {
+	public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
 		return VoxelShapes.empty();
 	}
 
 	@Override
-	public int getTickRate(WorldView worldView) {
-		return this.fluid.getTickRate(worldView);
-	}
-
-	@Override
-	public void onBlockAdded(BlockState blockState, World world, BlockPos blockPos, BlockState blockState2, boolean bl) {
-		if (this.receiveNeighborFluids(world, blockPos, blockState)) {
-			world.getFluidTickScheduler().schedule(blockPos, blockState.getFluidState().getFluid(), this.getTickRate(world));
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+		if (this.receiveNeighborFluids(world, pos, state)) {
+			world.getFluidTickScheduler().schedule(pos, state.getFluidState().getFluid(), this.fluid.getTickRate(world));
 		}
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if (blockState.getFluidState().isStill() || blockState2.getFluidState().isStill()) {
-			iWorld.getFluidTickScheduler().schedule(blockPos, blockState.getFluidState().getFluid(), this.getTickRate(iWorld));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if (state.getFluidState().isStill() || newState.getFluidState().isStill()) {
+			world.getFluidTickScheduler().schedule(pos, state.getFluidState().getFluid(), this.fluid.getTickRate(world));
 		}
 
-		return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 	}
 
 	@Override
-	public void neighborUpdate(BlockState blockState, World world, BlockPos blockPos, Block block, BlockPos blockPos2, boolean bl) {
-		if (this.receiveNeighborFluids(world, blockPos, blockState)) {
-			world.getFluidTickScheduler().schedule(blockPos, blockState.getFluidState().getFluid(), this.getTickRate(world));
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
+		if (this.receiveNeighborFluids(world, pos, state)) {
+			world.getFluidTickScheduler().schedule(pos, state.getFluidState().getFluid(), this.fluid.getTickRate(world));
 		}
 	}
 
-	public boolean receiveNeighborFluids(World world, BlockPos blockPos, BlockState blockState) {
-		if (this.fluid.matches(FluidTags.field_15518)) {
-			boolean bl = false;
+	private boolean receiveNeighborFluids(World world, BlockPos pos, BlockState state) {
+		if (this.fluid.isIn(FluidTags.LAVA)) {
+			boolean bl = world.getBlockState(pos.down()).isOf(Blocks.SOUL_SOIL);
 
 			for (Direction direction : Direction.values()) {
-				if (direction != Direction.field_11033 && world.getFluidState(blockPos.offset(direction)).matches(FluidTags.field_15517)) {
-					bl = true;
-					break;
-				}
-			}
+				if (direction != Direction.DOWN) {
+					BlockPos blockPos = pos.offset(direction);
+					if (world.getFluidState(blockPos).isIn(FluidTags.WATER)) {
+						Block block = world.getFluidState(pos).isStill() ? Blocks.OBSIDIAN : Blocks.COBBLESTONE;
+						world.setBlockState(pos, block.getDefaultState());
+						this.playExtinguishSound(world, pos);
+						return false;
+					}
 
-			if (bl) {
-				FluidState fluidState = world.getFluidState(blockPos);
-				if (fluidState.isStill()) {
-					world.setBlockState(blockPos, Blocks.field_10540.getDefaultState());
-					this.playExtinguishSound(world, blockPos);
-					return false;
-				}
-
-				if (fluidState.getHeight(world, blockPos) >= 0.44444445F) {
-					world.setBlockState(blockPos, Blocks.field_10445.getDefaultState());
-					this.playExtinguishSound(world, blockPos);
-					return false;
+					if (bl && world.getBlockState(blockPos).isOf(Blocks.BLUE_ICE)) {
+						world.setBlockState(pos, Blocks.BASALT.getDefaultState());
+						this.playExtinguishSound(world, pos);
+						return false;
+					}
 				}
 			}
 		}
@@ -146,8 +146,8 @@ public class FluidBlock extends Block implements FluidDrainable {
 		return true;
 	}
 
-	private void playExtinguishSound(IWorld iWorld, BlockPos blockPos) {
-		iWorld.playLevelEvent(1501, blockPos, 0);
+	private void playExtinguishSound(WorldAccess world, BlockPos pos) {
+		world.syncWorldEvent(1501, pos, 0);
 	}
 
 	@Override
@@ -156,19 +156,12 @@ public class FluidBlock extends Block implements FluidDrainable {
 	}
 
 	@Override
-	public Fluid tryDrainFluid(IWorld iWorld, BlockPos blockPos, BlockState blockState) {
-		if ((Integer)blockState.get(LEVEL) == 0) {
-			iWorld.setBlockState(blockPos, Blocks.field_10124.getDefaultState(), 11);
+	public Fluid tryDrainFluid(WorldAccess world, BlockPos pos, BlockState state) {
+		if ((Integer)state.get(LEVEL) == 0) {
+			world.setBlockState(pos, Blocks.AIR.getDefaultState(), 11);
 			return this.fluid;
 		} else {
-			return Fluids.field_15906;
-		}
-	}
-
-	@Override
-	public void onEntityCollision(BlockState blockState, World world, BlockPos blockPos, Entity entity) {
-		if (this.fluid.matches(FluidTags.field_15518)) {
-			entity.setInLava();
+			return Fluids.EMPTY;
 		}
 	}
 }

@@ -12,15 +12,15 @@ import java.util.stream.IntStream;
 import net.minecraft.datafixer.TypeReferences;
 
 public class BiomeFormatFix extends DataFix {
-	public BiomeFormatFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public BiomeFormatFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	protected TypeRewriteRule makeRule() {
 		Type<?> type = this.getInputSchema().getType(TypeReferences.CHUNK);
 		OpticFinder<?> opticFinder = type.findField("Level");
 		return this.fixTypeEverywhereTyped("Leaves fix", type, typed -> typed.updateTyped(opticFinder, typedx -> typedx.update(DSL.remainderFinder(), dynamic -> {
-					Optional<IntStream> optional = dynamic.get("Biomes").asIntStreamOpt();
+					Optional<IntStream> optional = dynamic.get("Biomes").asIntStreamOpt().result();
 					if (!optional.isPresent()) {
 						return dynamic;
 					} else {

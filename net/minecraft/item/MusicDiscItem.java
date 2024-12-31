@@ -11,6 +11,7 @@ import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
@@ -23,33 +24,33 @@ public class MusicDiscItem extends Item {
 	private final int comparatorOutput;
 	private final SoundEvent sound;
 
-	protected MusicDiscItem(int i, SoundEvent soundEvent, Item.Settings settings) {
+	protected MusicDiscItem(int comparatorOutput, SoundEvent sound, Item.Settings settings) {
 		super(settings);
-		this.comparatorOutput = i;
-		this.sound = soundEvent;
+		this.comparatorOutput = comparatorOutput;
+		this.sound = sound;
 		MUSIC_DISCS.put(this.sound, this);
 	}
 
 	@Override
-	public ActionResult useOnBlock(ItemUsageContext itemUsageContext) {
-		World world = itemUsageContext.getWorld();
-		BlockPos blockPos = itemUsageContext.getBlockPos();
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockPos blockPos = context.getBlockPos();
 		BlockState blockState = world.getBlockState(blockPos);
-		if (blockState.getBlock() == Blocks.field_10223 && !(Boolean)blockState.get(JukeboxBlock.HAS_RECORD)) {
-			ItemStack itemStack = itemUsageContext.getStack();
+		if (blockState.isOf(Blocks.JUKEBOX) && !(Boolean)blockState.get(JukeboxBlock.HAS_RECORD)) {
+			ItemStack itemStack = context.getStack();
 			if (!world.isClient) {
-				((JukeboxBlock)Blocks.field_10223).setRecord(world, blockPos, blockState, itemStack);
-				world.playLevelEvent(null, 1010, blockPos, Item.getRawId(this));
+				((JukeboxBlock)Blocks.JUKEBOX).setRecord(world, blockPos, blockState, itemStack);
+				world.syncWorldEvent(null, 1010, blockPos, Item.getRawId(this));
 				itemStack.decrement(1);
-				PlayerEntity playerEntity = itemUsageContext.getPlayer();
+				PlayerEntity playerEntity = context.getPlayer();
 				if (playerEntity != null) {
-					playerEntity.incrementStat(Stats.field_15375);
+					playerEntity.incrementStat(Stats.PLAY_RECORD);
 				}
 			}
 
-			return ActionResult.field_5812;
+			return ActionResult.success(world.isClient);
 		} else {
-			return ActionResult.field_5811;
+			return ActionResult.PASS;
 		}
 	}
 
@@ -58,17 +59,17 @@ public class MusicDiscItem extends Item {
 	}
 
 	@Override
-	public void appendTooltip(ItemStack itemStack, @Nullable World world, List<Text> list, TooltipContext tooltipContext) {
-		list.add(this.getDescription().formatted(Formatting.field_1080));
+	public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+		tooltip.add(this.getDescription().formatted(Formatting.GRAY));
 	}
 
-	public Text getDescription() {
+	public MutableText getDescription() {
 		return new TranslatableText(this.getTranslationKey() + ".desc");
 	}
 
 	@Nullable
-	public static MusicDiscItem bySound(SoundEvent soundEvent) {
-		return (MusicDiscItem)MUSIC_DISCS.get(soundEvent);
+	public static MusicDiscItem bySound(SoundEvent sound) {
+		return (MusicDiscItem)MUSIC_DISCS.get(sound);
 	}
 
 	public SoundEvent getSound() {

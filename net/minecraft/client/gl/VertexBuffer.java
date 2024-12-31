@@ -6,15 +6,15 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.util.math.Matrix4f;
 
 public class VertexBuffer implements AutoCloseable {
 	private int id;
 	private final VertexFormat format;
 	private int vertexCount;
 
-	public VertexBuffer(VertexFormat vertexFormat) {
-		this.format = vertexFormat;
+	public VertexBuffer(VertexFormat format) {
+		this.format = format;
 		RenderSystem.glGenBuffers(integer -> this.id = integer);
 	}
 
@@ -22,25 +22,25 @@ public class VertexBuffer implements AutoCloseable {
 		RenderSystem.glBindBuffer(34962, () -> this.id);
 	}
 
-	public void upload(BufferBuilder bufferBuilder) {
+	public void upload(BufferBuilder buffer) {
 		if (!RenderSystem.isOnRenderThread()) {
-			RenderSystem.recordRenderCall(() -> this.uploadInternal(bufferBuilder));
+			RenderSystem.recordRenderCall(() -> this.uploadInternal(buffer));
 		} else {
-			this.uploadInternal(bufferBuilder);
+			this.uploadInternal(buffer);
 		}
 	}
 
-	public CompletableFuture<Void> submitUpload(BufferBuilder bufferBuilder) {
+	public CompletableFuture<Void> submitUpload(BufferBuilder buffer) {
 		if (!RenderSystem.isOnRenderThread()) {
-			return CompletableFuture.runAsync(() -> this.uploadInternal(bufferBuilder), runnable -> RenderSystem.recordRenderCall(runnable::run));
+			return CompletableFuture.runAsync(() -> this.uploadInternal(buffer), runnable -> RenderSystem.recordRenderCall(runnable::run));
 		} else {
-			this.uploadInternal(bufferBuilder);
+			this.uploadInternal(buffer);
 			return CompletableFuture.completedFuture(null);
 		}
 	}
 
-	private void uploadInternal(BufferBuilder bufferBuilder) {
-		Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = bufferBuilder.popData();
+	private void uploadInternal(BufferBuilder buffer) {
+		Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> pair = buffer.popData();
 		if (this.id != -1) {
 			ByteBuffer byteBuffer = (ByteBuffer)pair.getSecond();
 			this.vertexCount = byteBuffer.remaining() / this.format.getVertexSize();
@@ -50,11 +50,11 @@ public class VertexBuffer implements AutoCloseable {
 		}
 	}
 
-	public void draw(Matrix4f matrix4f, int i) {
+	public void draw(Matrix4f matrix, int mode) {
 		RenderSystem.pushMatrix();
 		RenderSystem.loadIdentity();
-		RenderSystem.multMatrix(matrix4f);
-		RenderSystem.drawArrays(i, 0, this.vertexCount);
+		RenderSystem.multMatrix(matrix);
+		RenderSystem.drawArrays(mode, 0, this.vertexCount);
 		RenderSystem.popMatrix();
 	}
 

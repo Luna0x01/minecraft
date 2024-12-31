@@ -2,10 +2,11 @@ package net.minecraft.particle;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.serialization.Codec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.command.arguments.BlockArgumentParser;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.command.argument.BlockArgumentParser;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.registry.Registry;
 
 public class BlockStateParticleEffect implements ParticleEffect {
@@ -22,19 +23,24 @@ public class BlockStateParticleEffect implements ParticleEffect {
 	private final ParticleType<BlockStateParticleEffect> type;
 	private final BlockState blockState;
 
-	public BlockStateParticleEffect(ParticleType<BlockStateParticleEffect> particleType, BlockState blockState) {
-		this.type = particleType;
+	public static Codec<BlockStateParticleEffect> method_29128(ParticleType<BlockStateParticleEffect> particleType) {
+		return BlockState.CODEC
+			.xmap(blockState -> new BlockStateParticleEffect(particleType, blockState), blockStateParticleEffect -> blockStateParticleEffect.blockState);
+	}
+
+	public BlockStateParticleEffect(ParticleType<BlockStateParticleEffect> type, BlockState blockState) {
+		this.type = type;
 		this.blockState = blockState;
 	}
 
 	@Override
-	public void write(PacketByteBuf packetByteBuf) {
-		packetByteBuf.writeVarInt(Block.STATE_IDS.getId(this.blockState));
+	public void write(PacketByteBuf buf) {
+		buf.writeVarInt(Block.STATE_IDS.getRawId(this.blockState));
 	}
 
 	@Override
 	public String asString() {
-		return Registry.field_11141.getId(this.getType()) + " " + BlockArgumentParser.stringifyBlockState(this.blockState);
+		return Registry.PARTICLE_TYPE.getId(this.getType()) + " " + BlockArgumentParser.stringifyBlockState(this.blockState);
 	}
 
 	@Override

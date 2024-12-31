@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.util.Util;
@@ -24,6 +25,7 @@ public class ProfilerSystem implements ReadableProfiler {
 	private final LongList timeList = new LongArrayList();
 	private final Map<String, ProfilerSystem.LocatedInfo> locationInfos = Maps.newHashMap();
 	private final IntSupplier endTickGetter;
+	private final LongSupplier timeGetter;
 	private final long startTime;
 	private final int startTick;
 	private String location = "";
@@ -32,11 +34,12 @@ public class ProfilerSystem implements ReadableProfiler {
 	private ProfilerSystem.LocatedInfo currentInfo;
 	private final boolean checkTimeout;
 
-	public ProfilerSystem(long l, IntSupplier intSupplier, boolean bl) {
-		this.startTime = l;
-		this.startTick = intSupplier.getAsInt();
-		this.endTickGetter = intSupplier;
-		this.checkTimeout = bl;
+	public ProfilerSystem(LongSupplier timeGetter, IntSupplier tickGetter, boolean checkTimeout) {
+		this.startTime = timeGetter.getAsLong();
+		this.timeGetter = timeGetter;
+		this.startTick = tickGetter.getAsInt();
+		this.endTickGetter = tickGetter;
+		this.checkTimeout = checkTimeout;
 	}
 
 	@Override
@@ -68,15 +71,15 @@ public class ProfilerSystem implements ReadableProfiler {
 	}
 
 	@Override
-	public void push(String string) {
+	public void push(String location) {
 		if (!this.tickStarted) {
-			LOGGER.error("Cannot push '{}' to profiler if profiler tick hasn't started - missing startTick()?", string);
+			LOGGER.error("Cannot push '{}' to profiler if profiler tick hasn't started - missing startTick()?", location);
 		} else {
 			if (!this.location.isEmpty()) {
 				this.location = this.location + '\u001e';
 			}
 
-			this.location = this.location + string;
+			this.location = this.location + location;
 			this.path.add(this.location);
 			this.timeList.add(Util.getMeasuringTimeNano());
 			this.currentInfo = null;
@@ -84,8 +87,8 @@ public class ProfilerSystem implements ReadableProfiler {
 	}
 
 	@Override
-	public void push(Supplier<String> supplier) {
-		this.push((String)supplier.get());
+	public void push(Supplier<String> locationGetter) {
+		this.push((String)locationGetter.get());
 	}
 
 	@Override
@@ -115,15 +118,15 @@ public class ProfilerSystem implements ReadableProfiler {
 	}
 
 	@Override
-	public void swap(String string) {
+	public void swap(String location) {
 		this.pop();
-		this.push(string);
+		this.push(location);
 	}
 
 	@Override
-	public void swap(Supplier<String> supplier) {
+	public void swap(Supplier<String> locationGetter) {
 		this.pop();
-		this.push(supplier);
+		this.push(locationGetter);
 	}
 
 	private ProfilerSystem.LocatedInfo getCurrentInfo() {
@@ -135,18 +138,18 @@ public class ProfilerSystem implements ReadableProfiler {
 	}
 
 	@Override
-	public void visit(String string) {
-		this.getCurrentInfo().counts.addTo(string, 1L);
+	public void visit(String marker) {
+		this.getCurrentInfo().counts.addTo(marker, 1L);
 	}
 
 	@Override
-	public void visit(Supplier<String> supplier) {
-		this.getCurrentInfo().counts.addTo(supplier.get(), 1L);
+	public void visit(Supplier<String> markerGetter) {
+		this.getCurrentInfo().counts.addTo(markerGetter.get(), 1L);
 	}
 
 	@Override
 	public ProfileResult getResult() {
-		return new ProfileResultImpl(this.locationInfos, this.startTime, this.startTick, Util.getMeasuringTimeNano(), this.endTickGetter.getAsInt());
+		return new ProfileResultImpl(this.locationInfos, this.startTime, this.startTick, this.timeGetter.getAsLong(), this.endTickGetter.getAsInt());
 	}
 
 	static class LocatedInfo implements ProfileLocationInfo {

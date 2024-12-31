@@ -13,7 +13,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
 
 public class BoatEntityRenderer extends EntityRenderer<BoatEntity> {
-	private static final Identifier[] SKIN = new Identifier[]{
+	private static final Identifier[] TEXTURES = new Identifier[]{
 		new Identifier("textures/entity/boat/oak.png"),
 		new Identifier("textures/entity/boat/spruce.png"),
 		new Identifier("textures/entity/boat/birch.png"),
@@ -25,7 +25,7 @@ public class BoatEntityRenderer extends EntityRenderer<BoatEntity> {
 
 	public BoatEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
-		this.shadowSize = 0.8F;
+		this.shadowRadius = 0.8F;
 	}
 
 	public void render(BoatEntity boatEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
@@ -52,13 +52,16 @@ public class BoatEntityRenderer extends EntityRenderer<BoatEntity> {
 		this.model.setAngles(boatEntity, g, 0.0F, -0.1F, 0.0F, 0.0F);
 		VertexConsumer vertexConsumer = vertexConsumerProvider.getBuffer(this.model.getLayer(this.getTexture(boatEntity)));
 		this.model.render(matrixStack, vertexConsumer, i, OverlayTexture.DEFAULT_UV, 1.0F, 1.0F, 1.0F, 1.0F);
-		VertexConsumer vertexConsumer2 = vertexConsumerProvider.getBuffer(RenderLayer.getWaterMask());
-		this.model.getBottom().render(matrixStack, vertexConsumer2, i, OverlayTexture.DEFAULT_UV);
+		if (!boatEntity.isSubmergedInWater()) {
+			VertexConsumer vertexConsumer2 = vertexConsumerProvider.getBuffer(RenderLayer.getWaterMask());
+			this.model.getBottom().render(matrixStack, vertexConsumer2, i, OverlayTexture.DEFAULT_UV);
+		}
+
 		matrixStack.pop();
 		super.render(boatEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
 	public Identifier getTexture(BoatEntity boatEntity) {
-		return SKIN[boatEntity.getBoatType().ordinal()];
+		return TEXTURES[boatEntity.getBoatType().ordinal()];
 	}
 }

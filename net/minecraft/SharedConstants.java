@@ -2,47 +2,30 @@ package net.minecraft;
 
 import com.mojang.bridge.game.GameVersion;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.datafixers.types.constant.NamespacedStringType;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetector.Level;
+import java.time.Duration;
 import net.minecraft.command.TranslatableBuiltInExceptions;
-import net.minecraft.datafixer.schema.SchemaIdentifierNormalize;
 
 public class SharedConstants {
 	public static final Level RESOURCE_LEAK_DETECTOR_DISABLED = Level.DISABLED;
+	public static final long field_22251 = Duration.ofMillis(300L).toNanos();
+	public static boolean useChoiceTypeRegistrations = true;
 	public static boolean isDevelopment;
 	public static final char[] INVALID_CHARS_LEVEL_NAME = new char[]{'/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '"', ':'};
 	private static GameVersion gameVersion;
 
-	public static boolean isValidChar(char c) {
-		return c != 167 && c >= ' ' && c != 127;
+	public static boolean isValidChar(char chr) {
+		return chr != 167 && chr >= ' ' && chr != 127;
 	}
 
-	public static String stripInvalidChars(String string) {
+	public static String stripInvalidChars(String s) {
 		StringBuilder stringBuilder = new StringBuilder();
 
-		for (char c : string.toCharArray()) {
+		for (char c : s.toCharArray()) {
 			if (isValidChar(c)) {
 				stringBuilder.append(c);
 			}
-		}
-
-		return stringBuilder.toString();
-	}
-
-	public static String stripSupplementaryChars(String string) {
-		StringBuilder stringBuilder = new StringBuilder();
-		int i = 0;
-
-		while (i < string.length()) {
-			int j = string.codePointAt(i);
-			if (!Character.isSupplementaryCodePoint(j)) {
-				stringBuilder.appendCodePoint(j);
-			} else {
-				stringBuilder.append('�');
-			}
-
-			i = string.offsetByCodePoints(i, 1);
 		}
 
 		return stringBuilder.toString();
@@ -56,10 +39,13 @@ public class SharedConstants {
 		return gameVersion;
 	}
 
+	public static int method_31372() {
+		return 754;
+	}
+
 	static {
 		ResourceLeakDetector.setLevel(RESOURCE_LEAK_DETECTOR_DISABLED);
 		CommandSyntaxException.ENABLE_COMMAND_STACK_TRACES = false;
 		CommandSyntaxException.BUILT_IN_EXCEPTIONS = new TranslatableBuiltInExceptions();
-		NamespacedStringType.ENSURE_NAMESPACE = SchemaIdentifierNormalize::normalize;
 	}
 }

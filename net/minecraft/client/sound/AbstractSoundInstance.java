@@ -1,34 +1,31 @@
 package net.minecraft.client.sound;
 
-import javax.annotation.Nullable;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public abstract class AbstractSoundInstance implements SoundInstance {
 	protected Sound sound;
-	@Nullable
-	private WeightedSoundSet soundSet;
 	protected final SoundCategory category;
 	protected final Identifier id;
 	protected float volume = 1.0F;
 	protected float pitch = 1.0F;
-	protected float x;
-	protected float y;
-	protected float z;
+	protected double x;
+	protected double y;
+	protected double z;
 	protected boolean repeat;
 	protected int repeatDelay;
-	protected SoundInstance.AttenuationType attenuationType = SoundInstance.AttenuationType.field_5476;
+	protected SoundInstance.AttenuationType attenuationType = SoundInstance.AttenuationType.LINEAR;
 	protected boolean field_18935;
 	protected boolean looping;
 
-	protected AbstractSoundInstance(SoundEvent soundEvent, SoundCategory soundCategory) {
-		this(soundEvent.getId(), soundCategory);
+	protected AbstractSoundInstance(SoundEvent sound, SoundCategory category) {
+		this(sound.getId(), category);
 	}
 
-	protected AbstractSoundInstance(Identifier identifier, SoundCategory soundCategory) {
-		this.id = identifier;
-		this.category = soundCategory;
+	protected AbstractSoundInstance(Identifier soundId, SoundCategory category) {
+		this.id = soundId;
+		this.category = category;
 	}
 
 	@Override
@@ -38,14 +35,14 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 
 	@Override
 	public WeightedSoundSet getSoundSet(SoundManager soundManager) {
-		this.soundSet = soundManager.get(this.id);
-		if (this.soundSet == null) {
+		WeightedSoundSet weightedSoundSet = soundManager.get(this.id);
+		if (weightedSoundSet == null) {
 			this.sound = SoundManager.MISSING_SOUND;
 		} else {
-			this.sound = this.soundSet.getSound();
+			this.sound = weightedSoundSet.getSound();
 		}
 
-		return this.soundSet;
+		return weightedSoundSet;
 	}
 
 	@Override
@@ -79,17 +76,17 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 	}
 
 	@Override
-	public float getX() {
+	public double getX() {
 		return this.x;
 	}
 
 	@Override
-	public float getY() {
+	public double getY() {
 		return this.y;
 	}
 
 	@Override
-	public float getZ() {
+	public double getZ() {
 		return this.z;
 	}
 
@@ -101,5 +98,9 @@ public abstract class AbstractSoundInstance implements SoundInstance {
 	@Override
 	public boolean isLooping() {
 		return this.looping;
+	}
+
+	public String toString() {
+		return "SoundInstance[" + this.id + "]";
 	}
 }

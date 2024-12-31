@@ -1,19 +1,23 @@
 package net.minecraft.particle;
 
-public class ParticleType<T extends ParticleEffect> {
-	private final boolean shouldAlwaysSpawn;
+import com.mojang.serialization.Codec;
+
+public abstract class ParticleType<T extends ParticleEffect> {
+	private final boolean alwaysShow;
 	private final ParticleEffect.Factory<T> parametersFactory;
 
-	protected ParticleType(boolean bl, ParticleEffect.Factory<T> factory) {
-		this.shouldAlwaysSpawn = bl;
-		this.parametersFactory = factory;
+	protected ParticleType(boolean alwaysShow, ParticleEffect.Factory<T> parametersFactory) {
+		this.alwaysShow = alwaysShow;
+		this.parametersFactory = parametersFactory;
 	}
 
 	public boolean shouldAlwaysSpawn() {
-		return this.shouldAlwaysSpawn;
+		return this.alwaysShow;
 	}
 
 	public ParticleEffect.Factory<T> getParametersFactory() {
 		return this.parametersFactory;
 	}
+
+	public abstract Codec<T> getCodec();
 }

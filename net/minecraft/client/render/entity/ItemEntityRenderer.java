@@ -19,22 +19,22 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 	private final ItemRenderer itemRenderer;
 	private final Random random = new Random();
 
-	public ItemEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, ItemRenderer itemRenderer) {
-		super(entityRenderDispatcher);
+	public ItemEntityRenderer(EntityRenderDispatcher dispatcher, ItemRenderer itemRenderer) {
+		super(dispatcher);
 		this.itemRenderer = itemRenderer;
-		this.shadowSize = 0.15F;
-		this.shadowDarkness = 0.75F;
+		this.shadowRadius = 0.15F;
+		this.shadowOpacity = 0.75F;
 	}
 
-	private int getRenderedAmount(ItemStack itemStack) {
+	private int getRenderedAmount(ItemStack stack) {
 		int i = 1;
-		if (itemStack.getCount() > 48) {
+		if (stack.getCount() > 48) {
 			i = 5;
-		} else if (itemStack.getCount() > 32) {
+		} else if (stack.getCount() > 32) {
 			i = 4;
-		} else if (itemStack.getCount() > 16) {
+		} else if (stack.getCount() > 16) {
 			i = 3;
-		} else if (itemStack.getCount() > 1) {
+		} else if (stack.getCount() > 1) {
 			i = 2;
 		}
 
@@ -51,9 +51,9 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 		int k = this.getRenderedAmount(itemStack);
 		float h = 0.25F;
 		float l = MathHelper.sin(((float)itemEntity.getAge() + g) / 10.0F + itemEntity.hoverHeight) * 0.1F + 0.1F;
-		float m = bakedModel.getTransformation().getTransformation(ModelTransformation.Mode.field_4318).scale.getY();
+		float m = bakedModel.getTransformation().getTransformation(ModelTransformation.Mode.GROUND).scale.getY();
 		matrixStack.translate(0.0, (double)(l + 0.25F * m), 0.0);
-		float n = ((float)itemEntity.getAge() + g) / 20.0F + itemEntity.hoverHeight;
+		float n = itemEntity.method_27314(g);
 		matrixStack.multiply(Vector3f.POSITIVE_Y.getRadialQuaternion(n));
 		float o = bakedModel.getTransformation().ground.scale.getX();
 		float p = bakedModel.getTransformation().ground.scale.getY();
@@ -81,7 +81,7 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 			}
 
 			this.itemRenderer
-				.renderItem(itemStack, ModelTransformation.Mode.field_4318, false, matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV, bakedModel);
+				.renderItem(itemStack, ModelTransformation.Mode.GROUND, false, matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV, bakedModel);
 			matrixStack.pop();
 			if (!bl) {
 				matrixStack.translate((double)(0.0F * o), (double)(0.0F * p), (double)(0.09375F * q));
@@ -93,6 +93,6 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 	}
 
 	public Identifier getTexture(ItemEntity itemEntity) {
-		return SpriteAtlasTexture.BLOCK_ATLAS_TEX;
+		return SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE;
 	}
 }

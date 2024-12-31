@@ -32,11 +32,12 @@ public class LootTablesProvider implements DataProvider {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private final DataGenerator root;
 	private final List<Pair<Supplier<Consumer<BiConsumer<Identifier, LootTable.Builder>>>, LootContextType>> lootTypeGenerators = ImmutableList.of(
-		Pair.of(FishingLootTableGenerator::new, LootContextTypes.field_1176),
-		Pair.of(ChestLootTableGenerator::new, LootContextTypes.field_1179),
-		Pair.of(EntityLootTableGenerator::new, LootContextTypes.field_1173),
-		Pair.of(BlockLootTableGenerator::new, LootContextTypes.field_1172),
-		Pair.of(GiftLootTableGenerator::new, LootContextTypes.field_16235)
+		Pair.of(FishingLootTableGenerator::new, LootContextTypes.FISHING),
+		Pair.of(ChestLootTableGenerator::new, LootContextTypes.CHEST),
+		Pair.of(EntityLootTableGenerator::new, LootContextTypes.ENTITY),
+		Pair.of(BlockLootTableGenerator::new, LootContextTypes.BLOCK),
+		Pair.of(BarterLootTableGenerator::new, LootContextTypes.BARTER),
+		Pair.of(GiftLootTableGenerator::new, LootContextTypes.GIFT)
 	);
 
 	public LootTablesProvider(DataGenerator dataGenerator) {
@@ -44,21 +45,21 @@ public class LootTablesProvider implements DataProvider {
 	}
 
 	@Override
-	public void run(DataCache dataCache) {
+	public void run(DataCache cache) {
 		Path path = this.root.getOutput();
 		Map<Identifier, LootTable> map = Maps.newHashMap();
 		this.lootTypeGenerators.forEach(pair -> ((Consumer)((Supplier)pair.getFirst()).get()).accept((BiConsumer)(identifierx, builder) -> {
-				if (map.put(identifierx, builder.withType((LootContextType)pair.getSecond()).create()) != null) {
+				if (map.put(identifierx, builder.type((LootContextType)pair.getSecond()).build()) != null) {
 					throw new IllegalStateException("Duplicate loot table " + identifierx);
 				}
 			}));
-		LootTableReporter lootTableReporter = new LootTableReporter(LootContextTypes.field_1177, identifierx -> null, map::get);
+		LootTableReporter lootTableReporter = new LootTableReporter(LootContextTypes.GENERIC, identifierx -> null, map::get);
 
 		for (Identifier identifier : Sets.difference(LootTables.getAll(), map.keySet())) {
 			lootTableReporter.report("Missing built-in table: " + identifier);
 		}
 
-		map.forEach((identifierx, lootTable) -> LootManager.check(lootTableReporter, identifierx, lootTable));
+		map.forEach((identifierx, lootTable) -> LootManager.validate(lootTableReporter, identifierx, lootTable));
 		Multimap<String, String> multimap = lootTableReporter.getMessages();
 		if (!multimap.isEmpty()) {
 			multimap.forEach((string, string2) -> LOGGER.warn("Found validation problem in " + string + ": " + string2));
@@ -68,7 +69,7 @@ public class LootTablesProvider implements DataProvider {
 				Path path2 = getOutput(path, identifierx);
 
 				try {
-					DataProvider.writeToPath(GSON, dataCache, LootManager.toJson(lootTable), path2);
+					DataProvider.writeToPath(GSON, cache, LootManager.toJson(lootTable), path2);
 				} catch (IOException var6) {
 					LOGGER.error("Couldn't save loot table {}", path2, var6);
 				}
@@ -76,8 +77,8 @@ public class LootTablesProvider implements DataProvider {
 		}
 	}
 
-	private static Path getOutput(Path path, Identifier identifier) {
-		return path.resolve("data/" + identifier.getNamespace() + "/loot_tables/" + identifier.getPath() + ".json");
+	private static Path getOutput(Path rootOutput, Identifier lootTableId) {
+		return rootOutput.resolve("data/" + lootTableId.getNamespace() + "/loot_tables/" + lootTableId.getPath() + ".json");
 	}
 
 	@Override

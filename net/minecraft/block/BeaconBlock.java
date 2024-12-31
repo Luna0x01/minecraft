@@ -2,7 +2,6 @@ package net.minecraft.block;
 
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.block.ColoredBlock;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -15,50 +14,45 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public class BeaconBlock extends BlockWithEntity implements ColoredBlock {
-	public BeaconBlock(Block.Settings settings) {
+public class BeaconBlock extends BlockWithEntity implements Stainable {
+	public BeaconBlock(AbstractBlock.Settings settings) {
 		super(settings);
 	}
 
 	@Override
 	public DyeColor getColor() {
-		return DyeColor.field_7952;
+		return DyeColor.WHITE;
 	}
 
 	@Override
-	public BlockEntity createBlockEntity(BlockView blockView) {
+	public BlockEntity createBlockEntity(BlockView world) {
 		return new BeaconBlockEntity();
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
 		if (world.isClient) {
-			return ActionResult.field_5812;
+			return ActionResult.SUCCESS;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BeaconBlockEntity) {
-				playerEntity.openContainer((BeaconBlockEntity)blockEntity);
-				playerEntity.incrementStat(Stats.field_15416);
+				player.openHandledScreen((BeaconBlockEntity)blockEntity);
+				player.incrementStat(Stats.INTERACT_WITH_BEACON);
 			}
 
-			return ActionResult.field_5812;
+			return ActionResult.CONSUME;
 		}
 	}
 
 	@Override
-	public boolean isSimpleFullBlock(BlockState blockState, BlockView blockView, BlockPos blockPos) {
-		return false;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
-	public BlockRenderType getRenderType(BlockState blockState) {
-		return BlockRenderType.field_11458;
-	}
-
-	@Override
-	public void onPlaced(World world, BlockPos blockPos, BlockState blockState, LivingEntity livingEntity, ItemStack itemStack) {
+	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
 		if (itemStack.hasCustomName()) {
-			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof BeaconBlockEntity) {
 				((BeaconBlockEntity)blockEntity).setCustomName(itemStack.getName());
 			}

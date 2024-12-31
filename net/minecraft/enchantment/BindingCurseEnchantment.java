@@ -3,22 +3,22 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class BindingCurseEnchantment extends Enchantment {
-	public BindingCurseEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
-		super(weight, EnchantmentTarget.field_9078, equipmentSlots);
+	public BindingCurseEnchantment(Enchantment.Rarity weight, EquipmentSlot... slotTypes) {
+		super(weight, EnchantmentTarget.WEARABLE, slotTypes);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
+	public int getMinPower(int level) {
 		return 25;
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
+	public int getMaxPower(int level) {
 		return 50;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 1;
 	}
 

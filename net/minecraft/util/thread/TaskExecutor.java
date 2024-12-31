@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.SharedConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,14 +16,14 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 	private final Executor executor;
 	private final String name;
 
-	public static TaskExecutor<Runnable> create(Executor executor, String string) {
-		return new TaskExecutor<>(new TaskQueue.Simple<>(new ConcurrentLinkedQueue()), executor, string);
+	public static TaskExecutor<Runnable> create(Executor executor, String name) {
+		return new TaskExecutor<>(new TaskQueue.Simple<>(new ConcurrentLinkedQueue()), executor, name);
 	}
 
-	public TaskExecutor(TaskQueue<? super T, ? extends Runnable> taskQueue, Executor executor, String string) {
+	public TaskExecutor(TaskQueue<? super T, ? extends Runnable> queue, Executor executor, String name) {
 		this.executor = executor;
-		this.queue = taskQueue;
-		this.name = string;
+		this.queue = queue;
+		this.name = name;
 	}
 
 	private boolean unpause() {
@@ -68,7 +69,22 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 			if (runnable == null) {
 				return false;
 			} else {
+				String string;
+				Thread thread;
+				if (SharedConstants.isDevelopment) {
+					thread = Thread.currentThread();
+					string = thread.getName();
+					thread.setName(this.name);
+				} else {
+					thread = null;
+					string = null;
+				}
+
 				runnable.run();
+				if (thread != null) {
+					thread.setName(string);
+				}
+
 				return true;
 			}
 		}
@@ -84,8 +100,8 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 	}
 
 	@Override
-	public void send(T object) {
-		this.queue.add(object);
+	public void send(T message) {
+		this.queue.add(message);
 		this.execute();
 	}
 
@@ -103,10 +119,10 @@ public class TaskExecutor<T> implements MessageListener<T>, AutoCloseable, Runna
 		}
 	}
 
-	private int runWhile(Int2BooleanFunction int2BooleanFunction) {
+	private int runWhile(Int2BooleanFunction condition) {
 		int i = 0;
 
-		while (int2BooleanFunction.get(i) && this.runNext()) {
+		while (condition.get(i) && this.runNext()) {
 			i++;
 		}
 

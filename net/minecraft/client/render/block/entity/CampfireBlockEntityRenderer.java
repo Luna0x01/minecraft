@@ -8,7 +8,7 @@ import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.Direction;
 
 public class CampfireBlockEntityRenderer extends BlockEntityRenderer<CampfireBlockEntity> {
@@ -31,7 +31,7 @@ public class CampfireBlockEntityRenderer extends BlockEntityRenderer<CampfireBlo
 				matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(90.0F));
 				matrixStack.translate(-0.3125, -0.3125, 0.0);
 				matrixStack.scale(0.375F, 0.375F, 0.375F);
-				MinecraftClient.getInstance().getItemRenderer().renderItem(itemStack, ModelTransformation.Mode.field_4319, i, j, matrixStack, vertexConsumerProvider);
+				MinecraftClient.getInstance().getItemRenderer().renderItem(itemStack, ModelTransformation.Mode.FIXED, i, j, matrixStack, vertexConsumerProvider);
 				matrixStack.pop();
 			}
 		}

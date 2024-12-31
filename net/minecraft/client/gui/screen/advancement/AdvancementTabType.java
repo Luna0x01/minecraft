@@ -2,13 +2,14 @@ package net.minecraft.client.gui.screen.advancement;
 
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 
 enum AdvancementTabType {
-	field_2678(0, 0, 28, 32, 8),
-	field_2673(84, 0, 28, 32, 8),
-	field_2675(0, 64, 32, 28, 5),
-	field_2677(96, 64, 32, 28, 5);
+	ABOVE(0, 0, 28, 32, 8),
+	BELOW(84, 0, 28, 32, 8),
+	LEFT(0, 64, 32, 28, 5),
+	RIGHT(96, 64, 32, 28, 5);
 
 	private final int u;
 	private final int v;
@@ -16,19 +17,19 @@ enum AdvancementTabType {
 	private final int height;
 	private final int tabCount;
 
-	private AdvancementTabType(int j, int k, int l, int m, int n) {
-		this.u = j;
-		this.v = k;
-		this.width = l;
-		this.height = m;
-		this.tabCount = n;
+	private AdvancementTabType(int u, int v, int width, int height, int tabCount) {
+		this.u = u;
+		this.v = v;
+		this.width = width;
+		this.height = height;
+		this.tabCount = tabCount;
 	}
 
 	public int getTabCount() {
 		return this.tabCount;
 	}
 
-	public void drawBackground(DrawableHelper drawableHelper, int i, int j, boolean bl, int k) {
+	public void drawBackground(MatrixStack matrixStack, DrawableHelper drawableHelper, int i, int j, boolean bl, int k) {
 		int l = this.u;
 		if (k > 0) {
 			l += this.width;
@@ -39,66 +40,66 @@ enum AdvancementTabType {
 		}
 
 		int m = bl ? this.v + this.height : this.v;
-		drawableHelper.blit(i + this.getTabX(k), j + this.getTabY(k), l, m, this.width, this.height);
+		drawableHelper.drawTexture(matrixStack, i + this.getTabX(k), j + this.getTabY(k), l, m, this.width, this.height);
 	}
 
-	public void drawIcon(int i, int j, int k, ItemRenderer itemRenderer, ItemStack itemStack) {
-		int l = i + this.getTabX(k);
-		int m = j + this.getTabY(k);
+	public void drawIcon(int x, int y, int index, ItemRenderer itemRenderer, ItemStack icon) {
+		int i = x + this.getTabX(index);
+		int j = y + this.getTabY(index);
 		switch (this) {
-			case field_2678:
-				l += 6;
-				m += 9;
+			case ABOVE:
+				i += 6;
+				j += 9;
 				break;
-			case field_2673:
-				l += 6;
-				m += 6;
+			case BELOW:
+				i += 6;
+				j += 6;
 				break;
-			case field_2675:
-				l += 10;
-				m += 5;
+			case LEFT:
+				i += 10;
+				j += 5;
 				break;
-			case field_2677:
-				l += 6;
-				m += 5;
+			case RIGHT:
+				i += 6;
+				j += 5;
 		}
 
-		itemRenderer.renderGuiItem(null, itemStack, l, m);
+		itemRenderer.renderInGui(icon, i, j);
 	}
 
-	public int getTabX(int i) {
+	public int getTabX(int index) {
 		switch (this) {
-			case field_2678:
-				return (this.width + 4) * i;
-			case field_2673:
-				return (this.width + 4) * i;
-			case field_2675:
+			case ABOVE:
+				return (this.width + 4) * index;
+			case BELOW:
+				return (this.width + 4) * index;
+			case LEFT:
 				return -this.width + 4;
-			case field_2677:
+			case RIGHT:
 				return 248;
 			default:
 				throw new UnsupportedOperationException("Don't know what this tab type is!" + this);
 		}
 	}
 
-	public int getTabY(int i) {
+	public int getTabY(int index) {
 		switch (this) {
-			case field_2678:
+			case ABOVE:
 				return -this.height + 4;
-			case field_2673:
+			case BELOW:
 				return 136;
-			case field_2675:
-				return this.height * i;
-			case field_2677:
-				return this.height * i;
+			case LEFT:
+				return this.height * index;
+			case RIGHT:
+				return this.height * index;
 			default:
 				throw new UnsupportedOperationException("Don't know what this tab type is!" + this);
 		}
 	}
 
-	public boolean isClickOnTab(int i, int j, int k, double d, double e) {
-		int l = i + this.getTabX(k);
-		int m = j + this.getTabY(k);
-		return d > (double)l && d < (double)(l + this.width) && e > (double)m && e < (double)(m + this.height);
+	public boolean isClickOnTab(int screenX, int screenY, int index, double mouseX, double mouseY) {
+		int i = screenX + this.getTabX(index);
+		int j = screenY + this.getTabY(index);
+		return mouseX > (double)i && mouseX < (double)(i + this.width) && mouseY > (double)j && mouseY < (double)(j + this.height);
 	}
 }

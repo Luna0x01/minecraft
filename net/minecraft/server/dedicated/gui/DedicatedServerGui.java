@@ -26,7 +26,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import net.minecraft.server.dedicated.MinecraftDedicatedServer;
-import net.minecraft.util.UncaughtExceptionLogger;
+import net.minecraft.util.logging.UncaughtExceptionLogger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,14 +38,14 @@ public class DedicatedServerGui extends JComponent {
 	private final Collection<Runnable> stopTasks = Lists.newArrayList();
 	private final AtomicBoolean stopped = new AtomicBoolean();
 
-	public static DedicatedServerGui create(MinecraftDedicatedServer minecraftDedicatedServer) {
+	public static DedicatedServerGui create(MinecraftDedicatedServer server) {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception var3) {
 		}
 
 		final JFrame jFrame = new JFrame("Minecraft server");
-		final DedicatedServerGui dedicatedServerGui = new DedicatedServerGui(minecraftDedicatedServer);
+		final DedicatedServerGui dedicatedServerGui = new DedicatedServerGui(server);
 		jFrame.setDefaultCloseOperation(2);
 		jFrame.add(dedicatedServerGui);
 		jFrame.pack();
@@ -55,7 +55,7 @@ public class DedicatedServerGui extends JComponent {
 			public void windowClosing(WindowEvent windowEvent) {
 				if (!dedicatedServerGui.stopped.getAndSet(true)) {
 					jFrame.setTitle("Minecraft server - shutting down!");
-					minecraftDedicatedServer.stop(true);
+					server.stop(true);
 					dedicatedServerGui.runStopTasks();
 				}
 			}
@@ -65,8 +65,8 @@ public class DedicatedServerGui extends JComponent {
 		return dedicatedServerGui;
 	}
 
-	private DedicatedServerGui(MinecraftDedicatedServer minecraftDedicatedServer) {
-		this.server = minecraftDedicatedServer;
+	private DedicatedServerGui(MinecraftDedicatedServer server) {
+		this.server = server;
 		this.setPreferredSize(new Dimension(854, 480));
 		this.setLayout(new BorderLayout());
 
@@ -78,8 +78,8 @@ public class DedicatedServerGui extends JComponent {
 		}
 	}
 
-	public void addStopTask(Runnable runnable) {
-		this.stopTasks.add(runnable);
+	public void addStopTask(Runnable task) {
+		this.stopTasks.add(task);
 	}
 
 	private JComponent createStatsPanel() {
@@ -146,14 +146,14 @@ public class DedicatedServerGui extends JComponent {
 		this.stopTasks.forEach(Runnable::run);
 	}
 
-	public void appendToConsole(JTextArea jTextArea, JScrollPane jScrollPane, String string) {
+	public void appendToConsole(JTextArea textArea, JScrollPane scrollPane, String string) {
 		if (!SwingUtilities.isEventDispatchThread()) {
-			SwingUtilities.invokeLater(() -> this.appendToConsole(jTextArea, jScrollPane, string));
+			SwingUtilities.invokeLater(() -> this.appendToConsole(textArea, scrollPane, string));
 		} else {
-			Document document = jTextArea.getDocument();
-			JScrollBar jScrollBar = jScrollPane.getVerticalScrollBar();
+			Document document = textArea.getDocument();
+			JScrollBar jScrollBar = scrollPane.getVerticalScrollBar();
 			boolean bl = false;
-			if (jScrollPane.getViewport().getView() == jTextArea) {
+			if (scrollPane.getViewport().getView() == textArea) {
 				bl = (double)jScrollBar.getValue() + jScrollBar.getSize().getHeight() + (double)(FONT_MONOSPACE.getSize() * 4) > (double)jScrollBar.getMaximum();
 			}
 

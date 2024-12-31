@@ -10,32 +10,32 @@ import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 
 public class SetNbtLootFunction extends ConditionalLootFunction {
 	private final CompoundTag tag;
 
-	private SetNbtLootFunction(LootCondition[] lootConditions, CompoundTag compoundTag) {
-		super(lootConditions);
-		this.tag = compoundTag;
+	private SetNbtLootFunction(LootCondition[] conditions, CompoundTag tag) {
+		super(conditions);
+		this.tag = tag;
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		itemStack.getOrCreateTag().copyFrom(this.tag);
-		return itemStack;
+	public LootFunctionType getType() {
+		return LootFunctionTypes.SET_NBT;
 	}
 
-	public static ConditionalLootFunction.Builder<?> builder(CompoundTag compoundTag) {
-		return builder(lootConditions -> new SetNbtLootFunction(lootConditions, compoundTag));
+	@Override
+	public ItemStack process(ItemStack stack, LootContext context) {
+		stack.getOrCreateTag().copyFrom(this.tag);
+		return stack;
 	}
 
-	public static class Builder extends ConditionalLootFunction.Factory<SetNbtLootFunction> {
-		public Builder() {
-			super(new Identifier("set_nbt"), SetNbtLootFunction.class);
-		}
+	public static ConditionalLootFunction.Builder<?> builder(CompoundTag tag) {
+		return builder(conditions -> new SetNbtLootFunction(conditions, tag));
+	}
 
+	public static class Serializer extends ConditionalLootFunction.Serializer<SetNbtLootFunction> {
 		public void toJson(JsonObject jsonObject, SetNbtLootFunction setNbtLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, setNbtLootFunction, jsonSerializationContext);
 			jsonObject.addProperty("tag", setNbtLootFunction.tag.toString());

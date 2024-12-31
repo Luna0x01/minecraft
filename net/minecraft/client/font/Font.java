@@ -1,5 +1,6 @@
 package net.minecraft.client.font;
 
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.Closeable;
 import javax.annotation.Nullable;
 
@@ -8,7 +9,9 @@ public interface Font extends Closeable {
 	}
 
 	@Nullable
-	default RenderableGlyph getGlyph(char c) {
+	default RenderableGlyph getGlyph(int codePoint) {
 		return null;
 	}
+
+	IntSet getProvidedGlyphs();
 }

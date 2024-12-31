@@ -12,7 +12,7 @@ import net.minecraft.util.math.MathHelper;
 public class TntEntityRenderer extends EntityRenderer<TntEntity> {
 	public TntEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
-		this.shadowSize = 0.5F;
+		this.shadowRadius = 0.5F;
 	}
 
 	public void render(TntEntity tntEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
@@ -30,12 +30,12 @@ public class TntEntityRenderer extends EntityRenderer<TntEntity> {
 		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-90.0F));
 		matrixStack.translate(-0.5, -0.5, 0.5);
 		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(90.0F));
-		TntMinecartEntityRenderer.method_23190(Blocks.field_10375.getDefaultState(), matrixStack, vertexConsumerProvider, i, tntEntity.getFuseTimer() / 5 % 2 == 0);
+		TntMinecartEntityRenderer.renderFlashingBlock(Blocks.TNT.getDefaultState(), matrixStack, vertexConsumerProvider, i, tntEntity.getFuseTimer() / 5 % 2 == 0);
 		matrixStack.pop();
 		super.render(tntEntity, f, g, matrixStack, vertexConsumerProvider, i);
 	}
 
 	public Identifier getTexture(TntEntity tntEntity) {
-		return SpriteAtlasTexture.BLOCK_ATLAS_TEX;
+		return SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE;
 	}
 }

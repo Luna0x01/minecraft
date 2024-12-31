@@ -3,27 +3,27 @@ package net.minecraft.enchantment;
 import net.minecraft.entity.EquipmentSlot;
 
 public class DepthStriderEnchantment extends Enchantment {
-	public DepthStriderEnchantment(Enchantment.Weight weight, EquipmentSlot... equipmentSlots) {
-		super(weight, EnchantmentTarget.field_9079, equipmentSlots);
+	public DepthStriderEnchantment(Enchantment.Rarity weight, EquipmentSlot... slotTypes) {
+		super(weight, EnchantmentTarget.ARMOR_FEET, slotTypes);
 	}
 
 	@Override
-	public int getMinimumPower(int i) {
-		return i * 10;
+	public int getMinPower(int level) {
+		return level * 10;
 	}
 
 	@Override
-	public int getMaximumPower(int i) {
-		return this.getMinimumPower(i) + 15;
+	public int getMaxPower(int level) {
+		return this.getMinPower(level) + 15;
 	}
 
 	@Override
-	public int getMaximumLevel() {
+	public int getMaxLevel() {
 		return 3;
 	}
 
 	@Override
-	public boolean differs(Enchantment enchantment) {
-		return super.differs(enchantment) && enchantment != Enchantments.field_9122;
+	public boolean canAccept(Enchantment other) {
+		return super.canAccept(other) && other != Enchantments.FROST_WALKER;
 	}
 }

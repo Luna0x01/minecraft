@@ -10,34 +10,35 @@ import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.predicate.item.ItemPredicate;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonSerializer;
 
 public class MatchToolLootCondition implements LootCondition {
 	private final ItemPredicate predicate;
 
-	public MatchToolLootCondition(ItemPredicate itemPredicate) {
-		this.predicate = itemPredicate;
+	public MatchToolLootCondition(ItemPredicate predicate) {
+		this.predicate = predicate;
+	}
+
+	@Override
+	public LootConditionType getType() {
+		return LootConditionTypes.MATCH_TOOL;
 	}
 
 	@Override
 	public Set<LootContextParameter<?>> getRequiredParameters() {
-		return ImmutableSet.of(LootContextParameters.field_1229);
+		return ImmutableSet.of(LootContextParameters.TOOL);
 	}
 
 	public boolean test(LootContext lootContext) {
-		ItemStack itemStack = lootContext.get(LootContextParameters.field_1229);
+		ItemStack itemStack = lootContext.get(LootContextParameters.TOOL);
 		return itemStack != null && this.predicate.test(itemStack);
 	}
 
-	public static LootCondition.Builder builder(ItemPredicate.Builder builder) {
-		return () -> new MatchToolLootCondition(builder.build());
+	public static LootCondition.Builder builder(ItemPredicate.Builder predicate) {
+		return () -> new MatchToolLootCondition(predicate.build());
 	}
 
-	public static class Factory extends LootCondition.Factory<MatchToolLootCondition> {
-		protected Factory() {
-			super(new Identifier("match_tool"), MatchToolLootCondition.class);
-		}
-
+	public static class Serializer implements JsonSerializer<MatchToolLootCondition> {
 		public void toJson(JsonObject jsonObject, MatchToolLootCondition matchToolLootCondition, JsonSerializationContext jsonSerializationContext) {
 			jsonObject.add("predicate", matchToolLootCondition.predicate.toJson());
 		}

@@ -1,6 +1,8 @@
 package net.minecraft.entity.mob;
 
 import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
@@ -9,7 +11,7 @@ import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.control.MoveControl;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
@@ -27,19 +29,20 @@ import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.gen.ChunkRandom;
-import net.minecraft.world.level.LevelGeneratorType;
 
 public class SlimeEntity extends MobEntity implements Monster {
 	private static final TrackedData<Integer> SLIME_SIZE = DataTracker.registerData(SlimeEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -70,24 +73,18 @@ public class SlimeEntity extends MobEntity implements Monster {
 		this.dataTracker.startTracking(SLIME_SIZE, 1);
 	}
 
-	@Override
-	protected void initAttributes() {
-		super.initAttributes();
-		this.getAttributes().register(EntityAttributes.ATTACK_DAMAGE);
-	}
-
-	protected void setSize(int i, boolean bl) {
-		this.dataTracker.set(SLIME_SIZE, i);
+	protected void setSize(int size, boolean heal) {
+		this.dataTracker.set(SLIME_SIZE, size);
 		this.refreshPosition();
 		this.calculateDimensions();
-		this.getAttributeInstance(EntityAttributes.MAX_HEALTH).setBaseValue((double)(i * i));
-		this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue((double)(0.2F + 0.1F * (float)i));
-		this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).setBaseValue((double)i);
-		if (bl) {
-			this.setHealth(this.getMaximumHealth());
+		this.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue((double)(size * size));
+		this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue((double)(0.2F + 0.1F * (float)size));
+		this.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue((double)size);
+		if (heal) {
+			this.setHealth(this.getMaxHealth());
 		}
 
-		this.experiencePoints = i;
+		this.experiencePoints = size;
 	}
 
 	public int getSize() {
@@ -95,22 +92,22 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	@Override
-	public void writeCustomDataToTag(CompoundTag compoundTag) {
-		super.writeCustomDataToTag(compoundTag);
-		compoundTag.putInt("Size", this.getSize() - 1);
-		compoundTag.putBoolean("wasOnGround", this.onGroundLastTick);
+	public void writeCustomDataToTag(CompoundTag tag) {
+		super.writeCustomDataToTag(tag);
+		tag.putInt("Size", this.getSize() - 1);
+		tag.putBoolean("wasOnGround", this.onGroundLastTick);
 	}
 
 	@Override
-	public void readCustomDataFromTag(CompoundTag compoundTag) {
-		int i = compoundTag.getInt("Size");
+	public void readCustomDataFromTag(CompoundTag tag) {
+		int i = tag.getInt("Size");
 		if (i < 0) {
 			i = 0;
 		}
 
 		this.setSize(i + 1, false);
-		super.readCustomDataFromTag(compoundTag);
-		this.onGroundLastTick = compoundTag.getBoolean("wasOnGround");
+		super.readCustomDataFromTag(tag);
+		this.onGroundLastTick = tag.getBoolean("wasOnGround");
 	}
 
 	public boolean isSmall() {
@@ -118,11 +115,11 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	protected ParticleEffect getParticles() {
-		return ParticleTypes.field_11246;
+		return ParticleTypes.ITEM_SLIME;
 	}
 
 	@Override
-	protected boolean method_23734() {
+	protected boolean isDisallowedInPeaceful() {
 		return this.getSize() > 0;
 	}
 
@@ -170,8 +167,8 @@ public class SlimeEntity extends MobEntity implements Monster {
 	}
 
 	@Override
-	public void onTrackedDataSet(TrackedData<?> trackedData) {
-		if (SLIME_SIZE.equals(trackedData)) {
+	public void onTrackedDataSet(TrackedData<?> data) {
+		if (SLIME_SIZE.equals(data)) {
 			this.calculateDimensions();
 			this.yaw = this.headYaw;
 			this.bodyYaw = this.headYaw;
@@ -180,7 +177,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 			}
 		}
 
-		super.onTrackedDataSet(trackedData);
+		super.onTrackedDataSet(data);
 	}
 
 	@Override
@@ -191,24 +188,26 @@ public class SlimeEntity extends MobEntity implements Monster {
 	@Override
 	public void remove() {
 		int i = this.getSize();
-		if (!this.world.isClient && i > 1 && this.getHealth() <= 0.0F) {
-			int j = 2 + this.random.nextInt(3);
+		if (!this.world.isClient && i > 1 && this.isDead()) {
+			Text text = this.getCustomName();
+			boolean bl = this.isAiDisabled();
+			float f = (float)i / 4.0F;
+			int j = i / 2;
+			int k = 2 + this.random.nextInt(3);
 
-			for (int k = 0; k < j; k++) {
-				float f = ((float)(k % 2) - 0.5F) * (float)i / 4.0F;
-				float g = ((float)(k / 2) - 0.5F) * (float)i / 4.0F;
+			for (int l = 0; l < k; l++) {
+				float g = ((float)(l % 2) - 0.5F) * f;
+				float h = ((float)(l / 2) - 0.5F) * f;
 				SlimeEntity slimeEntity = this.getType().create(this.world);
-				if (this.hasCustomName()) {
-					slimeEntity.setCustomName(this.getCustomName());
-				}
-
 				if (this.isPersistent()) {
 					slimeEntity.setPersistent();
 				}
 
+				slimeEntity.setCustomName(text);
+				slimeEntity.setAiDisabled(bl);
 				slimeEntity.setInvulnerable(this.isInvulnerable());
-				slimeEntity.setSize(i / 2, true);
-				slimeEntity.refreshPositionAndAngles(this.getX() + (double)f, this.getY() + 0.5, this.getZ() + (double)g, this.random.nextFloat() * 360.0F, 0.0F);
+				slimeEntity.setSize(j, true);
+				slimeEntity.refreshPositionAndAngles(this.getX() + (double)g, this.getY() + 0.5, this.getZ() + (double)h, this.random.nextFloat() * 360.0F, 0.0F);
 				this.world.spawnEntity(slimeEntity);
 			}
 		}
@@ -219,55 +218,55 @@ public class SlimeEntity extends MobEntity implements Monster {
 	@Override
 	public void pushAwayFrom(Entity entity) {
 		super.pushAwayFrom(entity);
-		if (entity instanceof IronGolemEntity && this.isBig()) {
+		if (entity instanceof IronGolemEntity && this.canAttack()) {
 			this.damage((LivingEntity)entity);
 		}
 	}
 
 	@Override
-	public void onPlayerCollision(PlayerEntity playerEntity) {
-		if (this.isBig()) {
-			this.damage(playerEntity);
+	public void onPlayerCollision(PlayerEntity player) {
+		if (this.canAttack()) {
+			this.damage(player);
 		}
 	}
 
-	protected void damage(LivingEntity livingEntity) {
+	protected void damage(LivingEntity target) {
 		if (this.isAlive()) {
 			int i = this.getSize();
-			if (this.squaredDistanceTo(livingEntity) < 0.6 * (double)i * 0.6 * (double)i
-				&& this.canSee(livingEntity)
-				&& livingEntity.damage(DamageSource.mob(this), this.getDamageAmount())) {
-				this.playSound(SoundEvents.field_14863, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
-				this.dealDamage(this, livingEntity);
+			if (this.squaredDistanceTo(target) < 0.6 * (double)i * 0.6 * (double)i
+				&& this.canSee(target)
+				&& target.damage(DamageSource.mob(this), this.getDamageAmount())) {
+				this.playSound(SoundEvents.ENTITY_SLIME_ATTACK, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+				this.dealDamage(this, target);
 			}
 		}
 	}
 
 	@Override
-	protected float getActiveEyeHeight(EntityPose entityPose, EntityDimensions entityDimensions) {
-		return 0.625F * entityDimensions.height;
+	protected float getActiveEyeHeight(EntityPose pose, EntityDimensions dimensions) {
+		return 0.625F * dimensions.height;
 	}
 
-	protected boolean isBig() {
+	protected boolean canAttack() {
 		return !this.isSmall() && this.canMoveVoluntarily();
 	}
 
 	protected float getDamageAmount() {
-		return (float)this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).getValue();
+		return (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
 	}
 
 	@Override
-	protected SoundEvent getHurtSound(DamageSource damageSource) {
-		return this.isSmall() ? SoundEvents.field_14620 : SoundEvents.field_15014;
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return this.isSmall() ? SoundEvents.ENTITY_SLIME_HURT_SMALL : SoundEvents.ENTITY_SLIME_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return this.isSmall() ? SoundEvents.field_14849 : SoundEvents.field_14763;
+		return this.isSmall() ? SoundEvents.ENTITY_SLIME_DEATH_SMALL : SoundEvents.ENTITY_SLIME_DEATH;
 	}
 
 	protected SoundEvent getSquishSound() {
-		return this.isSmall() ? SoundEvents.field_15148 : SoundEvents.field_15095;
+		return this.isSmall() ? SoundEvents.ENTITY_SLIME_SQUISH_SMALL : SoundEvents.ENTITY_SLIME_SQUISH;
 	}
 
 	@Override
@@ -275,30 +274,29 @@ public class SlimeEntity extends MobEntity implements Monster {
 		return this.getSize() == 1 ? this.getType().getLootTableId() : LootTables.EMPTY;
 	}
 
-	public static boolean canSpawn(EntityType<SlimeEntity> entityType, IWorld iWorld, SpawnType spawnType, BlockPos blockPos, Random random) {
-		if (iWorld.getLevelProperties().getGeneratorType() == LevelGeneratorType.FLAT && random.nextInt(4) != 1) {
-			return false;
-		} else {
-			if (iWorld.getDifficulty() != Difficulty.field_5801) {
-				Biome biome = iWorld.getBiome(blockPos);
-				if (biome == Biomes.field_9471
-					&& blockPos.getY() > 50
-					&& blockPos.getY() < 70
-					&& random.nextFloat() < 0.5F
-					&& random.nextFloat() < iWorld.getMoonSize()
-					&& iWorld.getLightLevel(blockPos) <= random.nextInt(8)) {
-					return canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
-				}
-
-				ChunkPos chunkPos = new ChunkPos(blockPos);
-				boolean bl = ChunkRandom.create(chunkPos.x, chunkPos.z, iWorld.getSeed(), 987234911L).nextInt(10) == 0;
-				if (random.nextInt(10) == 0 && bl && blockPos.getY() < 40) {
-					return canMobSpawn(entityType, iWorld, spawnType, blockPos, random);
-				}
+	public static boolean canSpawn(EntityType<SlimeEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
+		if (world.getDifficulty() != Difficulty.PEACEFUL) {
+			if (Objects.equals(world.getBiomeKey(pos), Optional.of(BiomeKeys.SWAMP))
+				&& pos.getY() > 50
+				&& pos.getY() < 70
+				&& random.nextFloat() < 0.5F
+				&& random.nextFloat() < world.getMoonSize()
+				&& world.getLightLevel(pos) <= random.nextInt(8)) {
+				return canMobSpawn(type, world, spawnReason, pos, random);
 			}
 
-			return false;
+			if (!(world instanceof StructureWorldAccess)) {
+				return false;
+			}
+
+			ChunkPos chunkPos = new ChunkPos(pos);
+			boolean bl = ChunkRandom.getSlimeRandom(chunkPos.x, chunkPos.z, ((StructureWorldAccess)world).getSeed(), 987234911L).nextInt(10) == 0;
+			if (random.nextInt(10) == 0 && bl && pos.getY() < 40) {
+				return canMobSpawn(type, world, spawnReason, pos, random);
+			}
 		}
+
+		return false;
 	}
 
 	@Override
@@ -325,34 +323,39 @@ public class SlimeEntity extends MobEntity implements Monster {
 	@Nullable
 	@Override
 	public EntityData initialize(
-		IWorld iWorld, LocalDifficulty localDifficulty, SpawnType spawnType, @Nullable EntityData entityData, @Nullable CompoundTag compoundTag
+		ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable CompoundTag entityTag
 	) {
 		int i = this.random.nextInt(3);
-		if (i < 2 && this.random.nextFloat() < 0.5F * localDifficulty.getClampedLocalDifficulty()) {
+		if (i < 2 && this.random.nextFloat() < 0.5F * difficulty.getClampedLocalDifficulty()) {
 			i++;
 		}
 
 		int j = 1 << i;
 		this.setSize(j, true);
-		return super.initialize(iWorld, localDifficulty, spawnType, entityData, compoundTag);
+		return super.initialize(world, difficulty, spawnReason, entityData, entityTag);
+	}
+
+	private float getJumpSoundPitch() {
+		float f = this.isSmall() ? 1.4F : 0.8F;
+		return ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F) * f;
 	}
 
 	protected SoundEvent getJumpSound() {
-		return this.isSmall() ? SoundEvents.field_14694 : SoundEvents.field_14919;
+		return this.isSmall() ? SoundEvents.ENTITY_SLIME_JUMP_SMALL : SoundEvents.ENTITY_SLIME_JUMP;
 	}
 
 	@Override
-	public EntityDimensions getDimensions(EntityPose entityPose) {
-		return super.getDimensions(entityPose).scaled(0.255F * (float)this.getSize());
+	public EntityDimensions getDimensions(EntityPose pose) {
+		return super.getDimensions(pose).scaled(0.255F * (float)this.getSize());
 	}
 
 	static class FaceTowardTargetGoal extends Goal {
 		private final SlimeEntity slime;
 		private int ticksLeft;
 
-		public FaceTowardTargetGoal(SlimeEntity slimeEntity) {
-			this.slime = slimeEntity;
-			this.setControls(EnumSet.of(Goal.Control.field_18406));
+		public FaceTowardTargetGoal(SlimeEntity slime) {
+			this.slime = slime;
+			this.setControls(EnumSet.of(Goal.Control.LOOK));
 		}
 
 		@Override
@@ -390,16 +393,16 @@ public class SlimeEntity extends MobEntity implements Monster {
 		@Override
 		public void tick() {
 			this.slime.lookAtEntity(this.slime.getTarget(), 10.0F, 10.0F);
-			((SlimeEntity.SlimeMoveControl)this.slime.getMoveControl()).look(this.slime.yaw, this.slime.isBig());
+			((SlimeEntity.SlimeMoveControl)this.slime.getMoveControl()).look(this.slime.yaw, this.slime.canAttack());
 		}
 	}
 
 	static class MoveGoal extends Goal {
 		private final SlimeEntity slime;
 
-		public MoveGoal(SlimeEntity slimeEntity) {
-			this.slime = slimeEntity;
-			this.setControls(EnumSet.of(Goal.Control.field_18407, Goal.Control.field_18405));
+		public MoveGoal(SlimeEntity slime) {
+			this.slime = slime;
+			this.setControls(EnumSet.of(Goal.Control.JUMP, Goal.Control.MOVE));
 		}
 
 		@Override
@@ -418,15 +421,15 @@ public class SlimeEntity extends MobEntity implements Monster {
 		private float targetYaw;
 		private int timer;
 
-		public RandomLookGoal(SlimeEntity slimeEntity) {
-			this.slime = slimeEntity;
-			this.setControls(EnumSet.of(Goal.Control.field_18406));
+		public RandomLookGoal(SlimeEntity slime) {
+			this.slime = slime;
+			this.setControls(EnumSet.of(Goal.Control.LOOK));
 		}
 
 		@Override
 		public boolean canStart() {
 			return this.slime.getTarget() == null
-				&& (this.slime.onGround || this.slime.isTouchingWater() || this.slime.isInLava() || this.slime.hasStatusEffect(StatusEffects.field_5902))
+				&& (this.slime.onGround || this.slime.isTouchingWater() || this.slime.isInLava() || this.slime.hasStatusEffect(StatusEffects.LEVITATION))
 				&& this.slime.getMoveControl() instanceof SlimeEntity.SlimeMoveControl;
 		}
 
@@ -447,20 +450,20 @@ public class SlimeEntity extends MobEntity implements Monster {
 		private final SlimeEntity slime;
 		private boolean jumpOften;
 
-		public SlimeMoveControl(SlimeEntity slimeEntity) {
-			super(slimeEntity);
-			this.slime = slimeEntity;
-			this.targetYaw = 180.0F * slimeEntity.yaw / (float) Math.PI;
+		public SlimeMoveControl(SlimeEntity slime) {
+			super(slime);
+			this.slime = slime;
+			this.targetYaw = 180.0F * slime.yaw / (float) Math.PI;
 		}
 
-		public void look(float f, boolean bl) {
-			this.targetYaw = f;
-			this.jumpOften = bl;
+		public void look(float targetYaw, boolean jumpOften) {
+			this.targetYaw = targetYaw;
+			this.jumpOften = jumpOften;
 		}
 
-		public void move(double d) {
-			this.speed = d;
-			this.state = MoveControl.State.field_6378;
+		public void move(double speed) {
+			this.speed = speed;
+			this.state = MoveControl.State.MOVE_TO;
 		}
 
 		@Override
@@ -468,12 +471,12 @@ public class SlimeEntity extends MobEntity implements Monster {
 			this.entity.yaw = this.changeAngle(this.entity.yaw, this.targetYaw, 90.0F);
 			this.entity.headYaw = this.entity.yaw;
 			this.entity.bodyYaw = this.entity.yaw;
-			if (this.state != MoveControl.State.field_6378) {
+			if (this.state != MoveControl.State.MOVE_TO) {
 				this.entity.setForwardSpeed(0.0F);
 			} else {
-				this.state = MoveControl.State.field_6377;
-				if (this.entity.onGround) {
-					this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue()));
+				this.state = MoveControl.State.WAIT;
+				if (this.entity.isOnGround()) {
+					this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED)));
 					if (this.ticksUntilJump-- <= 0) {
 						this.ticksUntilJump = this.slime.getTicksUntilNextJump();
 						if (this.jumpOften) {
@@ -482,12 +485,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 
 						this.slime.getJumpControl().setActive();
 						if (this.slime.makesJumpSound()) {
-							this.slime
-								.playSound(
-									this.slime.getJumpSound(),
-									this.slime.getSoundVolume(),
-									((this.slime.getRandom().nextFloat() - this.slime.getRandom().nextFloat()) * 0.2F + 1.0F) * 0.8F
-								);
+							this.slime.playSound(this.slime.getJumpSound(), this.slime.getSoundVolume(), this.slime.getJumpSoundPitch());
 						}
 					} else {
 						this.slime.sidewaysSpeed = 0.0F;
@@ -495,7 +493,7 @@ public class SlimeEntity extends MobEntity implements Monster {
 						this.entity.setMovementSpeed(0.0F);
 					}
 				} else {
-					this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).getValue()));
+					this.entity.setMovementSpeed((float)(this.speed * this.entity.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED)));
 				}
 			}
 		}
@@ -504,10 +502,10 @@ public class SlimeEntity extends MobEntity implements Monster {
 	static class SwimmingGoal extends Goal {
 		private final SlimeEntity slime;
 
-		public SwimmingGoal(SlimeEntity slimeEntity) {
-			this.slime = slimeEntity;
-			this.setControls(EnumSet.of(Goal.Control.field_18407, Goal.Control.field_18405));
-			slimeEntity.getNavigation().setCanSwim(true);
+		public SwimmingGoal(SlimeEntity slime) {
+			this.slime = slime;
+			this.setControls(EnumSet.of(Goal.Control.JUMP, Goal.Control.MOVE));
+			slime.getNavigation().setCanSwim(true);
 		}
 
 		@Override

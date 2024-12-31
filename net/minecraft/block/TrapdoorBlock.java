@@ -2,8 +2,7 @@ package net.minecraft.block;
 
 import javax.annotation.Nullable;
 import net.minecraft.block.enums.BlockHalf;
-import net.minecraft.entity.EntityContext;
-import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -19,8 +18,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggable {
 	public static final BooleanProperty OPEN = Properties.OPEN;
@@ -34,110 +33,108 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 	protected static final VoxelShape OPEN_BOTTOM_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 3.0, 16.0);
 	protected static final VoxelShape OPEN_TOP_SHAPE = Block.createCuboidShape(0.0, 13.0, 0.0, 16.0, 16.0, 16.0);
 
-	protected TrapdoorBlock(Block.Settings settings) {
+	protected TrapdoorBlock(AbstractBlock.Settings settings) {
 		super(settings);
 		this.setDefaultState(
 			this.stateManager
 				.getDefaultState()
-				.with(FACING, Direction.field_11043)
+				.with(FACING, Direction.NORTH)
 				.with(OPEN, Boolean.valueOf(false))
-				.with(HALF, BlockHalf.field_12617)
+				.with(HALF, BlockHalf.BOTTOM)
 				.with(POWERED, Boolean.valueOf(false))
 				.with(WATERLOGGED, Boolean.valueOf(false))
 		);
 	}
 
 	@Override
-	public VoxelShape getOutlineShape(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityContext entityContext) {
-		if (!(Boolean)blockState.get(OPEN)) {
-			return blockState.get(HALF) == BlockHalf.field_12619 ? OPEN_TOP_SHAPE : OPEN_BOTTOM_SHAPE;
+	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		if (!(Boolean)state.get(OPEN)) {
+			return state.get(HALF) == BlockHalf.TOP ? OPEN_TOP_SHAPE : OPEN_BOTTOM_SHAPE;
 		} else {
-			switch ((Direction)blockState.get(FACING)) {
-				case field_11043:
+			switch ((Direction)state.get(FACING)) {
+				case NORTH:
 				default:
 					return NORTH_SHAPE;
-				case field_11035:
+				case SOUTH:
 					return SOUTH_SHAPE;
-				case field_11039:
+				case WEST:
 					return WEST_SHAPE;
-				case field_11034:
+				case EAST:
 					return EAST_SHAPE;
 			}
 		}
 	}
 
 	@Override
-	public boolean canPlaceAtSide(BlockState blockState, BlockView blockView, BlockPos blockPos, BlockPlacementEnvironment blockPlacementEnvironment) {
-		switch (blockPlacementEnvironment) {
-			case field_50:
-				return (Boolean)blockState.get(OPEN);
-			case field_48:
-				return (Boolean)blockState.get(WATERLOGGED);
-			case field_51:
-				return (Boolean)blockState.get(OPEN);
+	public boolean canPathfindThrough(BlockState state, BlockView world, BlockPos pos, NavigationType type) {
+		switch (type) {
+			case LAND:
+				return (Boolean)state.get(OPEN);
+			case WATER:
+				return (Boolean)state.get(WATERLOGGED);
+			case AIR:
+				return (Boolean)state.get(OPEN);
 			default:
 				return false;
 		}
 	}
 
 	@Override
-	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, BlockHitResult blockHitResult) {
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
 		if (this.material == Material.METAL) {
-			return ActionResult.field_5811;
+			return ActionResult.PASS;
 		} else {
-			blockState = blockState.cycle(OPEN);
-			world.setBlockState(blockPos, blockState, 2);
-			if ((Boolean)blockState.get(WATERLOGGED)) {
-				world.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+			state = state.cycle(OPEN);
+			world.setBlockState(pos, state, 2);
+			if ((Boolean)state.get(WATERLOGGED)) {
+				world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 			}
 
-			this.playToggleSound(playerEntity, world, blockPos, (Boolean)blockState.get(OPEN));
-			return ActionResult.field_5812;
+			this.playToggleSound(player, world, pos, (Boolean)state.get(OPEN));
+			return ActionResult.success(world.isClient);
 		}
 	}
 
-	protected void playToggleSound(@Nullable PlayerEntity playerEntity, World world, BlockPos blockPos, boolean bl) {
-		if (bl) {
+	protected void playToggleSound(@Nullable PlayerEntity player, World world, BlockPos pos, boolean open) {
+		if (open) {
 			int i = this.material == Material.METAL ? 1037 : 1007;
-			world.playLevelEvent(playerEntity, i, blockPos, 0);
+			world.syncWorldEvent(player, i, pos, 0);
 		} else {
 			int j = this.material == Material.METAL ? 1036 : 1013;
-			world.playLevelEvent(playerEntity, j, blockPos, 0);
+			world.syncWorldEvent(player, j, pos, 0);
 		}
 	}
 
 	@Override
-	public void neighborUpdate(BlockState blockState, World world, BlockPos blockPos, Block block, BlockPos blockPos2, boolean bl) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
 		if (!world.isClient) {
-			boolean bl2 = world.isReceivingRedstonePower(blockPos);
-			if (bl2 != (Boolean)blockState.get(POWERED)) {
-				if ((Boolean)blockState.get(OPEN) != bl2) {
-					blockState = blockState.with(OPEN, Boolean.valueOf(bl2));
-					this.playToggleSound(null, world, blockPos, bl2);
+			boolean bl = world.isReceivingRedstonePower(pos);
+			if (bl != (Boolean)state.get(POWERED)) {
+				if ((Boolean)state.get(OPEN) != bl) {
+					state = state.with(OPEN, Boolean.valueOf(bl));
+					this.playToggleSound(null, world, pos, bl);
 				}
 
-				world.setBlockState(blockPos, blockState.with(POWERED, Boolean.valueOf(bl2)), 2);
-				if ((Boolean)blockState.get(WATERLOGGED)) {
-					world.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+				world.setBlockState(pos, state.with(POWERED, Boolean.valueOf(bl)), 2);
+				if ((Boolean)state.get(WATERLOGGED)) {
+					world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 				}
 			}
 		}
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
 		BlockState blockState = this.getDefaultState();
-		FluidState fluidState = itemPlacementContext.getWorld().getFluidState(itemPlacementContext.getBlockPos());
-		Direction direction = itemPlacementContext.getSide();
-		if (!itemPlacementContext.canReplaceExisting() && direction.getAxis().isHorizontal()) {
-			blockState = blockState.with(FACING, direction)
-				.with(HALF, itemPlacementContext.getHitPos().y - (double)itemPlacementContext.getBlockPos().getY() > 0.5 ? BlockHalf.field_12619 : BlockHalf.field_12617);
+		FluidState fluidState = ctx.getWorld().getFluidState(ctx.getBlockPos());
+		Direction direction = ctx.getSide();
+		if (!ctx.canReplaceExisting() && direction.getAxis().isHorizontal()) {
+			blockState = blockState.with(FACING, direction).with(HALF, ctx.getHitPos().y - (double)ctx.getBlockPos().getY() > 0.5 ? BlockHalf.TOP : BlockHalf.BOTTOM);
 		} else {
-			blockState = blockState.with(FACING, itemPlacementContext.getPlayerFacing().getOpposite())
-				.with(HALF, direction == Direction.field_11036 ? BlockHalf.field_12617 : BlockHalf.field_12619);
+			blockState = blockState.with(FACING, ctx.getPlayerFacing().getOpposite()).with(HALF, direction == Direction.UP ? BlockHalf.BOTTOM : BlockHalf.TOP);
 		}
 
-		if (itemPlacementContext.getWorld().isReceivingRedstonePower(itemPlacementContext.getBlockPos())) {
+		if (ctx.getWorld().isReceivingRedstonePower(ctx.getBlockPos())) {
 			blockState = blockState.with(OPEN, Boolean.valueOf(true)).with(POWERED, Boolean.valueOf(true));
 		}
 
@@ -150,23 +147,16 @@ public class TrapdoorBlock extends HorizontalFacingBlock implements Waterloggabl
 	}
 
 	@Override
-	public FluidState getFluidState(BlockState blockState) {
-		return blockState.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(blockState);
+	public FluidState getFluidState(BlockState state) {
+		return state.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if ((Boolean)blockState.get(WATERLOGGED)) {
-			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if ((Boolean)state.get(WATERLOGGED)) {
+			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
-		return super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
-	}
-
-	@Override
-	public boolean allowsSpawning(BlockState blockState, BlockView blockView, BlockPos blockPos, EntityType<?> entityType) {
-		return false;
+		return super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 	}
 }

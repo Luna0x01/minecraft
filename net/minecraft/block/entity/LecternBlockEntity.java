@@ -1,11 +1,8 @@
 package net.minecraft.block.entity;
 
 import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.LecternBlock;
-import net.minecraft.container.Container;
-import net.minecraft.container.LecternContainer;
-import net.minecraft.container.NameableContainerFactory;
-import net.minecraft.container.PropertyDelegate;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -14,6 +11,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.WrittenBookItem;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.screen.LecternScreenHandler;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
@@ -25,27 +26,27 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
-public class LecternBlockEntity extends BlockEntity implements Clearable, NameableContainerFactory {
+public class LecternBlockEntity extends BlockEntity implements Clearable, NamedScreenHandlerFactory {
 	private final Inventory inventory = new Inventory() {
 		@Override
-		public int getInvSize() {
+		public int size() {
 			return 1;
 		}
 
 		@Override
-		public boolean isInvEmpty() {
+		public boolean isEmpty() {
 			return LecternBlockEntity.this.book.isEmpty();
 		}
 
 		@Override
-		public ItemStack getInvStack(int i) {
-			return i == 0 ? LecternBlockEntity.this.book : ItemStack.EMPTY;
+		public ItemStack getStack(int slot) {
+			return slot == 0 ? LecternBlockEntity.this.book : ItemStack.EMPTY;
 		}
 
 		@Override
-		public ItemStack takeInvStack(int i, int j) {
-			if (i == 0) {
-				ItemStack itemStack = LecternBlockEntity.this.book.split(j);
+		public ItemStack removeStack(int slot, int amount) {
+			if (slot == 0) {
+				ItemStack itemStack = LecternBlockEntity.this.book.split(amount);
 				if (LecternBlockEntity.this.book.isEmpty()) {
 					LecternBlockEntity.this.onBookRemoved();
 				}
@@ -57,8 +58,8 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 		}
 
 		@Override
-		public ItemStack removeInvStack(int i) {
-			if (i == 0) {
+		public ItemStack removeStack(int slot) {
+			if (slot == 0) {
 				ItemStack itemStack = LecternBlockEntity.this.book;
 				LecternBlockEntity.this.book = ItemStack.EMPTY;
 				LecternBlockEntity.this.onBookRemoved();
@@ -69,11 +70,11 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 		}
 
 		@Override
-		public void setInvStack(int i, ItemStack itemStack) {
+		public void setStack(int slot, ItemStack stack) {
 		}
 
 		@Override
-		public int getInvMaxStackAmount() {
+		public int getMaxCountPerStack() {
 			return 1;
 		}
 
@@ -83,11 +84,11 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 		}
 
 		@Override
-		public boolean canPlayerUseInv(PlayerEntity playerEntity) {
+		public boolean canPlayerUse(PlayerEntity player) {
 			if (LecternBlockEntity.this.world.getBlockEntity(LecternBlockEntity.this.pos) != LecternBlockEntity.this) {
 				return false;
 			} else {
-				return playerEntity.squaredDistanceTo(
+				return player.squaredDistanceTo(
 							(double)LecternBlockEntity.this.pos.getX() + 0.5, (double)LecternBlockEntity.this.pos.getY() + 0.5, (double)LecternBlockEntity.this.pos.getZ() + 0.5
 						)
 						> 64.0
@@ -97,7 +98,7 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 		}
 
 		@Override
-		public boolean isValidInvStack(int i, ItemStack itemStack) {
+		public boolean isValid(int slot, ItemStack stack) {
 			return false;
 		}
 
@@ -107,14 +108,14 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 	};
 	private final PropertyDelegate propertyDelegate = new PropertyDelegate() {
 		@Override
-		public int get(int i) {
-			return i == 0 ? LecternBlockEntity.this.currentPage : 0;
+		public int get(int index) {
+			return index == 0 ? LecternBlockEntity.this.currentPage : 0;
 		}
 
 		@Override
-		public void set(int i, int j) {
-			if (i == 0) {
-				LecternBlockEntity.this.setCurrentPage(j);
+		public void set(int index, int value) {
+			if (index == 0) {
+				LecternBlockEntity.this.setCurrentPage(value);
 			}
 		}
 
@@ -128,7 +129,7 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 	private int pageCount;
 
 	public LecternBlockEntity() {
-		super(BlockEntityType.field_16412);
+		super(BlockEntityType.LECTERN);
 	}
 
 	public ItemStack getBook() {
@@ -137,11 +138,11 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 
 	public boolean hasBook() {
 		Item item = this.book.getItem();
-		return item == Items.field_8674 || item == Items.field_8360;
+		return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
 	}
 
-	public void setBook(ItemStack itemStack) {
-		this.setBook(itemStack, null);
+	public void setBook(ItemStack book) {
+		this.setBook(book, null);
 	}
 
 	private void onBookRemoved() {
@@ -150,17 +151,17 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 		LecternBlock.setHasBook(this.getWorld(), this.getPos(), this.getCachedState(), false);
 	}
 
-	public void setBook(ItemStack itemStack, @Nullable PlayerEntity playerEntity) {
-		this.book = this.resolveBook(itemStack, playerEntity);
+	public void setBook(ItemStack book, @Nullable PlayerEntity player) {
+		this.book = this.resolveBook(book, player);
 		this.currentPage = 0;
 		this.pageCount = WrittenBookItem.getPageCount(this.book);
 		this.markDirty();
 	}
 
-	private void setCurrentPage(int i) {
-		int j = MathHelper.clamp(i, 0, this.pageCount - 1);
-		if (j != this.currentPage) {
-			this.currentPage = j;
+	private void setCurrentPage(int currentPage) {
+		int i = MathHelper.clamp(currentPage, 0, this.pageCount - 1);
+		if (i != this.currentPage) {
+			this.currentPage = i;
 			this.markDirty();
 			LecternBlock.setPowered(this.getWorld(), this.getPos(), this.getCachedState());
 		}
@@ -175,56 +176,56 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 		return MathHelper.floor(f * 14.0F) + (this.hasBook() ? 1 : 0);
 	}
 
-	private ItemStack resolveBook(ItemStack itemStack, @Nullable PlayerEntity playerEntity) {
-		if (this.world instanceof ServerWorld && itemStack.getItem() == Items.field_8360) {
-			WrittenBookItem.resolve(itemStack, this.getCommandSource(playerEntity), playerEntity);
+	private ItemStack resolveBook(ItemStack book, @Nullable PlayerEntity player) {
+		if (this.world instanceof ServerWorld && book.getItem() == Items.WRITTEN_BOOK) {
+			WrittenBookItem.resolve(book, this.getCommandSource(player), player);
 		}
 
-		return itemStack;
+		return book;
 	}
 
-	private ServerCommandSource getCommandSource(@Nullable PlayerEntity playerEntity) {
+	private ServerCommandSource getCommandSource(@Nullable PlayerEntity player) {
 		String string;
 		Text text;
-		if (playerEntity == null) {
+		if (player == null) {
 			string = "Lectern";
 			text = new LiteralText("Lectern");
 		} else {
-			string = playerEntity.getName().getString();
-			text = playerEntity.getDisplayName();
+			string = player.getName().getString();
+			text = player.getDisplayName();
 		}
 
-		Vec3d vec3d = new Vec3d((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5);
-		return new ServerCommandSource(CommandOutput.DUMMY, vec3d, Vec2f.ZERO, (ServerWorld)this.world, 2, string, text, this.world.getServer(), playerEntity);
+		Vec3d vec3d = Vec3d.ofCenter(this.pos);
+		return new ServerCommandSource(CommandOutput.DUMMY, vec3d, Vec2f.ZERO, (ServerWorld)this.world, 2, string, text, this.world.getServer(), player);
 	}
 
 	@Override
-	public boolean shouldNotCopyTagFromItem() {
+	public boolean copyItemDataRequiresOperator() {
 		return true;
 	}
 
 	@Override
-	public void fromTag(CompoundTag compoundTag) {
-		super.fromTag(compoundTag);
-		if (compoundTag.contains("Book", 10)) {
-			this.book = this.resolveBook(ItemStack.fromTag(compoundTag.getCompound("Book")), null);
+	public void fromTag(BlockState state, CompoundTag tag) {
+		super.fromTag(state, tag);
+		if (tag.contains("Book", 10)) {
+			this.book = this.resolveBook(ItemStack.fromTag(tag.getCompound("Book")), null);
 		} else {
 			this.book = ItemStack.EMPTY;
 		}
 
 		this.pageCount = WrittenBookItem.getPageCount(this.book);
-		this.currentPage = MathHelper.clamp(compoundTag.getInt("Page"), 0, this.pageCount - 1);
+		this.currentPage = MathHelper.clamp(tag.getInt("Page"), 0, this.pageCount - 1);
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag compoundTag) {
-		super.toTag(compoundTag);
+	public CompoundTag toTag(CompoundTag tag) {
+		super.toTag(tag);
 		if (!this.getBook().isEmpty()) {
-			compoundTag.put("Book", this.getBook().toTag(new CompoundTag()));
-			compoundTag.putInt("Page", this.currentPage);
+			tag.put("Book", this.getBook().toTag(new CompoundTag()));
+			tag.putInt("Page", this.currentPage);
 		}
 
-		return compoundTag;
+		return tag;
 	}
 
 	@Override
@@ -233,8 +234,8 @@ public class LecternBlockEntity extends BlockEntity implements Clearable, Nameab
 	}
 
 	@Override
-	public Container createMenu(int i, PlayerInventory playerInventory, PlayerEntity playerEntity) {
-		return new LecternContainer(i, this.inventory, this.propertyDelegate);
+	public ScreenHandler createMenu(int i, PlayerInventory playerInventory, PlayerEntity playerEntity) {
+		return new LecternScreenHandler(i, this.inventory, this.propertyDelegate);
 	}
 
 	@Override

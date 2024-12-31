@@ -4,53 +4,53 @@ import net.minecraft.world.biome.layer.type.CrossSamplingLayer;
 import net.minecraft.world.biome.layer.util.LayerRandomnessSource;
 
 public enum AddDeepOceanLayer implements CrossSamplingLayer {
-	field_16052;
+	INSTANCE;
 
 	@Override
-	public int sample(LayerRandomnessSource layerRandomnessSource, int i, int j, int k, int l, int m) {
-		if (BiomeLayers.isShallowOcean(m)) {
-			int n = 0;
-			if (BiomeLayers.isShallowOcean(i)) {
-				n++;
+	public int sample(LayerRandomnessSource context, int n, int e, int s, int w, int center) {
+		if (BiomeLayers.isShallowOcean(center)) {
+			int i = 0;
+			if (BiomeLayers.isShallowOcean(n)) {
+				i++;
 			}
 
-			if (BiomeLayers.isShallowOcean(j)) {
-				n++;
+			if (BiomeLayers.isShallowOcean(e)) {
+				i++;
 			}
 
-			if (BiomeLayers.isShallowOcean(l)) {
-				n++;
+			if (BiomeLayers.isShallowOcean(w)) {
+				i++;
 			}
 
-			if (BiomeLayers.isShallowOcean(k)) {
-				n++;
+			if (BiomeLayers.isShallowOcean(s)) {
+				i++;
 			}
 
-			if (n > 3) {
-				if (m == BiomeLayers.WARM_OCEAN_ID) {
-					return BiomeLayers.DEEP_WARM_OCEAN_ID;
+			if (i > 3) {
+				if (center == 44) {
+					return 47;
 				}
 
-				if (m == BiomeLayers.LUKEWARM_OCEAN_ID) {
-					return BiomeLayers.DEEP_LUKEWARM_OCEAN_ID;
+				if (center == 45) {
+					return 48;
 				}
 
-				if (m == BiomeLayers.OCEAN_ID) {
-					return BiomeLayers.DEEP_OCEAN_ID;
+				if (center == 0) {
+					return 24;
 				}
 
-				if (m == BiomeLayers.COLD_OCEAN_ID) {
-					return BiomeLayers.DEEP_COLD_OCEAN_ID;
+				if (center == 46) {
+					return 49;
 				}
 
-				if (m == BiomeLayers.FROZEN_OCEAN_ID) {
-					return BiomeLayers.DEEP_FROZEN_OCEAN_ID;
+				if (center == 10) {
+					return 50;
 				}
 
-				return BiomeLayers.DEEP_OCEAN_ID;
+				return 24;
 			}
 		}
 
-		return m;
+		return center;
 	}
 }

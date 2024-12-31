@@ -5,10 +5,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import net.minecraft.util.Unit;
 
-public interface ReloadableResourceManager extends ResourceManager {
-	CompletableFuture<Unit> beginReload(Executor executor, Executor executor2, List<ResourcePack> list, CompletableFuture<Unit> completableFuture);
+public interface ReloadableResourceManager extends ResourceManager, AutoCloseable {
+	default CompletableFuture<Unit> beginReload(Executor prepareExecutor, Executor applyExecutor, List<ResourcePack> packs, CompletableFuture<Unit> initialStage) {
+		return this.beginMonitoredReload(prepareExecutor, applyExecutor, initialStage, packs).whenComplete();
+	}
 
-	ResourceReloadMonitor beginMonitoredReload(Executor executor, Executor executor2, CompletableFuture<Unit> completableFuture, List<ResourcePack> list);
+	ResourceReloadMonitor beginMonitoredReload(Executor prepareExecutor, Executor applyExecutor, CompletableFuture<Unit> initialStage, List<ResourcePack> packs);
 
-	void registerListener(ResourceReloadListener resourceReloadListener);
+	void registerListener(ResourceReloadListener listener);
+
+	void close();
 }

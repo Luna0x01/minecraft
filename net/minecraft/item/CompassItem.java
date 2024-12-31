@@ -1,73 +1,105 @@
 package net.minecraft.item;
 
-import javax.annotation.Nullable;
+import java.util.Optional;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.IWorld;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
+import net.minecraft.world.poi.PointOfInterestType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class CompassItem extends Item {
+public class CompassItem extends Item implements Vanishable {
+	private static final Logger field_24670 = LogManager.getLogger();
+
 	public CompassItem(Item.Settings settings) {
 		super(settings);
-		this.addPropertyGetter(new Identifier("angle"), new ItemPropertyGetter() {
-			private double angle;
-			private double step;
-			private long lastTick;
+	}
 
-			@Override
-			public float call(ItemStack itemStack, @Nullable World world, @Nullable LivingEntity livingEntity) {
-				if (livingEntity == null && !itemStack.isInFrame()) {
-					return 0.0F;
-				} else {
-					boolean bl = livingEntity != null;
-					Entity entity = (Entity)(bl ? livingEntity : itemStack.getFrame());
-					if (world == null) {
-						world = entity.world;
-					}
+	public static boolean hasLodestone(ItemStack stack) {
+		CompoundTag compoundTag = stack.getTag();
+		return compoundTag != null && (compoundTag.contains("LodestoneDimension") || compoundTag.contains("LodestonePos"));
+	}
 
-					double f;
-					if (world.dimension.hasVisibleSky()) {
-						double d = bl ? (double)entity.yaw : this.getYaw((ItemFrameEntity)entity);
-						d = MathHelper.floorMod(d / 360.0, 1.0);
-						double e = this.getAngleToSpawn(world, entity) / (float) (Math.PI * 2);
-						f = 0.5 - (d - 0.25 - e);
-					} else {
-						f = Math.random();
-					}
+	@Override
+	public boolean hasGlint(ItemStack stack) {
+		return hasLodestone(stack) || super.hasGlint(stack);
+	}
 
-					if (bl) {
-						f = this.getAngle(world, f);
-					}
+	public static Optional<RegistryKey<World>> getLodestoneDimension(CompoundTag tag) {
+		return World.CODEC.parse(NbtOps.INSTANCE, tag.get("LodestoneDimension")).result();
+	}
 
-					return MathHelper.floorMod((float)f, 1.0F);
+	@Override
+	public void inventoryTick(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
+		if (!world.isClient) {
+			if (hasLodestone(stack)) {
+				CompoundTag compoundTag = stack.getOrCreateTag();
+				if (compoundTag.contains("LodestoneTracked") && !compoundTag.getBoolean("LodestoneTracked")) {
+					return;
+				}
+
+				Optional<RegistryKey<World>> optional = getLodestoneDimension(compoundTag);
+				if (optional.isPresent()
+					&& optional.get() == world.getRegistryKey()
+					&& compoundTag.contains("LodestonePos")
+					&& !((ServerWorld)world)
+						.getPointOfInterestStorage()
+						.hasTypeAt(PointOfInterestType.LODESTONE, NbtHelper.toBlockPos(compoundTag.getCompound("LodestonePos")))) {
+					compoundTag.remove("LodestonePos");
+				}
+			}
+		}
+	}
+
+	@Override
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		BlockPos blockPos = context.getBlockPos();
+		World world = context.getWorld();
+		if (!world.getBlockState(blockPos).isOf(Blocks.LODESTONE)) {
+			return super.useOnBlock(context);
+		} else {
+			world.playSound(null, blockPos, SoundEvents.ITEM_LODESTONE_COMPASS_LOCK, SoundCategory.PLAYERS, 1.0F, 1.0F);
+			PlayerEntity playerEntity = context.getPlayer();
+			ItemStack itemStack = context.getStack();
+			boolean bl = !playerEntity.abilities.creativeMode && itemStack.getCount() == 1;
+			if (bl) {
+				this.method_27315(world.getRegistryKey(), blockPos, itemStack.getOrCreateTag());
+			} else {
+				ItemStack itemStack2 = new ItemStack(Items.COMPASS, 1);
+				CompoundTag compoundTag = itemStack.hasTag() ? itemStack.getTag().copy() : new CompoundTag();
+				itemStack2.setTag(compoundTag);
+				if (!playerEntity.abilities.creativeMode) {
+					itemStack.decrement(1);
+				}
+
+				this.method_27315(world.getRegistryKey(), blockPos, compoundTag);
+				if (!playerEntity.inventory.insertStack(itemStack2)) {
+					playerEntity.dropItem(itemStack2, false);
 				}
 			}
 
-			private double getAngle(World world, double d) {
-				if (world.getTime() != this.lastTick) {
-					this.lastTick = world.getTime();
-					double e = d - this.angle;
-					e = MathHelper.floorMod(e + 0.5, 1.0) - 0.5;
-					this.step += e * 0.1;
-					this.step *= 0.8;
-					this.angle = MathHelper.floorMod(this.angle + this.step, 1.0);
-				}
+			return ActionResult.success(world.isClient);
+		}
+	}
 
-				return this.angle;
-			}
+	private void method_27315(RegistryKey<World> registryKey, BlockPos blockPos, CompoundTag compoundTag) {
+		compoundTag.put("LodestonePos", NbtHelper.fromBlockPos(blockPos));
+		World.CODEC.encodeStart(NbtOps.INSTANCE, registryKey).resultOrPartial(field_24670::error).ifPresent(tag -> compoundTag.put("LodestoneDimension", tag));
+		compoundTag.putBoolean("LodestoneTracked", true);
+	}
 
-			private double getYaw(ItemFrameEntity itemFrameEntity) {
-				return (double)MathHelper.wrapDegrees(180 + itemFrameEntity.getHorizontalFacing().getHorizontal() * 90);
-			}
-
-			private double getAngleToSpawn(IWorld iWorld, Entity entity) {
-				BlockPos blockPos = iWorld.getSpawnPos();
-				return Math.atan2((double)blockPos.getZ() - entity.getZ(), (double)blockPos.getX() - entity.getX());
-			}
-		});
+	@Override
+	public String getTranslationKey(ItemStack stack) {
+		return hasLodestone(stack) ? "item.minecraft.lodestone_compass" : super.getTranslationKey(stack);
 	}
 }

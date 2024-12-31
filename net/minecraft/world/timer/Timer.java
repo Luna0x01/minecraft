@@ -3,12 +3,14 @@ package net.minecraft.world.timer;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.primitives.UnsignedLong;
+import com.mojang.serialization.Dynamic;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Stream;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -26,28 +28,42 @@ public class Timer<T> {
 		return Comparator.comparingLong(event -> event.triggerTime).thenComparing(event -> event.id);
 	}
 
+	public Timer(TimerCallbackSerializer<T> timerCallbackSerializer, Stream<Dynamic<Tag>> stream) {
+		this(timerCallbackSerializer);
+		this.events.clear();
+		this.eventsByName.clear();
+		this.eventCounter = UnsignedLong.ZERO;
+		stream.forEach(dynamic -> {
+			if (!(dynamic.getValue() instanceof CompoundTag)) {
+				LOGGER.warn("Invalid format of events: {}", dynamic);
+			} else {
+				this.addEvent((CompoundTag)dynamic.getValue());
+			}
+		});
+	}
+
 	public Timer(TimerCallbackSerializer<T> timerCallbackSerializer) {
 		this.callback = timerCallbackSerializer;
 	}
 
-	public void processEvents(T object, long l) {
+	public void processEvents(T server, long time) {
 		while (true) {
 			Timer.Event<T> event = (Timer.Event<T>)this.events.peek();
-			if (event == null || event.triggerTime > l) {
+			if (event == null || event.triggerTime > time) {
 				return;
 			}
 
 			this.events.remove();
-			this.eventsByName.remove(event.name, l);
-			event.callback.call(object, this, l);
+			this.eventsByName.remove(event.name, time);
+			event.callback.call(server, this, time);
 		}
 	}
 
-	public void setEvent(String string, long l, TimerCallback<T> timerCallback) {
-		if (!this.eventsByName.contains(string, l)) {
+	public void setEvent(String name, long triggerTime, TimerCallback<T> callback) {
+		if (!this.eventsByName.contains(name, triggerTime)) {
 			this.eventCounter = this.eventCounter.plus(UnsignedLong.ONE);
-			Timer.Event<T> event = new Timer.Event<>(l, this.eventCounter, string, timerCallback);
-			this.eventsByName.put(string, l, event);
+			Timer.Event<T> event = new Timer.Event<>(triggerTime, this.eventCounter, name, callback);
+			this.eventsByName.put(name, triggerTime, event);
 			this.events.add(event);
 		}
 	}
@@ -64,28 +80,13 @@ public class Timer<T> {
 		return Collections.unmodifiableSet(this.eventsByName.rowKeySet());
 	}
 
-	private void addEvent(CompoundTag compoundTag) {
-		CompoundTag compoundTag2 = compoundTag.getCompound("Callback");
-		TimerCallback<T> timerCallback = this.callback.deserialize(compoundTag2);
+	private void addEvent(CompoundTag tag) {
+		CompoundTag compoundTag = tag.getCompound("Callback");
+		TimerCallback<T> timerCallback = this.callback.deserialize(compoundTag);
 		if (timerCallback != null) {
-			String string = compoundTag.getString("Name");
-			long l = compoundTag.getLong("TriggerTime");
+			String string = tag.getString("Name");
+			long l = tag.getLong("TriggerTime");
 			this.setEvent(string, l, timerCallback);
-		}
-	}
-
-	public void fromTag(ListTag listTag) {
-		this.events.clear();
-		this.eventsByName.clear();
-		this.eventCounter = UnsignedLong.ZERO;
-		if (!listTag.isEmpty()) {
-			if (listTag.getElementType() != 10) {
-				LOGGER.warn("Invalid format of events: " + listTag);
-			} else {
-				for (Tag tag : listTag) {
-					this.addEvent((CompoundTag)tag);
-				}
-			}
 		}
 	}
 
@@ -109,11 +110,11 @@ public class Timer<T> {
 		public final String name;
 		public final TimerCallback<T> callback;
 
-		private Event(long l, UnsignedLong unsignedLong, String string, TimerCallback<T> timerCallback) {
-			this.triggerTime = l;
-			this.id = unsignedLong;
-			this.name = string;
-			this.callback = timerCallback;
+		private Event(long triggerTime, UnsignedLong id, String name, TimerCallback<T> callback) {
+			this.triggerTime = triggerTime;
+			this.id = id;
+			this.name = name;
+			this.callback = callback;
 		}
 	}
 }

@@ -8,8 +8,9 @@ import java.util.Map;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.util.DefaultSkinHelper;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.packet.SpectatorTeleportC2SPacket;
+import net.minecraft.network.packet.c2s.play.SpectatorTeleportC2SPacket;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -17,6 +18,7 @@ import net.minecraft.util.Identifier;
 public class TeleportToSpecificPlayerSpectatorCommand implements SpectatorMenuCommand {
 	private final GameProfile gameProfile;
 	private final Identifier skinId;
+	private final LiteralText name;
 
 	public TeleportToSpecificPlayerSpectatorCommand(GameProfile gameProfile) {
 		this.gameProfile = gameProfile;
@@ -27,24 +29,26 @@ public class TeleportToSpecificPlayerSpectatorCommand implements SpectatorMenuCo
 		} else {
 			this.skinId = DefaultSkinHelper.getTexture(PlayerEntity.getUuidFromProfile(gameProfile));
 		}
+
+		this.name = new LiteralText(gameProfile.getName());
 	}
 
 	@Override
-	public void use(SpectatorMenu spectatorMenu) {
+	public void use(SpectatorMenu menu) {
 		MinecraftClient.getInstance().getNetworkHandler().sendPacket(new SpectatorTeleportC2SPacket(this.gameProfile.getId()));
 	}
 
 	@Override
 	public Text getName() {
-		return new LiteralText(this.gameProfile.getName());
+		return this.name;
 	}
 
 	@Override
-	public void renderIcon(float f, int i) {
+	public void renderIcon(MatrixStack matrices, float f, int i) {
 		MinecraftClient.getInstance().getTextureManager().bindTexture(this.skinId);
 		RenderSystem.color4f(1.0F, 1.0F, 1.0F, (float)i / 255.0F);
-		DrawableHelper.blit(2, 2, 12, 12, 8.0F, 8.0F, 8, 8, 64, 64);
-		DrawableHelper.blit(2, 2, 12, 12, 40.0F, 8.0F, 8, 8, 64, 64);
+		DrawableHelper.drawTexture(matrices, 2, 2, 12, 12, 8.0F, 8.0F, 8, 8, 64, 64);
+		DrawableHelper.drawTexture(matrices, 2, 2, 12, 12, 40.0F, 8.0F, 8, 8, 64, 64);
 	}
 
 	@Override

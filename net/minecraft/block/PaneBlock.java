@@ -5,13 +5,16 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Property;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.WorldAccess;
 
-public class PaneBlock extends HorizontalConnectedBlock {
-	protected PaneBlock(Block.Settings settings) {
+public class PaneBlock extends HorizontalConnectingBlock {
+	protected PaneBlock(AbstractBlock.Settings settings) {
 		super(1.0F, 1.0F, 16.0F, 16.0F, 16.0F, settings);
 		this.setDefaultState(
 			this.stateManager
@@ -25,10 +28,10 @@ public class PaneBlock extends HorizontalConnectedBlock {
 	}
 
 	@Override
-	public BlockState getPlacementState(ItemPlacementContext itemPlacementContext) {
-		BlockView blockView = itemPlacementContext.getWorld();
-		BlockPos blockPos = itemPlacementContext.getBlockPos();
-		FluidState fluidState = itemPlacementContext.getWorld().getFluidState(itemPlacementContext.getBlockPos());
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		BlockView blockView = ctx.getWorld();
+		BlockPos blockPos = ctx.getBlockPos();
+		FluidState fluidState = ctx.getWorld().getFluidState(ctx.getBlockPos());
 		BlockPos blockPos2 = blockPos.north();
 		BlockPos blockPos3 = blockPos.south();
 		BlockPos blockPos4 = blockPos.west();
@@ -38,48 +41,50 @@ public class PaneBlock extends HorizontalConnectedBlock {
 		BlockState blockState3 = blockView.getBlockState(blockPos4);
 		BlockState blockState4 = blockView.getBlockState(blockPos5);
 		return this.getDefaultState()
-			.with(NORTH, Boolean.valueOf(this.connectsTo(blockState, blockState.isSideSolidFullSquare(blockView, blockPos2, Direction.field_11035))))
-			.with(SOUTH, Boolean.valueOf(this.connectsTo(blockState2, blockState2.isSideSolidFullSquare(blockView, blockPos3, Direction.field_11043))))
-			.with(WEST, Boolean.valueOf(this.connectsTo(blockState3, blockState3.isSideSolidFullSquare(blockView, blockPos4, Direction.field_11034))))
-			.with(EAST, Boolean.valueOf(this.connectsTo(blockState4, blockState4.isSideSolidFullSquare(blockView, blockPos5, Direction.field_11039))))
+			.with(NORTH, Boolean.valueOf(this.connectsTo(blockState, blockState.isSideSolidFullSquare(blockView, blockPos2, Direction.SOUTH))))
+			.with(SOUTH, Boolean.valueOf(this.connectsTo(blockState2, blockState2.isSideSolidFullSquare(blockView, blockPos3, Direction.NORTH))))
+			.with(WEST, Boolean.valueOf(this.connectsTo(blockState3, blockState3.isSideSolidFullSquare(blockView, blockPos4, Direction.EAST))))
+			.with(EAST, Boolean.valueOf(this.connectsTo(blockState4, blockState4.isSideSolidFullSquare(blockView, blockPos5, Direction.WEST))))
 			.with(WATERLOGGED, Boolean.valueOf(fluidState.getFluid() == Fluids.WATER));
 	}
 
 	@Override
-	public BlockState getStateForNeighborUpdate(
-		BlockState blockState, Direction direction, BlockState blockState2, IWorld iWorld, BlockPos blockPos, BlockPos blockPos2
-	) {
-		if ((Boolean)blockState.get(WATERLOGGED)) {
-			iWorld.getFluidTickScheduler().schedule(blockPos, Fluids.WATER, Fluids.WATER.getTickRate(iWorld));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState newState, WorldAccess world, BlockPos pos, BlockPos posFrom) {
+		if ((Boolean)state.get(WATERLOGGED)) {
+			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 
 		return direction.getAxis().isHorizontal()
-			? blockState.with(
+			? state.with(
 				(Property)FACING_PROPERTIES.get(direction),
-				Boolean.valueOf(this.connectsTo(blockState2, blockState2.isSideSolidFullSquare(iWorld, blockPos2, direction.getOpposite())))
+				Boolean.valueOf(this.connectsTo(newState, newState.isSideSolidFullSquare(world, posFrom, direction.getOpposite())))
 			)
-			: super.getStateForNeighborUpdate(blockState, direction, blockState2, iWorld, blockPos, blockPos2);
+			: super.getStateForNeighborUpdate(state, direction, newState, world, pos, posFrom);
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockState blockState, BlockState blockState2, Direction direction) {
-		if (blockState2.getBlock() == this) {
+	public VoxelShape getVisualShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return VoxelShapes.empty();
+	}
+
+	@Override
+	public boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
+		if (stateFrom.isOf(this)) {
 			if (!direction.getAxis().isHorizontal()) {
 				return true;
 			}
 
-			if ((Boolean)blockState.get((Property)FACING_PROPERTIES.get(direction))
-				&& (Boolean)blockState2.get((Property)FACING_PROPERTIES.get(direction.getOpposite()))) {
+			if ((Boolean)state.get((Property)FACING_PROPERTIES.get(direction)) && (Boolean)stateFrom.get((Property)FACING_PROPERTIES.get(direction.getOpposite()))) {
 				return true;
 			}
 		}
 
-		return super.isSideInvisible(blockState, blockState2, direction);
+		return super.isSideInvisible(state, stateFrom, direction);
 	}
 
-	public final boolean connectsTo(BlockState blockState, boolean bl) {
-		Block block = blockState.getBlock();
-		return !cannotConnect(block) && bl || block instanceof PaneBlock;
+	public final boolean connectsTo(BlockState state, boolean bl) {
+		Block block = state.getBlock();
+		return !cannotConnect(block) && bl || block instanceof PaneBlock || block.isIn(BlockTags.WALLS);
 	}
 
 	@Override

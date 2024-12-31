@@ -41,8 +41,8 @@ public class AdvancementManager {
 		}
 	}
 
-	public void removeAll(Set<Identifier> set) {
-		for (Identifier identifier : set) {
+	public void removeAll(Set<Identifier> advancements) {
+		for (Identifier identifier : advancements) {
 			Advancement advancement = (Advancement)this.advancements.get(identifier);
 			if (advancement == null) {
 				LOGGER.warn("Told to remove advancement {} but I don't know what that is", identifier);
@@ -111,8 +111,8 @@ public class AdvancementManager {
 	}
 
 	@Nullable
-	public Advancement get(Identifier identifier) {
-		return (Advancement)this.advancements.get(identifier);
+	public Advancement get(Identifier id) {
+		return (Advancement)this.advancements.get(id);
 	}
 
 	public void setListener(@Nullable AdvancementManager.Listener listener) {
@@ -129,13 +129,13 @@ public class AdvancementManager {
 	}
 
 	public interface Listener {
-		void onRootAdded(Advancement advancement);
+		void onRootAdded(Advancement root);
 
-		void onRootRemoved(Advancement advancement);
+		void onRootRemoved(Advancement root);
 
-		void onDependentAdded(Advancement advancement);
+		void onDependentAdded(Advancement dependent);
 
-		void onDependentRemoved(Advancement advancement);
+		void onDependentRemoved(Advancement dependent);
 
 		void onClear();
 	}

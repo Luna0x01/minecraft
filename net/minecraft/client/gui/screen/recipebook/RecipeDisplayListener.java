@@ -4,5 +4,5 @@ import java.util.List;
 import net.minecraft.recipe.Recipe;
 
 public interface RecipeDisplayListener {
-	void onRecipesDisplayed(List<Recipe<?>> list);
+	void onRecipesDisplayed(List<Recipe<?>> recipes);
 }

@@ -1,13 +1,13 @@
 package net.minecraft.client.particle;
 
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
 
 public class RainSplashParticle extends SpriteBillboardParticle {
-	protected RainSplashParticle(World world, double d, double e, double f) {
-		super(world, d, e, f, 0.0, 0.0, 0.0);
+	protected RainSplashParticle(ClientWorld clientWorld, double d, double e, double f) {
+		super(clientWorld, d, e, f, 0.0, 0.0, 0.0);
 		this.velocityX *= 0.3F;
 		this.velocityY = Math.random() * 0.2F + 0.1F;
 		this.velocityZ *= 0.3F;
@@ -48,7 +48,7 @@ public class RainSplashParticle extends SpriteBillboardParticle {
 				this.world
 					.getBlockState(blockPos)
 					.getCollisionShape(this.world, blockPos)
-					.getEndingCoord(Direction.Axis.field_11052, this.x - (double)blockPos.getX(), this.z - (double)blockPos.getZ()),
+					.getEndingCoord(Direction.Axis.Y, this.x - (double)blockPos.getX(), this.z - (double)blockPos.getZ()),
 				(double)this.world.getFluidState(blockPos).getHeight(this.world, blockPos)
 			);
 			if (d > 0.0 && this.y < (double)blockPos.getY() + d) {
@@ -58,15 +58,15 @@ public class RainSplashParticle extends SpriteBillboardParticle {
 	}
 
 	public static class Factory implements ParticleFactory<DefaultParticleType> {
-		private final SpriteProvider field_17891;
+		private final SpriteProvider spriteProvider;
 
 		public Factory(SpriteProvider spriteProvider) {
-			this.field_17891 = spriteProvider;
+			this.spriteProvider = spriteProvider;
 		}
 
-		public Particle createParticle(DefaultParticleType defaultParticleType, World world, double d, double e, double f, double g, double h, double i) {
-			RainSplashParticle rainSplashParticle = new RainSplashParticle(world, d, e, f);
-			rainSplashParticle.setSprite(this.field_17891);
+		public Particle createParticle(DefaultParticleType defaultParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i) {
+			RainSplashParticle rainSplashParticle = new RainSplashParticle(clientWorld, d, e, f);
+			rainSplashParticle.setSprite(this.spriteProvider);
 			return rainSplashParticle;
 		}
 	}

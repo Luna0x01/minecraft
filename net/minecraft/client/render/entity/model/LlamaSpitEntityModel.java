@@ -5,30 +5,30 @@ import net.minecraft.client.model.ModelPart;
 import net.minecraft.entity.Entity;
 
 public class LlamaSpitEntityModel<T extends Entity> extends CompositeEntityModel<T> {
-	private final ModelPart field_3433 = new ModelPart(this);
+	private final ModelPart spit = new ModelPart(this);
 
 	public LlamaSpitEntityModel() {
 		this(0.0F);
 	}
 
-	public LlamaSpitEntityModel(float f) {
+	public LlamaSpitEntityModel(float scale) {
 		int i = 2;
-		this.field_3433.setTextureOffset(0, 0).addCuboid(-4.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
-		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, -4.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
-		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, -4.0F, 2.0F, 2.0F, 2.0F, f);
-		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
-		this.field_3433.setTextureOffset(0, 0).addCuboid(2.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
-		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 2.0F, 0.0F, 2.0F, 2.0F, 2.0F, f);
-		this.field_3433.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 2.0F, 2.0F, 2.0F, 2.0F, f);
-		this.field_3433.setPivot(0.0F, 0.0F, 0.0F);
+		this.spit.setTextureOffset(0, 0).addCuboid(-4.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
+		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, -4.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
+		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, -4.0F, 2.0F, 2.0F, 2.0F, scale);
+		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
+		this.spit.setTextureOffset(0, 0).addCuboid(2.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
+		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 2.0F, 0.0F, 2.0F, 2.0F, 2.0F, scale);
+		this.spit.setTextureOffset(0, 0).addCuboid(0.0F, 0.0F, 2.0F, 2.0F, 2.0F, 2.0F, scale);
+		this.spit.setPivot(0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
-	public void setAngles(T entity, float f, float g, float h, float i, float j) {
+	public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
 	}
 
 	@Override
 	public Iterable<ModelPart> getParts() {
-		return ImmutableList.of(this.field_3433);
+		return ImmutableList.of(this.spit);
 	}
 }

@@ -10,65 +10,74 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 
 public class BuriedTreasureGenerator {
 	public static class Piece extends StructurePiece {
-		public Piece(BlockPos blockPos) {
+		public Piece(BlockPos pos) {
 			super(StructurePieceType.BURIED_TREASURE, 0);
-			this.boundingBox = new BlockBox(blockPos.getX(), blockPos.getY(), blockPos.getZ(), blockPos.getX(), blockPos.getY(), blockPos.getZ());
+			this.boundingBox = new BlockBox(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
 		}
 
-		public Piece(StructureManager structureManager, CompoundTag compoundTag) {
-			super(StructurePieceType.BURIED_TREASURE, compoundTag);
-		}
-
-		@Override
-		protected void toNbt(CompoundTag compoundTag) {
+		public Piece(StructureManager manager, CompoundTag tag) {
+			super(StructurePieceType.BURIED_TREASURE, tag);
 		}
 
 		@Override
-		public boolean generate(IWorld iWorld, ChunkGenerator<?> chunkGenerator, Random random, BlockBox blockBox, ChunkPos chunkPos) {
-			int i = iWorld.getTopY(Heightmap.Type.field_13195, this.boundingBox.minX, this.boundingBox.minZ);
+		protected void toNbt(CompoundTag tag) {
+		}
+
+		@Override
+		public boolean generate(
+			StructureWorldAccess structureWorldAccess,
+			StructureAccessor structureAccessor,
+			ChunkGenerator chunkGenerator,
+			Random random,
+			BlockBox boundingBox,
+			ChunkPos chunkPos,
+			BlockPos blockPos
+		) {
+			int i = structureWorldAccess.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, this.boundingBox.minX, this.boundingBox.minZ);
 			BlockPos.Mutable mutable = new BlockPos.Mutable(this.boundingBox.minX, i, this.boundingBox.minZ);
 
 			while (mutable.getY() > 0) {
-				BlockState blockState = iWorld.getBlockState(mutable);
-				BlockState blockState2 = iWorld.getBlockState(mutable.down());
-				if (blockState2 == Blocks.field_9979.getDefaultState()
-					|| blockState2 == Blocks.field_10340.getDefaultState()
-					|| blockState2 == Blocks.field_10115.getDefaultState()
-					|| blockState2 == Blocks.field_10474.getDefaultState()
-					|| blockState2 == Blocks.field_10508.getDefaultState()) {
-					BlockState blockState3 = !blockState.isAir() && !this.isLiquid(blockState) ? blockState : Blocks.field_10102.getDefaultState();
+				BlockState blockState = structureWorldAccess.getBlockState(mutable);
+				BlockState blockState2 = structureWorldAccess.getBlockState(mutable.down());
+				if (blockState2 == Blocks.SANDSTONE.getDefaultState()
+					|| blockState2 == Blocks.STONE.getDefaultState()
+					|| blockState2 == Blocks.ANDESITE.getDefaultState()
+					|| blockState2 == Blocks.GRANITE.getDefaultState()
+					|| blockState2 == Blocks.DIORITE.getDefaultState()) {
+					BlockState blockState3 = !blockState.isAir() && !this.isLiquid(blockState) ? blockState : Blocks.SAND.getDefaultState();
 
 					for (Direction direction : Direction.values()) {
-						BlockPos blockPos = mutable.offset(direction);
-						BlockState blockState4 = iWorld.getBlockState(blockPos);
+						BlockPos blockPos2 = mutable.offset(direction);
+						BlockState blockState4 = structureWorldAccess.getBlockState(blockPos2);
 						if (blockState4.isAir() || this.isLiquid(blockState4)) {
-							BlockPos blockPos2 = blockPos.down();
-							BlockState blockState5 = iWorld.getBlockState(blockPos2);
-							if ((blockState5.isAir() || this.isLiquid(blockState5)) && direction != Direction.field_11036) {
-								iWorld.setBlockState(blockPos, blockState2, 3);
+							BlockPos blockPos3 = blockPos2.down();
+							BlockState blockState5 = structureWorldAccess.getBlockState(blockPos3);
+							if ((blockState5.isAir() || this.isLiquid(blockState5)) && direction != Direction.UP) {
+								structureWorldAccess.setBlockState(blockPos2, blockState2, 3);
 							} else {
-								iWorld.setBlockState(blockPos, blockState3, 3);
+								structureWorldAccess.setBlockState(blockPos2, blockState3, 3);
 							}
 						}
 					}
 
 					this.boundingBox = new BlockBox(mutable.getX(), mutable.getY(), mutable.getZ(), mutable.getX(), mutable.getY(), mutable.getZ());
-					return this.addChest(iWorld, blockBox, random, mutable, LootTables.field_251, null);
+					return this.addChest(structureWorldAccess, boundingBox, random, mutable, LootTables.BURIED_TREASURE_CHEST, null);
 				}
 
-				mutable.setOffset(0, -1, 0);
+				mutable.move(0, -1, 0);
 			}
 
 			return false;
 		}
 
-		private boolean isLiquid(BlockState blockState) {
-			return blockState == Blocks.field_10382.getDefaultState() || blockState == Blocks.field_10164.getDefaultState();
+		private boolean isLiquid(BlockState state) {
+			return state == Blocks.WATER.getDefaultState() || state == Blocks.LAVA.getDefaultState();
 		}
 	}
 }

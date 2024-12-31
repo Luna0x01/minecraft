@@ -22,14 +22,14 @@ public class MultipartModelComponent {
 	private final MultipartModelSelector selector;
 	private final WeightedUnbakedModel model;
 
-	public MultipartModelComponent(MultipartModelSelector multipartModelSelector, WeightedUnbakedModel weightedUnbakedModel) {
-		if (multipartModelSelector == null) {
+	public MultipartModelComponent(MultipartModelSelector selector, WeightedUnbakedModel model) {
+		if (selector == null) {
 			throw new IllegalArgumentException("Missing condition for selector");
-		} else if (weightedUnbakedModel == null) {
+		} else if (model == null) {
 			throw new IllegalArgumentException("Missing variant for selector");
 		} else {
-			this.selector = multipartModelSelector;
-			this.model = weightedUnbakedModel;
+			this.selector = selector;
+			this.model = model;
 		}
 	}
 
@@ -37,12 +37,12 @@ public class MultipartModelComponent {
 		return this.model;
 	}
 
-	public Predicate<BlockState> getPredicate(StateManager<Block, BlockState> stateManager) {
-		return this.selector.getPredicate(stateManager);
+	public Predicate<BlockState> getPredicate(StateManager<Block, BlockState> stateFactory) {
+		return this.selector.getPredicate(stateFactory);
 	}
 
-	public boolean equals(Object object) {
-		return this == object;
+	public boolean equals(Object o) {
+		return this == o;
 	}
 
 	public int hashCode() {
@@ -58,23 +58,23 @@ public class MultipartModelComponent {
 			);
 		}
 
-		private MultipartModelSelector deserializeSelectorOrDefault(JsonObject jsonObject) {
-			return jsonObject.has("when") ? deserializeSelector(JsonHelper.getObject(jsonObject, "when")) : MultipartModelSelector.TRUE;
+		private MultipartModelSelector deserializeSelectorOrDefault(JsonObject object) {
+			return object.has("when") ? deserializeSelector(JsonHelper.getObject(object, "when")) : MultipartModelSelector.TRUE;
 		}
 
 		@VisibleForTesting
-		static MultipartModelSelector deserializeSelector(JsonObject jsonObject) {
-			Set<Entry<String, JsonElement>> set = jsonObject.entrySet();
+		static MultipartModelSelector deserializeSelector(JsonObject object) {
+			Set<Entry<String, JsonElement>> set = object.entrySet();
 			if (set.isEmpty()) {
 				throw new JsonParseException("No elements found in selector");
 			} else if (set.size() == 1) {
-				if (jsonObject.has("OR")) {
-					List<MultipartModelSelector> list = (List<MultipartModelSelector>)Streams.stream(JsonHelper.getArray(jsonObject, "OR"))
+				if (object.has("OR")) {
+					List<MultipartModelSelector> list = (List<MultipartModelSelector>)Streams.stream(JsonHelper.getArray(object, "OR"))
 						.map(jsonElement -> deserializeSelector(jsonElement.getAsJsonObject()))
 						.collect(Collectors.toList());
 					return new OrMultipartModelSelector(list);
-				} else if (jsonObject.has("AND")) {
-					List<MultipartModelSelector> list2 = (List<MultipartModelSelector>)Streams.stream(JsonHelper.getArray(jsonObject, "AND"))
+				} else if (object.has("AND")) {
+					List<MultipartModelSelector> list2 = (List<MultipartModelSelector>)Streams.stream(JsonHelper.getArray(object, "AND"))
 						.map(jsonElement -> deserializeSelector(jsonElement.getAsJsonObject()))
 						.collect(Collectors.toList());
 					return new AndMultipartModelSelector(list2);

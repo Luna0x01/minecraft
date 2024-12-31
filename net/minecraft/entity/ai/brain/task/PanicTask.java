@@ -20,29 +20,29 @@ public class PanicTask extends Task<VillagerEntity> {
 	protected void run(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		if (wasHurt(villagerEntity) || isHostileNearby(villagerEntity)) {
 			Brain<?> brain = villagerEntity.getBrain();
-			if (!brain.hasActivity(Activity.field_18599)) {
-				brain.forget(MemoryModuleType.field_18449);
-				brain.forget(MemoryModuleType.field_18445);
-				brain.forget(MemoryModuleType.field_18446);
-				brain.forget(MemoryModuleType.field_18448);
-				brain.forget(MemoryModuleType.field_18447);
+			if (!brain.hasActivity(Activity.PANIC)) {
+				brain.forget(MemoryModuleType.PATH);
+				brain.forget(MemoryModuleType.WALK_TARGET);
+				brain.forget(MemoryModuleType.LOOK_TARGET);
+				brain.forget(MemoryModuleType.BREED_TARGET);
+				brain.forget(MemoryModuleType.INTERACTION_TARGET);
 			}
 
-			brain.resetPossibleActivities(Activity.field_18599);
+			brain.doExclusively(Activity.PANIC);
 		}
 	}
 
 	protected void keepRunning(ServerWorld serverWorld, VillagerEntity villagerEntity, long l) {
 		if (l % 100L == 0L) {
-			villagerEntity.summonGolem(l, 3);
+			villagerEntity.summonGolem(serverWorld, l, 3);
 		}
 	}
 
-	public static boolean isHostileNearby(LivingEntity livingEntity) {
-		return livingEntity.getBrain().hasMemoryModule(MemoryModuleType.field_18453);
+	public static boolean isHostileNearby(LivingEntity entity) {
+		return entity.getBrain().hasMemoryModule(MemoryModuleType.NEAREST_HOSTILE);
 	}
 
-	public static boolean wasHurt(LivingEntity livingEntity) {
-		return livingEntity.getBrain().hasMemoryModule(MemoryModuleType.field_18451);
+	public static boolean wasHurt(LivingEntity entity) {
+		return entity.getBrain().hasMemoryModule(MemoryModuleType.HURT_BY);
 	}
 }

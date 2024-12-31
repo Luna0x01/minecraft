@@ -3,14 +3,14 @@ package net.minecraft.datafixer.fix;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFix;
 import com.mojang.datafixers.DataFixUtils;
-import com.mojang.datafixers.Dynamic;
 import com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.schemas.Schema;
+import com.mojang.serialization.Dynamic;
 import net.minecraft.datafixer.TypeReferences;
 
 public class OptionsAddTextBackgroundFix extends DataFix {
-	public OptionsAddTextBackgroundFix(Schema schema, boolean bl) {
-		super(schema, bl);
+	public OptionsAddTextBackgroundFix(Schema outputSchema, boolean changesType) {
+		super(outputSchema, changesType);
 	}
 
 	public TypeRewriteRule makeRule() {
@@ -22,16 +22,17 @@ public class OptionsAddTextBackgroundFix extends DataFix {
 					dynamic -> (Dynamic)DataFixUtils.orElse(
 							dynamic.get("chatOpacity")
 								.asString()
-								.map(string -> dynamic.set("textBackgroundOpacity", dynamic.createDouble(this.convertToTextBackgroundOpacity(string)))),
+								.map(string -> dynamic.set("textBackgroundOpacity", dynamic.createDouble(this.convertToTextBackgroundOpacity(string))))
+								.result(),
 							dynamic
 						)
 				)
 		);
 	}
 
-	private double convertToTextBackgroundOpacity(String string) {
+	private double convertToTextBackgroundOpacity(String chatOpacity) {
 		try {
-			double d = 0.9 * Double.parseDouble(string) + 0.1;
+			double d = 0.9 * Double.parseDouble(chatOpacity) + 0.1;
 			return d / 2.0;
 		} catch (NumberFormatException var4) {
 			return 0.5;

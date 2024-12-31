@@ -3,30 +3,34 @@ package net.minecraft.client.network;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.exceptions.AuthenticationException;
 import com.mojang.authlib.exceptions.AuthenticationUnavailableException;
+import com.mojang.authlib.exceptions.InsufficientPrivilegesException;
 import com.mojang.authlib.exceptions.InvalidCredentialsException;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.network.packet.LoginCompressionS2CPacket;
-import net.minecraft.client.network.packet.LoginDisconnectS2CPacket;
-import net.minecraft.client.network.packet.LoginHelloS2CPacket;
-import net.minecraft.client.network.packet.LoginQueryRequestS2CPacket;
-import net.minecraft.client.network.packet.LoginSuccessS2CPacket;
+import net.minecraft.client.gui.screen.ScreenTexts;
+import net.minecraft.client.realms.gui.screen.DisconnectedRealmsScreen;
+import net.minecraft.client.realms.gui.screen.RealmsScreen;
 import net.minecraft.client.util.NetworkUtils;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkEncryptionUtils;
 import net.minecraft.network.NetworkState;
+import net.minecraft.network.encryption.NetworkEncryptionException;
 import net.minecraft.network.listener.ClientLoginPacketListener;
-import net.minecraft.realms.DisconnectedRealmsScreen;
-import net.minecraft.realms.RealmsScreenProxy;
-import net.minecraft.server.network.packet.LoginKeyC2SPacket;
-import net.minecraft.server.network.packet.LoginQueryResponseC2SPacket;
+import net.minecraft.network.packet.c2s.login.LoginKeyC2SPacket;
+import net.minecraft.network.packet.c2s.login.LoginQueryResponseC2SPacket;
+import net.minecraft.network.packet.s2c.login.LoginCompressionS2CPacket;
+import net.minecraft.network.packet.s2c.login.LoginDisconnectS2CPacket;
+import net.minecraft.network.packet.s2c.login.LoginHelloS2CPacket;
+import net.minecraft.network.packet.s2c.login.LoginQueryRequestS2CPacket;
+import net.minecraft.network.packet.s2c.login.LoginSuccessS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import org.apache.logging.log4j.LogManager;
@@ -41,19 +45,30 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 	private final ClientConnection connection;
 	private GameProfile profile;
 
-	public ClientLoginNetworkHandler(ClientConnection clientConnection, MinecraftClient minecraftClient, @Nullable Screen screen, Consumer<Text> consumer) {
-		this.connection = clientConnection;
-		this.client = minecraftClient;
-		this.parentGui = screen;
-		this.statusConsumer = consumer;
+	public ClientLoginNetworkHandler(ClientConnection connection, MinecraftClient client, @Nullable Screen parentGui, Consumer<Text> statusConsumer) {
+		this.connection = connection;
+		this.client = client;
+		this.parentGui = parentGui;
+		this.statusConsumer = statusConsumer;
 	}
 
 	@Override
-	public void onHello(LoginHelloS2CPacket loginHelloS2CPacket) {
-		SecretKey secretKey = NetworkEncryptionUtils.generateKey();
-		PublicKey publicKey = loginHelloS2CPacket.getPublicKey();
-		String string = new BigInteger(NetworkEncryptionUtils.generateServerId(loginHelloS2CPacket.getServerId(), publicKey, secretKey)).toString(16);
-		LoginKeyC2SPacket loginKeyC2SPacket = new LoginKeyC2SPacket(secretKey, publicKey, loginHelloS2CPacket.getNonce());
+	public void onHello(LoginHelloS2CPacket packet) {
+		Cipher cipher;
+		Cipher cipher2;
+		String string;
+		LoginKeyC2SPacket loginKeyC2SPacket;
+		try {
+			SecretKey secretKey = NetworkEncryptionUtils.generateKey();
+			PublicKey publicKey = packet.getPublicKey();
+			string = new BigInteger(NetworkEncryptionUtils.generateServerId(packet.getServerId(), publicKey, secretKey)).toString(16);
+			cipher = NetworkEncryptionUtils.cipherFromKey(2, secretKey);
+			cipher2 = NetworkEncryptionUtils.cipherFromKey(1, secretKey);
+			loginKeyC2SPacket = new LoginKeyC2SPacket(secretKey, publicKey, packet.getNonce());
+		} catch (NetworkEncryptionException var8) {
+			throw new IllegalStateException("Protocol error", var8);
+		}
+
 		this.statusConsumer.accept(new TranslatableText("connect.authorizing"));
 		NetworkUtils.downloadExecutor.submit(() -> {
 			Text text = this.joinServerSession(string);
@@ -67,21 +82,23 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 			}
 
 			this.statusConsumer.accept(new TranslatableText("connect.encrypting"));
-			this.connection.send(loginKeyC2SPacket, future -> this.connection.setupEncryption(secretKey));
+			this.connection.send(loginKeyC2SPacket, future -> this.connection.setupEncryption(cipher, cipher2));
 		});
 	}
 
 	@Nullable
-	private Text joinServerSession(String string) {
+	private Text joinServerSession(String serverId) {
 		try {
-			this.getSessionService().joinServer(this.client.getSession().getProfile(), this.client.getSession().getAccessToken(), string);
+			this.getSessionService().joinServer(this.client.getSession().getProfile(), this.client.getSession().getAccessToken(), serverId);
 			return null;
 		} catch (AuthenticationUnavailableException var3) {
 			return new TranslatableText("disconnect.loginFailedInfo", new TranslatableText("disconnect.loginFailedInfo.serversUnavailable"));
 		} catch (InvalidCredentialsException var4) {
 			return new TranslatableText("disconnect.loginFailedInfo", new TranslatableText("disconnect.loginFailedInfo.invalidSession"));
-		} catch (AuthenticationException var5) {
-			return new TranslatableText("disconnect.loginFailedInfo", var5.getMessage());
+		} catch (InsufficientPrivilegesException var5) {
+			return new TranslatableText("disconnect.loginFailedInfo", new TranslatableText("disconnect.loginFailedInfo.insufficientPrivileges"));
+		} catch (AuthenticationException var6) {
+			return new TranslatableText("disconnect.loginFailedInfo", var6.getMessage());
 		}
 	}
 
@@ -90,19 +107,19 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 	}
 
 	@Override
-	public void onLoginSuccess(LoginSuccessS2CPacket loginSuccessS2CPacket) {
+	public void onLoginSuccess(LoginSuccessS2CPacket packet) {
 		this.statusConsumer.accept(new TranslatableText("connect.joining"));
-		this.profile = loginSuccessS2CPacket.getProfile();
-		this.connection.setState(NetworkState.field_20591);
+		this.profile = packet.getProfile();
+		this.connection.setState(NetworkState.PLAY);
 		this.connection.setPacketListener(new ClientPlayNetworkHandler(this.client, this.parentGui, this.connection, this.profile));
 	}
 
 	@Override
-	public void onDisconnected(Text text) {
-		if (this.parentGui != null && this.parentGui instanceof RealmsScreenProxy) {
-			this.client.openScreen(new DisconnectedRealmsScreen(((RealmsScreenProxy)this.parentGui).getScreen(), "connect.failed", text).getProxy());
+	public void onDisconnected(Text reason) {
+		if (this.parentGui != null && this.parentGui instanceof RealmsScreen) {
+			this.client.openScreen(new DisconnectedRealmsScreen(this.parentGui, ScreenTexts.CONNECT_FAILED, reason));
 		} else {
-			this.client.openScreen(new DisconnectedScreen(this.parentGui, "connect.failed", text));
+			this.client.openScreen(new DisconnectedScreen(this.parentGui, ScreenTexts.CONNECT_FAILED, reason));
 		}
 	}
 
@@ -112,20 +129,20 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 	}
 
 	@Override
-	public void onDisconnect(LoginDisconnectS2CPacket loginDisconnectS2CPacket) {
-		this.connection.disconnect(loginDisconnectS2CPacket.getReason());
+	public void onDisconnect(LoginDisconnectS2CPacket packet) {
+		this.connection.disconnect(packet.getReason());
 	}
 
 	@Override
-	public void onCompression(LoginCompressionS2CPacket loginCompressionS2CPacket) {
+	public void onCompression(LoginCompressionS2CPacket packet) {
 		if (!this.connection.isLocal()) {
-			this.connection.setMinCompressedSize(loginCompressionS2CPacket.getCompressionThreshold());
+			this.connection.setCompressionThreshold(packet.getCompressionThreshold());
 		}
 	}
 
 	@Override
-	public void onQueryRequest(LoginQueryRequestS2CPacket loginQueryRequestS2CPacket) {
+	public void onQueryRequest(LoginQueryRequestS2CPacket packet) {
 		this.statusConsumer.accept(new TranslatableText("connect.negotiating"));
-		this.connection.send(new LoginQueryResponseC2SPacket(loginQueryRequestS2CPacket.getQueryId(), null));
+		this.connection.send(new LoginQueryResponseC2SPacket(packet.getQueryId(), null));
 	}
 }

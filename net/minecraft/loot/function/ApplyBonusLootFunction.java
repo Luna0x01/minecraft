@@ -25,43 +25,48 @@ public class ApplyBonusLootFunction extends ConditionalLootFunction {
 	private final Enchantment enchantment;
 	private final ApplyBonusLootFunction.Formula formula;
 
-	private ApplyBonusLootFunction(LootCondition[] lootConditions, Enchantment enchantment, ApplyBonusLootFunction.Formula formula) {
-		super(lootConditions);
+	private ApplyBonusLootFunction(LootCondition[] conditions, Enchantment enchantment, ApplyBonusLootFunction.Formula formula) {
+		super(conditions);
 		this.enchantment = enchantment;
 		this.formula = formula;
 	}
 
 	@Override
-	public Set<LootContextParameter<?>> getRequiredParameters() {
-		return ImmutableSet.of(LootContextParameters.field_1229);
+	public LootFunctionType getType() {
+		return LootFunctionTypes.APPLY_BONUS;
 	}
 
 	@Override
-	public ItemStack process(ItemStack itemStack, LootContext lootContext) {
-		ItemStack itemStack2 = lootContext.get(LootContextParameters.field_1229);
-		if (itemStack2 != null) {
-			int i = EnchantmentHelper.getLevel(this.enchantment, itemStack2);
-			int j = this.formula.getValue(lootContext.getRandom(), itemStack.getCount(), i);
-			itemStack.setCount(j);
-		}
-
-		return itemStack;
+	public Set<LootContextParameter<?>> getRequiredParameters() {
+		return ImmutableSet.of(LootContextParameters.TOOL);
 	}
 
-	public static ConditionalLootFunction.Builder<?> binomialWithBonusCount(Enchantment enchantment, float f, int i) {
-		return builder(lootConditions -> new ApplyBonusLootFunction(lootConditions, enchantment, new ApplyBonusLootFunction.BinomialWithBonusCount(i, f)));
+	@Override
+	public ItemStack process(ItemStack stack, LootContext context) {
+		ItemStack itemStack = context.get(LootContextParameters.TOOL);
+		if (itemStack != null) {
+			int i = EnchantmentHelper.getLevel(this.enchantment, itemStack);
+			int j = this.formula.getValue(context.getRandom(), stack.getCount(), i);
+			stack.setCount(j);
+		}
+
+		return stack;
+	}
+
+	public static ConditionalLootFunction.Builder<?> binomialWithBonusCount(Enchantment enchantment, float probability, int extra) {
+		return builder(conditions -> new ApplyBonusLootFunction(conditions, enchantment, new ApplyBonusLootFunction.BinomialWithBonusCount(extra, probability)));
 	}
 
 	public static ConditionalLootFunction.Builder<?> oreDrops(Enchantment enchantment) {
-		return builder(lootConditions -> new ApplyBonusLootFunction(lootConditions, enchantment, new ApplyBonusLootFunction.OreDrops()));
+		return builder(conditions -> new ApplyBonusLootFunction(conditions, enchantment, new ApplyBonusLootFunction.OreDrops()));
 	}
 
 	public static ConditionalLootFunction.Builder<?> uniformBonusCount(Enchantment enchantment) {
-		return builder(lootConditions -> new ApplyBonusLootFunction(lootConditions, enchantment, new ApplyBonusLootFunction.UniformBonusCount(1)));
+		return builder(conditions -> new ApplyBonusLootFunction(conditions, enchantment, new ApplyBonusLootFunction.UniformBonusCount(1)));
 	}
 
-	public static ConditionalLootFunction.Builder<?> uniformBonusCount(Enchantment enchantment, int i) {
-		return builder(lootConditions -> new ApplyBonusLootFunction(lootConditions, enchantment, new ApplyBonusLootFunction.UniformBonusCount(i)));
+	public static ConditionalLootFunction.Builder<?> uniformBonusCount(Enchantment enchantment, int bonusMultiplier) {
+		return builder(conditions -> new ApplyBonusLootFunction(conditions, enchantment, new ApplyBonusLootFunction.UniformBonusCount(bonusMultiplier)));
 	}
 
 	static {
@@ -75,31 +80,31 @@ public class ApplyBonusLootFunction extends ConditionalLootFunction {
 		private final int extra;
 		private final float probability;
 
-		public BinomialWithBonusCount(int i, float f) {
-			this.extra = i;
-			this.probability = f;
+		public BinomialWithBonusCount(int extra, float probability) {
+			this.extra = extra;
+			this.probability = probability;
 		}
 
 		@Override
-		public int getValue(Random random, int i, int j) {
-			for (int k = 0; k < j + this.extra; k++) {
+		public int getValue(Random random, int initialCount, int enchantmentLevel) {
+			for (int i = 0; i < enchantmentLevel + this.extra; i++) {
 				if (random.nextFloat() < this.probability) {
-					i++;
+					initialCount++;
 				}
 			}
 
-			return i;
+			return initialCount;
 		}
 
 		@Override
-		public void toJson(JsonObject jsonObject, JsonSerializationContext jsonSerializationContext) {
-			jsonObject.addProperty("extra", this.extra);
-			jsonObject.addProperty("probability", this.probability);
+		public void toJson(JsonObject json, JsonSerializationContext context) {
+			json.addProperty("extra", this.extra);
+			json.addProperty("probability", this.probability);
 		}
 
-		public static ApplyBonusLootFunction.Formula fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-			int i = JsonHelper.getInt(jsonObject, "extra");
-			float f = JsonHelper.getFloat(jsonObject, "probability");
+		public static ApplyBonusLootFunction.Formula fromJson(JsonObject json, JsonDeserializationContext context) {
+			int i = JsonHelper.getInt(json, "extra");
+			float f = JsonHelper.getFloat(json, "probability");
 			return new ApplyBonusLootFunction.BinomialWithBonusCount(i, f);
 		}
 
@@ -109,14 +114,56 @@ public class ApplyBonusLootFunction extends ConditionalLootFunction {
 		}
 	}
 
-	public static class Factory extends ConditionalLootFunction.Factory<ApplyBonusLootFunction> {
-		public Factory() {
-			super(new Identifier("apply_bonus"), ApplyBonusLootFunction.class);
+	interface Formula {
+		int getValue(Random random, int initialCount, int enchantmentLevel);
+
+		void toJson(JsonObject json, JsonSerializationContext context);
+
+		Identifier getId();
+	}
+
+	interface FormulaFactory {
+		ApplyBonusLootFunction.Formula deserialize(JsonObject functionJson, JsonDeserializationContext context);
+	}
+
+	static final class OreDrops implements ApplyBonusLootFunction.Formula {
+		public static final Identifier ID = new Identifier("ore_drops");
+
+		private OreDrops() {
 		}
 
+		@Override
+		public int getValue(Random random, int initialCount, int enchantmentLevel) {
+			if (enchantmentLevel > 0) {
+				int i = random.nextInt(enchantmentLevel + 2) - 1;
+				if (i < 0) {
+					i = 0;
+				}
+
+				return initialCount * (i + 1);
+			} else {
+				return initialCount;
+			}
+		}
+
+		@Override
+		public void toJson(JsonObject json, JsonSerializationContext context) {
+		}
+
+		public static ApplyBonusLootFunction.Formula fromJson(JsonObject json, JsonDeserializationContext context) {
+			return new ApplyBonusLootFunction.OreDrops();
+		}
+
+		@Override
+		public Identifier getId() {
+			return ID;
+		}
+	}
+
+	public static class Serializer extends ConditionalLootFunction.Serializer<ApplyBonusLootFunction> {
 		public void toJson(JsonObject jsonObject, ApplyBonusLootFunction applyBonusLootFunction, JsonSerializationContext jsonSerializationContext) {
 			super.toJson(jsonObject, applyBonusLootFunction, jsonSerializationContext);
-			jsonObject.addProperty("enchantment", Registry.field_11160.getId(applyBonusLootFunction.enchantment).toString());
+			jsonObject.addProperty("enchantment", Registry.ENCHANTMENT.getId(applyBonusLootFunction.enchantment).toString());
 			jsonObject.addProperty("formula", applyBonusLootFunction.formula.getId().toString());
 			JsonObject jsonObject2 = new JsonObject();
 			applyBonusLootFunction.formula.toJson(jsonObject2, jsonSerializationContext);
@@ -127,7 +174,7 @@ public class ApplyBonusLootFunction extends ConditionalLootFunction {
 
 		public ApplyBonusLootFunction fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootCondition[] lootConditions) {
 			Identifier identifier = new Identifier(JsonHelper.getString(jsonObject, "enchantment"));
-			Enchantment enchantment = (Enchantment)Registry.field_11160
+			Enchantment enchantment = (Enchantment)Registry.ENCHANTMENT
 				.getOrEmpty(identifier)
 				.orElseThrow(() -> new JsonParseException("Invalid enchantment id: " + identifier));
 			Identifier identifier2 = new Identifier(JsonHelper.getString(jsonObject, "formula"));
@@ -147,72 +194,26 @@ public class ApplyBonusLootFunction extends ConditionalLootFunction {
 		}
 	}
 
-	interface Formula {
-		int getValue(Random random, int i, int j);
-
-		void toJson(JsonObject jsonObject, JsonSerializationContext jsonSerializationContext);
-
-		Identifier getId();
-	}
-
-	interface FormulaFactory {
-		ApplyBonusLootFunction.Formula deserialize(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext);
-	}
-
-	static final class OreDrops implements ApplyBonusLootFunction.Formula {
-		public static final Identifier ID = new Identifier("ore_drops");
-
-		private OreDrops() {
-		}
-
-		@Override
-		public int getValue(Random random, int i, int j) {
-			if (j > 0) {
-				int k = random.nextInt(j + 2) - 1;
-				if (k < 0) {
-					k = 0;
-				}
-
-				return i * (k + 1);
-			} else {
-				return i;
-			}
-		}
-
-		@Override
-		public void toJson(JsonObject jsonObject, JsonSerializationContext jsonSerializationContext) {
-		}
-
-		public static ApplyBonusLootFunction.Formula fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-			return new ApplyBonusLootFunction.OreDrops();
-		}
-
-		@Override
-		public Identifier getId() {
-			return ID;
-		}
-	}
-
 	static final class UniformBonusCount implements ApplyBonusLootFunction.Formula {
 		public static final Identifier ID = new Identifier("uniform_bonus_count");
 		private final int bonusMultiplier;
 
-		public UniformBonusCount(int i) {
-			this.bonusMultiplier = i;
+		public UniformBonusCount(int bonusMultiplier) {
+			this.bonusMultiplier = bonusMultiplier;
 		}
 
 		@Override
-		public int getValue(Random random, int i, int j) {
-			return i + random.nextInt(this.bonusMultiplier * j + 1);
+		public int getValue(Random random, int initialCount, int enchantmentLevel) {
+			return initialCount + random.nextInt(this.bonusMultiplier * enchantmentLevel + 1);
 		}
 
 		@Override
-		public void toJson(JsonObject jsonObject, JsonSerializationContext jsonSerializationContext) {
-			jsonObject.addProperty("bonusMultiplier", this.bonusMultiplier);
+		public void toJson(JsonObject json, JsonSerializationContext context) {
+			json.addProperty("bonusMultiplier", this.bonusMultiplier);
 		}
 
-		public static ApplyBonusLootFunction.Formula fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-			int i = JsonHelper.getInt(jsonObject, "bonusMultiplier");
+		public static ApplyBonusLootFunction.Formula fromJson(JsonObject json, JsonDeserializationContext context) {
+			int i = JsonHelper.getInt(json, "bonusMultiplier");
 			return new ApplyBonusLootFunction.UniformBonusCount(i);
 		}
 

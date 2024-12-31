@@ -16,12 +16,12 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends EntityRenderer<T> {
-	private static final Identifier SKIN = new Identifier("textures/entity/minecart.png");
+	private static final Identifier TEXTURE = new Identifier("textures/entity/minecart.png");
 	protected final EntityModel<T> model = new MinecartEntityModel<>();
 
 	public MinecartEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
-		this.shadowSize = 0.7F;
+		this.shadowRadius = 0.7F;
 	}
 
 	public void render(T abstractMinecartEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i) {
@@ -37,11 +37,11 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 		double e = MathHelper.lerp((double)g, abstractMinecartEntity.lastRenderY, abstractMinecartEntity.getY());
 		double m = MathHelper.lerp((double)g, abstractMinecartEntity.lastRenderZ, abstractMinecartEntity.getZ());
 		double n = 0.3F;
-		Vec3d vec3d = abstractMinecartEntity.method_7508(d, e, m);
+		Vec3d vec3d = abstractMinecartEntity.snapPositionToRail(d, e, m);
 		float o = MathHelper.lerp(g, abstractMinecartEntity.prevPitch, abstractMinecartEntity.pitch);
 		if (vec3d != null) {
-			Vec3d vec3d2 = abstractMinecartEntity.method_7505(d, e, m, 0.3F);
-			Vec3d vec3d3 = abstractMinecartEntity.method_7505(d, e, m, -0.3F);
+			Vec3d vec3d2 = abstractMinecartEntity.snapPositionToRailWithOffset(d, e, m, 0.3F);
+			Vec3d vec3d3 = abstractMinecartEntity.snapPositionToRailWithOffset(d, e, m, -0.3F);
 			if (vec3d2 == null) {
 				vec3d2 = vec3d;
 			}
@@ -74,7 +74,7 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 
 		int r = abstractMinecartEntity.getBlockOffset();
 		BlockState blockState = abstractMinecartEntity.getContainedBlock();
-		if (blockState.getRenderType() != BlockRenderType.field_11455) {
+		if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
 			matrixStack.push();
 			float s = 0.75F;
 			matrixStack.scale(0.75F, 0.75F, 0.75F);
@@ -92,12 +92,10 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 	}
 
 	public Identifier getTexture(T abstractMinecartEntity) {
-		return SKIN;
+		return TEXTURE;
 	}
 
-	protected void renderBlock(
-		T abstractMinecartEntity, float f, BlockState blockState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i
-	) {
-		MinecraftClient.getInstance().getBlockRenderManager().renderBlockAsEntity(blockState, matrixStack, vertexConsumerProvider, i, OverlayTexture.DEFAULT_UV);
+	protected void renderBlock(T entity, float delta, BlockState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
+		MinecraftClient.getInstance().getBlockRenderManager().renderBlockAsEntity(state, matrices, vertexConsumers, light, OverlayTexture.DEFAULT_UV);
 	}
 }

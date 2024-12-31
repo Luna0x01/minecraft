@@ -23,72 +23,72 @@ public class ResourceReloader<S> implements ResourceReloadMonitor {
 	private final AtomicInteger preparedCount = new AtomicInteger();
 
 	public static ResourceReloader<Void> create(
-		ResourceManager resourceManager, List<ResourceReloadListener> list, Executor executor, Executor executor2, CompletableFuture<Unit> completableFuture
+		ResourceManager manager, List<ResourceReloadListener> listeners, Executor prepareExecutor, Executor applyExecutor, CompletableFuture<Unit> initialStage
 	) {
 		return new ResourceReloader<>(
-			executor,
-			executor2,
-			resourceManager,
-			list,
-			(synchronizer, resourceManagerx, resourceReloadListener, executor2x, executor3) -> resourceReloadListener.reload(
-					synchronizer, resourceManagerx, DummyProfiler.INSTANCE, DummyProfiler.INSTANCE, executor, executor3
+			prepareExecutor,
+			applyExecutor,
+			manager,
+			listeners,
+			(synchronizer, resourceManager, resourceReloadListener, executor2, executor3) -> resourceReloadListener.reload(
+					synchronizer, resourceManager, DummyProfiler.INSTANCE, DummyProfiler.INSTANCE, prepareExecutor, executor3
 				),
-			completableFuture
+			initialStage
 		);
 	}
 
 	protected ResourceReloader(
-		Executor executor,
-		Executor executor2,
-		ResourceManager resourceManager,
-		List<ResourceReloadListener> list,
-		ResourceReloader.Factory<S> factory,
-		CompletableFuture<Unit> completableFuture
+		Executor prepareExecutor,
+		Executor applyExecutor,
+		ResourceManager manager,
+		List<ResourceReloadListener> listeners,
+		ResourceReloader.Factory<S> creator,
+		CompletableFuture<Unit> initialStage
 	) {
-		this.manager = resourceManager;
-		this.listenerCount = list.size();
+		this.manager = manager;
+		this.listenerCount = listeners.size();
 		this.preparingCount.incrementAndGet();
-		completableFuture.thenRun(this.preparedCount::incrementAndGet);
-		List<CompletableFuture<S>> list2 = Lists.newArrayList();
-		CompletableFuture<?> completableFuture2 = completableFuture;
-		this.waitingListeners = Sets.newHashSet(list);
+		initialStage.thenRun(this.preparedCount::incrementAndGet);
+		List<CompletableFuture<S>> list = Lists.newArrayList();
+		CompletableFuture<?> completableFuture = initialStage;
+		this.waitingListeners = Sets.newHashSet(listeners);
 
-		for (final ResourceReloadListener resourceReloadListener : list) {
-			final CompletableFuture<?> completableFuture3 = completableFuture2;
-			CompletableFuture<S> completableFuture4 = factory.create(new ResourceReloadListener.Synchronizer() {
+		for (final ResourceReloadListener resourceReloadListener : listeners) {
+			final CompletableFuture<?> completableFuture2 = completableFuture;
+			CompletableFuture<S> completableFuture3 = creator.create(new ResourceReloadListener.Synchronizer() {
 				@Override
-				public <T> CompletableFuture<T> whenPrepared(T object) {
-					executor2.execute(() -> {
+				public <T> CompletableFuture<T> whenPrepared(T preparedObject) {
+					applyExecutor.execute(() -> {
 						ResourceReloader.this.waitingListeners.remove(resourceReloadListener);
 						if (ResourceReloader.this.waitingListeners.isEmpty()) {
-							ResourceReloader.this.prepareStageFuture.complete(Unit.field_17274);
+							ResourceReloader.this.prepareStageFuture.complete(Unit.INSTANCE);
 						}
 					});
-					return ResourceReloader.this.prepareStageFuture.thenCombine(completableFuture3, (unit, object2) -> object);
+					return ResourceReloader.this.prepareStageFuture.thenCombine(completableFuture2, (unit, object2) -> preparedObject);
 				}
-			}, resourceManager, resourceReloadListener, runnable -> {
+			}, manager, resourceReloadListener, runnable -> {
 				this.preparingCount.incrementAndGet();
-				executor.execute(() -> {
+				prepareExecutor.execute(() -> {
 					runnable.run();
 					this.preparedCount.incrementAndGet();
 				});
 			}, runnable -> {
 				this.applyingCount++;
-				executor2.execute(() -> {
+				applyExecutor.execute(() -> {
 					runnable.run();
 					this.appliedCount++;
 				});
 			});
-			list2.add(completableFuture4);
-			completableFuture2 = completableFuture4;
+			list.add(completableFuture3);
+			completableFuture = completableFuture3;
 		}
 
-		this.applyStageFuture = Util.combine(list2);
+		this.applyStageFuture = Util.combine(list);
 	}
 
 	@Override
 	public CompletableFuture<Unit> whenComplete() {
-		return this.applyStageFuture.thenApply(list -> Unit.field_17274);
+		return this.applyStageFuture.thenApply(list -> Unit.INSTANCE);
 	}
 
 	@Override
@@ -118,11 +118,7 @@ public class ResourceReloader<S> implements ResourceReloadMonitor {
 
 	public interface Factory<S> {
 		CompletableFuture<S> create(
-			ResourceReloadListener.Synchronizer synchronizer,
-			ResourceManager resourceManager,
-			ResourceReloadListener resourceReloadListener,
-			Executor executor,
-			Executor executor2
+			ResourceReloadListener.Synchronizer helper, ResourceManager manager, ResourceReloadListener listener, Executor prepareExecutor, Executor applyExecutor
 		);
 	}
 }
