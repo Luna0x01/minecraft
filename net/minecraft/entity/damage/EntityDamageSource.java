@@ -1,0 +1,48 @@
+package net.minecraft.entity.damage;
+
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.CommonI18n;
+
+public class EntityDamageSource extends DamageSource {
+	protected Entity source;
+	private boolean thorns = false;
+
+	public EntityDamageSource(String string, Entity entity) {
+		super(string);
+		this.source = entity;
+	}
+
+	public EntityDamageSource setThorns() {
+		this.thorns = true;
+		return this;
+	}
+
+	public boolean isThorns() {
+		return this.thorns;
+	}
+
+	@Override
+	public Entity getAttacker() {
+		return this.source;
+	}
+
+	@Override
+	public Text getDeathMessage(LivingEntity entity) {
+		ItemStack itemStack = this.source instanceof LivingEntity ? ((LivingEntity)this.source).getStackInHand() : null;
+		String string = "death.attack." + this.name;
+		String string2 = string + ".item";
+		return itemStack != null && itemStack.hasCustomName() && CommonI18n.hasTranslation(string2)
+			? new TranslatableText(string2, entity.getName(), this.source.getName(), itemStack.toHoverableText())
+			: new TranslatableText(string, entity.getName(), this.source.getName());
+	}
+
+	@Override
+	public boolean isScaledWithDifficulty() {
+		return this.source != null && this.source instanceof LivingEntity && !(this.source instanceof PlayerEntity);
+	}
+}

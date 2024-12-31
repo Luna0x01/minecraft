@@ -1,0 +1,305 @@
+package net.minecraft.entity.thrown;
+
+import java.util.List;
+import java.util.UUID;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.particle.ParticleType;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.Projectile;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+
+public abstract class ThrowableEntity extends Entity implements Projectile {
+	private int blockX = -1;
+	private int blockY = -1;
+	private int blockZ = -1;
+	private Block inBlock;
+	protected boolean inGround;
+	public int shake;
+	private LivingEntity field_6932;
+	private String ownerName;
+	private int inGroundTime;
+	private int field_4079;
+
+	public ThrowableEntity(World world) {
+		super(world);
+		this.setBounds(0.25F, 0.25F);
+	}
+
+	@Override
+	protected void initDataTracker() {
+	}
+
+	@Override
+	public boolean shouldRender(double distance) {
+		double d = this.getBoundingBox().getAverage() * 4.0;
+		if (Double.isNaN(d)) {
+			d = 4.0;
+		}
+
+		d *= 64.0;
+		return distance < d * d;
+	}
+
+	public ThrowableEntity(World world, LivingEntity livingEntity) {
+		super(world);
+		this.field_6932 = livingEntity;
+		this.setBounds(0.25F, 0.25F);
+		this.refreshPositionAndAngles(livingEntity.x, livingEntity.y + (double)livingEntity.getEyeHeight(), livingEntity.z, livingEntity.yaw, livingEntity.pitch);
+		this.x = this.x - (double)(MathHelper.cos(this.yaw / 180.0F * (float) Math.PI) * 0.16F);
+		this.y -= 0.1F;
+		this.z = this.z - (double)(MathHelper.sin(this.yaw / 180.0F * (float) Math.PI) * 0.16F);
+		this.updatePosition(this.x, this.y, this.z);
+		float f = 0.4F;
+		this.velocityX = (double)(-MathHelper.sin(this.yaw / 180.0F * (float) Math.PI) * MathHelper.cos(this.pitch / 180.0F * (float) Math.PI) * f);
+		this.velocityZ = (double)(MathHelper.cos(this.yaw / 180.0F * (float) Math.PI) * MathHelper.cos(this.pitch / 180.0F * (float) Math.PI) * f);
+		this.velocityY = (double)(-MathHelper.sin((this.pitch + this.method_3235()) / 180.0F * (float) Math.PI) * f);
+		this.setVelocity(this.velocityX, this.velocityY, this.velocityZ, this.method_3234(), 1.0F);
+	}
+
+	public ThrowableEntity(World world, double d, double e, double f) {
+		super(world);
+		this.inGroundTime = 0;
+		this.setBounds(0.25F, 0.25F);
+		this.updatePosition(d, e, f);
+	}
+
+	protected float method_3234() {
+		return 1.5F;
+	}
+
+	protected float method_3235() {
+		return 0.0F;
+	}
+
+	@Override
+	public void setVelocity(double x, double y, double z, float speed, float divergence) {
+		float f = MathHelper.sqrt(x * x + y * y + z * z);
+		x /= (double)f;
+		y /= (double)f;
+		z /= (double)f;
+		x += this.random.nextGaussian() * 0.0075F * (double)divergence;
+		y += this.random.nextGaussian() * 0.0075F * (double)divergence;
+		z += this.random.nextGaussian() * 0.0075F * (double)divergence;
+		x *= (double)speed;
+		y *= (double)speed;
+		z *= (double)speed;
+		this.velocityX = x;
+		this.velocityY = y;
+		this.velocityZ = z;
+		float g = MathHelper.sqrt(x * x + z * z);
+		this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0 / (float) Math.PI);
+		this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)g) * 180.0 / (float) Math.PI);
+		this.inGroundTime = 0;
+	}
+
+	@Override
+	public void setVelocityClient(double x, double y, double z) {
+		this.velocityX = x;
+		this.velocityY = y;
+		this.velocityZ = z;
+		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
+			float f = MathHelper.sqrt(x * x + z * z);
+			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0 / (float) Math.PI);
+			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0 / (float) Math.PI);
+		}
+	}
+
+	@Override
+	public void tick() {
+		this.prevTickX = this.x;
+		this.prevTickY = this.y;
+		this.prevTickZ = this.z;
+		super.tick();
+		if (this.shake > 0) {
+			this.shake--;
+		}
+
+		if (this.inGround) {
+			if (this.world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ)).getBlock() == this.inBlock) {
+				this.inGroundTime++;
+				if (this.inGroundTime == 1200) {
+					this.remove();
+				}
+
+				return;
+			}
+
+			this.inGround = false;
+			this.velocityX = this.velocityX * (double)(this.random.nextFloat() * 0.2F);
+			this.velocityY = this.velocityY * (double)(this.random.nextFloat() * 0.2F);
+			this.velocityZ = this.velocityZ * (double)(this.random.nextFloat() * 0.2F);
+			this.inGroundTime = 0;
+			this.field_4079 = 0;
+		} else {
+			this.field_4079++;
+		}
+
+		Vec3d vec3d = new Vec3d(this.x, this.y, this.z);
+		Vec3d vec3d2 = new Vec3d(this.x + this.velocityX, this.y + this.velocityY, this.z + this.velocityZ);
+		BlockHitResult blockHitResult = this.world.rayTrace(vec3d, vec3d2);
+		vec3d = new Vec3d(this.x, this.y, this.z);
+		vec3d2 = new Vec3d(this.x + this.velocityX, this.y + this.velocityY, this.z + this.velocityZ);
+		if (blockHitResult != null) {
+			vec3d2 = new Vec3d(blockHitResult.pos.x, blockHitResult.pos.y, blockHitResult.pos.z);
+		}
+
+		if (!this.world.isClient) {
+			Entity entity = null;
+			List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0, 1.0, 1.0));
+			double d = 0.0;
+			LivingEntity livingEntity = this.getOwner();
+
+			for (int i = 0; i < list.size(); i++) {
+				Entity entity2 = (Entity)list.get(i);
+				if (entity2.collides() && (entity2 != livingEntity || this.field_4079 >= 5)) {
+					float f = 0.3F;
+					Box box = entity2.getBoundingBox().expand((double)f, (double)f, (double)f);
+					BlockHitResult blockHitResult2 = box.method_585(vec3d, vec3d2);
+					if (blockHitResult2 != null) {
+						double e = vec3d.squaredDistanceTo(blockHitResult2.pos);
+						if (e < d || d == 0.0) {
+							entity = entity2;
+							d = e;
+						}
+					}
+				}
+			}
+
+			if (entity != null) {
+				blockHitResult = new BlockHitResult(entity);
+			}
+		}
+
+		if (blockHitResult != null) {
+			if (blockHitResult.type == BlockHitResult.Type.BLOCK && this.world.getBlockState(blockHitResult.getBlockPos()).getBlock() == Blocks.NETHER_PORTAL) {
+				this.setInNetherPortal(blockHitResult.getBlockPos());
+			} else {
+				this.onCollision(blockHitResult);
+			}
+		}
+
+		this.x = this.x + this.velocityX;
+		this.y = this.y + this.velocityY;
+		this.z = this.z + this.velocityZ;
+		float g = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
+		this.yaw = (float)(MathHelper.atan2(this.velocityX, this.velocityZ) * 180.0 / (float) Math.PI);
+		this.pitch = (float)(MathHelper.atan2(this.velocityY, (double)g) * 180.0 / (float) Math.PI);
+
+		while (this.pitch - this.prevPitch < -180.0F) {
+			this.prevPitch -= 360.0F;
+		}
+
+		while (this.pitch - this.prevPitch >= 180.0F) {
+			this.prevPitch += 360.0F;
+		}
+
+		while (this.yaw - this.prevYaw < -180.0F) {
+			this.prevYaw -= 360.0F;
+		}
+
+		while (this.yaw - this.prevYaw >= 180.0F) {
+			this.prevYaw += 360.0F;
+		}
+
+		this.pitch = this.prevPitch + (this.pitch - this.prevPitch) * 0.2F;
+		this.yaw = this.prevYaw + (this.yaw - this.prevYaw) * 0.2F;
+		float h = 0.99F;
+		float j = this.getGravity();
+		if (this.isTouchingWater()) {
+			for (int k = 0; k < 4; k++) {
+				float l = 0.25F;
+				this.world
+					.addParticle(
+						ParticleType.BUBBLE,
+						this.x - this.velocityX * (double)l,
+						this.y - this.velocityY * (double)l,
+						this.z - this.velocityZ * (double)l,
+						this.velocityX,
+						this.velocityY,
+						this.velocityZ
+					);
+			}
+
+			h = 0.8F;
+		}
+
+		this.velocityX *= (double)h;
+		this.velocityY *= (double)h;
+		this.velocityZ *= (double)h;
+		this.velocityY -= (double)j;
+		this.updatePosition(this.x, this.y, this.z);
+	}
+
+	protected float getGravity() {
+		return 0.03F;
+	}
+
+	protected abstract void onCollision(BlockHitResult result);
+
+	@Override
+	public void writeCustomDataToNbt(NbtCompound nbt) {
+		nbt.putShort("xTile", (short)this.blockX);
+		nbt.putShort("yTile", (short)this.blockY);
+		nbt.putShort("zTile", (short)this.blockZ);
+		Identifier identifier = Block.REGISTRY.getIdentifier(this.inBlock);
+		nbt.putString("inTile", identifier == null ? "" : identifier.toString());
+		nbt.putByte("shake", (byte)this.shake);
+		nbt.putByte("inGround", (byte)(this.inGround ? 1 : 0));
+		if ((this.ownerName == null || this.ownerName.length() == 0) && this.field_6932 instanceof PlayerEntity) {
+			this.ownerName = this.field_6932.getTranslationKey();
+		}
+
+		nbt.putString("ownerName", this.ownerName == null ? "" : this.ownerName);
+	}
+
+	@Override
+	public void readCustomDataFromNbt(NbtCompound nbt) {
+		this.blockX = nbt.getShort("xTile");
+		this.blockY = nbt.getShort("yTile");
+		this.blockZ = nbt.getShort("zTile");
+		if (nbt.contains("inTile", 8)) {
+			this.inBlock = Block.get(nbt.getString("inTile"));
+		} else {
+			this.inBlock = Block.getById(nbt.getByte("inTile") & 255);
+		}
+
+		this.shake = nbt.getByte("shake") & 255;
+		this.inGround = nbt.getByte("inGround") == 1;
+		this.field_6932 = null;
+		this.ownerName = nbt.getString("ownerName");
+		if (this.ownerName != null && this.ownerName.length() == 0) {
+			this.ownerName = null;
+		}
+
+		this.field_6932 = this.getOwner();
+	}
+
+	public LivingEntity getOwner() {
+		if (this.field_6932 == null && this.ownerName != null && this.ownerName.length() > 0) {
+			this.field_6932 = this.world.getPlayerByName(this.ownerName);
+			if (this.field_6932 == null && this.world instanceof ServerWorld) {
+				try {
+					Entity entity = ((ServerWorld)this.world).getEntity(UUID.fromString(this.ownerName));
+					if (entity instanceof LivingEntity) {
+						this.field_6932 = (LivingEntity)entity;
+					}
+				} catch (Throwable var2) {
+					this.field_6932 = null;
+				}
+			}
+		}
+
+		return this.field_6932;
+	}
+}

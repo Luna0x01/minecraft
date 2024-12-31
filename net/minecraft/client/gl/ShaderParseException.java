@@ -1,0 +1,73 @@
+package net.minecraft.client.gl;
+
+import com.google.common.collect.Lists;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
+
+public class ShaderParseException extends IOException {
+	private final List<ShaderParseException.JsonStackTrace> traces = Lists.newArrayList();
+	private final String message;
+
+	public ShaderParseException(String string) {
+		this.traces.add(new ShaderParseException.JsonStackTrace());
+		this.message = string;
+	}
+
+	public ShaderParseException(String string, Throwable throwable) {
+		super(throwable);
+		this.traces.add(new ShaderParseException.JsonStackTrace());
+		this.message = string;
+	}
+
+	public void addFaultyElement(String jsonKey) {
+		((ShaderParseException.JsonStackTrace)this.traces.get(0)).add(jsonKey);
+	}
+
+	public void addFaultyFile(String path) {
+		((ShaderParseException.JsonStackTrace)this.traces.get(0)).fileName = path;
+		this.traces.add(0, new ShaderParseException.JsonStackTrace());
+	}
+
+	public String getMessage() {
+		return "Invalid " + ((ShaderParseException.JsonStackTrace)this.traces.get(this.traces.size() - 1)).toString() + ": " + this.message;
+	}
+
+	public static ShaderParseException wrap(Exception cause) {
+		if (cause instanceof ShaderParseException) {
+			return (ShaderParseException)cause;
+		} else {
+			String string = cause.getMessage();
+			if (cause instanceof FileNotFoundException) {
+				string = "File not found";
+			}
+
+			return new ShaderParseException(string, cause);
+		}
+	}
+
+	public static class JsonStackTrace {
+		private String fileName = null;
+		private final List<String> faultyElements = Lists.newArrayList();
+
+		private JsonStackTrace() {
+		}
+
+		private void add(String element) {
+			this.faultyElements.add(0, element);
+		}
+
+		public String joinStackTrace() {
+			return StringUtils.join(this.faultyElements, "->");
+		}
+
+		public String toString() {
+			if (this.fileName != null) {
+				return !this.faultyElements.isEmpty() ? this.fileName + " " + this.joinStackTrace() : this.fileName;
+			} else {
+				return !this.faultyElements.isEmpty() ? "(Unknown file) " + this.joinStackTrace() : "(Unknown file)";
+			}
+		}
+	}
+}

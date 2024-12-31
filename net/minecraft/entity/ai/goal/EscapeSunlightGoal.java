@@ -1,0 +1,68 @@
+package net.minecraft.entity.ai.goal;
+
+import java.util.Random;
+import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+
+public class EscapeSunlightGoal extends Goal {
+	private PathAwareEntity mob;
+	private double targetX;
+	private double targetY;
+	private double targetZ;
+	private double speed;
+	private World world;
+
+	public EscapeSunlightGoal(PathAwareEntity pathAwareEntity, double d) {
+		this.mob = pathAwareEntity;
+		this.speed = d;
+		this.world = pathAwareEntity.world;
+		this.setCategoryBits(1);
+	}
+
+	@Override
+	public boolean canStart() {
+		if (!this.world.isDay()) {
+			return false;
+		} else if (!this.mob.isOnFire()) {
+			return false;
+		} else if (!this.world.hasDirectSunlight(new BlockPos(this.mob.x, this.mob.getBoundingBox().minY, this.mob.z))) {
+			return false;
+		} else {
+			Vec3d vec3d = this.locateShadedPos();
+			if (vec3d == null) {
+				return false;
+			} else {
+				this.targetX = vec3d.x;
+				this.targetY = vec3d.y;
+				this.targetZ = vec3d.z;
+				return true;
+			}
+		}
+	}
+
+	@Override
+	public boolean shouldContinue() {
+		return !this.mob.getNavigation().isIdle();
+	}
+
+	@Override
+	public void start() {
+		this.mob.getNavigation().startMovingTo(this.targetX, this.targetY, this.targetZ, this.speed);
+	}
+
+	private Vec3d locateShadedPos() {
+		Random random = this.mob.getRandom();
+		BlockPos blockPos = new BlockPos(this.mob.x, this.mob.getBoundingBox().minY, this.mob.z);
+
+		for (int i = 0; i < 10; i++) {
+			BlockPos blockPos2 = blockPos.add(random.nextInt(20) - 10, random.nextInt(6) - 3, random.nextInt(20) - 10);
+			if (!this.world.hasDirectSunlight(blockPos2) && this.mob.getPathfindingFavor(blockPos2) < 0.0F) {
+				return new Vec3d((double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
+			}
+		}
+
+		return null;
+	}
+}
