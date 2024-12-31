@@ -12,9 +12,11 @@ public class NoteBlockBlockEntity extends BlockEntity {
 	public boolean powered;
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		nbt.putByte("note", this.note);
+		nbt.putBoolean("powered", this.powered);
+		return nbt;
 	}
 
 	@Override
@@ -22,6 +24,7 @@ public class NoteBlockBlockEntity extends BlockEntity {
 		super.fromNbt(nbt);
 		this.note = nbt.getByte("note");
 		this.note = (byte)MathHelper.clamp(this.note, 0, 24);
+		this.powered = nbt.getBoolean("powered");
 	}
 
 	public void increaseNote() {
@@ -30,8 +33,8 @@ public class NoteBlockBlockEntity extends BlockEntity {
 	}
 
 	public void playNote(World world, BlockPos blockPos) {
-		if (world.getBlockState(blockPos.up()).getBlock().getMaterial() == Material.AIR) {
-			Material material = world.getBlockState(blockPos.down()).getBlock().getMaterial();
+		if (world.getBlockState(blockPos.up()).getMaterial() == Material.AIR) {
+			Material material = world.getBlockState(blockPos.down()).getMaterial();
 			int i = 0;
 			if (material == Material.STONE) {
 				i = 1;

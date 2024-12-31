@@ -1,10 +1,7 @@
 package net.minecraft.world.biome.layer;
 
-import java.util.concurrent.Callable;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.CustomizedWorldProperties;
 import net.minecraft.world.level.LevelGeneratorType;
 
@@ -37,7 +34,7 @@ public abstract class Layer {
 		CustomizedWorldProperties customizedWorldProperties = null;
 		int i = 4;
 		int j = i;
-		if (type == LevelGeneratorType.CUSTOMIZED && string.length() > 0) {
+		if (type == LevelGeneratorType.CUSTOMIZED && !string.isEmpty()) {
 			customizedWorldProperties = CustomizedWorldProperties.Builder.fromJson(string).build();
 			i = customizedWorldProperties.biomeSize;
 			j = customizedWorldProperties.riverSize;
@@ -131,36 +128,22 @@ public abstract class Layer {
 	protected static boolean compareBiomes(int biomeAId, int biomeBId) {
 		if (biomeAId == biomeBId) {
 			return true;
-		} else if (biomeAId != Biome.MESA_PLATEAU_F.id && biomeAId != Biome.MESA_PLATEAU.id) {
-			final Biome biome = Biome.byId(biomeAId);
-			final Biome biome2 = Biome.byId(biomeBId);
-
-			try {
-				return biome != null && biome2 != null ? biome.method_6421(biome2) : false;
-			} catch (Throwable var7) {
-				CrashReport crashReport = CrashReport.create(var7, "Comparing biomes");
-				CrashReportSection crashReportSection = crashReport.addElement("Biomes being compared");
-				crashReportSection.add("Biome A ID", biomeAId);
-				crashReportSection.add("Biome B ID", biomeBId);
-				crashReportSection.add("Biome A", new Callable<String>() {
-					public String call() throws Exception {
-						return String.valueOf(biome);
-					}
-				});
-				crashReportSection.add("Biome B", new Callable<String>() {
-					public String call() throws Exception {
-						return String.valueOf(biome2);
-					}
-				});
-				throw new CrashException(crashReport);
-			}
 		} else {
-			return biomeBId == Biome.MESA_PLATEAU_F.id || biomeBId == Biome.MESA_PLATEAU.id;
+			Biome biome = Biome.byId(biomeAId);
+			Biome biome2 = Biome.byId(biomeBId);
+			if (biome == null || biome2 == null) {
+				return false;
+			} else {
+				return biome != Biomes.MESA_ROCK && biome != Biomes.MESA_CLEAR_ROCK
+					? biome == biome2 || biome.asClass() == biome2.asClass()
+					: biome2 == Biomes.MESA_ROCK || biome2 == Biomes.MESA_CLEAR_ROCK;
+			}
 		}
 	}
 
 	protected static boolean isOcean(int biomeId) {
-		return biomeId == Biome.OCEAN.id || biomeId == Biome.DEEP_OCEAN.id || biomeId == Biome.FROZEN_OCEAN.id;
+		Biome biome = Biome.byId(biomeId);
+		return biome == Biomes.OCEAN || biome == Biomes.DEEP_OCEAN || biome == Biomes.FROZEN_OCEAN;
 	}
 
 	protected int getRandomBiome(int... args) {

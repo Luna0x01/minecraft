@@ -1,5 +1,6 @@
 package net.minecraft.village;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.MobSpawnerHelper;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
@@ -75,7 +76,7 @@ public class ZombieSiegeManager {
 					boolean bl = false;
 
 					for (int i = 0; i < 10; i++) {
-						float g = this.world.random.nextFloat() * (float) Math.PI * 2.0F;
+						float g = this.world.random.nextFloat() * (float) (Math.PI * 2);
 						this.field_3688 = blockPos.getX() + (int)((double)(MathHelper.cos(g) * f) * 0.9);
 						this.field_3689 = blockPos.getY();
 						this.field_3690 = blockPos.getZ() + (int)((double)(MathHelper.sin(g) * f) * 0.9);
@@ -119,7 +120,7 @@ public class ZombieSiegeManager {
 			try {
 				zombieEntity = new ZombieEntity(this.world);
 				zombieEntity.initialize(this.world.getLocalDifficulty(new BlockPos(zombieEntity)), null);
-				zombieEntity.setVillager(false);
+				zombieEntity.method_13249();
 			} catch (Exception var4) {
 				var4.printStackTrace();
 				return false;
@@ -133,6 +134,7 @@ public class ZombieSiegeManager {
 		}
 	}
 
+	@Nullable
 	private Vec3d method_11059(BlockPos pos) {
 		for (int i = 0; i < 10; i++) {
 			BlockPos blockPos = pos.add(this.world.random.nextInt(16) - 8, this.world.random.nextInt(6) - 3, this.world.random.nextInt(16) - 8);

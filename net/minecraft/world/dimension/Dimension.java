@@ -1,15 +1,18 @@
 package net.minecraft.world.dimension;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.LayeredBiomeSource;
 import net.minecraft.world.World;
+import net.minecraft.world.class_2711;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.biome.SingletonBiomeSource;
 import net.minecraft.world.border.WorldBorder;
-import net.minecraft.world.chunk.ChunkProvider;
 import net.minecraft.world.chunk.DebugChunkGenerator;
 import net.minecraft.world.chunk.FlatChunkGenerator;
 import net.minecraft.world.chunk.SurfaceChunkGenerator;
@@ -21,11 +24,10 @@ public abstract class Dimension {
 	protected World world;
 	private LevelGeneratorType generatorType;
 	private String generatorOptions;
-	protected LayeredBiomeSource biomeSource;
+	protected SingletonBiomeSource field_4787;
 	protected boolean waterVaporizes;
 	protected boolean hasNoSkylight;
 	protected final float[] lightLevelToBrightness = new float[16];
-	protected int dimensionType;
 	private final float[] backgroundColor = new float[4];
 
 	public final void copyFromWorld(World world) {
@@ -49,15 +51,15 @@ public abstract class Dimension {
 		LevelGeneratorType levelGeneratorType = this.world.getLevelProperties().getGeneratorType();
 		if (levelGeneratorType == LevelGeneratorType.FLAT) {
 			FlatWorldHelper flatWorldHelper = FlatWorldHelper.getHelper(this.world.getLevelProperties().getGeneratorOptions());
-			this.biomeSource = new SingletonBiomeSource(Biome.getBiomeById(flatWorldHelper.getBiomeId(), Biome.DEFAULT), 0.5F);
+			this.field_4787 = new class_2711(Biome.getByRawIdOrDefault(flatWorldHelper.getBiomeId(), Biomes.DEFAULT));
 		} else if (levelGeneratorType == LevelGeneratorType.DEBUG) {
-			this.biomeSource = new SingletonBiomeSource(Biome.PLAINS, 0.0F);
+			this.field_4787 = new class_2711(Biomes.PLAINS);
 		} else {
-			this.biomeSource = new LayeredBiomeSource(this.world);
+			this.field_4787 = new SingletonBiomeSource(this.world.getLevelProperties());
 		}
 	}
 
-	public ChunkProvider createChunkGenerator() {
+	public ChunkGenerator getChunkGenerator() {
 		if (this.generatorType == LevelGeneratorType.FLAT) {
 			return new FlatChunkGenerator(this.world, this.world.getSeed(), this.world.getLevelProperties().hasStructures(), this.generatorOptions);
 		} else if (this.generatorType == LevelGeneratorType.DEBUG) {
@@ -70,7 +72,8 @@ public abstract class Dimension {
 	}
 
 	public boolean isSpawnableBlock(int x, int z) {
-		return this.world.getBlockAt(new BlockPos(x, 0, z)) == Blocks.GRASS;
+		BlockPos blockPos = new BlockPos(x, 0, z);
+		return this.world.getBiome(blockPos).method_11504() ? true : this.world.method_8540(blockPos).getBlock() == Blocks.GRASS;
 	}
 
 	public float getSkyAngle(long timeOfDay, float tickDelta) {
@@ -96,9 +99,10 @@ public abstract class Dimension {
 		return true;
 	}
 
+	@Nullable
 	public float[] getBackgroundColor(float skyAngle, float tickDelta) {
 		float f = 0.4F;
-		float g = MathHelper.cos(skyAngle * (float) Math.PI * 2.0F) - 0.0F;
+		float g = MathHelper.cos(skyAngle * (float) (Math.PI * 2)) - 0.0F;
 		float h = -0.0F;
 		if (g >= h - f && g <= h + f) {
 			float i = (g - h) / f * 0.5F + 0.5F;
@@ -115,7 +119,7 @@ public abstract class Dimension {
 	}
 
 	public Vec3d getFogColor(float skyAngle, float tickDelta) {
-		float f = MathHelper.cos(skyAngle * (float) Math.PI * 2.0F) * 2.0F + 0.5F;
+		float f = MathHelper.cos(skyAngle * (float) (Math.PI * 2)) * 2.0F + 0.5F;
 		f = MathHelper.clamp(f, 0.0F, 1.0F);
 		float g = 0.7529412F;
 		float h = 0.84705883F;
@@ -128,16 +132,6 @@ public abstract class Dimension {
 
 	public boolean containsWorldSpawn() {
 		return true;
-	}
-
-	public static Dimension getById(int id) {
-		if (id == -1) {
-			return new TheNetherDimension();
-		} else if (id == 0) {
-			return new OverworldDimension();
-		} else {
-			return id == 1 ? new TheEndDimension() : null;
-		}
 	}
 
 	public float getCloudHeight() {
@@ -164,12 +158,8 @@ public abstract class Dimension {
 		return false;
 	}
 
-	public abstract String getName();
-
-	public abstract String getPersistentStateSuffix();
-
-	public LayeredBiomeSource getBiomeSource() {
-		return this.biomeSource;
+	public SingletonBiomeSource method_9175() {
+		return this.field_4787;
 	}
 
 	public boolean doesWaterVaporize() {
@@ -184,11 +174,25 @@ public abstract class Dimension {
 		return this.lightLevelToBrightness;
 	}
 
-	public int getType() {
-		return this.dimensionType;
-	}
-
 	public WorldBorder createWorldBorder() {
 		return new WorldBorder();
+	}
+
+	public void method_11786(ServerPlayerEntity player) {
+	}
+
+	public void method_11787(ServerPlayerEntity player) {
+	}
+
+	public abstract DimensionType getDimensionType();
+
+	public void method_11790() {
+	}
+
+	public void method_11791() {
+	}
+
+	public boolean canChunkBeUnloaded(int x, int z) {
+		return true;
 	}
 }

@@ -40,7 +40,7 @@ public class VillagerInteractGoal extends StopAndLookAtEntityGoal {
 					ItemStack itemStack2 = null;
 					if (itemStack != null) {
 						Item item = itemStack.getItem();
-						if ((item == Items.BREAD || item == Items.POTATO || item == Items.CARROT) && itemStack.count > 3) {
+						if ((item == Items.BREAD || item == Items.POTATO || item == Items.CARROT || item == Items.BEETROOT) && itemStack.count > 3) {
 							int j = itemStack.count / 2;
 							itemStack.count -= j;
 							itemStack2 = new ItemStack(item, j, itemStack.getData());
@@ -62,9 +62,9 @@ public class VillagerInteractGoal extends StopAndLookAtEntityGoal {
 						float f = 0.3F;
 						float g = this.villager.headYaw;
 						float h = this.villager.pitch;
-						itemEntity.velocityX = (double)(-MathHelper.sin(g / 180.0F * (float) Math.PI) * MathHelper.cos(h / 180.0F * (float) Math.PI) * f);
-						itemEntity.velocityZ = (double)(MathHelper.cos(g / 180.0F * (float) Math.PI) * MathHelper.cos(h / 180.0F * (float) Math.PI) * f);
-						itemEntity.velocityY = (double)(-MathHelper.sin(h / 180.0F * (float) Math.PI) * f + 0.1F);
+						itemEntity.velocityX = (double)(-MathHelper.sin(g * (float) (Math.PI / 180.0)) * MathHelper.cos(h * (float) (Math.PI / 180.0)) * f);
+						itemEntity.velocityZ = (double)(MathHelper.cos(g * (float) (Math.PI / 180.0)) * MathHelper.cos(h * (float) (Math.PI / 180.0)) * f);
+						itemEntity.velocityY = (double)(-MathHelper.sin(h * (float) (Math.PI / 180.0)) * f + 0.1F);
 						itemEntity.setToDefaultPickupDelay();
 						this.villager.world.spawnEntity(itemEntity);
 						break;

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.collection.IntObjectStorage;
+import org.lwjgl.input.Keyboard;
 
 public class KeyBinding implements Comparable<KeyBinding> {
 	private static final List<KeyBinding> KEYS = Lists.newArrayList();
@@ -32,6 +33,15 @@ public class KeyBinding implements Comparable<KeyBinding> {
 			KeyBinding keyBinding = KEY_MAP.get(keyCode);
 			if (keyBinding != null) {
 				keyBinding.pressed = pressed;
+			}
+		}
+	}
+
+	public static void method_12137() {
+		for (KeyBinding keyBinding : KEYS) {
+			try {
+				setKeyPressed(keyBinding.code, Keyboard.isKeyDown(keyBinding.code));
+			} catch (IndexOutOfBoundsException var3) {
 			}
 		}
 	}

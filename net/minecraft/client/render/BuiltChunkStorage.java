@@ -1,5 +1,6 @@
 package net.minecraft.client.render;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.render.world.ChunkRenderFactory;
 import net.minecraft.client.world.BuiltChunk;
 import net.minecraft.util.math.BlockPos;
@@ -30,8 +31,8 @@ public class BuiltChunkStorage {
 			for (int l = 0; l < this.sizeY; l++) {
 				for (int m = 0; m < this.sizeZ; m++) {
 					int n = (m * this.sizeY + l) * this.sizeX + k;
-					BlockPos blockPos = new BlockPos(k * 16, l * 16, m * 16);
-					this.chunks[n] = chunkRenderFactory.get(this.world, this.worldRenderer, blockPos, j++);
+					this.chunks[n] = chunkRenderFactory.method_10175(this.world, this.worldRenderer, j++);
+					this.chunks[n].method_12427(k * 16, l * 16, m * 16);
 				}
 			}
 		}
@@ -64,10 +65,7 @@ public class BuiltChunkStorage {
 				for (int p = 0; p < this.sizeY; p++) {
 					int q = p * 16;
 					BuiltChunk builtChunk = this.chunks[(n * this.sizeY + p) * this.sizeX + l];
-					BlockPos blockPos = new BlockPos(m, q, o);
-					if (!blockPos.equals(builtChunk.getPos())) {
-						builtChunk.method_10160(blockPos);
-					}
+					builtChunk.method_12427(m, q, o);
 				}
 			}
 		}
@@ -83,7 +81,7 @@ public class BuiltChunkStorage {
 		return l - m / j * j;
 	}
 
-	public void scheduleRebuild(int i, int j, int k, int l, int m, int n) {
+	public void method_9935(int i, int j, int k, int l, int m, int n, boolean bl) {
 		int o = MathHelper.floorDiv(i, 16);
 		int p = MathHelper.floorDiv(j, 16);
 		int q = MathHelper.floorDiv(k, 16);
@@ -111,12 +109,13 @@ public class BuiltChunkStorage {
 
 					int aa = (z * this.sizeY + x) * this.sizeX + v;
 					BuiltChunk builtChunk = this.chunks[aa];
-					builtChunk.method_10162(true);
+					builtChunk.method_10162(bl);
 				}
 			}
 		}
 	}
 
+	@Nullable
 	protected BuiltChunk getRenderedChunk(BlockPos pos) {
 		int i = MathHelper.floorDiv(pos.getX(), 16);
 		int j = MathHelper.floorDiv(pos.getY(), 16);

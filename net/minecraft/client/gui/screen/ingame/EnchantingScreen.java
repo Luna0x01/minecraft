@@ -144,22 +144,22 @@ public class EnchantingScreen extends HandledScreen {
 		for (int n = 0; n < 3; n++) {
 			int o = i + 60;
 			int p = o + 20;
-			int q = 86;
-			String string = EnchantingPhrases.getInstance().getRandomString();
 			this.zOffset = 0.0F;
 			this.client.getTextureManager().bindTexture(TEXTURE);
-			int r = this.enchantingScreenHandler.enchantmentId[n];
+			int q = this.enchantingScreenHandler.enchantmentId[n];
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			if (r == 0) {
+			if (q == 0) {
 				this.drawTexture(o, j + 14 + 19 * n, 0, 185, 108, 19);
 			} else {
-				String string2 = "" + r;
+				String string = "" + q;
+				int r = 86 - this.textRenderer.getStringWidth(string);
+				String string2 = EnchantingPhrases.getInstance().generatePhrase(this.textRenderer, r);
 				TextRenderer textRenderer = this.client.shadowTextRenderer;
 				int s = 6839882;
-				if ((m < n + 1 || this.client.player.experienceLevel < r) && !this.client.player.abilities.creativeMode) {
+				if ((m < n + 1 || this.client.player.experienceLevel < q) && !this.client.player.abilities.creativeMode) {
 					this.drawTexture(o, j + 14 + 19 * n, 0, 185, 108, 19);
 					this.drawTexture(o + 1, j + 15 + 19 * n, 16 * n, 239, 16, 16);
-					textRenderer.drawTrimmed(string, p, j + 16 + 19 * n, q, (s & 16711422) >> 1);
+					textRenderer.drawTrimmed(string2, p, j + 16 + 19 * n, r, (s & 16711422) >> 1);
 					s = 4226832;
 				} else {
 					int t = mouseX - (i + 60);
@@ -172,12 +172,12 @@ public class EnchantingScreen extends HandledScreen {
 					}
 
 					this.drawTexture(o + 1, j + 15 + 19 * n, 16 * n, 223, 16, 16);
-					textRenderer.drawTrimmed(string, p, j + 16 + 19 * n, q, s);
+					textRenderer.drawTrimmed(string2, p, j + 16 + 19 * n, r, s);
 					s = 8453920;
 				}
 
 				textRenderer = this.client.textRenderer;
-				textRenderer.drawWithShadow(string2, (float)(p + 86 - textRenderer.getStringWidth(string2)), (float)(j + 16 + 19 * n + 7), s);
+				textRenderer.drawWithShadow(string, (float)(p + 86 - textRenderer.getStringWidth(string)), (float)(j + 16 + 19 * n + 7), s);
 			}
 		}
 	}
@@ -190,43 +190,33 @@ public class EnchantingScreen extends HandledScreen {
 
 		for (int j = 0; j < 3; j++) {
 			int k = this.enchantingScreenHandler.enchantmentId[j];
-			int l = this.enchantingScreenHandler.enchantmentLevel[j];
+			Enchantment enchantment = Enchantment.byIndex(this.enchantingScreenHandler.enchantmentLevel[j]);
+			int l = this.enchantingScreenHandler.field_12271[j];
 			int m = j + 1;
-			if (this.isPointWithinBounds(60, 14 + 19 * j, 108, 17, mouseX, mouseY) && k > 0 && l >= 0) {
+			if (this.isPointWithinBounds(60, 14 + 19 * j, 108, 17, mouseX, mouseY) && k > 0 && l >= 0 && enchantment != null) {
 				List<String> list = Lists.newArrayList();
-				if (l >= 0 && Enchantment.byRawId(l & 0xFF) != null) {
-					String string = Enchantment.byRawId(l & 0xFF).getTranslatedName((l & 0xFF00) >> 8);
-					list.add(Formatting.WHITE.toString() + Formatting.ITALIC.toString() + I18n.translate("container.enchant.clue", string));
-				}
-
+				list.add(Formatting.WHITE.toString() + Formatting.ITALIC.toString() + I18n.translate("container.enchant.clue", enchantment.getTranslatedName(l)));
 				if (!bl) {
-					if (l >= 0) {
-						list.add("");
-					}
-
+					list.add("");
 					if (this.client.player.experienceLevel < k) {
 						list.add(Formatting.RED.toString() + "Level Requirement: " + this.enchantingScreenHandler.enchantmentId[j]);
 					} else {
-						String string2 = "";
+						String string;
 						if (m == 1) {
-							string2 = I18n.translate("container.enchant.lapis.one");
+							string = I18n.translate("container.enchant.lapis.one");
 						} else {
-							string2 = I18n.translate("container.enchant.lapis.many", m);
+							string = I18n.translate("container.enchant.lapis.many", m);
 						}
 
-						if (i >= m) {
-							list.add(Formatting.GRAY.toString() + "" + string2);
-						} else {
-							list.add(Formatting.RED.toString() + "" + string2);
-						}
-
+						Formatting formatting = i >= m ? Formatting.GRAY : Formatting.RED;
+						list.add(formatting.toString() + "" + string);
 						if (m == 1) {
-							string2 = I18n.translate("container.enchant.level.one");
+							string = I18n.translate("container.enchant.level.one");
 						} else {
-							string2 = I18n.translate("container.enchant.level.many", m);
+							string = I18n.translate("container.enchant.level.many", m);
 						}
 
-						list.add(Formatting.GRAY.toString() + "" + string2);
+						list.add(Formatting.GRAY.toString() + "" + string);
 					}
 				}
 

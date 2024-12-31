@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LivingEntity;
@@ -17,14 +18,22 @@ import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AnvilBlock extends FallingBlock {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
 	public static final IntProperty DAMAGE = IntProperty.of("damage", 0, 2);
+	protected static final Box field_12555 = new Box(0.0, 0.0, 0.125, 1.0, 1.0, 0.875);
+	protected static final Box field_12556 = new Box(0.125, 0.0, 0.0, 0.875, 1.0, 1.0);
+	protected static final Logger field_12557 = LogManager.getLogger();
 
 	protected AnvilBlock() {
 		super(Material.ANVIL);
@@ -34,25 +43,48 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
 		Direction direction = entity.getHorizontalDirection().rotateYClockwise();
-		return super.getStateFromData(world, pos, dir, x, y, z, id, entity).with(FACING, direction).with(DAMAGE, id >> 2);
+
+		try {
+			return super.getStateFromData(world, pos, dir, x, y, z, id, entity).with(FACING, direction).with(DAMAGE, id >> 2);
+		} catch (IllegalArgumentException var11) {
+			if (!world.isClient) {
+				field_12557.warn(String.format("Invalid damage property for anvil at %s. Found %d, must be in [0, 1, 2]", pos, id >> 2));
+				if (entity instanceof PlayerEntity) {
+					((PlayerEntity)entity).sendMessage(new TranslatableText("Invalid damage property. Please pick in [0, 1, 2]"));
+				}
+			}
+
+			return super.getStateFromData(world, pos, dir, x, y, z, 0, entity).with(FACING, direction).with(DAMAGE, 0);
+		}
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (!world.isClient) {
-			player.openHandledScreen(new AnvilBlock.AnvilNameableHandler(world, pos));
+			playerEntity.openHandledScreen(new AnvilBlock.AnvilNameableHandler(world, blockPos));
 		}
 
 		return true;
@@ -64,18 +96,14 @@ public class AnvilBlock extends FallingBlock {
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		Direction direction = view.getBlockState(pos).get(FACING);
-		if (direction.getAxis() == Direction.Axis.X) {
-			this.setBoundingBox(0.0F, 0.0F, 0.125F, 1.0F, 1.0F, 0.875F);
-		} else {
-			this.setBoundingBox(0.125F, 0.0F, 0.0F, 0.875F, 1.0F, 1.0F);
-		}
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		Direction direction = state.get(FACING);
+		return direction.getAxis() == Direction.Axis.X ? field_12555 : field_12556;
 	}
 
 	@Override
 	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> stacks) {
-		stacks.add(new ItemStack(item, 1, 0));
+		stacks.add(new ItemStack(item));
 		stacks.add(new ItemStack(item, 1, 1));
 		stacks.add(new ItemStack(item, 1, 2));
 	}
@@ -87,17 +115,12 @@ public class AnvilBlock extends FallingBlock {
 
 	@Override
 	public void onDestroyedOnLanding(World world, BlockPos pos) {
-		world.syncGlobalEvent(1022, pos, 0);
+		world.syncGlobalEvent(1031, pos, 0);
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
 		return true;
-	}
-
-	@Override
-	public BlockState getRenderState(BlockState state) {
-		return this.getDefaultState().with(FACING, Direction.SOUTH);
 	}
 
 	@Override
@@ -110,6 +133,11 @@ public class AnvilBlock extends FallingBlock {
 		int i = 0;
 		i |= ((Direction)state.get(FACING)).getHorizontal();
 		return i | (Integer)state.get(DAMAGE) << 2;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.getBlock() != this ? state : state.with(FACING, rotation.rotate(state.get(FACING)));
 	}
 
 	@Override

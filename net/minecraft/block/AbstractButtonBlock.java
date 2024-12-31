@@ -2,24 +2,39 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public abstract class AbstractButtonBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing");
+public abstract class AbstractButtonBlock extends FacingBlock {
 	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
+	protected static final Box field_12601 = new Box(0.3125, 0.875, 0.375, 0.6875, 1.0, 0.625);
+	protected static final Box field_12602 = new Box(0.3125, 0.0, 0.375, 0.6875, 0.125, 0.625);
+	protected static final Box field_12603 = new Box(0.3125, 0.375, 0.875, 0.6875, 0.625, 1.0);
+	protected static final Box field_12604 = new Box(0.3125, 0.375, 0.0, 0.6875, 0.625, 0.125);
+	protected static final Box field_12605 = new Box(0.875, 0.375, 0.3125, 1.0, 0.625, 0.6875);
+	protected static final Box field_12606 = new Box(0.0, 0.375, 0.3125, 0.125, 0.625, 0.6875);
+	protected static final Box field_12595 = new Box(0.3125, 0.9375, 0.375, 0.6875, 1.0, 0.625);
+	protected static final Box field_12596 = new Box(0.3125, 0.0, 0.375, 0.6875, 0.0625, 0.625);
+	protected static final Box field_12597 = new Box(0.3125, 0.375, 0.9375, 0.6875, 0.625, 1.0);
+	protected static final Box field_12598 = new Box(0.3125, 0.375, 0.0, 0.6875, 0.625, 0.0625);
+	protected static final Box field_12599 = new Box(0.9375, 0.375, 0.3125, 1.0, 0.625, 0.6875);
+	protected static final Box field_12600 = new Box(0.0, 0.375, 0.3125, 0.0625, 0.625, 0.6875);
 	private final boolean wooden;
 
 	protected AbstractButtonBlock(boolean bl) {
@@ -30,9 +45,10 @@ public abstract class AbstractButtonBlock extends Block {
 		this.wooden = bl;
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
@@ -41,12 +57,12 @@ public abstract class AbstractButtonBlock extends Block {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -68,7 +84,7 @@ public abstract class AbstractButtonBlock extends Block {
 
 	protected static boolean canHoldButton(World world, BlockPos pos, Direction dir) {
 		BlockPos blockPos = pos.offset(dir);
-		return dir == Direction.DOWN ? World.isOpaque(world, blockPos) : world.getBlockState(blockPos).getBlock().isFullCube();
+		return dir == Direction.DOWN ? world.getBlockState(blockPos).method_11739() : world.getBlockState(blockPos).method_11734();
 	}
 
 	@Override
@@ -79,10 +95,10 @@ public abstract class AbstractButtonBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (this.isButtonPlacementValid(world, pos, state) && !canHoldButton(world, pos, ((Direction)state.get(FACING)).getOpposite())) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (this.isButtonPlacementValid(world, blockPos, blockState) && !canHoldButton(world, blockPos, ((Direction)blockState.get(FACING)).getOpposite())) {
+			this.dropAsItem(world, blockPos, blockState, 0);
+			world.setAir(blockPos);
 		}
 	}
 
@@ -97,52 +113,54 @@ public abstract class AbstractButtonBlock extends Block {
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.setButtonBoundingBox(view.getBlockState(pos));
-	}
-
-	private void setButtonBoundingBox(BlockState state) {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		Direction direction = state.get(FACING);
 		boolean bl = (Boolean)state.get(POWERED);
-		float f = 0.25F;
-		float g = 0.375F;
-		float h = (float)(bl ? 1 : 2) / 16.0F;
-		float i = 0.125F;
-		float j = 0.1875F;
 		switch (direction) {
 			case EAST:
-				this.setBoundingBox(0.0F, 0.375F, 0.3125F, h, 0.625F, 0.6875F);
-				break;
+				return bl ? field_12600 : field_12606;
 			case WEST:
-				this.setBoundingBox(1.0F - h, 0.375F, 0.3125F, 1.0F, 0.625F, 0.6875F);
-				break;
+				return bl ? field_12599 : field_12605;
 			case SOUTH:
-				this.setBoundingBox(0.3125F, 0.375F, 0.0F, 0.6875F, 0.625F, h);
-				break;
+				return bl ? field_12598 : field_12604;
 			case NORTH:
-				this.setBoundingBox(0.3125F, 0.375F, 1.0F - h, 0.6875F, 0.625F, 1.0F);
-				break;
+			default:
+				return bl ? field_12597 : field_12603;
 			case UP:
-				this.setBoundingBox(0.3125F, 0.0F, 0.375F, 0.6875F, 0.0F + h, 0.625F);
-				break;
+				return bl ? field_12596 : field_12602;
 			case DOWN:
-				this.setBoundingBox(0.3125F, 1.0F - h, 0.375F, 0.6875F, 1.0F, 0.625F);
+				return bl ? field_12595 : field_12601;
 		}
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		if ((Boolean)state.get(POWERED)) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		if ((Boolean)blockState.get(POWERED)) {
 			return true;
 		} else {
-			world.setBlockState(pos, state.with(POWERED, true), 3);
-			world.onRenderRegionUpdate(pos, pos);
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, "random.click", 0.3F, 0.6F);
-			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
-			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+			world.setBlockState(blockPos, blockState.with(POWERED, true), 3);
+			world.onRenderRegionUpdate(blockPos, blockPos);
+			this.method_11580(playerEntity, world, blockPos);
+			this.updateNeighborsAfterActivation(world, blockPos, blockState.get(FACING));
+			world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
 			return true;
 		}
 	}
+
+	protected abstract void method_11580(@Nullable PlayerEntity playerEntity, World world, BlockPos blockPos);
+
+	protected abstract void method_11581(World world, BlockPos blockPos);
 
 	@Override
 	public void onBreaking(World world, BlockPos pos, BlockState state) {
@@ -154,21 +172,21 @@ public abstract class AbstractButtonBlock extends Block {
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		return state.get(POWERED) ? 15 : 0;
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		if (!(Boolean)state.get(POWERED)) {
 			return 0;
 		} else {
-			return state.get(FACING) == facing ? 15 : 0;
+			return state.get(FACING) == direction ? 15 : 0;
 		}
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
@@ -181,11 +199,11 @@ public abstract class AbstractButtonBlock extends Block {
 		if (!world.isClient) {
 			if ((Boolean)state.get(POWERED)) {
 				if (this.wooden) {
-					this.onPossibleArrowCollision(world, pos, state);
+					this.tryPowerWithProjectiles(state, world, pos);
 				} else {
 					world.setBlockState(pos, state.with(POWERED, false));
 					this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
-					world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, "random.click", 0.3F, 0.5F);
+					this.method_11581(world, pos);
 					world.onRenderRegionUpdate(pos, pos);
 				}
 			}
@@ -193,55 +211,36 @@ public abstract class AbstractButtonBlock extends Block {
 	}
 
 	@Override
-	public void setBlockItemBounds() {
-		float f = 0.1875F;
-		float g = 0.125F;
-		float h = 0.125F;
-		this.setBoundingBox(0.5F - f, 0.5F - g, 0.5F - h, 0.5F + f, 0.5F + g, 0.5F + h);
-	}
-
-	@Override
 	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
 		if (!world.isClient) {
 			if (this.wooden) {
 				if (!(Boolean)state.get(POWERED)) {
-					this.onPossibleArrowCollision(world, pos, state);
+					this.tryPowerWithProjectiles(state, world, pos);
 				}
 			}
 		}
 	}
 
-	private void onPossibleArrowCollision(World world, BlockPos pos, BlockState state) {
-		this.setButtonBoundingBox(state);
-		List<? extends Entity> list = world.getEntitiesInBox(
-			AbstractArrowEntity.class,
-			new Box(
-				(double)pos.getX() + this.boundingBoxMinX,
-				(double)pos.getY() + this.boundingBoxMinY,
-				(double)pos.getZ() + this.boundingBoxMinZ,
-				(double)pos.getX() + this.boundingBoxMaxX,
-				(double)pos.getY() + this.boundingBoxMaxY,
-				(double)pos.getZ() + this.boundingBoxMaxZ
-			)
-		);
+	private void tryPowerWithProjectiles(BlockState state, World world, BlockPos pos) {
+		List<? extends Entity> list = world.getEntitiesInBox(AbstractArrowEntity.class, state.getCollisionBox((BlockView)world, pos).offset(pos));
 		boolean bl = !list.isEmpty();
 		boolean bl2 = (Boolean)state.get(POWERED);
 		if (bl && !bl2) {
 			world.setBlockState(pos, state.with(POWERED, true));
 			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
 			world.onRenderRegionUpdate(pos, pos);
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, "random.click", 0.3F, 0.6F);
+			this.method_11580(null, world, pos);
 		}
 
 		if (!bl && bl2) {
 			world.setBlockState(pos, state.with(POWERED, false));
 			this.updateNeighborsAfterActivation(world, pos, state.get(FACING));
 			world.onRenderRegionUpdate(pos, pos);
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, "random.click", 0.3F, 0.5F);
+			this.method_11581(world, pos);
 		}
 
 		if (bl) {
-			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+			world.createAndScheduleBlockTick(new BlockPos(pos), this, this.getTickRate(world));
 		}
 	}
 
@@ -306,6 +305,16 @@ public abstract class AbstractButtonBlock extends Block {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

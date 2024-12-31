@@ -3,6 +3,7 @@ package net.minecraft.client.render.item;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedModelManager;
 import net.minecraft.client.render.model.MeshDefinition;
@@ -47,9 +48,10 @@ public class ItemModels {
 	}
 
 	protected int getMetadata(ItemStack stack) {
-		return stack.isDamageable() ? 0 : stack.getData();
+		return stack.getMaxDamage() > 0 ? 0 : stack.getData();
 	}
 
+	@Nullable
 	protected BakedModel getModel(Item item, int metadata) {
 		return (BakedModel)this.models.get(this.pack(item, metadata));
 	}

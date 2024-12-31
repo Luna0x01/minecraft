@@ -2,18 +2,12 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedModelManager;
 import net.minecraft.client.render.model.json.ModelTransformation;
-import net.minecraft.client.texture.CompassSprite;
-import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.entity.ItemEntity;
@@ -25,8 +19,6 @@ import net.minecraft.item.SkullItem;
 import net.minecraft.item.map.MapState;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import org.lwjgl.opengl.GL11;
 
 public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 	private static final Identifier field_6497 = new Identifier("textures/map/map_background.png");
@@ -60,7 +52,17 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(-0.5F, -0.5F, -0.5F);
-		blockRenderManager.getModelRenderer().render(bakedModel, 1.0F, 1.0F, 1.0F, 1.0F);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(itemFrameEntity));
+		}
+
+		blockRenderManager.getModelRenderer().method_12350(bakedModel, 1.0F, 1.0F, 1.0F, 1.0F);
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.popMatrix();
 		GlStateManager.translate(0.0F, 0.0F, 0.4375F);
 		this.method_4334(itemFrameEntity);
@@ -104,31 +106,6 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 					this.field_8000.gameRenderer.getMapRenderer().draw(mapState, true);
 				}
 			} else {
-				Sprite sprite = null;
-				if (item == Items.COMPASS) {
-					sprite = this.field_8000.getSpriteAtlasTexture().getSprite(CompassSprite.field_11201);
-					this.field_8000.getTextureManager().bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-					if (sprite instanceof CompassSprite) {
-						CompassSprite compassSprite = (CompassSprite)sprite;
-						double d = compassSprite.field_2150;
-						double e = compassSprite.field_2151;
-						compassSprite.field_2150 = 0.0;
-						compassSprite.field_2151 = 0.0;
-						compassSprite.method_5241(
-							itemFrameEntity.world,
-							itemFrameEntity.x,
-							itemFrameEntity.z,
-							(double)MathHelper.wrapDegrees((float)(180 + itemFrameEntity.direction.getHorizontal() * 90)),
-							false,
-							true
-						);
-						compassSprite.field_2150 = d;
-						compassSprite.field_2151 = e;
-					} else {
-						sprite = null;
-					}
-				}
-
 				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 				if (!this.field_11113.hasDepth(itemEntity.getItemStack()) || item instanceof SkullItem) {
 					GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
@@ -136,12 +113,9 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 
 				GlStateManager.pushLightingAttributes();
 				DiffuseLighting.enableNormally();
-				this.field_11113.renderItem(itemEntity.getItemStack(), ModelTransformation.Mode.FIXED);
+				this.field_11113.method_12458(itemEntity.getItemStack(), ModelTransformation.Mode.FIXED);
 				DiffuseLighting.disable();
 				GlStateManager.popAttributes();
-				if (sprite != null && sprite.getSize() > 0) {
-					sprite.update();
-				}
 			}
 
 			GlStateManager.enableLighting();
@@ -154,45 +128,11 @@ public class ItemFrameEntityRenderer extends EntityRenderer<ItemFrameEntity> {
 			&& itemFrameEntity.getHeldItemStack() != null
 			&& itemFrameEntity.getHeldItemStack().hasCustomName()
 			&& this.dispatcher.field_7998 == itemFrameEntity) {
-			float g = 1.6F;
-			float h = 0.016666668F * g;
-			double i = itemFrameEntity.squaredDistanceTo(this.dispatcher.field_11098);
-			float j = itemFrameEntity.isSneaking() ? 32.0F : 64.0F;
-			if (i < (double)(j * j)) {
+			double g = itemFrameEntity.squaredDistanceTo(this.dispatcher.field_11098);
+			float h = itemFrameEntity.isSneaking() ? 32.0F : 64.0F;
+			if (!(g >= (double)(h * h))) {
 				String string = itemFrameEntity.getHeldItemStack().getCustomName();
-				if (itemFrameEntity.isSneaking()) {
-					TextRenderer textRenderer = this.getFontRenderer();
-					GlStateManager.pushMatrix();
-					GlStateManager.translate((float)d + 0.0F, (float)e + itemFrameEntity.height + 0.5F, (float)f);
-					GL11.glNormal3f(0.0F, 1.0F, 0.0F);
-					GlStateManager.rotate(-this.dispatcher.yaw, 0.0F, 1.0F, 0.0F);
-					GlStateManager.rotate(this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
-					GlStateManager.scale(-h, -h, h);
-					GlStateManager.disableLighting();
-					GlStateManager.translate(0.0F, 0.25F / h, 0.0F);
-					GlStateManager.depthMask(false);
-					GlStateManager.enableBlend();
-					GlStateManager.blendFunc(770, 771);
-					Tessellator tessellator = Tessellator.getInstance();
-					BufferBuilder bufferBuilder = tessellator.getBuffer();
-					int k = textRenderer.getStringWidth(string) / 2;
-					GlStateManager.disableTexture();
-					bufferBuilder.begin(7, VertexFormats.POSITION_COLOR);
-					bufferBuilder.vertex((double)(-k - 1), -1.0, 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-					bufferBuilder.vertex((double)(-k - 1), 8.0, 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-					bufferBuilder.vertex((double)(k + 1), 8.0, 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-					bufferBuilder.vertex((double)(k + 1), -1.0, 0.0).color(0.0F, 0.0F, 0.0F, 0.25F).next();
-					tessellator.draw();
-					GlStateManager.enableTexture();
-					GlStateManager.depthMask(true);
-					textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, 0, 553648127);
-					GlStateManager.enableLighting();
-					GlStateManager.disableBlend();
-					GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-					GlStateManager.popMatrix();
-				} else {
-					this.renderLabelIfPresent(itemFrameEntity, string, d, e, f, 64);
-				}
+				this.renderLabelIfPresent(itemFrameEntity, string, d, e, f, 64);
 			}
 		}
 	}

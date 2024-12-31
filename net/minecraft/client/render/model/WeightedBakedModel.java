@@ -4,6 +4,9 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.class_2876;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.collection.Weighting;
@@ -16,18 +19,17 @@ public class WeightedBakedModel implements BakedModel {
 
 	public WeightedBakedModel(List<WeightedBakedModel.WeightedRandomItemEntry> list) {
 		this.modelItems = list;
-		this.totalWeight = Weighting.getRate(list);
+		this.totalWeight = Weighting.getWeightSum(list);
 		this.model = ((WeightedBakedModel.WeightedRandomItemEntry)list.get(0)).model;
 	}
 
-	@Override
-	public List<BakedQuad> getByDirection(Direction direction) {
-		return this.model.getByDirection(direction);
+	private BakedModel method_12519(long l) {
+		return Weighting.getAt(this.modelItems, Math.abs((int)l >> 16) % this.totalWeight).model;
 	}
 
 	@Override
-	public List<BakedQuad> getQuads() {
-		return this.model.getQuads();
+	public List<BakedQuad> method_12502(@Nullable BlockState blockState, @Nullable Direction direction, long l) {
+		return this.method_12519(l).method_12502(blockState, direction, l);
 	}
 
 	@Override
@@ -55,8 +57,9 @@ public class WeightedBakedModel implements BakedModel {
 		return this.model.getTransformation();
 	}
 
-	public BakedModel method_10425(long l) {
-		return Weighting.pick(this.modelItems, Math.abs((int)l >> 16) % this.totalWeight).model;
+	@Override
+	public class_2876 method_12503() {
+		return this.model.method_12503();
 	}
 
 	public static class Builder {
@@ -86,20 +89,7 @@ public class WeightedBakedModel implements BakedModel {
 		}
 
 		public int compareTo(WeightedBakedModel.WeightedRandomItemEntry weightedRandomItemEntry) {
-			return ComparisonChain.start()
-				.compare(weightedRandomItemEntry.weight, this.weight)
-				.compare(this.method_10429(), weightedRandomItemEntry.method_10429())
-				.result();
-		}
-
-		protected int method_10429() {
-			int i = this.model.getQuads().size();
-
-			for (Direction direction : Direction.values()) {
-				i += this.model.getByDirection(direction).size();
-			}
-
-			return i;
+			return ComparisonChain.start().compare(weightedRandomItemEntry.weight, this.weight).result();
 		}
 
 		public String toString() {

@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.BlockStateIdentifierMap;
@@ -16,7 +17,7 @@ public class BlockStateMap extends BlockStateIdentifierMap {
 	private final String suffix;
 	private final List<Property<?>> ignoredProperties;
 
-	private BlockStateMap(Property<?> property, String string, List<Property<?>> list) {
+	private BlockStateMap(@Nullable Property<?> property, @Nullable String string, List<Property<?>> list) {
 		this.defaultProperty = property;
 		this.suffix = string;
 		this.ignoredProperties = list;
@@ -24,12 +25,12 @@ public class BlockStateMap extends BlockStateIdentifierMap {
 
 	@Override
 	protected ModelIdentifier getBlockStateIdentifier(BlockState state) {
-		Map<Property, Comparable> map = Maps.newLinkedHashMap(state.getPropertyMap());
+		Map<Property<?>, Comparable<?>> map = Maps.newLinkedHashMap(state.getPropertyMap());
 		String string;
 		if (this.defaultProperty == null) {
 			string = Block.REGISTRY.getIdentifier(state.getBlock()).toString();
 		} else {
-			string = ((Property<Object>)this.defaultProperty).name((Comparable)map.remove(this.defaultProperty));
+			string = this.method_12405(this.defaultProperty, map);
 		}
 
 		if (this.suffix != null) {
@@ -41,6 +42,10 @@ public class BlockStateMap extends BlockStateIdentifierMap {
 		}
 
 		return new ModelIdentifier(string, this.getPropertyStateString(map));
+	}
+
+	private <T extends Comparable<T>> String method_12405(Property<T> property, Map<Property<?>, Comparable<?>> map) {
+		return property.name((T)map.remove(this.defaultProperty));
 	}
 
 	public static class Builder {

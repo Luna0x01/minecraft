@@ -1,38 +1,40 @@
 package net.minecraft.world;
 
+import com.google.common.base.Function;
+import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.HopperBlock;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.SnowLayerBlock;
-import net.minecraft.block.StairsBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.class_2787;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.Packet;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.sound.Sound;
 import net.minecraft.util.ScheduledTick;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.collection.IntObjectStorage;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -40,13 +42,14 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.village.VillageState;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.SingletonBiomeSource;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkProvider;
@@ -80,19 +83,19 @@ public abstract class World implements BlockView {
 	private int field_4553;
 	public final Random random = new Random();
 	public final Dimension dimension;
-	protected List<WorldEventListener> eventListeners = Lists.newArrayList();
+	protected class_2975 field_12436 = new class_2975();
+	protected List<WorldEventListener> eventListeners = Lists.newArrayList(new WorldEventListener[]{this.field_12436});
 	protected ChunkProvider chunkProvider;
 	protected final SaveHandler saveHandler;
 	protected LevelProperties levelProperties;
 	protected boolean field_4523;
 	protected PersistentStateManager persistentStateManager;
 	protected VillageState villageState;
+	protected class_2787 field_12435;
 	public final Profiler profiler;
 	private final Calendar calender = Calendar.getInstance();
 	protected Scoreboard scoreboard = new Scoreboard();
 	public final boolean isClient;
-	protected Set<ChunkPos> field_4530 = Sets.newHashSet();
-	private int field_4534 = this.random.nextInt(12000);
 	protected boolean spawnAnimals = true;
 	protected boolean spawnMonsters = true;
 	private boolean iteratingTickingBlockEntities;
@@ -118,24 +121,24 @@ public abstract class World implements BlockView {
 			Chunk chunk = this.getChunk(pos);
 
 			try {
-				return chunk.getBiomeAt(pos, this.dimension.getBiomeSource());
+				return chunk.method_11771(pos, this.dimension.method_9175());
 			} catch (Throwable var6) {
 				CrashReport crashReport = CrashReport.create(var6, "Getting biome");
 				CrashReportSection crashReportSection = crashReport.addElement("Coordinates of biome request");
-				crashReportSection.add("Location", new Callable<String>() {
+				crashReportSection.add("Location", new CrashCallable<String>() {
 					public String call() throws Exception {
-						return CrashReportSection.addBlockData(pos);
+						return CrashReportSection.createPositionString(pos);
 					}
 				});
 				throw new CrashException(crashReport);
 			}
 		} else {
-			return this.dimension.getBiomeSource().getBiomeAt(pos, Biome.PLAINS);
+			return this.dimension.method_9175().method_11536(pos, Biomes.PLAINS);
 		}
 	}
 
-	public LayeredBiomeSource getBiomeSource() {
-		return this.dimension.getBiomeSource();
+	public SingletonBiomeSource method_3726() {
+		return this.dimension.method_9175();
 	}
 
 	protected abstract ChunkProvider getChunkCache();
@@ -144,27 +147,40 @@ public abstract class World implements BlockView {
 		this.levelProperties.setInitialized(true);
 	}
 
+	@Nullable
+	public MinecraftServer getServer() {
+		return null;
+	}
+
 	public void setDefaultSpawnClient() {
 		this.setSpawnPos(new BlockPos(8, 64, 8));
 	}
 
-	public Block getBlockAt(BlockPos pos) {
+	public BlockState method_8540(BlockPos pos) {
 		BlockPos blockPos = new BlockPos(pos.getX(), this.getSeaLevel(), pos.getZ());
 
 		while (!this.isAir(blockPos.up())) {
 			blockPos = blockPos.up();
 		}
 
-		return this.getBlockState(blockPos).getBlock();
+		return this.getBlockState(blockPos);
 	}
 
-	private boolean isValidPos(BlockPos pos) {
-		return pos.getX() >= -30000000 && pos.getZ() >= -30000000 && pos.getX() < 30000000 && pos.getZ() < 30000000 && pos.getY() >= 0 && pos.getY() < 256;
+	private boolean method_11479(BlockPos blockPos) {
+		return !this.method_11475(blockPos)
+			&& blockPos.getX() >= -30000000
+			&& blockPos.getZ() >= -30000000
+			&& blockPos.getX() < 30000000
+			&& blockPos.getZ() < 30000000;
+	}
+
+	private boolean method_11475(BlockPos blockPos) {
+		return blockPos.getY() < 0 || blockPos.getY() >= 256;
 	}
 
 	@Override
 	public boolean isAir(BlockPos pos) {
-		return this.getBlockState(pos).getBlock().getMaterial() == Material.AIR;
+		return this.getBlockState(pos).getMaterial() == Material.AIR;
 	}
 
 	public boolean blockExists(BlockPos pos) {
@@ -172,7 +188,7 @@ public abstract class World implements BlockView {
 	}
 
 	public boolean isLoaded(BlockPos pos, boolean canBeEmpty) {
-		return !this.isValidPos(pos) ? false : this.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4, canBeEmpty);
+		return this.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4, canBeEmpty);
 	}
 
 	public boolean isRegionLoaded(BlockPos pos, int distance) {
@@ -222,20 +238,18 @@ public abstract class World implements BlockView {
 		}
 	}
 
-	protected boolean isChunkLoaded(int chunkX, int chunkZ, boolean canBeEmpty) {
-		return this.chunkProvider.chunkExists(chunkX, chunkZ) && (canBeEmpty || !this.chunkProvider.getChunk(chunkX, chunkZ).isEmpty());
-	}
+	protected abstract boolean isChunkLoaded(int chunkX, int chunkZ, boolean canBeEmpty);
 
 	public Chunk getChunk(BlockPos pos) {
 		return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
 	}
 
 	public Chunk getChunk(int chunkX, int chunkZ) {
-		return this.chunkProvider.getChunk(chunkX, chunkZ);
+		return this.chunkProvider.getOrGenerateChunks(chunkX, chunkZ);
 	}
 
 	public boolean setBlockState(BlockPos pos, BlockState state, int flags) {
-		if (!this.isValidPos(pos)) {
+		if (this.method_11475(pos)) {
 			return false;
 		} else if (!this.isClient && this.levelProperties.getGeneratorType() == LevelGeneratorType.DEBUG) {
 			return false;
@@ -246,20 +260,19 @@ public abstract class World implements BlockView {
 			if (blockState == null) {
 				return false;
 			} else {
-				Block block2 = blockState.getBlock();
-				if (block.getOpacity() != block2.getOpacity() || block.getLightLevel() != block2.getLightLevel()) {
+				if (state.getOpacity() != blockState.getOpacity() || state.getLuminance() != blockState.getLuminance()) {
 					this.profiler.push("checkLight");
 					this.method_8568(pos);
 					this.profiler.pop();
 				}
 
 				if ((flags & 2) != 0 && (!this.isClient || (flags & 4) == 0) && chunk.isPopulated()) {
-					this.onBlockUpdate(pos);
+					this.method_11481(pos, blockState, state, flags);
 				}
 
 				if (!this.isClient && (flags & 1) != 0) {
 					this.updateNeighbors(pos, blockState.getBlock());
-					if (block.hasComparatorOutput()) {
+					if (state.method_11736()) {
 						this.updateHorizontalAdjacent(pos, block);
 					}
 				}
@@ -276,7 +289,7 @@ public abstract class World implements BlockView {
 	public boolean removeBlock(BlockPos pos, boolean dropAsItem) {
 		BlockState blockState = this.getBlockState(pos);
 		Block block = blockState.getBlock();
-		if (block.getMaterial() == Material.AIR) {
+		if (blockState.getMaterial() == Material.AIR) {
 			return false;
 		} else {
 			this.syncGlobalEvent(2001, pos, Block.getByBlockState(blockState));
@@ -292,9 +305,9 @@ public abstract class World implements BlockView {
 		return this.setBlockState(pos, state, 3);
 	}
 
-	public void onBlockUpdate(BlockPos pos) {
-		for (int i = 0; i < this.eventListeners.size(); i++) {
-			((WorldEventListener)this.eventListeners.get(i)).onBlockUpdate(pos);
+	public void method_11481(BlockPos position, BlockState blockState, BlockState blockState2, int i) {
+		for (int j = 0; j < this.eventListeners.size(); j++) {
+			((WorldEventListener)this.eventListeners.get(j)).method_11493(this, position, blockState, blockState2, i);
 		}
 	}
 
@@ -370,11 +383,11 @@ public abstract class World implements BlockView {
 			BlockState blockState = this.getBlockState(pos);
 
 			try {
-				blockState.getBlock().neighborUpdate(this, pos, blockState, block);
+				blockState.method_11707(this, pos, block);
 			} catch (Throwable var7) {
 				CrashReport crashReport = CrashReport.create(var7, "Exception while updating neighbours");
 				CrashReportSection crashReportSection = crashReport.addElement("Block being updated");
-				crashReportSection.add("Source block type", new Callable<String>() {
+				crashReportSection.add("Source block type", new CrashCallable<String>() {
 					public String call() throws Exception {
 						try {
 							return String.format("ID #%d (%s // %s)", Block.getIdByBlock(block), block.getTranslationKey(), block.getClass().getCanonicalName());
@@ -406,8 +419,8 @@ public abstract class World implements BlockView {
 				return false;
 			} else {
 				for (BlockPos var4 = blockPos.down(); var4.getY() > pos.getY(); var4 = var4.down()) {
-					Block block = this.getBlockState(var4).getBlock();
-					if (block.getOpacity() > 0 && !block.getMaterial().isFluid()) {
+					BlockState blockState = this.getBlockState(var4);
+					if (blockState.getOpacity() > 0 && !blockState.getMaterial().isFluid()) {
 						return false;
 					}
 				}
@@ -436,7 +449,7 @@ public abstract class World implements BlockView {
 	public int getLightLevel(BlockPos pos, boolean checkNeighbours) {
 		if (pos.getX() < -30000000 || pos.getZ() < -30000000 || pos.getX() >= 30000000 || pos.getZ() >= 30000000) {
 			return 15;
-		} else if (checkNeighbours && this.getBlockState(pos).getBlock().usesNeighbourLight()) {
+		} else if (checkNeighbours && this.getBlockState(pos).useNeighbourLight()) {
 			int i = this.getLightLevel(pos.up(), false);
 			int j = this.getLightLevel(pos.east(), false);
 			int k = this.getLightLevel(pos.west(), false);
@@ -486,6 +499,7 @@ public abstract class World implements BlockView {
 		return new BlockPos(pos.getX(), j, pos.getZ());
 	}
 
+	@Deprecated
 	public int getMinimumChunkHeightmap(int x, int z) {
 		if (x >= -30000000 && z >= -30000000 && x < 30000000 && z < 30000000) {
 			if (!this.isChunkLoaded(x >> 4, z >> 4, true)) {
@@ -507,11 +521,11 @@ public abstract class World implements BlockView {
 				pos = new BlockPos(pos.getX(), 0, pos.getZ());
 			}
 
-			if (!this.isValidPos(pos)) {
+			if (!this.method_11479(pos)) {
 				return lightType.defaultValue;
 			} else if (!this.blockExists(pos)) {
 				return lightType.defaultValue;
-			} else if (this.getBlockState(pos).getBlock().usesNeighbourLight()) {
+			} else if (this.getBlockState(pos).useNeighbourLight()) {
 				int i = this.getLightAtPos(lightType, pos.up());
 				int j = this.getLightAtPos(lightType, pos.east());
 				int k = this.getLightAtPos(lightType, pos.west());
@@ -546,7 +560,7 @@ public abstract class World implements BlockView {
 			pos = new BlockPos(pos.getX(), 0, pos.getZ());
 		}
 
-		if (!this.isValidPos(pos)) {
+		if (!this.method_11479(pos)) {
 			return lightType.defaultValue;
 		} else if (!this.blockExists(pos)) {
 			return lightType.defaultValue;
@@ -557,7 +571,7 @@ public abstract class World implements BlockView {
 	}
 
 	public void method_8491(LightType lightType, BlockPos pos, int lightLevel) {
-		if (this.isValidPos(pos)) {
+		if (this.method_11479(pos)) {
 			if (this.blockExists(pos)) {
 				Chunk chunk = this.getChunk(pos);
 				chunk.setLightAtPos(lightType, pos, lightLevel);
@@ -589,11 +603,11 @@ public abstract class World implements BlockView {
 
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
-		if (!this.isValidPos(pos)) {
+		if (this.method_11475(pos)) {
 			return Blocks.AIR.getDefaultState();
 		} else {
 			Chunk chunk = this.getChunk(pos);
-			return chunk.method_9154(pos);
+			return chunk.getBlockState(pos);
 		}
 	}
 
@@ -601,14 +615,17 @@ public abstract class World implements BlockView {
 		return this.ambientDarkness < 4;
 	}
 
+	@Nullable
 	public BlockHitResult rayTrace(Vec3d start, Vec3d end) {
 		return this.rayTrace(start, end, false, false, false);
 	}
 
+	@Nullable
 	public BlockHitResult rayTrace(Vec3d start, Vec3d end, boolean bl) {
 		return this.rayTrace(start, end, bl, false, false);
 	}
 
+	@Nullable
 	public BlockHitResult rayTrace(Vec3d start, Vec3d end, boolean bl, boolean bl2, boolean bl3) {
 		if (Double.isNaN(start.x) || Double.isNaN(start.y) || Double.isNaN(start.z)) {
 			return null;
@@ -622,8 +639,8 @@ public abstract class World implements BlockView {
 			BlockPos blockPos = new BlockPos(l, m, n);
 			BlockState blockState = this.getBlockState(blockPos);
 			Block block = blockState.getBlock();
-			if ((!bl2 || block.getCollisionBox(this, blockPos, blockState) != null) && block.canCollide(blockState, bl)) {
-				BlockHitResult blockHitResult = block.rayTrace(this, blockPos, start, end);
+			if ((!bl2 || blockState.getCollisionBox(this, blockPos) != Block.EMPTY_BOX) && block.canCollide(blockState, bl)) {
+				BlockHitResult blockHitResult = blockState.method_11711(this, blockPos, start, end);
 				if (blockHitResult != null) {
 					return blockHitResult;
 				}
@@ -719,9 +736,9 @@ public abstract class World implements BlockView {
 				blockPos = new BlockPos(l, m, n);
 				BlockState blockState2 = this.getBlockState(blockPos);
 				Block block2 = blockState2.getBlock();
-				if (!bl2 || block2.getCollisionBox(this, blockPos, blockState2) != null) {
+				if (!bl2 || blockState2.getMaterial() == Material.PORTAL || blockState2.getCollisionBox(this, blockPos) != Block.EMPTY_BOX) {
 					if (block2.canCollide(blockState2, bl)) {
-						BlockHitResult blockHitResult3 = block2.rayTrace(this, blockPos, start, end);
+						BlockHitResult blockHitResult3 = blockState2.method_11711(this, blockPos, start, end);
 						if (blockHitResult3 != null) {
 							return blockHitResult3;
 						}
@@ -737,30 +754,22 @@ public abstract class World implements BlockView {
 		}
 	}
 
-	public void playSound(Entity entity, String sound, float volume, float pitch) {
+	public void method_11486(@Nullable PlayerEntity playerEntity, BlockPos blockPos, Sound sound, SoundCategory soundCategory, float f, float g) {
+		this.playSound(playerEntity, (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, sound, soundCategory, f, g);
+	}
+
+	public void playSound(@Nullable PlayerEntity playerEntity, double d, double e, double f, Sound sound, SoundCategory soundCategory, float g, float h) {
 		for (int i = 0; i < this.eventListeners.size(); i++) {
-			((WorldEventListener)this.eventListeners.get(i)).playSound(sound, entity.x, entity.y, entity.z, volume, pitch);
+			((WorldEventListener)this.eventListeners.get(i)).method_3747(playerEntity, sound, soundCategory, d, e, f, g, h);
 		}
 	}
 
-	public void playSound(PlayerEntity player, String sound, float volume, float pitch) {
-		for (int i = 0; i < this.eventListeners.size(); i++) {
-			((WorldEventListener)this.eventListeners.get(i)).playSound(player, sound, player.x, player.y, player.z, volume, pitch);
-		}
+	public void playSound(double d, double e, double f, Sound sound, SoundCategory soundCategory, float g, float h, boolean bl) {
 	}
 
-	public void playSound(double x, double y, double z, String sound, float volume, float pitch) {
+	public void method_8509(BlockPos blockPos, @Nullable Sound sound) {
 		for (int i = 0; i < this.eventListeners.size(); i++) {
-			((WorldEventListener)this.eventListeners.get(i)).playSound(sound, x, y, z, volume, pitch);
-		}
-	}
-
-	public void playSound(double x, double y, double z, String sound, float volume, float pitch, boolean useDistance) {
-	}
-
-	public void playMusicDisc(BlockPos pos, String id) {
-		for (int i = 0; i < this.eventListeners.size(); i++) {
-			((WorldEventListener)this.eventListeners.get(i)).playMusicDisc(id, pos);
+			((WorldEventListener)this.eventListeners.get(i)).method_8572(sound, blockPos);
 		}
 	}
 
@@ -791,7 +800,7 @@ public abstract class World implements BlockView {
 			bl = true;
 		}
 
-		if (!bl && !this.isChunkLoaded(i, j, true)) {
+		if (!bl && !this.isChunkLoaded(i, j, false)) {
 			return false;
 		} else {
 			if (entity instanceof PlayerEntity) {
@@ -820,12 +829,12 @@ public abstract class World implements BlockView {
 	}
 
 	public void removeEntity(Entity entity) {
-		if (entity.rider != null) {
-			entity.rider.startRiding(null);
+		if (entity.hasPassengers()) {
+			entity.removeAllPassengers();
 		}
 
-		if (entity.vehicle != null) {
-			entity.startRiding(null);
+		if (entity.hasMount()) {
+			entity.stopRiding();
 		}
 
 		entity.remove();
@@ -837,6 +846,7 @@ public abstract class World implements BlockView {
 	}
 
 	public void method_3700(Entity entity) {
+		entity.method_12991(false);
 		entity.remove();
 		if (entity instanceof PlayerEntity) {
 			this.playerEntities.remove(entity);
@@ -861,55 +871,63 @@ public abstract class World implements BlockView {
 		this.eventListeners.remove(listener);
 	}
 
-	public List<Box> doesBoxCollide(Entity entity, Box box) {
+	public List<Box> doesBoxCollide(@Nullable Entity entity, Box box) {
 		List<Box> list = Lists.newArrayList();
-		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX + 1.0);
-		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY + 1.0);
-		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ + 1.0);
+		int i = MathHelper.floor(box.minX) - 1;
+		int j = MathHelper.ceil(box.maxX) + 1;
+		int k = MathHelper.floor(box.minY) - 1;
+		int l = MathHelper.ceil(box.maxY) + 1;
+		int m = MathHelper.floor(box.minZ) - 1;
+		int n = MathHelper.ceil(box.maxZ) + 1;
 		WorldBorder worldBorder = this.getWorldBorder();
-		boolean bl = entity.isOutsideWorldBorder();
-		boolean bl2 = this.isInsideWorld(worldBorder, entity);
+		boolean bl = entity != null && entity.isOutsideWorldBorder();
+		boolean bl2 = entity != null && this.isInsideWorld(worldBorder, entity);
 		BlockState blockState = Blocks.STONE.getDefaultState();
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 		for (int o = i; o < j; o++) {
 			for (int p = m; p < n; p++) {
-				if (this.blockExists(mutable.setPosition(o, 64, p))) {
-					for (int q = k - 1; q < l; q++) {
-						mutable.setPosition(o, q, p);
-						if (bl && bl2) {
-							entity.setOutsideWorldBorder(false);
-						} else if (!bl && !bl2) {
-							entity.setOutsideWorldBorder(true);
-						}
+				int q = (o != i && o != j - 1 ? 0 : 1) + (p != m && p != n - 1 ? 0 : 1);
+				if (q != 2 && this.blockExists(pooled.setPosition(o, 64, p))) {
+					for (int r = k; r < l; r++) {
+						if (q <= 0 || r != k && r != l - 1) {
+							pooled.setPosition(o, r, p);
+							if (entity != null) {
+								if (bl && bl2) {
+									entity.setOutsideWorldBorder(false);
+								} else if (!bl && !bl2) {
+									entity.setOutsideWorldBorder(true);
+								}
+							}
 
-						BlockState blockState2 = blockState;
-						if (worldBorder.contains(mutable) || !bl2) {
-							blockState2 = this.getBlockState(mutable);
-						}
+							BlockState blockState2 = blockState;
+							if (worldBorder.contains(pooled) || !bl2) {
+								blockState2 = this.getBlockState(pooled);
+							}
 
-						blockState2.getBlock().appendCollisionBoxes(this, mutable, blockState2, box, list, entity);
+							blockState2.addCollisionBoxesToList(this, pooled, box, list, entity);
+						}
 					}
 				}
 			}
 		}
 
-		double d = 0.25;
-		List<Entity> list2 = this.getEntitiesIn(entity, box.expand(d, d, d));
+		pooled.method_12576();
+		if (entity != null) {
+			List<Entity> list2 = this.getEntitiesIn(entity, box.expand(0.25));
 
-		for (int r = 0; r < list2.size(); r++) {
-			if (entity.rider != list2 && entity.vehicle != list2) {
-				Box box2 = ((Entity)list2.get(r)).getBox();
-				if (box2 != null && box2.intersects(box)) {
-					list.add(box2);
-				}
+			for (int s = 0; s < list2.size(); s++) {
+				Entity entity2 = (Entity)list2.get(s);
+				if (!entity.isConnectedThroughVehicle(entity2)) {
+					Box box2 = entity2.getBox();
+					if (box2 != null && box2.intersects(box)) {
+						list.add(box2);
+					}
 
-				box2 = entity.getHardCollisionBox((Entity)list2.get(r));
-				if (box2 != null && box2.intersects(box)) {
-					list.add(box2);
+					box2 = entity.getHardCollisionBox(entity2);
+					if (box2 != null && box2.intersects(box)) {
+						list.add(box2);
+					}
 				}
 			}
 		}
@@ -939,38 +957,81 @@ public abstract class World implements BlockView {
 
 	public List<Box> method_3608(Box box) {
 		List<Box> list = Lists.newArrayList();
-		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX + 1.0);
-		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY + 1.0);
-		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ + 1.0);
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		int i = MathHelper.floor(box.minX) - 1;
+		int j = MathHelper.ceil(box.maxX) + 1;
+		int k = MathHelper.floor(box.minY) - 1;
+		int l = MathHelper.ceil(box.maxY) + 1;
+		int m = MathHelper.floor(box.minZ) - 1;
+		int n = MathHelper.ceil(box.maxZ) + 1;
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 		for (int o = i; o < j; o++) {
 			for (int p = m; p < n; p++) {
-				if (this.blockExists(mutable.setPosition(o, 64, p))) {
-					for (int q = k - 1; q < l; q++) {
-						mutable.setPosition(o, q, p);
-						BlockState blockState2;
-						if (o >= -30000000 && o < 30000000 && p >= -30000000 && p < 30000000) {
-							blockState2 = this.getBlockState(mutable);
-						} else {
-							blockState2 = Blocks.BEDROCK.getDefaultState();
-						}
+				int q = (o != i && o != j - 1 ? 0 : 1) + (p != m && p != n - 1 ? 0 : 1);
+				if (q != 2 && this.blockExists(pooled.setPosition(o, 64, p))) {
+					for (int r = k; r < l; r++) {
+						if (q <= 0 || r != k && r != l - 1) {
+							pooled.setPosition(o, r, p);
+							BlockState blockState2;
+							if (o >= -30000000 && o < 30000000 && p >= -30000000 && p < 30000000) {
+								blockState2 = this.getBlockState(pooled);
+							} else {
+								blockState2 = Blocks.BEDROCK.getDefaultState();
+							}
 
-						blockState2.getBlock().appendCollisionBoxes(this, mutable, blockState2, box, list, null);
+							blockState2.addCollisionBoxesToList(this, pooled, box, list, null);
+						}
 					}
 				}
 			}
 		}
 
+		pooled.method_12576();
 		return list;
+	}
+
+	public boolean method_11488(Box box) {
+		List<Box> list = Lists.newArrayList();
+		int i = MathHelper.floor(box.minX) - 1;
+		int j = MathHelper.ceil(box.maxX) + 1;
+		int k = MathHelper.floor(box.minY) - 1;
+		int l = MathHelper.ceil(box.maxY) + 1;
+		int m = MathHelper.floor(box.minZ) - 1;
+		int n = MathHelper.ceil(box.maxZ) + 1;
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
+
+		try {
+			for (int o = i; o < j; o++) {
+				for (int p = m; p < n; p++) {
+					int q = (o != i && o != j - 1 ? 0 : 1) + (p != m && p != n - 1 ? 0 : 1);
+					if (q != 2 && this.blockExists(pooled.setPosition(o, 64, p))) {
+						for (int r = k; r < l; r++) {
+							if (q <= 0 || r != k && r != l - 1) {
+								pooled.setPosition(o, r, p);
+								if (o < -30000000 || o >= 30000000 || p < -30000000 || p >= 30000000) {
+									return true;
+								}
+
+								BlockState blockState = this.getBlockState(pooled);
+								blockState.addCollisionBoxesToList(this, pooled, box, list, null);
+								if (!list.isEmpty()) {
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			return false;
+		} finally {
+			pooled.method_12576();
+		}
 	}
 
 	public int method_3597(float f) {
 		float g = this.getSkyAngle(f);
-		float h = 1.0F - (MathHelper.cos(g * (float) Math.PI * 2.0F) * 2.0F + 0.5F);
+		float h = 1.0F - (MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.5F);
 		h = MathHelper.clamp(h, 0.0F, 1.0F);
 		h = 1.0F - h;
 		h = (float)((double)h * (1.0 - (double)(this.getRainGradient(f) * 5.0F) / 16.0));
@@ -981,7 +1042,7 @@ public abstract class World implements BlockView {
 
 	public float method_3649(float f) {
 		float g = this.getSkyAngle(f);
-		float h = 1.0F - (MathHelper.cos(g * (float) Math.PI * 2.0F) * 2.0F + 0.2F);
+		float h = 1.0F - (MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.2F);
 		h = MathHelper.clamp(h, 0.0F, 1.0F);
 		h = 1.0F - h;
 		h = (float)((double)h * (1.0 - (double)(this.getRainGradient(f) * 5.0F) / 16.0));
@@ -991,7 +1052,7 @@ public abstract class World implements BlockView {
 
 	public Vec3d method_3631(Entity entity, float f) {
 		float g = this.getSkyAngle(f);
-		float h = MathHelper.cos(g * (float) Math.PI * 2.0F) * 2.0F + 0.5F;
+		float h = MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.5F;
 		h = MathHelper.clamp(h, 0.0F, 1.0F);
 		int i = MathHelper.floor(entity.x);
 		int j = MathHelper.floor(entity.y);
@@ -1053,12 +1114,12 @@ public abstract class World implements BlockView {
 
 	public float getSkyAngleRadians(float tickDelta) {
 		float f = this.getSkyAngle(tickDelta);
-		return f * (float) Math.PI * 2.0F;
+		return f * (float) (Math.PI * 2);
 	}
 
 	public Vec3d getCloudColor(float tickDelta) {
 		float f = this.getSkyAngle(tickDelta);
-		float g = MathHelper.cos(f * (float) Math.PI * 2.0F) * 2.0F + 0.5F;
+		float g = MathHelper.cos(f * (float) (Math.PI * 2)) * 2.0F + 0.5F;
 		g = MathHelper.clamp(g, 0.0F, 1.0F);
 		float h = (float)(this.cloudColor >> 16 & 255L) / 255.0F;
 		float i = (float)(this.cloudColor >> 8 & 255L) / 255.0F;
@@ -1102,7 +1163,7 @@ public abstract class World implements BlockView {
 
 		while (blockPos.getY() >= 0) {
 			BlockPos blockPos2 = blockPos.down();
-			Material material = chunk.getBlockAtPos(blockPos2).getMaterial();
+			Material material = chunk.getBlockState(blockPos2).getMaterial();
 			if (material.blocksMovement() && material != Material.FOLIAGE) {
 				break;
 			}
@@ -1115,9 +1176,13 @@ public abstract class World implements BlockView {
 
 	public float method_3707(float f) {
 		float g = this.getSkyAngle(f);
-		float h = 1.0F - (MathHelper.cos(g * (float) Math.PI * 2.0F) * 2.0F + 0.25F);
+		float h = 1.0F - (MathHelper.cos(g * (float) (Math.PI * 2)) * 2.0F + 0.25F);
 		h = MathHelper.clamp(h, 0.0F, 1.0F);
 		return h * h * 0.5F;
+	}
+
+	public boolean method_11489(BlockPos pos, Block block) {
+		return true;
 	}
 
 	public void createAndScheduleBlockTick(BlockPos pos, Block block, int tickRate) {
@@ -1173,21 +1238,22 @@ public abstract class World implements BlockView {
 		}
 
 		this.unloadedEntities.clear();
+		this.method_11491();
 		this.profiler.swap("regular");
 
 		for (int n = 0; n < this.loadedEntities.size(); n++) {
 			Entity entity3 = (Entity)this.loadedEntities.get(n);
-			if (entity3.vehicle != null) {
-				if (!entity3.vehicle.removed && entity3.vehicle.rider == entity3) {
+			Entity entity4 = entity3.getVehicle();
+			if (entity4 != null) {
+				if (!entity4.removed && entity4.hasPassenger(entity3)) {
 					continue;
 				}
 
-				entity3.vehicle.rider = null;
-				entity3.vehicle = null;
+				entity3.stopRiding();
 			}
 
 			this.profiler.push("tick");
-			if (!entity3.removed) {
+			if (!entity3.removed && !(entity3 instanceof ServerPlayerEntity)) {
 				try {
 					this.checkChunk(entity3);
 				} catch (Throwable var8) {
@@ -1224,7 +1290,9 @@ public abstract class World implements BlockView {
 				BlockPos blockPos = blockEntity.getPos();
 				if (this.blockExists(blockPos) && this.border.contains(blockPos)) {
 					try {
+						this.profiler.push(blockEntity.getClass().getSimpleName());
 						((Tickable)blockEntity).tick();
+						this.profiler.pop();
 					} catch (Throwable var7) {
 						CrashReport crashReport3 = CrashReport.create(var7, "Ticking block entity");
 						CrashReportSection crashReportSection3 = crashReport3.addElement("Block entity being ticked");
@@ -1260,10 +1328,11 @@ public abstract class World implements BlockView {
 					}
 
 					if (this.blockExists(blockEntity2.getPos())) {
-						this.getChunk(blockEntity2.getPos()).method_9136(blockEntity2.getPos(), blockEntity2);
+						Chunk chunk = this.getChunk(blockEntity2.getPos());
+						BlockState blockState = chunk.getBlockState(blockEntity2.getPos());
+						chunk.method_9136(blockEntity2.getPos(), blockEntity2);
+						this.method_11481(blockEntity2.getPos(), blockState, blockState, 3);
 					}
-
-					this.onBlockUpdate(blockEntity2.getPos());
 				}
 			}
 
@@ -1272,6 +1341,9 @@ public abstract class World implements BlockView {
 
 		this.profiler.pop();
 		this.profiler.pop();
+	}
+
+	protected void method_11491() {
 	}
 
 	public boolean addBlockEntity(BlockEntity blockEntity) {
@@ -1288,10 +1360,7 @@ public abstract class World implements BlockView {
 			this.pendingBlockEntities.addAll(collection);
 		} else {
 			for (BlockEntity blockEntity : collection) {
-				this.blockEntities.add(blockEntity);
-				if (blockEntity instanceof Tickable) {
-					this.tickingBlockEntities.add(blockEntity);
-				}
+				this.addBlockEntity(blockEntity);
 			}
 		}
 	}
@@ -1312,7 +1381,7 @@ public abstract class World implements BlockView {
 			entity.prevPitch = entity.pitch;
 			if (bl && entity.updateNeeded) {
 				entity.ticksAlive++;
-				if (entity.vehicle != null) {
+				if (entity.hasMount()) {
 					entity.tickRiding();
 				} else {
 					entity.tick();
@@ -1348,21 +1417,21 @@ public abstract class World implements BlockView {
 					this.getChunk(entity.chunkX, entity.chunkZ).removeEntity(entity, entity.chunkY);
 				}
 
-				if (this.isChunkLoaded(l, n, true)) {
-					entity.updateNeeded = true;
-					this.getChunk(l, n).addEntity(entity);
-				} else {
+				if (!entity.teleportRequested() && !this.isChunkLoaded(l, n, true)) {
 					entity.updateNeeded = false;
+				} else {
+					this.getChunk(l, n).addEntity(entity);
 				}
 			}
 
 			this.profiler.pop();
-			if (bl && entity.updateNeeded && entity.rider != null) {
-				if (!entity.rider.removed && entity.rider.vehicle == entity) {
-					this.checkChunk(entity.rider);
-				} else {
-					entity.rider.vehicle = null;
-					entity.rider = null;
+			if (bl && entity.updateNeeded) {
+				for (Entity entity2 : entity.getPassengerList()) {
+					if (!entity2.removed && entity2.getVehicle() == entity) {
+						this.checkChunk(entity2);
+					} else {
+						entity2.stopRiding();
+					}
 				}
 			}
 		}
@@ -1372,12 +1441,12 @@ public abstract class World implements BlockView {
 		return this.hasEntityIn(box, null);
 	}
 
-	public boolean hasEntityIn(Box box, Entity except) {
+	public boolean hasEntityIn(Box box, @Nullable Entity except) {
 		List<Entity> list = this.getEntitiesIn(null, box);
 
 		for (int i = 0; i < list.size(); i++) {
 			Entity entity = (Entity)list.get(i);
-			if (!entity.removed && entity.inanimate && entity != except && (except == null || except.vehicle != entity && except.rider != entity)) {
+			if (!entity.removed && entity.inanimate && entity != except && (except == null || entity.isConnectedThroughVehicle(except))) {
 				return false;
 			}
 		}
@@ -1387,70 +1456,77 @@ public abstract class World implements BlockView {
 
 	public boolean isBoxNotEmpty(Box box) {
 		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX);
+		int j = MathHelper.ceil(box.maxX);
 		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY);
+		int l = MathHelper.ceil(box.maxY);
 		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ);
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		int n = MathHelper.ceil(box.maxZ);
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-		for (int o = i; o <= j; o++) {
-			for (int p = k; p <= l; p++) {
-				for (int q = m; q <= n; q++) {
-					Block block = this.getBlockState(mutable.setPosition(o, p, q)).getBlock();
-					if (block.getMaterial() != Material.AIR) {
+		for (int o = i; o < j; o++) {
+			for (int p = k; p < l; p++) {
+				for (int q = m; q < n; q++) {
+					BlockState blockState = this.getBlockState(pooled.setPosition(o, p, q));
+					if (blockState.getMaterial() != Material.AIR) {
+						pooled.method_12576();
 						return true;
 					}
 				}
 			}
 		}
 
+		pooled.method_12576();
 		return false;
 	}
 
 	public boolean containsFluid(Box box) {
 		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX);
+		int j = MathHelper.ceil(box.maxX);
 		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY);
+		int l = MathHelper.ceil(box.maxY);
 		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ);
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		int n = MathHelper.ceil(box.maxZ);
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
-		for (int o = i; o <= j; o++) {
-			for (int p = k; p <= l; p++) {
-				for (int q = m; q <= n; q++) {
-					Block block = this.getBlockState(mutable.setPosition(o, p, q)).getBlock();
-					if (block.getMaterial().isFluid()) {
+		for (int o = i; o < j; o++) {
+			for (int p = k; p < l; p++) {
+				for (int q = m; q < n; q++) {
+					BlockState blockState = this.getBlockState(pooled.setPosition(o, p, q));
+					if (blockState.getMaterial().isFluid()) {
+						pooled.method_12576();
 						return true;
 					}
 				}
 			}
 		}
 
+		pooled.method_12576();
 		return false;
 	}
 
 	public boolean containsFireSource(Box box) {
 		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX + 1.0);
+		int j = MathHelper.ceil(box.maxX);
 		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY + 1.0);
+		int l = MathHelper.ceil(box.maxY);
 		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ + 1.0);
+		int n = MathHelper.ceil(box.maxZ);
 		if (this.isRegionLoaded(i, k, m, j, l, n, true)) {
-			BlockPos.Mutable mutable = new BlockPos.Mutable();
+			BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 			for (int o = i; o < j; o++) {
 				for (int p = k; p < l; p++) {
 					for (int q = m; q < n; q++) {
-						Block block = this.getBlockState(mutable.setPosition(o, p, q)).getBlock();
+						Block block = this.getBlockState(pooled.setPosition(o, p, q)).getBlock();
 						if (block == Blocks.FIRE || block == Blocks.FLOWING_LAVA || block == Blocks.LAVA) {
+							pooled.method_12576();
 							return true;
 						}
 					}
 				}
 			}
+
+			pooled.method_12576();
 		}
 
 		return false;
@@ -1458,35 +1534,36 @@ public abstract class World implements BlockView {
 
 	public boolean method_3610(Box box, Material material, Entity entity) {
 		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX + 1.0);
+		int j = MathHelper.ceil(box.maxX);
 		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY + 1.0);
+		int l = MathHelper.ceil(box.maxY);
 		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ + 1.0);
+		int n = MathHelper.ceil(box.maxZ);
 		if (!this.isRegionLoaded(i, k, m, j, l, n, true)) {
 			return false;
 		} else {
 			boolean bl = false;
-			Vec3d vec3d = new Vec3d(0.0, 0.0, 0.0);
-			BlockPos.Mutable mutable = new BlockPos.Mutable();
+			Vec3d vec3d = Vec3d.ZERO;
+			BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 			for (int o = i; o < j; o++) {
 				for (int p = k; p < l; p++) {
 					for (int q = m; q < n; q++) {
-						mutable.setPosition(o, p, q);
-						BlockState blockState = this.getBlockState(mutable);
+						pooled.setPosition(o, p, q);
+						BlockState blockState = this.getBlockState(pooled);
 						Block block = blockState.getBlock();
-						if (block.getMaterial() == material) {
+						if (blockState.getMaterial() == material) {
 							double d = (double)((float)(p + 1) - AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL)));
 							if ((double)l >= d) {
 								bl = true;
-								vec3d = block.onEntityCollision(this, mutable, entity, vec3d);
+								vec3d = block.onEntityCollision(this, pooled, entity, vec3d);
 							}
 						}
 					}
 				}
 			}
 
+			pooled.method_12576();
 			if (vec3d.length() > 0.0 && entity.canFly()) {
 				vec3d = vec3d.normalize();
 				double e = 0.014;
@@ -1501,41 +1578,42 @@ public abstract class World implements BlockView {
 
 	public boolean containsMaterial(Box box, Material material) {
 		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX + 1.0);
+		int j = MathHelper.ceil(box.maxX);
 		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY + 1.0);
+		int l = MathHelper.ceil(box.maxY);
 		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ + 1.0);
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		int n = MathHelper.ceil(box.maxZ);
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 		for (int o = i; o < j; o++) {
 			for (int p = k; p < l; p++) {
 				for (int q = m; q < n; q++) {
-					if (this.getBlockState(mutable.setPosition(o, p, q)).getBlock().getMaterial() == material) {
+					if (this.getBlockState(pooled.setPosition(o, p, q)).getMaterial() == material) {
+						pooled.method_12576();
 						return true;
 					}
 				}
 			}
 		}
 
+		pooled.method_12576();
 		return false;
 	}
 
 	public boolean containsBlockWithMaterial(Box box, Material material) {
 		int i = MathHelper.floor(box.minX);
-		int j = MathHelper.floor(box.maxX + 1.0);
+		int j = MathHelper.ceil(box.maxX);
 		int k = MathHelper.floor(box.minY);
-		int l = MathHelper.floor(box.maxY + 1.0);
+		int l = MathHelper.ceil(box.maxY);
 		int m = MathHelper.floor(box.minZ);
-		int n = MathHelper.floor(box.maxZ + 1.0);
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		int n = MathHelper.ceil(box.maxZ);
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 		for (int o = i; o < j; o++) {
 			for (int p = k; p < l; p++) {
 				for (int q = m; q < n; q++) {
-					BlockState blockState = this.getBlockState(mutable.setPosition(o, p, q));
-					Block block = blockState.getBlock();
-					if (block.getMaterial() == material) {
+					BlockState blockState = this.getBlockState(pooled.setPosition(o, p, q));
+					if (blockState.getMaterial() == material) {
 						int r = (Integer)blockState.get(AbstractFluidBlock.LEVEL);
 						double d = (double)(p + 1);
 						if (r < 8) {
@@ -1543,6 +1621,7 @@ public abstract class World implements BlockView {
 						}
 
 						if (d >= box.minY) {
+							pooled.method_12576();
 							return true;
 						}
 					}
@@ -1550,14 +1629,15 @@ public abstract class World implements BlockView {
 			}
 		}
 
+		pooled.method_12576();
 		return false;
 	}
 
-	public Explosion createExplosion(Entity entity, double x, double y, double z, float power, boolean destructive) {
+	public Explosion createExplosion(@Nullable Entity entity, double x, double y, double z, float power, boolean destructive) {
 		return this.createExplosion(entity, x, y, z, power, false, destructive);
 	}
 
-	public Explosion createExplosion(Entity entity, double x, double y, double z, float power, boolean createFire, boolean destructive) {
+	public Explosion createExplosion(@Nullable Entity entity, double x, double y, double z, float power, boolean createFire, boolean destructive) {
 		Explosion explosion = new Explosion(this, entity, x, y, z, power, createFire, destructive);
 		explosion.collectBlocksAndDamageEntities();
 		explosion.affectWorld(true);
@@ -1595,10 +1675,10 @@ public abstract class World implements BlockView {
 		}
 	}
 
-	public boolean extinguishFire(PlayerEntity player, BlockPos pos, Direction direction) {
+	public boolean extinguishFire(@Nullable PlayerEntity player, BlockPos pos, Direction direction) {
 		pos = pos.offset(direction);
 		if (this.getBlockState(pos).getBlock() == Blocks.FIRE) {
-			this.syncWorldEvent(player, 1004, pos, 0);
+			this.syncWorldEvent(player, 1009, pos, 0);
 			this.setAir(pos);
 			return true;
 		} else {
@@ -1614,20 +1694,15 @@ public abstract class World implements BlockView {
 		return this.chunkProvider.getChunkProviderName();
 	}
 
+	@Nullable
 	@Override
 	public BlockEntity getBlockEntity(BlockPos pos) {
-		if (!this.isValidPos(pos)) {
+		if (this.method_11475(pos)) {
 			return null;
 		} else {
 			BlockEntity blockEntity = null;
 			if (this.iteratingTickingBlockEntities) {
-				for (int i = 0; i < this.pendingBlockEntities.size(); i++) {
-					BlockEntity blockEntity2 = (BlockEntity)this.pendingBlockEntities.get(i);
-					if (!blockEntity2.isRemoved() && blockEntity2.getPos().equals(pos)) {
-						blockEntity = blockEntity2;
-						break;
-					}
-				}
+				blockEntity = this.method_11476(pos);
 			}
 
 			if (blockEntity == null) {
@@ -1635,37 +1710,45 @@ public abstract class World implements BlockView {
 			}
 
 			if (blockEntity == null) {
-				for (int j = 0; j < this.pendingBlockEntities.size(); j++) {
-					BlockEntity blockEntity3 = (BlockEntity)this.pendingBlockEntities.get(j);
-					if (!blockEntity3.isRemoved() && blockEntity3.getPos().equals(pos)) {
-						blockEntity = blockEntity3;
-						break;
-					}
-				}
+				blockEntity = this.method_11476(pos);
 			}
 
 			return blockEntity;
 		}
 	}
 
-	public void setBlockEntity(BlockPos pos, BlockEntity blockEntity) {
-		if (blockEntity != null && !blockEntity.isRemoved()) {
-			if (this.iteratingTickingBlockEntities) {
-				blockEntity.setPos(pos);
-				Iterator<BlockEntity> iterator = this.pendingBlockEntities.iterator();
+	@Nullable
+	private BlockEntity method_11476(BlockPos blockPos) {
+		for (int i = 0; i < this.pendingBlockEntities.size(); i++) {
+			BlockEntity blockEntity = (BlockEntity)this.pendingBlockEntities.get(i);
+			if (!blockEntity.isRemoved() && blockEntity.getPos().equals(blockPos)) {
+				return blockEntity;
+			}
+		}
 
-				while (iterator.hasNext()) {
-					BlockEntity blockEntity2 = (BlockEntity)iterator.next();
-					if (blockEntity2.getPos().equals(pos)) {
-						blockEntity2.markRemoved();
-						iterator.remove();
+		return null;
+	}
+
+	public void setBlockEntity(BlockPos pos, @Nullable BlockEntity blockEntity) {
+		if (!this.method_11475(pos)) {
+			if (blockEntity != null && !blockEntity.isRemoved()) {
+				if (this.iteratingTickingBlockEntities) {
+					blockEntity.setPosition(pos);
+					Iterator<BlockEntity> iterator = this.pendingBlockEntities.iterator();
+
+					while (iterator.hasNext()) {
+						BlockEntity blockEntity2 = (BlockEntity)iterator.next();
+						if (blockEntity2.getPos().equals(pos)) {
+							blockEntity2.markRemoved();
+							iterator.remove();
+						}
 					}
-				}
 
-				this.pendingBlockEntities.add(blockEntity);
-			} else {
-				this.addBlockEntity(blockEntity);
-				this.getChunk(pos).method_9136(pos, blockEntity);
+					this.pendingBlockEntities.add(blockEntity);
+				} else {
+					this.addBlockEntity(blockEntity);
+					this.getChunk(pos).method_9136(pos, blockEntity);
+				}
 			}
 		}
 	}
@@ -1690,38 +1773,21 @@ public abstract class World implements BlockView {
 		this.unloadedBlockEntities.add(blockEntity);
 	}
 
-	public boolean method_8565(BlockPos pos) {
-		BlockState blockState = this.getBlockState(pos);
-		Box box = blockState.getBlock().getCollisionBox(this, pos, blockState);
-		return box != null && box.getAverage() >= 1.0;
-	}
-
-	public static boolean isOpaque(BlockView world, BlockPos pos) {
-		BlockState blockState = world.getBlockState(pos);
-		Block block = blockState.getBlock();
-		if (block.getMaterial().isOpaque() && block.renderAsNormalBlock()) {
-			return true;
-		} else if (block instanceof StairsBlock) {
-			return blockState.get(StairsBlock.HALF) == StairsBlock.Half.TOP;
-		} else if (block instanceof SlabBlock) {
-			return blockState.get(SlabBlock.HALF) == SlabBlock.SlabType.TOP;
-		} else if (block instanceof HopperBlock) {
-			return true;
-		} else {
-			return block instanceof SnowLayerBlock ? (Integer)blockState.get(SnowLayerBlock.LAYERS) == 7 : false;
-		}
+	public boolean method_11492(BlockPos blockPos) {
+		Box box = this.getBlockState(blockPos).getCollisionBox(this, blockPos);
+		return box != Block.EMPTY_BOX && box.getAverage() >= 1.0;
 	}
 
 	public boolean renderAsNormalBlock(BlockPos pos, boolean defaultValue) {
-		if (!this.isValidPos(pos)) {
-			return defaultValue;
+		if (this.method_11475(pos)) {
+			return false;
 		} else {
-			Chunk chunk = this.chunkProvider.getChunk(pos);
-			if (chunk.isEmpty()) {
-				return defaultValue;
+			Chunk chunk = this.chunkProvider.getLoadedChunk(pos.getX() >> 4, pos.getZ() >> 4);
+			if (chunk != null && !chunk.isEmpty()) {
+				BlockState blockState = this.getBlockState(pos);
+				return blockState.getMaterial().isOpaque() && blockState.method_11730();
 			} else {
-				Block block = this.getBlockState(pos).getBlock();
-				return block.getMaterial().isOpaque() && block.renderAsNormalBlock();
+				return defaultValue;
 			}
 		}
 	}
@@ -1809,75 +1875,16 @@ public abstract class World implements BlockView {
 		}
 	}
 
-	protected void updateLighting() {
-		this.field_4530.clear();
-		this.profiler.push("buildList");
-
-		for (int i = 0; i < this.playerEntities.size(); i++) {
-			PlayerEntity playerEntity = (PlayerEntity)this.playerEntities.get(i);
-			int j = MathHelper.floor(playerEntity.x / 16.0);
-			int k = MathHelper.floor(playerEntity.z / 16.0);
-			int l = this.getNextMapId();
-
-			for (int m = -l; m <= l; m++) {
-				for (int n = -l; n <= l; n++) {
-					this.field_4530.add(new ChunkPos(m + j, n + k));
-				}
-			}
-		}
-
-		this.profiler.pop();
-		if (this.field_4534 > 0) {
-			this.field_4534--;
-		}
-
-		this.profiler.push("playerCheckLight");
-		if (!this.playerEntities.isEmpty()) {
-			int o = this.random.nextInt(this.playerEntities.size());
-			PlayerEntity playerEntity2 = (PlayerEntity)this.playerEntities.get(o);
-			int p = MathHelper.floor(playerEntity2.x) + this.random.nextInt(11) - 5;
-			int q = MathHelper.floor(playerEntity2.y) + this.random.nextInt(11) - 5;
-			int r = MathHelper.floor(playerEntity2.z) + this.random.nextInt(11) - 5;
-			this.method_8568(new BlockPos(p, q, r));
-		}
-
-		this.profiler.pop();
-	}
-
-	protected abstract int getNextMapId();
-
 	protected void method_3605(int i, int j, Chunk chunk) {
-		this.profiler.swap("moodSound");
-		if (this.field_4534 == 0 && !this.isClient) {
-			this.lcgBlockSeed = this.lcgBlockSeed * 3 + 1013904223;
-			int k = this.lcgBlockSeed >> 2;
-			int l = k & 15;
-			int m = k >> 8 & 15;
-			int n = k >> 16 & 0xFF;
-			BlockPos blockPos = new BlockPos(l, n, m);
-			Block block = chunk.getBlockAtPos(blockPos);
-			l += i;
-			m += j;
-			if (block.getMaterial() == Material.AIR && this.getLightLevel(blockPos) <= this.random.nextInt(8) && this.getLightAtPos(LightType.SKY, blockPos) <= 0) {
-				PlayerEntity playerEntity = this.getClosestPlayer((double)l + 0.5, (double)n + 0.5, (double)m + 0.5, 8.0);
-				if (playerEntity != null && playerEntity.squaredDistanceTo((double)l + 0.5, (double)n + 0.5, (double)m + 0.5) > 4.0) {
-					this.playSound((double)l + 0.5, (double)n + 0.5, (double)m + 0.5, "ambient.cave.cave", 0.7F, 0.8F + this.random.nextFloat() * 0.2F);
-					this.field_4534 = this.random.nextInt(12000) + 6000;
-				}
-			}
-		}
-
-		this.profiler.swap("checkLight");
 		chunk.method_3923();
 	}
 
 	protected void tickBlocks() {
-		this.updateLighting();
 	}
 
-	public void scheduleTick(Block block, BlockPos pos, Random random) {
+	public void method_11482(BlockPos pos, BlockState state, Random random) {
 		this.immediateUpdates = true;
-		block.onScheduledTick(this, pos, this.getBlockState(pos), random);
+		state.getBlock().onScheduledTick(this, pos, state, random);
 		this.immediateUpdates = false;
 	}
 
@@ -1915,7 +1922,7 @@ public abstract class World implements BlockView {
 	}
 
 	private boolean isWater(BlockPos pos) {
-		return this.getBlockState(pos).getBlock().getMaterial() == Material.WATER;
+		return this.getBlockState(pos).getMaterial() == Material.WATER;
 	}
 
 	public boolean method_8552(BlockPos pos, boolean bl) {
@@ -1927,8 +1934,8 @@ public abstract class World implements BlockView {
 			return true;
 		} else {
 			if (pos.getY() >= 0 && pos.getY() < 256 && this.getLightAtPos(LightType.BLOCK, pos) < 10) {
-				Block block = this.getBlockState(pos).getBlock();
-				if (block.getMaterial() == Material.AIR && Blocks.SNOW_LAYER.canBePlacedAtPos(this, pos)) {
+				BlockState blockState = this.getBlockState(pos);
+				if (blockState.getMaterial() == Material.AIR && Blocks.SNOW_LAYER.canBePlacedAtPos(this, pos)) {
 					return true;
 				}
 			}
@@ -1950,10 +1957,10 @@ public abstract class World implements BlockView {
 		if (type == LightType.SKY && this.hasDirectSunlight(pos)) {
 			return 15;
 		} else {
-			Block block = this.getBlockState(pos).getBlock();
-			int i = type == LightType.SKY ? 0 : block.getLightLevel();
-			int j = block.getOpacity();
-			if (j >= 15 && block.getLightLevel() > 0) {
+			BlockState blockState = this.getBlockState(pos);
+			int i = type == LightType.SKY ? 0 : blockState.getLuminance();
+			int j = blockState.getOpacity();
+			if (j >= 15 && blockState.getLuminance() > 0) {
 				j = 1;
 			}
 
@@ -1966,9 +1973,11 @@ public abstract class World implements BlockView {
 			} else if (i >= 14) {
 				return i;
 			} else {
+				BlockPos.Pooled pooled = BlockPos.Pooled.get();
+
 				for (Direction direction : Direction.values()) {
-					BlockPos blockPos = pos.offset(direction);
-					int m = this.getLightAtPos(type, blockPos) - j;
+					pooled.set(pos).move(direction);
+					int m = this.getLightAtPos(type, pooled) - j;
 					if (m > i) {
 						i = m;
 					}
@@ -1978,6 +1987,7 @@ public abstract class World implements BlockView {
 					}
 				}
 
+				pooled.method_12576();
 				return i;
 			}
 		}
@@ -2015,19 +2025,21 @@ public abstract class World implements BlockView {
 							int w = MathHelper.abs(r - n);
 							int x = MathHelper.abs(s - o);
 							if (v + w + x < 17) {
-								BlockPos.Mutable mutable = new BlockPos.Mutable();
+								BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 								for (Direction direction : Direction.values()) {
 									int aa = q + direction.getOffsetX();
 									int ab = r + direction.getOffsetY();
 									int ac = s + direction.getOffsetZ();
-									mutable.setPosition(aa, ab, ac);
-									int ad = Math.max(1, this.getBlockState(mutable).getBlock().getOpacity());
-									u = this.getLightAtPos(lightType, mutable);
+									pooled.setPosition(aa, ab, ac);
+									int ad = Math.max(1, this.getBlockState(pooled).getOpacity());
+									u = this.getLightAtPos(lightType, pooled);
 									if (u == t - ad && j < this.updateLightBlocks.length) {
 										this.updateLightBlocks[j++] = aa - m + 32 | ab - n + 32 << 6 | ac - o + 32 << 12 | t - ad << 18;
 									}
 								}
+
+								pooled.method_12576();
 							}
 						}
 					}
@@ -2092,19 +2104,21 @@ public abstract class World implements BlockView {
 		return false;
 	}
 
+	@Nullable
 	public List<ScheduledTick> getScheduledTicks(Chunk chunk, boolean bl) {
 		return null;
 	}
 
+	@Nullable
 	public List<ScheduledTick> getScheduledTicks(BlockBox box, boolean bl) {
 		return null;
 	}
 
-	public List<Entity> getEntitiesIn(Entity entity, Box box) {
+	public List<Entity> getEntitiesIn(@Nullable Entity entity, Box box) {
 		return this.getEntitiesIn(entity, box, EntityPredicate.EXCEPT_SPECTATOR);
 	}
 
-	public List<Entity> getEntitiesIn(Entity entity, Box box, Predicate<? super Entity> predicate) {
+	public List<Entity> getEntitiesIn(@Nullable Entity entity, Box box, @Nullable Predicate<? super Entity> predicate) {
 		List<Entity> list = Lists.newArrayList();
 		int i = MathHelper.floor((box.minX - 2.0) / 16.0);
 		int j = MathHelper.floor((box.maxX + 2.0) / 16.0);
@@ -2150,15 +2164,15 @@ public abstract class World implements BlockView {
 		return this.getEntitiesInBox(except, box, EntityPredicate.EXCEPT_SPECTATOR);
 	}
 
-	public <T extends Entity> List<T> getEntitiesInBox(Class<? extends T> clazz, Box box, Predicate<? super T> entityPredicate) {
+	public <T extends Entity> List<T> getEntitiesInBox(Class<? extends T> clazz, Box box, @Nullable Predicate<? super T> entityPredicate) {
 		int i = MathHelper.floor((box.minX - 2.0) / 16.0);
-		int j = MathHelper.floor((box.maxX + 2.0) / 16.0);
+		int j = MathHelper.ceil((box.maxX + 2.0) / 16.0);
 		int k = MathHelper.floor((box.minZ - 2.0) / 16.0);
-		int l = MathHelper.floor((box.maxZ + 2.0) / 16.0);
+		int l = MathHelper.ceil((box.maxZ + 2.0) / 16.0);
 		List<T> list = Lists.newArrayList();
 
-		for (int m = i; m <= j; m++) {
-			for (int n = k; n <= l; n++) {
+		for (int m = i; m < j; m++) {
+			for (int n = k; n < l; n++) {
 				if (this.isChunkLoaded(m, n, true)) {
 					this.getChunk(m, n).method_9140(clazz, box, list, entityPredicate);
 				}
@@ -2168,6 +2182,7 @@ public abstract class World implements BlockView {
 		return list;
 	}
 
+	@Nullable
 	public <T extends Entity> T getEntitiesByClass(Class<? extends T> entityClass, Box box, T except) {
 		List<T> list = this.getEntitiesInBox(entityClass, box);
 		T entity = null;
@@ -2187,6 +2202,7 @@ public abstract class World implements BlockView {
 		return entity;
 	}
 
+	@Nullable
 	public Entity getEntityById(int id) {
 		return this.idToEntity.get(id);
 	}
@@ -2225,15 +2241,15 @@ public abstract class World implements BlockView {
 		this.unloadedEntities.addAll(entities);
 	}
 
-	public boolean canBlockBePlaced(Block block, BlockPos pos, boolean bl, Direction direction, Entity entity, ItemStack item) {
-		Block block2 = this.getBlockState(pos).getBlock();
-		Box box = bl ? null : block.getCollisionBox(this, pos, block.getDefaultState());
-		if (box != null && !this.hasEntityIn(box, entity)) {
+	public boolean canBlockBePlaced(Block block, BlockPos pos, boolean bl, Direction direction, @Nullable Entity entity, @Nullable ItemStack item) {
+		BlockState blockState = this.getBlockState(pos);
+		Box box = bl ? null : block.getDefaultState().getCollisionBox(this, pos);
+		if (box != Block.EMPTY_BOX && !this.hasEntityIn(box.offset(pos), entity)) {
 			return false;
 		} else {
-			return block2.getMaterial() == Material.DECORATION && block == Blocks.ANVIL
+			return blockState.getMaterial() == Material.DECORATION && block == Blocks.ANVIL
 				? true
-				: block2.getMaterial().isReplaceable() && block.canBeReplaced(this, pos, direction, item);
+				: blockState.getMaterial().isReplaceable() && block.canBeReplaced(this, pos, direction, item);
 		}
 	}
 
@@ -2247,8 +2263,7 @@ public abstract class World implements BlockView {
 
 	@Override
 	public int getStrongRedstonePower(BlockPos pos, Direction direction) {
-		BlockState blockState = this.getBlockState(pos);
-		return blockState.getBlock().getStrongRedstonePower(this, pos, blockState, direction);
+		return this.getBlockState(pos).getStrongRedstonePower(this, pos, direction);
 	}
 
 	@Override
@@ -2293,8 +2308,7 @@ public abstract class World implements BlockView {
 
 	public int getEmittedRedstonePower(BlockPos pos, Direction dir) {
 		BlockState blockState = this.getBlockState(pos);
-		Block block = blockState.getBlock();
-		return block.isFullCube() ? this.getReceivedStrongRedstonePower(pos) : block.getWeakRedstonePower(this, pos, blockState, dir);
+		return blockState.method_11734() ? this.getReceivedStrongRedstonePower(pos) : blockState.getWeakRedstonePower(this, pos, dir);
 	}
 
 	public boolean isReceivingRedstonePower(BlockPos pos) {
@@ -2328,20 +2342,27 @@ public abstract class World implements BlockView {
 		return i;
 	}
 
+	@Nullable
 	public PlayerEntity getClosestPlayer(Entity entity, double maxDistance) {
-		return this.getClosestPlayer(entity.x, entity.y, entity.z, maxDistance);
+		return this.method_11478(entity.x, entity.y, entity.z, maxDistance, false);
 	}
 
-	public PlayerEntity getClosestPlayer(double x, double y, double z, double maxDistance) {
-		double d = -1.0;
+	@Nullable
+	public PlayerEntity method_11490(Entity entity, double d) {
+		return this.method_11478(entity.x, entity.y, entity.z, d, true);
+	}
+
+	@Nullable
+	public PlayerEntity method_11478(double d, double e, double f, double g, boolean bl) {
+		double h = -1.0;
 		PlayerEntity playerEntity = null;
 
 		for (int i = 0; i < this.playerEntities.size(); i++) {
 			PlayerEntity playerEntity2 = (PlayerEntity)this.playerEntities.get(i);
-			if (EntityPredicate.EXCEPT_SPECTATOR.apply(playerEntity2)) {
-				double e = playerEntity2.squaredDistanceTo(x, y, z);
-				if ((maxDistance < 0.0 || e < maxDistance * maxDistance) && (d == -1.0 || e < d)) {
-					d = e;
+			if ((EntityPredicate.EXCEPT_CREATIVE_OR_SPECTATOR.apply(playerEntity2) || !bl) && (EntityPredicate.EXCEPT_SPECTATOR.apply(playerEntity2) || bl)) {
+				double j = playerEntity2.squaredDistanceTo(d, e, f);
+				if ((g < 0.0 || j < g * g) && (h == -1.0 || j < h)) {
+					h = j;
 					playerEntity = playerEntity2;
 				}
 			}
@@ -2364,6 +2385,61 @@ public abstract class World implements BlockView {
 		return false;
 	}
 
+	@Nullable
+	public PlayerEntity method_11484(Entity entity, double d, double e) {
+		return this.method_11477(entity.x, entity.y, entity.z, d, e, null, null);
+	}
+
+	@Nullable
+	public PlayerEntity method_11480(BlockPos blockPos, double d, double e) {
+		return this.method_11477(
+			(double)((float)blockPos.getX() + 0.5F), (double)((float)blockPos.getY() + 0.5F), (double)((float)blockPos.getZ() + 0.5F), d, e, null, null
+		);
+	}
+
+	@Nullable
+	public PlayerEntity method_11477(
+		double d, double e, double f, double g, double h, @Nullable Function<PlayerEntity, Double> function, @Nullable Predicate<PlayerEntity> predicate
+	) {
+		double i = -1.0;
+		PlayerEntity playerEntity = null;
+
+		for (int j = 0; j < this.playerEntities.size(); j++) {
+			PlayerEntity playerEntity2 = (PlayerEntity)this.playerEntities.get(j);
+			if (!playerEntity2.abilities.invulnerable
+				&& playerEntity2.isAlive()
+				&& !playerEntity2.isSpectator()
+				&& (predicate == null || predicate.apply(playerEntity2))) {
+				double k = playerEntity2.squaredDistanceTo(d, playerEntity2.y, f);
+				double l = g;
+				if (playerEntity2.isSneaking()) {
+					l = g * 0.8F;
+				}
+
+				if (playerEntity2.isInvisible()) {
+					float m = playerEntity2.method_4575();
+					if (m < 0.1F) {
+						m = 0.1F;
+					}
+
+					l *= (double)(0.7F * m);
+				}
+
+				if (function != null) {
+					l *= Objects.firstNonNull(function.apply(playerEntity2), 1.0);
+				}
+
+				if ((h < 0.0 || Math.abs(playerEntity2.y - e) < h * h) && (g < 0.0 || k < l * l) && (i == -1.0 || k < i)) {
+					i = k;
+					playerEntity = playerEntity2;
+				}
+			}
+		}
+
+		return playerEntity;
+	}
+
+	@Nullable
 	public PlayerEntity getPlayerByName(String name) {
 		for (int i = 0; i < this.playerEntities.size(); i++) {
 			PlayerEntity playerEntity = (PlayerEntity)this.playerEntities.get(i);
@@ -2375,6 +2451,7 @@ public abstract class World implements BlockView {
 		return null;
 	}
 
+	@Nullable
 	public PlayerEntity getPlayerByUuid(UUID uuid) {
 		for (int i = 0; i < this.playerEntities.size(); i++) {
 			PlayerEntity playerEntity = (PlayerEntity)this.playerEntities.get(i);
@@ -2431,9 +2508,9 @@ public abstract class World implements BlockView {
 		int j = MathHelper.floor(entity.z / 16.0);
 		int k = 2;
 
-		for (int l = i - k; l <= i + k; l++) {
-			for (int m = j - k; m <= j + k; m++) {
-				this.getChunk(l, m);
+		for (int l = -k; l <= k; l++) {
+			for (int m = -k; m <= k; m++) {
+				this.getChunk(i + l, j + m);
 			}
 		}
 
@@ -2454,7 +2531,7 @@ public abstract class World implements BlockView {
 	}
 
 	public void addBlockAction(BlockPos pos, Block block, int type, int data) {
-		block.onEvent(this, pos, this.getBlockState(pos), type, data);
+		this.getBlockState(pos).onSyncedBlockEvent(this, pos, type, data);
 	}
 
 	public SaveHandler getSaveHandler() {
@@ -2520,6 +2597,7 @@ public abstract class World implements BlockView {
 		return biome.hasHighHumidity();
 	}
 
+	@Nullable
 	public PersistentStateManager getPersistentStateManager() {
 		return this.persistentStateManager;
 	}
@@ -2528,6 +2606,7 @@ public abstract class World implements BlockView {
 		this.persistentStateManager.replace(name, state);
 	}
 
+	@Nullable
 	public PersistentState getOrCreateState(Class<? extends PersistentState> cls, String name) {
 		return this.persistentStateManager.getOrCreate(cls, name);
 	}
@@ -2546,7 +2625,7 @@ public abstract class World implements BlockView {
 		this.syncWorldEvent(null, eventId, pos, data);
 	}
 
-	public void syncWorldEvent(PlayerEntity player, int eventId, BlockPos pos, int data) {
+	public void syncWorldEvent(@Nullable PlayerEntity player, int eventId, BlockPos pos, int data) {
 		try {
 			for (int i = 0; i < this.eventListeners.size(); i++) {
 				((WorldEventListener)this.eventListeners.get(i)).processWorldEvent(player, eventId, pos, data);
@@ -2554,7 +2633,7 @@ public abstract class World implements BlockView {
 		} catch (Throwable var8) {
 			CrashReport crashReport = CrashReport.create(var8, "Playing level event");
 			CrashReportSection crashReportSection = crashReport.addElement("Level event being played");
-			crashReportSection.add("Block coordinates", CrashReportSection.addBlockData(pos));
+			crashReportSection.add("Block coordinates", CrashReportSection.createPositionString(pos));
 			crashReportSection.add("Event source", player);
 			crashReportSection.add("Event type", eventId);
 			crashReportSection.add("Event data", data);
@@ -2576,10 +2655,6 @@ public abstract class World implements BlockView {
 		return this.random;
 	}
 
-	public BlockPos getNearestStructurePos(String structureName, BlockPos pos) {
-		return this.getChunkProvider().getNearestStructurePos(this, structureName, pos);
-	}
-
 	@Override
 	public boolean isEmpty() {
 		return false;
@@ -2592,12 +2667,12 @@ public abstract class World implements BlockView {
 	public CrashReportSection addToCrashReport(CrashReport report) {
 		CrashReportSection crashReportSection = report.addElement("Affected level", 1);
 		crashReportSection.add("Level name", this.levelProperties == null ? "????" : this.levelProperties.getLevelName());
-		crashReportSection.add("All players", new Callable<String>() {
+		crashReportSection.add("All players", new CrashCallable<String>() {
 			public String call() {
 				return World.this.playerEntities.size() + " total; " + World.this.playerEntities.toString();
 			}
 		});
-		crashReportSection.add("Chunk stats", new Callable<String>() {
+		crashReportSection.add("Chunk stats", new CrashCallable<String>() {
 			public String call() {
 				return World.this.chunkProvider.getChunkProviderName();
 			}
@@ -2627,7 +2702,7 @@ public abstract class World implements BlockView {
 		return this.calender;
 	}
 
-	public void addFireworkParticle(double x, double y, double z, double velocityX, double velocityY, double velocityZ, NbtCompound nbt) {
+	public void addFireworkParticle(double x, double y, double z, double velocityX, double velocityY, double velocityZ, @Nullable NbtCompound nbt) {
 	}
 
 	public Scoreboard getScoreboard() {
@@ -2639,13 +2714,13 @@ public abstract class World implements BlockView {
 			BlockPos blockPos = pos.offset(direction);
 			if (this.blockExists(blockPos)) {
 				BlockState blockState = this.getBlockState(blockPos);
-				if (Blocks.UNPOWERED_COMPARATOR.isComparator(blockState.getBlock())) {
-					blockState.getBlock().neighborUpdate(this, blockPos, blockState, block);
-				} else if (blockState.getBlock().isFullCube()) {
+				if (Blocks.UNPOWERED_COMPARATOR.method_11603(blockState)) {
+					blockState.method_11707(this, blockPos, block);
+				} else if (blockState.method_11734()) {
 					blockPos = blockPos.offset(direction);
 					blockState = this.getBlockState(blockPos);
-					if (Blocks.UNPOWERED_COMPARATOR.isComparator(blockState.getBlock())) {
-						blockState.getBlock().neighborUpdate(this, blockPos, blockState, block);
+					if (Blocks.UNPOWERED_COMPARATOR.method_11603(blockState)) {
+						blockState.method_11707(this, blockPos, block);
 					}
 				}
 			}
@@ -2683,10 +2758,6 @@ public abstract class World implements BlockView {
 		this.field_4553 = i;
 	}
 
-	public boolean method_8522() {
-		return this.field_4523;
-	}
-
 	public VillageState getVillageState() {
 		return this.villageState;
 	}
@@ -2701,5 +2772,13 @@ public abstract class World implements BlockView {
 		int j = chunkZ * 16 + 8 - blockPos.getZ();
 		int k = 128;
 		return i >= -k && i <= k && j >= -k && j <= k;
+	}
+
+	public void method_11483(Packet<?> packet) {
+		throw new UnsupportedOperationException("Can't send packets to server unless you're on the client.");
+	}
+
+	public class_2787 method_11487() {
+		return this.field_12435;
 	}
 }

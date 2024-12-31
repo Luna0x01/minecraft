@@ -116,37 +116,56 @@ public class NbtList extends NbtElement {
 	public NbtCompound getCompound(int index) {
 		if (index >= 0 && index < this.value.size()) {
 			NbtElement nbtElement = (NbtElement)this.value.get(index);
-			return nbtElement.getType() == 10 ? (NbtCompound)nbtElement : new NbtCompound();
-		} else {
-			return new NbtCompound();
+			if (nbtElement.getType() == 10) {
+				return (NbtCompound)nbtElement;
+			}
 		}
+
+		return new NbtCompound();
+	}
+
+	public int getInt(int index) {
+		if (index >= 0 && index < this.value.size()) {
+			NbtElement nbtElement = (NbtElement)this.value.get(index);
+			if (nbtElement.getType() == 3) {
+				return ((NbtInt)nbtElement).intValue();
+			}
+		}
+
+		return 0;
 	}
 
 	public int[] getIntArray(int index) {
 		if (index >= 0 && index < this.value.size()) {
 			NbtElement nbtElement = (NbtElement)this.value.get(index);
-			return nbtElement.getType() == 11 ? ((NbtIntArray)nbtElement).getIntArray() : new int[0];
-		} else {
-			return new int[0];
+			if (nbtElement.getType() == 11) {
+				return ((NbtIntArray)nbtElement).getIntArray();
+			}
 		}
+
+		return new int[0];
 	}
 
 	public double getDouble(int index) {
 		if (index >= 0 && index < this.value.size()) {
 			NbtElement nbtElement = (NbtElement)this.value.get(index);
-			return nbtElement.getType() == 6 ? ((NbtDouble)nbtElement).doubleValue() : 0.0;
-		} else {
-			return 0.0;
+			if (nbtElement.getType() == 6) {
+				return ((NbtDouble)nbtElement).doubleValue();
+			}
 		}
+
+		return 0.0;
 	}
 
 	public float getFloat(int index) {
 		if (index >= 0 && index < this.value.size()) {
 			NbtElement nbtElement = (NbtElement)this.value.get(index);
-			return nbtElement.getType() == 5 ? ((NbtFloat)nbtElement).floatValue() : 0.0F;
-		} else {
-			return 0.0F;
+			if (nbtElement.getType() == 5) {
+				return ((NbtFloat)nbtElement).floatValue();
+			}
 		}
+
+		return 0.0F;
 	}
 
 	public String getString(int index) {

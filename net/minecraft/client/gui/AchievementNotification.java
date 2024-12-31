@@ -109,7 +109,7 @@ public class AchievementNotification extends DrawableHelper {
 			GlStateManager.enableRescaleNormal();
 			GlStateManager.enableColorMaterial();
 			GlStateManager.enableLighting();
-			this.itemRenderer.renderInGuiWithOverrides(this.achievement.logo, i + 8, j + 8);
+			this.itemRenderer.method_12461(this.achievement.logo, i + 8, j + 8);
 			GlStateManager.disableLighting();
 			GlStateManager.depthMask(true);
 			GlStateManager.enableDepthTest();

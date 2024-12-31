@@ -1,7 +1,9 @@
 package net.minecraft.server.dedicated.command;
 
 import com.mojang.authlib.GameProfile;
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -26,20 +28,19 @@ public class PardonCommand extends AbstractCommand {
 	}
 
 	@Override
-	public boolean isAccessible(CommandSource source) {
-		return MinecraftServer.getServer().getPlayerManager().getUserBanList().isEnabled() && super.isAccessible(source);
+	public boolean method_3278(MinecraftServer server, CommandSource source) {
+		return server.getPlayerManager().getUserBanList().isEnabled() && super.method_3278(server, source);
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length == 1 && args[0].length() > 0) {
-			MinecraftServer minecraftServer = MinecraftServer.getServer();
 			GameProfile gameProfile = minecraftServer.getPlayerManager().getUserBanList().getBannedPlayer(args[0]);
 			if (gameProfile == null) {
 				throw new CommandException("commands.unban.failed", args[0]);
 			} else {
 				minecraftServer.getPlayerManager().getUserBanList().remove(gameProfile);
-				run(source, this, "commands.unban.success", new Object[]{args[0]});
+				run(commandSource, this, "commands.unban.success", new Object[]{args[0]});
 			}
 		} else {
 			throw new IncorrectUsageException("commands.unban.usage");
@@ -47,7 +48,7 @@ public class PardonCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, MinecraftServer.getServer().getPlayerManager().getUserBanList().getNames()) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, server.getPlayerManager().getUserBanList().getNames()) : Collections.emptyList();
 	}
 }

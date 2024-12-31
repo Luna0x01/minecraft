@@ -1,19 +1,28 @@
 package net.minecraft.entity.decoration;
 
+import com.google.common.base.Optional;
+import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.map.MapState;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class ItemFrameEntity extends AbstractDecorationEntity {
+	private static final TrackedData<Optional<ItemStack>> ITEM_STACK = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
+	private static final TrackedData<Integer> ROTATION = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private float setDropChance = 1.0F;
 
 	public ItemFrameEntity(World world) {
@@ -27,8 +36,8 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 
 	@Override
 	protected void initDataTracker() {
-		this.getDataTracker().addEntry(8, 5);
-		this.getDataTracker().track(9, (byte)0);
+		this.getDataTracker().startTracking(ITEM_STACK, Optional.absent());
+		this.getDataTracker().startTracking(ROTATION, 0);
 	}
 
 	@Override
@@ -43,6 +52,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 		} else if (!source.isExplosive() && this.getHeldItemStack() != null) {
 			if (!this.world.isClient) {
 				this.dropHeldStack(source.getAttacker(), false);
+				this.playSound(Sounds.ENTITY_ITEMFRAME_REMOVE_ITEM, 1.0F, 1.0F);
 				this.setHeldItemStack(null);
 			}
 
@@ -65,16 +75,22 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	@Override
 	public boolean shouldRender(double distance) {
 		double d = 16.0;
-		d *= 64.0 * this.renderDistanceMultiplier;
+		d *= 64.0 * getRenderDistanceMultiplier();
 		return distance < d * d;
 	}
 
 	@Override
-	public void onBreak(Entity entity) {
+	public void onBreak(@Nullable Entity entity) {
+		this.playSound(Sounds.ENTITY_ITEMFRAME_BREAK, 1.0F, 1.0F);
 		this.dropHeldStack(entity, true);
 	}
 
-	public void dropHeldStack(Entity entity, boolean alwaysDrop) {
+	@Override
+	public void onPlace() {
+		this.playSound(Sounds.ENTITY_ITEMFRAME_PLACE, 1.0F, 1.0F);
+	}
+
+	public void dropHeldStack(@Nullable Entity entity, boolean alwaysDrop) {
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
 			ItemStack itemStack = this.getHeldItemStack();
 			if (entity instanceof PlayerEntity) {
@@ -108,30 +124,45 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 		}
 	}
 
+	@Nullable
 	public ItemStack getHeldItemStack() {
-		return this.getDataTracker().getStack(8);
+		return (ItemStack)this.getDataTracker().get(ITEM_STACK).orNull();
 	}
 
-	public void setHeldItemStack(ItemStack stack) {
+	public void setHeldItemStack(@Nullable ItemStack stack) {
 		this.setHeldItemStack(stack, true);
 	}
 
-	private void setHeldItemStack(ItemStack stack, boolean update) {
+	private void setHeldItemStack(@Nullable ItemStack stack, boolean update) {
 		if (stack != null) {
 			stack = stack.copy();
 			stack.count = 1;
 			stack.setInItemFrame(this);
 		}
 
-		this.getDataTracker().setProperty(8, stack);
-		this.getDataTracker().markDirty(8);
+		this.getDataTracker().set(ITEM_STACK, Optional.fromNullable(stack));
+		this.getDataTracker().method_12754(ITEM_STACK);
+		if (stack != null) {
+			this.playSound(Sounds.ENTITY_ITEMFRAME_ADD_ITEM, 1.0F, 1.0F);
+		}
+
 		if (update && this.pos != null) {
 			this.world.updateHorizontalAdjacent(this.pos, Blocks.AIR);
 		}
 	}
 
+	@Override
+	public void onTrackedDataSet(TrackedData<?> data) {
+		if (data.equals(ITEM_STACK)) {
+			ItemStack itemStack = this.getHeldItemStack();
+			if (itemStack != null && itemStack.getItemFrame() != this) {
+				itemStack.setInItemFrame(this);
+			}
+		}
+	}
+
 	public int rotation() {
-		return this.getDataTracker().getByte(9);
+		return this.getDataTracker().get(ROTATION);
 	}
 
 	public void setRotation(int value) {
@@ -139,7 +170,7 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 	}
 
 	private void setRotation(int value, boolean update) {
-		this.getDataTracker().setProperty(9, (byte)(value % 8));
+		this.getDataTracker().set(ROTATION, value % 8);
 		if (update && this.pos != null) {
 			this.world.updateHorizontalAdjacent(this.pos, Blocks.AIR);
 		}
@@ -165,26 +196,22 @@ public class ItemFrameEntity extends AbstractDecorationEntity {
 			if (nbt.contains("ItemDropChance", 99)) {
 				this.setDropChance = nbt.getFloat("ItemDropChance");
 			}
-
-			if (nbt.contains("Direction")) {
-				this.setRotation(this.rotation() * 2, false);
-			}
 		}
 
 		super.readCustomDataFromNbt(nbt);
 	}
 
 	@Override
-	public boolean openInventory(PlayerEntity player) {
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
 		if (this.getHeldItemStack() == null) {
-			ItemStack itemStack = player.getStackInHand();
 			if (itemStack != null && !this.world.isClient) {
 				this.setHeldItemStack(itemStack);
-				if (!player.abilities.creativeMode && --itemStack.count <= 0) {
-					player.inventory.setInvStack(player.inventory.selectedSlot, null);
+				if (!playerEntity.abilities.creativeMode) {
+					itemStack.count--;
 				}
 			}
 		} else if (!this.world.isClient) {
+			this.playSound(Sounds.ENTITY_ITEMFRAME_ROTATE_ITEM, 1.0F, 1.0F);
 			this.setRotation(this.rotation() + 1);
 		}
 

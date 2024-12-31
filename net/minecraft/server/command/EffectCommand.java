@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -30,49 +32,45 @@ public class EffectCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 2) {
 			throw new IncorrectUsageException("commands.effect.usage");
 		} else {
-			LivingEntity livingEntity = getEntity(source, args[0], LivingEntity.class);
+			LivingEntity livingEntity = method_12702(minecraftServer, commandSource, args[0], LivingEntity.class);
 			if (args[1].equals("clear")) {
 				if (livingEntity.getStatusEffectInstances().isEmpty()) {
 					throw new CommandException("commands.effect.failure.notActive.all", livingEntity.getTranslationKey());
 				} else {
 					livingEntity.clearStatusEffects();
-					run(source, this, "commands.effect.success.removed.all", new Object[]{livingEntity.getTranslationKey()});
+					run(commandSource, this, "commands.effect.success.removed.all", new Object[]{livingEntity.getTranslationKey()});
 				}
 			} else {
-				int i;
+				StatusEffect statusEffect;
 				try {
-					i = parseClampedInt(args[1], 1);
+					statusEffect = StatusEffect.byIndex(parseClampedInt(args[1], 1));
 				} catch (InvalidNumberException var11) {
-					StatusEffect statusEffect = StatusEffect.get(args[1]);
-					if (statusEffect == null) {
-						throw var11;
-					}
-
-					i = statusEffect.id;
+					statusEffect = StatusEffect.get(args[1]);
 				}
 
-				int k = 600;
-				int l = 30;
-				int m = 0;
-				if (i >= 0 && i < StatusEffect.STATUS_EFFECTS.length && StatusEffect.STATUS_EFFECTS[i] != null) {
-					StatusEffect statusEffect2 = StatusEffect.STATUS_EFFECTS[i];
+				if (statusEffect == null) {
+					throw new InvalidNumberException("commands.effect.notFound", args[1]);
+				} else {
+					int i = 600;
+					int j = 30;
+					int k = 0;
 					if (args.length >= 3) {
-						l = parseClampedInt(args[2], 0, 1000000);
-						if (statusEffect2.isInstant()) {
-							k = l;
+						j = parseClampedInt(args[2], 0, 1000000);
+						if (statusEffect.isInstant()) {
+							i = j;
 						} else {
-							k = l * 20;
+							i = j * 20;
 						}
-					} else if (statusEffect2.isInstant()) {
-						k = 1;
+					} else if (statusEffect.isInstant()) {
+						i = 1;
 					}
 
 					if (args.length >= 4) {
-						m = parseClampedInt(args[3], 0, 255);
+						k = parseClampedInt(args[3], 0, 255);
 					}
 
 					boolean bl = true;
@@ -80,43 +78,42 @@ public class EffectCommand extends AbstractCommand {
 						bl = false;
 					}
 
-					if (l > 0) {
-						StatusEffectInstance statusEffectInstance = new StatusEffectInstance(i, k, m, false, bl);
+					if (j > 0) {
+						StatusEffectInstance statusEffectInstance = new StatusEffectInstance(statusEffect, i, k, false, bl);
 						livingEntity.addStatusEffect(statusEffectInstance);
 						run(
-							source,
+							commandSource,
 							this,
 							"commands.effect.success",
-							new Object[]{new TranslatableText(statusEffectInstance.getTranslationKey()), i, m, livingEntity.getTranslationKey(), l}
+							new Object[]{
+								new TranslatableText(statusEffectInstance.getTranslationKey()), StatusEffect.getIndex(statusEffect), k, livingEntity.getTranslationKey(), j
+							}
 						);
-					} else if (livingEntity.hasStatusEffect(i)) {
-						livingEntity.method_6149(i);
+					} else if (livingEntity.hasStatusEffect(statusEffect)) {
+						livingEntity.removeStatusEffect(statusEffect);
 						run(
-							source, this, "commands.effect.success.removed", new Object[]{new TranslatableText(statusEffect2.getTranslationKey()), livingEntity.getTranslationKey()}
+							commandSource,
+							this,
+							"commands.effect.success.removed",
+							new Object[]{new TranslatableText(statusEffect.getTranslationKey()), livingEntity.getTranslationKey()}
 						);
 					} else {
-						throw new CommandException("commands.effect.failure.notActive", new TranslatableText(statusEffect2.getTranslationKey()), livingEntity.getTranslationKey());
+						throw new CommandException("commands.effect.failure.notActive", new TranslatableText(statusEffect.getTranslationKey()), livingEntity.getTranslationKey());
 					}
-				} else {
-					throw new InvalidNumberException("commands.effect.notFound", i);
 				}
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, this.method_4729());
-		} else if (args.length == 2) {
-			return method_10708(args, StatusEffect.method_10923());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, server.getPlayerNames());
+		} else if (strings.length == 2) {
+			return method_10708(strings, StatusEffect.REGISTRY.getKeySet());
 		} else {
-			return args.length == 5 ? method_2894(args, new String[]{"true", "false"}) : null;
+			return strings.length == 5 ? method_2894(strings, new String[]{"true", "false"}) : Collections.emptyList();
 		}
-	}
-
-	protected String[] method_4729() {
-		return MinecraftServer.getServer().getPlayerNames();
 	}
 
 	@Override

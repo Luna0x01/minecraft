@@ -77,7 +77,7 @@ public class ScoreboardState extends PersistentState {
 			if (nbtCompound.contains("NameTagVisibility", 8)) {
 				AbstractTeam.VisibilityRule visibilityRule = AbstractTeam.VisibilityRule.getRuleByName(nbtCompound.getString("NameTagVisibility"));
 				if (visibilityRule != null) {
-					team.setNameTagVisibilityRule(visibilityRule);
+					team.method_12128(visibilityRule);
 				}
 			}
 
@@ -85,6 +85,13 @@ public class ScoreboardState extends PersistentState {
 				AbstractTeam.VisibilityRule visibilityRule2 = AbstractTeam.VisibilityRule.getRuleByName(nbtCompound.getString("DeathMessageVisibility"));
 				if (visibilityRule2 != null) {
 					team.setDeathMessageVisibilityRule(visibilityRule2);
+				}
+			}
+
+			if (nbtCompound.contains("CollisionRule", 8)) {
+				AbstractTeam.CollisionRule collisionRule = AbstractTeam.CollisionRule.method_12132(nbtCompound.getString("CollisionRule"));
+				if (collisionRule != null) {
+					team.method_9353(collisionRule);
 				}
 			}
 
@@ -143,14 +150,16 @@ public class ScoreboardState extends PersistentState {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		if (this.field_5694 == null) {
 			LOGGER.warn("Tried to save scoreboard without having a scoreboard...");
+			return nbt;
 		} else {
 			nbt.put("Objectives", this.serializeObjectives());
 			nbt.put("PlayerScores", this.method_4916());
 			nbt.put("Teams", this.serializeTeams());
 			this.serializeSlots(nbt);
+			return nbt;
 		}
 	}
 
@@ -161,8 +170,8 @@ public class ScoreboardState extends PersistentState {
 			NbtCompound nbtCompound = new NbtCompound();
 			nbtCompound.putString("Name", team.getName());
 			nbtCompound.putString("DisplayName", team.getDisplayName());
-			if (team.getFormatting().getColorIndex() >= 0) {
-				nbtCompound.putString("TeamColor", team.getFormatting().getName());
+			if (team.method_12130().getColorIndex() >= 0) {
+				nbtCompound.putString("TeamColor", team.method_12130().getName());
 			}
 
 			nbtCompound.putString("Prefix", team.getPrefix());
@@ -171,6 +180,7 @@ public class ScoreboardState extends PersistentState {
 			nbtCompound.putBoolean("SeeFriendlyInvisibles", team.shouldShowFriendlyInvisibles());
 			nbtCompound.putString("NameTagVisibility", team.getNameTagVisibilityRule().name);
 			nbtCompound.putString("DeathMessageVisibility", team.getDeathMessageVisibilityRule().name);
+			nbtCompound.putString("CollisionRule", team.method_12129().name);
 			NbtList nbtList2 = new NbtList();
 
 			for (String string : team.getPlayerList()) {

@@ -1,5 +1,6 @@
 package net.minecraft.entity.damage;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.text.Text;
 
@@ -32,10 +33,12 @@ public class DamageRecord {
 		return this.damageSource.getAttacker() instanceof LivingEntity;
 	}
 
+	@Nullable
 	public String getFallDeathSuffix() {
 		return this.fallDeathSuffix;
 	}
 
+	@Nullable
 	public Text getAttackerName() {
 		return this.getDamageSource().getAttacker() == null ? null : this.getDamageSource().getAttacker().getName();
 	}

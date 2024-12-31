@@ -11,8 +11,8 @@ public class WaterBubbleParticle extends Particle {
 		this.green = 1.0F;
 		this.blue = 1.0F;
 		this.setMiscTexture(32);
-		this.setBounds(0.02F, 0.02F);
-		this.scale = this.scale * (this.random.nextFloat() * 0.6F + 0.2F);
+		this.method_12244(0.02F, 0.02F);
+		this.scale = this.scale * (this.field_13438.nextFloat() * 0.6F + 0.2F);
 		this.velocityX = g * 0.2F + (Math.random() * 2.0 - 1.0) * 0.02F;
 		this.velocityY = h * 0.2F + (Math.random() * 2.0 - 1.0) * 0.02F;
 		this.velocityZ = i * 0.2F + (Math.random() * 2.0 - 1.0) * 0.02F;
@@ -20,21 +20,21 @@ public class WaterBubbleParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		this.velocityY += 0.002;
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX *= 0.85F;
 		this.velocityY *= 0.85F;
 		this.velocityZ *= 0.85F;
-		if (this.world.getBlockState(new BlockPos(this)).getBlock().getMaterial() != Material.WATER) {
-			this.remove();
+		if (this.field_13424.getBlockState(new BlockPos(this.field_13428, this.field_13429, this.field_13430)).getMaterial() != Material.WATER) {
+			this.method_12251();
 		}
 
 		if (this.maxAge-- <= 0) {
-			this.remove();
+			this.method_12251();
 		}
 	}
 

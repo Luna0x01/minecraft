@@ -3,10 +3,12 @@ package net.minecraft.server.command;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.Command;
 import net.minecraft.command.CommandException;
@@ -14,6 +16,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
 import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.entity.Entity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.PlayerSelector;
@@ -21,7 +24,7 @@ import net.minecraft.util.math.BlockPos;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CommandRegistry implements CommandRegistryProvider {
+public abstract class CommandRegistry implements CommandRegistryProvider {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final Map<String, Command> commandMap = Maps.newHashMap();
 	private final Set<Command> commands = Sets.newHashSet();
@@ -43,14 +46,14 @@ public class CommandRegistry implements CommandRegistryProvider {
 			TranslatableText translatableText = new TranslatableText("commands.generic.notFound");
 			translatableText.getStyle().setFormatting(Formatting.RED);
 			source.sendMessage(translatableText);
-		} else if (command.isAccessible(source)) {
+		} else if (command.method_3278(this.getServer(), source)) {
 			if (i > -1) {
 				List<Entity> list = PlayerSelector.method_10866(source, strings[i], Entity.class);
 				String string2 = strings[i];
 				source.setStat(CommandStats.Type.AFFECTED_ENTITIES, list.size());
 
 				for (Entity entity : list) {
-					strings[i] = entity.getUuid().toString();
+					strings[i] = entity.getEntityName();
 					if (this.method_10732(source, strings, command, name)) {
 						j++;
 					}
@@ -75,7 +78,7 @@ public class CommandRegistry implements CommandRegistryProvider {
 
 	protected boolean method_10732(CommandSource commandSource, String[] strings, Command command, String string) {
 		try {
-			command.execute(commandSource, strings);
+			command.method_3279(this.getServer(), commandSource, strings);
 			return true;
 		} catch (IncorrectUsageException var7) {
 			TranslatableText translatableText = new TranslatableText("commands.generic.usage", new TranslatableText(var7.getMessage(), var7.getArgs()));
@@ -94,6 +97,8 @@ public class CommandRegistry implements CommandRegistryProvider {
 
 		return false;
 	}
+
+	protected abstract MinecraftServer getServer();
 
 	public Command registerCommand(Command command) {
 		this.commandMap.put(command.getCommandName(), command);
@@ -116,14 +121,14 @@ public class CommandRegistry implements CommandRegistryProvider {
 	}
 
 	@Override
-	public List<String> getCompletions(CommandSource source, String name, BlockPos pos) {
+	public List<String> getCompletions(CommandSource source, String name, @Nullable BlockPos pos) {
 		String[] strings = name.split(" ", -1);
 		String string = strings[0];
 		if (strings.length == 1) {
 			List<String> list = Lists.newArrayList();
 
 			for (Entry<String, Command> entry : this.commandMap.entrySet()) {
-				if (AbstractCommand.method_2883(string, (String)entry.getKey()) && ((Command)entry.getValue()).isAccessible(source)) {
+				if (AbstractCommand.method_2883(string, (String)entry.getKey()) && ((Command)entry.getValue()).method_3278(this.getServer(), source)) {
 					list.add(entry.getKey());
 				}
 			}
@@ -132,12 +137,12 @@ public class CommandRegistry implements CommandRegistryProvider {
 		} else {
 			if (strings.length > 1) {
 				Command command = (Command)this.commandMap.get(string);
-				if (command != null && command.isAccessible(source)) {
-					return command.getAutoCompleteHints(source, method_3104(strings), pos);
+				if (command != null && command.method_3278(this.getServer(), source)) {
+					return command.method_10738(this.getServer(), source, method_3104(strings), pos);
 				}
 			}
 
-			return null;
+			return Collections.emptyList();
 		}
 	}
 
@@ -146,7 +151,7 @@ public class CommandRegistry implements CommandRegistryProvider {
 		List<Command> list = Lists.newArrayList();
 
 		for (Command command : this.commands) {
-			if (command.isAccessible(source)) {
+			if (command.method_3278(this.getServer(), source)) {
 				list.add(command);
 			}
 		}

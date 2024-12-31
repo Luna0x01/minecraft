@@ -1,6 +1,9 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
@@ -10,6 +13,7 @@ import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -30,29 +34,29 @@ public class BlockDataCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 4) {
 			throw new IncorrectUsageException("commands.blockdata.usage");
 		} else {
-			source.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
-			BlockPos blockPos = getBlockPos(source, args, 0, false);
-			World world = source.getWorld();
+			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
+			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
+			World world = commandSource.getWorld();
 			if (!world.blockExists(blockPos)) {
 				throw new CommandException("commands.blockdata.outOfWorld");
 			} else {
+				BlockState blockState = world.getBlockState(blockPos);
 				BlockEntity blockEntity = world.getBlockEntity(blockPos);
 				if (blockEntity == null) {
 					throw new CommandException("commands.blockdata.notValid");
 				} else {
-					NbtCompound nbtCompound = new NbtCompound();
-					blockEntity.toNbt(nbtCompound);
+					NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
 					NbtCompound nbtCompound2 = (NbtCompound)nbtCompound.copy();
 
 					NbtCompound nbtCompound3;
 					try {
-						nbtCompound3 = StringNbtReader.parse(method_4635(source, args, 3).asUnformattedString());
-					} catch (NbtException var10) {
-						throw new CommandException("commands.blockdata.tagError", var10.getMessage());
+						nbtCompound3 = StringNbtReader.parse(method_4635(commandSource, args, 3).asUnformattedString());
+					} catch (NbtException var12) {
+						throw new CommandException("commands.blockdata.tagError", var12.getMessage());
 					}
 
 					nbtCompound.copyFrom(nbtCompound3);
@@ -64,9 +68,9 @@ public class BlockDataCommand extends AbstractCommand {
 					} else {
 						blockEntity.fromNbt(nbtCompound);
 						blockEntity.markDirty();
-						world.onBlockUpdate(blockPos);
-						source.setStat(CommandStats.Type.AFFECTED_BLOCKS, 1);
-						run(source, this, "commands.blockdata.success", new Object[]{nbtCompound.toString()});
+						world.method_11481(blockPos, blockState, blockState, 3);
+						commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 1);
+						run(commandSource, this, "commands.blockdata.success", new Object[]{nbtCompound.toString()});
 					}
 				}
 			}
@@ -74,7 +78,7 @@ public class BlockDataCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length > 0 && args.length <= 3 ? method_10707(args, 0, pos) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length > 0 && strings.length <= 3 ? method_10707(strings, 0, pos) : Collections.emptyList();
 	}
 }

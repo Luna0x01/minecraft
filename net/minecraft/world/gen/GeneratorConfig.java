@@ -1,7 +1,8 @@
 package net.minecraft.world.gen;
 
+import com.google.common.collect.Lists;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -12,7 +13,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 
 public abstract class GeneratorConfig {
-	protected LinkedList<StructurePiece> children = new LinkedList();
+	protected List<StructurePiece> field_13015 = Lists.newLinkedList();
 	protected BlockBox boundingBox;
 	private int chunkX;
 	private int chunkZ;
@@ -29,12 +30,12 @@ public abstract class GeneratorConfig {
 		return this.boundingBox;
 	}
 
-	public LinkedList<StructurePiece> getChildren() {
-		return this.children;
+	public List<StructurePiece> method_11855() {
+		return this.field_13015;
 	}
 
 	public void generateStructure(World world, Random random, BlockBox boundingBox) {
-		Iterator<StructurePiece> iterator = this.children.iterator();
+		Iterator<StructurePiece> iterator = this.field_13015.iterator();
 
 		while (iterator.hasNext()) {
 			StructurePiece structurePiece = (StructurePiece)iterator.next();
@@ -47,7 +48,7 @@ public abstract class GeneratorConfig {
 	protected void setBoundingBoxFromChildren() {
 		this.boundingBox = BlockBox.empty();
 
-		for (StructurePiece structurePiece : this.children) {
+		for (StructurePiece structurePiece : this.field_13015) {
 			this.boundingBox.encompass(structurePiece.getBoundingBox());
 		}
 	}
@@ -60,7 +61,7 @@ public abstract class GeneratorConfig {
 		nbtCompound.put("BB", this.boundingBox.toNbt());
 		NbtList nbtList = new NbtList();
 
-		for (StructurePiece structurePiece : this.children) {
+		for (StructurePiece structurePiece : this.field_13015) {
 			nbtList.add(structurePiece.toNbt());
 		}
 
@@ -82,7 +83,7 @@ public abstract class GeneratorConfig {
 		NbtList nbtList = nbt.getList("Children", 10);
 
 		for (int i = 0; i < nbtList.size(); i++) {
-			this.children.add(StructurePieceManager.getStructurePieceFromNbt(nbtList.getCompound(i), random));
+			this.field_13015.add(StructurePieceManager.getStructurePieceFromNbt(nbtList.getCompound(i), random));
 		}
 
 		this.deserialize(nbt);
@@ -101,7 +102,7 @@ public abstract class GeneratorConfig {
 		int l = k - this.boundingBox.maxY;
 		this.boundingBox.move(0, l, 0);
 
-		for (StructurePiece structurePiece : this.children) {
+		for (StructurePiece structurePiece : this.field_13015) {
 			structurePiece.translate(0, l, 0);
 		}
 	}
@@ -118,7 +119,7 @@ public abstract class GeneratorConfig {
 		int m = l - this.boundingBox.minY;
 		this.boundingBox.move(0, m, 0);
 
-		for (StructurePiece structurePiece : this.children) {
+		for (StructurePiece structurePiece : this.field_13015) {
 			structurePiece.translate(0, m, 0);
 		}
 	}

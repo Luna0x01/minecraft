@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
 import net.minecraft.block.material.Material;
@@ -10,26 +11,35 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EnchantingTableBlock extends BlockWithEntity {
+	protected static final Box field_12653 = new Box(0.0, 0.0, 0.0, 1.0, 0.75, 1.0);
+
 	protected EnchantingTableBlock() {
 		super(Material.STONE, MaterialColor.RED);
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.75F, 1.0F);
 		this.setOpacity(0);
 		this.setItemGroup(ItemGroup.DECORATIONS);
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12653;
+	}
+
+	@Override
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
-		super.randomDisplayTick(world, pos, state, rand);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		super.randomDisplayTick(state, world, pos, random);
 
 		for (int i = -2; i <= 2; i++) {
 			for (int j = -2; j <= 2; j++) {
@@ -37,7 +47,7 @@ public class EnchantingTableBlock extends BlockWithEntity {
 					j = 2;
 				}
 
-				if (rand.nextInt(16) == 0) {
+				if (random.nextInt(16) == 0) {
 					for (int k = 0; k <= 1; k++) {
 						BlockPos blockPos = pos.add(i, k, j);
 						if (world.getBlockState(blockPos).getBlock() == Blocks.BOOKSHELF) {
@@ -50,9 +60,9 @@ public class EnchantingTableBlock extends BlockWithEntity {
 								(double)pos.getX() + 0.5,
 								(double)pos.getY() + 2.0,
 								(double)pos.getZ() + 0.5,
-								(double)((float)i + rand.nextFloat()) - 0.5,
-								(double)((float)k - rand.nextFloat() - 1.0F),
-								(double)((float)j + rand.nextFloat()) - 0.5
+								(double)((float)i + random.nextFloat()) - 0.5,
+								(double)((float)k - random.nextFloat() - 1.0F),
+								(double)((float)j + random.nextFloat()) - 0.5
 							);
 						}
 					}
@@ -62,13 +72,13 @@ public class EnchantingTableBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
@@ -77,13 +87,24 @@ public class EnchantingTableBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof EnchantingTableBlockEntity) {
-				player.openHandledScreen((EnchantingTableBlockEntity)blockEntity);
+				playerEntity.openHandledScreen((EnchantingTableBlockEntity)blockEntity);
 			}
 
 			return true;

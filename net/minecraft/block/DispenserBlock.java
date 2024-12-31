@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
@@ -17,6 +18,9 @@ import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPointerImpl;
@@ -28,7 +32,7 @@ import net.minecraft.util.registry.DefaultedRegistry;
 import net.minecraft.world.World;
 
 public class DispenserBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing");
+	public static final DirectionProperty FACING = FacingBlock.FACING;
 	public static final BooleanProperty TRIGGERED = BooleanProperty.of("triggered");
 	public static final DefaultedRegistry<Item, DispenserBehavior> SPECIAL_ITEMS = new DefaultedRegistry<>(new ItemDispenserBehavior());
 	protected Random random = new Random();
@@ -53,15 +57,15 @@ public class DispenserBlock extends BlockWithEntity {
 	private void setDirection(World world, BlockPos pos, BlockState state) {
 		if (!world.isClient) {
 			Direction direction = state.get(FACING);
-			boolean bl = world.getBlockState(pos.north()).getBlock().isFullBlock();
-			boolean bl2 = world.getBlockState(pos.south()).getBlock().isFullBlock();
+			boolean bl = world.getBlockState(pos.north()).isFullBlock();
+			boolean bl2 = world.getBlockState(pos.south()).isFullBlock();
 			if (direction == Direction.NORTH && bl && !bl2) {
 				direction = Direction.SOUTH;
 			} else if (direction == Direction.SOUTH && bl2 && !bl) {
 				direction = Direction.NORTH;
 			} else {
-				boolean bl3 = world.getBlockState(pos.west()).getBlock().isFullBlock();
-				boolean bl4 = world.getBlockState(pos.east()).getBlock().isFullBlock();
+				boolean bl3 = world.getBlockState(pos.west()).isFullBlock();
+				boolean bl4 = world.getBlockState(pos.east()).isFullBlock();
 				if (direction == Direction.WEST && bl3 && !bl4) {
 					direction = Direction.EAST;
 				} else if (direction == Direction.EAST && bl4 && !bl3) {
@@ -74,17 +78,28 @@ public class DispenserBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof DispenserBlockEntity) {
-				player.openInventory((DispenserBlockEntity)blockEntity);
+				playerEntity.openInventory((DispenserBlockEntity)blockEntity);
 				if (blockEntity instanceof DropperBlockEntity) {
-					player.incrementStat(Stats.INTERACTIONS_WITH_DROPPER);
+					playerEntity.incrementStat(Stats.INTERACTIONS_WITH_DROPPER);
 				} else {
-					player.incrementStat(Stats.INTERACTIONS_WITH_DISPENSER);
+					playerEntity.incrementStat(Stats.INTERACTIONS_WITH_DISPENSER);
 				}
 			}
 
@@ -110,19 +125,19 @@ public class DispenserBlock extends BlockWithEntity {
 		}
 	}
 
-	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
+	protected DispenserBehavior getBehaviorForItem(@Nullable ItemStack stack) {
 		return SPECIAL_ITEMS.get(stack == null ? null : stack.getItem());
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		boolean bl = world.isReceivingRedstonePower(pos) || world.isReceivingRedstonePower(pos.up());
-		boolean bl2 = (Boolean)state.get(TRIGGERED);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		boolean bl = world.isReceivingRedstonePower(blockPos) || world.isReceivingRedstonePower(blockPos.up());
+		boolean bl2 = (Boolean)blockState.get(TRIGGERED);
 		if (bl && !bl2) {
-			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
-			world.setBlockState(pos, state.with(TRIGGERED, true), 4);
+			world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
+			world.setBlockState(blockPos, blockState.with(TRIGGERED, true), 4);
 		} else if (!bl && bl2) {
-			world.setBlockState(pos, state.with(TRIGGERED, false), 4);
+			world.setBlockState(blockPos, blockState.with(TRIGGERED, false), 4);
 		}
 	}
 
@@ -140,12 +155,12 @@ public class DispenserBlock extends BlockWithEntity {
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, PistonBlock.getDirectionFromEntity(world, pos, entity)).with(TRIGGERED, false);
+		return this.getDefaultState().with(FACING, PistonBlock.method_9000(pos, entity)).with(TRIGGERED, false);
 	}
 
 	@Override
 	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
-		world.setBlockState(pos, state.with(FACING, PistonBlock.getDirectionFromEntity(world, pos, placer)), 2);
+		world.setBlockState(pos, state.with(FACING, PistonBlock.method_9000(pos, placer)), 2);
 		if (itemStack.hasCustomName()) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof DispenserBlockEntity) {
@@ -178,23 +193,18 @@ public class DispenserBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
 		return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
-	}
-
-	@Override
-	public BlockState getRenderState(BlockState state) {
-		return this.getDefaultState().with(FACING, Direction.SOUTH);
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
@@ -211,6 +221,16 @@ public class DispenserBlock extends BlockWithEntity {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

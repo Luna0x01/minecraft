@@ -1,6 +1,7 @@
 package net.minecraft.entity.vehicle;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.HopperBlockEntity;
@@ -10,9 +11,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.HopperScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.util.Hand;
 import net.minecraft.util.HopperProvider;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -51,9 +54,9 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 	}
 
 	@Override
-	public boolean openInventory(PlayerEntity player) {
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
 		if (!this.world.isClient) {
-			player.openInventory(this);
+			playerEntity.openInventory(this);
 		}
 
 		return true;
@@ -121,7 +124,7 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 			return true;
 		} else {
 			List<ItemEntity> list = this.world.getEntitiesInBox(ItemEntity.class, this.getBoundingBox().expand(0.25, 0.0, 0.25), EntityPredicate.VALID_ENTITY);
-			if (list.size() > 0) {
+			if (!list.isEmpty()) {
 				HopperBlockEntity.extract(this, (ItemEntity)list.get(0));
 			}
 
@@ -141,12 +144,14 @@ public class HopperMinecartEntity extends StorageMinecartEntity implements Hoppe
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
 		nbt.putInt("TransferCooldown", this.transferCooldown);
+		nbt.putBoolean("Enabled", this.enabled);
 	}
 
 	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
 		this.transferCooldown = nbt.getInt("TransferCooldown");
+		this.enabled = nbt.contains("Enabled") ? nbt.getBoolean("Enabled") : true;
 	}
 
 	public void setTransferCooldown(int cooldown) {

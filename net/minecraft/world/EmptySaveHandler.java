@@ -2,6 +2,7 @@ package net.minecraft.world;
 
 import java.io.File;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.structure.class_2763;
 import net.minecraft.world.chunk.ChunkStorage;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.level.LevelProperties;
@@ -45,12 +46,12 @@ public class EmptySaveHandler implements SaveHandler {
 	}
 
 	@Override
-	public String getWorldName() {
-		return "none";
+	public File getWorldFolder() {
+		return null;
 	}
 
 	@Override
-	public File getWorldFolder() {
+	public class_2763 method_11956() {
 		return null;
 	}
 }

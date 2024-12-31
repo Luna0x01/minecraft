@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -30,12 +31,12 @@ public class RedstoneLampBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
 		if (!world.isClient) {
-			if (this.powered && !world.isReceivingRedstonePower(pos)) {
-				world.createAndScheduleBlockTick(pos, this, 4);
-			} else if (!this.powered && world.isReceivingRedstonePower(pos)) {
-				world.setBlockState(pos, Blocks.LIT_REDSTONE_LAMP.getDefaultState(), 2);
+			if (this.powered && !world.isReceivingRedstonePower(blockPos)) {
+				world.createAndScheduleBlockTick(blockPos, this, 4);
+			} else if (!this.powered && world.isReceivingRedstonePower(blockPos)) {
+				world.setBlockState(blockPos, Blocks.LIT_REDSTONE_LAMP.getDefaultState(), 2);
 			}
 		}
 	}
@@ -49,14 +50,15 @@ public class RedstoneLampBlock extends Block {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.REDSTONE_LAMP);
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(Blocks.REDSTONE_LAMP);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Blocks.REDSTONE_LAMP);
 	}
 
 	@Override

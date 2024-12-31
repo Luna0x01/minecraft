@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -12,10 +14,12 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ThreadedAnvilChunkStorage;
 
 public class SummonCommand extends AbstractCommand {
 	@Override
@@ -34,13 +38,13 @@ public class SummonCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.summon.usage");
 		} else {
 			String string = args[0];
-			BlockPos blockPos = source.getBlockPos();
-			Vec3d vec3d = source.getPos();
+			BlockPos blockPos = commandSource.getBlockPos();
+			Vec3d vec3d = commandSource.getPos();
 			double d = vec3d.x;
 			double e = vec3d.y;
 			double f = vec3d.z;
@@ -51,35 +55,28 @@ public class SummonCommand extends AbstractCommand {
 				blockPos = new BlockPos(d, e, f);
 			}
 
-			World world = source.getWorld();
+			World world = commandSource.getWorld();
 			if (!world.blockExists(blockPos)) {
 				throw new CommandException("commands.summon.outOfWorld");
 			} else if ("LightningBolt".equals(string)) {
-				world.addEntity(new LightningBoltEntity(world, d, e, f));
-				run(source, this, "commands.summon.success", new Object[0]);
+				world.addEntity(new LightningBoltEntity(world, d, e, f, false));
+				run(commandSource, this, "commands.summon.success", new Object[0]);
 			} else {
 				NbtCompound nbtCompound = new NbtCompound();
 				boolean bl = false;
 				if (args.length >= 5) {
-					Text text = method_4635(source, args, 4);
+					Text text = method_4635(commandSource, args, 4);
 
 					try {
 						nbtCompound = StringNbtReader.parse(text.asUnformattedString());
 						bl = true;
-					} catch (NbtException var20) {
-						throw new CommandException("commands.summon.tagError", var20.getMessage());
+					} catch (NbtException var18) {
+						throw new CommandException("commands.summon.tagError", var18.getMessage());
 					}
 				}
 
 				nbtCompound.putString("id", string);
-
-				Entity entity;
-				try {
-					entity = EntityType.createInstanceFromNbt(nbtCompound, world);
-				} catch (RuntimeException var19) {
-					throw new CommandException("commands.summon.failed");
-				}
-
+				Entity entity = ThreadedAnvilChunkStorage.method_11782(nbtCompound, world, d, e, f, true);
 				if (entity == null) {
 					throw new CommandException("commands.summon.failed");
 				} else {
@@ -88,32 +85,18 @@ public class SummonCommand extends AbstractCommand {
 						((MobEntity)entity).initialize(world.getLocalDifficulty(new BlockPos(entity)), null);
 					}
 
-					world.spawnEntity(entity);
-					Entity entity3 = entity;
-
-					for (NbtCompound nbtCompound2 = nbtCompound; entity3 != null && nbtCompound2.contains("Riding", 10); nbtCompound2 = nbtCompound2.getCompound("Riding")) {
-						Entity entity4 = EntityType.createInstanceFromNbt(nbtCompound2.getCompound("Riding"), world);
-						if (entity4 != null) {
-							entity4.refreshPositionAndAngles(d, e, f, entity4.yaw, entity4.pitch);
-							world.spawnEntity(entity4);
-							entity3.startRiding(entity4);
-						}
-
-						entity3 = entity4;
-					}
-
-					run(source, this, "commands.summon.success", new Object[0]);
+					run(commandSource, this, "commands.summon.success", new Object[0]);
 				}
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_10708(args, EntityType.getEntityNames());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_10708(strings, EntityType.getEntityNames());
 		} else {
-			return args.length > 1 && args.length <= 4 ? method_10707(args, 1, pos) : null;
+			return strings.length > 1 && strings.length <= 4 ? method_10707(strings, 1, pos) : Collections.emptyList();
 		}
 	}
 }

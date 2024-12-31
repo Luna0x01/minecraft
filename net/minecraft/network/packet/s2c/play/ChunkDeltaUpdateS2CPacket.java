@@ -67,7 +67,7 @@ public class ChunkDeltaUpdateS2CPacket implements Packet<ClientPlayPacketListene
 
 		public ChunkDeltaRecord(short s, Chunk chunk) {
 			this.pos = s;
-			this.state = chunk.method_9154(this.getBlockPos());
+			this.state = chunk.getBlockState(this.getBlockPos());
 		}
 
 		public BlockPos getBlockPos() {

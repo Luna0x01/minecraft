@@ -25,8 +25,8 @@ public class FallingBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
 	}
 
 	@Override
@@ -37,13 +37,13 @@ public class FallingBlock extends Block {
 	}
 
 	private void scheduledTick(World world, BlockPos pos) {
-		if (canFallThrough(world, pos.down()) && pos.getY() >= 0) {
+		if (canFallThough(world.getBlockState(pos.down())) && pos.getY() >= 0) {
 			int i = 32;
 			if (instantFall || !world.isRegionLoaded(pos.add(-i, -i, -i), pos.add(i, i, i))) {
 				world.setAir(pos);
 				BlockPos blockPos = pos.down();
 
-				while (canFallThrough(world, blockPos) && blockPos.getY() > 0) {
+				while (canFallThough(world.getBlockState(blockPos)) && blockPos.getY() > 0) {
 					blockPos = blockPos.down();
 				}
 
@@ -68,9 +68,9 @@ public class FallingBlock extends Block {
 		return 2;
 	}
 
-	public static boolean canFallThrough(World world, BlockPos pos) {
-		Block block = world.getBlockState(pos).getBlock();
-		Material material = block.material;
+	public static boolean canFallThough(BlockState pos) {
+		Block block = pos.getBlock();
+		Material material = pos.getMaterial();
 		return block == Blocks.FIRE || material == Material.AIR || material == Material.WATER || material == Material.LAVA;
 	}
 

@@ -33,7 +33,7 @@ public class CreeperEntityRenderer extends MobEntityRenderer<CreeperEntity> {
 		} else {
 			int i = (int)(h * 0.2F * 255.0F);
 			i = MathHelper.clamp(i, 0, 255);
-			return i << 24 | 16777215;
+			return i << 24 | 822083583;
 		}
 	}
 

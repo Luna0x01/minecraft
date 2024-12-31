@@ -5,6 +5,7 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.Screen;
@@ -131,7 +132,8 @@ public class PagedEntryListWidget extends EntryListWidget {
 		}
 	}
 
-	private DrawableHelper createWidget(PagedEntryListWidget.ListEntry entry, int offsetX, boolean isSingle) {
+	@Nullable
+	private DrawableHelper createWidget(@Nullable PagedEntryListWidget.ListEntry entry, int offsetX, boolean isSingle) {
 		if (entry instanceof PagedEntryListWidget.LabelSupplierEntry) {
 			return this.createSliderWidget(this.width / 2 - 155 + offsetX, 0, (PagedEntryListWidget.LabelSupplierEntry)entry);
 		} else if (entry instanceof PagedEntryListWidget.ButtonEntry) {
@@ -302,7 +304,7 @@ public class PagedEntryListWidget extends EntryListWidget {
 		private final DrawableHelper second;
 		private DrawableHelper prevClicked;
 
-		public DualDrawableEntry(DrawableHelper drawableHelper, DrawableHelper drawableHelper2) {
+		public DualDrawableEntry(@Nullable DrawableHelper drawableHelper, @Nullable DrawableHelper drawableHelper2) {
 			this.first = drawableHelper;
 			this.second = drawableHelper2;
 		}

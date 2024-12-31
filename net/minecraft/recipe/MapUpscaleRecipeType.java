@@ -1,5 +1,6 @@
 package net.minecraft.recipe;
 
+import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -50,6 +51,7 @@ public class MapUpscaleRecipeType extends ShapedRecipeType {
 		}
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		ItemStack itemStack = null;
@@ -67,7 +69,7 @@ public class MapUpscaleRecipeType extends ShapedRecipeType {
 			itemStack.setNbt(new NbtCompound());
 		}
 
-		itemStack.getNbt().putBoolean("map_is_scaling", true);
+		itemStack.getNbt().putInt("map_scale_direction", 1);
 		return itemStack;
 	}
 }

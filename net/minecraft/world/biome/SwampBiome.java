@@ -1,6 +1,7 @@
 package net.minecraft.world.biome;
 
 import java.util.Random;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FlowerBlock;
 import net.minecraft.block.material.Material;
@@ -11,8 +12,10 @@ import net.minecraft.world.chunk.ChunkBlockStateStorage;
 import net.minecraft.world.gen.feature.FoliageFeature;
 
 public class SwampBiome extends Biome {
-	protected SwampBiome(int i) {
-		super(i);
+	protected static final BlockState field_12547 = Blocks.LILY_PAD.getDefaultState();
+
+	protected SwampBiome(Biome.Settings settings) {
+		super(settings);
 		this.biomeDecorator.treesPerChunk = 2;
 		this.biomeDecorator.flowersPerChunk = 1;
 		this.biomeDecorator.deadBushesPerChunk = 1;
@@ -23,13 +26,12 @@ public class SwampBiome extends Biome {
 		this.biomeDecorator.sandDisksPerChunk = 0;
 		this.biomeDecorator.gravelDisksPerChunk = 0;
 		this.biomeDecorator.grassPerChunk = 5;
-		this.waterColor = 14745518;
 		this.monsterEntries.add(new Biome.SpawnEntry(SlimeEntity.class, 1, 1, 1));
 	}
 
 	@Override
 	public FoliageFeature method_3822(Random random) {
-		return this.OAK_TREE_FEATURE;
+		return OAK_TREE_FEATURE;
 	}
 
 	@Override
@@ -56,11 +58,11 @@ public class SwampBiome extends Biome {
 			int l = j & 15;
 
 			for (int m = 255; m >= 0; m--) {
-				if (chunkStorage.get(l, m, k).getBlock().getMaterial() != Material.AIR) {
+				if (chunkStorage.get(l, m, k).getMaterial() != Material.AIR) {
 					if (m == 62 && chunkStorage.get(l, m, k).getBlock() != Blocks.WATER) {
-						chunkStorage.set(l, m, k, Blocks.WATER.getDefaultState());
+						chunkStorage.set(l, m, k, waterBlockState);
 						if (e < 0.12) {
-							chunkStorage.set(l, m + 1, k, Blocks.LILY_PAD.getDefaultState());
+							chunkStorage.set(l, m + 1, k, field_12547);
 						}
 					}
 					break;

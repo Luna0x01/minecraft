@@ -1,8 +1,8 @@
 package net.minecraft.client.render;
 
 import com.mojang.blaze3d.platform.GLX;
+import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.ByteBuffer;
-import org.lwjgl.opengl.GL11;
 
 public class VertexBuffer {
 	private int id;
@@ -26,7 +26,7 @@ public class VertexBuffer {
 	}
 
 	public void draw(int mode) {
-		GL11.glDrawArrays(mode, 0, this.size);
+		GlStateManager.method_12313(mode, 0, this.size);
 	}
 
 	public void unbind() {

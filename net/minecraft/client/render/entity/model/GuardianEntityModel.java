@@ -60,8 +60,8 @@ public class GuardianEntityModel extends EntityModel {
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		GuardianEntity guardianEntity = (GuardianEntity)entity;
 		float f = tickDelta - (float)guardianEntity.ticksAlive;
-		this.body.posY = age / (180.0F / (float)Math.PI);
-		this.body.posX = headPitch / (180.0F / (float)Math.PI);
+		this.body.posY = age * (float) (Math.PI / 180.0);
+		this.body.posX = headPitch * (float) (Math.PI / 180.0);
 		float[] fs = new float[]{1.75F, 0.25F, 0.0F, 0.0F, 0.5F, 0.5F, 0.5F, 0.5F, 1.25F, 0.75F, 0.0F, 0.0F};
 		float[] gs = new float[]{0.0F, 0.0F, 0.0F, 0.0F, 0.25F, 1.75F, 1.25F, 0.75F, 0.0F, 0.0F, 0.0F, 0.0F};
 		float[] hs = new float[]{0.0F, 0.0F, 0.25F, 1.75F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.75F, 1.25F};

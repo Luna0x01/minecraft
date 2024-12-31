@@ -1,5 +1,6 @@
 package net.minecraft.recipe;
 
+import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -19,6 +20,7 @@ public class ShapedRecipeType implements RecipeType {
 		this.result = itemStack;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return this.result;
@@ -89,6 +91,7 @@ public class ShapedRecipeType implements RecipeType {
 		return true;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		ItemStack itemStack = this.getOutput().copy();

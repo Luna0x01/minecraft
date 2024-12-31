@@ -1,7 +1,6 @@
 package net.minecraft.block;
 
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
@@ -43,9 +42,9 @@ public class SpongeBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		this.attemptAbsorbWater(world, pos, state);
-		super.neighborUpdate(world, pos, state, block);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		this.attemptAbsorbWater(world, blockPos, blockState);
+		super.method_8641(blockState, world, blockPos, block);
 	}
 
 	protected void attemptAbsorbWater(World world, BlockPos pos, BlockState state) {
@@ -57,7 +56,7 @@ public class SpongeBlock extends Block {
 
 	private boolean absorbWater(World world, BlockPos pos) {
 		Queue<Pair<BlockPos, Integer>> queue = Lists.newLinkedList();
-		ArrayList<BlockPos> arrayList = Lists.newArrayList();
+		List<BlockPos> list = Lists.newArrayList();
 		queue.add(new Pair<>(pos, 0));
 		int i = 0;
 
@@ -68,9 +67,9 @@ public class SpongeBlock extends Block {
 
 			for (Direction direction : Direction.values()) {
 				BlockPos blockPos2 = blockPos.offset(direction);
-				if (world.getBlockState(blockPos2).getBlock().getMaterial() == Material.WATER) {
+				if (world.getBlockState(blockPos2).getMaterial() == Material.WATER) {
 					world.setBlockState(blockPos2, Blocks.AIR.getDefaultState(), 2);
-					arrayList.add(blockPos2);
+					list.add(blockPos2);
 					i++;
 					if (j < 6) {
 						queue.add(new Pair<>(blockPos2, j + 1));
@@ -83,7 +82,7 @@ public class SpongeBlock extends Block {
 			}
 		}
 
-		for (BlockPos blockPos3 : arrayList) {
+		for (BlockPos blockPos3 : list) {
 			world.updateNeighborsAlways(blockPos3, Blocks.AIR);
 		}
 
@@ -112,28 +111,28 @@ public class SpongeBlock extends Block {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		if ((Boolean)state.get(WET)) {
-			Direction direction = Direction.random(rand);
-			if (direction != Direction.UP && !World.isOpaque(world, pos.offset(direction))) {
+			Direction direction = Direction.random(random);
+			if (direction != Direction.UP && !world.getBlockState(pos.offset(direction)).method_11739()) {
 				double d = (double)pos.getX();
 				double e = (double)pos.getY();
 				double f = (double)pos.getZ();
 				if (direction == Direction.DOWN) {
 					e -= 0.05;
-					d += rand.nextDouble();
-					f += rand.nextDouble();
+					d += random.nextDouble();
+					f += random.nextDouble();
 				} else {
-					e += rand.nextDouble() * 0.8;
+					e += random.nextDouble() * 0.8;
 					if (direction.getAxis() == Direction.Axis.X) {
-						f += rand.nextDouble();
+						f += random.nextDouble();
 						if (direction == Direction.EAST) {
 							d++;
 						} else {
 							d += 0.05;
 						}
 					} else {
-						d += rand.nextDouble();
+						d += random.nextDouble();
 						if (direction == Direction.SOUTH) {
 							f++;
 						} else {

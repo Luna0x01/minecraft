@@ -4,6 +4,9 @@ import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class CarrotOnAStickItem extends Item {
@@ -24,21 +27,22 @@ public class CarrotOnAStickItem extends Item {
 	}
 
 	@Override
-	public ItemStack onStartUse(ItemStack stack, World world, PlayerEntity player) {
-		if (player.hasVehicle() && player.vehicle instanceof PigEntity) {
-			PigEntity pigEntity = (PigEntity)player.vehicle;
-			if (pigEntity.getPlayerControlGoal().method_4495() && stack.getMaxDamage() - stack.getData() >= 7) {
-				pigEntity.getPlayerControlGoal().method_4494();
-				stack.damage(7, player);
-				if (stack.count == 0) {
-					ItemStack itemStack = new ItemStack(Items.FISHING_ROD);
-					itemStack.setNbt(stack.getNbt());
-					return itemStack;
+	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+		if (playerEntity.hasMount() && playerEntity.getVehicle() instanceof PigEntity) {
+			PigEntity pigEntity = (PigEntity)playerEntity.getVehicle();
+			if (itemStack.getMaxDamage() - itemStack.getData() >= 7 && pigEntity.method_13117()) {
+				itemStack.damage(7, playerEntity);
+				if (itemStack.count == 0) {
+					ItemStack itemStack2 = new ItemStack(Items.FISHING_ROD);
+					itemStack2.setNbt(itemStack.getNbt());
+					return new TypedActionResult<>(ActionResult.SUCCESS, itemStack2);
 				}
+
+				return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 			}
 		}
 
-		player.incrementStat(Stats.USED[Item.getRawId(this)]);
-		return stack;
+		playerEntity.incrementStat(Stats.used(this));
+		return new TypedActionResult<>(ActionResult.PASS, itemStack);
 	}
 }

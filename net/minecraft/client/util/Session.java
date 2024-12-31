@@ -5,6 +5,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.util.UUIDTypeAdapter;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 public class Session {
 	private final String username;
@@ -44,10 +45,6 @@ public class Session {
 		}
 	}
 
-	public Session.AccountType getAccountType() {
-		return this.accountType;
-	}
-
 	public static enum AccountType {
 		LEGACY("legacy"),
 		MOJANG("mojang");
@@ -59,6 +56,7 @@ public class Session {
 			this.name = string2;
 		}
 
+		@Nullable
 		public static Session.AccountType byName(String string) {
 			return (Session.AccountType)BY_NAME.get(string.toLowerCase());
 		}

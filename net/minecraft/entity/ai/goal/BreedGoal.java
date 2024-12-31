@@ -58,8 +58,7 @@ public class BreedGoal extends Goal {
 	}
 
 	private AnimalEntity findMate() {
-		float f = 8.0F;
-		List<AnimalEntity> list = this.world.getEntitiesInBox(this.animal.getClass(), this.animal.getBoundingBox().expand((double)f, (double)f, (double)f));
+		List<AnimalEntity> list = this.world.getEntitiesInBox(this.animal.getClass(), this.animal.getBoundingBox().expand(8.0));
 		double d = Double.MAX_VALUE;
 		AnimalEntity animalEntity = null;
 

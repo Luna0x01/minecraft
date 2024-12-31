@@ -2,6 +2,7 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
@@ -154,6 +155,7 @@ public class FireworkRecipeType implements RecipeType {
 		}
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		return this.ingredient.copy();
@@ -164,6 +166,7 @@ public class FireworkRecipeType implements RecipeType {
 		return 10;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return this.ingredient;

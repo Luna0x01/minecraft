@@ -18,7 +18,7 @@ import net.minecraft.util.DyeColor;
 public class BlockRecipeDispatcher {
 	public void register(RecipeDispatcher recipes) {
 		recipes.registerShapedRecipe(new ItemStack(Blocks.CHEST), "###", "# #", "###", '#', Blocks.PLANKS);
-		recipes.registerShapedRecipe(new ItemStack(Blocks.TRAPPED_CHEST), "#-", '#', Blocks.CHEST, '-', Blocks.TRIPWIRE_HOOK);
+		recipes.registerShapelessRecipe(new ItemStack(Blocks.TRAPPED_CHEST), Blocks.CHEST, Blocks.TRIPWIRE_HOOK);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.ENDERCHEST), "###", "#E#", "###", '#', Blocks.OBSIDIAN, 'E', Items.EYE_OF_ENDER);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.FURNACE), "###", "# #", "###", '#', Blocks.COBBLESTONE);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.CRAFTING_TABLE), "##", "##", '#', Blocks.PLANKS);
@@ -133,5 +133,9 @@ public class BlockRecipeDispatcher {
 			new ItemStack(Items.DYE, 1, DyeColor.BLACK.getSwappedId())
 		);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.SEA_LANTERN, 1, 0), "SCS", "CCC", "SCS", 'S', Items.PRISMARINE_SHARD, 'C', Items.PRISMARINE_CRYSTALS);
+		recipes.registerShapedRecipe(new ItemStack(Blocks.PURPUR_BLOCK, 4, 0), "FF", "FF", 'F', Items.CHORUS_FRUIT_POPPED);
+		recipes.registerShapedRecipe(new ItemStack(Blocks.PURPUR_STAIRS, 4, 0), "#  ", "## ", "###", '#', Blocks.PURPUR_BLOCK);
+		recipes.registerShapedRecipe(new ItemStack(Blocks.PURPUR_PILLAR, 1, 0), "#", "#", '#', Blocks.PURPUR_SLAB);
+		recipes.registerShapedRecipe(new ItemStack(Blocks.END_BRICKS, 4, 0), "##", "##", '#', Blocks.END_STONE);
 	}
 }

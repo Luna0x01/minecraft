@@ -58,7 +58,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 			ServerPlayerEntity serverPlayerEntity = this.server.getPlayerManager().getPlayer(this.profile.getId());
 			if (serverPlayerEntity == null) {
 				this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
-				this.server.getPlayerManager().onPlayerConnect(this.connection, this.clientEntity);
+				this.server.getPlayerManager().method_12827(this.connection, this.clientEntity);
 				this.clientEntity = null;
 			}
 		}
@@ -103,7 +103,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 				this.state = ServerLoginNetworkHandler.State.DELAY_ACCEPT;
 				this.clientEntity = this.server.getPlayerManager().createPlayer(this.profile);
 			} else {
-				this.server.getPlayerManager().onPlayerConnect(this.connection, this.server.getPlayerManager().createPlayer(this.profile));
+				this.server.getPlayerManager().method_12827(this.connection, this.server.getPlayerManager().createPlayer(this.profile));
 			}
 		}
 	}
@@ -163,7 +163,7 @@ public class ServerLoginNetworkHandler implements ServerLoginPacketListener, Tic
 								ServerLoginNetworkHandler.this.state = ServerLoginNetworkHandler.State.READY_TO_ACCEPT;
 							} else {
 								ServerLoginNetworkHandler.this.disconnect("Failed to verify username!");
-								ServerLoginNetworkHandler.LOGGER.error("Username '" + ServerLoginNetworkHandler.this.profile.getName() + "' tried to join with an invalid session");
+								ServerLoginNetworkHandler.LOGGER.error("Username '" + gameProfile.getName() + "' tried to join with an invalid session");
 							}
 						} catch (AuthenticationUnavailableException var3) {
 							if (ServerLoginNetworkHandler.this.server.isSinglePlayer()) {

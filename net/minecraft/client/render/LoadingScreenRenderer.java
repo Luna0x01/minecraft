@@ -136,7 +136,9 @@ public class LoadingScreenRenderer implements ProgressListener {
 				}
 
 				GlStateManager.enableBlend();
-				GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+				GlStateManager.method_12288(
+					GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+				);
 				this.client
 					.textRenderer
 					.drawWithShadow(this.title, (float)((j - this.client.textRenderer.getStringWidth(this.title)) / 2), (float)(k / 2 - 4 - 16), 16777215);

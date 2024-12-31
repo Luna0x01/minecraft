@@ -1,12 +1,12 @@
 package net.minecraft.structure;
 
-import com.google.common.collect.Maps;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -21,37 +21,39 @@ import net.minecraft.world.gen.feature.FeatureState;
 
 public abstract class StructureFeature extends Carver {
 	private FeatureState field_6237;
-	protected Map<Long, GeneratorConfig> config = Maps.newHashMap();
+	protected Long2ObjectMap<GeneratorConfig> field_13012 = new Long2ObjectOpenHashMap(1024);
 
 	public abstract String getName();
 
 	@Override
-	protected final void carve(World world, int chunkX, int chunkZ, int mainChunkX, int mainChunkZ, ChunkBlockStateStorage chunkStorage) {
+	protected final synchronized void carve(World world, int chunkX, int chunkZ, int mainChunkX, int mainChunkZ, ChunkBlockStateStorage chunkStorage) {
 		this.method_5515(world);
-		if (!this.config.containsKey(ChunkPos.getIdFromCoords(chunkX, chunkZ))) {
+		if (!this.field_13012.containsKey(ChunkPos.getIdFromCoords(chunkX, chunkZ))) {
 			this.random.nextInt();
 
 			try {
 				if (this.shouldStartAt(chunkX, chunkZ)) {
 					GeneratorConfig generatorConfig = this.getGeneratorConfig(chunkX, chunkZ);
-					this.config.put(ChunkPos.getIdFromCoords(chunkX, chunkZ), generatorConfig);
-					this.method_5514(chunkX, chunkZ, generatorConfig);
+					this.field_13012.put(ChunkPos.getIdFromCoords(chunkX, chunkZ), generatorConfig);
+					if (generatorConfig.isValid()) {
+						this.method_5514(chunkX, chunkZ, generatorConfig);
+					}
 				}
 			} catch (Throwable var10) {
 				CrashReport crashReport = CrashReport.create(var10, "Exception preparing structure feature");
 				CrashReportSection crashReportSection = crashReport.addElement("Feature being prepared");
-				crashReportSection.add("Is feature chunk", new Callable<String>() {
+				crashReportSection.add("Is feature chunk", new CrashCallable<String>() {
 					public String call() throws Exception {
 						return StructureFeature.this.shouldStartAt(chunkX, chunkZ) ? "True" : "False";
 					}
 				});
 				crashReportSection.add("Chunk location", String.format("%d,%d", chunkX, chunkZ));
-				crashReportSection.add("Chunk pos hash", new Callable<String>() {
+				crashReportSection.add("Chunk pos hash", new CrashCallable<String>() {
 					public String call() throws Exception {
 						return String.valueOf(ChunkPos.getIdFromCoords(chunkX, chunkZ));
 					}
 				});
-				crashReportSection.add("Structure type", new Callable<String>() {
+				crashReportSection.add("Structure type", new CrashCallable<String>() {
 					public String call() throws Exception {
 						return StructureFeature.this.getClass().getCanonicalName();
 					}
@@ -61,13 +63,13 @@ public abstract class StructureFeature extends Carver {
 		}
 	}
 
-	public boolean populate(World world, Random random, ChunkPos chunkPos) {
+	public synchronized boolean populate(World world, Random random, ChunkPos chunkPos) {
 		this.method_5515(world);
 		int i = (chunkPos.x << 4) + 8;
 		int j = (chunkPos.z << 4) + 8;
 		boolean bl = false;
 
-		for (GeneratorConfig generatorConfig : this.config.values()) {
+		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
 			if (generatorConfig.isValid() && generatorConfig.method_9277(chunkPos) && generatorConfig.getBoundingBox().intersectsXZ(i, j, i + 15, j + 15)) {
 				generatorConfig.generateStructure(world, random, new BlockBox(i, j, i + 15, j + 15));
 				generatorConfig.method_9278(chunkPos);
@@ -85,9 +87,9 @@ public abstract class StructureFeature extends Carver {
 	}
 
 	protected GeneratorConfig getGeneratorConfigAtPos(BlockPos pos) {
-		for (GeneratorConfig generatorConfig : this.config.values()) {
+		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
 			if (generatorConfig.isValid() && generatorConfig.getBoundingBox().contains(pos)) {
-				for (StructurePiece structurePiece : generatorConfig.getChildren()) {
+				for (StructurePiece structurePiece : generatorConfig.method_11855()) {
 					if (structurePiece.getBoundingBox().contains(pos)) {
 						return generatorConfig;
 					}
@@ -101,7 +103,7 @@ public abstract class StructureFeature extends Carver {
 	public boolean method_9267(World world, BlockPos pos) {
 		this.method_5515(world);
 
-		for (GeneratorConfig generatorConfig : this.config.values()) {
+		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
 			if (generatorConfig.isValid() && generatorConfig.getBoundingBox().contains(pos)) {
 				return true;
 			}
@@ -123,9 +125,9 @@ public abstract class StructureFeature extends Carver {
 		double d = Double.MAX_VALUE;
 		BlockPos blockPos = null;
 
-		for (GeneratorConfig generatorConfig : this.config.values()) {
+		for (GeneratorConfig generatorConfig : this.field_13012.values()) {
 			if (generatorConfig.isValid()) {
-				StructurePiece structurePiece = (StructurePiece)generatorConfig.getChildren().get(0);
+				StructurePiece structurePiece = (StructurePiece)generatorConfig.method_11855().get(0);
 				BlockPos blockPos2 = structurePiece.getCenterBlockPos();
 				double e = blockPos2.getSquaredDistance(pos);
 				if (e < d) {
@@ -161,7 +163,7 @@ public abstract class StructureFeature extends Carver {
 		return null;
 	}
 
-	private void method_5515(World world) {
+	protected void method_5515(World world) {
 		if (this.field_6237 == null) {
 			this.field_6237 = (FeatureState)world.getOrCreateState(FeatureState.class, this.getName());
 			if (this.field_6237 == null) {
@@ -179,7 +181,7 @@ public abstract class StructureFeature extends Carver {
 							int j = nbtCompound2.getInt("ChunkZ");
 							GeneratorConfig generatorConfig = StructurePieceManager.getGeneratorConfigFromNbt(nbtCompound2, world);
 							if (generatorConfig != null) {
-								this.config.put(ChunkPos.getIdFromCoords(i, j), generatorConfig);
+								this.field_13012.put(ChunkPos.getIdFromCoords(i, j), generatorConfig);
 							}
 						}
 					}

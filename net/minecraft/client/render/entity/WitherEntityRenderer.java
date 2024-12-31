@@ -3,7 +3,6 @@ package net.minecraft.client.render.entity;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.entity.feature.WitherArmorFeatureRenderer;
 import net.minecraft.client.render.entity.model.WitherEntityModel;
-import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.util.Identifier;
 
@@ -14,11 +13,6 @@ public class WitherEntityRenderer extends MobEntityRenderer<WitherEntity> {
 	public WitherEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new WitherEntityModel(0.0F), 1.0F);
 		this.addFeature(new WitherArmorFeatureRenderer(this));
-	}
-
-	public void render(WitherEntity witherEntity, double d, double e, double f, float g, float h) {
-		BossBar.update(witherEntity, true);
-		super.render(witherEntity, d, e, f, g, h);
 	}
 
 	protected Identifier getTexture(WitherEntity witherEntity) {

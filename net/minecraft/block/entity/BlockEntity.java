@@ -2,13 +2,14 @@ package net.minecraft.block.entity;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.JukeboxBlock;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -50,34 +51,45 @@ public abstract class BlockEntity {
 		this.pos = new BlockPos(nbt.getInt("x"), nbt.getInt("y"), nbt.getInt("z"));
 	}
 
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
+		return this.method_11648(nbt);
+	}
+
+	private NbtCompound method_11648(NbtCompound tag) {
 		String string = (String)classStringMap.get(this.getClass());
 		if (string == null) {
 			throw new RuntimeException(this.getClass() + " is missing a mapping! This is a bug!");
 		} else {
-			nbt.putString("id", string);
-			nbt.putInt("x", this.pos.getX());
-			nbt.putInt("y", this.pos.getY());
-			nbt.putInt("z", this.pos.getZ());
+			tag.putString("id", string);
+			tag.putInt("x", this.pos.getX());
+			tag.putInt("y", this.pos.getY());
+			tag.putInt("z", this.pos.getZ());
+			return tag;
 		}
 	}
 
 	public static BlockEntity createFromNbt(NbtCompound nbt) {
 		BlockEntity blockEntity = null;
+		String string = nbt.getString("id");
 
 		try {
-			Class<? extends BlockEntity> class_ = (Class<? extends BlockEntity>)stringClassMap.get(nbt.getString("id"));
+			Class<? extends BlockEntity> class_ = (Class<? extends BlockEntity>)stringClassMap.get(string);
 			if (class_ != null) {
 				blockEntity = (BlockEntity)class_.newInstance();
 			}
-		} catch (Exception var3) {
-			var3.printStackTrace();
+		} catch (Throwable var5) {
+			LOGGER.error("Failed to create block entity " + string, var5);
 		}
 
 		if (blockEntity != null) {
-			blockEntity.fromNbt(nbt);
+			try {
+				blockEntity.fromNbt(nbt);
+			} catch (Throwable var4) {
+				LOGGER.error("Failed to load data for block entity " + string, var4);
+				blockEntity = null;
+			}
 		} else {
-			LOGGER.warn("Skipping BlockEntity with id " + nbt.getString("id"));
+			LOGGER.warn("Skipping BlockEntity with id " + string);
 		}
 
 		return blockEntity;
@@ -119,15 +131,20 @@ public abstract class BlockEntity {
 	}
 
 	public Block getBlock() {
-		if (this.block == null) {
+		if (this.block == null && this.world != null) {
 			this.block = this.world.getBlockState(this.pos).getBlock();
 		}
 
 		return this.block;
 	}
 
-	public Packet getPacket() {
+	@Nullable
+	public BlockEntityUpdateS2CPacket getUpdatePacket() {
 		return null;
+	}
+
+	public NbtCompound getUpdatePacketContent() {
+		return this.method_11648(new NbtCompound());
 	}
 
 	public boolean isRemoved() {
@@ -152,14 +169,14 @@ public abstract class BlockEntity {
 	}
 
 	public void populateCrashReport(CrashReportSection section) {
-		section.add("Name", new Callable<String>() {
+		section.add("Name", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return (String)BlockEntity.classStringMap.get(BlockEntity.this.getClass()) + " // " + BlockEntity.this.getClass().getCanonicalName();
 			}
 		});
 		if (this.world != null) {
 			CrashReportSection.addBlockData(section, this.pos, this.getBlock(), this.getDataValue());
-			section.add("Actual block type", new Callable<String>() {
+			section.add("Actual block type", new CrashCallable<String>() {
 				public String call() throws Exception {
 					int i = Block.getIdByBlock(BlockEntity.this.world.getBlockState(BlockEntity.this.pos).getBlock());
 
@@ -170,7 +187,7 @@ public abstract class BlockEntity {
 					}
 				}
 			});
-			section.add("Actual block data value", new Callable<String>() {
+			section.add("Actual block data value", new CrashCallable<String>() {
 				public String call() throws Exception {
 					BlockState blockState = BlockEntity.this.world.getBlockState(BlockEntity.this.pos);
 					int i = blockState.getBlock().getData(blockState);
@@ -185,7 +202,12 @@ public abstract class BlockEntity {
 		}
 	}
 
-	public void setPos(BlockPos pos) {
+	public void setPosition(BlockPos pos) {
+		if (pos instanceof BlockPos.Mutable || pos instanceof BlockPos.Pooled) {
+			LOGGER.warn("Tried to assign a mutable BlockPos to a block entity...", new Error(pos.getClass().toString()));
+			pos = new BlockPos(pos);
+		}
+
 		this.pos = pos;
 	}
 
@@ -207,7 +229,6 @@ public abstract class BlockEntity {
 		registerBlockEntity(BrewingStandBlockEntity.class, "Cauldron");
 		registerBlockEntity(EnchantingTableBlockEntity.class, "EnchantTable");
 		registerBlockEntity(EndPortalBlockEntity.class, "Airportal");
-		registerBlockEntity(CommandBlockBlockEntity.class, "Control");
 		registerBlockEntity(BeaconBlockEntity.class, "Beacon");
 		registerBlockEntity(SkullBlockEntity.class, "Skull");
 		registerBlockEntity(DaylightDetectorBlockEntity.class, "DLDetector");
@@ -215,5 +236,8 @@ public abstract class BlockEntity {
 		registerBlockEntity(ComparatorBlockEntity.class, "Comparator");
 		registerBlockEntity(FlowerPotBlockEntity.class, "FlowerPot");
 		registerBlockEntity(BannerBlockEntity.class, "Banner");
+		registerBlockEntity(StructureBlockEntity.class, "Structure");
+		registerBlockEntity(EndGatewayBlockEntity.class, "EndGateway");
+		registerBlockEntity(CommandBlockBlockEntity.class, "Control");
 	}
 }

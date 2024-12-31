@@ -1,9 +1,11 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.DyeColor;
@@ -21,6 +23,7 @@ public class OreBlock extends Block {
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		if (this == Blocks.COAL_ORE) {
@@ -77,8 +80,8 @@ public class OreBlock extends Block {
 	}
 
 	@Override
-	public int getMeta(World world, BlockPos pos) {
-		return 0;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this);
 	}
 
 	@Override

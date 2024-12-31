@@ -1,71 +1,77 @@
 package net.minecraft.entity.ai.pathing;
 
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 
-public class WaterPathNodeMaker extends PathNodeMaker {
+public class WaterPathNodeMaker extends class_2771 {
 	@Override
-	public void init(BlockView blockView, Entity entity) {
-		super.init(blockView, entity);
-	}
-
-	@Override
-	public void clear() {
-		super.clear();
-	}
-
-	@Override
-	public PathNode getStart(Entity entity) {
-		return this.getNode(
-			MathHelper.floor(entity.getBoundingBox().minX), MathHelper.floor(entity.getBoundingBox().minY + 0.5), MathHelper.floor(entity.getBoundingBox().minZ)
+	public PathNode method_11918() {
+		return this.method_11912(
+			MathHelper.floor(this.field_13076.getBoundingBox().minX),
+			MathHelper.floor(this.field_13076.getBoundingBox().minY + 0.5),
+			MathHelper.floor(this.field_13076.getBoundingBox().minZ)
 		);
 	}
 
 	@Override
-	public PathNode getNode(Entity entity, double x, double y, double z) {
-		return this.getNode(MathHelper.floor(x - (double)(entity.width / 2.0F)), MathHelper.floor(y + 0.5), MathHelper.floor(z - (double)(entity.width / 2.0F)));
+	public PathNode method_11911(double d, double e, double f) {
+		return this.method_11912(
+			MathHelper.floor(d - (double)(this.field_13076.width / 2.0F)), MathHelper.floor(e + 0.5), MathHelper.floor(f - (double)(this.field_13076.width / 2.0F))
+		);
 	}
 
 	@Override
-	public int getSuccessors(PathNode[] nodes, Entity entity, PathNode currentNode, PathNode endNode, float maxDistance) {
+	public int method_11917(PathNode[] pathNodes, PathNode pathNode, PathNode pathNode2, float f) {
 		int i = 0;
 
 		for (Direction direction : Direction.values()) {
-			PathNode pathNode = this.getNodeInWater(
-				entity, currentNode.posX + direction.getOffsetX(), currentNode.posY + direction.getOffsetY(), currentNode.posZ + direction.getOffsetZ()
+			PathNode pathNode3 = this.method_11944(
+				pathNode.posX + direction.getOffsetX(), pathNode.posY + direction.getOffsetY(), pathNode.posZ + direction.getOffsetZ()
 			);
-			if (pathNode != null && !pathNode.visited && pathNode.getDistance(endNode) < maxDistance) {
-				nodes[i++] = pathNode;
+			if (pathNode3 != null && !pathNode3.visited && pathNode3.getDistance(pathNode2) < f) {
+				pathNodes[i++] = pathNode3;
 			}
 		}
 
 		return i;
 	}
 
-	private PathNode getNodeInWater(Entity entity, int x, int y, int z) {
-		int i = this.getNodeType(entity, x, y, z);
-		return i == -1 ? this.getNode(x, y, z) : null;
+	@Override
+	public LandType method_11914(BlockView blockView, int i, int j, int k, MobEntity mobEntity, int l, int m, int n, boolean bl, boolean bl2) {
+		return LandType.WATER;
 	}
 
-	private int getNodeType(Entity entity, int x, int y, int z) {
+	@Override
+	public LandType method_11913(BlockView blockView, int i, int j, int k) {
+		return LandType.WATER;
+	}
+
+	@Nullable
+	private PathNode method_11944(int i, int j, int k) {
+		LandType landType = this.method_11945(i, j, k);
+		return landType == LandType.WATER ? this.method_11912(i, j, k) : null;
+	}
+
+	private LandType method_11945(int i, int j, int k) {
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int i = x; i < x + this.entityBlockXSize; i++) {
-			for (int j = y; j < y + this.entityBlockYSize; j++) {
-				for (int k = z; k < z + this.entityBlockZSize; k++) {
-					Block block = this.blockView.getBlockState(mutable.setPosition(i, j, k)).getBlock();
-					if (block.getMaterial() != Material.WATER) {
-						return 0;
+		for (int l = i; l < i + this.field_13078; l++) {
+			for (int m = j; m < j + this.field_13079; m++) {
+				for (int n = k; n < k + this.field_13080; n++) {
+					BlockState blockState = this.field_13075.getBlockState(mutable.setPosition(l, m, n));
+					if (blockState.getMaterial() != Material.WATER) {
+						return LandType.BLOCKED;
 					}
 				}
 			}
 		}
 
-		return -1;
+		return LandType.WATER;
 	}
 }

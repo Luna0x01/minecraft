@@ -1,20 +1,26 @@
 package net.minecraft.entity.vehicle;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FurnaceMinecartEntity extends AbstractMinecartEntity {
+	private static final TrackedData<Boolean> LIT = DataTracker.registerData(FurnaceMinecartEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private int fuel;
 	public double pushX;
 	public double pushZ;
@@ -35,7 +41,7 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(16, new Byte((byte)0));
+		this.dataTracker.startTracking(LIT, false);
 	}
 
 	@Override
@@ -110,18 +116,17 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean openInventory(PlayerEntity player) {
-		ItemStack itemStack = player.inventory.getMainHandStack();
-		if (itemStack != null && itemStack.getItem() == Items.COAL) {
-			if (!player.abilities.creativeMode && --itemStack.count == 0) {
-				player.inventory.setInvStack(player.inventory.selectedSlot, null);
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+		if (itemStack != null && itemStack.getItem() == Items.COAL && this.fuel + 3600 <= 32000) {
+			if (!playerEntity.abilities.creativeMode) {
+				itemStack.count--;
 			}
 
 			this.fuel += 3600;
 		}
 
-		this.pushX = this.x - player.x;
-		this.pushZ = this.z - player.z;
+		this.pushX = this.x - playerEntity.x;
+		this.pushZ = this.z - playerEntity.z;
 		return true;
 	}
 
@@ -142,15 +147,11 @@ public class FurnaceMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	protected boolean isLit() {
-		return (this.dataTracker.getByte(16) & 1) != 0;
+		return this.dataTracker.get(LIT);
 	}
 
 	protected void setLit(boolean lit) {
-		if (lit) {
-			this.dataTracker.setProperty(16, (byte)(this.dataTracker.getByte(16) | 1));
-		} else {
-			this.dataTracker.setProperty(16, (byte)(this.dataTracker.getByte(16) & -2));
-		}
+		this.dataTracker.set(LIT, lit);
 	}
 
 	@Override

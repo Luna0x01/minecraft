@@ -54,7 +54,7 @@ public class EnderChestBlockEntityRenderer extends BlockEntityRenderer<EnderChes
 		float h = enderChestBlockEntity.lastAnimationProgress + (enderChestBlockEntity.animationProgress - enderChestBlockEntity.lastAnimationProgress) * g;
 		h = 1.0F - h;
 		h = 1.0F - h * h * h;
-		this.model.lid.posX = -(h * (float) Math.PI / 2.0F);
+		this.model.lid.posX = -(h * (float) (Math.PI / 2));
 		this.model.renderParts();
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();

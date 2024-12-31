@@ -3,16 +3,22 @@ package net.minecraft.structure;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
+import net.minecraft.block.AbstractButtonBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.DoorBlock;
 import net.minecraft.block.EndPortalFrameBlock;
 import net.minecraft.block.InfestedBlock;
+import net.minecraft.block.LadderBlock;
+import net.minecraft.block.StairsBlock;
 import net.minecraft.block.StoneBrickBlock;
 import net.minecraft.block.StoneSlabBlock;
+import net.minecraft.block.TorchBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.WeightedRandomChestContent;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -96,7 +102,7 @@ public class StrongholdPieces {
 		int x,
 		int y,
 		int z,
-		Direction orientation,
+		@Nullable Direction orientation,
 		int chainLength
 	) {
 		StrongholdPieces.AbstractPiece abstractPiece = null;
@@ -174,7 +180,7 @@ public class StrongholdPieces {
 	}
 
 	private static StructurePiece generate(
-		StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation, int chainLength
+		StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int x, int y, int z, @Nullable Direction orientation, int chainLength
 	) {
 		if (chainLength > 50) {
 			return null;
@@ -226,7 +232,7 @@ public class StrongholdPieces {
 					this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), x + 2, y + 1, z, box);
 					this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), x + 2, y, z, box);
 					this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState(), x + 1, y, z, box);
-					this.setBlockState(world, Blocks.OAK_DOOR.stateFromData(8), x + 1, y + 1, z, box);
+					this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState().with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), x + 1, y + 1, z, box);
 					break;
 				case GRATES:
 					this.setBlockState(world, Blocks.AIR.getDefaultState(), x + 1, y, z, box);
@@ -248,9 +254,9 @@ public class StrongholdPieces {
 					this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), x + 2, y + 1, z, box);
 					this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), x + 2, y, z, box);
 					this.setBlockState(world, Blocks.IRON_DOOR.getDefaultState(), x + 1, y, z, box);
-					this.setBlockState(world, Blocks.IRON_DOOR.stateFromData(8), x + 1, y + 1, z, box);
-					this.setBlockState(world, Blocks.STONE_BUTTON.stateFromData(this.getData(Blocks.STONE_BUTTON, 4)), x + 2, y + 1, z + 1, box);
-					this.setBlockState(world, Blocks.STONE_BUTTON.stateFromData(this.getData(Blocks.STONE_BUTTON, 3)), x + 2, y + 1, z - 1, box);
+					this.setBlockState(world, Blocks.IRON_DOOR.getDefaultState().with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), x + 1, y + 1, z, box);
+					this.setBlockState(world, Blocks.STONE_BUTTON.getDefaultState().with(AbstractButtonBlock.FACING, Direction.NORTH), x + 2, y + 1, z + 1, box);
+					this.setBlockState(world, Blocks.STONE_BUTTON.getDefaultState().with(AbstractButtonBlock.FACING, Direction.SOUTH), x + 2, y + 1, z - 1, box);
 			}
 		}
 
@@ -273,8 +279,9 @@ public class StrongholdPieces {
 		protected StructurePiece fillForwardOpening(
 			StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int leftRightOffset, int heightOffset
 		) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return StrongholdPieces.generate(
 							start,
@@ -283,7 +290,7 @@ public class StrongholdPieces {
 							this.boundingBox.minX + leftRightOffset,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.minZ - 1,
-							this.facing,
+							direction,
 							this.getChainLength()
 						);
 					case SOUTH:
@@ -294,7 +301,7 @@ public class StrongholdPieces {
 							this.boundingBox.minX + leftRightOffset,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.maxZ + 1,
-							this.facing,
+							direction,
 							this.getChainLength()
 						);
 					case WEST:
@@ -305,7 +312,7 @@ public class StrongholdPieces {
 							this.boundingBox.minX - 1,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.minZ + leftRightOffset,
-							this.facing,
+							direction,
 							this.getChainLength()
 						);
 					case EAST:
@@ -316,7 +323,7 @@ public class StrongholdPieces {
 							this.boundingBox.maxX + 1,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.minZ + leftRightOffset,
-							this.facing,
+							direction,
 							this.getChainLength()
 						);
 				}
@@ -326,8 +333,9 @@ public class StrongholdPieces {
 		}
 
 		protected StructurePiece fillNWOpening(StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return StrongholdPieces.generate(
 							start,
@@ -379,8 +387,9 @@ public class StrongholdPieces {
 		}
 
 		protected StructurePiece fillSEOpening(StrongholdPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return StrongholdPieces.generate(
 							start,
@@ -444,28 +453,6 @@ public class StrongholdPieces {
 	}
 
 	public static class ChestCorridor extends StrongholdPieces.AbstractPiece {
-		private static final List<WeightedRandomChestContent> POSSIBLE_CHEST_CONTENT = Lists.newArrayList(
-			new WeightedRandomChestContent[]{
-				new WeightedRandomChestContent(Items.ENDER_PEARL, 0, 1, 1, 10),
-				new WeightedRandomChestContent(Items.DIAMOND, 0, 1, 3, 3),
-				new WeightedRandomChestContent(Items.IRON_INGOT, 0, 1, 5, 10),
-				new WeightedRandomChestContent(Items.GOLD_INGOT, 0, 1, 3, 5),
-				new WeightedRandomChestContent(Items.REDSTONE, 0, 4, 9, 5),
-				new WeightedRandomChestContent(Items.BREAD, 0, 1, 3, 15),
-				new WeightedRandomChestContent(Items.APPLE, 0, 1, 3, 15),
-				new WeightedRandomChestContent(Items.IRON_PICKAXE, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_SWORD, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_CHESTPLATE, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_HELMET, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_LEGGINGS, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_BOOTS, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.GOLDEN_APPLE, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.SADDLE, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.IRON_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.GOLDEN_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.DIAMOND_HORSE_ARMOR, 0, 1, 1, 1)
-			}
-		);
 		private boolean chestGenerated;
 
 		public ChestCorridor() {
@@ -473,7 +460,7 @@ public class StrongholdPieces {
 
 		public ChestCorridor(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 		}
@@ -522,16 +509,7 @@ public class StrongholdPieces {
 
 				if (!this.chestGenerated && boundingBox.contains(new BlockPos(this.applyXTransform(3, 3), this.applyYTransform(2), this.applyZTransform(3, 3)))) {
 					this.chestGenerated = true;
-					this.placeChest(
-						world,
-						boundingBox,
-						random,
-						3,
-						2,
-						3,
-						WeightedRandomChestContent.combineLootTables(POSSIBLE_CHEST_CONTENT, Items.ENCHANTED_BOOK.getLootTable(random)),
-						2 + random.nextInt(2)
-					);
+					this.method_11852(world, boundingBox, random, 3, 2, 3, LootTables.STRONGHOLD_CORRIDOR_CHEST);
 				}
 
 				return true;
@@ -547,7 +525,7 @@ public class StrongholdPieces {
 
 		public EndPortalRoom(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -602,53 +580,54 @@ public class StrongholdPieces {
 				this.fillWithOutline(world, boundingBox, k, 3, 15, k, 4, 15, Blocks.IRON_BARS.getDefaultState(), Blocks.IRON_BARS.getDefaultState(), false);
 			}
 
-			int l = this.getData(Blocks.STONE_BRICK_STAIRS, 3);
+			BlockState blockState = Blocks.STONE_BRICK_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
 			this.fillRandomized(world, boundingBox, 4, 1, 5, 6, 1, 7, false, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 			this.fillRandomized(world, boundingBox, 4, 2, 6, 6, 2, 7, false, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 			this.fillRandomized(world, boundingBox, 4, 3, 7, 6, 3, 7, false, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 
-			for (int m = 4; m <= 6; m++) {
-				this.setBlockState(world, Blocks.STONE_BRICK_STAIRS.stateFromData(l), m, 1, 4, boundingBox);
-				this.setBlockState(world, Blocks.STONE_BRICK_STAIRS.stateFromData(l), m, 2, 5, boundingBox);
-				this.setBlockState(world, Blocks.STONE_BRICK_STAIRS.stateFromData(l), m, 3, 6, boundingBox);
+			for (int l = 4; l <= 6; l++) {
+				this.setBlockState(world, blockState, l, 1, 4, boundingBox);
+				this.setBlockState(world, blockState, l, 2, 5, boundingBox);
+				this.setBlockState(world, blockState, l, 3, 6, boundingBox);
 			}
 
-			int n = Direction.NORTH.getHorizontal();
-			int o = Direction.SOUTH.getHorizontal();
-			int p = Direction.EAST.getHorizontal();
-			int q = Direction.WEST.getHorizontal();
-			if (this.facing != null) {
-				switch (this.facing) {
-					case SOUTH:
-						n = Direction.SOUTH.getHorizontal();
-						o = Direction.NORTH.getHorizontal();
-						break;
-					case WEST:
-						n = Direction.WEST.getHorizontal();
-						o = Direction.EAST.getHorizontal();
-						p = Direction.SOUTH.getHorizontal();
-						q = Direction.NORTH.getHorizontal();
-						break;
-					case EAST:
-						n = Direction.EAST.getHorizontal();
-						o = Direction.WEST.getHorizontal();
-						p = Direction.SOUTH.getHorizontal();
-						q = Direction.NORTH.getHorizontal();
-				}
+			BlockState blockState2 = Blocks.END_PORTAL_FRAME.getDefaultState().with(EndPortalFrameBlock.FACING, Direction.NORTH);
+			BlockState blockState3 = Blocks.END_PORTAL_FRAME.getDefaultState().with(EndPortalFrameBlock.FACING, Direction.SOUTH);
+			BlockState blockState4 = Blocks.END_PORTAL_FRAME.getDefaultState().with(EndPortalFrameBlock.FACING, Direction.EAST);
+			BlockState blockState5 = Blocks.END_PORTAL_FRAME.getDefaultState().with(EndPortalFrameBlock.FACING, Direction.WEST);
+			boolean bl = true;
+			boolean[] bls = new boolean[12];
+
+			for (int m = 0; m < bls.length; m++) {
+				bls[m] = random.nextFloat() > 0.9F;
+				bl &= bls[m];
 			}
 
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(n).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 4, 3, 8, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(n).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 5, 3, 8, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(n).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 6, 3, 8, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(o).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 4, 3, 12, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(o).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 5, 3, 12, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(o).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 6, 3, 12, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(p).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 3, 3, 9, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(p).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 3, 3, 10, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(p).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 3, 3, 11, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(q).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 7, 3, 9, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(q).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 7, 3, 10, boundingBox);
-			this.setBlockState(world, Blocks.END_PORTAL_FRAME.stateFromData(q).with(EndPortalFrameBlock.EYE, random.nextFloat() > 0.9F), 7, 3, 11, boundingBox);
+			this.setBlockState(world, blockState2.with(EndPortalFrameBlock.EYE, bls[0]), 4, 3, 8, boundingBox);
+			this.setBlockState(world, blockState2.with(EndPortalFrameBlock.EYE, bls[1]), 5, 3, 8, boundingBox);
+			this.setBlockState(world, blockState2.with(EndPortalFrameBlock.EYE, bls[2]), 6, 3, 8, boundingBox);
+			this.setBlockState(world, blockState3.with(EndPortalFrameBlock.EYE, bls[3]), 4, 3, 12, boundingBox);
+			this.setBlockState(world, blockState3.with(EndPortalFrameBlock.EYE, bls[4]), 5, 3, 12, boundingBox);
+			this.setBlockState(world, blockState3.with(EndPortalFrameBlock.EYE, bls[5]), 6, 3, 12, boundingBox);
+			this.setBlockState(world, blockState4.with(EndPortalFrameBlock.EYE, bls[6]), 3, 3, 9, boundingBox);
+			this.setBlockState(world, blockState4.with(EndPortalFrameBlock.EYE, bls[7]), 3, 3, 10, boundingBox);
+			this.setBlockState(world, blockState4.with(EndPortalFrameBlock.EYE, bls[8]), 3, 3, 11, boundingBox);
+			this.setBlockState(world, blockState5.with(EndPortalFrameBlock.EYE, bls[9]), 7, 3, 9, boundingBox);
+			this.setBlockState(world, blockState5.with(EndPortalFrameBlock.EYE, bls[10]), 7, 3, 10, boundingBox);
+			this.setBlockState(world, blockState5.with(EndPortalFrameBlock.EYE, bls[11]), 7, 3, 11, boundingBox);
+			if (bl) {
+				BlockState blockState6 = Blocks.END_PORTAL.getDefaultState();
+				this.setBlockState(world, blockState6, 4, 3, 9, boundingBox);
+				this.setBlockState(world, blockState6, 5, 3, 9, boundingBox);
+				this.setBlockState(world, blockState6, 6, 3, 9, boundingBox);
+				this.setBlockState(world, blockState6, 4, 3, 10, boundingBox);
+				this.setBlockState(world, blockState6, 5, 3, 10, boundingBox);
+				this.setBlockState(world, blockState6, 6, 3, 10, boundingBox);
+				this.setBlockState(world, blockState6, 4, 3, 11, boundingBox);
+				this.setBlockState(world, blockState6, 5, 3, 11, boundingBox);
+				this.setBlockState(world, blockState6, 6, 3, 11, boundingBox);
+			}
+
 			if (!this.spawnerPlaced) {
 				i = this.applyYTransform(3);
 				BlockPos blockPos = new BlockPos(this.applyXTransform(5, 6), i, this.applyZTransform(5, 6));
@@ -677,7 +656,7 @@ public class StrongholdPieces {
 
 		public FiveWayCrossing(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 			this.lowerLeftExists = random.nextBoolean();
@@ -708,7 +687,8 @@ public class StrongholdPieces {
 		public void fillOpenings(StructurePiece start, List<StructurePiece> pieces, Random random) {
 			int i = 3;
 			int j = 5;
-			if (this.facing == Direction.WEST || this.facing == Direction.NORTH) {
+			Direction direction = this.method_11854();
+			if (direction == Direction.WEST || direction == Direction.NORTH) {
 				i = 8 - i;
 				j = 8 - j;
 			}
@@ -775,7 +755,7 @@ public class StrongholdPieces {
 				this.fillWithOutline(world, boundingBox, 4, 5, 7, 4, 5, 9, Blocks.STONE_SLAB.getDefaultState(), Blocks.STONE_SLAB.getDefaultState(), false);
 				this.fillWithOutline(world, boundingBox, 8, 5, 7, 8, 5, 9, Blocks.STONE_SLAB.getDefaultState(), Blocks.STONE_SLAB.getDefaultState(), false);
 				this.fillWithOutline(world, boundingBox, 5, 5, 7, 7, 5, 9, Blocks.DOUBLE_STONE_SLAB.getDefaultState(), Blocks.DOUBLE_STONE_SLAB.getDefaultState(), false);
-				this.setBlockState(world, Blocks.TORCH.getDefaultState(), 6, 5, 6, boundingBox);
+				this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.SOUTH), 6, 5, 6, boundingBox);
 				return true;
 			}
 		}
@@ -789,7 +769,7 @@ public class StrongholdPieces {
 
 		public FlexibleCorridor(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.length = direction != Direction.NORTH && direction != Direction.SOUTH ? blockBox.getBlockCountX() : blockBox.getBlockCountZ();
 		}
@@ -887,14 +867,15 @@ public class StrongholdPieces {
 
 		public LeftTurn(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 		}
 
 		@Override
 		public void fillOpenings(StructurePiece start, List<StructurePiece> pieces, Random random) {
-			if (this.facing != Direction.NORTH && this.facing != Direction.EAST) {
+			Direction direction = this.method_11854();
+			if (direction != Direction.NORTH && direction != Direction.EAST) {
 				this.fillSEOpening((StrongholdPieces.StartPiece)start, pieces, random, 1, 1);
 			} else {
 				this.fillNWOpening((StrongholdPieces.StartPiece)start, pieces, random, 1, 1);
@@ -915,7 +896,8 @@ public class StrongholdPieces {
 			} else {
 				this.fillRandomized(world, boundingBox, 0, 0, 0, 4, 4, 4, true, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 				this.generateEntrance(world, random, boundingBox, this.entryDoor, 1, 1, 0);
-				if (this.facing != Direction.NORTH && this.facing != Direction.EAST) {
+				Direction direction = this.method_11854();
+				if (direction != Direction.NORTH && direction != Direction.EAST) {
 					this.fillWithOutline(world, boundingBox, 4, 1, 1, 4, 3, 3, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 				} else {
 					this.fillWithOutline(world, boundingBox, 0, 1, 1, 0, 3, 3, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
@@ -927,14 +909,6 @@ public class StrongholdPieces {
 	}
 
 	public static class Library extends StrongholdPieces.AbstractPiece {
-		private static final List<WeightedRandomChestContent> POSSIBLE_CHEST_CONTENT = Lists.newArrayList(
-			new WeightedRandomChestContent[]{
-				new WeightedRandomChestContent(Items.BOOK, 0, 1, 3, 20),
-				new WeightedRandomChestContent(Items.PAPER, 0, 2, 7, 20),
-				new WeightedRandomChestContent(Items.MAP, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.COMPASS, 0, 1, 1, 1)
-			}
-		);
 		private boolean tall;
 
 		public Library() {
@@ -942,7 +916,7 @@ public class StrongholdPieces {
 
 		public Library(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 			this.tall = blockBox.getBlockCountY() > 6;
@@ -994,8 +968,8 @@ public class StrongholdPieces {
 					if ((l - 1) % 4 == 0) {
 						this.fillWithOutline(world, boundingBox, 1, 1, l, 1, 4, l, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
 						this.fillWithOutline(world, boundingBox, 12, 1, l, 12, 4, l, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
-						this.setBlockState(world, Blocks.TORCH.getDefaultState(), 2, 3, l, boundingBox);
-						this.setBlockState(world, Blocks.TORCH.getDefaultState(), 11, 3, l, boundingBox);
+						this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.EAST), 2, 3, l, boundingBox);
+						this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.WEST), 11, 3, l, boundingBox);
 						if (this.tall) {
 							this.fillWithOutline(world, boundingBox, 1, 6, l, 1, 9, l, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
 							this.fillWithOutline(world, boundingBox, 12, 6, l, 12, 9, l, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
@@ -1031,58 +1005,41 @@ public class StrongholdPieces {
 					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 9, 6, 11, boundingBox);
 					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 8, 6, 11, boundingBox);
 					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 9, 6, 10, boundingBox);
-					int n = this.getData(Blocks.LADDER, 3);
-					this.setBlockState(world, Blocks.LADDER.stateFromData(n), 10, 1, 13, boundingBox);
-					this.setBlockState(world, Blocks.LADDER.stateFromData(n), 10, 2, 13, boundingBox);
-					this.setBlockState(world, Blocks.LADDER.stateFromData(n), 10, 3, 13, boundingBox);
-					this.setBlockState(world, Blocks.LADDER.stateFromData(n), 10, 4, 13, boundingBox);
-					this.setBlockState(world, Blocks.LADDER.stateFromData(n), 10, 5, 13, boundingBox);
-					this.setBlockState(world, Blocks.LADDER.stateFromData(n), 10, 6, 13, boundingBox);
-					this.setBlockState(world, Blocks.LADDER.stateFromData(n), 10, 7, 13, boundingBox);
+					BlockState blockState = Blocks.LADDER.getDefaultState().with(LadderBlock.FACING, Direction.SOUTH);
+					this.setBlockState(world, blockState, 10, 1, 13, boundingBox);
+					this.setBlockState(world, blockState, 10, 2, 13, boundingBox);
+					this.setBlockState(world, blockState, 10, 3, 13, boundingBox);
+					this.setBlockState(world, blockState, 10, 4, 13, boundingBox);
+					this.setBlockState(world, blockState, 10, 5, 13, boundingBox);
+					this.setBlockState(world, blockState, 10, 6, 13, boundingBox);
+					this.setBlockState(world, blockState, 10, 7, 13, boundingBox);
+					int n = 7;
 					int o = 7;
-					int p = 7;
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o - 1, 9, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o, 9, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o - 1, 8, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o, 8, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o - 1, 7, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o, 7, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o - 2, 7, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o + 1, 7, p, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o - 1, 7, p - 1, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o - 1, 7, p + 1, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o, 7, p - 1, boundingBox);
-					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), o, 7, p + 1, boundingBox);
-					this.setBlockState(world, Blocks.TORCH.getDefaultState(), o - 2, 8, p, boundingBox);
-					this.setBlockState(world, Blocks.TORCH.getDefaultState(), o + 1, 8, p, boundingBox);
-					this.setBlockState(world, Blocks.TORCH.getDefaultState(), o - 1, 8, p - 1, boundingBox);
-					this.setBlockState(world, Blocks.TORCH.getDefaultState(), o - 1, 8, p + 1, boundingBox);
-					this.setBlockState(world, Blocks.TORCH.getDefaultState(), o, 8, p - 1, boundingBox);
-					this.setBlockState(world, Blocks.TORCH.getDefaultState(), o, 8, p + 1, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 9, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 9, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 8, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 8, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 7, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 7, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 2, 7, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n + 1, 7, o, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 7, o - 1, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n - 1, 7, o + 1, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 7, o - 1, boundingBox);
+					this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), n, 7, o + 1, boundingBox);
+					BlockState blockState2 = Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.UP);
+					this.setBlockState(world, blockState2, n - 2, 8, o, boundingBox);
+					this.setBlockState(world, blockState2, n + 1, 8, o, boundingBox);
+					this.setBlockState(world, blockState2, n - 1, 8, o - 1, boundingBox);
+					this.setBlockState(world, blockState2, n - 1, 8, o + 1, boundingBox);
+					this.setBlockState(world, blockState2, n, 8, o - 1, boundingBox);
+					this.setBlockState(world, blockState2, n, 8, o + 1, boundingBox);
 				}
 
-				this.placeChest(
-					world,
-					boundingBox,
-					random,
-					3,
-					3,
-					5,
-					WeightedRandomChestContent.combineLootTables(POSSIBLE_CHEST_CONTENT, Items.ENCHANTED_BOOK.getLootTable(random, 1, 5, 2)),
-					1 + random.nextInt(4)
-				);
+				this.method_11852(world, boundingBox, random, 3, 3, 5, LootTables.STRONGHOLD_LIBRARY_CHEST);
 				if (this.tall) {
 					this.setBlockState(world, Blocks.AIR.getDefaultState(), 12, 9, 1, boundingBox);
-					this.placeChest(
-						world,
-						boundingBox,
-						random,
-						12,
-						8,
-						1,
-						WeightedRandomChestContent.combineLootTables(POSSIBLE_CHEST_CONTENT, Items.ENCHANTED_BOOK.getLootTable(random, 1, 5, 2)),
-						1 + random.nextInt(4)
-					);
+					this.method_11852(world, boundingBox, random, 12, 8, 1, LootTables.STRONGHOLD_LIBRARY_CHEST);
 				}
 
 				return true;
@@ -1117,7 +1074,7 @@ public class StrongholdPieces {
 
 		public PrisonHall(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 		}
@@ -1150,10 +1107,12 @@ public class StrongholdPieces {
 				this.fillWithOutline(world, boundingBox, 5, 1, 5, 7, 3, 5, Blocks.IRON_BARS.getDefaultState(), Blocks.IRON_BARS.getDefaultState(), false);
 				this.setBlockState(world, Blocks.IRON_BARS.getDefaultState(), 4, 3, 2, boundingBox);
 				this.setBlockState(world, Blocks.IRON_BARS.getDefaultState(), 4, 3, 8, boundingBox);
-				this.setBlockState(world, Blocks.IRON_DOOR.stateFromData(this.getData(Blocks.IRON_DOOR, 3)), 4, 1, 2, boundingBox);
-				this.setBlockState(world, Blocks.IRON_DOOR.stateFromData(this.getData(Blocks.IRON_DOOR, 3) + 8), 4, 2, 2, boundingBox);
-				this.setBlockState(world, Blocks.IRON_DOOR.stateFromData(this.getData(Blocks.IRON_DOOR, 3)), 4, 1, 8, boundingBox);
-				this.setBlockState(world, Blocks.IRON_DOOR.stateFromData(this.getData(Blocks.IRON_DOOR, 3) + 8), 4, 2, 8, boundingBox);
+				BlockState blockState = Blocks.IRON_DOOR.getDefaultState().with(DoorBlock.FACING, Direction.WEST);
+				BlockState blockState2 = Blocks.IRON_DOOR.getDefaultState().with(DoorBlock.FACING, Direction.WEST).with(DoorBlock.HALF, DoorBlock.HalfType.UPPER);
+				this.setBlockState(world, blockState, 4, 1, 2, boundingBox);
+				this.setBlockState(world, blockState2, 4, 2, 2, boundingBox);
+				this.setBlockState(world, blockState, 4, 1, 8, boundingBox);
+				this.setBlockState(world, blockState2, 4, 2, 8, boundingBox);
 				return true;
 			}
 		}
@@ -1162,7 +1121,8 @@ public class StrongholdPieces {
 	public static class RightTurn extends StrongholdPieces.LeftTurn {
 		@Override
 		public void fillOpenings(StructurePiece start, List<StructurePiece> pieces, Random random) {
-			if (this.facing != Direction.NORTH && this.facing != Direction.EAST) {
+			Direction direction = this.method_11854();
+			if (direction != Direction.NORTH && direction != Direction.EAST) {
 				this.fillNWOpening((StrongholdPieces.StartPiece)start, pieces, random, 1, 1);
 			} else {
 				this.fillSEOpening((StrongholdPieces.StartPiece)start, pieces, random, 1, 1);
@@ -1176,7 +1136,8 @@ public class StrongholdPieces {
 			} else {
 				this.fillRandomized(world, boundingBox, 0, 0, 0, 4, 4, 4, true, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 				this.generateEntrance(world, random, boundingBox, this.entryDoor, 1, 1, 0);
-				if (this.facing != Direction.NORTH && this.facing != Direction.EAST) {
+				Direction direction = this.method_11854();
+				if (direction != Direction.NORTH && direction != Direction.EAST) {
 					this.fillWithOutline(world, boundingBox, 0, 1, 1, 0, 3, 3, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 				} else {
 					this.fillWithOutline(world, boundingBox, 4, 1, 1, 4, 3, 3, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
@@ -1196,22 +1157,19 @@ public class StrongholdPieces {
 		public SpiralStaircase(int i, Random random, int j, int k) {
 			super(i);
 			this.isStructureStart = true;
-			this.facing = Direction.DirectionType.HORIZONTAL.getRandomDirection(random);
+			this.method_11853(Direction.DirectionType.HORIZONTAL.getRandomDirection(random));
 			this.entryDoor = StrongholdPieces.AbstractPiece.EntranceType.OPENING;
-			switch (this.facing) {
-				case NORTH:
-				case SOUTH:
-					this.boundingBox = new BlockBox(j, 64, k, j + 5 - 1, 74, k + 5 - 1);
-					break;
-				default:
-					this.boundingBox = new BlockBox(j, 64, k, j + 5 - 1, 74, k + 5 - 1);
+			if (this.method_11854().getAxis() == Direction.Axis.Z) {
+				this.boundingBox = new BlockBox(j, 64, k, j + 5 - 1, 74, k + 5 - 1);
+			} else {
+				this.boundingBox = new BlockBox(j, 64, k, j + 5 - 1, 74, k + 5 - 1);
 			}
 		}
 
 		public SpiralStaircase(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
 			this.isStructureStart = false;
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 		}
@@ -1275,17 +1233,6 @@ public class StrongholdPieces {
 	}
 
 	public static class SquareRoom extends StrongholdPieces.AbstractPiece {
-		private static final List<WeightedRandomChestContent> POSSIBLE_CHEST_CONTENT = Lists.newArrayList(
-			new WeightedRandomChestContent[]{
-				new WeightedRandomChestContent(Items.IRON_INGOT, 0, 1, 5, 10),
-				new WeightedRandomChestContent(Items.GOLD_INGOT, 0, 1, 3, 5),
-				new WeightedRandomChestContent(Items.REDSTONE, 0, 4, 9, 5),
-				new WeightedRandomChestContent(Items.COAL, 0, 3, 8, 10),
-				new WeightedRandomChestContent(Items.BREAD, 0, 1, 3, 15),
-				new WeightedRandomChestContent(Items.APPLE, 0, 1, 3, 15),
-				new WeightedRandomChestContent(Items.IRON_PICKAXE, 0, 1, 1, 1)
-			}
-		);
 		protected int roomType;
 
 		public SquareRoom() {
@@ -1293,7 +1240,7 @@ public class StrongholdPieces {
 
 		public SquareRoom(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 			this.roomType = random.nextInt(5);
@@ -1340,10 +1287,10 @@ public class StrongholdPieces {
 						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 5, 1, 5, boundingBox);
 						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 5, 2, 5, boundingBox);
 						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 5, 3, 5, boundingBox);
-						this.setBlockState(world, Blocks.TORCH.getDefaultState(), 4, 3, 5, boundingBox);
-						this.setBlockState(world, Blocks.TORCH.getDefaultState(), 6, 3, 5, boundingBox);
-						this.setBlockState(world, Blocks.TORCH.getDefaultState(), 5, 3, 4, boundingBox);
-						this.setBlockState(world, Blocks.TORCH.getDefaultState(), 5, 3, 6, boundingBox);
+						this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.WEST), 4, 3, 5, boundingBox);
+						this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.EAST), 6, 3, 5, boundingBox);
+						this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.SOUTH), 5, 3, 4, boundingBox);
+						this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH), 5, 3, 6, boundingBox);
 						this.setBlockState(world, Blocks.STONE_SLAB.getDefaultState(), 4, 1, 4, boundingBox);
 						this.setBlockState(world, Blocks.STONE_SLAB.getDefaultState(), 4, 1, 5, boundingBox);
 						this.setBlockState(world, Blocks.STONE_SLAB.getDefaultState(), 4, 1, 6, boundingBox);
@@ -1408,19 +1355,11 @@ public class StrongholdPieces {
 							this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 8, 3, m, boundingBox);
 						}
 
-						this.setBlockState(world, Blocks.LADDER.stateFromData(this.getData(Blocks.LADDER, Direction.WEST.getId())), 9, 1, 3, boundingBox);
-						this.setBlockState(world, Blocks.LADDER.stateFromData(this.getData(Blocks.LADDER, Direction.WEST.getId())), 9, 2, 3, boundingBox);
-						this.setBlockState(world, Blocks.LADDER.stateFromData(this.getData(Blocks.LADDER, Direction.WEST.getId())), 9, 3, 3, boundingBox);
-						this.placeChest(
-							world,
-							boundingBox,
-							random,
-							3,
-							4,
-							8,
-							WeightedRandomChestContent.combineLootTables(POSSIBLE_CHEST_CONTENT, Items.ENCHANTED_BOOK.getLootTable(random)),
-							1 + random.nextInt(4)
-						);
+						BlockState blockState = Blocks.LADDER.getDefaultState().with(LadderBlock.FACING, Direction.WEST);
+						this.setBlockState(world, blockState, 9, 1, 3, boundingBox);
+						this.setBlockState(world, blockState, 9, 2, 3, boundingBox);
+						this.setBlockState(world, blockState, 9, 3, 3, boundingBox);
+						this.method_11852(world, boundingBox, random, 3, 4, 8, LootTables.STRONGHOLD_CROSSING_CHEST);
 				}
 
 				return true;
@@ -1455,7 +1394,7 @@ public class StrongholdPieces {
 
 		public StraightCorridor(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 			this.leftExitExists = random.nextInt(2) == 0;
@@ -1505,10 +1444,12 @@ public class StrongholdPieces {
 				this.fillRandomized(world, boundingBox, 0, 0, 0, 4, 4, 6, true, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 				this.generateEntrance(world, random, boundingBox, this.entryDoor, 1, 1, 0);
 				this.generateEntrance(world, random, boundingBox, StrongholdPieces.AbstractPiece.EntranceType.OPENING, 1, 1, 6);
-				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 1, 2, 1, Blocks.TORCH.getDefaultState());
-				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 3, 2, 1, Blocks.TORCH.getDefaultState());
-				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 1, 2, 5, Blocks.TORCH.getDefaultState());
-				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 3, 2, 5, Blocks.TORCH.getDefaultState());
+				BlockState blockState = Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.EAST);
+				BlockState blockState2 = Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.WEST);
+				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 1, 2, 1, blockState);
+				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 3, 2, 1, blockState2);
+				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 1, 2, 5, blockState);
+				this.addBlockWithRandomThreshold(world, boundingBox, random, 0.1F, 3, 2, 5, blockState2);
 				if (this.leftExitExists) {
 					this.fillWithOutline(world, boundingBox, 0, 1, 2, 0, 3, 4, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 				}
@@ -1528,7 +1469,7 @@ public class StrongholdPieces {
 
 		public StraightStairs(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.entryDoor = this.getEntranceType(random);
 			this.boundingBox = blockBox;
 		}
@@ -1553,16 +1494,16 @@ public class StrongholdPieces {
 				this.fillRandomized(world, boundingBox, 0, 0, 0, 4, 10, 7, true, random, StrongholdPieces.INFESTED_STONE_RANDOMIZER);
 				this.generateEntrance(world, random, boundingBox, this.entryDoor, 1, 7, 0);
 				this.generateEntrance(world, random, boundingBox, StrongholdPieces.AbstractPiece.EntranceType.OPENING, 1, 1, 7);
-				int i = this.getData(Blocks.STONE_STAIRS, 2);
+				BlockState blockState = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH);
 
-				for (int j = 0; j < 6; j++) {
-					this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 1, 6 - j, 1 + j, boundingBox);
-					this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 2, 6 - j, 1 + j, boundingBox);
-					this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 3, 6 - j, 1 + j, boundingBox);
-					if (j < 5) {
-						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 1, 5 - j, 1 + j, boundingBox);
-						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 2, 5 - j, 1 + j, boundingBox);
-						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 3, 5 - j, 1 + j, boundingBox);
+				for (int i = 0; i < 6; i++) {
+					this.setBlockState(world, blockState, 1, 6 - i, 1 + i, boundingBox);
+					this.setBlockState(world, blockState, 2, 6 - i, 1 + i, boundingBox);
+					this.setBlockState(world, blockState, 3, 6 - i, 1 + i, boundingBox);
+					if (i < 5) {
+						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 1, 5 - i, 1 + i, boundingBox);
+						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 2, 5 - i, 1 + i, boundingBox);
+						this.setBlockState(world, Blocks.STONE_BRICKS.getDefaultState(), 3, 5 - i, 1 + i, boundingBox);
 					}
 				}
 

@@ -16,14 +16,12 @@ public class TextureStitcher {
 	private int height;
 	private final int maxWidth;
 	private final int maxHeight;
-	private final boolean powerOf2;
 	private final int maxSize;
 
-	public TextureStitcher(int i, int j, boolean bl, int k, int l) {
+	public TextureStitcher(int i, int j, int k, int l) {
 		this.mipLevel = l;
 		this.maxWidth = i;
 		this.maxHeight = j;
-		this.powerOf2 = bl;
 		this.maxSize = k;
 	}
 
@@ -60,10 +58,8 @@ public class TextureStitcher {
 			}
 		}
 
-		if (this.powerOf2) {
-			this.width = MathHelper.smallestEncompassingPowerOfTwo(this.width);
-			this.height = MathHelper.smallestEncompassingPowerOfTwo(this.height);
-		}
+		this.width = MathHelper.smallestEncompassingPowerOfTwo(this.width);
+		this.height = MathHelper.smallestEncompassingPowerOfTwo(this.height);
 	}
 
 	public List<Sprite> getStitchedSprites() {
@@ -90,17 +86,22 @@ public class TextureStitcher {
 	}
 
 	private boolean fit(TextureStitcher.Holder holder) {
+		Sprite sprite = holder.getSprite();
+		boolean bl = sprite.getWidth() != sprite.getHeight();
+
 		for (int i = 0; i < this.slots.size(); i++) {
 			if (((TextureStitcher.Slot)this.slots.get(i)).add(holder)) {
 				return true;
 			}
 
-			holder.rotate();
-			if (((TextureStitcher.Slot)this.slots.get(i)).add(holder)) {
-				return true;
-			}
+			if (bl) {
+				holder.rotate();
+				if (((TextureStitcher.Slot)this.slots.get(i)).add(holder)) {
+					return true;
+				}
 
-			holder.rotate();
+				holder.rotate();
+			}
 		}
 
 		return this.growAndFit(holder);
@@ -108,42 +109,27 @@ public class TextureStitcher {
 
 	private boolean growAndFit(TextureStitcher.Holder holder) {
 		int i = Math.min(holder.getWidth(), holder.getHeight());
-		boolean bl = this.width == 0 && this.height == 0;
-		boolean bl6;
-		if (this.powerOf2) {
-			int j = MathHelper.smallestEncompassingPowerOfTwo(this.width);
-			int k = MathHelper.smallestEncompassingPowerOfTwo(this.height);
-			int l = MathHelper.smallestEncompassingPowerOfTwo(this.width + i);
-			int m = MathHelper.smallestEncompassingPowerOfTwo(this.height + i);
-			boolean bl2 = l <= this.maxWidth;
-			boolean bl3 = m <= this.maxHeight;
-			if (!bl2 && !bl3) {
-				return false;
-			}
-
-			boolean bl4 = j != l;
-			boolean bl5 = k != m;
-			if (bl4 ^ bl5) {
-				bl6 = !bl4;
-			} else {
-				bl6 = bl2 && j <= k;
-			}
-		} else {
-			boolean bl8 = this.width + i <= this.maxWidth;
-			boolean bl9 = this.height + i <= this.maxHeight;
-			if (!bl8 && !bl9) {
-				return false;
-			}
-
-			bl6 = bl8 && (bl || this.width <= this.height);
-		}
-
-		int n = Math.max(holder.getWidth(), holder.getHeight());
-		if (MathHelper.smallestEncompassingPowerOfTwo((bl6 ? this.height : this.width) + n) > (bl6 ? this.maxHeight : this.maxWidth)) {
+		int j = Math.max(holder.getWidth(), holder.getHeight());
+		int k = MathHelper.smallestEncompassingPowerOfTwo(this.width);
+		int l = MathHelper.smallestEncompassingPowerOfTwo(this.height);
+		int m = MathHelper.smallestEncompassingPowerOfTwo(this.width + i);
+		int n = MathHelper.smallestEncompassingPowerOfTwo(this.height + i);
+		boolean bl = m <= this.maxWidth;
+		boolean bl2 = n <= this.maxHeight;
+		if (!bl && !bl2) {
 			return false;
 		} else {
+			boolean bl3 = bl && k != m;
+			boolean bl4 = bl2 && l != n;
+			boolean bl5;
+			if (bl3 ^ bl4) {
+				bl5 = bl3;
+			} else {
+				bl5 = bl && k <= l;
+			}
+
 			TextureStitcher.Slot slot;
-			if (bl6) {
+			if (bl5) {
 				if (holder.getWidth() > holder.getHeight()) {
 					holder.rotate();
 				}

@@ -70,8 +70,8 @@ public class ServerEntry implements EntryListWidget.Entry {
 			});
 		}
 
-		boolean bl = this.serverInfo.protocolVersion > 47;
-		boolean bl2 = this.serverInfo.protocolVersion < 47;
+		boolean bl = this.serverInfo.protocolVersion > 110;
+		boolean bl2 = this.serverInfo.protocolVersion < 110;
 		boolean bl3 = bl || bl2;
 		this.client.textRenderer.draw(this.serverInfo.name, x + 32 + 3, y + 1, 16777215);
 		List<String> list = this.client.textRenderer.wrapLines(this.serverInfo.label, rowWidth - 32 - 2);

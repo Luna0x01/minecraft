@@ -1,7 +1,7 @@
 package net.minecraft.block;
 
-import com.google.common.base.Predicate;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -10,6 +10,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
@@ -17,28 +18,38 @@ import net.minecraft.world.World;
 
 public class StemBlock extends PlantBlock implements Growable {
 	public static final IntProperty AGE = IntProperty.of("age", 0, 7);
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", new Predicate<Direction>() {
-		public boolean apply(Direction direction) {
-			return direction != Direction.DOWN;
-		}
-	});
+	public static final DirectionProperty FACING = TorchBlock.FACING;
 	private final Block mainBlock;
+	protected static final Box[] field_12798 = new Box[]{
+		new Box(0.375, 0.0, 0.375, 0.625, 0.125, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 0.25, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 0.375, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 0.5, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 0.625, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 0.75, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 0.875, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 1.0, 0.625)
+	};
 
 	protected StemBlock(Block block) {
 		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, 0).with(FACING, Direction.UP));
 		this.mainBlock = block;
 		this.setTickRandomly(true);
-		float f = 0.125F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 0.25F, 0.5F + f);
 		this.setItemGroup(null);
 	}
 
 	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12798[state.get(AGE)];
+	}
+
+	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
+		int i = (Integer)state.get(AGE);
 		state = state.with(FACING, Direction.UP);
 
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			if (view.getBlockState(pos.offset(direction)).getBlock() == this.mainBlock) {
+			if (view.getBlockState(pos.offset(direction)).getBlock() == this.mainBlock && i == 7) {
 				state = state.with(FACING, direction);
 				break;
 			}
@@ -48,8 +59,8 @@ public class StemBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	protected boolean canPlantOnTop(Block block) {
-		return block == Blocks.FARMLAND;
+	protected boolean method_11579(BlockState blockState) {
+		return blockState.getBlock() == Blocks.FARMLAND;
 	}
 
 	@Override
@@ -85,37 +96,6 @@ public class StemBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public int getColor(BlockState state) {
-		if (state.getBlock() != this) {
-			return super.getColor(state);
-		} else {
-			int i = (Integer)state.get(AGE);
-			int j = i * 32;
-			int k = 255 - i * 8;
-			int l = i * 4;
-			return j << 16 | k << 8 | l;
-		}
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		return this.getColor(view.getBlockState(pos));
-	}
-
-	@Override
-	public void setBlockItemBounds() {
-		float f = 0.125F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 0.25F, 0.5F + f);
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.boundingBoxMaxY = (double)((float)((Integer)view.getBlockState(pos).get(AGE) * 2 + 2) / 16.0F);
-		float f = 0.125F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, (float)this.boundingBoxMaxY, 0.5F + f);
-	}
-
-	@Override
 	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
 		super.randomDropAsItem(world, pos, state, chance, id);
 		if (!world.isClient) {
@@ -132,6 +112,7 @@ public class StemBlock extends PlantBlock implements Growable {
 		}
 	}
 
+	@Nullable
 	protected Item getSeeds() {
 		if (this.mainBlock == Blocks.PUMPKIN) {
 			return Items.PUMPKIN_SEEDS;
@@ -140,15 +121,17 @@ public class StemBlock extends PlantBlock implements Growable {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return null;
 	}
 
+	@Nullable
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
 		Item item = this.getSeeds();
-		return item != null ? item : null;
+		return item == null ? null : new ItemStack(item);
 	}
 
 	@Override

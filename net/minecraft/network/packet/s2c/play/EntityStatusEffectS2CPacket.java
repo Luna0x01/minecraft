@@ -1,6 +1,7 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -18,7 +19,7 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 
 	public EntityStatusEffectS2CPacket(int i, StatusEffectInstance statusEffectInstance) {
 		this.entityId = i;
-		this.effectId = (byte)(statusEffectInstance.getEffectId() & 0xFF);
+		this.effectId = (byte)(StatusEffect.getIndex(statusEffectInstance.getStatusEffect()) & 0xFF);
 		this.amplifier = (byte)(statusEffectInstance.getAmplifier() & 0xFF);
 		if (statusEffectInstance.getDuration() > 32767) {
 			this.duration = 32767;
@@ -26,7 +27,14 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 			this.duration = statusEffectInstance.getDuration();
 		}
 
-		this.flags = (byte)(statusEffectInstance.shouldShowParticles() ? 1 : 0);
+		this.flags = 0;
+		if (statusEffectInstance.isAmbient()) {
+			this.flags = (byte)(this.flags | 1);
+		}
+
+		if (statusEffectInstance.shouldShowParticles()) {
+			this.flags = (byte)(this.flags | 2);
+		}
 	}
 
 	@Override
@@ -72,6 +80,10 @@ public class EntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListe
 	}
 
 	public boolean shouldShowParticles() {
-		return this.flags != 0;
+		return (this.flags & 2) == 2;
+	}
+
+	public boolean isAmbient() {
+		return (this.flags & 1) == 1;
 	}
 }

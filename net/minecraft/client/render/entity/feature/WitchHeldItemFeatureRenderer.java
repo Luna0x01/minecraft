@@ -20,7 +20,7 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 	}
 
 	public void render(WitchEntity witchEntity, float f, float g, float h, float i, float j, float k, float l) {
-		ItemStack itemStack = witchEntity.getStackInHand();
+		ItemStack itemStack = witchEntity.getMainHandStack();
 		if (itemStack != null) {
 			GlStateManager.color(1.0F, 1.0F, 1.0F);
 			GlStateManager.pushMatrix();
@@ -35,7 +35,7 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 			GlStateManager.translate(-0.0625F, 0.53125F, 0.21875F);
 			Item item = itemStack.getItem();
 			MinecraftClient minecraftClient = MinecraftClient.getInstance();
-			if (item instanceof BlockItem && minecraftClient.getBlockRenderManager().method_9948(Block.getBlockFromItem(item), itemStack.getData())) {
+			if (item instanceof BlockItem && minecraftClient.getBlockRenderManager().method_12345(Block.getBlockFromItem(item))) {
 				GlStateManager.translate(0.0F, 0.0625F, -0.25F);
 				GlStateManager.rotate(30.0F, 1.0F, 0.0F, 0.0F);
 				GlStateManager.rotate(-5.0F, 0.0F, 1.0F, 0.0F);
@@ -71,7 +71,7 @@ public class WitchHeldItemFeatureRenderer implements FeatureRenderer<WitchEntity
 
 			GlStateManager.rotate(-15.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.rotate(40.0F, 0.0F, 0.0F, 1.0F);
-			minecraftClient.getHeldItemRenderer().renderItem(witchEntity, itemStack, ModelTransformation.Mode.THIRD_PERSON);
+			minecraftClient.getHeldItemRenderer().renderItem(witchEntity, itemStack, ModelTransformation.Mode.THIRD_PERSON_RIGHT_HAND);
 			GlStateManager.popMatrix();
 		}
 	}

@@ -1,5 +1,6 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
@@ -16,6 +17,9 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -25,44 +29,46 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class ChestBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
-	public final int type;
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
+	protected static final Box field_12616 = new Box(0.0625, 0.0, 0.0, 0.9375, 0.875, 0.9375);
+	protected static final Box field_12617 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.875, 1.0);
+	protected static final Box field_12618 = new Box(0.0, 0.0, 0.0625, 0.9375, 0.875, 0.9375);
+	protected static final Box field_12619 = new Box(0.0625, 0.0, 0.0625, 1.0, 0.875, 0.9375);
+	protected static final Box field_12620 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.875, 0.9375);
+	public final ChestBlock.Type field_12621;
 
-	protected ChestBlock(int i) {
+	protected ChestBlock(ChestBlock.Type type) {
 		super(Material.WOOD);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
-		this.type = i;
-		this.setItemGroup(ItemGroup.DECORATIONS);
-		this.setBoundingBox(0.0625F, 0.0F, 0.0625F, 0.9375F, 0.875F, 0.9375F);
+		this.field_12621 = type;
+		this.setItemGroup(type == ChestBlock.Type.TRAP ? ItemGroup.REDSTONE : ItemGroup.DECORATIONS);
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public int getBlockType() {
-		return 2;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.ENTITYBLOCK_ANIMATED;
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		if (view.getBlockState(pos.north()).getBlock() == this) {
-			this.setBoundingBox(0.0625F, 0.0F, 0.0F, 0.9375F, 0.875F, 0.9375F);
+			return field_12616;
 		} else if (view.getBlockState(pos.south()).getBlock() == this) {
-			this.setBoundingBox(0.0625F, 0.0F, 0.0625F, 0.9375F, 0.875F, 1.0F);
+			return field_12617;
 		} else if (view.getBlockState(pos.west()).getBlock() == this) {
-			this.setBoundingBox(0.0F, 0.0F, 0.0625F, 0.9375F, 0.875F, 0.9375F);
-		} else if (view.getBlockState(pos.east()).getBlock() == this) {
-			this.setBoundingBox(0.0625F, 0.0F, 0.0625F, 1.0F, 0.875F, 0.9375F);
+			return field_12618;
 		} else {
-			this.setBoundingBox(0.0625F, 0.0F, 0.0625F, 0.9375F, 0.875F, 0.9375F);
+			return view.getBlockState(pos.east()).getBlock() == this ? field_12619 : field_12620;
 		}
 	}
 
@@ -135,20 +141,16 @@ public class ChestBlock extends BlockWithEntity {
 			BlockState blockState3 = world.getBlockState(pos.west());
 			BlockState blockState4 = world.getBlockState(pos.east());
 			Direction direction = state.get(FACING);
-			Block block = blockState.getBlock();
-			Block block2 = blockState2.getBlock();
-			Block block3 = blockState3.getBlock();
-			Block block4 = blockState4.getBlock();
-			if (block != this && block2 != this) {
-				boolean bl = block.isFullBlock();
-				boolean bl2 = block2.isFullBlock();
-				if (block3 == this || block4 == this) {
-					BlockPos blockPos2 = block3 == this ? pos.west() : pos.east();
+			if (blockState.getBlock() != this && blockState2.getBlock() != this) {
+				boolean bl = blockState.isFullBlock();
+				boolean bl2 = blockState2.isFullBlock();
+				if (blockState3.getBlock() == this || blockState4.getBlock() == this) {
+					BlockPos blockPos2 = blockState3.getBlock() == this ? pos.west() : pos.east();
 					BlockState blockState7 = world.getBlockState(blockPos2.north());
 					BlockState blockState8 = world.getBlockState(blockPos2.south());
 					direction = Direction.SOUTH;
 					Direction direction4;
-					if (block3 == this) {
+					if (blockState3.getBlock() == this) {
 						direction4 = blockState3.get(FACING);
 					} else {
 						direction4 = blockState4.get(FACING);
@@ -158,23 +160,21 @@ public class ChestBlock extends BlockWithEntity {
 						direction = Direction.NORTH;
 					}
 
-					Block block7 = blockState7.getBlock();
-					Block block8 = blockState8.getBlock();
-					if ((bl || block7.isFullBlock()) && !bl2 && !block8.isFullBlock()) {
+					if ((bl || blockState7.isFullBlock()) && !bl2 && !blockState8.isFullBlock()) {
 						direction = Direction.SOUTH;
 					}
 
-					if ((bl2 || block8.isFullBlock()) && !bl && !block7.isFullBlock()) {
+					if ((bl2 || blockState8.isFullBlock()) && !bl && !blockState7.isFullBlock()) {
 						direction = Direction.NORTH;
 					}
 				}
 			} else {
-				BlockPos blockPos = block == this ? pos.north() : pos.south();
+				BlockPos blockPos = blockState.getBlock() == this ? pos.north() : pos.south();
 				BlockState blockState5 = world.getBlockState(blockPos.west());
 				BlockState blockState6 = world.getBlockState(blockPos.east());
 				direction = Direction.EAST;
 				Direction direction2;
-				if (block == this) {
+				if (blockState.getBlock() == this) {
 					direction2 = blockState.get(FACING);
 				} else {
 					direction2 = blockState2.get(FACING);
@@ -184,13 +184,11 @@ public class ChestBlock extends BlockWithEntity {
 					direction = Direction.WEST;
 				}
 
-				Block block5 = blockState5.getBlock();
-				Block block6 = blockState6.getBlock();
-				if ((block3.isFullBlock() || block5.isFullBlock()) && !block4.isFullBlock() && !block6.isFullBlock()) {
+				if ((blockState3.isFullBlock() || blockState5.isFullBlock()) && !blockState4.isFullBlock() && !blockState6.isFullBlock()) {
 					direction = Direction.EAST;
 				}
 
-				if ((block4.isFullBlock() || block6.isFullBlock()) && !block3.isFullBlock() && !block5.isFullBlock()) {
+				if ((blockState4.isFullBlock() || blockState6.isFullBlock()) && !blockState3.isFullBlock() && !blockState5.isFullBlock()) {
 					direction = Direction.WEST;
 				}
 			}
@@ -210,7 +208,7 @@ public class ChestBlock extends BlockWithEntity {
 				return blockState;
 			}
 
-			if (blockState2.getBlock().isFullBlock()) {
+			if (blockState2.isFullBlock()) {
 				if (direction != null) {
 					direction = null;
 					break;
@@ -224,15 +222,15 @@ public class ChestBlock extends BlockWithEntity {
 			return blockState.with(FACING, direction.getOpposite());
 		} else {
 			Direction direction3 = blockState.get(FACING);
-			if (world.getBlockState(blockPos.offset(direction3)).getBlock().isFullBlock()) {
+			if (world.getBlockState(blockPos.offset(direction3)).isFullBlock()) {
 				direction3 = direction3.getOpposite();
 			}
 
-			if (world.getBlockState(blockPos.offset(direction3)).getBlock().isFullBlock()) {
+			if (world.getBlockState(blockPos.offset(direction3)).isFullBlock()) {
 				direction3 = direction3.rotateYClockwise();
 			}
 
-			if (world.getBlockState(blockPos.offset(direction3)).getBlock().isFullBlock()) {
+			if (world.getBlockState(blockPos.offset(direction3)).isFullBlock()) {
 				direction3 = direction3.getOpposite();
 			}
 
@@ -297,9 +295,9 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		super.neighborUpdate(world, pos, state, block);
-		BlockEntity blockEntity = world.getBlockEntity(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		super.method_8641(blockState, world, blockPos, block);
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (blockEntity instanceof ChestBlockEntity) {
 			blockEntity.resetBlock();
 		}
@@ -317,17 +315,28 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			LockableScreenHandlerFactory lockableScreenHandlerFactory = this.createScreenHandlerFactory(world, pos);
+			LockableScreenHandlerFactory lockableScreenHandlerFactory = this.method_11583(world, blockPos);
 			if (lockableScreenHandlerFactory != null) {
-				player.openInventory(lockableScreenHandlerFactory);
-				if (this.type == 0) {
-					player.incrementStat(Stats.CHEST_OPENED);
-				} else if (this.type == 1) {
-					player.incrementStat(Stats.TRAPPED_CHEST_TRIGGERED);
+				playerEntity.openInventory(lockableScreenHandlerFactory);
+				if (this.field_12621 == ChestBlock.Type.BASIC) {
+					playerEntity.incrementStat(Stats.CHEST_OPENED);
+				} else if (this.field_12621 == ChestBlock.Type.TRAP) {
+					playerEntity.incrementStat(Stats.TRAPPED_CHEST_TRIGGERED);
 				}
 			}
 
@@ -335,24 +344,30 @@ public class ChestBlock extends BlockWithEntity {
 		}
 	}
 
-	public LockableScreenHandlerFactory createScreenHandlerFactory(World world, BlockPos pos) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
+	@Nullable
+	public LockableScreenHandlerFactory method_11583(World world, BlockPos blockPos) {
+		return this.method_8702(world, blockPos, false);
+	}
+
+	@Nullable
+	public LockableScreenHandlerFactory method_8702(World world, BlockPos blockPos, boolean bl) {
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (!(blockEntity instanceof ChestBlockEntity)) {
 			return null;
 		} else {
 			LockableScreenHandlerFactory lockableScreenHandlerFactory = (ChestBlockEntity)blockEntity;
-			if (this.isChestBlocked(world, pos)) {
+			if (!bl && this.isChestBlocked(world, blockPos)) {
 				return null;
 			} else {
 				for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-					BlockPos blockPos = pos.offset(direction);
-					Block block = world.getBlockState(blockPos).getBlock();
+					BlockPos blockPos2 = blockPos.offset(direction);
+					Block block = world.getBlockState(blockPos2).getBlock();
 					if (block == this) {
-						if (this.isChestBlocked(world, blockPos)) {
+						if (this.isChestBlocked(world, blockPos2)) {
 							return null;
 						}
 
-						BlockEntity blockEntity2 = world.getBlockEntity(blockPos);
+						BlockEntity blockEntity2 = world.getBlockEntity(blockPos2);
 						if (blockEntity2 instanceof ChestBlockEntity) {
 							if (direction != Direction.WEST && direction != Direction.NORTH) {
 								lockableScreenHandlerFactory = new DoubleInventory("container.chestDouble", lockableScreenHandlerFactory, (ChestBlockEntity)blockEntity2);
@@ -374,17 +389,17 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
-		return this.type == 1;
+	public boolean emitsRedstonePower(BlockState state) {
+		return this.field_12621 == ChestBlock.Type.TRAP;
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
-		if (!this.emitsRedstonePower()) {
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		if (!state.emitsRedstonePower()) {
 			return 0;
 		} else {
 			int i = 0;
-			BlockEntity blockEntity = view.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof ChestBlockEntity) {
 				i = ((ChestBlockEntity)blockEntity).viewerCount;
 			}
@@ -394,8 +409,8 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
-		return facing == Direction.UP ? this.getWeakRedstonePower(view, pos, state, facing) : 0;
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return direction == Direction.UP ? state.getWeakRedstonePower(world, pos, direction) : 0;
 	}
 
 	private boolean isChestBlocked(World world, BlockPos pos) {
@@ -403,7 +418,7 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	private boolean isUnderSolidBlock(World world, BlockPos pos) {
-		return world.getBlockState(pos.up()).getBlock().isFullCube();
+		return world.getBlockState(pos.up()).method_11734();
 	}
 
 	private boolean hasCatOnTop(World world, BlockPos pos) {
@@ -421,13 +436,13 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
-		return ScreenHandler.calculateComparatorOutput(this.createScreenHandlerFactory(world, pos));
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+		return ScreenHandler.calculateComparatorOutput(this.method_11583(world, pos));
 	}
 
 	@Override
@@ -446,7 +461,22 @@ public class ChestBlock extends BlockWithEntity {
 	}
 
 	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
+	}
+
+	@Override
 	protected StateManager appendProperties() {
 		return new StateManager(this, FACING);
+	}
+
+	public static enum Type {
+		BASIC,
+		TRAP;
 	}
 }

@@ -1,28 +1,49 @@
 package net.minecraft.network.packet.s2c.play;
 
 import com.google.common.collect.Lists;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map.Entry;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
 public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int chunkX;
 	private int chunkZ;
-	private ChunkDataS2CPacket.ExtraData extraData;
+	private int field_13771;
+	private byte[] data;
+	private List<NbtCompound> blockEntities;
 	private boolean isFullChunk;
 
 	public ChunkDataS2CPacket() {
 	}
 
-	public ChunkDataS2CPacket(Chunk chunk, boolean bl, int i) {
+	public ChunkDataS2CPacket(Chunk chunk, int i) {
 		this.chunkX = chunk.chunkX;
 		this.chunkZ = chunk.chunkZ;
-		this.isFullChunk = bl;
-		this.extraData = createExtraData(chunk, bl, !chunk.getWorld().dimension.hasNoSkylight(), i);
+		this.isFullChunk = i == 65535;
+		boolean bl = !chunk.getWorld().dimension.hasNoSkylight();
+		this.data = new byte[this.getDataSize(chunk, bl, i)];
+		this.field_13771 = this.writeData(new PacketByteBuf(this.getWriteBuffer()), chunk, bl, i);
+		this.blockEntities = Lists.newArrayList();
+
+		for (Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
+			BlockPos blockPos = (BlockPos)entry.getKey();
+			BlockEntity blockEntity = (BlockEntity)entry.getValue();
+			int j = blockPos.getY() >> 4;
+			if (this.shouldLoad() || (i & 1 << j) != 0) {
+				NbtCompound nbtCompound = blockEntity.getUpdatePacketContent();
+				this.blockEntities.add(nbtCompound);
+			}
+		}
 	}
 
 	@Override
@@ -30,9 +51,20 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.chunkX = buf.readInt();
 		this.chunkZ = buf.readInt();
 		this.isFullChunk = buf.readBoolean();
-		this.extraData = new ChunkDataS2CPacket.ExtraData();
-		this.extraData.size = buf.readShort();
-		this.extraData.bytes = buf.readByteArray();
+		this.field_13771 = buf.readVarInt();
+		int i = buf.readVarInt();
+		if (i > 2097152) {
+			throw new RuntimeException("Chunk Packet trying to allocate too much memory on read.");
+		} else {
+			this.data = new byte[i];
+			buf.readBytes(this.data);
+			int j = buf.readVarInt();
+			this.blockEntities = Lists.newArrayList();
+
+			for (int k = 0; k < j; k++) {
+				this.blockEntities.add(buf.readNbtCompound());
+			}
+		}
 	}
 
 	@Override
@@ -40,71 +72,75 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeInt(this.chunkX);
 		buf.writeInt(this.chunkZ);
 		buf.writeBoolean(this.isFullChunk);
-		buf.writeShort((short)(this.extraData.size & 65535));
-		buf.writeByteArray(this.extraData.bytes);
+		buf.writeVarInt(this.field_13771);
+		buf.writeVarInt(this.data.length);
+		buf.writeBytes(this.data);
+		buf.writeVarInt(this.blockEntities.size());
+
+		for (NbtCompound nbtCompound : this.blockEntities) {
+			buf.writeNbtCompound(nbtCompound);
+		}
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onChunkData(this);
 	}
 
-	public byte[] method_7757() {
-		return this.extraData.bytes;
+	public PacketByteBuf getReadBuffer() {
+		return new PacketByteBuf(Unpooled.wrappedBuffer(this.data));
 	}
 
-	protected static int method_10659(int i, boolean bl, boolean bl2) {
-		int j = i * 2 * 16 * 16 * 16;
-		int k = i * 16 * 16 * 16 / 2;
-		int l = bl ? i * 16 * 16 * 16 / 2 : 0;
-		int m = bl2 ? 256 : 0;
-		return j + k + l + m;
+	private ByteBuf getWriteBuffer() {
+		ByteBuf byteBuf = Unpooled.wrappedBuffer(this.data);
+		byteBuf.writerIndex(0);
+		return byteBuf;
 	}
 
-	public static ChunkDataS2CPacket.ExtraData createExtraData(Chunk chunk, boolean load, boolean notNether, int i) {
+	public int writeData(PacketByteBuf buffer, Chunk chunk, boolean bl, int includedSectionsMask) {
+		int i = 0;
 		ChunkSection[] chunkSections = chunk.getBlockStorage();
-		ChunkDataS2CPacket.ExtraData extraData = new ChunkDataS2CPacket.ExtraData();
-		List<ChunkSection> list = Lists.newArrayList();
+		int j = 0;
 
-		for (int j = 0; j < chunkSections.length; j++) {
+		for (int k = chunkSections.length; j < k; j++) {
 			ChunkSection chunkSection = chunkSections[j];
-			if (chunkSection != null && (!load || !chunkSection.isEmpty()) && (i & 1 << j) != 0) {
-				extraData.size |= 1 << j;
-				list.add(chunkSection);
+			if (chunkSection != Chunk.EMPTY && (!this.shouldLoad() || !chunkSection.isEmpty()) && (includedSectionsMask & 1 << j) != 0) {
+				i |= 1 << j;
+				chunkSection.getBlockData().write(buffer);
+				buffer.writeBytes(chunkSection.getBlockLight().getValue());
+				if (bl) {
+					buffer.writeBytes(chunkSection.getSkyLight().getValue());
+				}
 			}
 		}
 
-		extraData.bytes = new byte[method_10659(Integer.bitCount(extraData.size), notNether, load)];
-		int k = 0;
-
-		for (ChunkSection chunkSection2 : list) {
-			char[] cs = chunkSection2.getBlockStates();
-
-			for (char c : cs) {
-				extraData.bytes[k++] = (byte)(c & 255);
-				extraData.bytes[k++] = (byte)(c >> '\b' & 0xFF);
-			}
+		if (this.shouldLoad()) {
+			buffer.writeBytes(chunk.getBiomeArray());
 		}
 
-		for (ChunkSection chunkSection3 : list) {
-			k = method_10661(chunkSection3.getBlockLight().getValue(), extraData.bytes, k);
-		}
-
-		if (notNether) {
-			for (ChunkSection chunkSection4 : list) {
-				k = method_10661(chunkSection4.getSkyLight().getValue(), extraData.bytes, k);
-			}
-		}
-
-		if (load) {
-			method_10661(chunk.getBiomeArray(), extraData.bytes, k);
-		}
-
-		return extraData;
+		return i;
 	}
 
-	private static int method_10661(byte[] bs, byte[] cs, int i) {
-		System.arraycopy(bs, 0, cs, i, bs.length);
-		return i + bs.length;
+	protected int getDataSize(Chunk chunk, boolean bl, int includedSectionsMark) {
+		int i = 0;
+		ChunkSection[] chunkSections = chunk.getBlockStorage();
+		int j = 0;
+
+		for (int k = chunkSections.length; j < k; j++) {
+			ChunkSection chunkSection = chunkSections[j];
+			if (chunkSection != Chunk.EMPTY && (!this.shouldLoad() || !chunkSection.isEmpty()) && (includedSectionsMark & 1 << j) != 0) {
+				i += chunkSection.getBlockData().packetSize();
+				i += chunkSection.getBlockLight().getValue().length;
+				if (bl) {
+					i += chunkSection.getSkyLight().getValue().length;
+				}
+			}
+		}
+
+		if (this.shouldLoad()) {
+			i += chunk.getBiomeArray().length;
+		}
+
+		return i;
 	}
 
 	public int getChunkX() {
@@ -116,15 +152,14 @@ public class ChunkDataS2CPacket implements Packet<ClientPlayPacketListener> {
 	}
 
 	public int method_7760() {
-		return this.extraData.size;
+		return this.field_13771;
 	}
 
 	public boolean shouldLoad() {
 		return this.isFullChunk;
 	}
 
-	public static class ExtraData {
-		public byte[] bytes;
-		public int size;
+	public List<NbtCompound> getBlockEntityTagList() {
+		return this.blockEntities;
 	}
 }

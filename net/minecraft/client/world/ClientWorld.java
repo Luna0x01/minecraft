@@ -3,36 +3,44 @@ package net.minecraft.client.world;
 import com.google.common.collect.Sets;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.material.Material;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.particle.FireworksSparkParticle;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.sound.MinecartMovingSoundInstance;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.Packet;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.text.LiteralText;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.EmptySaveHandler;
+import net.minecraft.world.LightType;
 import net.minecraft.world.TemporaryStateManager;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkProvider;
 import net.minecraft.world.chunk.ClientChunkProvider;
-import net.minecraft.world.dimension.Dimension;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.level.LevelInfo;
 import net.minecraft.world.level.LevelProperties;
 
@@ -43,9 +51,11 @@ public class ClientWorld extends World {
 	private final Set<Entity> entitiesForSpawn = Sets.newHashSet();
 	private final MinecraftClient client = MinecraftClient.getInstance();
 	private final Set<ChunkPos> previousChunkPos = Sets.newHashSet();
+	private int field_13407 = this.random.nextInt(12000);
+	protected Set<ChunkPos> field_13408 = Sets.newHashSet();
 
 	public ClientWorld(ClientPlayNetworkHandler clientPlayNetworkHandler, LevelInfo levelInfo, int i, Difficulty difficulty, Profiler profiler) {
-		super(new EmptySaveHandler(), new LevelProperties(levelInfo, "MpServer"), Dimension.getById(i), profiler, true);
+		super(new EmptySaveHandler(), new LevelProperties(levelInfo, "MpServer"), DimensionType.fromId(i).create(), profiler, true);
 		this.clientNetHandler = clientPlayNetworkHandler;
 		this.getLevelProperties().setDifficulty(difficulty);
 		this.setSpawnPos(new BlockPos(8, 64, 8));
@@ -91,16 +101,41 @@ public class ClientWorld extends World {
 	}
 
 	@Override
+	protected boolean isChunkLoaded(int chunkX, int chunkZ, boolean canBeEmpty) {
+		return canBeEmpty || !this.getChunkProvider().getOrGenerateChunks(chunkX, chunkZ).isEmpty();
+	}
+
+	protected void method_12237() {
+		this.field_13408.clear();
+		int i = this.client.options.viewDistance;
+		this.profiler.push("buildList");
+		int j = MathHelper.floor(this.client.player.x / 16.0);
+		int k = MathHelper.floor(this.client.player.z / 16.0);
+
+		for (int l = -i; l <= i; l++) {
+			for (int m = -i; m <= i; m++) {
+				this.field_13408.add(new ChunkPos(l + j, m + k));
+			}
+		}
+
+		this.profiler.pop();
+	}
+
+	@Override
 	protected void tickBlocks() {
-		super.tickBlocks();
-		this.previousChunkPos.retainAll(this.field_4530);
-		if (this.previousChunkPos.size() == this.field_4530.size()) {
+		this.method_12237();
+		if (this.field_13407 > 0) {
+			this.field_13407--;
+		}
+
+		this.previousChunkPos.retainAll(this.field_13408);
+		if (this.previousChunkPos.size() == this.field_13408.size()) {
 			this.previousChunkPos.clear();
 		}
 
 		int i = 0;
 
-		for (ChunkPos chunkPos : this.field_4530) {
+		for (ChunkPos chunkPos : this.field_13408) {
 			if (!this.previousChunkPos.contains(chunkPos)) {
 				int j = chunkPos.x * 16;
 				int k = chunkPos.z * 16;
@@ -121,9 +156,6 @@ public class ClientWorld extends World {
 			this.clientChunkCache.getOrGenerateChunk(x, z);
 		} else {
 			this.clientChunkCache.unloadChunk(x, z);
-		}
-
-		if (!load) {
 			this.onRenderRegionUpdate(x * 16, 0, z * 16, x * 16 + 15, 256, z * 16 + 15);
 		}
 	}
@@ -184,6 +216,7 @@ public class ClientWorld extends World {
 		this.idToEntity.set(id, entity);
 	}
 
+	@Nullable
 	@Override
 	public Entity getEntityById(int id) {
 		return (Entity)(id == this.client.player.getEntityId() ? this.client.player : super.getEntityById(id));
@@ -199,6 +232,7 @@ public class ClientWorld extends World {
 		return entity;
 	}
 
+	@Deprecated
 	public boolean setBlockStateWithoutNeighborUpdates(BlockPos pos, BlockState state) {
 		int i = pos.getX();
 		int j = pos.getY();
@@ -217,29 +251,55 @@ public class ClientWorld extends World {
 	}
 
 	@Override
-	protected int getNextMapId() {
-		return this.client.options.viewDistance;
+	protected void method_3605(int i, int j, Chunk chunk) {
+		super.method_3605(i, j, chunk);
+		if (this.field_13407 == 0) {
+			this.lcgBlockSeed = this.lcgBlockSeed * 3 + 1013904223;
+			int k = this.lcgBlockSeed >> 2;
+			int l = k & 15;
+			int m = k >> 8 & 15;
+			int n = k >> 16 & 0xFF;
+			BlockPos blockPos = new BlockPos(l + i, n, m + j);
+			BlockState blockState = chunk.getBlockState(blockPos);
+			l += i;
+			m += j;
+			if (blockState.getMaterial() == Material.AIR
+				&& this.getLightLevel(blockPos) <= this.random.nextInt(8)
+				&& this.getLightAtPos(LightType.SKY, blockPos) <= 0
+				&& this.client.player != null
+				&& this.client.player.squaredDistanceTo((double)l + 0.5, (double)n + 0.5, (double)m + 0.5) > 4.0) {
+				this.playSound(
+					(double)l + 0.5, (double)n + 0.5, (double)m + 0.5, Sounds.AMBIENT_CAVE, SoundCategory.AMBIENT, 0.7F, 0.8F + this.random.nextFloat() * 0.2F, false
+				);
+				this.field_13407 = this.random.nextInt(12000) + 6000;
+			}
+		}
 	}
 
 	public void spawnRandomParticles(int x, int y, int z) {
-		int i = 16;
+		int i = 32;
 		Random random = new Random();
-		ItemStack itemStack = this.client.player.getStackInHand();
+		ItemStack itemStack = this.client.player.getMainHandStack();
 		boolean bl = this.client.interactionManager.getCurrentGameMode() == LevelInfo.GameMode.CREATIVE
 			&& itemStack != null
 			&& Block.getBlockFromItem(itemStack.getItem()) == Blocks.BARRIER;
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-		for (int j = 0; j < 1000; j++) {
-			int k = x + this.random.nextInt(i) - this.random.nextInt(i);
-			int l = y + this.random.nextInt(i) - this.random.nextInt(i);
-			int m = z + this.random.nextInt(i) - this.random.nextInt(i);
-			mutable.setPosition(k, l, m);
-			BlockState blockState = this.getBlockState(mutable);
-			blockState.getBlock().randomDisplayTick(this, mutable, blockState, random);
-			if (bl && blockState.getBlock() == Blocks.BARRIER) {
-				this.addParticle(ParticleType.BARRIER, (double)((float)k + 0.5F), (double)((float)l + 0.5F), (double)((float)m + 0.5F), 0.0, 0.0, 0.0, new int[0]);
-			}
+		for (int j = 0; j < 667; j++) {
+			this.method_12238(x, y, z, 16, random, bl, mutable);
+			this.method_12238(x, y, z, 32, random, bl, mutable);
+		}
+	}
+
+	public void method_12238(int i, int j, int k, int l, Random random, boolean bl, BlockPos.Mutable mutable) {
+		int m = i + this.random.nextInt(l) - this.random.nextInt(l);
+		int n = j + this.random.nextInt(l) - this.random.nextInt(l);
+		int o = k + this.random.nextInt(l) - this.random.nextInt(l);
+		mutable.setPosition(m, n, o);
+		BlockState blockState = this.getBlockState(mutable);
+		blockState.getBlock().randomDisplayTick(blockState, this, mutable, random);
+		if (bl && blockState.getBlock() == Blocks.BARRIER) {
+			this.addParticle(ParticleType.BARRIER, (double)((float)m + 0.5F), (double)((float)n + 0.5F), (double)((float)o + 0.5F), 0.0, 0.0, 0.0, new int[0]);
 		}
 	}
 
@@ -263,13 +323,13 @@ public class ClientWorld extends World {
 
 		for (int m = 0; m < this.loadedEntities.size(); m++) {
 			Entity entity2 = (Entity)this.loadedEntities.get(m);
-			if (entity2.vehicle != null) {
-				if (!entity2.vehicle.removed && entity2.vehicle.rider == entity2) {
+			Entity entity3 = entity2.getVehicle();
+			if (entity3 != null) {
+				if (!entity3.removed && entity3.hasPassenger(entity2)) {
 					continue;
 				}
 
-				entity2.vehicle.rider = null;
-				entity2.vehicle = null;
+				entity2.stopRiding();
 			}
 
 			if (entity2.removed) {
@@ -288,22 +348,22 @@ public class ClientWorld extends World {
 	@Override
 	public CrashReportSection addToCrashReport(CrashReport report) {
 		CrashReportSection crashReportSection = super.addToCrashReport(report);
-		crashReportSection.add("Forced entities", new Callable<String>() {
+		crashReportSection.add("Forced entities", new CrashCallable<String>() {
 			public String call() {
 				return ClientWorld.this.world.size() + " total; " + ClientWorld.this.world.toString();
 			}
 		});
-		crashReportSection.add("Retry entities", new Callable<String>() {
+		crashReportSection.add("Retry entities", new CrashCallable<String>() {
 			public String call() {
 				return ClientWorld.this.entitiesForSpawn.size() + " total; " + ClientWorld.this.entitiesForSpawn.toString();
 			}
 		});
-		crashReportSection.add("Server brand", new Callable<String>() {
+		crashReportSection.add("Server brand", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return ClientWorld.this.client.player.getServerBrand();
 			}
 		});
-		crashReportSection.add("Server type", new Callable<String>() {
+		crashReportSection.add("Server type", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return ClientWorld.this.client.getServer() == null ? "Non-integrated multiplayer server" : "Integrated singleplayer server";
 			}
@@ -311,27 +371,39 @@ public class ClientWorld extends World {
 		return crashReportSection;
 	}
 
-	public void playSound(BlockPos pos, String sound, float volume, float pitch, boolean useDistance) {
-		this.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, sound, volume, pitch, useDistance);
+	@Override
+	public void playSound(@Nullable PlayerEntity playerEntity, double d, double e, double f, Sound sound, SoundCategory soundCategory, float g, float h) {
+		if (playerEntity == this.client.player) {
+			this.playSound(d, e, f, sound, soundCategory, g, h, false);
+		}
+	}
+
+	public void method_9669(BlockPos blockPos, Sound sound, SoundCategory soundCategory, float f, float g, boolean bl) {
+		this.playSound((double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.5, (double)blockPos.getZ() + 0.5, sound, soundCategory, f, g, bl);
 	}
 
 	@Override
-	public void playSound(double x, double y, double z, String sound, float volume, float pitch, boolean useDistance) {
-		double d = this.client.getCameraEntity().squaredDistanceTo(x, y, z);
-		PositionedSoundInstance positionedSoundInstance = new PositionedSoundInstance(new Identifier(sound), volume, pitch, (float)x, (float)y, (float)z);
-		if (useDistance && d > 100.0) {
-			double e = Math.sqrt(d) / 40.0;
-			this.client.getSoundManager().play(positionedSoundInstance, (int)(e * 20.0));
+	public void playSound(double d, double e, double f, Sound sound, SoundCategory soundCategory, float g, float h, boolean bl) {
+		double i = this.client.getCameraEntity().squaredDistanceTo(d, e, f);
+		PositionedSoundInstance positionedSoundInstance = new PositionedSoundInstance(sound, soundCategory, g, h, (float)d, (float)e, (float)f);
+		if (bl && i > 100.0) {
+			double j = Math.sqrt(i) / 40.0;
+			this.client.getSoundManager().play(positionedSoundInstance, (int)(j * 20.0));
 		} else {
 			this.client.getSoundManager().play(positionedSoundInstance);
 		}
 	}
 
 	@Override
-	public void addFireworkParticle(double x, double y, double z, double velocityX, double velocityY, double velocityZ, NbtCompound nbt) {
+	public void addFireworkParticle(double x, double y, double z, double velocityX, double velocityY, double velocityZ, @Nullable NbtCompound nbt) {
 		this.client
 			.particleManager
-			.addParticle(new FireworksSparkParticle.FireworkParticle(this, x, y, z, velocityX, velocityY, velocityZ, this.client.particleManager, nbt));
+			.method_12256(new FireworksSparkParticle.FireworkParticle(this, x, y, z, velocityX, velocityY, velocityZ, this.client.particleManager, nbt));
+	}
+
+	@Override
+	public void method_11483(Packet<?> packet) {
+		this.clientNetHandler.sendPacket(packet);
 	}
 
 	public void setScoreboard(Scoreboard sb) {
@@ -348,5 +420,9 @@ public class ClientWorld extends World {
 		}
 
 		super.setTimeOfDay(time);
+	}
+
+	public ClientChunkProvider getChunkProvider() {
+		return (ClientChunkProvider)super.getChunkProvider();
 	}
 }

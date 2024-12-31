@@ -2,20 +2,22 @@ package net.minecraft.block;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public abstract class AbstractRailBlock extends Block {
+	protected static final Box field_12566 = new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0);
+	protected static final Box field_12567 = new Box(0.0, 0.0, 0.0, 1.0, 0.15625, 1.0);
 	protected final boolean forbidCurves;
 
 	public static boolean isRail(World world, BlockPos pos) {
@@ -30,45 +32,34 @@ public abstract class AbstractRailBlock extends Block {
 	protected AbstractRailBlock(boolean bl) {
 		super(Material.DECORATION);
 		this.forbidCurves = bl;
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.125F, 1.0F);
 		this.setItemGroup(ItemGroup.TRANSPORTATION);
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public BlockHitResult rayTrace(World world, BlockPos pos, Vec3d start, Vec3d end) {
-		this.setBoundingBox(world, pos);
-		return super.rayTrace(world, pos, start, end);
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		AbstractRailBlock.RailShapeType railShapeType = state.getBlock() == this ? state.get(this.getShapeProperty()) : null;
+		return railShapeType != null && railShapeType.isAscending() ? field_12567 : field_12566;
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
-		AbstractRailBlock.RailShapeType railShapeType = blockState.getBlock() == this ? blockState.get(this.getShapeProperty()) : null;
-		if (railShapeType != null && railShapeType.isAscending()) {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.625F, 1.0F);
-		} else {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.125F, 1.0F);
-		}
-	}
-
-	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return World.isOpaque(world, pos.down());
+		return world.getBlockState(pos.down()).method_11739();
 	}
 
 	@Override
@@ -76,40 +67,40 @@ public abstract class AbstractRailBlock extends Block {
 		if (!world.isClient) {
 			state = this.updateBlockState(world, pos, state, true);
 			if (this.forbidCurves) {
-				this.neighborUpdate(world, pos, state, this);
+				state.method_11707(world, pos, this);
 			}
 		}
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
 		if (!world.isClient) {
-			AbstractRailBlock.RailShapeType railShapeType = state.get(this.getShapeProperty());
+			AbstractRailBlock.RailShapeType railShapeType = blockState.get(this.getShapeProperty());
 			boolean bl = false;
-			if (!World.isOpaque(world, pos.down())) {
+			if (!world.getBlockState(blockPos.down()).method_11739()) {
 				bl = true;
 			}
 
-			if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_EAST && !World.isOpaque(world, pos.east())) {
+			if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_EAST && !world.getBlockState(blockPos.east()).method_11739()) {
 				bl = true;
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_WEST && !World.isOpaque(world, pos.west())) {
+			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_WEST && !world.getBlockState(blockPos.west()).method_11739()) {
 				bl = true;
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_NORTH && !World.isOpaque(world, pos.north())) {
+			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_NORTH && !world.getBlockState(blockPos.north()).method_11739()) {
 				bl = true;
-			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_SOUTH && !World.isOpaque(world, pos.south())) {
+			} else if (railShapeType == AbstractRailBlock.RailShapeType.ASCENDING_SOUTH && !world.getBlockState(blockPos.south()).method_11739()) {
 				bl = true;
 			}
 
-			if (bl) {
-				this.dropAsItem(world, pos, state, 0);
-				world.setAir(pos);
+			if (bl && !world.isAir(blockPos)) {
+				this.dropAsItem(world, blockPos, blockState, 0);
+				world.setAir(blockPos);
 			} else {
-				this.updateBlockState(world, pos, state, block);
+				this.updateBlockState(blockState, world, blockPos, block);
 			}
 		}
 	}
 
-	protected void updateBlockState(World world, BlockPos pos, BlockState state, Block block) {
+	protected void updateBlockState(BlockState state, World world, BlockPos pos, Block neighbor) {
 	}
 
 	protected BlockState updateBlockState(World world, BlockPos pos, BlockState state, boolean forceUpdate) {
@@ -119,8 +110,8 @@ public abstract class AbstractRailBlock extends Block {
 	}
 
 	@Override
-	public int getPistonInteractionType() {
-		return 0;
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.NORMAL;
 	}
 
 	@Override
@@ -156,9 +147,13 @@ public abstract class AbstractRailBlock extends Block {
 			this.pos = blockPos;
 			this.state = blockState;
 			this.block = (AbstractRailBlock)blockState.getBlock();
-			AbstractRailBlock.RailShapeType railShapeType = blockState.get(AbstractRailBlock.this.getShapeProperty());
+			AbstractRailBlock.RailShapeType railShapeType = blockState.get(this.block.getShapeProperty());
 			this.allowSlopes = this.block.forbidCurves;
 			this.computeNeighbors(railShapeType);
+		}
+
+		public List<BlockPos> method_11551() {
+			return this.neighbors;
 		}
 
 		private void computeNeighbors(AbstractRailBlock.RailShapeType shape) {
@@ -221,6 +216,7 @@ public abstract class AbstractRailBlock extends Block {
 			return AbstractRailBlock.isRail(this.world, pos) || AbstractRailBlock.isRail(this.world, pos.up()) || AbstractRailBlock.isRail(this.world, pos.down());
 		}
 
+		@Nullable
 		private AbstractRailBlock.RailPlacementHelper getVerticalHelper(BlockPos pos) {
 			BlockState blockState = this.world.getBlockState(pos);
 			if (AbstractRailBlock.isRail(blockState)) {

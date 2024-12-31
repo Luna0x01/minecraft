@@ -1,10 +1,13 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -27,10 +30,10 @@ public class IceBlock extends TransparentBlock {
 	}
 
 	@Override
-	public void harvest(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be) {
-		player.incrementStat(Stats.BLOCK_STATS[Block.getIdByBlock(this)]);
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+		player.incrementStat(Stats.mined(this));
 		player.addExhaustion(0.025F);
-		if (this.requiresSilkTouch() && EnchantmentHelper.hasSilkTouch(player)) {
+		if (this.requiresSilkTouch() && EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, stack) > 0) {
 			ItemStack itemStack = this.createStackFromBlock(state);
 			if (itemStack != null) {
 				onBlockBreak(world, pos, itemStack);
@@ -41,9 +44,9 @@ public class IceBlock extends TransparentBlock {
 				return;
 			}
 
-			int i = EnchantmentHelper.getFortune(player);
+			int i = EnchantmentHelper.getLevel(Enchantments.FORTUNE, stack);
 			this.dropAsItem(world, pos, state, i);
-			Material material = world.getBlockState(pos.down()).getBlock().getMaterial();
+			Material material = world.getBlockState(pos.down()).getMaterial();
 			if (material.blocksMovement() || material.isFluid()) {
 				world.setBlockState(pos, Blocks.FLOWING_WATER.getDefaultState());
 			}
@@ -57,18 +60,23 @@ public class IceBlock extends TransparentBlock {
 
 	@Override
 	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (world.getLightAtPos(LightType.BLOCK, pos) > 11 - this.getOpacity()) {
-			if (world.dimension.doesWaterVaporize()) {
-				world.setAir(pos);
-			} else {
-				this.dropAsItem(world, pos, world.getBlockState(pos), 0);
-				world.setBlockState(pos, Blocks.WATER.getDefaultState());
-			}
+		if (world.getLightAtPos(LightType.BLOCK, pos) > 11 - this.getDefaultState().getOpacity()) {
+			this.method_11617(world, pos);
+		}
+	}
+
+	protected void method_11617(World world, BlockPos blockPos) {
+		if (world.dimension.doesWaterVaporize()) {
+			world.setAir(blockPos);
+		} else {
+			this.dropAsItem(world, blockPos, world.getBlockState(blockPos), 0);
+			world.setBlockState(blockPos, Blocks.WATER.getDefaultState());
+			world.neighbourUpdate(blockPos, Blocks.WATER);
 		}
 	}
 
 	@Override
-	public int getPistonInteractionType() {
-		return 0;
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.NORMAL;
 	}
 }

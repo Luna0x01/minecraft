@@ -354,8 +354,8 @@ public class AchievementsScreen extends Screen implements StatsListener {
 
 				GlStateManager.enableLighting();
 				GlStateManager.enableCull();
-				this.itemRenderer.renderInGuiWithOverrides(achievement3.logo, ak + 3, al + 3);
-				GlStateManager.blendFunc(770, 771);
+				this.itemRenderer.method_12461(achievement3.logo, ak + 3, al + 3);
+				GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 				GlStateManager.disableLighting();
 				if (!this.handler.hasParentAchievement(achievement3)) {
 					this.itemRenderer.setRenderingAchievement(true);

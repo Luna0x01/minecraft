@@ -1,13 +1,13 @@
 package net.minecraft.client.sound;
 
 import net.minecraft.entity.mob.GuardianEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.Sounds;
 
 public class GuardianAttackSoundInstance extends MovingSoundInstance {
 	private final GuardianEntity field_11342;
 
 	public GuardianAttackSoundInstance(GuardianEntity guardianEntity) {
-		super(new Identifier("minecraft:mob.guardian.attack"));
+		super(Sounds.ENTITY_GUARDIAN_ATTACK, SoundCategory.HOSTILE);
 		this.field_11342 = guardianEntity;
 		this.attenuationType = SoundInstance.AttenuationType.NONE;
 		this.repeat = true;

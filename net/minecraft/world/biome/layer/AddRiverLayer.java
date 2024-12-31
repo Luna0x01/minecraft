@@ -2,6 +2,7 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.collection.IntArrayCache;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class AddRiverLayer extends Layer {
 	public AddRiverLayer(long l, Layer layer) {
@@ -28,7 +29,7 @@ public class AddRiverLayer extends Layer {
 				if (w == s && w == u && w == t && w == v) {
 					js[r + q * k] = -1;
 				} else {
-					js[r + q * k] = Biome.RIVER.id;
+					js[r + q * k] = Biome.getBiomeIndex(Biomes.RIVER);
 				}
 			}
 		}

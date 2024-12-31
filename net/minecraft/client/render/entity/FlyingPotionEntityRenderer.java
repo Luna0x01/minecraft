@@ -11,6 +11,6 @@ public class FlyingPotionEntityRenderer extends FlyingItemEntityRenderer<PotionE
 	}
 
 	public ItemStack createStack(PotionEntity potionEntity) {
-		return new ItemStack(this.item, 1, potionEntity.method_3237());
+		return potionEntity.getItem();
 	}
 }

@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity.feature;
 
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.BiPedModel;
+import net.minecraft.entity.EquipmentSlot;
 
 public class ArmorRenderer extends ArmorFeatureRenderer<BiPedModel> {
 	public ArmorRenderer(LivingEntityRenderer<?> livingEntityRenderer) {
@@ -14,26 +15,26 @@ public class ArmorRenderer extends ArmorFeatureRenderer<BiPedModel> {
 		this.firstLayer = new BiPedModel(1.0F);
 	}
 
-	protected void setVisible(BiPedModel biPedModel, int i) {
+	protected void method_10277(BiPedModel biPedModel, EquipmentSlot equipmentSlot) {
 		this.setVisible(biPedModel);
-		switch (i) {
-			case 1:
-				biPedModel.rightLeg.visible = true;
-				biPedModel.leftLeg.visible = true;
+		switch (equipmentSlot) {
+			case HEAD:
+				biPedModel.head.visible = true;
+				biPedModel.hat.visible = true;
 				break;
-			case 2:
-				biPedModel.body.visible = true;
-				biPedModel.rightLeg.visible = true;
-				biPedModel.leftLeg.visible = true;
-				break;
-			case 3:
+			case CHEST:
 				biPedModel.body.visible = true;
 				biPedModel.rightArm.visible = true;
 				biPedModel.leftArm.visible = true;
 				break;
-			case 4:
-				biPedModel.head.visible = true;
-				biPedModel.hat.visible = true;
+			case LEGS:
+				biPedModel.body.visible = true;
+				biPedModel.rightLeg.visible = true;
+				biPedModel.leftLeg.visible = true;
+				break;
+			case FEET:
+				biPedModel.rightLeg.visible = true;
+				biPedModel.leftLeg.visible = true;
 		}
 	}
 

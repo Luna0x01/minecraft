@@ -3,22 +3,24 @@ package net.minecraft.entity.mob;
 import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.BreakDoorGoal;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.MoveThroughVillageGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
+import net.minecraft.entity.ai.goal.class_2974;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.ClampedEntityAttribute;
@@ -26,17 +28,25 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.predicate.EntityPredicate;
-import net.minecraft.item.Item;
+import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
@@ -48,6 +58,10 @@ public class ZombieEntity extends HostileEntity {
 		.setName("Spawn Reinforcements Chance");
 	private static final UUID BABY_SPEED_ID = UUID.fromString("B9766B59-9566-4402-BC1F-2EE2A276D836");
 	private static final AttributeModifier BABY_SPEED_BOOST_MODIFIER = new AttributeModifier(BABY_SPEED_ID, "Baby speed boost", 0.5, 1);
+	private static final TrackedData<Boolean> field_14785 = DataTracker.registerData(ZombieEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Integer> field_14786 = DataTracker.registerData(ZombieEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Boolean> field_14787 = DataTracker.registerData(ZombieEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Boolean> field_14788 = DataTracker.registerData(ZombieEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private final BreakDoorGoal breakDoorsGoal = new BreakDoorGoal(this);
 	private int ticksUntilConversion;
 	private boolean canBreakDoors = false;
@@ -56,25 +70,26 @@ public class ZombieEntity extends HostileEntity {
 
 	public ZombieEntity(World world) {
 		super(world);
-		((MobNavigation)this.getNavigation()).setCanPathThroughDoors(true);
+		this.setBounds(0.6F, 1.95F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(0, new SwimGoal(this));
-		this.goals.add(2, new MeleeAttackGoal(this, PlayerEntity.class, 1.0, false));
+		this.goals.add(2, new class_2974(this, 1.0, false));
 		this.goals.add(5, new GoToWalkTargetGoal(this, 1.0));
 		this.goals.add(7, new WanderAroundGoal(this, 1.0));
 		this.goals.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(8, new LookAroundGoal(this));
 		this.initCustomGoals();
-		this.setBounds(0.6F, 1.95F);
 	}
 
 	protected void initCustomGoals() {
-		this.goals.add(4, new MeleeAttackGoal(this, VillagerEntity.class, 1.0, true));
-		this.goals.add(4, new MeleeAttackGoal(this, IronGolemEntity.class, 1.0, true));
 		this.goals.add(6, new MoveThroughVillageGoal(this, 1.0, false));
 		this.attackGoals.add(1, new RevengeGoal(this, true, ZombiePigmanEntity.class));
 		this.attackGoals.add(2, new FollowTargetGoal(this, PlayerEntity.class, true));
-		this.attackGoals.add(2, new FollowTargetGoal(this, VillagerEntity.class, false));
-		this.attackGoals.add(2, new FollowTargetGoal(this, IronGolemEntity.class, true));
+		this.attackGoals.add(3, new FollowTargetGoal(this, VillagerEntity.class, false));
+		this.attackGoals.add(3, new FollowTargetGoal(this, IronGolemEntity.class, true));
 	}
 
 	@Override
@@ -83,25 +98,25 @@ public class ZombieEntity extends HostileEntity {
 		this.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE).setBaseValue(35.0);
 		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.23F);
 		this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(3.0);
+		this.initializeAttribute(EntityAttributes.GENERIC_ARMOR).setBaseValue(2.0);
 		this.getAttributeContainer().register(REINFORCEMENTS_ATTRIBUTE).setBaseValue(this.random.nextDouble() * 0.1F);
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.getDataTracker().track(12, (byte)0);
-		this.getDataTracker().track(13, (byte)0);
-		this.getDataTracker().track(14, (byte)0);
+		this.getDataTracker().startTracking(field_14785, false);
+		this.getDataTracker().startTracking(field_14786, 0);
+		this.getDataTracker().startTracking(field_14787, false);
+		this.getDataTracker().startTracking(field_14788, false);
 	}
 
-	@Override
-	public int getArmorProtectionValue() {
-		int i = super.getArmorProtectionValue() + 2;
-		if (i > 20) {
-			i = 20;
-		}
+	public void method_13246(boolean bl) {
+		this.getDataTracker().set(field_14788, bl);
+	}
 
-		return i;
+	public boolean method_13247() {
+		return this.getDataTracker().get(field_14788);
 	}
 
 	public boolean canBreakDoors() {
@@ -111,6 +126,7 @@ public class ZombieEntity extends HostileEntity {
 	public void setCanBreakDoors(boolean canBreakDoors) {
 		if (this.canBreakDoors != canBreakDoors) {
 			this.canBreakDoors = canBreakDoors;
+			((MobNavigation)this.getNavigation()).setCanPathThroughDoors(canBreakDoors);
 			if (canBreakDoors) {
 				this.goals.add(1, this.breakDoorsGoal);
 			} else {
@@ -121,7 +137,7 @@ public class ZombieEntity extends HostileEntity {
 
 	@Override
 	public boolean isBaby() {
-		return this.getDataTracker().getByte(12) == 1;
+		return this.getDataTracker().get(field_14785);
 	}
 
 	@Override
@@ -134,7 +150,7 @@ public class ZombieEntity extends HostileEntity {
 	}
 
 	public void setBaby(boolean baby) {
-		this.getDataTracker().setProperty(12, (byte)(baby ? 1 : 0));
+		this.getDataTracker().set(field_14785, baby);
 		if (this.world != null && !this.world.isClient) {
 			EntityAttributeInstance entityAttributeInstance = this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED);
 			entityAttributeInstance.method_6193(BABY_SPEED_BOOST_MODIFIER);
@@ -147,27 +163,46 @@ public class ZombieEntity extends HostileEntity {
 	}
 
 	public boolean isVillager() {
-		return this.getDataTracker().getByte(13) == 1;
+		return this.getDataTracker().get(field_14786) > 0;
 	}
 
-	public void setVillager(boolean bl) {
-		this.getDataTracker().setProperty(13, (byte)(bl ? 1 : 0));
+	public int method_13248() {
+		return this.getDataTracker().get(field_14786) - 1;
+	}
+
+	public void method_13245(int i) {
+		this.getDataTracker().set(field_14786, i + 1);
+	}
+
+	public void method_13249() {
+		this.getDataTracker().set(field_14786, 0);
+	}
+
+	@Override
+	public void onTrackedDataSet(TrackedData<?> data) {
+		if (field_14785.equals(data)) {
+			this.changeType(this.isBaby());
+		}
+
+		super.onTrackedDataSet(data);
 	}
 
 	@Override
 	public void tickMovement() {
 		if (this.world.isDay() && !this.world.isClient && !this.isBaby()) {
 			float f = this.getBrightnessAtEyes(1.0F);
-			BlockPos blockPos = new BlockPos(this.x, (double)Math.round(this.y), this.z);
+			BlockPos blockPos = this.getVehicle() instanceof BoatEntity
+				? new BlockPos(this.x, (double)Math.round(this.y), this.z).up()
+				: new BlockPos(this.x, (double)Math.round(this.y), this.z);
 			if (f > 0.5F && this.random.nextFloat() * 30.0F < (f - 0.4F) * 2.0F && this.world.hasDirectSunlight(blockPos)) {
 				boolean bl = true;
-				ItemStack itemStack = this.getMainSlot(4);
+				ItemStack itemStack = this.getStack(EquipmentSlot.HEAD);
 				if (itemStack != null) {
 					if (itemStack.isDamageable()) {
 						itemStack.setDamage(itemStack.getDamage() + this.random.nextInt(2));
 						if (itemStack.getDamage() >= itemStack.getMaxDamage()) {
 							this.method_6111(itemStack);
-							this.setArmorSlot(4, null);
+							this.equipStack(EquipmentSlot.HEAD, null);
 						}
 					}
 
@@ -178,10 +213,6 @@ public class ZombieEntity extends HostileEntity {
 					this.setOnFireFor(8);
 				}
 			}
-		}
-
-		if (this.hasVehicle() && this.getTarget() != null && this.vehicle instanceof ChickenEntity) {
-			((MobEntity)this.vehicle).getNavigation().startMovingAlong(this.getNavigation().getCurrentPath(), 1.5);
 		}
 
 		super.tickMovement();
@@ -197,7 +228,8 @@ public class ZombieEntity extends HostileEntity {
 
 			if (livingEntity != null
 				&& this.world.getGlobalDifficulty() == Difficulty.HARD
-				&& (double)this.random.nextFloat() < this.initializeAttribute(REINFORCEMENTS_ATTRIBUTE).getValue()) {
+				&& (double)this.random.nextFloat() < this.initializeAttribute(REINFORCEMENTS_ATTRIBUTE).getValue()
+				&& this.world.getGameRules().getBoolean("doMobSpawning")) {
 				int i = MathHelper.floor(this.x);
 				int j = MathHelper.floor(this.y);
 				int k = MathHelper.floor(this.z);
@@ -207,7 +239,7 @@ public class ZombieEntity extends HostileEntity {
 					int m = i + MathHelper.nextInt(this.random, 7, 40) * MathHelper.nextInt(this.random, -1, 1);
 					int n = j + MathHelper.nextInt(this.random, 7, 40) * MathHelper.nextInt(this.random, -1, 1);
 					int o = k + MathHelper.nextInt(this.random, 7, 40) * MathHelper.nextInt(this.random, -1, 1);
-					if (World.isOpaque(this.world, new BlockPos(m, n - 1, o)) && this.world.getLightLevelWithNeighbours(new BlockPos(m, n, o)) < 10) {
+					if (this.world.getBlockState(new BlockPos(m, n - 1, o)).method_11739() && this.world.getLightLevelWithNeighbours(new BlockPos(m, n, o)) < 10) {
 						zombieEntity.updatePosition((double)m, (double)n, (double)o);
 						if (!this.world.isPlayerInRange((double)m, (double)n, (double)o, 7.0)
 							&& this.world.hasEntityIn(zombieEntity.getBoundingBox(), zombieEntity)
@@ -248,7 +280,7 @@ public class ZombieEntity extends HostileEntity {
 		boolean bl = super.tryAttack(target);
 		if (bl) {
 			int i = this.world.getGlobalDifficulty().getId();
-			if (this.getStackInHand() == null && this.isOnFire() && this.random.nextFloat() < (float)i * 0.3F) {
+			if (this.getMainHandStack() == null && this.isOnFire() && this.random.nextFloat() < (float)i * 0.3F) {
 				target.setOnFireFor(2 * i);
 			}
 		}
@@ -257,28 +289,23 @@ public class ZombieEntity extends HostileEntity {
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.zombie.say";
+	protected Sound ambientSound() {
+		return this.isVillager() ? Sounds.ENTITY_ZOMBIE_VILLAGER_AMBIENT : Sounds.ENTITY_ZOMBIE_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.zombie.hurt";
+	protected Sound method_13048() {
+		return this.isVillager() ? Sounds.ENTITY_ZOMBIE_VILLAGER_HURT : Sounds.ENTITY_ZOMBIE_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.zombie.death";
+	protected Sound deathSound() {
+		return this.isVillager() ? Sounds.ENTITY_ZOMBIE_VILLAGER_DEATH : Sounds.ENTITY_ZOMBIE_DEATH;
 	}
 
 	@Override
 	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound("mob.zombie.step", 0.15F, 1.0F);
-	}
-
-	@Override
-	protected Item getDefaultDrop() {
-		return Items.ROTTEN_FLESH;
+		this.playSound(this.isVillager() ? Sounds.ENTITY_ZOMBIE_VILLAGER_STEP : Sounds.ENTITY_ZOMBIE_STEP, 0.15F, 1.0F);
 	}
 
 	@Override
@@ -286,18 +313,10 @@ public class ZombieEntity extends HostileEntity {
 		return EntityGroup.UNDEAD;
 	}
 
+	@Nullable
 	@Override
-	protected void method_4473() {
-		switch (this.random.nextInt(3)) {
-			case 0:
-				this.dropItem(Items.IRON_INGOT, 1);
-				break;
-			case 1:
-				this.dropItem(Items.CARROT, 1);
-				break;
-			case 2:
-				this.dropItem(Items.POTATO, 1);
-		}
+	protected Identifier getLootTableId() {
+		return LootTables.ZOMBIE_ENTITIE;
 	}
 
 	@Override
@@ -306,9 +325,9 @@ public class ZombieEntity extends HostileEntity {
 		if (this.random.nextFloat() < (this.world.getGlobalDifficulty() == Difficulty.HARD ? 0.05F : 0.01F)) {
 			int i = this.random.nextInt(3);
 			if (i == 0) {
-				this.setArmorSlot(0, new ItemStack(Items.IRON_SWORD));
+				this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
 			} else {
-				this.setArmorSlot(0, new ItemStack(Items.IRON_SHOVEL));
+				this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SHOVEL));
 			}
 		}
 	}
@@ -322,6 +341,7 @@ public class ZombieEntity extends HostileEntity {
 
 		if (this.isVillager()) {
 			nbt.putBoolean("IsVillager", true);
+			nbt.putInt("VillagerProfession", this.method_13248());
 		}
 
 		nbt.putInt("ConversionTime", this.getConversionType() ? this.ticksUntilConversion : -1);
@@ -336,7 +356,11 @@ public class ZombieEntity extends HostileEntity {
 		}
 
 		if (nbt.getBoolean("IsVillager")) {
-			this.setVillager(true);
+			if (nbt.contains("VillagerProfession", 99)) {
+				this.method_13245(nbt.getInt("VillagerProfession"));
+			} else {
+				this.method_13245(this.world.random.nextInt(5));
+			}
 		}
 
 		if (nbt.contains("ConversionTime", 99) && nbt.getInt("ConversionTime") > -1) {
@@ -354,24 +378,21 @@ public class ZombieEntity extends HostileEntity {
 				return;
 			}
 
-			MobEntity mobEntity = (MobEntity)other;
+			VillagerEntity villagerEntity = (VillagerEntity)other;
 			ZombieEntity zombieEntity = new ZombieEntity(this.world);
 			zombieEntity.copyPosition(other);
 			this.world.removeEntity(other);
-			zombieEntity.initialize(this.world.getLocalDifficulty(new BlockPos(zombieEntity)), null);
-			zombieEntity.setVillager(true);
-			if (other.isBaby()) {
-				zombieEntity.setBaby(true);
-			}
-
-			zombieEntity.setAiDisabled(mobEntity.hasNoAi());
-			if (mobEntity.hasCustomName()) {
-				zombieEntity.setCustomName(mobEntity.getCustomName());
-				zombieEntity.setCustomNameVisible(mobEntity.isCustomNameVisible());
+			zombieEntity.initialize(this.world.getLocalDifficulty(new BlockPos(zombieEntity)), new ZombieEntity.Data(false, true));
+			zombieEntity.method_13245(villagerEntity.profession());
+			zombieEntity.setBaby(other.isBaby());
+			zombieEntity.setAiDisabled(villagerEntity.hasNoAi());
+			if (villagerEntity.hasCustomName()) {
+				zombieEntity.setCustomName(villagerEntity.getCustomName());
+				zombieEntity.setCustomNameVisible(villagerEntity.isCustomNameVisible());
 			}
 
 			this.world.spawnEntity(zombieEntity);
-			this.world.syncWorldEvent(null, 1016, new BlockPos((int)this.x, (int)this.y, (int)this.z), 0);
+			this.world.syncWorldEvent(null, 1026, new BlockPos((int)this.x, (int)this.y, (int)this.z), 0);
 		}
 	}
 
@@ -387,11 +408,12 @@ public class ZombieEntity extends HostileEntity {
 
 	@Override
 	protected boolean canPickupItem(ItemStack stack) {
-		return stack.getItem() == Items.EGG && this.isBaby() && this.hasVehicle() ? false : super.canPickupItem(stack);
+		return stack.getItem() == Items.EGG && this.isBaby() && this.hasMount() ? false : super.canPickupItem(stack);
 	}
 
+	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, EntityData data) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
 		data = super.initialize(difficulty, data);
 		float f = difficulty.getClampedLocalDifficulty();
 		this.setCanPickUpLoot(this.random.nextFloat() < 0.55F * f);
@@ -402,7 +424,7 @@ public class ZombieEntity extends HostileEntity {
 		if (data instanceof ZombieEntity.Data) {
 			ZombieEntity.Data data2 = (ZombieEntity.Data)data;
 			if (data2.field_6929) {
-				this.setVillager(true);
+				this.method_13245(this.random.nextInt(5));
 			}
 
 			if (data2.field_6928) {
@@ -412,7 +434,7 @@ public class ZombieEntity extends HostileEntity {
 					if (!list.isEmpty()) {
 						ChickenEntity chickenEntity = (ChickenEntity)list.get(0);
 						chickenEntity.setHasJockey(true);
-						this.startRiding(chickenEntity);
+						this.ride(chickenEntity);
 					}
 				} else if ((double)this.world.random.nextFloat() < 0.05) {
 					ChickenEntity chickenEntity2 = new ChickenEntity(this.world);
@@ -420,7 +442,7 @@ public class ZombieEntity extends HostileEntity {
 					chickenEntity2.initialize(difficulty, null);
 					chickenEntity2.setHasJockey(true);
 					this.world.spawnEntity(chickenEntity2);
-					this.startRiding(chickenEntity2);
+					this.ride(chickenEntity2);
 				}
 			}
 		}
@@ -428,11 +450,11 @@ public class ZombieEntity extends HostileEntity {
 		this.setCanBreakDoors(this.random.nextFloat() < f * 0.1F);
 		this.initEquipment(difficulty);
 		this.updateEnchantments(difficulty);
-		if (this.getMainSlot(4) == null) {
+		if (this.getStack(EquipmentSlot.HEAD) == null) {
 			Calendar calendar = this.world.getCalenderInstance();
 			if (calendar.get(2) + 1 == 10 && calendar.get(5) == 31 && this.random.nextFloat() < 0.25F) {
-				this.setArmorSlot(4, new ItemStack(this.random.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.PUMPKIN));
-				this.armorDropChances[4] = 0.0F;
+				this.equipStack(EquipmentSlot.HEAD, new ItemStack(this.random.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.PUMPKIN));
+				this.field_14559[EquipmentSlot.HEAD.method_13032()] = 0.0F;
 			}
 		}
 
@@ -454,19 +476,14 @@ public class ZombieEntity extends HostileEntity {
 	}
 
 	@Override
-	public boolean method_2537(PlayerEntity playerEntity) {
-		ItemStack itemStack = playerEntity.getMainHandStack();
+	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
 		if (itemStack != null
 			&& itemStack.getItem() == Items.GOLDEN_APPLE
 			&& itemStack.getData() == 0
 			&& this.isVillager()
-			&& this.hasStatusEffect(StatusEffect.WEAKNESS)) {
+			&& this.hasStatusEffect(StatusEffects.WEAKNESS)) {
 			if (!playerEntity.abilities.creativeMode) {
 				itemStack.count--;
-			}
-
-			if (itemStack.count <= 0) {
-				playerEntity.inventory.setInvStack(playerEntity.inventory.selectedSlot, null);
 			}
 
 			if (!this.world.isClient) {
@@ -481,9 +498,9 @@ public class ZombieEntity extends HostileEntity {
 
 	protected void setConversionTime(int ticks) {
 		this.ticksUntilConversion = ticks;
-		this.getDataTracker().setProperty(14, (byte)1);
-		this.method_6149(StatusEffect.WEAKNESS.id);
-		this.addStatusEffect(new StatusEffectInstance(StatusEffect.STRENGTH.id, ticks, Math.min(this.world.getGlobalDifficulty().getId() - 1, 0)));
+		this.getDataTracker().set(field_14787, true);
+		this.removeStatusEffect(StatusEffects.WEAKNESS);
+		this.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, ticks, Math.min(this.world.getGlobalDifficulty().getId() - 1, 0)));
 		this.world.sendEntityStatus(this, (byte)16);
 	}
 
@@ -492,7 +509,16 @@ public class ZombieEntity extends HostileEntity {
 		if (status == 16) {
 			if (!this.isSilent()) {
 				this.world
-					.playSound(this.x + 0.5, this.y + 0.5, this.z + 0.5, "mob.zombie.remedy", 1.0F + this.random.nextFloat(), this.random.nextFloat() * 0.7F + 0.3F, false);
+					.playSound(
+						this.x + 0.5,
+						this.y + 0.5,
+						this.z + 0.5,
+						Sounds.ENTITY_ZOMBIE_VILLAGER_CURE,
+						this.getSoundCategory(),
+						1.0F + this.random.nextFloat(),
+						this.random.nextFloat() * 0.7F + 0.3F,
+						false
+					);
 			}
 		} else {
 			super.handleStatus(status);
@@ -505,7 +531,7 @@ public class ZombieEntity extends HostileEntity {
 	}
 
 	public boolean getConversionType() {
-		return this.getDataTracker().getByte(14) == 1;
+		return this.getDataTracker().get(field_14787);
 	}
 
 	protected void convertInWater() {
@@ -519,14 +545,15 @@ public class ZombieEntity extends HostileEntity {
 
 		this.world.removeEntity(this);
 		villagerEntity.setAiDisabled(this.hasNoAi());
+		villagerEntity.setProfession(this.method_13248());
 		if (this.hasCustomName()) {
 			villagerEntity.setCustomName(this.getCustomName());
 			villagerEntity.setCustomNameVisible(this.isCustomNameVisible());
 		}
 
 		this.world.spawnEntity(villagerEntity);
-		villagerEntity.addStatusEffect(new StatusEffectInstance(StatusEffect.NAUSEA.id, 200, 0));
-		this.world.syncWorldEvent(null, 1017, new BlockPos((int)this.x, (int)this.y, (int)this.z), 0);
+		villagerEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 0));
+		this.world.syncWorldEvent(null, 1027, new BlockPos((int)this.x, (int)this.y, (int)this.z), 0);
 	}
 
 	protected int method_4564() {

@@ -68,7 +68,7 @@ public class PineTreeFeature extends FoliageFeature {
 								int v = u - blockPos.getZ();
 								if (Math.abs(t) != q || Math.abs(v) != q || q <= 0) {
 									BlockPos blockPos2 = new BlockPos(s, r, u);
-									if (!world.getBlockState(blockPos2).getBlock().isFullBlock()) {
+									if (!world.getBlockState(blockPos2).isFullBlock()) {
 										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, LEAVES);
 									}
 								}
@@ -83,8 +83,8 @@ public class PineTreeFeature extends FoliageFeature {
 					}
 
 					for (int w = 0; w < i - 1; w++) {
-						Block block2 = world.getBlockState(blockPos.up(w)).getBlock();
-						if (block2.getMaterial() == Material.AIR || block2.getMaterial() == Material.FOLIAGE) {
+						Material material = world.getBlockState(blockPos.up(w)).getMaterial();
+						if (material == Material.AIR || material == Material.FOLIAGE) {
 							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(w), LOG);
 						}
 					}

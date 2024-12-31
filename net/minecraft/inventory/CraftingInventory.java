@@ -1,5 +1,7 @@
 package net.minecraft.inventory;
 
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
@@ -26,11 +28,13 @@ public class CraftingInventory implements Inventory {
 		return this.stacks.length;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
 		return slot >= this.getInvSize() ? null : this.stacks[slot];
 	}
 
+	@Nullable
 	public ItemStack getStackAt(int width, int height) {
 		return width >= 0 && width < this.width && height >= 0 && height <= this.height ? this.getInvStack(width + height * this.width) : null;
 	}
@@ -50,41 +54,25 @@ public class CraftingInventory implements Inventory {
 		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.stacks[slot] != null) {
-			ItemStack itemStack = this.stacks[slot];
-			this.stacks[slot] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		return class_2960.method_12932(this.stacks, slot);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.stacks[slot] != null) {
-			if (this.stacks[slot].count <= amount) {
-				ItemStack itemStack = this.stacks[slot];
-				this.stacks[slot] = null;
-				this.screenHandler.onContentChanged(this);
-				return itemStack;
-			} else {
-				ItemStack itemStack2 = this.stacks[slot].split(amount);
-				if (this.stacks[slot].count == 0) {
-					this.stacks[slot] = null;
-				}
-
-				this.screenHandler.onContentChanged(this);
-				return itemStack2;
-			}
-		} else {
-			return null;
+		ItemStack itemStack = class_2960.method_12933(this.stacks, slot, amount);
+		if (itemStack != null) {
+			this.screenHandler.onContentChanged(this);
 		}
+
+		return itemStack;
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
 		this.stacks[slot] = stack;
 		this.screenHandler.onContentChanged(this);
 	}

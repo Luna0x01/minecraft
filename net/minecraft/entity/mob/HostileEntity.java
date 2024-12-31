@@ -1,11 +1,18 @@
 package net.minecraft.entity.mob;
 
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.AxeItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
@@ -16,6 +23,11 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 	public HostileEntity(World world) {
 		super(world);
 		this.experiencePoints = 5;
+	}
+
+	@Override
+	public SoundCategory getSoundCategory() {
+		return SoundCategory.HOSTILE;
 	}
 
 	@Override
@@ -38,40 +50,33 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 	}
 
 	@Override
-	protected String getSwimSound() {
-		return "game.hostile.swim";
+	protected Sound method_12984() {
+		return Sounds.ENTITY_HOSTILE_SWIM;
 	}
 
 	@Override
-	protected String getSplashSound() {
-		return "game.hostile.swim.splash";
+	protected Sound method_12985() {
+		return Sounds.ENTITY_HOSTILE_SPLASH;
 	}
 
 	@Override
 	public boolean damage(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source)) {
-			return false;
-		} else if (super.damage(source, amount)) {
-			Entity entity = source.getAttacker();
-			return this.rider != entity && this.vehicle != entity ? true : true;
-		} else {
-			return false;
-		}
+		return this.isInvulnerableTo(source) ? false : super.damage(source, amount);
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "game.hostile.hurt";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_HOSTILE_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "game.hostile.die";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_HOSTILE_DEATH;
 	}
 
 	@Override
-	protected String getFallSound(int distance) {
-		return distance > 4 ? "game.hostile.hurt.fall.big" : "game.hostile.hurt.fall.small";
+	protected Sound getLandSound(int height) {
+		return height > 4 ? Sounds.ENTITY_HOSTILE_BIG_FALL : Sounds.ENTITY_HOSTILE_SMALL_FALL;
 	}
 
 	@Override
@@ -79,18 +84,17 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 		float f = (float)this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getValue();
 		int i = 0;
 		if (target instanceof LivingEntity) {
-			f += EnchantmentHelper.getAttackDamage(this.getStackInHand(), ((LivingEntity)target).getGroup());
+			f += EnchantmentHelper.getAttackDamage(this.getMainHandStack(), ((LivingEntity)target).getGroup());
 			i += EnchantmentHelper.getKnockback(this);
 		}
 
 		boolean bl = target.damage(DamageSource.mob(this), f);
 		if (bl) {
-			if (i > 0) {
-				target.addVelocity(
-					(double)(-MathHelper.sin(this.yaw * (float) Math.PI / 180.0F) * (float)i * 0.5F),
-					0.1,
-					(double)(MathHelper.cos(this.yaw * (float) Math.PI / 180.0F) * (float)i * 0.5F)
-				);
+			if (i > 0 && target instanceof LivingEntity) {
+				((LivingEntity)target)
+					.method_6109(
+						this, (float)i * 0.5F, (double)MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)), (double)(-MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)))
+					);
 				this.velocityX *= 0.6;
 				this.velocityZ *= 0.6;
 			}
@@ -98,6 +102,19 @@ public abstract class HostileEntity extends PathAwareEntity implements Monster {
 			int j = EnchantmentHelper.getFireAspect(this);
 			if (j > 0) {
 				target.setOnFireFor(j * 4);
+			}
+
+			if (target instanceof PlayerEntity) {
+				PlayerEntity playerEntity = (PlayerEntity)target;
+				ItemStack itemStack = this.getMainHandStack();
+				ItemStack itemStack2 = playerEntity.method_13061() ? playerEntity.method_13064() : null;
+				if (itemStack != null && itemStack2 != null && itemStack.getItem() instanceof AxeItem && itemStack2.getItem() == Items.SHIELD) {
+					float g = 0.25F + (float)EnchantmentHelper.getEfficiency(this) * 0.05F;
+					if (this.random.nextFloat() < g) {
+						playerEntity.getItemCooldownManager().method_11384(Items.SHIELD, 100);
+						this.world.sendEntityStatus(playerEntity, (byte)30);
+					}
+				}
 			}
 
 			this.dealDamage(this, target);

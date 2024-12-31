@@ -7,10 +7,11 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.entity.SkullBlockEntityRenderer;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.item.BlockItem;
+import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -28,7 +29,7 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 
 	@Override
 	public void render(LivingEntity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale) {
-		ItemStack itemStack = entity.getArmorSlot(3);
+		ItemStack itemStack = entity.getStack(EquipmentSlot.HEAD);
 		if (itemStack != null && itemStack.getItem() != null) {
 			Item item = itemStack.getItem();
 			MinecraftClient minecraftClient = MinecraftClient.getInstance();
@@ -38,28 +39,19 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 			}
 
 			boolean bl = entity instanceof VillagerEntity || entity instanceof ZombieEntity && ((ZombieEntity)entity).isVillager();
-			if (!bl && entity.isBaby()) {
+			if (entity.isBaby() && !(entity instanceof VillagerEntity)) {
 				float f = 2.0F;
 				float g = 1.4F;
+				GlStateManager.translate(0.0F, 0.5F * scale, 0.0F);
 				GlStateManager.scale(g / f, g / f, g / f);
 				GlStateManager.translate(0.0F, 16.0F * scale, 0.0F);
 			}
 
 			this.modelPart.preRender(0.0625F);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			if (item instanceof BlockItem) {
-				float h = 0.625F;
-				GlStateManager.translate(0.0F, -0.25F, 0.0F);
-				GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+			if (item == Items.SKULL) {
+				float h = 1.1875F;
 				GlStateManager.scale(h, -h, -h);
-				if (bl) {
-					GlStateManager.translate(0.0F, 0.1875F, 0.0F);
-				}
-
-				minecraftClient.getHeldItemRenderer().renderItem(entity, itemStack, ModelTransformation.Mode.HEAD);
-			} else if (item == Items.SKULL) {
-				float i = 1.1875F;
-				GlStateManager.scale(i, -i, -i);
 				if (bl) {
 					GlStateManager.translate(0.0F, 0.0625F, 0.0F);
 				}
@@ -78,7 +70,17 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 					}
 				}
 
-				SkullBlockEntityRenderer.instance.render(-0.5F, 0.0F, -0.5F, Direction.UP, 180.0F, itemStack.getData(), gameProfile, -1);
+				SkullBlockEntityRenderer.instance.method_10108(-0.5F, 0.0F, -0.5F, Direction.UP, 180.0F, itemStack.getData(), gameProfile, -1, handSwing);
+			} else if (!(item instanceof ArmorItem) || ((ArmorItem)item).method_11352() != EquipmentSlot.HEAD) {
+				float i = 0.625F;
+				GlStateManager.translate(0.0F, -0.25F, 0.0F);
+				GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+				GlStateManager.scale(i, -i, -i);
+				if (bl) {
+					GlStateManager.translate(0.0F, 0.1875F, 0.0F);
+				}
+
+				minecraftClient.getHeldItemRenderer().renderItem(entity, itemStack, ModelTransformation.Mode.HEAD);
 			}
 
 			GlStateManager.popMatrix();
@@ -87,6 +89,6 @@ public class HeadFeatureRenderer implements FeatureRenderer<LivingEntity> {
 
 	@Override
 	public boolean combineTextures() {
-		return true;
+		return false;
 	}
 }

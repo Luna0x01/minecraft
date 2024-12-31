@@ -1,5 +1,6 @@
 package net.minecraft.entity.attribute;
 
+import javax.annotation.Nullable;
 import net.minecraft.util.math.MathHelper;
 
 public class ClampedEntityAttribute extends AbstractEntityAttribute {
@@ -7,7 +8,7 @@ public class ClampedEntityAttribute extends AbstractEntityAttribute {
 	private final double maxValue;
 	private String name;
 
-	public ClampedEntityAttribute(EntityAttribute entityAttribute, String string, double d, double e, double f) {
+	public ClampedEntityAttribute(@Nullable EntityAttribute entityAttribute, String string, double d, double e, double f) {
 		super(entityAttribute, string, d);
 		this.minValue = e;
 		this.maxValue = f;

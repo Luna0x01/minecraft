@@ -3,7 +3,7 @@ package net.minecraft.world;
 import io.netty.buffer.ByteBuf;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
 import net.minecraft.entity.player.PlayerEntity;
@@ -12,6 +12,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandRegistryProvider;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -29,11 +30,15 @@ public abstract class CommandBlockExecutor implements CommandSource {
 		return this.successCount;
 	}
 
-	public Text getLastOutput() {
-		return this.lastOutput;
+	public void setSuccessCount(int successCount) {
+		this.successCount = successCount;
 	}
 
-	public void toNbt(NbtCompound nbt) {
+	public Text getLastOutput() {
+		return (Text)(this.lastOutput == null ? new LiteralText("") : this.lastOutput);
+	}
+
+	public NbtCompound toNbt(NbtCompound nbt) {
 		nbt.putString("Command", this.command);
 		nbt.putInt("SuccessCount", this.successCount);
 		nbt.putString("CustomName", this.name);
@@ -43,6 +48,7 @@ public abstract class CommandBlockExecutor implements CommandSource {
 		}
 
 		this.commandStats.toNbt(nbt);
+		return nbt;
 	}
 
 	public void fromNbt(NbtCompound nbt) {
@@ -57,7 +63,13 @@ public abstract class CommandBlockExecutor implements CommandSource {
 		}
 
 		if (nbt.contains("LastOutput", 8) && this.trackOutput) {
-			this.lastOutput = Text.Serializer.deserialize(nbt.getString("LastOutput"));
+			try {
+				this.lastOutput = Text.Serializer.deserializeText(nbt.getString("LastOutput"));
+			} catch (Throwable var3) {
+				this.lastOutput = new LiteralText(var3.getMessage());
+			}
+		} else {
+			this.lastOutput = null;
 		}
 
 		this.commandStats.fromNbt(nbt);
@@ -80,32 +92,35 @@ public abstract class CommandBlockExecutor implements CommandSource {
 	public void execute(World world) {
 		if (world.isClient) {
 			this.successCount = 0;
-		}
-
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
-		if (minecraftServer != null && minecraftServer.hasGameDir() && minecraftServer.areCommandBlocksEnabled()) {
-			CommandRegistryProvider commandRegistryProvider = minecraftServer.getCommandManager();
-
-			try {
-				this.lastOutput = null;
-				this.successCount = commandRegistryProvider.execute(this, this.command);
-			} catch (Throwable var7) {
-				CrashReport crashReport = CrashReport.create(var7, "Executing command block");
-				CrashReportSection crashReportSection = crashReport.addElement("Command to be executed");
-				crashReportSection.add("Command", new Callable<String>() {
-					public String call() throws Exception {
-						return CommandBlockExecutor.this.getCommand();
-					}
-				});
-				crashReportSection.add("Name", new Callable<String>() {
-					public String call() throws Exception {
-						return CommandBlockExecutor.this.getTranslationKey();
-					}
-				});
-				throw new CrashException(crashReport);
-			}
+		} else if ("Searge".equalsIgnoreCase(this.command)) {
+			this.lastOutput = new LiteralText("#itzlipofutzli");
+			this.successCount = 1;
 		} else {
-			this.successCount = 0;
+			MinecraftServer minecraftServer = this.getMinecraftServer();
+			if (minecraftServer != null && minecraftServer.hasGameDir() && minecraftServer.areCommandBlocksEnabled()) {
+				CommandRegistryProvider commandRegistryProvider = minecraftServer.getCommandManager();
+
+				try {
+					this.lastOutput = null;
+					this.successCount = commandRegistryProvider.execute(this, this.command);
+				} catch (Throwable var7) {
+					CrashReport crashReport = CrashReport.create(var7, "Executing command block");
+					CrashReportSection crashReportSection = crashReport.addElement("Command to be executed");
+					crashReportSection.add("Command", new CrashCallable<String>() {
+						public String call() throws Exception {
+							return CommandBlockExecutor.this.getCommand();
+						}
+					});
+					crashReportSection.add("Name", new CrashCallable<String>() {
+						public String call() throws Exception {
+							return CommandBlockExecutor.this.getTranslationKey();
+						}
+					});
+					throw new CrashException(crashReport);
+				}
+			} else {
+				this.successCount = 0;
+			}
 		}
 	}
 
@@ -133,13 +148,13 @@ public abstract class CommandBlockExecutor implements CommandSource {
 
 	@Override
 	public boolean sendCommandFeedback() {
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
+		MinecraftServer minecraftServer = this.getMinecraftServer();
 		return minecraftServer == null || !minecraftServer.hasGameDir() || minecraftServer.worlds[0].getGameRules().getBoolean("commandBlockOutput");
 	}
 
 	@Override
 	public void setStat(CommandStats.Type statsType, int value) {
-		this.commandStats.execute(this, statsType, value);
+		this.commandStats.method_10792(this.getMinecraftServer(), this, statsType, value);
 	}
 
 	public abstract void markDirty();
@@ -148,7 +163,7 @@ public abstract class CommandBlockExecutor implements CommandSource {
 
 	public abstract void writeEntityId(ByteBuf byteBuf);
 
-	public void setLastOutput(Text lastOutput) {
+	public void setLastOutput(@Nullable Text lastOutput) {
 		this.lastOutput = lastOutput;
 	}
 

@@ -1,19 +1,31 @@
 package net.minecraft.entity.vehicle;
 
+import java.util.Random;
+import javax.annotation.Nullable;
+import net.minecraft.class_2782;
+import net.minecraft.class_2960;
+import net.minecraft.class_2964;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.ScreenHandlerLock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.class_2780;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.world.World;
 
-public abstract class StorageMinecartEntity extends AbstractMinecartEntity implements LockableScreenHandlerFactory {
+public abstract class StorageMinecartEntity extends AbstractMinecartEntity implements LockableScreenHandlerFactory, class_2964 {
 	private ItemStack[] stacks = new ItemStack[36];
 	private boolean field_6145 = true;
+	private Identifier lootTableId;
+	private long lootSeed;
 
 	public StorageMinecartEntity(World world) {
 		super(world);
@@ -31,33 +43,24 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 		}
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
+		this.generateLoot(null);
 		return this.stacks[slot];
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.stacks[slot] != null) {
-			if (this.stacks[slot].count <= amount) {
-				ItemStack itemStack = this.stacks[slot];
-				this.stacks[slot] = null;
-				return itemStack;
-			} else {
-				ItemStack itemStack2 = this.stacks[slot].split(amount);
-				if (this.stacks[slot].count == 0) {
-					this.stacks[slot] = null;
-				}
-
-				return itemStack2;
-			}
-		} else {
-			return null;
-		}
+		this.generateLoot(null);
+		return class_2960.method_12933(this.stacks, slot, amount);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
+		this.generateLoot(null);
 		if (this.stacks[slot] != null) {
 			ItemStack itemStack = this.stacks[slot];
 			this.stacks[slot] = null;
@@ -68,7 +71,8 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
+		this.generateLoot(null);
 		this.stacks[slot] = stack;
 		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
 			stack.count = this.getInvMaxStackAmount();
@@ -98,19 +102,15 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	}
 
 	@Override
-	public String getTranslationKey() {
-		return this.hasCustomName() ? this.getCustomName() : "container.minecart";
-	}
-
-	@Override
 	public int getInvMaxStackAmount() {
 		return 64;
 	}
 
+	@Nullable
 	@Override
-	public void teleportToDimension(int dimensionId) {
+	public Entity changeDimension(int newDimension) {
 		this.field_6145 = false;
-		super.teleportToDimension(dimensionId);
+		return super.changeDimension(newDimension);
 	}
 
 	@Override
@@ -123,41 +123,58 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 	}
 
 	@Override
+	public void method_12991(boolean bl) {
+		this.field_6145 = bl;
+	}
+
+	@Override
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		NbtList nbtList = new NbtList();
-
-		for (int i = 0; i < this.stacks.length; i++) {
-			if (this.stacks[i] != null) {
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putByte("Slot", (byte)i);
-				this.stacks[i].toNbt(nbtCompound);
-				nbtList.add(nbtCompound);
+		if (this.lootTableId != null) {
+			nbt.putString("LootTable", this.lootTableId.toString());
+			if (this.lootSeed != 0L) {
+				nbt.putLong("LootTableSeed", this.lootSeed);
 			}
-		}
+		} else {
+			NbtList nbtList = new NbtList();
 
-		nbt.put("Items", nbtList);
+			for (int i = 0; i < this.stacks.length; i++) {
+				if (this.stacks[i] != null) {
+					NbtCompound nbtCompound = new NbtCompound();
+					nbtCompound.putByte("Slot", (byte)i);
+					this.stacks[i].toNbt(nbtCompound);
+					nbtList.add(nbtCompound);
+				}
+			}
+
+			nbt.put("Items", nbtList);
+		}
 	}
 
 	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
-		NbtList nbtList = nbt.getList("Items", 10);
 		this.stacks = new ItemStack[this.getInvSize()];
+		if (nbt.contains("LootTable", 8)) {
+			this.lootTableId = new Identifier(nbt.getString("LootTable"));
+			this.lootSeed = nbt.getLong("LootTableSeed");
+		} else {
+			NbtList nbtList = nbt.getList("Items", 10);
 
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			int j = nbtCompound.getByte("Slot") & 255;
-			if (j >= 0 && j < this.stacks.length) {
-				this.stacks[j] = ItemStack.fromNbt(nbtCompound);
+			for (int i = 0; i < nbtList.size(); i++) {
+				NbtCompound nbtCompound = nbtList.getCompound(i);
+				int j = nbtCompound.getByte("Slot") & 255;
+				if (j >= 0 && j < this.stacks.length) {
+					this.stacks[j] = ItemStack.fromNbt(nbtCompound);
+				}
 			}
 		}
 	}
 
 	@Override
-	public boolean openInventory(PlayerEntity player) {
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
 		if (!this.world.isClient) {
-			player.openInventory(this);
+			playerEntity.openInventory(this);
 		}
 
 		return true;
@@ -165,8 +182,12 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 
 	@Override
 	protected void applySlowdown() {
-		int i = 15 - ScreenHandler.calculateComparatorOutput(this);
-		float f = 0.98F + (float)i * 0.001F;
+		float f = 0.98F;
+		if (this.lootTableId == null) {
+			int i = 15 - ScreenHandler.calculateComparatorOutput(this);
+			f += (float)i * 0.001F;
+		}
+
 		this.velocityX *= (double)f;
 		this.velocityY *= 0.0;
 		this.velocityZ *= (double)f;
@@ -200,10 +221,42 @@ public abstract class StorageMinecartEntity extends AbstractMinecartEntity imple
 		return ScreenHandlerLock.NONE;
 	}
 
+	public void generateLoot(@Nullable PlayerEntity player) {
+		if (this.lootTableId != null) {
+			class_2780 lv = this.world.method_11487().method_12006(this.lootTableId);
+			this.lootTableId = null;
+			Random random;
+			if (this.lootSeed == 0L) {
+				random = new Random();
+			} else {
+				random = new Random(this.lootSeed);
+			}
+
+			class_2782.class_2783 lv2 = new class_2782.class_2783((ServerWorld)this.world);
+			if (player != null) {
+				lv2.method_11995(player.method_13271());
+			}
+
+			lv.method_11983(this, random, lv2.method_11994());
+		}
+	}
+
 	@Override
 	public void clear() {
+		this.generateLoot(null);
+
 		for (int i = 0; i < this.stacks.length; i++) {
 			this.stacks[i] = null;
 		}
+	}
+
+	public void setLootTable(Identifier id, long lootSeed) {
+		this.lootTableId = id;
+		this.lootSeed = lootSeed;
+	}
+
+	@Override
+	public Identifier getLootTableId() {
+		return this.lootTableId;
 	}
 }

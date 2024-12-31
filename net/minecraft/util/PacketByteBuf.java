@@ -17,6 +17,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -42,39 +43,110 @@ public class PacketByteBuf extends ByteBuf {
 		return 5;
 	}
 
-	public void writeByteArray(byte[] bytes) {
-		this.writeVarInt(bytes.length);
-		this.writeBytes(bytes);
+	public PacketByteBuf writeByteArray(byte[] bs) {
+		this.writeVarInt(bs.length);
+		this.writeBytes(bs);
+		return this;
 	}
 
 	public byte[] readByteArray() {
-		byte[] bs = new byte[this.readVarInt()];
-		this.readBytes(bs);
-		return bs;
+		return this.readByteArray(this.readableBytes());
+	}
+
+	public byte[] readByteArray(int size) {
+		int i = this.readVarInt();
+		if (i > size) {
+			throw new DecoderException("ByteArray with size " + i + " is bigger than allowed " + size);
+		} else {
+			byte[] bs = new byte[i];
+			this.readBytes(bs);
+			return bs;
+		}
+	}
+
+	public PacketByteBuf writeIntArray(int[] intArray) {
+		this.writeVarInt(intArray.length);
+
+		for (int i = 0; i < intArray.length; i++) {
+			this.writeVarInt(intArray[i]);
+		}
+
+		return this;
+	}
+
+	public int[] readIntArray() {
+		return this.readIntArray(this.readableBytes());
+	}
+
+	public int[] readIntArray(int size) {
+		int i = this.readVarInt();
+		if (i > size) {
+			throw new DecoderException("VarIntArray with size " + i + " is bigger than allowed " + size);
+		} else {
+			int[] is = new int[i];
+
+			for (int j = 0; j < is.length; j++) {
+				is[j] = this.readVarInt();
+			}
+
+			return is;
+		}
+	}
+
+	public PacketByteBuf writeLongArray(long[] ls) {
+		this.writeVarInt(ls.length);
+
+		for (int i = 0; i < ls.length; i++) {
+			this.writeLong(ls[i]);
+		}
+
+		return this;
+	}
+
+	public long[] readLongArray(@Nullable long[] dest) {
+		return this.readLongArray(dest, this.readableBytes() / 8);
+	}
+
+	public long[] readLongArray(@Nullable long[] dest, int size) {
+		int i = this.readVarInt();
+		if (dest == null || dest.length != i) {
+			if (i > size) {
+				throw new DecoderException("LongArray with size " + i + " is bigger than allowed " + size);
+			}
+
+			dest = new long[i];
+		}
+
+		for (int j = 0; j < dest.length; j++) {
+			dest[j] = this.readLong();
+		}
+
+		return dest;
 	}
 
 	public BlockPos readBlockPos() {
 		return BlockPos.fromLong(this.readLong());
 	}
 
-	public void writeBlockPos(BlockPos pos) {
+	public PacketByteBuf writeBlockPos(BlockPos pos) {
 		this.writeLong(pos.asLong());
+		return this;
 	}
 
-	public Text readText() throws IOException {
-		return Text.Serializer.deserialize(this.readString(32767));
+	public Text readText() {
+		return Text.Serializer.deserializeText(this.readString(32767));
 	}
 
-	public void writeText(Text text) throws IOException {
-		this.writeString(Text.Serializer.serialize(text));
+	public PacketByteBuf writeText(Text text) {
+		return this.writeString(Text.Serializer.serialize(text));
 	}
 
 	public <T extends Enum<T>> T readEnumConstant(Class<T> instance) {
 		return (T)instance.getEnumConstants()[this.readVarInt()];
 	}
 
-	public void writeEnum(Enum<?> instance) {
-		this.writeVarInt(instance.ordinal());
+	public PacketByteBuf writeEnumConstant(Enum<?> constant) {
+		return this.writeVarInt(constant.ordinal());
 	}
 
 	public int readVarInt() {
@@ -109,34 +181,37 @@ public class PacketByteBuf extends ByteBuf {
 		return l;
 	}
 
-	public void writeUUID(UUID uuid) {
+	public PacketByteBuf writeUuid(UUID uuid) {
 		this.writeLong(uuid.getMostSignificantBits());
 		this.writeLong(uuid.getLeastSignificantBits());
+		return this;
 	}
 
 	public UUID readUuid() {
 		return new UUID(this.readLong(), this.readLong());
 	}
 
-	public void writeVarInt(int value) {
-		while ((value & -128) != 0) {
-			this.writeByte(value & 127 | 128);
-			value >>>= 7;
+	public PacketByteBuf writeVarInt(int integer) {
+		while ((integer & -128) != 0) {
+			this.writeByte(integer & 127 | 128);
+			integer >>>= 7;
 		}
 
-		this.writeByte(value);
+		this.writeByte(integer);
+		return this;
 	}
 
-	public void writeVarLong(long value) {
-		while ((value & -128L) != 0L) {
-			this.writeByte((int)(value & 127L) | 128);
-			value >>>= 7;
+	public PacketByteBuf method_10608(long l) {
+		while ((l & -128L) != 0L) {
+			this.writeByte((int)(l & 127L) | 128);
+			l >>>= 7;
 		}
 
-		this.writeByte((int)value);
+		this.writeByte((int)l);
+		return this;
 	}
 
-	public void writeNbtCompound(NbtCompound nbt) {
+	public PacketByteBuf writeNbtCompound(@Nullable NbtCompound nbt) {
 		if (nbt == null) {
 			this.writeByte(0);
 		} else {
@@ -146,20 +221,28 @@ public class PacketByteBuf extends ByteBuf {
 				throw new EncoderException(var3);
 			}
 		}
+
+		return this;
 	}
 
-	public NbtCompound readNbtCompound() throws IOException {
+	@Nullable
+	public NbtCompound readNbtCompound() {
 		int i = this.readerIndex();
 		byte b = this.readByte();
 		if (b == 0) {
 			return null;
 		} else {
 			this.readerIndex(i);
-			return NbtIo.read(new ByteBufInputStream(this), new PositionTracker(2097152L));
+
+			try {
+				return NbtIo.read(new ByteBufInputStream(this), new PositionTracker(2097152L));
+			} catch (IOException var4) {
+				throw new EncoderException(var4);
+			}
 		}
 	}
 
-	public void writeItemStack(ItemStack stack) {
+	public PacketByteBuf writeItemStack(@Nullable ItemStack stack) {
 		if (stack == null) {
 			this.writeShort(-1);
 		} else {
@@ -173,9 +256,12 @@ public class PacketByteBuf extends ByteBuf {
 
 			this.writeNbtCompound(nbtCompound);
 		}
+
+		return this;
 	}
 
-	public ItemStack readItemStack() throws IOException {
+	@Nullable
+	public ItemStack readItemStack() {
 		ItemStack itemStack = null;
 		int i = this.readShort();
 		if (i >= 0) {

@@ -5,21 +5,18 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.opengl.GL11;
 
-public class BaseArrowEntityRenderer extends EntityRenderer<AbstractArrowEntity> {
-	private static final Identifier TEXTURE = new Identifier("textures/entity/arrow.png");
-
+public abstract class BaseArrowEntityRenderer<T extends AbstractArrowEntity> extends EntityRenderer<T> {
 	public BaseArrowEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher);
 	}
 
-	public void render(AbstractArrowEntity abstractArrowEntity, double d, double e, double f, float g, float h) {
+	public void render(T abstractArrowEntity, double d, double e, double f, float g, float h) {
 		this.bindTexture(abstractArrowEntity);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.pushMatrix();
+		GlStateManager.disableLighting();
 		GlStateManager.translate((float)d, (float)e, (float)f);
 		GlStateManager.rotate(abstractArrowEntity.prevYaw + (abstractArrowEntity.yaw - abstractArrowEntity.prevYaw) * h - 90.0F, 0.0F, 1.0F, 0.0F);
 		GlStateManager.rotate(abstractArrowEntity.prevPitch + (abstractArrowEntity.pitch - abstractArrowEntity.prevPitch) * h, 0.0F, 0.0F, 1.0F);
@@ -45,14 +42,19 @@ public class BaseArrowEntityRenderer extends EntityRenderer<AbstractArrowEntity>
 		GlStateManager.rotate(45.0F, 1.0F, 0.0F, 0.0F);
 		GlStateManager.scale(r, r, r);
 		GlStateManager.translate(-4.0F, 0.0F, 0.0F);
-		GL11.glNormal3f(r, 0.0F, 0.0F);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(abstractArrowEntity));
+		}
+
+		GlStateManager.method_12272(r, 0.0F, 0.0F);
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
 		bufferBuilder.vertex(-7.0, -2.0, -2.0).texture((double)n, (double)p).next();
 		bufferBuilder.vertex(-7.0, -2.0, 2.0).texture((double)o, (double)p).next();
 		bufferBuilder.vertex(-7.0, 2.0, 2.0).texture((double)o, (double)q).next();
 		bufferBuilder.vertex(-7.0, 2.0, -2.0).texture((double)n, (double)q).next();
 		tessellator.draw();
-		GL11.glNormal3f(-r, 0.0F, 0.0F);
+		GlStateManager.method_12272(-r, 0.0F, 0.0F);
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
 		bufferBuilder.vertex(-7.0, 2.0, -2.0).texture((double)n, (double)p).next();
 		bufferBuilder.vertex(-7.0, 2.0, 2.0).texture((double)o, (double)p).next();
@@ -62,7 +64,7 @@ public class BaseArrowEntityRenderer extends EntityRenderer<AbstractArrowEntity>
 
 		for (int u = 0; u < 4; u++) {
 			GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
-			GL11.glNormal3f(0.0F, 0.0F, r);
+			GlStateManager.method_12272(0.0F, 0.0F, r);
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
 			bufferBuilder.vertex(-8.0, -2.0, 0.0).texture((double)j, (double)l).next();
 			bufferBuilder.vertex(8.0, -2.0, 0.0).texture((double)k, (double)l).next();
@@ -71,12 +73,14 @@ public class BaseArrowEntityRenderer extends EntityRenderer<AbstractArrowEntity>
 			tessellator.draw();
 		}
 
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.disableRescaleNormal();
+		GlStateManager.enableLighting();
 		GlStateManager.popMatrix();
 		super.render(abstractArrowEntity, d, e, f, g, h);
-	}
-
-	protected Identifier getTexture(AbstractArrowEntity abstractArrowEntity) {
-		return TEXTURE;
 	}
 }

@@ -2,21 +2,35 @@ package net.minecraft.block.entity;
 
 import com.google.common.collect.Iterables;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.properties.Property;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatUtil;
+import net.minecraft.util.Tickable;
+import net.minecraft.util.UserCache;
 
-public class SkullBlockEntity extends BlockEntity {
+public class SkullBlockEntity extends BlockEntity implements Tickable {
 	private int skullType;
 	private int rot;
 	private GameProfile owner = null;
+	private int field_12854;
+	private boolean field_12855;
+	private static UserCache field_12856;
+	private static MinecraftSessionService field_12857;
+
+	public static void method_11666(UserCache userCache) {
+		field_12856 = userCache;
+	}
+
+	public static void method_11665(MinecraftSessionService minecraftSessionService) {
+		field_12857 = minecraftSessionService;
+	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		nbt.putByte("SkullType", (byte)(this.skullType & 0xFF));
 		nbt.putByte("Rot", (byte)(this.rot & 0xFF));
@@ -25,6 +39,8 @@ public class SkullBlockEntity extends BlockEntity {
 			NbtHelper.fromGameProfile(nbtCompound, this.owner);
 			nbt.put("Owner", nbtCompound);
 		}
+
+		return nbt;
 	}
 
 	@Override
@@ -45,15 +61,36 @@ public class SkullBlockEntity extends BlockEntity {
 		}
 	}
 
+	@Override
+	public void tick() {
+		if (this.skullType == 5) {
+			if (this.world.isReceivingRedstonePower(this.pos)) {
+				this.field_12855 = true;
+				this.field_12854++;
+			} else {
+				this.field_12855 = false;
+			}
+		}
+	}
+
+	public float method_11664(float f) {
+		return this.field_12855 ? (float)this.field_12854 + f : (float)this.field_12854;
+	}
+
+	@Nullable
 	public GameProfile getOwner() {
 		return this.owner;
 	}
 
+	@Nullable
 	@Override
-	public Packet getPacket() {
-		NbtCompound nbtCompound = new NbtCompound();
-		this.toNbt(nbtCompound);
-		return new BlockEntityUpdateS2CPacket(this.pos, 4, nbtCompound);
+	public BlockEntityUpdateS2CPacket getUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 4, this.getUpdatePacketContent());
+	}
+
+	@Override
+	public NbtCompound getUpdatePacketContent() {
+		return this.toNbt(new NbtCompound());
 	}
 
 	public void setSkullType(int type) {
@@ -61,7 +98,7 @@ public class SkullBlockEntity extends BlockEntity {
 		this.owner = null;
 	}
 
-	public void setOwnerAndType(GameProfile owner) {
+	public void setOwnerAndType(@Nullable GameProfile owner) {
 		this.skullType = 3;
 		this.owner = owner;
 		this.loadOwnerProperties();
@@ -76,20 +113,20 @@ public class SkullBlockEntity extends BlockEntity {
 		if (profile != null && !ChatUtil.isEmpty(profile.getName())) {
 			if (profile.isComplete() && profile.getProperties().containsKey("textures")) {
 				return profile;
-			} else if (MinecraftServer.getServer() == null) {
-				return profile;
-			} else {
-				GameProfile gameProfile = MinecraftServer.getServer().getUserCache().findByName(profile.getName());
+			} else if (field_12856 != null && field_12857 != null) {
+				GameProfile gameProfile = field_12856.findByName(profile.getName());
 				if (gameProfile == null) {
 					return profile;
 				} else {
 					Property property = (Property)Iterables.getFirst(gameProfile.getProperties().get("textures"), null);
 					if (property == null) {
-						gameProfile = MinecraftServer.getServer().getSessionService().fillProfileProperties(gameProfile, true);
+						gameProfile = field_12857.fillProfileProperties(gameProfile, true);
 					}
 
 					return gameProfile;
 				}
+			} else {
+				return profile;
 			}
 		} else {
 			return profile;

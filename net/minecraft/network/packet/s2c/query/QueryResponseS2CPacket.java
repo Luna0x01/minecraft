@@ -8,6 +8,7 @@ import net.minecraft.network.listener.ClientQueryPacketListener;
 import net.minecraft.server.ServerMetadata;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.LowercaseEnumTypeAdapterFactory;
 import net.minecraft.util.PacketByteBuf;
 
@@ -31,7 +32,7 @@ public class QueryResponseS2CPacket implements Packet<ClientQueryPacketListener>
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.metadata = (ServerMetadata)GSON.fromJson(buf.readString(32767), ServerMetadata.class);
+		this.metadata = JsonHelper.deserialize(GSON, buf.readString(32767), ServerMetadata.class);
 	}
 
 	@Override

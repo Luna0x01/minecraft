@@ -4,24 +4,55 @@ import com.google.common.base.Functions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
+import com.google.gson.JsonParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.PlayerSelector;
 import net.minecraft.util.math.BlockPos;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public abstract class AbstractCommand implements Command {
 	private static CommandProvider commandProvider;
+
+	protected static SyntaxException method_12701(JsonParseException jsonParseException) {
+		Throwable throwable = ExceptionUtils.getRootCause(jsonParseException);
+		String string = "";
+		if (throwable != null) {
+			string = throwable.getMessage();
+			if (string.contains("setLenient")) {
+				string = string.substring(string.indexOf("to accept ") + 10);
+			}
+		}
+
+		return new SyntaxException("commands.tellraw.jsonException", string);
+	}
+
+	protected static NbtCompound getEntityNbt(Entity entity) {
+		NbtCompound nbtCompound = entity.toNbt(new NbtCompound());
+		if (entity instanceof PlayerEntity) {
+			ItemStack itemStack = ((PlayerEntity)entity).inventory.getMainHandStack();
+			if (itemStack != null && itemStack.getItem() != null) {
+				nbtCompound.put("SelectedItem", itemStack.toNbt(new NbtCompound()));
+			}
+		}
+
+		return nbtCompound;
+	}
 
 	public int getPermissionLevel() {
 		return 4;
@@ -33,13 +64,13 @@ public abstract class AbstractCommand implements Command {
 	}
 
 	@Override
-	public boolean isAccessible(CommandSource source) {
+	public boolean method_3278(MinecraftServer server, CommandSource source) {
 		return source.canUseCommand(this.getPermissionLevel(), this.getCommandName());
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return Collections.emptyList();
 	}
 
 	public static int parseInt(String value) throws InvalidNumberException {
@@ -139,17 +170,17 @@ public abstract class AbstractCommand implements Command {
 		}
 	}
 
-	public static ServerPlayerEntity getPlayer(CommandSource source, String name) throws PlayerNotFoundException {
-		ServerPlayerEntity serverPlayerEntity = PlayerSelector.selectPlayer(source, name);
+	public static ServerPlayerEntity method_4639(MinecraftServer minecraftServer, CommandSource commandSource, String string) throws PlayerNotFoundException {
+		ServerPlayerEntity serverPlayerEntity = PlayerSelector.selectPlayer(commandSource, string);
 		if (serverPlayerEntity == null) {
 			try {
-				serverPlayerEntity = MinecraftServer.getServer().getPlayerManager().getPlayer(UUID.fromString(name));
-			} catch (IllegalArgumentException var4) {
+				serverPlayerEntity = minecraftServer.getPlayerManager().getPlayer(UUID.fromString(string));
+			} catch (IllegalArgumentException var5) {
 			}
 		}
 
 		if (serverPlayerEntity == null) {
-			serverPlayerEntity = MinecraftServer.getServer().getPlayerManager().getPlayer(name);
+			serverPlayerEntity = minecraftServer.getPlayerManager().getPlayer(string);
 		}
 
 		if (serverPlayerEntity == null) {
@@ -159,20 +190,19 @@ public abstract class AbstractCommand implements Command {
 		}
 	}
 
-	public static Entity getEntity(CommandSource source, String uuid) throws EntityNotFoundException {
-		return getEntity(source, uuid, Entity.class);
+	public static Entity method_10711(MinecraftServer minecraftServer, CommandSource commandSource, String string) throws EntityNotFoundException {
+		return method_12702(minecraftServer, commandSource, string, Entity.class);
 	}
 
-	public static <T extends Entity> T getEntity(CommandSource source, String uuid, Class<? extends T> entityClass) throws EntityNotFoundException {
-		Entity entity = PlayerSelector.selectEntity(source, uuid, entityClass);
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
+	public static <T extends Entity> T method_12702(MinecraftServer minecraftServer, CommandSource commandSource, String string, Class<? extends T> class_) throws EntityNotFoundException {
+		Entity entity = PlayerSelector.selectEntity(commandSource, string, class_);
 		if (entity == null) {
-			entity = minecraftServer.getPlayerManager().getPlayer(uuid);
+			entity = minecraftServer.getPlayerManager().getPlayer(string);
 		}
 
 		if (entity == null) {
 			try {
-				UUID uUID = UUID.fromString(uuid);
+				UUID uUID = UUID.fromString(string);
 				entity = minecraftServer.getEntity(uUID);
 				if (entity == null) {
 					entity = minecraftServer.getPlayerManager().getPlayer(uUID);
@@ -182,42 +212,42 @@ public abstract class AbstractCommand implements Command {
 			}
 		}
 
-		if (entity != null && entityClass.isAssignableFrom(entity.getClass())) {
+		if (entity != null && class_.isAssignableFrom(entity.getClass())) {
 			return (T)entity;
 		} else {
 			throw new EntityNotFoundException();
 		}
 	}
 
-	public static List<Entity> getEntities(CommandSource source, String uuid) throws EntityNotFoundException {
-		return (List<Entity>)(PlayerSelector.method_4091(uuid)
-			? PlayerSelector.method_10866(source, uuid, Entity.class)
-			: Lists.newArrayList(new Entity[]{getEntity(source, uuid)}));
+	public static List<Entity> method_12704(MinecraftServer minecraftServer, CommandSource commandSource, String string) throws EntityNotFoundException {
+		return (List<Entity>)(PlayerSelector.method_4091(string)
+			? PlayerSelector.method_10866(commandSource, string, Entity.class)
+			: Lists.newArrayList(new Entity[]{method_10711(minecraftServer, commandSource, string)}));
 	}
 
-	public static String method_5468(CommandSource source, String name) throws PlayerNotFoundException {
+	public static String method_12705(MinecraftServer minecraftServer, CommandSource commandSource, String string) throws PlayerNotFoundException {
 		try {
-			return getPlayer(source, name).getTranslationKey();
-		} catch (PlayerNotFoundException var3) {
-			if (PlayerSelector.method_4091(name)) {
-				throw var3;
+			return method_4639(minecraftServer, commandSource, string).getTranslationKey();
+		} catch (PlayerNotFoundException var4) {
+			if (string != null && !string.startsWith("@")) {
+				return string;
 			} else {
-				return name;
+				throw var4;
 			}
 		}
 	}
 
-	public static String method_10714(CommandSource source, String name) throws EntityNotFoundException {
+	public static String method_12706(MinecraftServer minecraftServer, CommandSource commandSource, String string) throws EntityNotFoundException {
 		try {
-			return getPlayer(source, name).getTranslationKey();
-		} catch (PlayerNotFoundException var5) {
+			return method_4639(minecraftServer, commandSource, string).getTranslationKey();
+		} catch (PlayerNotFoundException var6) {
 			try {
-				return getEntity(source, name).getUuid().toString();
-			} catch (EntityNotFoundException var4) {
-				if (PlayerSelector.method_4091(name)) {
-					throw var4;
+				return method_10711(minecraftServer, commandSource, string).getEntityName();
+			} catch (EntityNotFoundException var5) {
+				if (string != null && !string.startsWith("@")) {
+					return string;
 				} else {
-					return name;
+					throw var5;
 				}
 			}
 		}
@@ -290,17 +320,18 @@ public abstract class AbstractCommand implements Command {
 				}
 			}
 
+			double f = e + (bl2 ? d : 0.0);
 			if (min != 0 || max != 0) {
-				if (e < (double)min) {
-					throw new InvalidNumberException("commands.generic.double.tooSmall", e, min);
+				if (f < (double)min) {
+					throw new InvalidNumberException("commands.generic.double.tooSmall", f, min);
 				}
 
-				if (e > (double)max) {
-					throw new InvalidNumberException("commands.generic.double.tooBig", e, max);
+				if (f > (double)max) {
+					throw new InvalidNumberException("commands.generic.double.tooBig", f, max);
 				}
 			}
 
-			return new AbstractCommand.Coordinate(e + (bl2 ? d : 0.0), e, bl2);
+			return new AbstractCommand.Coordinate(f, e, bl2);
 		}
 	}
 
@@ -405,9 +436,9 @@ public abstract class AbstractCommand implements Command {
 		return concat(strings.toArray(new String[strings.size()]));
 	}
 
-	public static List<String> method_10707(String[] strings, int i, BlockPos pos) {
+	public static List<String> method_10707(String[] strings, int i, @Nullable BlockPos pos) {
 		if (pos == null) {
-			return null;
+			return Lists.newArrayList(new String[]{"~"});
 		} else {
 			int j = strings.length - 1;
 			String string;
@@ -417,7 +448,7 @@ public abstract class AbstractCommand implements Command {
 				string = Integer.toString(pos.getY());
 			} else {
 				if (j != i + 2) {
-					return null;
+					return Collections.emptyList();
 				}
 
 				string = Integer.toString(pos.getZ());
@@ -427,9 +458,10 @@ public abstract class AbstractCommand implements Command {
 		}
 	}
 
-	public static List<String> method_10712(String[] strings, int i, BlockPos pos) {
+	@Nullable
+	public static List<String> method_10712(String[] strings, int i, @Nullable BlockPos pos) {
 		if (pos == null) {
-			return null;
+			return Lists.newArrayList(new String[]{"~"});
 		} else {
 			int j = strings.length - 1;
 			String string;

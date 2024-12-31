@@ -1,8 +1,13 @@
 package net.minecraft.item;
 
+import javax.annotation.Nullable;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
@@ -12,17 +17,21 @@ public class MilkBucketItem extends Item {
 		this.setItemGroup(ItemGroup.MISC);
 	}
 
+	@Nullable
 	@Override
-	public ItemStack onFinishUse(ItemStack stack, World world, PlayerEntity player) {
-		if (!player.abilities.creativeMode) {
+	public ItemStack method_3367(ItemStack stack, World world, LivingEntity entity) {
+		if (entity instanceof PlayerEntity && !((PlayerEntity)entity).abilities.creativeMode) {
 			stack.count--;
 		}
 
 		if (!world.isClient) {
-			player.clearStatusEffects();
+			entity.clearStatusEffects();
 		}
 
-		player.incrementStat(Stats.USED[Item.getRawId(this)]);
+		if (entity instanceof PlayerEntity) {
+			((PlayerEntity)entity).incrementStat(Stats.used(this));
+		}
+
 		return stack.count <= 0 ? new ItemStack(Items.BUCKET) : stack;
 	}
 
@@ -37,8 +46,8 @@ public class MilkBucketItem extends Item {
 	}
 
 	@Override
-	public ItemStack onStartUse(ItemStack stack, World world, PlayerEntity player) {
-		player.setUseItem(stack, this.getMaxUseTime(stack));
-		return stack;
+	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+		playerEntity.method_13050(hand);
+		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 }

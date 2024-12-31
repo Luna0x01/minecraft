@@ -1,7 +1,6 @@
 package net.minecraft.world.gen.feature;
 
 import java.util.Random;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.TallPlantBlock;
@@ -18,8 +17,8 @@ public class TallGrassFeature extends Feature {
 
 	@Override
 	public boolean generate(World world, Random random, BlockPos blockPos) {
-		Block block;
-		while (((block = world.getBlockState(blockPos).getBlock()).getMaterial() == Material.AIR || block.getMaterial() == Material.FOLIAGE) && blockPos.getY() > 0) {
+		BlockState blockState;
+		while (((blockState = world.getBlockState(blockPos)).getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) && blockPos.getY() > 0) {
 			blockPos = blockPos.down();
 		}
 

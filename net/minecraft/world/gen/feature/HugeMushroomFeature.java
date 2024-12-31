@@ -2,6 +2,7 @@ package net.minecraft.world.gen.feature;
 
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.MushroomBlock;
 import net.minecraft.block.material.Material;
@@ -9,7 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class HugeMushroomFeature extends Feature {
-	private Block block;
+	private final Block block;
 
 	public HugeMushroomFeature(Block block) {
 		super(true);
@@ -18,12 +19,14 @@ public class HugeMushroomFeature extends Feature {
 
 	public HugeMushroomFeature() {
 		super(false);
+		this.block = null;
 	}
 
 	@Override
 	public boolean generate(World world, Random random, BlockPos blockPos) {
-		if (this.block == null) {
-			this.block = random.nextBoolean() ? Blocks.BROWN_MUSHROOM_BLOCK : Blocks.RED_MUSHROOM_BLOCK;
+		Block block = this.block;
+		if (block == null) {
+			block = random.nextBoolean() ? Blocks.BROWN_MUSHROOM_BLOCK : Blocks.RED_MUSHROOM_BLOCK;
 		}
 
 		int i = random.nextInt(3) + 4;
@@ -40,8 +43,8 @@ public class HugeMushroomFeature extends Feature {
 				for (int l = blockPos.getX() - k; l <= blockPos.getX() + k && bl; l++) {
 					for (int m = blockPos.getZ() - k; m <= blockPos.getZ() + k && bl; m++) {
 						if (j >= 0 && j < 256) {
-							Block block = world.getBlockState(mutable.setPosition(l, j, m)).getBlock();
-							if (block.getMaterial() != Material.AIR && block.getMaterial() != Material.FOLIAGE) {
+							Material material = world.getBlockState(mutable.setPosition(l, j, m)).getMaterial();
+							if (material != Material.AIR && material != Material.FOLIAGE) {
 								bl = false;
 							}
 						} else {
@@ -59,7 +62,7 @@ public class HugeMushroomFeature extends Feature {
 					return false;
 				} else {
 					int n = blockPos.getY() + i;
-					if (this.block == Blocks.RED_MUSHROOM_BLOCK) {
+					if (block == Blocks.RED_MUSHROOM_BLOCK) {
 						n = blockPos.getY() + i - 3;
 					}
 
@@ -69,7 +72,7 @@ public class HugeMushroomFeature extends Feature {
 							p++;
 						}
 
-						if (this.block == Blocks.BROWN_MUSHROOM_BLOCK) {
+						if (block == Blocks.BROWN_MUSHROOM_BLOCK) {
 							p = 3;
 						}
 
@@ -94,7 +97,7 @@ public class HugeMushroomFeature extends Feature {
 								}
 
 								MushroomBlock.MushroomType mushroomType = MushroomBlock.MushroomType.getById(w);
-								if (this.block == Blocks.BROWN_MUSHROOM_BLOCK || o < blockPos.getY() + i) {
+								if (block == Blocks.BROWN_MUSHROOM_BLOCK || o < blockPos.getY() + i) {
 									if ((u == q || u == r) && (v == s || v == t)) {
 										continue;
 									}
@@ -138,8 +141,8 @@ public class HugeMushroomFeature extends Feature {
 
 								if (blockPos.getY() >= blockPos.getY() + i - 1 || mushroomType != MushroomBlock.MushroomType.ALL_INSIDE) {
 									BlockPos blockPos2 = new BlockPos(u, o, v);
-									if (!world.getBlockState(blockPos2).getBlock().isFullBlock()) {
-										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, this.block.getDefaultState().with(MushroomBlock.VARIANT, mushroomType));
+									if (!world.getBlockState(blockPos2).isFullBlock()) {
+										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, block.getDefaultState().with(MushroomBlock.VARIANT, mushroomType));
 									}
 								}
 							}
@@ -147,11 +150,9 @@ public class HugeMushroomFeature extends Feature {
 					}
 
 					for (int x = 0; x < i; x++) {
-						Block block3 = world.getBlockState(blockPos.up(x)).getBlock();
-						if (!block3.isFullBlock()) {
-							this.setBlockStateWithoutUpdatingNeighbors(
-								world, blockPos.up(x), this.block.getDefaultState().with(MushroomBlock.VARIANT, MushroomBlock.MushroomType.STEM)
-							);
+						BlockState blockState = world.getBlockState(blockPos.up(x));
+						if (!blockState.isFullBlock()) {
+							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(x), block.getDefaultState().with(MushroomBlock.VARIANT, MushroomBlock.MushroomType.STEM));
 						}
 					}
 

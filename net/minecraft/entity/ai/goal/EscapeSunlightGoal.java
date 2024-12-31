@@ -1,6 +1,8 @@
 package net.minecraft.entity.ai.goal;
 
 import java.util.Random;
+import javax.annotation.Nullable;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -29,6 +31,8 @@ public class EscapeSunlightGoal extends Goal {
 			return false;
 		} else if (!this.world.hasDirectSunlight(new BlockPos(this.mob.x, this.mob.getBoundingBox().minY, this.mob.z))) {
 			return false;
+		} else if (this.mob.getStack(EquipmentSlot.HEAD) != null) {
+			return false;
 		} else {
 			Vec3d vec3d = this.locateShadedPos();
 			if (vec3d == null) {
@@ -52,6 +56,7 @@ public class EscapeSunlightGoal extends Goal {
 		this.mob.getNavigation().startMovingTo(this.targetX, this.targetY, this.targetZ, this.speed);
 	}
 
+	@Nullable
 	private Vec3d locateShadedPos() {
 		Random random = this.mob.getRandom();
 		BlockPos blockPos = new BlockPos(this.mob.x, this.mob.getBoundingBox().minY, this.mob.z);

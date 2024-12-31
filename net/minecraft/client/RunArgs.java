@@ -3,6 +3,8 @@ package net.minecraft.client;
 import com.mojang.authlib.properties.PropertyMap;
 import java.io.File;
 import java.net.Proxy;
+import javax.annotation.Nullable;
+import net.minecraft.client.resource.AssetsIndex;
 import net.minecraft.client.util.Session;
 
 public class RunArgs {
@@ -52,21 +54,27 @@ public class RunArgs {
 		public final File assetDir;
 		public final String assetIndex;
 
-		public Directories(File file, File file2, File file3, String string) {
+		public Directories(File file, File file2, File file3, @Nullable String string) {
 			this.runDir = file;
 			this.resourcePackDir = file2;
 			this.assetDir = file3;
 			this.assetIndex = string;
+		}
+
+		public AssetsIndex getAssetsIndex() {
+			return (AssetsIndex)(this.assetIndex == null ? new class_2902(this.assetDir) : new AssetsIndex(this.assetDir, this.assetIndex));
 		}
 	}
 
 	public static class Game {
 		public final boolean demo;
 		public final String version;
+		public final String versionType;
 
-		public Game(boolean bl, String string) {
+		public Game(boolean bl, String string, String string2) {
 			this.demo = bl;
 			this.version = string;
+			this.versionType = string2;
 		}
 	}
 

@@ -1,5 +1,6 @@
 package net.minecraft.world.level.storage;
 
+import java.io.File;
 import java.util.List;
 import net.minecraft.client.ClientException;
 import net.minecraft.util.ProgressListener;
@@ -30,4 +31,6 @@ public interface LevelStorageAccess {
 	boolean convert(String worldName, ProgressListener progressListener);
 
 	boolean levelExists(String name);
+
+	File method_11957(String string, String string2);
 }

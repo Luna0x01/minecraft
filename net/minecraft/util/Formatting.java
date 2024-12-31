@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 public enum Formatting {
 	BLACK("BLACK", '0', 0),
@@ -79,14 +80,17 @@ public enum Formatting {
 		return this.stringValue;
 	}
 
-	public static String strip(String string) {
+	@Nullable
+	public static String strip(@Nullable String string) {
 		return string == null ? null : FORMATTING_CODE_PATTERN.matcher(string).replaceAll("");
 	}
 
-	public static Formatting byName(String name) {
+	@Nullable
+	public static Formatting byName(@Nullable String name) {
 		return name == null ? null : (Formatting)BY_NAME.get(sanitize(name));
 	}
 
+	@Nullable
 	public static Formatting byColorIndex(int colorIndex) {
 		if (colorIndex < 0) {
 			return RESET;

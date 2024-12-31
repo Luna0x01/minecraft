@@ -18,11 +18,6 @@ public class LeavesItem extends BlockItem {
 	}
 
 	@Override
-	public int getDisplayColor(ItemStack stack, int color) {
-		return this.leavesBlock.getColor(this.leavesBlock.stateFromData(stack.getData()));
-	}
-
-	@Override
 	public String getTranslationKey(ItemStack stack) {
 		return super.getTranslationKey() + "." + this.leavesBlock.getWoodType(stack.getData()).getOldName();
 	}

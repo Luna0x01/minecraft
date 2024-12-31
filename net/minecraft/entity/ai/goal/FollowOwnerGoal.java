@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
+import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,7 +22,7 @@ public class FollowOwnerGoal extends Goal {
 	private int updateCountdownTicks;
 	float maxDistance;
 	float minDistance;
-	private boolean field_3500;
+	private float field_14576;
 
 	public FollowOwnerGoal(TameableEntity tameableEntity, double d, float f, float g) {
 		this.tameable = tameableEntity;
@@ -61,21 +62,21 @@ public class FollowOwnerGoal extends Goal {
 	@Override
 	public void start() {
 		this.updateCountdownTicks = 0;
-		this.field_3500 = ((MobNavigation)this.tameable.getNavigation()).method_11032();
-		((MobNavigation)this.tameable.getNavigation()).method_11027(false);
+		this.field_14576 = this.tameable.method_13075(LandType.WATER);
+		this.tameable.method_13076(LandType.WATER, 0.0F);
 	}
 
 	@Override
 	public void stop() {
 		this.owner = null;
 		this.navigation.stop();
-		((MobNavigation)this.tameable.getNavigation()).method_11027(true);
+		this.tameable.method_13076(LandType.WATER, this.field_14576);
 	}
 
 	private boolean canTeleportTo(BlockPos pos) {
 		BlockState blockState = this.world.getBlockState(pos);
 		Block block = blockState.getBlock();
-		return block == Blocks.AIR ? true : !block.renderAsNormalBlock();
+		return block == Blocks.AIR ? true : !blockState.method_11730();
 	}
 
 	@Override
@@ -94,7 +95,7 @@ public class FollowOwnerGoal extends Goal {
 							for (int l = 0; l <= 4; l++) {
 								for (int m = 0; m <= 4; m++) {
 									if ((l < 1 || m < 1 || l > 3 || m > 3)
-										&& World.isOpaque(this.world, new BlockPos(i + l, k - 1, j + m))
+										&& this.world.getBlockState(new BlockPos(i + l, k - 1, j + m)).method_11739()
 										&& this.canTeleportTo(new BlockPos(i + l, k, j + m))
 										&& this.canTeleportTo(new BlockPos(i + l, k + 1, j + m))) {
 										this.tameable

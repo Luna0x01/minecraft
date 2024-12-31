@@ -44,7 +44,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
-import tv.twitch.chat.ChatUserInfo;
 
 public abstract class Screen extends DrawableHelper implements IdentifiableBooleanConsumer {
 	private static final Logger logger = LogManager.getLogger();
@@ -297,13 +296,6 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 					this.insertText(clickEvent.getValue(), true);
 				} else if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
 					this.sendMessage(clickEvent.getValue(), false);
-				} else if (clickEvent.getAction() == ClickEvent.Action.TWITCH_USER_INFO) {
-					ChatUserInfo chatUserInfo = this.client.getTwitchStreamProvider().getUserInfo(clickEvent.getValue());
-					if (chatUserInfo != null) {
-						this.client.setScreen(new StreamUtilitiesScreen(this.client.getTwitchStreamProvider(), chatUserInfo));
-					} else {
-						logger.error("Tried to handle twitch user but couldn't find them!");
-					}
 				} else {
 					logger.error("Don't know how to handle " + clickEvent);
 				}
@@ -411,8 +403,9 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 	}
 
 	public void handleKeyboard() {
-		if (Keyboard.getEventKeyState()) {
-			this.keyPressed(Keyboard.getEventCharacter(), Keyboard.getEventKey());
+		char c = Keyboard.getEventCharacter();
+		if (Keyboard.getEventKey() == 0 && c >= ' ' || Keyboard.getEventKeyState()) {
+			this.keyPressed(c, Keyboard.getEventKey());
 		}
 
 		this.client.handleKeyInput();
@@ -477,7 +470,8 @@ public abstract class Screen extends DrawableHelper implements IdentifiableBoole
 			Object object = class_.getMethod("getDesktop").invoke(null);
 			class_.getMethod("browse", URI.class).invoke(object, link);
 		} catch (Throwable var4) {
-			logger.error("Couldn't open link", var4);
+			Throwable throwable2 = var4.getCause();
+			logger.error("Couldn't open link: {}", new Object[]{throwable2 == null ? "<UNKNOWN>" : throwable2.getMessage()});
 		}
 	}
 

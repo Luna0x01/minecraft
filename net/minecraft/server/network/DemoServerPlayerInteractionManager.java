@@ -1,9 +1,12 @@
 package net.minecraft.server.network;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -80,22 +83,24 @@ public class DemoServerPlayerInteractionManager extends ServerPlayerInteractionM
 	}
 
 	@Override
-	public boolean interactItem(PlayerEntity player, World world, ItemStack stack) {
+	public ActionResult method_12791(PlayerEntity player, World world, ItemStack item, Hand hand) {
 		if (this.demoEnded) {
 			this.sendDemoReminder();
-			return false;
+			return ActionResult.PASS;
 		} else {
-			return super.interactItem(player, world, stack);
+			return super.method_12791(player, world, item, hand);
 		}
 	}
 
 	@Override
-	public boolean interactBlock(PlayerEntity player, World world, ItemStack stack, BlockPos pos, Direction direction, float x, float y, float z) {
+	public ActionResult method_12792(
+		PlayerEntity playerEntity, World world, @Nullable ItemStack itemStack, Hand hand, BlockPos blockPos, Direction direction, float f, float g, float h
+	) {
 		if (this.demoEnded) {
 			this.sendDemoReminder();
-			return false;
+			return ActionResult.PASS;
 		} else {
-			return super.interactBlock(player, world, stack, pos, direction, x, y, z);
+			return super.method_12792(playerEntity, world, itemStack, hand, blockPos, direction, f, g, h);
 		}
 	}
 }

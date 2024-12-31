@@ -12,6 +12,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.Map.Entry;
 import net.minecraft.client.util.NetworkUtils;
+import net.minecraft.server.MinecraftServer;
 
 public class Snooper {
 	private final Map<String, Object> systemInfo = Maps.newHashMap();
@@ -54,7 +55,8 @@ public class Snooper {
 							map.put("snooper_token", Snooper.this.token);
 						}
 
-						NetworkUtils.post(Snooper.this.snooperUrl, map, true);
+						MinecraftServer minecraftServer = Snooper.this.snooped instanceof MinecraftServer ? (MinecraftServer)Snooper.this.snooped : null;
+						NetworkUtils.snoop(Snooper.this.snooperUrl, map, true, minecraftServer == null ? null : minecraftServer.getProxy());
 					}
 				}
 			}, 0L, 900000L);
@@ -69,7 +71,7 @@ public class Snooper {
 		this.addSystemInfo("os_version", System.getProperty("os.version"));
 		this.addSystemInfo("os_architecture", System.getProperty("os.arch"));
 		this.addSystemInfo("java_version", System.getProperty("java.version"));
-		this.addGameInfo("version", "1.8.9");
+		this.addGameInfo("version", "1.9.4");
 		this.snooped.addSnooper(this);
 	}
 

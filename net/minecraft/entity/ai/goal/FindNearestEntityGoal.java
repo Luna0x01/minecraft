@@ -3,6 +3,7 @@ package net.minecraft.entity.ai.goal;
 import com.google.common.base.Predicate;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
@@ -28,7 +29,7 @@ public class FindNearestEntityGoal extends Goal {
 		}
 
 		this.targetPredicate = new Predicate<LivingEntity>() {
-			public boolean apply(LivingEntity livingEntity) {
+			public boolean apply(@Nullable LivingEntity livingEntity) {
 				double d = FindNearestEntityGoal.this.method_11019();
 				if (livingEntity.isSneaking()) {
 					d *= 0.8F;

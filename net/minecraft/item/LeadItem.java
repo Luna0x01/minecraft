@@ -6,6 +6,8 @@ import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -17,17 +19,18 @@ public class LeadItem extends Item {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		Block block = world.getBlockState(pos).getBlock();
-		if (block instanceof FenceBlock) {
-			if (world.isClient) {
-				return true;
-			} else {
-				useLead(player, world, pos);
-				return true;
-			}
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
+		Block block = world.getBlockState(blockPos).getBlock();
+		if (!(block instanceof FenceBlock)) {
+			return ActionResult.PASS;
 		} else {
-			return false;
+			if (!world.isClient) {
+				useLead(playerEntity, world, blockPos);
+			}
+
+			return ActionResult.SUCCESS;
 		}
 	}
 

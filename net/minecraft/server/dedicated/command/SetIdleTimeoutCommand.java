@@ -23,13 +23,13 @@ public class SetIdleTimeoutCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length != 1) {
 			throw new IncorrectUsageException("commands.setidletimeout.usage");
 		} else {
 			int i = parseClampedInt(args[0], 0);
-			MinecraftServer.getServer().setPlayerIdleTimeout(i);
-			run(source, this, "commands.setidletimeout.success", new Object[]{i});
+			minecraftServer.setPlayerIdleTimeout(i);
+			run(commandSource, this, "commands.setidletimeout.success", new Object[]{i});
 		}
 	}
 }

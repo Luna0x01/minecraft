@@ -3,8 +3,9 @@ package net.minecraft.world.level.storage;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.LayeredBiomeSource;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.SingletonBiomeSource;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 
 public class AlphaChunkIo {
@@ -31,18 +32,18 @@ public class AlphaChunkIo {
 		return alphaChunk;
 	}
 
-	public static void convertAlphaChunk(AlphaChunkIo.AlphaChunk alphaChunk, NbtCompound nbt, LayeredBiomeSource biomeSource) {
-		nbt.putInt("xPos", alphaChunk.x);
-		nbt.putInt("zPos", alphaChunk.z);
-		nbt.putLong("LastUpdate", alphaChunk.lastUpdate);
+	public static void method_3956(AlphaChunkIo.AlphaChunk alphaChunk, NbtCompound nbtCompound, SingletonBiomeSource singletonBiomeSource) {
+		nbtCompound.putInt("xPos", alphaChunk.x);
+		nbtCompound.putInt("zPos", alphaChunk.z);
+		nbtCompound.putLong("LastUpdate", alphaChunk.lastUpdate);
 		int[] is = new int[alphaChunk.heightMap.length];
 
 		for (int i = 0; i < alphaChunk.heightMap.length; i++) {
 			is[i] = alphaChunk.heightMap[i];
 		}
 
-		nbt.putIntArray("HeightMap", is);
-		nbt.putBoolean("TerrainPopulated", alphaChunk.terrainPopulated);
+		nbtCompound.putIntArray("HeightMap", is);
+		nbtCompound.putBoolean("TerrainPopulated", alphaChunk.terrainPopulated);
 		NbtList nbtList = new NbtList();
 
 		for (int j = 0; j < 8; j++) {
@@ -80,32 +81,32 @@ public class AlphaChunkIo {
 					}
 				}
 
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putByte("Y", (byte)(j & 0xFF));
-				nbtCompound.putByteArray("Blocks", bs);
-				nbtCompound.putByteArray("Data", chunkNibbleArray.getValue());
-				nbtCompound.putByteArray("SkyLight", chunkNibbleArray2.getValue());
-				nbtCompound.putByteArray("BlockLight", chunkNibbleArray3.getValue());
-				nbtList.add(nbtCompound);
+				NbtCompound nbtCompound2 = new NbtCompound();
+				nbtCompound2.putByte("Y", (byte)(j & 0xFF));
+				nbtCompound2.putByteArray("Blocks", bs);
+				nbtCompound2.putByteArray("Data", chunkNibbleArray.getValue());
+				nbtCompound2.putByteArray("SkyLight", chunkNibbleArray2.getValue());
+				nbtCompound2.putByteArray("BlockLight", chunkNibbleArray3.getValue());
+				nbtList.add(nbtCompound2);
 			}
 		}
 
-		nbt.put("Sections", nbtList);
+		nbtCompound.put("Sections", nbtList);
 		byte[] cs = new byte[256];
 		BlockPos.Mutable mutable = new BlockPos.Mutable();
 
 		for (int u = 0; u < 16; u++) {
 			for (int v = 0; v < 16; v++) {
 				mutable.setPosition(alphaChunk.x << 4 | u, 0, alphaChunk.z << 4 | v);
-				cs[v << 4 | u] = (byte)(biomeSource.getBiomeAt(mutable, Biome.DEFAULT).id & 0xFF);
+				cs[v << 4 | u] = (byte)(Biome.getBiomeIndex(singletonBiomeSource.method_11536(mutable, Biomes.DEFAULT)) & 0xFF);
 			}
 		}
 
-		nbt.putByteArray("Biomes", cs);
-		nbt.put("Entities", alphaChunk.entities);
-		nbt.put("TileEntities", alphaChunk.blockEntities);
+		nbtCompound.putByteArray("Biomes", cs);
+		nbtCompound.put("Entities", alphaChunk.entities);
+		nbtCompound.put("TileEntities", alphaChunk.blockEntities);
 		if (alphaChunk.blockTicks != null) {
-			nbt.put("TileTicks", alphaChunk.blockTicks);
+			nbtCompound.put("TileTicks", alphaChunk.blockTicks);
 		}
 	}
 

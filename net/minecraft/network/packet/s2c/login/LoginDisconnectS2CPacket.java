@@ -18,7 +18,7 @@ public class LoginDisconnectS2CPacket implements Packet<ClientLoginPacketListene
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.reason = buf.readText();
+		this.reason = Text.Serializer.lenientDeserializeText(buf.readString(32767));
 	}
 
 	@Override

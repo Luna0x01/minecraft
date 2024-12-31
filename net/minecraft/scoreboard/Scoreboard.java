@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Formatting;
@@ -19,6 +20,7 @@ public class Scoreboard {
 	private final Map<String, Team> teamsByPlayer = Maps.newHashMap();
 	private static String[] names = null;
 
+	@Nullable
 	public ScoreboardObjective getNullableObjective(String name) {
 		return (ScoreboardObjective)this.objectives.get(name);
 	}
@@ -170,6 +172,7 @@ public class Scoreboard {
 		this.objectivesArray[slot] = objective;
 	}
 
+	@Nullable
 	public ScoreboardObjective getObjectiveForSlot(int i) {
 		return this.objectivesArray[i];
 	}
@@ -248,6 +251,7 @@ public class Scoreboard {
 		return this.teams.values();
 	}
 
+	@Nullable
 	public Team getPlayerTeam(String string) {
 		return (Team)this.teamsByPlayer.get(string);
 	}
@@ -333,7 +337,7 @@ public class Scoreboard {
 
 	public void resetEntityScore(Entity entity) {
 		if (entity != null && !(entity instanceof PlayerEntity) && !entity.isAlive()) {
-			String string = entity.getUuid().toString();
+			String string = entity.getEntityName();
 			this.resetPlayerScore(string, null);
 			this.clearPlayerTeam(string);
 		}

@@ -2,42 +2,54 @@ package net.minecraft.world.chunk;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ChorusFlowerBlock;
 import net.minecraft.block.FallingBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityCategory;
-import net.minecraft.util.ProgressListener;
+import net.minecraft.server.world.ChunkGenerator;
+import net.minecraft.structure.EndCityStructure;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.noise.NoiseSampler;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.NoiseGenerator;
+import net.minecraft.world.gen.feature.class_2754;
 
-public class EndChunkGenerator implements ChunkProvider {
+public class EndChunkGenerator implements ChunkGenerator {
 	private Random random;
-	private NoiseGenerator field_4856;
-	private NoiseGenerator field_4857;
-	private NoiseGenerator field_4858;
-	public NoiseGenerator field_4847;
-	public NoiseGenerator field_4848;
-	private World world;
+	protected static final BlockState END_STONE = Blocks.END_STONE.getDefaultState();
+	protected static final BlockState AIR = Blocks.AIR.getDefaultState();
+	private final NoiseGenerator field_4856;
+	private final NoiseGenerator field_4857;
+	private final NoiseGenerator field_4858;
+	public NoiseGenerator field_12973;
+	public NoiseGenerator field_12974;
+	private final World world;
+	private final boolean hasStructures;
+	private final EndCityStructure endCityFeature = new EndCityStructure(this);
+	private final NoiseSampler field_12977;
 	private double[] field_4860;
 	private Biome[] field_4861;
 	double[] field_4849;
 	double[] field_4850;
 	double[] field_4851;
-	double[] field_4852;
-	double[] field_4853;
+	private final class_2754 field_12978 = new class_2754();
 
-	public EndChunkGenerator(World world, long l) {
+	public EndChunkGenerator(World world, boolean bl, long l) {
 		this.world = world;
+		this.hasStructures = bl;
 		this.random = new Random(l);
 		this.field_4856 = new NoiseGenerator(this.random, 16);
 		this.field_4857 = new NoiseGenerator(this.random, 16);
 		this.field_4858 = new NoiseGenerator(this.random, 8);
-		this.field_4847 = new NoiseGenerator(this.random, 10);
-		this.field_4848 = new NoiseGenerator(this.random, 16);
+		this.field_12973 = new NoiseGenerator(this.random, 10);
+		this.field_12974 = new NoiseGenerator(this.random, 16);
+		this.field_12977 = new NoiseSampler(this.random);
 	}
 
 	public void method_9195(int i, int j, ChunkBlockStateStorage chunkBlockStateStorage) {
@@ -73,9 +85,9 @@ public class EndChunkGenerator implements ChunkProvider {
 							double ae = (y - x) * ac;
 
 							for (int af = 0; af < 8; af++) {
-								BlockState blockState = null;
+								BlockState blockState = AIR;
 								if (ad > 0.0) {
-									blockState = Blocks.END_STONE.getDefaultState();
+									blockState = END_STONE;
 								}
 
 								int ag = ab + o * 8;
@@ -104,18 +116,18 @@ public class EndChunkGenerator implements ChunkProvider {
 			for (int j = 0; j < 16; j++) {
 				int k = 1;
 				int l = -1;
-				BlockState blockState = Blocks.END_STONE.getDefaultState();
-				BlockState blockState2 = Blocks.END_STONE.getDefaultState();
+				BlockState blockState = END_STONE;
+				BlockState blockState2 = END_STONE;
 
 				for (int m = 127; m >= 0; m--) {
 					BlockState blockState3 = chunkBlockStateStorage.get(i, m, j);
-					if (blockState3.getBlock().getMaterial() == Material.AIR) {
+					if (blockState3.getMaterial() == Material.AIR) {
 						l = -1;
 					} else if (blockState3.getBlock() == Blocks.STONE) {
 						if (l == -1) {
 							if (k <= 0) {
-								blockState = Blocks.AIR.getDefaultState();
-								blockState2 = Blocks.END_STONE.getDefaultState();
+								blockState = AIR;
+								blockState2 = END_STONE;
 							}
 
 							l = k;
@@ -135,21 +147,68 @@ public class EndChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public Chunk getChunk(int x, int z) {
+	public Chunk generate(int x, int z) {
 		this.random.setSeed((long)x * 341873128712L + (long)z * 132897987541L);
 		ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
-		this.field_4861 = this.world.getBiomeSource().method_3861(this.field_4861, x * 16, z * 16, 16, 16);
+		this.field_4861 = this.world.method_3726().method_11540(this.field_4861, x * 16, z * 16, 16, 16);
 		this.method_9195(x, z, chunkBlockStateStorage);
 		this.method_9196(chunkBlockStateStorage);
+		if (this.hasStructures) {
+			this.endCityFeature.method_4004(this.world, x, z, chunkBlockStateStorage);
+		}
+
 		Chunk chunk = new Chunk(this.world, chunkBlockStateStorage, x, z);
 		byte[] bs = chunk.getBiomeArray();
 
 		for (int i = 0; i < bs.length; i++) {
-			bs[i] = (byte)this.field_4861[i].id;
+			bs[i] = (byte)Biome.getBiomeIndex(this.field_4861[i]);
 		}
 
 		chunk.calculateSkyLight();
 		return chunk;
+	}
+
+	private float method_11821(int i, int j, int k, int l) {
+		float f = (float)(i * 2 + k);
+		float g = (float)(j * 2 + l);
+		float h = 100.0F - MathHelper.sqrt(f * f + g * g) * 8.0F;
+		if (h > 80.0F) {
+			h = 80.0F;
+		}
+
+		if (h < -100.0F) {
+			h = -100.0F;
+		}
+
+		for (int m = -12; m <= 12; m++) {
+			for (int n = -12; n <= 12; n++) {
+				long o = (long)(i + m);
+				long p = (long)(j + n);
+				if (o * o + p * p > 4096L && this.field_12977.sample((double)o, (double)p) < -0.9F) {
+					float q = (MathHelper.abs((float)o) * 3439.0F + MathHelper.abs((float)p) * 147.0F) % 13.0F + 9.0F;
+					f = (float)(k - m * 2);
+					g = (float)(l - n * 2);
+					float r = 100.0F - MathHelper.sqrt(f * f + g * g) * q;
+					if (r > 80.0F) {
+						r = 80.0F;
+					}
+
+					if (r < -100.0F) {
+						r = -100.0F;
+					}
+
+					if (r > h) {
+						h = r;
+					}
+				}
+			}
+		}
+
+		return h;
+	}
+
+	public boolean method_11822(int i, int j) {
+		return (long)i * (long)i + (long)j * (long)j > 4096L && this.method_11821(i, j, 1, 1) >= 0.0F;
 	}
 
 	private double[] method_4011(double[] ds, int i, int j, int k, int l, int m, int n) {
@@ -159,57 +218,48 @@ public class EndChunkGenerator implements ChunkProvider {
 
 		double d = 684.412;
 		double e = 684.412;
-		this.field_4852 = this.field_4847.method_121(this.field_4852, i, k, l, n, 1.121, 1.121, 0.5);
-		this.field_4853 = this.field_4848.method_121(this.field_4853, i, k, l, n, 200.0, 200.0, 0.5);
 		d *= 2.0;
 		this.field_4849 = this.field_4858.method_122(this.field_4849, i, j, k, l, m, n, d / 80.0, e / 160.0, d / 80.0);
 		this.field_4850 = this.field_4856.method_122(this.field_4850, i, j, k, l, m, n, d, e, d);
 		this.field_4851 = this.field_4857.method_122(this.field_4851, i, j, k, l, m, n, d, e, d);
-		int o = 0;
+		int o = i / 2;
+		int p = k / 2;
+		int q = 0;
 
-		for (int p = 0; p < l; p++) {
-			for (int q = 0; q < n; q++) {
-				float f = (float)(p + i) / 1.0F;
-				float g = (float)(q + k) / 1.0F;
-				float h = 100.0F - MathHelper.sqrt(f * f + g * g) * 8.0F;
-				if (h > 80.0F) {
-					h = 80.0F;
-				}
+		for (int r = 0; r < l; r++) {
+			for (int s = 0; s < n; s++) {
+				float f = this.method_11821(o, p, r, s);
 
-				if (h < -100.0F) {
-					h = -100.0F;
-				}
-
-				for (int r = 0; r < m; r++) {
-					double s = 0.0;
-					double t = this.field_4850[o] / 512.0;
-					double u = this.field_4851[o] / 512.0;
-					double v = (this.field_4849[o] / 10.0 + 1.0) / 2.0;
+				for (int t = 0; t < m; t++) {
+					double g = 0.0;
+					double h = this.field_4850[q] / 512.0;
+					double u = this.field_4851[q] / 512.0;
+					double v = (this.field_4849[q] / 10.0 + 1.0) / 2.0;
 					if (v < 0.0) {
-						s = t;
+						g = h;
 					} else if (v > 1.0) {
-						s = u;
+						g = u;
 					} else {
-						s = t + (u - t) * v;
+						g = h + (u - h) * v;
 					}
 
-					s -= 8.0;
-					s += (double)h;
+					g -= 8.0;
+					g += (double)f;
 					int w = 2;
-					if (r > m / 2 - w) {
-						double x = (double)((float)(r - (m / 2 - w)) / 64.0F);
+					if (t > m / 2 - w) {
+						double x = (double)((float)(t - (m / 2 - w)) / 64.0F);
 						x = MathHelper.clamp(x, 0.0, 1.0);
-						s = s * (1.0 - x) + -3000.0 * x;
+						g = g * (1.0 - x) + -3000.0 * x;
 					}
 
 					int var34 = 8;
-					if (r < var34) {
-						double y = (double)((float)(var34 - r) / ((float)var34 - 1.0F));
-						s = s * (1.0 - y) + -30.0 * y;
+					if (t < var34) {
+						double y = (double)((float)(var34 - t) / ((float)var34 - 1.0F));
+						g = g * (1.0 - y) + -30.0 * y;
 					}
 
-					ds[o] = s;
-					o++;
+					ds[q] = g;
+					q++;
 				}
 			}
 		}
@@ -218,45 +268,47 @@ public class EndChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean chunkExists(int x, int z) {
-		return true;
-	}
-
-	@Override
-	public void decorateChunk(ChunkProvider provider, int x, int z) {
+	public void populate(int x, int z) {
 		FallingBlock.instantFall = true;
 		BlockPos blockPos = new BlockPos(x * 16, 0, z * 16);
+		if (this.hasStructures) {
+			this.endCityFeature.populate(this.world, this.random, new ChunkPos(x, z));
+		}
+
 		this.world.getBiome(blockPos.add(16, 0, 16)).decorate(this.world, this.world.random, blockPos);
+		long l = (long)x * (long)x + (long)z * (long)z;
+		if (l > 4096L) {
+			float f = this.method_11821(x, z, 1, 1);
+			if (f < -20.0F && this.random.nextInt(14) == 0) {
+				this.field_12978.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, 55 + this.random.nextInt(16), this.random.nextInt(16) + 8));
+				if (this.random.nextInt(4) == 0) {
+					this.field_12978.generate(this.world, this.random, blockPos.add(this.random.nextInt(16) + 8, 55 + this.random.nextInt(16), this.random.nextInt(16) + 8));
+				}
+			}
+
+			if (this.method_11821(x, z, 1, 1) > 40.0F) {
+				int i = this.random.nextInt(5);
+
+				for (int j = 0; j < i; j++) {
+					int k = this.random.nextInt(16) + 8;
+					int m = this.random.nextInt(16) + 8;
+					int n = this.world.getHighestBlock(blockPos.add(k, 0, m)).getY();
+					if (n > 0) {
+						int o = n - 1;
+						if (this.world.isAir(blockPos.add(k, o + 1, m)) && this.world.getBlockState(blockPos.add(k, o, m)).getBlock() == Blocks.END_STONE) {
+							ChorusFlowerBlock.method_11586(this.world, blockPos.add(k, o + 1, m), this.random, 8);
+						}
+					}
+				}
+			}
+		}
+
 		FallingBlock.instantFall = false;
 	}
 
 	@Override
-	public boolean isChunkModified(ChunkProvider chunkProvider, Chunk chunk, int x, int z) {
+	public boolean method_11762(Chunk chunk, int x, int z) {
 		return false;
-	}
-
-	@Override
-	public boolean saveChunks(boolean saveEntities, ProgressListener progressListener) {
-		return true;
-	}
-
-	@Override
-	public void flushChunks() {
-	}
-
-	@Override
-	public boolean tickChunks() {
-		return false;
-	}
-
-	@Override
-	public boolean isSavingEnabled() {
-		return true;
-	}
-
-	@Override
-	public String getChunkProviderName() {
-		return "RandomLevelSource";
 	}
 
 	@Override
@@ -264,22 +316,13 @@ public class EndChunkGenerator implements ChunkProvider {
 		return this.world.getBiome(pos).getSpawnEntries(category);
 	}
 
+	@Nullable
 	@Override
-	public BlockPos getNearestStructurePos(World world, String structureName, BlockPos pos) {
+	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
 		return null;
 	}
 
 	@Override
-	public int getLoadedChunksCount() {
-		return 0;
-	}
-
-	@Override
-	public void handleInitialLoad(Chunk chunk, int x, int z) {
-	}
-
-	@Override
-	public Chunk getChunk(BlockPos pos) {
-		return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
+	public void method_4702(Chunk chunk, int x, int z) {
 	}
 }

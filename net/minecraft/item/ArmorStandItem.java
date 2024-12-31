@@ -2,11 +2,14 @@ package net.minecraft.item;
 
 import java.util.List;
 import java.util.Random;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -20,48 +23,44 @@ public class ArmorStandItem extends Item {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
 		if (direction == Direction.DOWN) {
-			return false;
+			return ActionResult.FAIL;
 		} else {
-			boolean bl = world.getBlockState(pos).getBlock().isReplaceable(world, pos);
-			BlockPos blockPos = bl ? pos : pos.offset(direction);
-			if (!player.canModify(blockPos, direction, itemStack)) {
-				return false;
+			boolean bl = world.getBlockState(blockPos).getBlock().method_8638(world, blockPos);
+			BlockPos blockPos2 = bl ? blockPos : blockPos.offset(direction);
+			if (!playerEntity.canModify(blockPos2, direction, itemStack)) {
+				return ActionResult.FAIL;
 			} else {
-				BlockPos blockPos2 = blockPos.up();
-				boolean bl2 = !world.isAir(blockPos) && !world.getBlockState(blockPos).getBlock().isReplaceable(world, blockPos);
-				bl2 |= !world.isAir(blockPos2) && !world.getBlockState(blockPos2).getBlock().isReplaceable(world, blockPos2);
+				BlockPos blockPos3 = blockPos2.up();
+				boolean bl2 = !world.isAir(blockPos2) && !world.getBlockState(blockPos2).getBlock().method_8638(world, blockPos2);
+				bl2 |= !world.isAir(blockPos3) && !world.getBlockState(blockPos3).getBlock().method_8638(world, blockPos3);
 				if (bl2) {
-					return false;
+					return ActionResult.FAIL;
 				} else {
-					double d = (double)blockPos.getX();
-					double e = (double)blockPos.getY();
-					double f = (double)blockPos.getZ();
-					List<Entity> list = world.getEntitiesIn(null, Box.createNewBox(d, e, f, d + 1.0, e + 2.0, f + 1.0));
-					if (list.size() > 0) {
-						return false;
+					double d = (double)blockPos2.getX();
+					double e = (double)blockPos2.getY();
+					double i = (double)blockPos2.getZ();
+					List<Entity> list = world.getEntitiesIn(null, new Box(d, e, i, d + 1.0, e + 2.0, i + 1.0));
+					if (!list.isEmpty()) {
+						return ActionResult.FAIL;
 					} else {
 						if (!world.isClient) {
-							world.setAir(blockPos);
 							world.setAir(blockPos2);
-							ArmorStandEntity armorStandEntity = new ArmorStandEntity(world, d + 0.5, e, f + 0.5);
-							float g = (float)MathHelper.floor((MathHelper.wrapDegrees(player.yaw - 180.0F) + 22.5F) / 45.0F) * 45.0F;
-							armorStandEntity.refreshPositionAndAngles(d + 0.5, e, f + 0.5, g, 0.0F);
+							world.setAir(blockPos3);
+							ArmorStandEntity armorStandEntity = new ArmorStandEntity(world, d + 0.5, e, i + 0.5);
+							float j = (float)MathHelper.floor((MathHelper.wrapDegrees(playerEntity.yaw - 180.0F) + 22.5F) / 45.0F) * 45.0F;
+							armorStandEntity.refreshPositionAndAngles(d + 0.5, e, i + 0.5, j, 0.0F);
 							this.place(armorStandEntity, world.random);
-							NbtCompound nbtCompound = itemStack.getNbt();
-							if (nbtCompound != null && nbtCompound.contains("EntityTag", 10)) {
-								NbtCompound nbtCompound2 = new NbtCompound();
-								armorStandEntity.saveToNbt(nbtCompound2);
-								nbtCompound2.copyFrom(nbtCompound.getCompound("EntityTag"));
-								armorStandEntity.fromNbt(nbtCompound2);
-							}
-
+							SpawnEggItem.method_11406(world, playerEntity, itemStack, armorStandEntity);
 							world.spawnEntity(armorStandEntity);
+							world.playSound(null, armorStandEntity.x, armorStandEntity.y, armorStandEntity.z, Sounds.ENTITY_ARMORSTAND_PLACE, SoundCategory.BLOCKS, 0.75F, 0.8F);
 						}
 
 						itemStack.count--;
-						return true;
+						return ActionResult.SUCCESS;
 					}
 				}
 			}

@@ -1,8 +1,11 @@
 package net.minecraft.client.render.block;
 
 import net.minecraft.block.AbstractFluidBlock;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.BlockColors;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.texture.Sprite;
@@ -13,10 +16,13 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 
 public class FluidRenderer {
+	private final BlockColors field_13549;
 	private Sprite[] lavaSprites = new Sprite[2];
 	private Sprite[] waterSprites = new Sprite[2];
+	private Sprite field_13550;
 
-	public FluidRenderer() {
+	public FluidRenderer(BlockColors blockColors) {
+		this.field_13549 = blockColors;
 		this.onResourceReload();
 	}
 
@@ -26,33 +32,34 @@ public class FluidRenderer {
 		this.lavaSprites[1] = spriteAtlasTexture.getSprite("minecraft:blocks/lava_flow");
 		this.waterSprites[0] = spriteAtlasTexture.getSprite("minecraft:blocks/water_still");
 		this.waterSprites[1] = spriteAtlasTexture.getSprite("minecraft:blocks/water_flow");
+		this.field_13550 = spriteAtlasTexture.getSprite("minecraft:blocks/water_overlay");
 	}
 
 	public boolean render(BlockView world, BlockState state, BlockPos pos, BufferBuilder buffer) {
 		AbstractFluidBlock abstractFluidBlock = (AbstractFluidBlock)state.getBlock();
-		abstractFluidBlock.setBoundingBox(world, pos);
-		Sprite[] sprites = abstractFluidBlock.getMaterial() == Material.LAVA ? this.lavaSprites : this.waterSprites;
-		int i = abstractFluidBlock.getBlendColor(world, pos);
+		boolean bl = state.getMaterial() == Material.LAVA;
+		Sprite[] sprites = bl ? this.lavaSprites : this.waterSprites;
+		int i = this.field_13549.method_12157(state, world, pos, 0);
 		float f = (float)(i >> 16 & 0xFF) / 255.0F;
 		float g = (float)(i >> 8 & 0xFF) / 255.0F;
 		float h = (float)(i & 0xFF) / 255.0F;
-		boolean bl = abstractFluidBlock.isSideInvisible(world, pos.up(), Direction.UP);
-		boolean bl2 = abstractFluidBlock.isSideInvisible(world, pos.down(), Direction.DOWN);
+		boolean bl2 = state.method_11724(world, pos, Direction.UP);
+		boolean bl3 = state.method_11724(world, pos, Direction.DOWN);
 		boolean[] bls = new boolean[]{
-			abstractFluidBlock.isSideInvisible(world, pos.north(), Direction.NORTH),
-			abstractFluidBlock.isSideInvisible(world, pos.south(), Direction.SOUTH),
-			abstractFluidBlock.isSideInvisible(world, pos.west(), Direction.WEST),
-			abstractFluidBlock.isSideInvisible(world, pos.east(), Direction.EAST)
+			state.method_11724(world, pos, Direction.NORTH),
+			state.method_11724(world, pos, Direction.SOUTH),
+			state.method_11724(world, pos, Direction.WEST),
+			state.method_11724(world, pos, Direction.EAST)
 		};
-		if (!bl && !bl2 && !bls[0] && !bls[1] && !bls[2] && !bls[3]) {
+		if (!bl2 && !bl3 && !bls[0] && !bls[1] && !bls[2] && !bls[3]) {
 			return false;
 		} else {
-			boolean bl3 = false;
+			boolean bl4 = false;
 			float j = 0.5F;
 			float k = 1.0F;
 			float l = 0.8F;
 			float m = 0.6F;
-			Material material = abstractFluidBlock.getMaterial();
+			Material material = state.getMaterial();
 			float n = this.getFluidHeight(world, pos, material);
 			float o = this.getFluidHeight(world, pos.south(), material);
 			float p = this.getFluidHeight(world, pos.east().south(), material);
@@ -61,14 +68,10 @@ public class FluidRenderer {
 			double e = (double)pos.getY();
 			double r = (double)pos.getZ();
 			float s = 0.001F;
-			if (bl) {
-				bl3 = true;
-				Sprite sprite = sprites[0];
-				float t = (float)AbstractFluidBlock.getDirection(world, pos, material);
-				if (t > -999.0F) {
-					sprite = sprites[1];
-				}
-
+			if (bl2) {
+				bl4 = true;
+				float t = AbstractFluidBlock.method_11618(world, pos, material, state);
+				Sprite sprite = t > -999.0F ? sprites[1] : sprites[0];
 				n -= s;
 				o -= s;
 				p -= s;
@@ -104,7 +107,7 @@ public class FluidRenderer {
 					ab = sprite.getFrameV((double)(8.0F + (-ad - ac) * 16.0F));
 				}
 
-				int an = abstractFluidBlock.getBrightness(world, pos);
+				int an = state.method_11712(world, pos);
 				int ao = an >> 16 & 65535;
 				int ap = an & 65535;
 				float aq = k * f;
@@ -122,19 +125,19 @@ public class FluidRenderer {
 				}
 			}
 
-			if (bl2) {
+			if (bl3) {
 				float at = sprites[0].getMinU();
 				float au = sprites[0].getMaxU();
 				float av = sprites[0].getMinV();
 				float aw = sprites[0].getMaxV();
-				int ax = abstractFluidBlock.getBrightness(world, pos.down());
+				int ax = state.method_11712(world, pos.down());
 				int ay = ax >> 16 & 65535;
 				int az = ax & 65535;
 				buffer.vertex(d, e, r + 1.0).color(j, j, j, 1.0F).texture((double)at, (double)aw).texture2(ay, az).next();
 				buffer.vertex(d, e, r).color(j, j, j, 1.0F).texture((double)at, (double)av).texture2(ay, az).next();
 				buffer.vertex(d + 1.0, e, r).color(j, j, j, 1.0F).texture((double)au, (double)av).texture2(ay, az).next();
 				buffer.vertex(d + 1.0, e, r + 1.0).color(j, j, j, 1.0F).texture((double)au, (double)aw).texture2(ay, az).next();
-				bl3 = true;
+				bl4 = true;
 			}
 
 			for (int ba = 0; ba < 4; ba++) {
@@ -158,6 +161,13 @@ public class FluidRenderer {
 
 				BlockPos blockPos = pos.add(bb, 0, bc);
 				Sprite sprite2 = sprites[1];
+				if (!bl) {
+					Block block = world.getBlockState(blockPos).getBlock();
+					if (block == Blocks.GLASS || block == Blocks.STAINED_GLASS) {
+						sprite2 = this.field_13550;
+					}
+				}
+
 				if (bls[ba]) {
 					float bd;
 					float be;
@@ -195,13 +205,13 @@ public class FluidRenderer {
 						bi = r + 1.0;
 					}
 
-					bl3 = true;
+					bl4 = true;
 					float cc = sprite2.getFrameU(0.0);
 					float cd = sprite2.getFrameU(8.0);
 					float ce = sprite2.getFrameV((double)((1.0F - bd) * 16.0F * 0.5F));
 					float cf = sprite2.getFrameV((double)((1.0F - be) * 16.0F * 0.5F));
 					float cg = sprite2.getFrameV(8.0);
-					int ch = abstractFluidBlock.getBrightness(world, blockPos);
+					int ch = state.method_11712(world, blockPos);
 					int ci = ch >> 16 & 65535;
 					int cj = ch & 65535;
 					float ck = ba < 2 ? l : m;
@@ -212,14 +222,16 @@ public class FluidRenderer {
 					buffer.vertex(bg, e + (double)be, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cf).texture2(ci, cj).next();
 					buffer.vertex(bg, e + 0.0, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cg).texture2(ci, cj).next();
 					buffer.vertex(bf, e + 0.0, bh).color(cl, cm, cn, 1.0F).texture((double)cc, (double)cg).texture2(ci, cj).next();
-					buffer.vertex(bf, e + 0.0, bh).color(cl, cm, cn, 1.0F).texture((double)cc, (double)cg).texture2(ci, cj).next();
-					buffer.vertex(bg, e + 0.0, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cg).texture2(ci, cj).next();
-					buffer.vertex(bg, e + (double)be, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cf).texture2(ci, cj).next();
-					buffer.vertex(bf, e + (double)bd, bh).color(cl, cm, cn, 1.0F).texture((double)cc, (double)ce).texture2(ci, cj).next();
+					if (sprite2 != this.field_13550) {
+						buffer.vertex(bf, e + 0.0, bh).color(cl, cm, cn, 1.0F).texture((double)cc, (double)cg).texture2(ci, cj).next();
+						buffer.vertex(bg, e + 0.0, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cg).texture2(ci, cj).next();
+						buffer.vertex(bg, e + (double)be, bi).color(cl, cm, cn, 1.0F).texture((double)cd, (double)cf).texture2(ci, cj).next();
+						buffer.vertex(bf, e + (double)bd, bh).color(cl, cm, cn, 1.0F).texture((double)cc, (double)ce).texture2(ci, cj).next();
+					}
 				}
 			}
 
-			return bl3;
+			return bl4;
 		}
 	}
 
@@ -229,12 +241,12 @@ public class FluidRenderer {
 
 		for (int j = 0; j < 4; j++) {
 			BlockPos blockPos = pos.add(-(j & 1), 0, -(j >> 1 & 1));
-			if (world.getBlockState(blockPos.up()).getBlock().getMaterial() == material) {
+			if (world.getBlockState(blockPos.up()).getMaterial() == material) {
 				return 1.0F;
 			}
 
 			BlockState blockState = world.getBlockState(blockPos);
-			Material material2 = blockState.getBlock().getMaterial();
+			Material material2 = blockState.getMaterial();
 			if (material2 == material) {
 				int k = (Integer)blockState.get(AbstractFluidBlock.LEVEL);
 				if (k >= 8 || k == 0) {

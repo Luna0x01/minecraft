@@ -2,8 +2,10 @@ package net.minecraft.entity.mob;
 
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -17,13 +19,22 @@ import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.thrown.PotionEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionUtil;
+import net.minecraft.potion.Potions;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -31,14 +42,16 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	private static final UUID DRINKING_SPEED_PENALTY_MODIFIER_ID = UUID.fromString("5CD17E52-A79A-43D3-A529-90FDE04B181E");
 	private static final AttributeModifier field_6924 = new AttributeModifier(DRINKING_SPEED_PENALTY_MODIFIER_ID, "Drinking speed penalty", -0.25, 0)
 		.setSerialized(false);
-	private static final Item[] field_9127 = new Item[]{
-		Items.GLOWSTONE_DUST, Items.SUGAR, Items.REDSTONE, Items.SPIDER_EYE, Items.GLASS_BOTTLE, Items.GUNPOWDER, Items.STICK, Items.STICK
-	};
+	private static final TrackedData<Boolean> field_14784 = DataTracker.registerData(WitchEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private int drinkTimeLeft;
 
 	public WitchEntity(World world) {
 		super(world);
 		this.setBounds(0.6F, 1.95F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new ProjectileAttackGoal(this, 1.0, 60, 10.0F));
 		this.goals.add(2, new WanderAroundGoal(this, 1.0));
@@ -51,30 +64,30 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.getDataTracker().track(21, (byte)0);
+		this.getDataTracker().startTracking(field_14784, false);
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return null;
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_WITCH_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return null;
+	protected Sound method_13048() {
+		return Sounds.ENTITY_WITCH_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return null;
+	protected Sound deathSound() {
+		return Sounds.ENTITY_WITCH_DEATH;
 	}
 
 	public void method_4556(boolean bl) {
-		this.getDataTracker().setProperty(21, Byte.valueOf((byte)(bl ? 1 : 0)));
+		this.getDataTracker().set(field_14784, bl);
 	}
 
-	public boolean method_4557() {
-		return this.getDataTracker().getByte(21) == 1;
+	public boolean method_13243() {
+		return this.getDataTracker().get(field_14784);
 	}
 
 	@Override
@@ -87,13 +100,13 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 	@Override
 	public void tickMovement() {
 		if (!this.world.isClient) {
-			if (this.method_4557()) {
+			if (this.method_13243()) {
 				if (this.drinkTimeLeft-- <= 0) {
 					this.method_4556(false);
-					ItemStack itemStack = this.getStackInHand();
-					this.setArmorSlot(0, null);
+					ItemStack itemStack = this.getMainHandStack();
+					this.equipStack(EquipmentSlot.MAINHAND, null);
 					if (itemStack != null && itemStack.getItem() == Items.POTION) {
-						List<StatusEffectInstance> list = Items.POTION.getCustomPotionEffects(itemStack);
+						List<StatusEffectInstance> list = PotionUtil.getPotionEffects(itemStack);
 						if (list != null) {
 							for (StatusEffectInstance statusEffectInstance : list) {
 								this.addStatusEffect(new StatusEffectInstance(statusEffectInstance));
@@ -104,29 +117,25 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 					this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).method_6193(field_6924);
 				}
 			} else {
-				int i = -1;
-				if (this.random.nextFloat() < 0.15F && this.isSubmergedIn(Material.WATER) && !this.hasStatusEffect(StatusEffect.WATER_BREATHING)) {
-					i = 8237;
-				} else if (this.random.nextFloat() < 0.15F && this.isOnFire() && !this.hasStatusEffect(StatusEffect.FIRE_RESISTANCE)) {
-					i = 16307;
+				Potion potion = null;
+				if (this.random.nextFloat() < 0.15F && this.isSubmergedIn(Material.WATER) && !this.hasStatusEffect(StatusEffects.WATER_BREATHING)) {
+					potion = Potions.WATER_BREATHING;
+				} else if (this.random.nextFloat() < 0.15F && this.isOnFire() && !this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
+					potion = Potions.FIRE_RESISTANCE;
 				} else if (this.random.nextFloat() < 0.05F && this.getHealth() < this.getMaxHealth()) {
-					i = 16341;
-				} else if (this.random.nextFloat() < 0.25F
+					potion = Potions.HEALING;
+				} else if (this.random.nextFloat() < 0.5F
 					&& this.getTarget() != null
-					&& !this.hasStatusEffect(StatusEffect.SPEED)
+					&& !this.hasStatusEffect(StatusEffects.SPEED)
 					&& this.getTarget().squaredDistanceTo(this) > 121.0) {
-					i = 16274;
-				} else if (this.random.nextFloat() < 0.25F
-					&& this.getTarget() != null
-					&& !this.hasStatusEffect(StatusEffect.SPEED)
-					&& this.getTarget().squaredDistanceTo(this) > 121.0) {
-					i = 16274;
+					potion = Potions.SWIFTNESS;
 				}
 
-				if (i > -1) {
-					this.setArmorSlot(0, new ItemStack(Items.POTION, 1, i));
-					this.drinkTimeLeft = this.getStackInHand().getMaxUseTime();
+				if (potion != null) {
+					this.equipStack(EquipmentSlot.MAINHAND, PotionUtil.setPotion(new ItemStack(Items.POTION), potion));
+					this.drinkTimeLeft = this.getMainHandStack().getMaxUseTime();
 					this.method_4556(true);
+					this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_WITCH_DRINK, this.getSoundCategory(), 1.0F, 0.8F + this.random.nextFloat() * 0.4F);
 					EntityAttributeInstance entityAttributeInstance = this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED);
 					entityAttributeInstance.method_6193(field_6924);
 					entityAttributeInstance.addModifier(field_6924);
@@ -175,42 +184,33 @@ public class WitchEntity extends HostileEntity implements RangedAttackMob {
 		return amount;
 	}
 
+	@Nullable
 	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		int i = this.random.nextInt(3) + 1;
-
-		for (int j = 0; j < i; j++) {
-			int k = this.random.nextInt(3);
-			Item item = field_9127[this.random.nextInt(field_9127.length)];
-			if (lootingMultiplier > 0) {
-				k += this.random.nextInt(lootingMultiplier + 1);
-			}
-
-			for (int l = 0; l < k; l++) {
-				this.dropItem(item, 1);
-			}
-		}
+	protected Identifier getLootTableId() {
+		return LootTables.WITCH_ENTITIE;
 	}
 
 	@Override
 	public void rangedAttack(LivingEntity target, float pullProgress) {
-		if (!this.method_4557()) {
-			PotionEntity potionEntity = new PotionEntity(this.world, this, 32732);
+		if (!this.method_13243()) {
 			double d = target.y + (double)target.getEyeHeight() - 1.1F;
-			potionEntity.pitch -= -20.0F;
 			double e = target.x + target.velocityX - this.x;
 			double f = d - this.y;
 			double g = target.z + target.velocityZ - this.z;
 			float h = MathHelper.sqrt(e * e + g * g);
-			if (h >= 8.0F && !target.hasStatusEffect(StatusEffect.SLOWNESS)) {
-				potionEntity.setPotionValue(32698);
-			} else if (target.getHealth() >= 8.0F && !target.hasStatusEffect(StatusEffect.POISON)) {
-				potionEntity.setPotionValue(32660);
-			} else if (h <= 3.0F && !target.hasStatusEffect(StatusEffect.WEAKNESS) && this.random.nextFloat() < 0.25F) {
-				potionEntity.setPotionValue(32696);
+			Potion potion = Potions.HARMING;
+			if (h >= 8.0F && !target.hasStatusEffect(StatusEffects.SLOWNESS)) {
+				potion = Potions.SLOWNESS;
+			} else if (target.getHealth() >= 8.0F && !target.hasStatusEffect(StatusEffects.POISON)) {
+				potion = Potions.POISON;
+			} else if (h <= 3.0F && !target.hasStatusEffect(StatusEffects.WEAKNESS) && this.random.nextFloat() < 0.25F) {
+				potion = Potions.WEAKNESS;
 			}
 
+			PotionEntity potionEntity = new PotionEntity(this.world, this, PotionUtil.setPotion(new ItemStack(Items.SPLASH_POTION), potion));
+			potionEntity.pitch -= -20.0F;
 			potionEntity.setVelocity(e, f + (double)(h * 0.2F), g, 0.75F, 8.0F);
+			this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_WITCH_THROW, this.getSoundCategory(), 1.0F, 0.8F + this.random.nextFloat() * 0.4F);
 			this.world.spawnEntity(potionEntity);
 		}
 	}

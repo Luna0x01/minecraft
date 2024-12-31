@@ -2,12 +2,16 @@ package net.minecraft.client.particle;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.Callable;
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.BufferBuilder;
@@ -18,32 +22,36 @@ import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class ParticleManager {
 	private static final Identifier PARTICLE_TEXTURE = new Identifier("textures/particle/particles.png");
 	protected World world;
-	private List<Particle>[][] particles = new List[4][];
-	private List<EmitterParticle> newEmitterParticles = Lists.newArrayList();
-	private TextureManager textureManager;
-	private Random random = new Random();
-	private Map<Integer, ParticleFactory> factories = Maps.newHashMap();
+	private final ArrayDeque<Particle>[][] field_13439 = new ArrayDeque[4][];
+	private final Queue<EmitterParticle> field_13440 = Queues.newArrayDeque();
+	private final TextureManager textureManager;
+	private final Random random = new Random();
+	private final Map<Integer, ParticleFactory> factories = Maps.newHashMap();
+	private final Queue<Particle> field_13441 = Queues.newArrayDeque();
 
 	public ParticleManager(World world, TextureManager textureManager) {
 		this.world = world;
 		this.textureManager = textureManager;
 
 		for (int i = 0; i < 4; i++) {
-			this.particles[i] = new List[2];
+			this.field_13439[i] = new ArrayDeque[2];
 
 			for (int j = 0; j < 2; j++) {
-				this.particles[i][j] = Lists.newArrayList();
+				this.field_13439[i][j] = Queues.newArrayDeque();
 			}
 		}
 
@@ -92,6 +100,10 @@ public class ParticleManager {
 		this.registerFactory(ParticleType.LARGE_EXPLOSION.getId(), new LargeExplosionParticle.Factory());
 		this.registerFactory(ParticleType.FIREWORK_SPARK.getId(), new FireworksSparkParticle.Factory());
 		this.registerFactory(ParticleType.MOB_APPEARANCE.getId(), new ElderGuardianAppearanceParticle.Factory());
+		this.registerFactory(ParticleType.DRAGON_BREATH.getId(), new DragonBreathParticle.Factory());
+		this.registerFactory(ParticleType.END_ROD.getId(), new EndRodParticle.Factory());
+		this.registerFactory(ParticleType.DAMAGE_INDICATOR.getId(), new DamageParticle.Factory());
+		this.registerFactory(ParticleType.SWEEP_ATTACK.getId(), new SweepAttackParticle.Factory());
 	}
 
 	public void registerFactory(int id, ParticleFactory factory) {
@@ -99,15 +111,16 @@ public class ParticleManager {
 	}
 
 	public void addEmitter(Entity entity, ParticleType type) {
-		this.newEmitterParticles.add(new EmitterParticle(this.world, entity, type));
+		this.field_13440.add(new EmitterParticle(this.world, entity, type));
 	}
 
+	@Nullable
 	public Particle addParticle(int id, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... args) {
 		ParticleFactory particleFactory = (ParticleFactory)this.factories.get(id);
 		if (particleFactory != null) {
 			Particle particle = particleFactory.createParticle(id, this.world, x, y, z, velocityX, velocityY, velocityZ, args);
 			if (particle != null) {
-				this.addParticle(particle);
+				this.method_12256(particle);
 				return particle;
 			}
 		}
@@ -115,66 +128,80 @@ public class ParticleManager {
 		return null;
 	}
 
-	public void addParticle(Particle particle) {
-		int i = particle.getLayer();
-		int j = particle.getAlpha() != 1.0F ? 0 : 1;
-		if (this.particles[i][j].size() >= 4000) {
-			this.particles[i][j].remove(0);
-		}
-
-		this.particles[i][j].add(particle);
+	public void method_12256(Particle particle) {
+		this.field_13441.add(particle);
 	}
 
 	public void tick() {
 		for (int i = 0; i < 4; i++) {
-			this.updateLayer(i);
+			this.method_12255(i);
 		}
 
-		List<EmitterParticle> list = Lists.newArrayList();
+		if (!this.field_13440.isEmpty()) {
+			List<EmitterParticle> list = Lists.newArrayList();
 
-		for (EmitterParticle emitterParticle : this.newEmitterParticles) {
-			emitterParticle.tick();
-			if (emitterParticle.removed) {
-				list.add(emitterParticle);
+			for (EmitterParticle emitterParticle : this.field_13440) {
+				emitterParticle.method_12241();
+				if (!emitterParticle.method_12253()) {
+					list.add(emitterParticle);
+				}
+			}
+
+			this.field_13440.removeAll(list);
+		}
+
+		if (!this.field_13441.isEmpty()) {
+			for (Particle particle = (Particle)this.field_13441.poll(); particle != null; particle = (Particle)this.field_13441.poll()) {
+				int j = particle.getLayer();
+				int k = particle.method_12248() ? 0 : 1;
+				if (this.field_13439[j][k].size() >= 16384) {
+					this.field_13439[j][k].removeFirst();
+				}
+
+				this.field_13439[j][k].add(particle);
 			}
 		}
-
-		this.newEmitterParticles.removeAll(list);
 	}
 
-	private void updateLayer(int index) {
-		for (int i = 0; i < 2; i++) {
-			this.updateLayer(this.particles[index][i]);
+	private void method_12255(int i) {
+		this.world.profiler.push(i + "");
+
+		for (int j = 0; j < 2; j++) {
+			this.world.profiler.push(j + "");
+			this.method_12257(this.field_13439[i][j]);
+			this.world.profiler.pop();
 		}
+
+		this.world.profiler.pop();
 	}
 
-	private void updateLayer(List<Particle> particles) {
-		List<Particle> list = Lists.newArrayList();
+	private void method_12257(Queue<Particle> queue) {
+		if (!queue.isEmpty()) {
+			Iterator<Particle> iterator = queue.iterator();
 
-		for (int i = 0; i < particles.size(); i++) {
-			Particle particle = (Particle)particles.get(i);
-			this.tickParticle(particle);
-			if (particle.removed) {
-				list.add(particle);
+			while (iterator.hasNext()) {
+				Particle particle = (Particle)iterator.next();
+				this.tickParticle(particle);
+				if (!particle.method_12253()) {
+					iterator.remove();
+				}
 			}
 		}
-
-		particles.removeAll(list);
 	}
 
 	private void tickParticle(Particle particle) {
 		try {
-			particle.tick();
+			particle.method_12241();
 		} catch (Throwable var6) {
 			CrashReport crashReport = CrashReport.create(var6, "Ticking Particle");
 			CrashReportSection crashReportSection = crashReport.addElement("Particle being ticked");
 			final int i = particle.getLayer();
-			crashReportSection.add("Particle", new Callable<String>() {
+			crashReportSection.add("Particle", new CrashCallable<String>() {
 				public String call() throws Exception {
 					return particle.toString();
 				}
 			});
-			crashReportSection.add("Particle Type", new Callable<String>() {
+			crashReportSection.add("Particle Type", new CrashCallable<String>() {
 				public String call() throws Exception {
 					if (i == 0) {
 						return "MISC_TEXTURE";
@@ -199,12 +226,12 @@ public class ParticleManager {
 		Particle.field_1723 = entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta;
 		Particle.field_1724 = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)tickDelta;
 		GlStateManager.enableBlend();
-		GlStateManager.blendFunc(770, 771);
+		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 		GlStateManager.alphaFunc(516, 0.003921569F);
 
 		for (final int k = 0; k < 3; k++) {
 			for (int l = 0; l < 2; l++) {
-				if (!this.particles[k][l].isEmpty()) {
+				if (!this.field_13439[k][l].isEmpty()) {
 					switch (l) {
 						case 0:
 							GlStateManager.depthMask(false);
@@ -227,20 +254,18 @@ public class ParticleManager {
 					BufferBuilder bufferBuilder = tessellator.getBuffer();
 					bufferBuilder.begin(7, VertexFormats.PARTICLE);
 
-					for (int m = 0; m < this.particles[k][l].size(); m++) {
-						final Particle particle = (Particle)this.particles[k][l].get(m);
-
+					for (final Particle particle : this.field_13439[k][l]) {
 						try {
 							particle.draw(bufferBuilder, entity, tickDelta, f, j, g, h, i);
 						} catch (Throwable var18) {
 							CrashReport crashReport = CrashReport.create(var18, "Rendering Particle");
 							CrashReportSection crashReportSection = crashReport.addElement("Particle being rendered");
-							crashReportSection.add("Particle", new Callable<String>() {
+							crashReportSection.add("Particle", new CrashCallable<String>() {
 								public String call() throws Exception {
 									return particle.toString();
 								}
 							});
-							crashReportSection.add("Particle Type", new Callable<String>() {
+							crashReportSection.add("Particle Type", new CrashCallable<String>() {
 								public String call() throws Exception {
 									if (k == 0) {
 										return "MISC_TEXTURE";
@@ -274,34 +299,33 @@ public class ParticleManager {
 		float k = MathHelper.cos(entity.pitch * (float) (Math.PI / 180.0));
 
 		for (int l = 0; l < 2; l++) {
-			List<Particle> list = this.particles[3][l];
-			if (!list.isEmpty()) {
+			Queue<Particle> queue = this.field_13439[3][l];
+			if (!queue.isEmpty()) {
 				Tessellator tessellator = Tessellator.getInstance();
 				BufferBuilder bufferBuilder = tessellator.getBuffer();
 
-				for (int m = 0; m < list.size(); m++) {
-					Particle particle = (Particle)list.get(m);
+				for (Particle particle : queue) {
 					particle.draw(bufferBuilder, entity, tickDelta, g, k, h, i, j);
 				}
 			}
 		}
 	}
 
-	public void setWorld(World world) {
+	public void setWorld(@Nullable World world) {
 		this.world = world;
 
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 2; j++) {
-				this.particles[i][j].clear();
+				this.field_13439[i][j].clear();
 			}
 		}
 
-		this.newEmitterParticles.clear();
+		this.field_13440.clear();
 	}
 
 	public void addBlockBreakParticles(BlockPos pos, BlockState state) {
-		if (state.getBlock().getMaterial() != Material.AIR) {
-			state = state.getBlock().getBlockState(state, this.world, pos);
+		if (state.getMaterial() != Material.AIR) {
+			state = state.getBlockState(this.world, pos);
 			int i = 4;
 
 			for (int j = 0; j < i; j++) {
@@ -310,9 +334,9 @@ public class ParticleManager {
 						double d = (double)pos.getX() + ((double)j + 0.5) / (double)i;
 						double e = (double)pos.getY() + ((double)k + 0.5) / (double)i;
 						double f = (double)pos.getZ() + ((double)l + 0.5) / (double)i;
-						this.addParticle(
+						this.method_12256(
 							new BlockDustParticle(this.world, d, e, f, d - (double)pos.getX() - 0.5, e - (double)pos.getY() - 0.5, f - (double)pos.getZ() - 0.5, state)
-								.setBlockPos(pos)
+								.method_12260(pos)
 						);
 					}
 				}
@@ -322,57 +346,40 @@ public class ParticleManager {
 
 	public void addBlockBreakingParticles(BlockPos pos, Direction direction) {
 		BlockState blockState = this.world.getBlockState(pos);
-		Block block = blockState.getBlock();
-		if (block.getBlockType() != -1) {
+		if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
 			int i = pos.getX();
 			int j = pos.getY();
 			int k = pos.getZ();
 			float f = 0.1F;
-			double d = (double)i + this.random.nextDouble() * (block.getMaxX() - block.getMinX() - (double)(f * 2.0F)) + (double)f + block.getMinX();
-			double e = (double)j + this.random.nextDouble() * (block.getMaxY() - block.getMinY() - (double)(f * 2.0F)) + (double)f + block.getMinY();
-			double g = (double)k + this.random.nextDouble() * (block.getMaxZ() - block.getMinZ() - (double)(f * 2.0F)) + (double)f + block.getMinZ();
+			Box box = blockState.getCollisionBox((BlockView)this.world, pos);
+			double d = (double)i + this.random.nextDouble() * (box.maxX - box.minX - (double)(f * 2.0F)) + (double)f + box.minX;
+			double e = (double)j + this.random.nextDouble() * (box.maxY - box.minY - (double)(f * 2.0F)) + (double)f + box.minY;
+			double g = (double)k + this.random.nextDouble() * (box.maxZ - box.minZ - (double)(f * 2.0F)) + (double)f + box.minZ;
 			if (direction == Direction.DOWN) {
-				e = (double)j + block.getMinY() - (double)f;
+				e = (double)j + box.minY - (double)f;
 			}
 
 			if (direction == Direction.UP) {
-				e = (double)j + block.getMaxY() + (double)f;
+				e = (double)j + box.maxY + (double)f;
 			}
 
 			if (direction == Direction.NORTH) {
-				g = (double)k + block.getMinZ() - (double)f;
+				g = (double)k + box.minZ - (double)f;
 			}
 
 			if (direction == Direction.SOUTH) {
-				g = (double)k + block.getMaxZ() + (double)f;
+				g = (double)k + box.maxZ + (double)f;
 			}
 
 			if (direction == Direction.WEST) {
-				d = (double)i + block.getMinX() - (double)f;
+				d = (double)i + box.minX - (double)f;
 			}
 
 			if (direction == Direction.EAST) {
-				d = (double)i + block.getMaxX() + (double)f;
+				d = (double)i + box.maxX + (double)f;
 			}
 
-			this.addParticle(new BlockDustParticle(this.world, d, e, g, 0.0, 0.0, 0.0, blockState).setBlockPos(pos).move(0.2F).scale(0.6F));
-		}
-	}
-
-	public void moveToAlphaLayer(Particle particle) {
-		this.moveToLayer(particle, 1, 0);
-	}
-
-	public void moveToNoAlphaLayer(Particle particle) {
-		this.moveToLayer(particle, 0, 1);
-	}
-
-	private void moveToLayer(Particle particle, int from, int to) {
-		for (int i = 0; i < 4; i++) {
-			if (this.particles[i][from].contains(particle)) {
-				this.particles[i][from].remove(particle);
-				this.particles[i][to].add(particle);
-			}
+			this.method_12256(new BlockDustParticle(this.world, d, e, g, 0.0, 0.0, 0.0, blockState).method_12260(pos).method_12249(0.2F).scale(0.6F));
 		}
 	}
 
@@ -381,7 +388,7 @@ public class ParticleManager {
 
 		for (int j = 0; j < 4; j++) {
 			for (int k = 0; k < 2; k++) {
-				i += this.particles[j][k].size();
+				i += this.field_13439[j][k].size();
 			}
 		}
 

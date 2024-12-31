@@ -6,31 +6,37 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public abstract class AbstractRedstoneGateBlock extends FacingBlock {
+public abstract class AbstractRedstoneGateBlock extends HorizontalFacingBlock {
+	protected static final Box field_12644 = new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0);
 	protected final boolean powered;
 
 	protected AbstractRedstoneGateBlock(boolean bl) {
 		super(Material.DECORATION);
 		this.powered = bl;
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.125F, 1.0F);
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12644;
+	}
+
+	@Override
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return World.isOpaque(world, pos.down()) ? super.canBePlacedAtPos(world, pos) : false;
+		return world.getBlockState(pos.down()).method_11739() ? super.canBePlacedAtPos(world, pos) : false;
 	}
 
 	public boolean isOnOpaqueBlock(World world, BlockPos pos) {
-		return World.isOpaque(world, pos.down());
+		return world.getBlockState(pos.down()).method_11739();
 	}
 
 	@Override
@@ -53,8 +59,8 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
-		return facing.getAxis() != Direction.Axis.Y;
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		return direction.getAxis() != Direction.Axis.Y;
 	}
 
 	protected boolean isPowered(BlockState state) {
@@ -62,29 +68,29 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
-		return this.getWeakRedstonePower(view, pos, state, facing);
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return state.getWeakRedstonePower(world, pos, direction);
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		if (!this.isPowered(state)) {
 			return 0;
 		} else {
-			return state.get(FACING) == facing ? this.getOutputLevel(view, pos, state) : 0;
+			return state.get(DIRECTION) == direction ? this.getOutputLevel(world, pos, state) : 0;
 		}
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (this.isOnOpaqueBlock(world, pos)) {
-			this.updatePowered(world, pos, state);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (this.isOnOpaqueBlock(world, blockPos)) {
+			this.updatePowered(world, blockPos, blockState);
 		} else {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
+			this.dropAsItem(world, blockPos, blockState, 0);
+			world.setAir(blockPos);
 
 			for (Direction direction : Direction.values()) {
-				world.updateNeighborsAlways(pos.offset(direction), this);
+				world.updateNeighborsAlways(blockPos.offset(direction), this);
 			}
 		}
 	}
@@ -114,7 +120,7 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 	}
 
 	protected int getPower(World world, BlockPos pos, BlockState state) {
-		Direction direction = state.get(FACING);
+		Direction direction = state.get(DIRECTION);
 		BlockPos blockPos = pos.offset(direction);
 		int i = world.getEmittedRedstonePower(blockPos, direction);
 		if (i >= 15) {
@@ -126,7 +132,7 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 	}
 
 	protected int getMaxInputLevelSides(BlockView view, BlockPos pos, BlockState state) {
-		Direction direction = state.get(FACING);
+		Direction direction = state.get(DIRECTION);
 		Direction direction2 = direction.rotateYClockwise();
 		Direction direction3 = direction.rotateYCounterclockwise();
 		return Math.max(this.getInputLevel(view, pos.offset(direction2), direction2), this.getInputLevel(view, pos.offset(direction3), direction3));
@@ -135,21 +141,25 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 	protected int getInputLevel(BlockView view, BlockPos pos, Direction dir) {
 		BlockState blockState = view.getBlockState(pos);
 		Block block = blockState.getBlock();
-		if (this.emitsRedstonePower(block)) {
-			return block == Blocks.REDSTONE_WIRE ? (Integer)blockState.get(RedstoneWireBlock.POWER) : view.getStrongRedstonePower(pos, dir);
+		if (this.stateEmitRedstonePower(blockState)) {
+			if (block == Blocks.REDSTONE_BLOCK) {
+				return 15;
+			} else {
+				return block == Blocks.REDSTONE_WIRE ? (Integer)blockState.get(RedstoneWireBlock.POWER) : view.getStrongRedstonePower(pos, dir);
+			}
 		} else {
 			return 0;
 		}
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, entity.getHorizontalDirection().getOpposite());
+		return this.getDefaultState().with(DIRECTION, entity.getHorizontalDirection().getOpposite());
 	}
 
 	@Override
@@ -165,7 +175,7 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 	}
 
 	protected void updateTarget(World world, BlockPos pos, BlockState state) {
-		Direction direction = state.get(FACING);
+		Direction direction = state.get(DIRECTION);
 		BlockPos blockPos = pos.offset(direction.getOpposite());
 		world.neighbourUpdate(blockPos, this);
 		world.updateNeighborsExcept(blockPos, this, direction);
@@ -183,30 +193,31 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
-	protected boolean emitsRedstonePower(Block block) {
-		return block.emitsRedstonePower();
+	protected boolean stateEmitRedstonePower(BlockState state) {
+		return state.emitsRedstonePower();
 	}
 
 	protected int getOutputLevel(BlockView world, BlockPos pos, BlockState state) {
 		return 15;
 	}
 
-	public static boolean isRedstoneGate(Block block) {
-		return Blocks.UNPOWERED_REPEATER.isComparator(block) || Blocks.UNPOWERED_COMPARATOR.isComparator(block);
+	public static boolean isRedstoneGateBlock(BlockState state) {
+		return Blocks.UNPOWERED_REPEATER.method_11603(state) || Blocks.UNPOWERED_COMPARATOR.method_11603(state);
 	}
 
-	public boolean isComparator(Block block) {
+	public boolean method_11603(BlockState blockState) {
+		Block block = blockState.getBlock();
 		return block == this.getPoweredState(this.getDefaultState()).getBlock() || block == this.getUnpoweredState(this.getDefaultState()).getBlock();
 	}
 
 	public boolean isTargetNotAligned(World world, BlockPos pos, BlockState state) {
-		Direction direction = ((Direction)state.get(FACING)).getOpposite();
+		Direction direction = ((Direction)state.get(DIRECTION)).getOpposite();
 		BlockPos blockPos = pos.offset(direction);
-		return isRedstoneGate(world.getBlockState(blockPos).getBlock()) ? world.getBlockState(blockPos).get(FACING) != direction : false;
+		return isRedstoneGateBlock(world.getBlockState(blockPos)) ? world.getBlockState(blockPos).get(DIRECTION) != direction : false;
 	}
 
 	protected int getUpdateDelay(BlockState state) {
@@ -221,7 +232,7 @@ public abstract class AbstractRedstoneGateBlock extends FacingBlock {
 
 	@Override
 	public boolean isEqualTo(Block block) {
-		return this.isComparator(block);
+		return this.method_11603(block.getDefaultState());
 	}
 
 	@Override

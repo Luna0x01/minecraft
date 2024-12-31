@@ -1,18 +1,17 @@
 package net.minecraft.entity.ai.pathing;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.ZombieEntity;
-import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class MobNavigation extends EntityNavigation {
-	protected LandPathNodeMaker nodeMaker;
 	private boolean avoidSunlight;
 
 	public MobNavigation(MobEntity mobEntity, World world) {
@@ -21,21 +20,58 @@ public class MobNavigation extends EntityNavigation {
 
 	@Override
 	protected PathNodeNavigator createNavigator() {
-		this.nodeMaker = new LandPathNodeMaker();
-		this.nodeMaker.setCanEnterOpenDoors(true);
-		return new PathNodeNavigator(this.nodeMaker);
+		this.field_14600 = new LandPathNodeMaker();
+		this.field_14600.method_11916(true);
+		return new PathNodeNavigator(this.field_14600);
 	}
 
 	@Override
 	protected boolean isAtValidPosition() {
-		return this.mob.onGround
-			|| this.canSwim() && this.isInLiquid()
-			|| this.mob.hasVehicle() && this.mob instanceof ZombieEntity && this.mob.vehicle instanceof ChickenEntity;
+		return this.mob.onGround || this.canSwim() && this.isInLiquid() || this.mob.hasMount();
 	}
 
 	@Override
 	protected Vec3d getPos() {
 		return new Vec3d(this.mob.x, (double)this.getPathfindingY(), this.mob.z);
+	}
+
+	@Override
+	public PathMinHeap method_13108(BlockPos blockPos) {
+		if (this.world.getBlockState(blockPos).getMaterial() == Material.AIR) {
+			BlockPos blockPos2 = blockPos.down();
+
+			while (blockPos2.getY() > 0 && this.world.getBlockState(blockPos2).getMaterial() == Material.AIR) {
+				blockPos2 = blockPos2.down();
+			}
+
+			if (blockPos2.getY() > 0) {
+				return super.method_13108(blockPos2.up());
+			}
+
+			while (blockPos2.getY() < this.world.getMaxBuildHeight() && this.world.getBlockState(blockPos2).getMaterial() == Material.AIR) {
+				blockPos2 = blockPos2.up();
+			}
+
+			blockPos = blockPos2;
+		}
+
+		if (!this.world.getBlockState(blockPos).getMaterial().isSolid()) {
+			return super.method_13108(blockPos);
+		} else {
+			BlockPos blockPos3 = blockPos.up();
+
+			while (blockPos3.getY() < this.world.getMaxBuildHeight() && this.world.getBlockState(blockPos3).getMaterial().isSolid()) {
+				blockPos3 = blockPos3.up();
+			}
+
+			return super.method_13108(blockPos3);
+		}
+	}
+
+	@Override
+	public PathMinHeap method_13109(Entity entity) {
+		BlockPos blockPos = new BlockPos(entity);
+		return this.method_13108(blockPos);
 	}
 
 	private int getPathfindingY() {
@@ -60,15 +96,29 @@ public class MobNavigation extends EntityNavigation {
 	@Override
 	protected void adjustPath() {
 		super.adjustPath();
+
+		for (int i = 0; i < this.field_14599.method_11936(); i++) {
+			PathNode pathNode = this.field_14599.method_11925(i);
+			PathNode pathNode2 = i + 1 < this.field_14599.method_11936() ? this.field_14599.method_11925(i + 1) : null;
+			BlockState blockState = this.world.getBlockState(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ));
+			Block block = blockState.getBlock();
+			if (block == Blocks.CAULDRON) {
+				this.field_14599.method_11926(i, pathNode.method_11907(pathNode.posX, pathNode.posY + 1, pathNode.posZ));
+				if (pathNode2 != null && pathNode.posY >= pathNode2.posY) {
+					this.field_14599.method_11926(i + 1, pathNode2.method_11907(pathNode2.posX, pathNode.posY + 1, pathNode2.posZ));
+				}
+			}
+		}
+
 		if (this.avoidSunlight) {
 			if (this.world.hasDirectSunlight(new BlockPos(MathHelper.floor(this.mob.x), (int)(this.mob.getBoundingBox().minY + 0.5), MathHelper.floor(this.mob.z)))) {
 				return;
 			}
 
-			for (int i = 0; i < this.currentPath.getNodeCount(); i++) {
-				PathNode pathNode = this.currentPath.getNode(i);
-				if (this.world.hasDirectSunlight(new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ))) {
-					this.currentPath.setNodeCount(i - 1);
+			for (int j = 0; j < this.field_14599.method_11936(); j++) {
+				PathNode pathNode3 = this.field_14599.method_11925(j);
+				if (this.world.hasDirectSunlight(new BlockPos(pathNode3.posX, pathNode3.posY, pathNode3.posZ))) {
+					this.field_14599.method_11931(j - 1);
 					return;
 				}
 			}
@@ -90,15 +140,15 @@ public class MobNavigation extends EntityNavigation {
 			e *= g;
 			sizeX += 2;
 			sizeZ += 2;
-			if (!this.allVisibleAreSafe(i, (int)origin.y, j, sizeX, sizeY, sizeZ, origin, d, e)) {
+			if (!this.method_13106(i, (int)origin.y, j, sizeX, sizeY, sizeZ, origin, d, e)) {
 				return false;
 			} else {
 				sizeX -= 2;
 				sizeZ -= 2;
 				double h = 1.0 / Math.abs(d);
 				double k = 1.0 / Math.abs(e);
-				double l = (double)(i * 1) - origin.x;
-				double m = (double)(j * 1) - origin.z;
+				double l = (double)i - origin.x;
+				double m = (double)j - origin.z;
 				if (d >= 0.0) {
 					l++;
 				}
@@ -127,7 +177,7 @@ public class MobNavigation extends EntityNavigation {
 						s = q - j;
 					}
 
-					if (!this.allVisibleAreSafe(i, (int)origin.y, j, sizeX, sizeY, sizeZ, origin, d, e)) {
+					if (!this.method_13106(i, (int)origin.y, j, sizeX, sizeY, sizeZ, origin, d, e)) {
 						return false;
 					}
 				}
@@ -137,28 +187,37 @@ public class MobNavigation extends EntityNavigation {
 		}
 	}
 
-	private boolean allVisibleAreSafe(int centerX, int centerY, int centerZ, int sizeX, int sizeY, int sizeZ, Vec3d entityPos, double lookVecX, double lookVecZ) {
-		int i = centerX - sizeX / 2;
-		int j = centerZ - sizeZ / 2;
-		if (!this.allVisibleArePassable(i, centerY, j, sizeX, sizeY, sizeZ, entityPos, lookVecX, lookVecZ)) {
+	private boolean method_13106(int i, int j, int k, int l, int m, int n, Vec3d vec3d, double d, double e) {
+		int o = i - l / 2;
+		int p = k - n / 2;
+		if (!this.allVisibleArePassable(o, j, p, l, m, n, vec3d, d, e)) {
 			return false;
 		} else {
-			for (int k = i; k < i + sizeX; k++) {
-				for (int l = j; l < j + sizeZ; l++) {
-					double d = (double)k + 0.5 - entityPos.x;
-					double e = (double)l + 0.5 - entityPos.z;
-					if (!(d * lookVecX + e * lookVecZ < 0.0)) {
-						Block block = this.world.getBlockState(new BlockPos(k, centerY - 1, l)).getBlock();
-						Material material = block.getMaterial();
-						if (material == Material.AIR) {
+			for (int q = o; q < o + l; q++) {
+				for (int r = p; r < p + n; r++) {
+					double f = (double)q + 0.5 - vec3d.x;
+					double g = (double)r + 0.5 - vec3d.z;
+					if (!(f * d + g * e < 0.0)) {
+						LandType landType = this.field_14600.method_11914(this.world, q, j - 1, r, this.mob, l, m, n, true, true);
+						if (landType == LandType.WATER) {
 							return false;
 						}
 
-						if (material == Material.WATER && !this.mob.isTouchingWater()) {
+						if (landType == LandType.LAVA) {
 							return false;
 						}
 
-						if (material == Material.LAVA) {
+						if (landType == LandType.OPEN) {
+							return false;
+						}
+
+						landType = this.field_14600.method_11914(this.world, q, j, r, this.mob, l, m, n, true, true);
+						float h = this.mob.method_13075(landType);
+						if (h < 0.0F || h >= 8.0F) {
+							return false;
+						}
+
+						if (landType == LandType.DAMAGE_FIRE || landType == LandType.DANGER_FIRE || landType == LandType.DAMAGE_OTHER) {
 							return false;
 						}
 					}
@@ -184,32 +243,24 @@ public class MobNavigation extends EntityNavigation {
 		return true;
 	}
 
-	public void method_11027(boolean value) {
-		this.nodeMaker.method_9300(value);
-	}
-
-	public boolean method_11032() {
-		return this.nodeMaker.method_9303();
-	}
-
 	public void setCanPathThroughDoors(boolean value) {
-		this.nodeMaker.setCanOpenDoors(value);
+		this.field_14600.method_11919(value);
 	}
 
 	public void setCanEnterOpenDoors(boolean value) {
-		this.nodeMaker.setCanEnterOpenDoors(value);
+		this.field_14600.method_11916(value);
 	}
 
 	public boolean canEnterOpenDoors() {
-		return this.nodeMaker.canEnterOpenDoors();
+		return this.field_14600.method_11920();
 	}
 
 	public void setCanSwim(boolean value) {
-		this.nodeMaker.setCanSwim(value);
+		this.field_14600.method_11921(value);
 	}
 
 	public boolean canSwim() {
-		return this.nodeMaker.canSwim();
+		return this.field_14600.method_11923();
 	}
 
 	public void setAvoidSunlight(boolean avoidSunlight) {

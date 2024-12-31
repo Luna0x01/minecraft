@@ -14,16 +14,21 @@ import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.util.Identifier;
 
 public class ZombieBaseEntityRenderer extends BipedEntityRenderer<ZombieEntity> {
+	private static final Identifier ZOMBIE_VILLAGER = new Identifier("textures/entity/zombie_villager/zombie_villager.png");
+	private static final Identifier field_13642 = new Identifier("textures/entity/zombie_villager/zombie_farmer.png");
+	private static final Identifier field_13643 = new Identifier("textures/entity/zombie_villager/zombie_librarian.png");
+	private static final Identifier field_13644 = new Identifier("textures/entity/zombie_villager/zombie_priest.png");
+	private static final Identifier field_13645 = new Identifier("textures/entity/zombie_villager/zombie_smith.png");
+	private static final Identifier field_13646 = new Identifier("textures/entity/zombie_villager/zombie_butcher.png");
 	private static final Identifier ZOMBIE = new Identifier("textures/entity/zombie/zombie.png");
-	private static final Identifier ZOMBIE_VILLAGER = new Identifier("textures/entity/zombie/zombie_villager.png");
 	private final BiPedModel field_5219;
-	private final ZombieVillagerEntityModel field_5220;
+	private ZombieVillagerEntityModel field_5220;
 	private final List<FeatureRenderer<ZombieEntity>> field_11139;
 	private final List<FeatureRenderer<ZombieEntity>> field_11140;
 
 	public ZombieBaseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
 		super(entityRenderDispatcher, new AbstractZombieModel(), 0.5F, 1.0F);
-		FeatureRenderer featureRenderer = (FeatureRenderer)this.features.get(0);
+		FeatureRenderer<?> featureRenderer = (FeatureRenderer<?>)this.features.get(0);
 		this.field_5219 = this.bipedModel;
 		this.field_5220 = new ZombieVillagerEntityModel();
 		this.addFeature(new HeldItemRenderer(this));
@@ -52,7 +57,24 @@ public class ZombieBaseEntityRenderer extends BipedEntityRenderer<ZombieEntity> 
 	}
 
 	protected Identifier getTexture(ZombieEntity zombieEntity) {
-		return zombieEntity.isVillager() ? ZOMBIE_VILLAGER : ZOMBIE;
+		if (zombieEntity.isVillager()) {
+			switch (zombieEntity.method_13248()) {
+				case 0:
+					return field_13642;
+				case 1:
+					return field_13643;
+				case 2:
+					return field_13644;
+				case 3:
+					return field_13645;
+				case 4:
+					return field_13646;
+				default:
+					return ZOMBIE_VILLAGER;
+			}
+		} else {
+			return ZOMBIE;
+		}
 	}
 
 	private void method_4356(ZombieEntity zombieEntity) {

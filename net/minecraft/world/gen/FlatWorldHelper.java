@@ -9,6 +9,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.layer.FlatWorldLayer;
 
 public class FlatWorldHelper {
@@ -189,7 +190,7 @@ public class FlatWorldHelper {
 				if (list != null && !list.isEmpty()) {
 					flatWorldHelper.getLayers().addAll(list);
 					flatWorldHelper.updateLayerLevel();
-					int k = Biome.PLAINS.id;
+					int k = Biome.getBiomeIndex(Biomes.PLAINS);
 					if (i > 0 && strings.length > j) {
 						k = MathHelper.parseInt(strings[j++], k);
 					}
@@ -201,7 +202,7 @@ public class FlatWorldHelper {
 						for (String string : strings2) {
 							String[] strings4 = string.split("\\(", 2);
 							Map<String, String> map = Maps.newHashMap();
-							if (strings4[0].length() > 0) {
+							if (!strings4[0].isEmpty()) {
 								flatWorldHelper.getStructures().put(strings4[0], map);
 								if (strings4.length > 1 && strings4[1].endsWith(")") && strings4[1].length() > 1) {
 									String[] strings5 = strings4[1].substring(0, strings4[1].length() - 1).split(" ");
@@ -231,7 +232,7 @@ public class FlatWorldHelper {
 
 	public static FlatWorldHelper createDefault() {
 		FlatWorldHelper flatWorldHelper = new FlatWorldHelper();
-		flatWorldHelper.setBiomeId(Biome.PLAINS.id);
+		flatWorldHelper.setBiomeId(Biome.getBiomeIndex(Biomes.PLAINS));
 		flatWorldHelper.getLayers().add(new FlatWorldLayer(1, Blocks.BEDROCK));
 		flatWorldHelper.getLayers().add(new FlatWorldLayer(2, Blocks.DIRT));
 		flatWorldHelper.getLayers().add(new FlatWorldLayer(1, Blocks.GRASS));

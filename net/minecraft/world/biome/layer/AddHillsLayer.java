@@ -2,6 +2,7 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.collection.IntArrayCache;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,72 +32,69 @@ public class AddHillsLayer extends Layer {
 					LOGGER.debug("old! " + o);
 				}
 
-				if (o != 0 && p >= 2 && (p - 2) % 29 == 1 && o < 128) {
-					if (Biome.byId(o + 128) != null) {
-						ks[n + m * k] = o + 128;
-					} else {
-						ks[n + m * k] = o;
-					}
+				Biome biome = Biome.getBiomeFromIndex(o);
+				boolean bl2 = biome != null && biome.hasParent();
+				if (o != 0 && p >= 2 && (p - 2) % 29 == 1 && !bl2) {
+					Biome biome2 = Biome.getBiomeFromList(biome);
+					ks[n + m * k] = biome2 == null ? o : Biome.getBiomeIndex(biome2);
 				} else if (this.nextInt(3) != 0 && !bl) {
 					ks[n + m * k] = o;
 				} else {
-					int q = o;
-					if (o == Biome.DESERT.id) {
-						q = Biome.DESERT_HILLS.id;
-					} else if (o == Biome.FOREST.id) {
-						q = Biome.FOREST_HILLS.id;
-					} else if (o == Biome.BIRCH_FOREST.id) {
-						q = Biome.BIRCH_FOREST_HILLS.id;
-					} else if (o == Biome.ROOFED_FOREST.id) {
-						q = Biome.PLAINS.id;
-					} else if (o == Biome.TAIGA.id) {
-						q = Biome.TAIGA_HILLS.id;
-					} else if (o == Biome.MEGA_TAIGA.id) {
-						q = Biome.MEGA_TAIGA_HILLS.id;
-					} else if (o == Biome.COLD_TAIGA.id) {
-						q = Biome.COLD_TAIGA_HILLS.id;
-					} else if (o == Biome.PLAINS.id) {
+					Biome biome3 = biome;
+					if (biome == Biomes.DESERT) {
+						biome3 = Biomes.DESERT_HILLS;
+					} else if (biome == Biomes.FOREST) {
+						biome3 = Biomes.FOREST_HILLS;
+					} else if (biome == Biomes.BIRCH_FOREST) {
+						biome3 = Biomes.BIRCH_FOREST_HILLS;
+					} else if (biome == Biomes.ROOFED_FOREST) {
+						biome3 = Biomes.PLAINS;
+					} else if (biome == Biomes.TAIGA) {
+						biome3 = Biomes.TAIGA_HILLS;
+					} else if (biome == Biomes.REDWOOD_TAIGA) {
+						biome3 = Biomes.REDWOOD_TAIGA_HILLS;
+					} else if (biome == Biomes.TAIGA_COLD) {
+						biome3 = Biomes.TAIGA_COLD_HILLS;
+					} else if (biome == Biomes.PLAINS) {
 						if (this.nextInt(3) == 0) {
-							q = Biome.FOREST_HILLS.id;
+							biome3 = Biomes.FOREST_HILLS;
 						} else {
-							q = Biome.FOREST.id;
+							biome3 = Biomes.FOREST;
 						}
-					} else if (o == Biome.ICE_PLAINS.id) {
-						q = Biome.ICE_MOUNTAINS.id;
-					} else if (o == Biome.JUNGLE.id) {
-						q = Biome.JUNGLE_HILLS.id;
-					} else if (o == Biome.OCEAN.id) {
-						q = Biome.DEEP_OCEAN.id;
-					} else if (o == Biome.EXTREME_HILLS.id) {
-						q = Biome.EXTREME_HILLS_PLUS.id;
-					} else if (o == Biome.SAVANNA.id) {
-						q = Biome.SAVANNA_PLATEAU.id;
-					} else if (compareBiomes(o, Biome.MESA_PLATEAU_F.id)) {
-						q = Biome.MESA.id;
-					} else if (o == Biome.DEEP_OCEAN.id && this.nextInt(3) == 0) {
-						int r = this.nextInt(2);
-						if (r == 0) {
-							q = Biome.PLAINS.id;
+					} else if (biome == Biomes.ICE_FLATS) {
+						biome3 = Biomes.ICE_MOUNTAINS;
+					} else if (biome == Biomes.JUNGLE) {
+						biome3 = Biomes.JUNGLE_HILLS;
+					} else if (biome == Biomes.OCEAN) {
+						biome3 = Biomes.DEEP_OCEAN;
+					} else if (biome == Biomes.EXTREME_HILLS) {
+						biome3 = Biomes.EXTREME_HILLS_WITH_TREES;
+					} else if (biome == Biomes.SAVANNA) {
+						biome3 = Biomes.SAVANNA_ROCK;
+					} else if (compareBiomes(o, Biome.getBiomeIndex(Biomes.MESA_ROCK))) {
+						biome3 = Biomes.MESA;
+					} else if (biome == Biomes.DEEP_OCEAN && this.nextInt(3) == 0) {
+						int q = this.nextInt(2);
+						if (q == 0) {
+							biome3 = Biomes.PLAINS;
 						} else {
-							q = Biome.FOREST.id;
-						}
-					}
-
-					if (bl && q != o) {
-						if (Biome.byId(q + 128) != null) {
-							q += 128;
-						} else {
-							q = o;
+							biome3 = Biomes.FOREST;
 						}
 					}
 
-					if (q == o) {
+					int r = Biome.getBiomeIndex(biome3);
+					if (bl && r != o) {
+						Biome biome4 = Biome.getBiomeFromList(biome3);
+						r = biome4 == null ? o : Biome.getBiomeIndex(biome4);
+					}
+
+					if (r == o) {
 						ks[n + m * k] = o;
 					} else {
-						int s = is[n + 1 + (m + 1 - 1) * (k + 2)];
-						int t = is[n + 1 + 1 + (m + 1) * (k + 2)];
-						int u = is[n + 1 - 1 + (m + 1) * (k + 2)];
-						int v = is[n + 1 + (m + 1 + 1) * (k + 2)];
+						int s = is[n + 1 + (m + 0) * (k + 2)];
+						int t = is[n + 2 + (m + 1) * (k + 2)];
+						int u = is[n + 0 + (m + 1) * (k + 2)];
+						int v = is[n + 1 + (m + 2) * (k + 2)];
 						int w = 0;
 						if (compareBiomes(s, o)) {
 							w++;
@@ -115,7 +113,7 @@ public class AddHillsLayer extends Layer {
 						}
 
 						if (w >= 3) {
-							ks[n + m * k] = q;
+							ks[n + m * k] = r;
 						} else {
 							ks[n + m * k] = o;
 						}

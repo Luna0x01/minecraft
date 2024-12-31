@@ -1,10 +1,17 @@
 package net.minecraft.util.math;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Lists;
 import java.util.Iterator;
+import java.util.List;
+import javax.annotation.concurrent.Immutable;
 import net.minecraft.entity.Entity;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+@Immutable
 public class BlockPos extends Vec3i {
+	private static final Logger LOGGER = LogManager.getLogger();
 	public static final BlockPos ORIGIN = new BlockPos(0, 0, 0);
 	private static final int SIZE_BITS_X = 1 + MathHelper.log2(MathHelper.smallestEncompassingPowerOfTwo(30000000));
 	private static final int SIZE_BITS_Z = SIZE_BITS_X;
@@ -170,6 +177,10 @@ public class BlockPos extends Vec3i {
 		};
 	}
 
+	public BlockPos toImmutable() {
+		return this;
+	}
+
 	public static Iterable<BlockPos.Mutable> mutableIterate(BlockPos pos1, BlockPos pos2) {
 		final BlockPos blockPos = new BlockPos(Math.min(pos1.getX(), pos2.getX()), Math.min(pos1.getY(), pos2.getY()), Math.min(pos1.getZ(), pos2.getZ()));
 		final BlockPos blockPos2 = new BlockPos(Math.max(pos1.getX(), pos2.getX()), Math.max(pos1.getY(), pos2.getY()), Math.max(pos1.getZ(), pos2.getZ()));
@@ -210,13 +221,17 @@ public class BlockPos extends Vec3i {
 		};
 	}
 
-	public static final class Mutable extends BlockPos {
-		private int posX;
-		private int posY;
-		private int posZ;
+	public static class Mutable extends BlockPos {
+		protected int posX;
+		protected int posY;
+		protected int posZ;
 
 		public Mutable() {
 			this(0, 0, 0);
+		}
+
+		public Mutable(BlockPos blockPos) {
+			this(blockPos.getX(), blockPos.getY(), blockPos.getZ());
 		}
 
 		public Mutable(int i, int j, int k) {
@@ -246,6 +261,112 @@ public class BlockPos extends Vec3i {
 			this.posY = y;
 			this.posZ = z;
 			return this;
+		}
+
+		public BlockPos.Mutable set(Entity entity) {
+			return this.set(entity.x, entity.y, entity.z);
+		}
+
+		public BlockPos.Mutable set(double x, double y, double z) {
+			return this.setPosition(MathHelper.floor(x), MathHelper.floor(y), MathHelper.floor(z));
+		}
+
+		public BlockPos.Mutable set(Vec3i pos) {
+			return this.setPosition(pos.getX(), pos.getY(), pos.getZ());
+		}
+
+		public BlockPos.Mutable move(Direction direction) {
+			return this.move(direction, 1);
+		}
+
+		public BlockPos.Mutable move(Direction direction, int distance) {
+			return this.setPosition(
+				this.posX + direction.getOffsetX() * distance, this.posY + direction.getOffsetY() * distance, this.posZ + direction.getOffsetZ() * distance
+			);
+		}
+
+		public void setY(int y) {
+			this.posY = y;
+		}
+
+		@Override
+		public BlockPos toImmutable() {
+			return new BlockPos(this);
+		}
+	}
+
+	public static final class Pooled extends BlockPos.Mutable {
+		private boolean field_13716;
+		private static final List<BlockPos.Pooled> field_13717 = Lists.newArrayList();
+
+		private Pooled(int i, int j, int k) {
+			super(i, j, k);
+		}
+
+		public static BlockPos.Pooled get() {
+			return method_12571(0, 0, 0);
+		}
+
+		public static BlockPos.Pooled method_12567(double d, double e, double f) {
+			return method_12571(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
+		}
+
+		public static BlockPos.Pooled method_12573(Vec3i vec3i) {
+			return method_12571(vec3i.getX(), vec3i.getY(), vec3i.getZ());
+		}
+
+		public static BlockPos.Pooled method_12571(int i, int j, int k) {
+			synchronized (field_13717) {
+				if (!field_13717.isEmpty()) {
+					BlockPos.Pooled pooled = (BlockPos.Pooled)field_13717.remove(field_13717.size() - 1);
+					if (pooled != null && pooled.field_13716) {
+						pooled.field_13716 = false;
+						pooled.setPosition(i, j, k);
+						return pooled;
+					}
+				}
+			}
+
+			return new BlockPos.Pooled(i, j, k);
+		}
+
+		public void method_12576() {
+			synchronized (field_13717) {
+				if (field_13717.size() < 100) {
+					field_13717.add(this);
+				}
+
+				this.field_13716 = true;
+			}
+		}
+
+		public BlockPos.Pooled setPosition(int i, int j, int k) {
+			if (this.field_13716) {
+				BlockPos.LOGGER.error("PooledMutableBlockPosition modified after it was released.", new Throwable());
+				this.field_13716 = false;
+			}
+
+			return (BlockPos.Pooled)super.setPosition(i, j, k);
+		}
+
+		public BlockPos.Pooled set(Entity entity) {
+			return (BlockPos.Pooled)super.set(entity);
+		}
+
+		public BlockPos.Pooled set(double d, double e, double f) {
+			return (BlockPos.Pooled)super.set(d, e, f);
+		}
+
+		public BlockPos.Pooled set(Vec3i vec3i) {
+			return (BlockPos.Pooled)super.set(vec3i);
+		}
+
+		public BlockPos.Pooled move(Direction direction) {
+			return (BlockPos.Pooled)super.move(direction);
+		}
+
+		public BlockPos.Pooled move(Direction direction, int i) {
+			return (BlockPos.Pooled)super.move(direction, i);
 		}
 	}
 }

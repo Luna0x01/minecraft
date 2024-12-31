@@ -1,29 +1,29 @@
 package net.minecraft.world.biome;
 
 import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.List;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.collection.LongObjectStorage;
-import net.minecraft.world.LayeredBiomeSource;
 
 public class BiomeCache {
-	private final LayeredBiomeSource biomeSource;
+	private final SingletonBiomeSource field_4665;
 	private long field_4666;
-	private LongObjectStorage<BiomeCache.Entry> field_4667 = new LongObjectStorage<>();
-	private List<BiomeCache.Entry> slots = Lists.newArrayList();
+	private final Long2ObjectMap<BiomeCache.Entry> field_12460 = new Long2ObjectOpenHashMap(4096);
+	private final List<BiomeCache.Entry> slots = Lists.newArrayList();
 
-	public BiomeCache(LayeredBiomeSource layeredBiomeSource) {
-		this.biomeSource = layeredBiomeSource;
+	public BiomeCache(SingletonBiomeSource singletonBiomeSource) {
+		this.field_4665 = singletonBiomeSource;
 	}
 
 	public BiomeCache.Entry method_3841(int i, int j) {
 		i >>= 4;
 		j >>= 4;
 		long l = (long)i & 4294967295L | ((long)j & 4294967295L) << 32;
-		BiomeCache.Entry entry = this.field_4667.get(l);
+		BiomeCache.Entry entry = (BiomeCache.Entry)this.field_12460.get(l);
 		if (entry == null) {
 			entry = new BiomeCache.Entry(i, j);
-			this.field_4667.set(l, entry);
+			this.field_12460.put(l, entry);
 			this.slots.add(entry);
 		}
 
@@ -48,7 +48,7 @@ public class BiomeCache {
 				if (n > 30000L || n < 0L) {
 					this.slots.remove(i--);
 					long o = (long)entry.x & 4294967295L | ((long)entry.z & 4294967295L) << 32;
-					this.field_4667.remove(o);
+					this.field_12460.remove(o);
 				}
 			}
 		}
@@ -59,7 +59,6 @@ public class BiomeCache {
 	}
 
 	public class Entry {
-		public float[] field_7227 = new float[256];
 		public Biome[] biomeArray = new Biome[256];
 		public int x;
 		public int z;
@@ -68,8 +67,7 @@ public class BiomeCache {
 		public Entry(int i, int j) {
 			this.x = i;
 			this.z = j;
-			BiomeCache.this.biomeSource.method_3856(this.field_7227, i << 4, j << 4, 16, 16);
-			BiomeCache.this.biomeSource.method_3858(this.biomeArray, i << 4, j << 4, 16, 16, false);
+			BiomeCache.this.field_4665.method_11538(this.biomeArray, i << 4, j << 4, 16, 16, false);
 		}
 
 		public Biome getBiomeAt(int x, int z) {

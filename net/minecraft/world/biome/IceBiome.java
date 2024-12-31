@@ -2,6 +2,7 @@ package net.minecraft.world.biome;
 
 import java.util.Random;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.FoliageFeature;
@@ -14,14 +15,15 @@ public class IceBiome extends Biome {
 	private IceSpikeFeature iceSpikeFeature = new IceSpikeFeature();
 	private IceDiskFeature field_7242 = new IceDiskFeature(4);
 
-	public IceBiome(int i, boolean bl) {
-		super(i);
+	public IceBiome(boolean bl, Biome.Settings settings) {
+		super(settings);
 		this.field_7240 = bl;
 		if (bl) {
 			this.topBlock = Blocks.SNOW.getDefaultState();
 		}
 
 		this.passiveEntries.clear();
+		this.passiveEntries.add(new Biome.SpawnEntry(RabbitEntity.class, 4, 2, 3));
 	}
 
 	@Override
@@ -46,18 +48,5 @@ public class IceBiome extends Biome {
 	@Override
 	public FoliageFeature method_3822(Random random) {
 		return new SpruceTreeFeature(false);
-	}
-
-	@Override
-	protected Biome getMutatedVariant(int id) {
-		Biome biome = new IceBiome(id, true)
-			.seedModifier(13828095, true)
-			.setName(this.name + " Spikes")
-			.setMutated()
-			.setTemperatureAndDownfall(0.0F, 0.5F)
-			.setHeight(new Biome.Height(this.depth + 0.1F, this.variationModifier + 0.1F));
-		biome.depth = this.depth + 0.3F;
-		biome.variationModifier = this.variationModifier + 0.4F;
-		return biome;
 	}
 }

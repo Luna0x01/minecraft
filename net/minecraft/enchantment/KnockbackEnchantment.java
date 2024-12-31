@@ -1,10 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class KnockbackEnchantment extends Enchantment {
-	protected KnockbackEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.WEAPON);
+	protected KnockbackEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.WEAPON, equipmentSlots);
 		this.setName("knockback");
 	}
 

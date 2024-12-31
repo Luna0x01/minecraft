@@ -37,22 +37,23 @@ public class ItemPickupParticle extends Particle {
 		double p = d + (m - d) * (double)f;
 		double q = e + (n - e) * (double)f;
 		double r = l + (o - l) * (double)f;
-		int s = this.getLightmapCoordinates(tickDelta);
+		int s = this.method_12243(tickDelta);
 		int t = s % 65536;
 		int u = s / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)t / 1.0F, (float)u / 1.0F);
+		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)t, (float)u);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		p -= field_1722;
 		q -= field_1723;
 		r -= field_1724;
-		this.entityRenderManager.render(this.itemEntity, (double)((float)p), (double)((float)q), (double)((float)r), this.itemEntity.yaw, tickDelta);
+		GlStateManager.enableLighting();
+		this.entityRenderManager.method_12446(this.itemEntity, p, q, r, this.itemEntity.yaw, tickDelta, false);
 	}
 
 	@Override
-	public void tick() {
+	public void method_12241() {
 		this.pickupAge++;
 		if (this.pickupAge == this.pickupMaxAge) {
-			this.remove();
+			this.method_12251();
 		}
 	}
 

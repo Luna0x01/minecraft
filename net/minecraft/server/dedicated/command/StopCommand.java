@@ -17,11 +17,11 @@ public class StopCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		if (MinecraftServer.getServer().worlds != null) {
-			run(source, this, "commands.stop.start", new Object[0]);
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
+		if (minecraftServer.worlds != null) {
+			run(commandSource, this, "commands.stop.start", new Object[0]);
 		}
 
-		MinecraftServer.getServer().stopRunning();
+		minecraftServer.stopRunning();
 	}
 }

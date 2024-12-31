@@ -1,465 +1,230 @@
 package net.minecraft.entity.effect;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import net.minecraft.util.collection.IntegerStorage;
+import javax.annotation.Nullable;
+import net.minecraft.item.FishItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.PotionItem;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionUtil;
+import net.minecraft.potion.Potions;
 
 public class StatusEffectStrings {
-	public static final String UNCRAFTABLE = null;
-	public static final String SUGAR = "-0+1-2-3&4-4+13";
-	public static final String GHAST_TEAR = "+0-1-2-3&4-4+13";
-	public static final String POISON = "-0-1+2-3&4-4+13";
-	public static final String FERMENTED_SPIDER_EYE = "-0+3-4+13";
-	public static final String GLISTERING_MELON = "+0-1+2-3&4-4+13";
-	public static final String BLAZE_POWDER = "+0-1-2+3&4-4+13";
-	public static final String MAGMA_CREAM = "+0+1-2-3&4-4+13";
-	public static final String REDSTONE = "-5+6-7";
-	public static final String GLOWSTONE = "+5-6-7";
-	public static final String GUNPOWDER = "+14&13-13";
-	public static final String GOLDEN_CARROT = "-0+1+2-3+13&4-4";
-	public static final String WATER_BREATHING = "+0-1+2+3+13&4-4";
-	public static final String RABBIT_FOOT = "+0+1-2+3&4-4+13";
-	private static final Map<Integer, String> field_9162 = Maps.newHashMap();
-	private static final Map<Integer, String> field_9163 = Maps.newHashMap();
-	private static final Map<Integer, Integer> field_9164 = Maps.newHashMap();
-	private static final String[] field_4427 = new String[]{
-		"potion.prefix.mundane",
-		"potion.prefix.uninteresting",
-		"potion.prefix.bland",
-		"potion.prefix.clear",
-		"potion.prefix.milky",
-		"potion.prefix.diffuse",
-		"potion.prefix.artless",
-		"potion.prefix.thin",
-		"potion.prefix.awkward",
-		"potion.prefix.flat",
-		"potion.prefix.bulky",
-		"potion.prefix.bungling",
-		"potion.prefix.buttered",
-		"potion.prefix.smooth",
-		"potion.prefix.suave",
-		"potion.prefix.debonair",
-		"potion.prefix.thick",
-		"potion.prefix.elegant",
-		"potion.prefix.fancy",
-		"potion.prefix.charming",
-		"potion.prefix.dashing",
-		"potion.prefix.refined",
-		"potion.prefix.cordial",
-		"potion.prefix.sparkling",
-		"potion.prefix.potent",
-		"potion.prefix.foul",
-		"potion.prefix.odorless",
-		"potion.prefix.rank",
-		"potion.prefix.harsh",
-		"potion.prefix.acrid",
-		"potion.prefix.gross",
-		"potion.prefix.stinky"
+	private static final List<StatusEffectStrings.class_2697<Potion>> field_12339 = Lists.newArrayList();
+	private static final List<StatusEffectStrings.class_2697<Item>> field_12340 = Lists.newArrayList();
+	private static final List<StatusEffectStrings.class_2696> field_12341 = Lists.newArrayList();
+	private static final Predicate<ItemStack> field_12342 = new Predicate<ItemStack>() {
+		public boolean apply(@Nullable ItemStack itemStack) {
+			for (StatusEffectStrings.class_2696 lv : StatusEffectStrings.field_12341) {
+				if (lv.apply(itemStack)) {
+					return true;
+				}
+			}
+
+			return false;
+		}
 	};
 
-	public static boolean method_3469(int i, int j) {
-		return (i & 1 << j) != 0;
+	public static boolean method_11417(ItemStack itemStack) {
+		return method_11423(itemStack) || method_11425(itemStack);
 	}
 
-	private static int method_3479(int i, int j) {
-		return method_3469(i, j) ? 1 : 0;
+	protected static boolean method_11423(ItemStack itemStack) {
+		int i = 0;
+
+		for (int j = field_12340.size(); i < j; i++) {
+			if (((StatusEffectStrings.class_2697)field_12340.get(i)).field_12346.apply(itemStack)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
-	private static int method_3480(int i, int j) {
-		return method_3469(i, j) ? 0 : 1;
+	protected static boolean method_11425(ItemStack itemStack) {
+		int i = 0;
+
+		for (int j = field_12339.size(); i < j; i++) {
+			if (((StatusEffectStrings.class_2697)field_12339.get(i)).field_12346.apply(itemStack)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
-	public static int method_3468(int i) {
-		return method_3470(i, 5, 4, 3, 2, 1);
+	public static boolean method_11418(ItemStack itemStack, ItemStack itemStack2) {
+		return !field_12342.apply(itemStack) ? false : method_11424(itemStack, itemStack2) || method_11426(itemStack, itemStack2);
 	}
 
-	public static int method_3475(Collection<StatusEffectInstance> collection) {
-		int i = 3694022;
-		if (collection != null && !collection.isEmpty()) {
-			float f = 0.0F;
-			float g = 0.0F;
-			float h = 0.0F;
-			float j = 0.0F;
+	protected static boolean method_11424(ItemStack itemStack, ItemStack itemStack2) {
+		Item item = itemStack.getItem();
+		int i = 0;
 
-			for (StatusEffectInstance statusEffectInstance : collection) {
-				if (statusEffectInstance.shouldShowParticles()) {
-					int k = StatusEffect.STATUS_EFFECTS[statusEffectInstance.getEffectId()].getColor();
+		for (int j = field_12340.size(); i < j; i++) {
+			StatusEffectStrings.class_2697<Item> lv = (StatusEffectStrings.class_2697<Item>)field_12340.get(i);
+			if (lv.field_12345 == item && lv.field_12346.apply(itemStack2)) {
+				return true;
+			}
+		}
 
-					for (int l = 0; l <= statusEffectInstance.getAmplifier(); l++) {
-						f += (float)(k >> 16 & 0xFF) / 255.0F;
-						g += (float)(k >> 8 & 0xFF) / 255.0F;
-						h += (float)(k >> 0 & 0xFF) / 255.0F;
-						j++;
-					}
+		return false;
+	}
+
+	protected static boolean method_11426(ItemStack itemStack, ItemStack itemStack2) {
+		Potion potion = PotionUtil.getPotion(itemStack);
+		int i = 0;
+
+		for (int j = field_12339.size(); i < j; i++) {
+			StatusEffectStrings.class_2697<Potion> lv = (StatusEffectStrings.class_2697<Potion>)field_12339.get(i);
+			if (lv.field_12345 == potion && lv.field_12346.apply(itemStack2)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	@Nullable
+	public static ItemStack method_11427(ItemStack itemStack, @Nullable ItemStack itemStack2) {
+		if (itemStack2 != null) {
+			Potion potion = PotionUtil.getPotion(itemStack2);
+			Item item = itemStack2.getItem();
+			int i = 0;
+
+			for (int j = field_12340.size(); i < j; i++) {
+				StatusEffectStrings.class_2697<Item> lv = (StatusEffectStrings.class_2697<Item>)field_12340.get(i);
+				if (lv.field_12345 == item && lv.field_12346.apply(itemStack)) {
+					return PotionUtil.setPotion(new ItemStack(lv.field_12347), potion);
 				}
 			}
 
-			if (j == 0.0F) {
-				return 0;
-			} else {
-				f = f / j * 255.0F;
-				g = g / j * 255.0F;
-				h = h / j * 255.0F;
-				return (int)f << 16 | (int)g << 8 | (int)h;
-			}
-		} else {
-			return i;
-		}
-	}
+			i = 0;
 
-	public static boolean method_4633(Collection<StatusEffectInstance> collection) {
-		for (StatusEffectInstance statusEffectInstance : collection) {
-			if (!statusEffectInstance.isAmbient()) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	public static int getColor(int i, boolean bl) {
-		Integer integer = IntegerStorage.get(i);
-		if (!bl) {
-			if (field_9164.containsKey(integer)) {
-				return (Integer)field_9164.get(integer);
-			} else {
-				int j = method_3475(getPotionEffects(integer, false));
-				field_9164.put(integer, j);
-				return j;
-			}
-		} else {
-			return method_3475(getPotionEffects(integer, true));
-		}
-	}
-
-	public static String method_3478(int i) {
-		int j = method_3468(i);
-		return field_4427[j];
-	}
-
-	private static int method_3476(boolean bl, boolean bl2, boolean bl3, int i, int j, int k, int l) {
-		int m = 0;
-		if (bl) {
-			m = method_3480(l, j);
-		} else if (i != -1) {
-			if (i == 0 && method_3481(l) == j) {
-				m = 1;
-			} else if (i == 1 && method_3481(l) > j) {
-				m = 1;
-			} else if (i == 2 && method_3481(l) < j) {
-				m = 1;
-			}
-		} else {
-			m = method_3479(l, j);
-		}
-
-		if (bl2) {
-			m *= k;
-		}
-
-		if (bl3) {
-			m *= -1;
-		}
-
-		return m;
-	}
-
-	private static int method_3481(int i) {
-		int j;
-		for (j = 0; i > 0; j++) {
-			i &= i - 1;
-		}
-
-		return j;
-	}
-
-	private static int method_3474(String string, int i, int j, int k) {
-		if (i < string.length() && j >= 0 && i < j) {
-			int l = string.indexOf(124, i);
-			if (l >= 0 && l < j) {
-				int m = method_3474(string, i, l - 1, k);
-				if (m > 0) {
-					return m;
-				} else {
-					int n = method_3474(string, l + 1, j, k);
-					return n > 0 ? n : 0;
-				}
-			} else {
-				int o = string.indexOf(38, i);
-				if (o >= 0 && o < j) {
-					int p = method_3474(string, i, o - 1, k);
-					if (p <= 0) {
-						return 0;
-					} else {
-						int q = method_3474(string, o + 1, j, k);
-						if (q <= 0) {
-							return 0;
-						} else {
-							return p > q ? p : q;
-						}
-					}
-				} else {
-					boolean bl = false;
-					boolean bl2 = false;
-					boolean bl3 = false;
-					boolean bl4 = false;
-					boolean bl5 = false;
-					int r = -1;
-					int s = 0;
-					int t = 0;
-					int u = 0;
-
-					for (int v = i; v < j; v++) {
-						char c = string.charAt(v);
-						if (c >= '0' && c <= '9') {
-							if (bl) {
-								t = c - '0';
-								bl2 = true;
-							} else {
-								s *= 10;
-								s += c - '0';
-								bl3 = true;
-							}
-						} else if (c == '*') {
-							bl = true;
-						} else if (c == '!') {
-							if (bl3) {
-								u += method_3476(bl4, bl2, bl5, r, s, t, k);
-								bl4 = false;
-								bl5 = false;
-								bl = false;
-								bl2 = false;
-								bl3 = false;
-								t = 0;
-								s = 0;
-								r = -1;
-							}
-
-							bl4 = true;
-						} else if (c == '-') {
-							if (bl3) {
-								u += method_3476(bl4, bl2, bl5, r, s, t, k);
-								bl4 = false;
-								bl5 = false;
-								bl = false;
-								bl2 = false;
-								bl3 = false;
-								t = 0;
-								s = 0;
-								r = -1;
-							}
-
-							bl5 = true;
-						} else if (c != '=' && c != '<' && c != '>') {
-							if (c == '+' && bl3) {
-								u += method_3476(bl4, bl2, bl5, r, s, t, k);
-								bl4 = false;
-								bl5 = false;
-								bl = false;
-								bl2 = false;
-								bl3 = false;
-								t = 0;
-								s = 0;
-								r = -1;
-							}
-						} else {
-							if (bl3) {
-								u += method_3476(bl4, bl2, bl5, r, s, t, k);
-								bl4 = false;
-								bl5 = false;
-								bl = false;
-								bl2 = false;
-								bl3 = false;
-								t = 0;
-								s = 0;
-								r = -1;
-							}
-
-							if (c == '=') {
-								r = 0;
-							} else if (c == '<') {
-								r = 2;
-							} else if (c == '>') {
-								r = 1;
-							}
-						}
-					}
-
-					if (bl3) {
-						u += method_3476(bl4, bl2, bl5, r, s, t, k);
-					}
-
-					return u;
-				}
-			}
-		} else {
-			return 0;
-		}
-	}
-
-	public static List<StatusEffectInstance> getPotionEffects(int i, boolean bl) {
-		List<StatusEffectInstance> list = null;
-
-		for (StatusEffect statusEffect : StatusEffect.STATUS_EFFECTS) {
-			if (statusEffect != null && (!statusEffect.method_2448() || bl)) {
-				String string = (String)field_9162.get(statusEffect.getId());
-				if (string != null) {
-					int l = method_3474(string, 0, string.length(), i);
-					if (l > 0) {
-						int m = 0;
-						String string2 = (String)field_9163.get(statusEffect.getId());
-						if (string2 != null) {
-							m = method_3474(string2, 0, string2.length(), i);
-							if (m < 0) {
-								m = 0;
-							}
-						}
-
-						if (statusEffect.isInstant()) {
-							l = 1;
-						} else {
-							l = 1200 * (l * 3 + (l - 1) * 2);
-							l >>= m;
-							l = (int)Math.round((double)l * statusEffect.method_2446());
-							if ((i & 16384) != 0) {
-								l = (int)Math.round((double)l * 0.75 + 0.5);
-							}
-						}
-
-						if (list == null) {
-							list = Lists.newArrayList();
-						}
-
-						StatusEffectInstance statusEffectInstance = new StatusEffectInstance(statusEffect.getId(), l, m);
-						if ((i & 16384) != 0) {
-							statusEffectInstance.setSplash(true);
-						}
-
-						list.add(statusEffectInstance);
-					}
+			for (int l = field_12339.size(); i < l; i++) {
+				StatusEffectStrings.class_2697<Potion> lv2 = (StatusEffectStrings.class_2697<Potion>)field_12339.get(i);
+				if (lv2.field_12345 == potion && lv2.field_12346.apply(itemStack)) {
+					return PotionUtil.setPotion(new ItemStack(item), lv2.field_12347);
 				}
 			}
 		}
 
-		return list;
+		return itemStack2;
 	}
 
-	private static int method_3471(int i, int j, boolean bl, boolean bl2, boolean bl3) {
-		if (bl3) {
-			if (!method_3469(i, j)) {
-				return 0;
-			}
-		} else if (bl) {
-			i &= ~(1 << j);
-		} else if (bl2) {
-			if ((i & 1 << j) == 0) {
-				i |= 1 << j;
-			} else {
-				i &= ~(1 << j);
-			}
-		} else {
-			i |= 1 << j;
+	public static void method_11416() {
+		Predicate<ItemStack> predicate = new StatusEffectStrings.class_2696(Items.NETHER_WART);
+		Predicate<ItemStack> predicate2 = new StatusEffectStrings.class_2696(Items.GOLDEN_CARROT);
+		Predicate<ItemStack> predicate3 = new StatusEffectStrings.class_2696(Items.REDSTONE);
+		Predicate<ItemStack> predicate4 = new StatusEffectStrings.class_2696(Items.FERMENTED_SPIDER_EYE);
+		Predicate<ItemStack> predicate5 = new StatusEffectStrings.class_2696(Items.RABBIT_FOOT);
+		Predicate<ItemStack> predicate6 = new StatusEffectStrings.class_2696(Items.GLOWSTONE_DUST);
+		Predicate<ItemStack> predicate7 = new StatusEffectStrings.class_2696(Items.MAGMA_CREAM);
+		Predicate<ItemStack> predicate8 = new StatusEffectStrings.class_2696(Items.SUGAR);
+		Predicate<ItemStack> predicate9 = new StatusEffectStrings.class_2696(Items.RAW_FISH, FishItem.FishType.PUFFERFISH.getId());
+		Predicate<ItemStack> predicate10 = new StatusEffectStrings.class_2696(Items.GLISTERING_MELON);
+		Predicate<ItemStack> predicate11 = new StatusEffectStrings.class_2696(Items.SPIDER_EYE);
+		Predicate<ItemStack> predicate12 = new StatusEffectStrings.class_2696(Items.GHAST_TEAR);
+		Predicate<ItemStack> predicate13 = new StatusEffectStrings.class_2696(Items.BLAZE_POWDER);
+		method_11421(new StatusEffectStrings.class_2696(Items.POTION));
+		method_11421(new StatusEffectStrings.class_2696(Items.SPLASH_POTION));
+		method_11421(new StatusEffectStrings.class_2696(Items.LINGERING_POTION));
+		method_11419(Items.POTION, new StatusEffectStrings.class_2696(Items.GUNPOWDER), Items.SPLASH_POTION);
+		method_11419(Items.SPLASH_POTION, new StatusEffectStrings.class_2696(Items.DRAGON_BREATH), Items.LINGERING_POTION);
+		method_11420(Potions.WATER, predicate10, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate12, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate5, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate13, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate11, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate8, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate7, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate6, Potions.THICK);
+		method_11420(Potions.WATER, predicate3, Potions.MUNDANE);
+		method_11420(Potions.WATER, predicate, Potions.AWKWARD);
+		method_11420(Potions.AWKWARD, predicate2, Potions.NIGHT_VISION);
+		method_11420(Potions.NIGHT_VISION, predicate3, Potions.LONG_NIGHT_VISION);
+		method_11420(Potions.NIGHT_VISION, predicate4, Potions.INVISIBILITY);
+		method_11420(Potions.LONG_NIGHT_VISION, predicate4, Potions.LONG_INVISIBILITY);
+		method_11420(Potions.INVISIBILITY, predicate3, Potions.LONG_INVISIBILITY);
+		method_11420(Potions.AWKWARD, predicate7, Potions.FIRE_RESISTANCE);
+		method_11420(Potions.FIRE_RESISTANCE, predicate3, Potions.LONG_FIRE_RESISTANCE);
+		method_11420(Potions.AWKWARD, predicate5, Potions.LEAPING);
+		method_11420(Potions.LEAPING, predicate3, Potions.LONG_LEAPING);
+		method_11420(Potions.LEAPING, predicate6, Potions.STRONG_LEAPING);
+		method_11420(Potions.LEAPING, predicate4, Potions.SLOWNESS);
+		method_11420(Potions.LONG_LEAPING, predicate4, Potions.LONG_SLOWNESS);
+		method_11420(Potions.SLOWNESS, predicate3, Potions.LONG_SLOWNESS);
+		method_11420(Potions.SWIFTNESS, predicate4, Potions.SLOWNESS);
+		method_11420(Potions.LONG_SWIFTNESS, predicate4, Potions.LONG_SLOWNESS);
+		method_11420(Potions.AWKWARD, predicate8, Potions.SWIFTNESS);
+		method_11420(Potions.SWIFTNESS, predicate3, Potions.LONG_SWIFTNESS);
+		method_11420(Potions.SWIFTNESS, predicate6, Potions.STRONG_SWIFTNESS);
+		method_11420(Potions.AWKWARD, predicate9, Potions.WATER_BREATHING);
+		method_11420(Potions.WATER_BREATHING, predicate3, Potions.LONG_WATER_BREATHING);
+		method_11420(Potions.AWKWARD, predicate10, Potions.HEALING);
+		method_11420(Potions.HEALING, predicate6, Potions.STRONG_HEALING);
+		method_11420(Potions.HEALING, predicate4, Potions.HARMING);
+		method_11420(Potions.STRONG_HEALING, predicate4, Potions.STRONG_HARMING);
+		method_11420(Potions.HARMING, predicate6, Potions.STRONG_HARMING);
+		method_11420(Potions.POISON, predicate4, Potions.HARMING);
+		method_11420(Potions.LONG_POISON, predicate4, Potions.HARMING);
+		method_11420(Potions.STRONG_POISON, predicate4, Potions.STRONG_HARMING);
+		method_11420(Potions.AWKWARD, predicate11, Potions.POISON);
+		method_11420(Potions.POISON, predicate3, Potions.LONG_POISON);
+		method_11420(Potions.POISON, predicate6, Potions.STRONG_POISON);
+		method_11420(Potions.AWKWARD, predicate12, Potions.REGENERATION);
+		method_11420(Potions.REGENERATION, predicate3, Potions.LONG_REGENERATION);
+		method_11420(Potions.REGENERATION, predicate6, Potions.STRONG_REGENERATION);
+		method_11420(Potions.AWKWARD, predicate13, Potions.STRENGTH);
+		method_11420(Potions.STRENGTH, predicate3, Potions.LONG_STRENGTH);
+		method_11420(Potions.STRENGTH, predicate6, Potions.STRONG_STRENGTH);
+		method_11420(Potions.WATER, predicate4, Potions.WEAKNESS);
+		method_11420(Potions.WEAKNESS, predicate3, Potions.LONG_WEAKNESS);
+	}
+
+	private static void method_11419(PotionItem potionItem, StatusEffectStrings.class_2696 arg, PotionItem potionItem2) {
+		field_12340.add(new StatusEffectStrings.class_2697<>(potionItem, arg, potionItem2));
+	}
+
+	private static void method_11421(StatusEffectStrings.class_2696 arg) {
+		field_12341.add(arg);
+	}
+
+	private static void method_11420(Potion potion, Predicate<ItemStack> predicate, Potion potion2) {
+		field_12339.add(new StatusEffectStrings.class_2697<>(potion, predicate, potion2));
+	}
+
+	static class class_2696 implements Predicate<ItemStack> {
+		private final Item field_12343;
+		private final int field_12344;
+
+		public class_2696(Item item) {
+			this(item, -1);
 		}
 
-		return i;
-	}
-
-	public static int getStatusEffectData(int i, String string) {
-		int j = 0;
-		int k = string.length();
-		boolean bl = false;
-		boolean bl2 = false;
-		boolean bl3 = false;
-		boolean bl4 = false;
-		int l = 0;
-
-		for (int m = j; m < k; m++) {
-			char c = string.charAt(m);
-			if (c >= '0' && c <= '9') {
-				l *= 10;
-				l += c - '0';
-				bl = true;
-			} else if (c == '!') {
-				if (bl) {
-					i = method_3471(i, l, bl3, bl2, bl4);
-					bl4 = false;
-					bl2 = false;
-					bl3 = false;
-					bl = false;
-					l = 0;
-				}
-
-				bl2 = true;
-			} else if (c == '-') {
-				if (bl) {
-					i = method_3471(i, l, bl3, bl2, bl4);
-					bl4 = false;
-					bl2 = false;
-					bl3 = false;
-					bl = false;
-					l = 0;
-				}
-
-				bl3 = true;
-			} else if (c == '+') {
-				if (bl) {
-					i = method_3471(i, l, bl3, bl2, bl4);
-					bl4 = false;
-					bl2 = false;
-					bl3 = false;
-					bl = false;
-					l = 0;
-				}
-			} else if (c == '&') {
-				if (bl) {
-					i = method_3471(i, l, bl3, bl2, bl4);
-					bl4 = false;
-					bl2 = false;
-					bl3 = false;
-					bl = false;
-					l = 0;
-				}
-
-				bl4 = true;
-			}
+		public class_2696(Item item, int i) {
+			this.field_12343 = item;
+			this.field_12344 = i;
 		}
 
-		if (bl) {
-			i = method_3471(i, l, bl3, bl2, bl4);
+		public boolean apply(@Nullable ItemStack itemStack) {
+			return itemStack != null && itemStack.getItem() == this.field_12343 && (this.field_12344 == -1 || this.field_12344 == itemStack.getData());
 		}
-
-		return i & 32767;
 	}
 
-	public static int method_3470(int i, int j, int k, int l, int m, int n) {
-		return (method_3469(i, j) ? 16 : 0) | (method_3469(i, k) ? 8 : 0) | (method_3469(i, l) ? 4 : 0) | (method_3469(i, m) ? 2 : 0) | (method_3469(i, n) ? 1 : 0);
-	}
+	static class class_2697<T> {
+		final T field_12345;
+		final Predicate<ItemStack> field_12346;
+		final T field_12347;
 
-	static {
-		field_9162.put(StatusEffect.REGENERATION.getId(), "0 & !1 & !2 & !3 & 0+6");
-		field_9162.put(StatusEffect.SPEED.getId(), "!0 & 1 & !2 & !3 & 1+6");
-		field_9162.put(StatusEffect.FIRE_RESISTANCE.getId(), "0 & 1 & !2 & !3 & 0+6");
-		field_9162.put(StatusEffect.INSTANT_HEALTH.getId(), "0 & !1 & 2 & !3");
-		field_9162.put(StatusEffect.POISON.getId(), "!0 & !1 & 2 & !3 & 2+6");
-		field_9162.put(StatusEffect.WEAKNESS.getId(), "!0 & !1 & !2 & 3 & 3+6");
-		field_9162.put(StatusEffect.INSTANT_DAMAGE.getId(), "!0 & !1 & 2 & 3");
-		field_9162.put(StatusEffect.SLOWNESS.getId(), "!0 & 1 & !2 & 3 & 3+6");
-		field_9162.put(StatusEffect.STRENGTH.getId(), "0 & !1 & !2 & 3 & 3+6");
-		field_9162.put(StatusEffect.NIGHTVISION.getId(), "!0 & 1 & 2 & !3 & 2+6");
-		field_9162.put(StatusEffect.INVISIBILITY.getId(), "!0 & 1 & 2 & 3 & 2+6");
-		field_9162.put(StatusEffect.WATER_BREATHING.getId(), "0 & !1 & 2 & 3 & 2+6");
-		field_9162.put(StatusEffect.JUMP_BOOST.getId(), "0 & 1 & !2 & 3 & 3+6");
-		field_9163.put(StatusEffect.SPEED.getId(), "5");
-		field_9163.put(StatusEffect.HASTE.getId(), "5");
-		field_9163.put(StatusEffect.STRENGTH.getId(), "5");
-		field_9163.put(StatusEffect.REGENERATION.getId(), "5");
-		field_9163.put(StatusEffect.INSTANT_DAMAGE.getId(), "5");
-		field_9163.put(StatusEffect.INSTANT_HEALTH.getId(), "5");
-		field_9163.put(StatusEffect.RESISTANCE.getId(), "5");
-		field_9163.put(StatusEffect.POISON.getId(), "5");
-		field_9163.put(StatusEffect.JUMP_BOOST.getId(), "5");
+		public class_2697(T object, Predicate<ItemStack> predicate, T object2) {
+			this.field_12345 = object;
+			this.field_12346 = predicate;
+			this.field_12347 = object2;
+		}
 	}
 }

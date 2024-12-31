@@ -10,7 +10,6 @@ import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Callable;
 import net.minecraft.util.collection.IntArrayCache;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -34,27 +33,27 @@ public class CrashReport {
 	}
 
 	private void fillSystemDetails() {
-		this.systemDetailsSection.add("Minecraft Version", new Callable<String>() {
+		this.systemDetailsSection.add("Minecraft Version", new CrashCallable<String>() {
 			public String call() {
-				return "1.8.9";
+				return "1.9.4";
 			}
 		});
-		this.systemDetailsSection.add("Operating System", new Callable<String>() {
+		this.systemDetailsSection.add("Operating System", new CrashCallable<String>() {
 			public String call() {
 				return System.getProperty("os.name") + " (" + System.getProperty("os.arch") + ") version " + System.getProperty("os.version");
 			}
 		});
-		this.systemDetailsSection.add("Java Version", new Callable<String>() {
+		this.systemDetailsSection.add("Java Version", new CrashCallable<String>() {
 			public String call() {
 				return System.getProperty("java.version") + ", " + System.getProperty("java.vendor");
 			}
 		});
-		this.systemDetailsSection.add("Java VM Version", new Callable<String>() {
+		this.systemDetailsSection.add("Java VM Version", new CrashCallable<String>() {
 			public String call() {
 				return System.getProperty("java.vm.name") + " (" + System.getProperty("java.vm.info") + "), " + System.getProperty("java.vm.vendor");
 			}
 		});
-		this.systemDetailsSection.add("Memory", new Callable<String>() {
+		this.systemDetailsSection.add("Memory", new CrashCallable<String>() {
 			public String call() {
 				Runtime runtime = Runtime.getRuntime();
 				long l = runtime.maxMemory();
@@ -66,7 +65,7 @@ public class CrashReport {
 				return n + " bytes (" + q + " MB) / " + m + " bytes (" + p + " MB) up to " + l + " bytes (" + o + " MB)";
 			}
 		});
-		this.systemDetailsSection.add("JVM Flags", new Callable<String>() {
+		this.systemDetailsSection.add("JVM Flags", new CrashCallable<String>() {
 			public String call() {
 				RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
 				List<String> list = runtimeMXBean.getInputArguments();
@@ -86,7 +85,7 @@ public class CrashReport {
 				return String.format("%d total; %s", i, stringBuilder.toString());
 			}
 		});
-		this.systemDetailsSection.add("IntCache", new Callable<String>() {
+		this.systemDetailsSection.add("IntCache", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return IntArrayCache.asString();
 			}
@@ -102,12 +101,13 @@ public class CrashReport {
 	}
 
 	public void addStackTrace(StringBuilder stringBuilder) {
-		if ((this.stackTrace == null || this.stackTrace.length <= 0) && this.otherSections.size() > 0) {
+		if ((this.stackTrace == null || this.stackTrace.length <= 0) && !this.otherSections.isEmpty()) {
 			this.stackTrace = (StackTraceElement[])ArrayUtils.subarray(((CrashReportSection)this.otherSections.get(0)).getStackTrace(), 0, 1);
 		}
 
 		if (this.stackTrace != null && this.stackTrace.length > 0) {
 			stringBuilder.append("-- Head --\n");
+			stringBuilder.append("Thread: ").append(Thread.currentThread().getName()).append("\n");
 			stringBuilder.append("Stacktrace:\n");
 
 			for (StackTraceElement stackTraceElement : this.stackTrace) {

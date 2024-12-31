@@ -8,7 +8,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CactusBlock;
-import net.minecraft.block.CommandBlock;
 import net.minecraft.block.DirtBlock;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.DoorBlock;
@@ -156,7 +155,8 @@ public class BlockModelShapes {
 			Blocks.BARRIER,
 			Blocks.WALL_SIGN,
 			Blocks.WALL_BANNER,
-			Blocks.STANDING_BANNER
+			Blocks.STANDING_BANNER,
+			Blocks.END_GATEWAY
 		);
 		this.putBlock(Blocks.STONE, new BlockStateMap.Builder().defaultProperty(StoneBlock.VARIANT).build());
 		this.putBlock(Blocks.PRISMARINE, new BlockStateMap.Builder().defaultProperty(PrismarineBlock.VARIANT).build());
@@ -171,7 +171,6 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.CACTUS, new BlockStateMap.Builder().ignoreProperties(CactusBlock.AGE).build());
 		this.putBlock(Blocks.SUGARCANE, new BlockStateMap.Builder().ignoreProperties(SugarCaneBlock.AGE).build());
 		this.putBlock(Blocks.JUKEBOX, new BlockStateMap.Builder().ignoreProperties(JukeboxBlock.HAS_RECORD).build());
-		this.putBlock(Blocks.COMMAND_BLOCK, new BlockStateMap.Builder().ignoreProperties(CommandBlock.TRIGGERED).build());
 		this.putBlock(Blocks.COBBLESTONE_WALL, new BlockStateMap.Builder().defaultProperty(WallBlock.VARIANT).suffix("_wall").build());
 		this.putBlock(Blocks.DOUBLE_PLANT, new BlockStateMap.Builder().defaultProperty(DoublePlantBlock.VARIANT).ignoreProperties(DoublePlantBlock.FACING).build());
 		this.putBlock(Blocks.OAK_FENCE_GATE, new BlockStateMap.Builder().ignoreProperties(FenceGateBlock.POWERED).build());
@@ -245,7 +244,7 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.PUMPKIN_STEM, new BlockStateIdentifierMap() {
 			@Override
 			protected ModelIdentifier getBlockStateIdentifier(BlockState state) {
-				Map<Property, Comparable> map = Maps.newLinkedHashMap(state.getPropertyMap());
+				Map<Property<?>, Comparable<?>> map = Maps.newLinkedHashMap(state.getPropertyMap());
 				if (state.get(StemBlock.FACING) != Direction.UP) {
 					map.remove(StemBlock.AGE);
 				}
@@ -256,7 +255,7 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.MELON_STEM, new BlockStateIdentifierMap() {
 			@Override
 			protected ModelIdentifier getBlockStateIdentifier(BlockState state) {
-				Map<Property, Comparable> map = Maps.newLinkedHashMap(state.getPropertyMap());
+				Map<Property<?>, Comparable<?>> map = Maps.newLinkedHashMap(state.getPropertyMap());
 				if (state.get(StemBlock.FACING) != Direction.UP) {
 					map.remove(StemBlock.AGE);
 				}
@@ -267,8 +266,8 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.DIRT, new BlockStateIdentifierMap() {
 			@Override
 			protected ModelIdentifier getBlockStateIdentifier(BlockState state) {
-				Map<Property, Comparable> map = Maps.newLinkedHashMap(state.getPropertyMap());
-				String string = DirtBlock.VARIANT.name((Comparable)map.remove(DirtBlock.VARIANT));
+				Map<Property<?>, Comparable<?>> map = Maps.newLinkedHashMap(state.getPropertyMap());
+				String string = DirtBlock.VARIANT.name((DirtBlock.DirtType)map.remove(DirtBlock.VARIANT));
 				if (DirtBlock.DirtType.PODZOL != state.get(DirtBlock.VARIANT)) {
 					map.remove(DirtBlock.SNOWY);
 				}
@@ -279,8 +278,8 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.DOUBLE_STONE_SLAB, new BlockStateIdentifierMap() {
 			@Override
 			protected ModelIdentifier getBlockStateIdentifier(BlockState state) {
-				Map<Property, Comparable> map = Maps.newLinkedHashMap(state.getPropertyMap());
-				String string = StoneSlabBlock.VARIANT.name((Comparable)map.remove(StoneSlabBlock.VARIANT));
+				Map<Property<?>, Comparable<?>> map = Maps.newLinkedHashMap(state.getPropertyMap());
+				String string = StoneSlabBlock.VARIANT.name((StoneSlabBlock.SlabType)map.remove(StoneSlabBlock.VARIANT));
 				map.remove(StoneSlabBlock.SEAMLESS);
 				String string2 = state.get(StoneSlabBlock.SEAMLESS) ? "all" : "normal";
 				return new ModelIdentifier(string + "_double_slab", string2);
@@ -289,8 +288,8 @@ public class BlockModelShapes {
 		this.putBlock(Blocks.DOUBLE_STONE_SLAB2, new BlockStateIdentifierMap() {
 			@Override
 			protected ModelIdentifier getBlockStateIdentifier(BlockState state) {
-				Map<Property, Comparable> map = Maps.newLinkedHashMap(state.getPropertyMap());
-				String string = RedSandstoneSlabBlock.VARIANT.name((Comparable)map.remove(RedSandstoneSlabBlock.VARIANT));
+				Map<Property<?>, Comparable<?>> map = Maps.newLinkedHashMap(state.getPropertyMap());
+				String string = RedSandstoneSlabBlock.VARIANT.name((RedSandstoneSlabBlock.SlabType)map.remove(RedSandstoneSlabBlock.VARIANT));
 				map.remove(StoneSlabBlock.SEAMLESS);
 				String string2 = state.get(RedSandstoneSlabBlock.SEAMLESS) ? "all" : "normal";
 				return new ModelIdentifier(string + "_double_slab", string2);

@@ -1,6 +1,8 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import javax.annotation.Nullable;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -8,29 +10,29 @@ import net.minecraft.util.PacketByteBuf;
 
 public class EntityEquipmentUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
-	private int slot;
+	private EquipmentSlot slot;
 	private ItemStack stack;
 
 	public EntityEquipmentUpdateS2CPacket() {
 	}
 
-	public EntityEquipmentUpdateS2CPacket(int i, int j, ItemStack itemStack) {
+	public EntityEquipmentUpdateS2CPacket(int i, EquipmentSlot equipmentSlot, @Nullable ItemStack itemStack) {
 		this.id = i;
-		this.slot = j;
+		this.slot = equipmentSlot;
 		this.stack = itemStack == null ? null : itemStack.copy();
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.id = buf.readVarInt();
-		this.slot = buf.readShort();
+		this.slot = buf.readEnumConstant(EquipmentSlot.class);
 		this.stack = buf.readItemStack();
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.id);
-		buf.writeShort(this.slot);
+		buf.writeEnumConstant(this.slot);
 		buf.writeItemStack(this.stack);
 	}
 
@@ -46,7 +48,7 @@ public class EntityEquipmentUpdateS2CPacket implements Packet<ClientPlayPacketLi
 		return this.id;
 	}
 
-	public int getSlot() {
+	public EquipmentSlot getSlot() {
 		return this.slot;
 	}
 }

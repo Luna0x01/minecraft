@@ -9,9 +9,9 @@ import net.minecraft.world.World;
 
 public class EntityS2CPacket implements Packet<ClientPlayPacketListener> {
 	protected int id;
-	protected byte x;
-	protected byte y;
-	protected byte z;
+	protected int field_13775;
+	protected int field_13776;
+	protected int field_13777;
 	protected byte yaw;
 	protected byte pitch;
 	protected boolean onGround;
@@ -46,16 +46,16 @@ public class EntityS2CPacket implements Packet<ClientPlayPacketListener> {
 		return world.getEntityById(this.id);
 	}
 
-	public byte getX() {
-		return this.x;
+	public int method_7808() {
+		return this.field_13775;
 	}
 
-	public byte getY() {
-		return this.y;
+	public int method_7809() {
+		return this.field_13776;
 	}
 
-	public byte getZ() {
-		return this.z;
+	public int method_7810() {
+		return this.field_13777;
 	}
 
 	public byte getYaw() {
@@ -78,29 +78,29 @@ public class EntityS2CPacket implements Packet<ClientPlayPacketListener> {
 		public MoveRelative() {
 		}
 
-		public MoveRelative(int i, byte b, byte c, byte d, boolean bl) {
+		public MoveRelative(int i, long l, long m, long n, boolean bl) {
 			super(i);
-			this.x = b;
-			this.y = c;
-			this.z = d;
+			this.field_13775 = (int)l;
+			this.field_13776 = (int)m;
+			this.field_13777 = (int)n;
 			this.onGround = bl;
 		}
 
 		@Override
 		public void read(PacketByteBuf buf) throws IOException {
 			super.read(buf);
-			this.x = buf.readByte();
-			this.y = buf.readByte();
-			this.z = buf.readByte();
+			this.field_13775 = buf.readShort();
+			this.field_13776 = buf.readShort();
+			this.field_13777 = buf.readShort();
 			this.onGround = buf.readBoolean();
 		}
 
 		@Override
 		public void write(PacketByteBuf buf) throws IOException {
 			super.write(buf);
-			buf.writeByte(this.x);
-			buf.writeByte(this.y);
-			buf.writeByte(this.z);
+			buf.writeShort(this.field_13775);
+			buf.writeShort(this.field_13776);
+			buf.writeShort(this.field_13777);
 			buf.writeBoolean(this.onGround);
 		}
 	}
@@ -140,13 +140,13 @@ public class EntityS2CPacket implements Packet<ClientPlayPacketListener> {
 			this.rotate = true;
 		}
 
-		public RotateAndMoveRelative(int i, byte b, byte c, byte d, byte e, byte f, boolean bl) {
+		public RotateAndMoveRelative(int i, long l, long m, long n, byte b, byte c, boolean bl) {
 			super(i);
-			this.x = b;
-			this.y = c;
-			this.z = d;
-			this.yaw = e;
-			this.pitch = f;
+			this.field_13775 = (int)l;
+			this.field_13776 = (int)m;
+			this.field_13777 = (int)n;
+			this.yaw = b;
+			this.pitch = c;
 			this.onGround = bl;
 			this.rotate = true;
 		}
@@ -154,9 +154,9 @@ public class EntityS2CPacket implements Packet<ClientPlayPacketListener> {
 		@Override
 		public void read(PacketByteBuf buf) throws IOException {
 			super.read(buf);
-			this.x = buf.readByte();
-			this.y = buf.readByte();
-			this.z = buf.readByte();
+			this.field_13775 = buf.readShort();
+			this.field_13776 = buf.readShort();
+			this.field_13777 = buf.readShort();
 			this.yaw = buf.readByte();
 			this.pitch = buf.readByte();
 			this.onGround = buf.readBoolean();
@@ -165,9 +165,9 @@ public class EntityS2CPacket implements Packet<ClientPlayPacketListener> {
 		@Override
 		public void write(PacketByteBuf buf) throws IOException {
 			super.write(buf);
-			buf.writeByte(this.x);
-			buf.writeByte(this.y);
-			buf.writeByte(this.z);
+			buf.writeShort(this.field_13775);
+			buf.writeShort(this.field_13776);
+			buf.writeShort(this.field_13777);
 			buf.writeByte(this.yaw);
 			buf.writeByte(this.pitch);
 			buf.writeBoolean(this.onGround);

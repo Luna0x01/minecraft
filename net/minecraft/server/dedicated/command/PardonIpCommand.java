@@ -1,7 +1,9 @@
 package net.minecraft.server.dedicated.command;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -22,8 +24,8 @@ public class PardonIpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public boolean isAccessible(CommandSource source) {
-		return MinecraftServer.getServer().getPlayerManager().getIpBanList().isEnabled() && super.isAccessible(source);
+	public boolean method_3278(MinecraftServer server, CommandSource source) {
+		return server.getPlayerManager().getIpBanList().isEnabled() && super.method_3278(server, source);
 	}
 
 	@Override
@@ -32,12 +34,12 @@ public class PardonIpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length == 1 && args[0].length() > 1) {
 			Matcher matcher = BanIpCommand.field_2725.matcher(args[0]);
 			if (matcher.matches()) {
-				MinecraftServer.getServer().getPlayerManager().getIpBanList().remove(args[0]);
-				run(source, this, "commands.unbanip.success", new Object[]{args[0]});
+				minecraftServer.getPlayerManager().getIpBanList().remove(args[0]);
+				run(commandSource, this, "commands.unbanip.success", new Object[]{args[0]});
 			} else {
 				throw new SyntaxException("commands.unbanip.invalid");
 			}
@@ -47,7 +49,7 @@ public class PardonIpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, MinecraftServer.getServer().getPlayerManager().getIpBanList().getNames()) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, server.getPlayerManager().getIpBanList().getNames()) : Collections.emptyList();
 	}
 }

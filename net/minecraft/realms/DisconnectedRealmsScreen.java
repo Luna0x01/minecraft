@@ -19,6 +19,7 @@ public class DisconnectedRealmsScreen extends RealmsScreen {
 	@Override
 	public void init() {
 		Realms.setConnectedToRealms(false);
+		Realms.clearResourcePack();
 		this.buttonsClear();
 		this.lines = this.fontSplit(this.reason.asFormattedString(), this.width() - 50);
 		this.textHeight = this.lines.size() * this.fontLineHeight();

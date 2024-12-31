@@ -2,18 +2,19 @@ package net.minecraft.structure;
 
 import java.util.List;
 import java.util.Random;
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.DoorBlock;
-import net.minecraft.block.FacingBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.DispenserBlockEntity;
 import net.minecraft.block.material.Material;
-import net.minecraft.item.WoodenDoorItem;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.WeightedRandomChestContent;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -21,7 +22,10 @@ import net.minecraft.world.World;
 
 public abstract class StructurePiece {
 	protected BlockBox boundingBox;
-	protected Direction facing;
+	@Nullable
+	private Direction facing;
+	private BlockMirror field_13013;
+	private BlockRotation field_13014;
 	protected int chainLength;
 
 	public StructurePiece() {
@@ -31,11 +35,12 @@ public abstract class StructurePiece {
 		this.chainLength = i;
 	}
 
-	public NbtCompound toNbt() {
+	public final NbtCompound toNbt() {
 		NbtCompound nbtCompound = new NbtCompound();
 		nbtCompound.putString("id", StructurePieceManager.getId(this));
 		nbtCompound.put("BB", this.boundingBox.toNbt());
-		nbtCompound.putInt("O", this.facing == null ? -1 : this.facing.getHorizontal());
+		Direction direction = this.method_11854();
+		nbtCompound.putInt("O", direction == null ? -1 : direction.getHorizontal());
 		nbtCompound.putInt("GD", this.chainLength);
 		this.serialize(nbtCompound);
 		return nbtCompound;
@@ -49,7 +54,7 @@ public abstract class StructurePiece {
 		}
 
 		int i = nbt.getInt("O");
-		this.facing = i == -1 ? null : Direction.fromHorizontal(i);
+		this.method_11853(i == -1 ? null : Direction.fromHorizontal(i));
 		this.chainLength = nbt.getInt("GD");
 		this.deserialize(nbt);
 	}
@@ -94,11 +99,11 @@ public abstract class StructurePiece {
 
 		for (int o = i; o <= l; o++) {
 			for (int p = k; p <= n; p++) {
-				if (world.getBlockState(mutable.setPosition(o, j, p)).getBlock().getMaterial().isFluid()) {
+				if (world.getBlockState(mutable.setPosition(o, j, p)).getMaterial().isFluid()) {
 					return true;
 				}
 
-				if (world.getBlockState(mutable.setPosition(o, m, p)).getBlock().getMaterial().isFluid()) {
+				if (world.getBlockState(mutable.setPosition(o, m, p)).getMaterial().isFluid()) {
 					return true;
 				}
 			}
@@ -106,11 +111,11 @@ public abstract class StructurePiece {
 
 		for (int q = i; q <= l; q++) {
 			for (int r = j; r <= m; r++) {
-				if (world.getBlockState(mutable.setPosition(q, r, k)).getBlock().getMaterial().isFluid()) {
+				if (world.getBlockState(mutable.setPosition(q, r, k)).getMaterial().isFluid()) {
 					return true;
 				}
 
-				if (world.getBlockState(mutable.setPosition(q, r, n)).getBlock().getMaterial().isFluid()) {
+				if (world.getBlockState(mutable.setPosition(q, r, n)).getMaterial().isFluid()) {
 					return true;
 				}
 			}
@@ -118,11 +123,11 @@ public abstract class StructurePiece {
 
 		for (int s = k; s <= n; s++) {
 			for (int t = j; t <= m; t++) {
-				if (world.getBlockState(mutable.setPosition(i, t, s)).getBlock().getMaterial().isFluid()) {
+				if (world.getBlockState(mutable.setPosition(i, t, s)).getMaterial().isFluid()) {
 					return true;
 				}
 
-				if (world.getBlockState(mutable.setPosition(l, t, s)).getBlock().getMaterial().isFluid()) {
+				if (world.getBlockState(mutable.setPosition(l, t, s)).getMaterial().isFluid()) {
 					return true;
 				}
 			}
@@ -132,10 +137,11 @@ public abstract class StructurePiece {
 	}
 
 	protected int applyXTransform(int x, int z) {
-		if (this.facing == null) {
+		Direction direction = this.method_11854();
+		if (direction == null) {
 			return x;
 		} else {
-			switch (this.facing) {
+			switch (direction) {
 				case NORTH:
 				case SOUTH:
 					return this.boundingBox.minX + x;
@@ -150,14 +156,15 @@ public abstract class StructurePiece {
 	}
 
 	protected int applyYTransform(int y) {
-		return this.facing == null ? y : y + this.boundingBox.minY;
+		return this.method_11854() == null ? y : y + this.boundingBox.minY;
 	}
 
 	protected int applyZTransform(int x, int z) {
-		if (this.facing == null) {
+		Direction direction = this.method_11854();
+		if (direction == null) {
 			return z;
 		} else {
-			switch (this.facing) {
+			switch (direction) {
 				case NORTH:
 					return this.boundingBox.maxZ - z;
 				case SOUTH:
@@ -171,248 +178,17 @@ public abstract class StructurePiece {
 		}
 	}
 
-	protected int getData(Block block, int type) {
-		if (block == Blocks.RAIL) {
-			if (this.facing == Direction.WEST || this.facing == Direction.EAST) {
-				if (type == 1) {
-					return 0;
-				}
-
-				return 1;
-			}
-		} else if (block instanceof DoorBlock) {
-			if (this.facing == Direction.SOUTH) {
-				if (type == 0) {
-					return 2;
-				}
-
-				if (type == 2) {
-					return 0;
-				}
-			} else {
-				if (this.facing == Direction.WEST) {
-					return type + 1 & 3;
-				}
-
-				if (this.facing == Direction.EAST) {
-					return type + 3 & 3;
-				}
-			}
-		} else if (block != Blocks.STONE_STAIRS
-			&& block != Blocks.WOODEN_STAIRS
-			&& block != Blocks.NETHER_BRICK_STAIRS
-			&& block != Blocks.STONE_BRICK_STAIRS
-			&& block != Blocks.SANDSTONE_STAIRS) {
-			if (block == Blocks.LADDER) {
-				if (this.facing == Direction.SOUTH) {
-					if (type == Direction.NORTH.getId()) {
-						return Direction.SOUTH.getId();
-					}
-
-					if (type == Direction.SOUTH.getId()) {
-						return Direction.NORTH.getId();
-					}
-				} else if (this.facing == Direction.WEST) {
-					if (type == Direction.NORTH.getId()) {
-						return Direction.WEST.getId();
-					}
-
-					if (type == Direction.SOUTH.getId()) {
-						return Direction.EAST.getId();
-					}
-
-					if (type == Direction.WEST.getId()) {
-						return Direction.NORTH.getId();
-					}
-
-					if (type == Direction.EAST.getId()) {
-						return Direction.SOUTH.getId();
-					}
-				} else if (this.facing == Direction.EAST) {
-					if (type == Direction.NORTH.getId()) {
-						return Direction.EAST.getId();
-					}
-
-					if (type == Direction.SOUTH.getId()) {
-						return Direction.WEST.getId();
-					}
-
-					if (type == Direction.WEST.getId()) {
-						return Direction.NORTH.getId();
-					}
-
-					if (type == Direction.EAST.getId()) {
-						return Direction.SOUTH.getId();
-					}
-				}
-			} else if (block == Blocks.STONE_BUTTON) {
-				if (this.facing == Direction.SOUTH) {
-					if (type == 3) {
-						return 4;
-					}
-
-					if (type == 4) {
-						return 3;
-					}
-				} else if (this.facing == Direction.WEST) {
-					if (type == 3) {
-						return 1;
-					}
-
-					if (type == 4) {
-						return 2;
-					}
-
-					if (type == 2) {
-						return 3;
-					}
-
-					if (type == 1) {
-						return 4;
-					}
-				} else if (this.facing == Direction.EAST) {
-					if (type == 3) {
-						return 2;
-					}
-
-					if (type == 4) {
-						return 1;
-					}
-
-					if (type == 2) {
-						return 3;
-					}
-
-					if (type == 1) {
-						return 4;
-					}
-				}
-			} else if (block == Blocks.TRIPWIRE_HOOK || block instanceof FacingBlock) {
-				Direction direction = Direction.fromHorizontal(type);
-				if (this.facing == Direction.SOUTH) {
-					if (direction == Direction.SOUTH || direction == Direction.NORTH) {
-						return direction.getOpposite().getHorizontal();
-					}
-				} else if (this.facing == Direction.WEST) {
-					if (direction == Direction.NORTH) {
-						return Direction.WEST.getHorizontal();
-					}
-
-					if (direction == Direction.SOUTH) {
-						return Direction.EAST.getHorizontal();
-					}
-
-					if (direction == Direction.WEST) {
-						return Direction.NORTH.getHorizontal();
-					}
-
-					if (direction == Direction.EAST) {
-						return Direction.SOUTH.getHorizontal();
-					}
-				} else if (this.facing == Direction.EAST) {
-					if (direction == Direction.NORTH) {
-						return Direction.EAST.getHorizontal();
-					}
-
-					if (direction == Direction.SOUTH) {
-						return Direction.WEST.getHorizontal();
-					}
-
-					if (direction == Direction.WEST) {
-						return Direction.NORTH.getHorizontal();
-					}
-
-					if (direction == Direction.EAST) {
-						return Direction.SOUTH.getHorizontal();
-					}
-				}
-			} else if (block == Blocks.PISTON || block == Blocks.STICKY_PISTON || block == Blocks.LEVER || block == Blocks.DISPENSER) {
-				if (this.facing == Direction.SOUTH) {
-					if (type == Direction.NORTH.getId() || type == Direction.SOUTH.getId()) {
-						return Direction.getById(type).getOpposite().getId();
-					}
-				} else if (this.facing == Direction.WEST) {
-					if (type == Direction.NORTH.getId()) {
-						return Direction.WEST.getId();
-					}
-
-					if (type == Direction.SOUTH.getId()) {
-						return Direction.EAST.getId();
-					}
-
-					if (type == Direction.WEST.getId()) {
-						return Direction.NORTH.getId();
-					}
-
-					if (type == Direction.EAST.getId()) {
-						return Direction.SOUTH.getId();
-					}
-				} else if (this.facing == Direction.EAST) {
-					if (type == Direction.NORTH.getId()) {
-						return Direction.EAST.getId();
-					}
-
-					if (type == Direction.SOUTH.getId()) {
-						return Direction.WEST.getId();
-					}
-
-					if (type == Direction.WEST.getId()) {
-						return Direction.NORTH.getId();
-					}
-
-					if (type == Direction.EAST.getId()) {
-						return Direction.SOUTH.getId();
-					}
-				}
-			}
-		} else if (this.facing == Direction.SOUTH) {
-			if (type == 2) {
-				return 3;
-			}
-
-			if (type == 3) {
-				return 2;
-			}
-		} else if (this.facing == Direction.WEST) {
-			if (type == 0) {
-				return 2;
-			}
-
-			if (type == 1) {
-				return 3;
-			}
-
-			if (type == 2) {
-				return 0;
-			}
-
-			if (type == 3) {
-				return 1;
-			}
-		} else if (this.facing == Direction.EAST) {
-			if (type == 0) {
-				return 2;
-			}
-
-			if (type == 1) {
-				return 3;
-			}
-
-			if (type == 2) {
-				return 1;
-			}
-
-			if (type == 3) {
-				return 0;
-			}
-		}
-
-		return type;
-	}
-
 	protected void setBlockState(World world, BlockState state, int x, int y, int z, BlockBox box) {
 		BlockPos blockPos = new BlockPos(this.applyXTransform(x, z), this.applyYTransform(y), this.applyZTransform(x, z));
 		if (box.contains(blockPos)) {
+			if (this.field_13013 != BlockMirror.NONE) {
+				state = state.withMirror(this.field_13013);
+			}
+
+			if (this.field_13014 != BlockRotation.NONE) {
+				state = state.withRotation(this.field_13014);
+			}
+
 			world.setBlockState(blockPos, state, 2);
 		}
 	}
@@ -441,7 +217,7 @@ public abstract class StructurePiece {
 		for (int i = minY; i <= maxY; i++) {
 			for (int j = minX; j <= maxX; j++) {
 				for (int k = minZ; k <= maxZ; k++) {
-					if (!cantReplaceAir || this.getBlockAt(world, j, i, k, box).getBlock().getMaterial() != Material.AIR) {
+					if (!cantReplaceAir || this.getBlockAt(world, j, i, k, box).getMaterial() != Material.AIR) {
 						if (i != minY && i != maxY && j != minX && j != maxX && k != minZ && k != maxZ) {
 							this.setBlockState(world, inside, j, i, k, box);
 						} else {
@@ -469,7 +245,7 @@ public abstract class StructurePiece {
 		for (int i = minY; i <= maxY; i++) {
 			for (int j = minX; j <= maxX; j++) {
 				for (int k = minZ; k <= maxZ; k++) {
-					if (!cantReplaceAir || this.getBlockAt(world, j, i, k, box).getBlock().getMaterial() != Material.AIR) {
+					if (!cantReplaceAir || this.getBlockAt(world, j, i, k, box).getMaterial() != Material.AIR) {
 						randomizer.setBlock(random, j, i, k, i == minY || i == maxY || j == minX || j == maxX || k == minZ || k == maxZ);
 						this.setBlockState(world, randomizer.getBlock(), j, i, k, box);
 					}
@@ -496,7 +272,7 @@ public abstract class StructurePiece {
 		for (int i = minY; i <= maxY; i++) {
 			for (int j = minX; j <= maxX; j++) {
 				for (int k = minZ; k <= maxZ; k++) {
-					if (!(random.nextFloat() > blockChance) && (!cantReplaceAir || this.getBlockAt(world, j, i, k, box).getBlock().getMaterial() != Material.AIR)) {
+					if (!(random.nextFloat() > blockChance) && (!cantReplaceAir || this.getBlockAt(world, j, i, k, box).getMaterial() != Material.AIR)) {
 						if (i != minY && i != maxY && j != minX && j != maxX && k != minZ && k != maxZ) {
 							this.setBlockState(world, inside, j, i, k, box);
 						} else {
@@ -531,7 +307,7 @@ public abstract class StructurePiece {
 
 				for (int o = minZ; o <= maxZ; o++) {
 					float p = ((float)o - j) / (h * 0.5F);
-					if (!cantReplaceAir || this.getBlockAt(world, m, k, o, box).getBlock().getMaterial() != Material.AIR) {
+					if (!cantReplaceAir || this.getBlockAt(world, m, k, o, box).getMaterial() != Material.AIR) {
 						float q = n * n + l * l + p * p;
 						if (q <= 1.05F) {
 							this.setBlockState(world, block, m, k, o, box);
@@ -557,21 +333,21 @@ public abstract class StructurePiece {
 		int j = this.applyYTransform(y);
 		int k = this.applyZTransform(x, z);
 		if (box.contains(new BlockPos(i, j, k))) {
-			while ((world.isAir(new BlockPos(i, j, k)) || world.getBlockState(new BlockPos(i, j, k)).getBlock().getMaterial().isFluid()) && j > 1) {
+			while ((world.isAir(new BlockPos(i, j, k)) || world.getBlockState(new BlockPos(i, j, k)).getMaterial().isFluid()) && j > 1) {
 				world.setBlockState(new BlockPos(i, j, k), block, 2);
 				j--;
 			}
 		}
 	}
 
-	protected boolean placeChest(World world, BlockBox box, Random random, int x, int y, int z, List<WeightedRandomChestContent> chestContent, int i) {
-		BlockPos blockPos = new BlockPos(this.applyXTransform(x, z), this.applyYTransform(y), this.applyZTransform(x, z));
-		if (box.contains(blockPos) && world.getBlockState(blockPos).getBlock() != Blocks.CHEST) {
+	protected boolean method_11852(World world, BlockBox blockBox, Random random, int i, int j, int k, Identifier identifier) {
+		BlockPos blockPos = new BlockPos(this.applyXTransform(i, k), this.applyYTransform(j), this.applyZTransform(i, k));
+		if (blockBox.contains(blockPos) && world.getBlockState(blockPos).getBlock() != Blocks.CHEST) {
 			BlockState blockState = Blocks.CHEST.getDefaultState();
 			world.setBlockState(blockPos, Blocks.CHEST.changeFacing(world, blockPos, blockState), 2);
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof ChestBlockEntity) {
-				WeightedRandomChestContent.fillInventory(random, chestContent, (ChestBlockEntity)blockEntity, i);
+				((ChestBlockEntity)blockEntity).method_11660(identifier, random.nextLong());
 			}
 
 			return true;
@@ -580,15 +356,13 @@ public abstract class StructurePiece {
 		}
 	}
 
-	protected boolean placeDispenser(
-		World world, BlockBox box, Random random, int x, int y, int z, int type, List<WeightedRandomChestContent> dispenserContent, int i
-	) {
-		BlockPos blockPos = new BlockPos(this.applyXTransform(x, z), this.applyYTransform(y), this.applyZTransform(x, z));
-		if (box.contains(blockPos) && world.getBlockState(blockPos).getBlock() != Blocks.DISPENSER) {
-			world.setBlockState(blockPos, Blocks.DISPENSER.stateFromData(this.getData(Blocks.DISPENSER, type)), 2);
+	protected boolean method_11851(World world, BlockBox blockBox, Random random, int i, int j, int k, Direction direction, Identifier identifier) {
+		BlockPos blockPos = new BlockPos(this.applyXTransform(i, k), this.applyYTransform(j), this.applyZTransform(i, k));
+		if (blockBox.contains(blockPos) && world.getBlockState(blockPos).getBlock() != Blocks.DISPENSER) {
+			this.setBlockState(world, Blocks.DISPENSER.getDefaultState().with(DispenserBlock.FACING, direction), i, j, k, blockBox);
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof DispenserBlockEntity) {
-				WeightedRandomChestContent.fillDispenser(random, dispenserContent, (DispenserBlockEntity)blockEntity, i);
+				((DispenserBlockEntity)blockEntity).method_11660(identifier, random.nextLong());
 			}
 
 			return true;
@@ -598,14 +372,43 @@ public abstract class StructurePiece {
 	}
 
 	protected void placeDoor(World world, BlockBox box, Random random, int x, int y, int z, Direction facing) {
-		BlockPos blockPos = new BlockPos(this.applyXTransform(x, z), this.applyYTransform(y), this.applyZTransform(x, z));
-		if (box.contains(blockPos)) {
-			WoodenDoorItem.place(world, blockPos, facing.rotateYCounterclockwise(), Blocks.OAK_DOOR);
-		}
+		this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState().with(DoorBlock.FACING, facing), x, y, z, box);
+		this.setBlockState(world, Blocks.OAK_DOOR.getDefaultState().with(DoorBlock.FACING, facing).with(DoorBlock.HALF, DoorBlock.HalfType.UPPER), x, y + 1, z, box);
 	}
 
 	public void translate(int x, int y, int z) {
 		this.boundingBox.move(x, y, z);
+	}
+
+	@Nullable
+	public Direction method_11854() {
+		return this.facing;
+	}
+
+	public void method_11853(@Nullable Direction direction) {
+		this.facing = direction;
+		if (direction == null) {
+			this.field_13014 = BlockRotation.NONE;
+			this.field_13013 = BlockMirror.NONE;
+		} else {
+			switch (direction) {
+				case SOUTH:
+					this.field_13013 = BlockMirror.LEFT_RIGHT;
+					this.field_13014 = BlockRotation.NONE;
+					break;
+				case WEST:
+					this.field_13013 = BlockMirror.LEFT_RIGHT;
+					this.field_13014 = BlockRotation.CLOCKWISE_90;
+					break;
+				case EAST:
+					this.field_13013 = BlockMirror.NONE;
+					this.field_13014 = BlockRotation.CLOCKWISE_90;
+					break;
+				default:
+					this.field_13013 = BlockMirror.NONE;
+					this.field_13014 = BlockRotation.NONE;
+			}
+		}
 	}
 
 	public abstract static class BlockRandomizer {

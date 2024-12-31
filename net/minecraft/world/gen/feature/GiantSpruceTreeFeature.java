@@ -37,24 +37,24 @@ public class GiantSpruceTreeFeature extends AbstractGiantTreeFeature {
 			this.generateTopLeaves(world, blockPos.getX(), blockPos.getZ(), blockPos.getY() + i, 0, random);
 
 			for (int j = 0; j < i; j++) {
-				Block block = world.getBlockState(blockPos.up(j)).getBlock();
-				if (block.getMaterial() == Material.AIR || block.getMaterial() == Material.FOLIAGE) {
+				BlockState blockState = world.getBlockState(blockPos.up(j));
+				if (blockState.getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) {
 					this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(j), this.treeLogState);
 				}
 
 				if (j < i - 1) {
-					block = world.getBlockState(blockPos.add(1, j, 0)).getBlock();
-					if (block.getMaterial() == Material.AIR || block.getMaterial() == Material.FOLIAGE) {
+					blockState = world.getBlockState(blockPos.add(1, j, 0));
+					if (blockState.getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) {
 						this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.add(1, j, 0), this.treeLogState);
 					}
 
-					block = world.getBlockState(blockPos.add(1, j, 1)).getBlock();
-					if (block.getMaterial() == Material.AIR || block.getMaterial() == Material.FOLIAGE) {
+					blockState = world.getBlockState(blockPos.add(1, j, 1));
+					if (blockState.getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) {
 						this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.add(1, j, 1), this.treeLogState);
 					}
 
-					block = world.getBlockState(blockPos.add(0, j, 1)).getBlock();
-					if (block.getMaterial() == Material.AIR || block.getMaterial() == Material.FOLIAGE) {
+					blockState = world.getBlockState(blockPos.add(0, j, 1));
+					if (blockState.getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) {
 						this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.add(0, j, 1), this.treeLogState);
 					}
 				}
@@ -106,13 +106,14 @@ public class GiantSpruceTreeFeature extends AbstractGiantTreeFeature {
 	private void changeDirtToPodzol(World world, BlockPos blockPos) {
 		for (int i = 2; i >= -3; i--) {
 			BlockPos blockPos2 = blockPos.up(i);
-			Block block = world.getBlockState(blockPos2).getBlock();
+			BlockState blockState = world.getBlockState(blockPos2);
+			Block block = blockState.getBlock();
 			if (block == Blocks.GRASS || block == Blocks.DIRT) {
 				this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, PODZOL);
 				break;
 			}
 
-			if (block.getMaterial() != Material.AIR && i < 0) {
+			if (blockState.getMaterial() != Material.AIR && i < 0) {
 				break;
 			}
 		}

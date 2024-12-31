@@ -1,23 +1,33 @@
 package net.minecraft.entity.vehicle;
 
 import io.netty.buffer.ByteBuf;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.CommandBlockExecutor;
 import net.minecraft.world.World;
 
 public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
+	private static final TrackedData<String> COMMAND = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.STRING);
+	private static final TrackedData<Text> LAST_OUTPUT = DataTracker.registerData(CommandBlockMinecartEntity.class, TrackedDataHandlerRegistry.TEXT_COMPONENT);
 	private final CommandBlockExecutor executor = new CommandBlockExecutor() {
 		@Override
 		public void markDirty() {
-			CommandBlockMinecartEntity.this.getDataTracker().setProperty(23, this.getCommand());
-			CommandBlockMinecartEntity.this.getDataTracker().setProperty(24, Text.Serializer.serialize(this.getLastOutput()));
+			CommandBlockMinecartEntity.this.getDataTracker().set(CommandBlockMinecartEntity.COMMAND, this.getCommand());
+			CommandBlockMinecartEntity.this.getDataTracker().set(CommandBlockMinecartEntity.LAST_OUTPUT, this.getLastOutput());
 		}
 
 		@Override
@@ -49,6 +59,11 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 		public Entity getEntity() {
 			return CommandBlockMinecartEntity.this;
 		}
+
+		@Override
+		public MinecraftServer getMinecraftServer() {
+			return CommandBlockMinecartEntity.this.world.getServer();
+		}
 	};
 	private int lastExecuted = 0;
 
@@ -63,16 +78,16 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.getDataTracker().track(23, "");
-		this.getDataTracker().track(24, "");
+		this.getDataTracker().startTracking(COMMAND, "");
+		this.getDataTracker().startTracking(LAST_OUTPUT, new LiteralText(""));
 	}
 
 	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
 		this.executor.fromNbt(nbt);
-		this.getDataTracker().setProperty(23, this.getCommandExecutor().getCommand());
-		this.getDataTracker().setProperty(24, Text.Serializer.serialize(this.getCommandExecutor().getLastOutput()));
+		this.getDataTracker().set(COMMAND, this.getCommandExecutor().getCommand());
+		this.getDataTracker().set(LAST_OUTPUT, this.getCommandExecutor().getLastOutput());
 	}
 
 	@Override
@@ -104,21 +119,26 @@ public class CommandBlockMinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean openInventory(PlayerEntity player) {
-		this.executor.interact(player);
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+		this.executor.interact(playerEntity);
 		return false;
 	}
 
 	@Override
-	public void method_8364(int i) {
-		super.method_8364(i);
-		if (i == 24) {
+	public void onTrackedDataSet(TrackedData<?> data) {
+		super.onTrackedDataSet(data);
+		if (LAST_OUTPUT.equals(data)) {
 			try {
-				this.executor.setLastOutput(Text.Serializer.deserialize(this.getDataTracker().getString(24)));
+				this.executor.setLastOutput(this.getDataTracker().get(LAST_OUTPUT));
 			} catch (Throwable var3) {
 			}
-		} else if (i == 23) {
-			this.executor.setCommand(this.getDataTracker().getString(23));
+		} else if (COMMAND.equals(data)) {
+			this.executor.setCommand(this.getDataTracker().get(COMMAND));
 		}
+	}
+
+	@Override
+	public boolean entityDataRequiresOperator() {
+		return true;
 	}
 }

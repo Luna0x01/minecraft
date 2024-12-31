@@ -2,6 +2,7 @@ package net.minecraft.entity.attribute;
 
 import java.util.Collection;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import org.apache.logging.log4j.LogManager;
@@ -19,6 +20,10 @@ public class EntityAttributes {
 		.setName("Movement Speed")
 		.setTracked(true);
 	public static final EntityAttribute GENERIC_ATTACK_DAMAGE = new ClampedEntityAttribute(null, "generic.attackDamage", 2.0, 0.0, 2048.0);
+	public static final EntityAttribute GENERIC_ATTACK_SPEED = new ClampedEntityAttribute(null, "generic.attackSpeed", 4.0, 0.0, 1024.0).setTracked(true);
+	public static final EntityAttribute GENERIC_ARMOR = new ClampedEntityAttribute(null, "generic.armor", 0.0, 0.0, 30.0).setTracked(true);
+	public static final EntityAttribute GENERIC_ARMOR_TOUGHNESS = new ClampedEntityAttribute(null, "generic.armorToughness", 0.0, 0.0, 20.0).setTracked(true);
+	public static final EntityAttribute GENERIC_LUCK = new ClampedEntityAttribute(null, "generic.luck", 0.0, -1024.0, 1024.0).setTracked(true);
 
 	public static NbtList toNbt(AbstractEntityAttributeContainer container) {
 		NbtList nbtList = new NbtList();
@@ -51,13 +56,12 @@ public class EntityAttributes {
 		return nbtCompound;
 	}
 
-	private static NbtCompound toNbt(AttributeModifier modifier) {
+	public static NbtCompound toNbt(AttributeModifier modifier) {
 		NbtCompound nbtCompound = new NbtCompound();
 		nbtCompound.putString("Name", modifier.getName());
 		nbtCompound.putDouble("Amount", modifier.getAmount());
 		nbtCompound.putInt("Operation", modifier.getOperation());
-		nbtCompound.putLong("UUIDMost", modifier.getId().getMostSignificantBits());
-		nbtCompound.putLong("UUIDLeast", modifier.getId().getLeastSignificantBits());
+		nbtCompound.putUuid("UUID", modifier.getId());
 		return nbtCompound;
 	}
 
@@ -92,8 +96,9 @@ public class EntityAttributes {
 		}
 	}
 
+	@Nullable
 	public static AttributeModifier fromNbt(NbtCompound nbt) {
-		UUID uUID = new UUID(nbt.getLong("UUIDMost"), nbt.getLong("UUIDLeast"));
+		UUID uUID = nbt.getUuid("UUID");
 
 		try {
 			return new AttributeModifier(uUID, nbt.getString("Name"), nbt.getDouble("Amount"), nbt.getInt("Operation"));

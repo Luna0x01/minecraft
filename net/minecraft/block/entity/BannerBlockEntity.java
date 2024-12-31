@@ -2,13 +2,13 @@ package net.minecraft.block.entity;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FlowerBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.DyeColor;
 
@@ -44,12 +44,13 @@ public class BannerBlockEntity extends BlockEntity {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		toNbt(nbt, this.base, this.patternsNbt);
+		return nbt;
 	}
 
-	public static void toNbt(NbtCompound compound, int base, NbtList patterns) {
+	public static void toNbt(NbtCompound compound, int base, @Nullable NbtList patterns) {
 		compound.putInt("Base", base);
 		if (patterns != null) {
 			compound.put("Patterns", patterns);
@@ -67,11 +68,15 @@ public class BannerBlockEntity extends BlockEntity {
 		this.patternListTagRead = true;
 	}
 
+	@Nullable
 	@Override
-	public Packet getPacket() {
-		NbtCompound nbtCompound = new NbtCompound();
-		this.toNbt(nbtCompound);
-		return new BlockEntityUpdateS2CPacket(this.pos, 6, nbtCompound);
+	public BlockEntityUpdateS2CPacket getUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 6, this.getUpdatePacketContent());
+	}
+
+	@Override
+	public NbtCompound getUpdatePacketContent() {
+		return this.toNbt(new NbtCompound());
 	}
 
 	public int getBase() {
@@ -131,6 +136,11 @@ public class BannerBlockEntity extends BlockEntity {
 				}
 			}
 		}
+	}
+
+	public static void method_11644(ItemStack itemStack, DyeColor dyeColor) {
+		NbtCompound nbtCompound = itemStack.getSubNbt("BlockEntityTag", true);
+		nbtCompound.putInt("Base", dyeColor.getSwappedId());
 	}
 
 	public static void loadFromItemStack(ItemStack stack) {
@@ -236,6 +246,7 @@ public class BannerBlockEntity extends BlockEntity {
 			return this.ingredient;
 		}
 
+		@Nullable
 		public static BannerBlockEntity.BannerPattern getById(String id) {
 			for (BannerBlockEntity.BannerPattern bannerPattern : values()) {
 				if (bannerPattern.id.equals(id)) {

@@ -18,14 +18,13 @@ public class NoteParticle extends Particle {
 		this.velocityY *= 0.01F;
 		this.velocityZ *= 0.01F;
 		this.velocityY += 0.2;
-		this.red = MathHelper.sin(((float)g + 0.0F) * (float) Math.PI * 2.0F) * 0.65F + 0.35F;
-		this.green = MathHelper.sin(((float)g + 0.33333334F) * (float) Math.PI * 2.0F) * 0.65F + 0.35F;
-		this.blue = MathHelper.sin(((float)g + 0.6666667F) * (float) Math.PI * 2.0F) * 0.65F + 0.35F;
+		this.red = MathHelper.sin(((float)g + 0.0F) * (float) (Math.PI * 2)) * 0.65F + 0.35F;
+		this.green = MathHelper.sin(((float)g + 0.33333334F) * (float) (Math.PI * 2)) * 0.65F + 0.35F;
+		this.blue = MathHelper.sin(((float)g + 0.6666667F) * (float) (Math.PI * 2)) * 0.65F + 0.35F;
 		this.scale *= 0.75F;
 		this.scale *= j;
 		this.prevScale = this.scale;
 		this.maxAge = 6;
-		this.noClip = false;
 		this.setMiscTexture(64);
 	}
 
@@ -38,16 +37,16 @@ public class NoteParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		if (this.age++ >= this.maxAge) {
-			this.remove();
+			this.method_12251();
 		}
 
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
-		if (this.y == this.prevY) {
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
+		if (this.field_13429 == this.field_13426) {
 			this.velocityX *= 1.1;
 			this.velocityZ *= 1.1;
 		}
@@ -55,7 +54,7 @@ public class NoteParticle extends Particle {
 		this.velocityX *= 0.66F;
 		this.velocityY *= 0.66F;
 		this.velocityZ *= 0.66F;
-		if (this.onGround) {
+		if (this.field_13434) {
 			this.velocityX *= 0.7F;
 			this.velocityZ *= 0.7F;
 		}

@@ -33,7 +33,7 @@ public class ItemModelGenerator {
 			return null;
 		} else {
 			map.put("particle", model.isValidTexture("particle") ? model.resolveTexture("particle") : (String)map.get("layer0"));
-			return new BlockModel(list, map, false, false, model.getTransformation());
+			return new BlockModel(null, list, map, false, false, model.getTransformation(), model.method_12353());
 		}
 	}
 

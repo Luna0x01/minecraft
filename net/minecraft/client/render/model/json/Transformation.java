@@ -30,11 +30,7 @@ public class Transformation {
 			return false;
 		} else {
 			Transformation transformation = (Transformation)obj;
-			if (!this.rotation.equals(transformation.rotation)) {
-				return false;
-			} else {
-				return !this.scale.equals(transformation.scale) ? false : this.translation.equals(transformation.translation);
-			}
+			return this.rotation.equals(transformation.rotation) && this.scale.equals(transformation.scale) && this.translation.equals(transformation.translation);
 		}
 	}
 
@@ -54,9 +50,9 @@ public class Transformation {
 			Vector3f vector3f = this.deserializeVector3f(jsonObject, "rotation", rotation);
 			Vector3f vector3f2 = this.deserializeVector3f(jsonObject, "translation", translation);
 			vector3f2.scale(0.0625F);
-			vector3f2.x = MathHelper.clamp(vector3f2.x, -1.5F, 1.5F);
-			vector3f2.y = MathHelper.clamp(vector3f2.y, -1.5F, 1.5F);
-			vector3f2.z = MathHelper.clamp(vector3f2.z, -1.5F, 1.5F);
+			vector3f2.x = MathHelper.clamp(vector3f2.x, -5.0F, 5.0F);
+			vector3f2.y = MathHelper.clamp(vector3f2.y, -5.0F, 5.0F);
+			vector3f2.z = MathHelper.clamp(vector3f2.z, -5.0F, 5.0F);
 			Vector3f vector3f3 = this.deserializeVector3f(jsonObject, "scale", scale);
 			vector3f3.x = MathHelper.clamp(vector3f3.x, -4.0F, 4.0F);
 			vector3f3.y = MathHelper.clamp(vector3f3.y, -4.0F, 4.0F);

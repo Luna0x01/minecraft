@@ -21,13 +21,13 @@ public class VideoOptionsScreen extends Screen {
 		GameOptions.Option.ANAGLYPH,
 		GameOptions.Option.VIEW_BOBBING,
 		GameOptions.Option.GUI_SCALE,
+		GameOptions.Option.ATTACK_INDICATOR,
 		GameOptions.Option.BRIGHTNESS,
 		GameOptions.Option.SHOW_CLOUDS,
 		GameOptions.Option.PARTICLES,
 		GameOptions.Option.USE_FULLSCREEN,
 		GameOptions.Option.ENABLE_VSYNC,
 		GameOptions.Option.MIPMAP_LEVELS,
-		GameOptions.Option.BLOCK_ALTERNATIVES,
 		GameOptions.Option.USE_VBO,
 		GameOptions.Option.ENTITY_SHADOWS
 	};

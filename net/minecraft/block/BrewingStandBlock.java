@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BrewingStandBlockEntity;
 import net.minecraft.block.material.Material;
@@ -18,16 +19,20 @@ import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class BrewingStandBlock extends BlockWithEntity {
 	public static final BooleanProperty[] HAS_BOTTLES = new BooleanProperty[]{
 		BooleanProperty.of("has_bottle_0"), BooleanProperty.of("has_bottle_1"), BooleanProperty.of("has_bottle_2")
 	};
+	protected static final Box field_12592 = new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0);
+	protected static final Box field_12593 = new Box(0.4375, 0.0, 0.4375, 0.5625, 0.875, 0.5625);
 
 	public BrewingStandBlock() {
 		super(Material.IRON);
@@ -40,13 +45,13 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
@@ -55,32 +60,41 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		this.setBoundingBox(0.4375F, 0.0F, 0.4375F, 0.5625F, 0.875F, 0.5625F);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		this.setBlockItemBounds();
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+		appendCollisionBoxes(pos, entityBox, boxes, field_12593);
+		appendCollisionBoxes(pos, entityBox, boxes, field_12592);
 	}
 
 	@Override
-	public void setBlockItemBounds() {
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.125F, 1.0F);
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12592;
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BrewingStandBlockEntity) {
-				player.openInventory((BrewingStandBlockEntity)blockEntity);
-				player.incrementStat(Stats.INTERACTIONS_WITH_BREWING_STAND);
+				playerEntity.openInventory((BrewingStandBlockEntity)blockEntity);
+				playerEntity.incrementStat(Stats.INTERACTIONS_WITH_BREWING_STAND);
 			}
 
 			return true;
@@ -98,10 +112,10 @@ public class BrewingStandBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
-		double d = (double)((float)pos.getX() + 0.4F + rand.nextFloat() * 0.2F);
-		double e = (double)((float)pos.getY() + 0.7F + rand.nextFloat() * 0.3F);
-		double f = (double)((float)pos.getZ() + 0.4F + rand.nextFloat() * 0.2F);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		double d = (double)((float)pos.getX() + 0.4F + random.nextFloat() * 0.2F);
+		double e = (double)((float)pos.getY() + 0.7F + random.nextFloat() * 0.3F);
+		double f = (double)((float)pos.getZ() + 0.4F + random.nextFloat() * 0.2F);
 		world.addParticle(ParticleType.SMOKE, d, e, f, 0.0, 0.0, 0.0);
 	}
 
@@ -115,23 +129,24 @@ public class BrewingStandBlock extends BlockWithEntity {
 		super.onBreaking(world, pos, state);
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.BREWING_STAND;
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.BREWING_STAND;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Items.BREWING_STAND);
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
 		return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
 	}
 

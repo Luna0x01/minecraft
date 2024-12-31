@@ -41,7 +41,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		this.hardcore = (i & 8) == 8;
 		i &= -9;
 		this.gameMode = LevelInfo.GameMode.byId(i);
-		this.viewDistance = buf.readByte();
+		this.viewDistance = buf.readInt();
 		this.difficulty = Difficulty.byOrdinal(buf.readUnsignedByte());
 		this.maxPlayers = buf.readUnsignedByte();
 		this.levelGeneratorType = LevelGeneratorType.getTypeFromName(buf.readString(16));
@@ -61,7 +61,7 @@ public class GameJoinS2CPacket implements Packet<ClientPlayPacketListener> {
 		}
 
 		buf.writeByte(i);
-		buf.writeByte(this.viewDistance);
+		buf.writeInt(this.viewDistance);
 		buf.writeByte(this.difficulty.getId());
 		buf.writeByte(this.maxPlayers);
 		buf.writeString(this.levelGeneratorType.getName());

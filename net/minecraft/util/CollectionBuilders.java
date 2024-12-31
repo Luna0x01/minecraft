@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import javax.annotation.Nullable;
 
 public class CollectionBuilders {
 	public static <T> Iterable<T[]> method_10515(Class<T> class_, Iterable<? extends Iterable<? extends T>> iterable) {
@@ -42,7 +43,7 @@ public class CollectionBuilders {
 		private Object2ListFunction() {
 		}
 
-		public List<T> apply(Object[] array) {
+		public List<T> apply(@Nullable Object[] array) {
 			return Arrays.asList(array);
 		}
 	}

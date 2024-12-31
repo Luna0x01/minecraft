@@ -3,8 +3,8 @@ package net.minecraft.world.biome;
 import net.minecraft.block.Blocks;
 
 public class StoneBeachBiome extends Biome {
-	public StoneBeachBiome(int i) {
-		super(i);
+	public StoneBeachBiome(Biome.Settings settings) {
+		super(settings);
 		this.passiveEntries.clear();
 		this.topBlock = Blocks.STONE.getDefaultState();
 		this.baseBlock = Blocks.STONE.getDefaultState();

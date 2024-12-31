@@ -2,14 +2,17 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -17,28 +20,84 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public class PistonHeadBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing");
+public class PistonHeadBlock extends FacingBlock {
 	public static final EnumProperty<PistonHeadBlock.PistonHeadType> TYPE = EnumProperty.of("type", PistonHeadBlock.PistonHeadType.class);
 	public static final BooleanProperty SHORT = BooleanProperty.of("short");
+	protected static final Box field_12894 = new Box(0.75, 0.0, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12895 = new Box(0.0, 0.0, 0.0, 0.25, 1.0, 1.0);
+	protected static final Box field_12896 = new Box(0.0, 0.0, 0.75, 1.0, 1.0, 1.0);
+	protected static final Box field_12897 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.25);
+	protected static final Box field_12898 = new Box(0.0, 0.75, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12887 = new Box(0.0, 0.0, 0.0, 1.0, 0.25, 1.0);
+	protected static final Box field_12888 = new Box(0.375, -0.25, 0.375, 0.625, 0.75, 0.625);
+	protected static final Box field_12889 = new Box(0.375, 0.25, 0.375, 0.625, 1.25, 0.625);
+	protected static final Box field_12890 = new Box(0.375, 0.375, -0.25, 0.625, 0.625, 0.75);
+	protected static final Box field_12891 = new Box(0.375, 0.375, 0.25, 0.625, 0.625, 1.25);
+	protected static final Box field_12892 = new Box(-0.25, 0.375, 0.375, 0.75, 0.625, 0.625);
+	protected static final Box field_12893 = new Box(0.25, 0.375, 0.375, 1.25, 0.625, 0.625);
 
 	public PistonHeadBlock() {
 		super(Material.PISTON);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(TYPE, PistonHeadBlock.PistonHeadType.DEFAULT).with(SHORT, false));
-		this.setSound(STONE);
+		this.setBlockSoundGroup(BlockSoundGroup.STONE);
 		this.setStrength(0.5F);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((Direction)state.get(FACING)) {
+			case DOWN:
+			default:
+				return field_12887;
+			case UP:
+				return field_12898;
+			case NORTH:
+				return field_12897;
+			case SOUTH:
+				return field_12896;
+			case WEST:
+				return field_12895;
+			case EAST:
+				return field_12894;
+		}
+	}
+
+	@Override
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+		appendCollisionBoxes(pos, entityBox, boxes, state.getCollisionBox((BlockView)world, pos));
+		appendCollisionBoxes(pos, entityBox, boxes, this.method_11700(state));
+	}
+
+	private Box method_11700(BlockState blockState) {
+		switch ((Direction)blockState.get(FACING)) {
+			case DOWN:
+			default:
+				return field_12889;
+			case UP:
+				return field_12888;
+			case NORTH:
+				return field_12891;
+			case SOUTH:
+				return field_12890;
+			case WEST:
+				return field_12893;
+			case EAST:
+				return field_12892;
+		}
+	}
+
+	@Override
+	public boolean method_11568(BlockState state) {
+		return state.get(FACING) == Direction.UP;
 	}
 
 	@Override
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state, PlayerEntity player) {
 		if (player.abilities.creativeMode) {
-			Direction direction = state.get(FACING);
-			if (direction != null) {
-				BlockPos blockPos = pos.offset(direction.getOpposite());
-				Block block = world.getBlockState(blockPos).getBlock();
-				if (block == Blocks.PISTON || block == Blocks.STICKY_PISTON) {
-					world.setAir(blockPos);
-				}
+			BlockPos blockPos = pos.offset(((Direction)state.get(FACING)).getOpposite());
+			Block block = world.getBlockState(blockPos).getBlock();
+			if (block == Blocks.PISTON || block == Blocks.STICKY_PISTON) {
+				world.setAir(blockPos);
 			}
 		}
 
@@ -58,12 +117,12 @@ public class PistonHeadBlock extends Block {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -83,97 +142,31 @@ public class PistonHeadBlock extends Block {
 	}
 
 	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		this.setHeadBoundingBox(state);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		this.setMainBoundingBox(state);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-	}
-
-	private void setMainBoundingBox(BlockState state) {
-		float f = 0.25F;
-		float g = 0.375F;
-		float h = 0.625F;
-		float i = 0.25F;
-		float j = 0.75F;
-		switch ((Direction)state.get(FACING)) {
-			case DOWN:
-				this.setBoundingBox(0.375F, 0.25F, 0.375F, 0.625F, 1.0F, 0.625F);
-				break;
-			case UP:
-				this.setBoundingBox(0.375F, 0.0F, 0.375F, 0.625F, 0.75F, 0.625F);
-				break;
-			case NORTH:
-				this.setBoundingBox(0.25F, 0.375F, 0.25F, 0.75F, 0.625F, 1.0F);
-				break;
-			case SOUTH:
-				this.setBoundingBox(0.25F, 0.375F, 0.0F, 0.75F, 0.625F, 0.75F);
-				break;
-			case WEST:
-				this.setBoundingBox(0.375F, 0.25F, 0.25F, 0.625F, 0.75F, 1.0F);
-				break;
-			case EAST:
-				this.setBoundingBox(0.0F, 0.375F, 0.25F, 0.75F, 0.625F, 0.75F);
-		}
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.setHeadBoundingBox(view.getBlockState(pos));
-	}
-
-	public void setHeadBoundingBox(BlockState state) {
-		float f = 0.25F;
-		Direction direction = state.get(FACING);
-		if (direction != null) {
-			switch (direction) {
-				case DOWN:
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.25F, 1.0F);
-					break;
-				case UP:
-					this.setBoundingBox(0.0F, 0.75F, 0.0F, 1.0F, 1.0F, 1.0F);
-					break;
-				case NORTH:
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0.25F);
-					break;
-				case SOUTH:
-					this.setBoundingBox(0.0F, 0.0F, 0.75F, 1.0F, 1.0F, 1.0F);
-					break;
-				case WEST:
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 0.25F, 1.0F, 1.0F);
-					break;
-				case EAST:
-					this.setBoundingBox(0.75F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-			}
-		}
-	}
-
-	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		Direction direction = state.get(FACING);
-		BlockPos blockPos = pos.offset(direction.getOpposite());
-		BlockState blockState = world.getBlockState(blockPos);
-		if (blockState.getBlock() != Blocks.PISTON && blockState.getBlock() != Blocks.STICKY_PISTON) {
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		Direction direction = blockState.get(FACING);
+		BlockPos blockPos2 = blockPos.offset(direction.getOpposite());
+		BlockState blockState2 = world.getBlockState(blockPos2);
+		if (blockState2.getBlock() != Blocks.PISTON && blockState2.getBlock() != Blocks.STICKY_PISTON) {
+			world.setAir(blockPos);
 		} else {
-			blockState.getBlock().neighborUpdate(world, blockPos, blockState, block);
+			blockState2.method_11707(world, blockPos2, block);
 		}
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
 		return true;
 	}
 
+	@Nullable
 	public static Direction getDirection(int data) {
 		int i = data & 7;
 		return i > 5 ? null : Direction.getById(i);
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return world.getBlockState(pos).get(TYPE) == PistonHeadBlock.PistonHeadType.STICKY ? Item.fromBlock(Blocks.STICKY_PISTON) : Item.fromBlock(Blocks.PISTON);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(blockState.get(TYPE) == PistonHeadBlock.PistonHeadType.STICKY ? Blocks.STICKY_PISTON : Blocks.PISTON);
 	}
 
 	@Override
@@ -192,6 +185,16 @@ public class PistonHeadBlock extends Block {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

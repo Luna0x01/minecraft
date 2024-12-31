@@ -22,7 +22,7 @@ public class Identifier {
 	}
 
 	protected static String[] method_10737(String path) {
-		String[] strings = new String[]{null, path};
+		String[] strings = new String[]{"minecraft", path};
 		int i = path.indexOf(58);
 		if (i >= 0) {
 			strings[1] = path.substring(i + 1, path.length());

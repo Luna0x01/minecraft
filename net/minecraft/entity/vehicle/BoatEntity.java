@@ -1,67 +1,71 @@
 package net.minecraft.entity.vehicle;
 
+import com.google.common.collect.Lists;
 import java.util.List;
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
+import net.minecraft.block.AbstractFluidBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.PlanksBlock;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.ProjectileDamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.WaterCreatureEntity;
+import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.c2s.play.SteerBoatC2SPacket;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class BoatEntity extends Entity {
-	private boolean field_3877 = true;
-	private double field_3879 = 0.07;
-	private int field_3880;
-	private double field_3881;
-	private double field_3882;
-	private double field_3883;
-	private double boatYaw;
+	private static final TrackedData<Integer> DAMAGE_WOBBLE_TICKS = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Integer> DAMAGE_WOBBLE_SIDE = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Float> DAMAGE_WOBBLE_STRENGTH = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.FLOAT);
+	private static final TrackedData<Integer> BOAT_TYPE = DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Boolean>[] PADDLES_MOVING = new TrackedData[]{
+		DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN),
+		DataTracker.registerData(BoatEntity.class, TrackedDataHandlerRegistry.BOOLEAN)
+	};
+	private float[] paddlePhases = new float[2];
+	private float velocityDecay;
+	private float ticksUnderwater;
+	private float yawVelocity;
+	private int field_12223;
 	private double boatX;
-	private double field_3886;
-	private double field_3887;
-	private double field_3878;
+	private double boatY;
+	private double boatZ;
+	private double boatYaw;
+	private double boatPitch;
+	private boolean pressingLeft;
+	private boolean pressingRight;
+	private boolean pressingForward;
+	private boolean pressingBack;
+	private double waterLevel;
+	private float field_12217;
+	private BoatEntity.Location location;
+	private BoatEntity.Location lastLocation;
+	private double fallVelocity;
 
 	public BoatEntity(World world) {
 		super(world);
 		this.inanimate = true;
-		this.setBounds(1.5F, 0.6F);
-	}
-
-	@Override
-	protected boolean canClimb() {
-		return false;
-	}
-
-	@Override
-	protected void initDataTracker() {
-		this.dataTracker.track(17, new Integer(0));
-		this.dataTracker.track(18, new Integer(1));
-		this.dataTracker.track(19, new Float(0.0F));
-	}
-
-	@Override
-	public Box getHardCollisionBox(Entity collidingEntity) {
-		return collidingEntity.getBoundingBox();
-	}
-
-	@Override
-	public Box getBox() {
-		return this.getBoundingBox();
-	}
-
-	@Override
-	public boolean isPushable() {
-		return true;
+		this.setBounds(1.375F, 0.5625F);
 	}
 
 	public BoatEntity(World world, double d, double e, double f) {
@@ -76,39 +80,96 @@ public class BoatEntity extends Entity {
 	}
 
 	@Override
+	protected boolean canClimb() {
+		return false;
+	}
+
+	@Override
+	protected void initDataTracker() {
+		this.dataTracker.startTracking(DAMAGE_WOBBLE_TICKS, 0);
+		this.dataTracker.startTracking(DAMAGE_WOBBLE_SIDE, 1);
+		this.dataTracker.startTracking(DAMAGE_WOBBLE_STRENGTH, 0.0F);
+		this.dataTracker.startTracking(BOAT_TYPE, BoatEntity.Type.OAK.ordinal());
+
+		for (int i = 0; i < PADDLES_MOVING.length; i++) {
+			this.dataTracker.startTracking(PADDLES_MOVING[i], false);
+		}
+	}
+
+	@Nullable
+	@Override
+	public Box getHardCollisionBox(Entity collidingEntity) {
+		return collidingEntity.getBoundingBox();
+	}
+
+	@Nullable
+	@Override
+	public Box getBox() {
+		return this.getBoundingBox();
+	}
+
+	@Override
+	public boolean isPushable() {
+		return true;
+	}
+
+	@Override
 	public double getMountedHeightOffset() {
-		return -0.3;
+		return -0.1;
 	}
 
 	@Override
 	public boolean damage(DamageSource source, float amount) {
 		if (this.isInvulnerableTo(source)) {
 			return false;
-		} else if (!this.world.isClient && !this.removed) {
-			if (this.rider != null && this.rider == source.getAttacker() && source instanceof ProjectileDamageSource) {
-				return false;
-			} else {
-				this.setDamageWobbleSide(-this.getDamageWobbleSide());
-				this.setBubbleWobbleTicks(10);
-				this.setDamageWobbleStrength(this.getDamageWobbleStrength() + amount * 10.0F);
-				this.scheduleVelocityUpdate();
-				boolean bl = source.getAttacker() instanceof PlayerEntity && ((PlayerEntity)source.getAttacker()).abilities.creativeMode;
-				if (bl || this.getDamageWobbleStrength() > 40.0F) {
-					if (this.rider != null) {
-						this.rider.startRiding(this);
-					}
-
-					if (!bl && this.world.getGameRules().getBoolean("doEntityDrops")) {
-						this.dropItem(Items.BOAT, 1, 0.0F);
-					}
-
-					this.remove();
+		} else if (this.world.isClient || this.removed) {
+			return true;
+		} else if (source instanceof ProjectileDamageSource && source.getAttacker() != null && this.hasPassenger(source.getAttacker())) {
+			return false;
+		} else {
+			this.setDamageWobbleSide(-this.getDamageWobbleSide());
+			this.setBubbleWobbleTicks(10);
+			this.setDamageWobbleStrength(this.getDamageWobbleStrength() + amount * 10.0F);
+			this.scheduleVelocityUpdate();
+			boolean bl = source.getAttacker() instanceof PlayerEntity && ((PlayerEntity)source.getAttacker()).abilities.creativeMode;
+			if (bl || this.getDamageWobbleStrength() > 40.0F) {
+				if (!bl && this.world.getGameRules().getBoolean("doEntityDrops")) {
+					this.dropItem(this.asItem(), 1, 0.0F);
 				}
 
-				return true;
+				this.remove();
 			}
-		} else {
+
 			return true;
+		}
+	}
+
+	@Override
+	public void pushAwayFrom(Entity entity) {
+		if (entity instanceof BoatEntity) {
+			if (entity.getBoundingBox().minY < this.getBoundingBox().maxY) {
+				super.pushAwayFrom(entity);
+			}
+		} else if (entity.getBoundingBox().minY <= this.getBoundingBox().minY) {
+			super.pushAwayFrom(entity);
+		}
+	}
+
+	public Item asItem() {
+		switch (this.getBoatType()) {
+			case OAK:
+			default:
+				return Items.BOAT;
+			case SPRUCE:
+				return Items.SPRUCE_BOAT;
+			case BIRCH:
+				return Items.BIRCH_BOAT;
+			case JUNGLE:
+				return Items.JUNGLE_BOAT;
+			case ACACIA:
+				return Items.ACACIA_BOAT;
+			case DARK_OAK:
+				return Items.DARK_OAK_BOAT;
 		}
 	}
 
@@ -126,53 +187,33 @@ public class BoatEntity extends Entity {
 
 	@Override
 	public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps, boolean interpolate) {
-		if (interpolate && this.rider != null) {
-			this.prevX = this.x = x;
-			this.prevY = this.y = y;
-			this.prevZ = this.z = z;
-			this.yaw = yaw;
-			this.pitch = pitch;
-			this.field_3880 = 0;
-			this.updatePosition(x, y, z);
-			this.velocityX = this.field_3886 = 0.0;
-			this.velocityY = this.field_3887 = 0.0;
-			this.velocityZ = this.field_3878 = 0.0;
-		} else {
-			if (this.field_3877) {
-				this.field_3880 = interpolationSteps + 5;
-			} else {
-				double d = x - this.x;
-				double e = y - this.y;
-				double f = z - this.z;
-				double g = d * d + e * e + f * f;
-				if (!(g > 1.0)) {
-					return;
-				}
-
-				this.field_3880 = 3;
-			}
-
-			this.field_3881 = x;
-			this.field_3882 = y;
-			this.field_3883 = z;
-			this.boatYaw = (double)yaw;
-			this.boatX = (double)pitch;
-			this.velocityX = this.field_3886;
-			this.velocityY = this.field_3887;
-			this.velocityZ = this.field_3878;
-		}
+		this.boatX = x;
+		this.boatY = y;
+		this.boatZ = z;
+		this.boatYaw = (double)yaw;
+		this.boatPitch = (double)pitch;
+		this.field_12223 = 10;
 	}
 
 	@Override
-	public void setVelocityClient(double x, double y, double z) {
-		this.field_3886 = this.velocityX = x;
-		this.field_3887 = this.velocityY = y;
-		this.field_3878 = this.velocityZ = z;
+	public Direction getMovementDirection() {
+		return this.getHorizontalDirection().rotateYClockwise();
 	}
 
 	@Override
 	public void tick() {
-		super.tick();
+		this.lastLocation = this.location;
+		this.location = this.checkLocation();
+		if (this.location != BoatEntity.Location.UNDER_WATER && this.location != BoatEntity.Location.UNDER_FLOWING_WATER) {
+			this.ticksUnderwater = 0.0F;
+		} else {
+			this.ticksUnderwater++;
+		}
+
+		if (!this.world.isClient && this.ticksUnderwater >= 60.0F) {
+			this.removeAllPassengers();
+		}
+
 		if (this.getBubbleWobbleTicks() > 0) {
 			this.setBubbleWobbleTicks(this.getBubbleWobbleTicks() - 1);
 		}
@@ -184,262 +225,546 @@ public class BoatEntity extends Entity {
 		this.prevX = this.x;
 		this.prevY = this.y;
 		this.prevZ = this.z;
-		int i = 5;
-		double d = 0.0;
-
-		for (int j = 0; j < i; j++) {
-			double e = this.getBoundingBox().minY + (this.getBoundingBox().maxY - this.getBoundingBox().minY) * (double)(j + 0) / (double)i - 0.125;
-			double f = this.getBoundingBox().minY + (this.getBoundingBox().maxY - this.getBoundingBox().minY) * (double)(j + 1) / (double)i - 0.125;
-			Box box = new Box(this.getBoundingBox().minX, e, this.getBoundingBox().minZ, this.getBoundingBox().maxX, f, this.getBoundingBox().maxZ);
-			if (this.world.containsBlockWithMaterial(box, Material.WATER)) {
-				d += 1.0 / (double)i;
-			}
-		}
-
-		double g = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-		if (g > 0.2975) {
-			double h = Math.cos((double)this.yaw * Math.PI / 180.0);
-			double k = Math.sin((double)this.yaw * Math.PI / 180.0);
-
-			for (int l = 0; (double)l < 1.0 + g * 60.0; l++) {
-				double m = (double)(this.random.nextFloat() * 2.0F - 1.0F);
-				double n = (double)(this.random.nextInt(2) * 2 - 1) * 0.7;
-				if (this.random.nextBoolean()) {
-					double o = this.x - h * m * 0.8 + k * n;
-					double p = this.z - k * m * 0.8 - h * n;
-					this.world.addParticle(ParticleType.WATER, o, this.y - 0.125, p, this.velocityX, this.velocityY, this.velocityZ);
-				} else {
-					double q = this.x + h + k * m * 0.7;
-					double r = this.z + k - h * m * 0.7;
-					this.world.addParticle(ParticleType.WATER, q, this.y - 0.125, r, this.velocityX, this.velocityY, this.velocityZ);
-				}
-			}
-		}
-
-		if (this.world.isClient && this.field_3877) {
-			if (this.field_3880 > 0) {
-				double s = this.x + (this.field_3881 - this.x) / (double)this.field_3880;
-				double t = this.y + (this.field_3882 - this.y) / (double)this.field_3880;
-				double u = this.z + (this.field_3883 - this.z) / (double)this.field_3880;
-				double v = MathHelper.wrapDegrees(this.boatYaw - (double)this.yaw);
-				this.yaw = (float)((double)this.yaw + v / (double)this.field_3880);
-				this.pitch = (float)((double)this.pitch + (this.boatX - (double)this.pitch) / (double)this.field_3880);
-				this.field_3880--;
-				this.updatePosition(s, t, u);
-				this.setRotation(this.yaw, this.pitch);
-			} else {
-				double w = this.x + this.velocityX;
-				double x = this.y + this.velocityY;
-				double y = this.z + this.velocityZ;
-				this.updatePosition(w, x, y);
-				if (this.onGround) {
-					this.velocityX *= 0.5;
-					this.velocityY *= 0.5;
-					this.velocityZ *= 0.5;
-				}
-
-				this.velocityX *= 0.99F;
-				this.velocityY *= 0.95F;
-				this.velocityZ *= 0.99F;
-			}
-		} else {
-			if (d < 1.0) {
-				double z = d * 2.0 - 1.0;
-				this.velocityY += 0.04F * z;
-			} else {
-				if (this.velocityY < 0.0) {
-					this.velocityY /= 2.0;
-				}
-
-				this.velocityY += 0.007F;
+		super.tick();
+		this.method_11335();
+		if (this.method_13003()) {
+			if (this.getPassengerList().size() == 0 || !(this.getPassengerList().get(0) instanceof PlayerEntity)) {
+				this.setPaddleMoving(false, false);
 			}
 
-			if (this.rider instanceof LivingEntity) {
-				LivingEntity livingEntity = (LivingEntity)this.rider;
-				float aa = this.rider.yaw + -livingEntity.sidewaysSpeed * 90.0F;
-				this.velocityX = this.velocityX + -Math.sin((double)(aa * (float) Math.PI / 180.0F)) * this.field_3879 * (double)livingEntity.forwardSpeed * 0.05F;
-				this.velocityZ = this.velocityZ + Math.cos((double)(aa * (float) Math.PI / 180.0F)) * this.field_3879 * (double)livingEntity.forwardSpeed * 0.05F;
-			}
-
-			double ab = Math.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-			if (ab > 0.35) {
-				double ac = 0.35 / ab;
-				this.velocityX *= ac;
-				this.velocityZ *= ac;
-				ab = 0.35;
-			}
-
-			if (ab > g && this.field_3879 < 0.35) {
-				this.field_3879 = this.field_3879 + (0.35 - this.field_3879) / 35.0;
-				if (this.field_3879 > 0.35) {
-					this.field_3879 = 0.35;
-				}
-			} else {
-				this.field_3879 = this.field_3879 - (this.field_3879 - 0.07) / 35.0;
-				if (this.field_3879 < 0.07) {
-					this.field_3879 = 0.07;
-				}
-			}
-
-			for (int ad = 0; ad < 4; ad++) {
-				int ae = MathHelper.floor(this.x + ((double)(ad % 2) - 0.5) * 0.8);
-				int af = MathHelper.floor(this.z + ((double)(ad / 2) - 0.5) * 0.8);
-
-				for (int ag = 0; ag < 2; ag++) {
-					int ah = MathHelper.floor(this.y) + ag;
-					BlockPos blockPos = new BlockPos(ae, ah, af);
-					Block block = this.world.getBlockState(blockPos).getBlock();
-					if (block == Blocks.SNOW_LAYER) {
-						this.world.setAir(blockPos);
-						this.horizontalCollision = false;
-					} else if (block == Blocks.LILY_PAD) {
-						this.world.removeBlock(blockPos, true);
-						this.horizontalCollision = false;
-					}
-				}
-			}
-
-			if (this.onGround) {
-				this.velocityX *= 0.5;
-				this.velocityY *= 0.5;
-				this.velocityZ *= 0.5;
+			this.updateVelocity();
+			if (this.world.isClient) {
+				this.updatePaddles();
+				this.world.method_11483(new SteerBoatC2SPacket(this.isPaddleMoving(0), this.isPaddleMoving(1)));
 			}
 
 			this.move(this.velocityX, this.velocityY, this.velocityZ);
-			if (!this.horizontalCollision || !(g > 0.2975)) {
-				this.velocityX *= 0.99F;
-				this.velocityY *= 0.95F;
-				this.velocityZ *= 0.99F;
-			} else if (!this.world.isClient && !this.removed) {
-				this.remove();
-				if (this.world.getGameRules().getBoolean("doEntityDrops")) {
-					for (int ai = 0; ai < 3; ai++) {
-						this.dropItem(Item.fromBlock(Blocks.PLANKS), 1, 0.0F);
+		} else {
+			this.velocityX = 0.0;
+			this.velocityY = 0.0;
+			this.velocityZ = 0.0;
+		}
+
+		for (int i = 0; i <= 1; i++) {
+			if (this.isPaddleMoving(i)) {
+				this.paddlePhases[i] = (float)((double)this.paddlePhases[i] + 0.01);
+			} else {
+				this.paddlePhases[i] = 0.0F;
+			}
+		}
+
+		this.checkBlockCollision();
+		List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, -0.01F, 0.2F), EntityPredicate.method_13025(this));
+		if (!list.isEmpty()) {
+			boolean bl = !this.world.isClient && !(this.getPrimaryPassenger() instanceof PlayerEntity);
+
+			for (int j = 0; j < list.size(); j++) {
+				Entity entity = (Entity)list.get(j);
+				if (!entity.hasPassenger(this)) {
+					if (bl
+						&& this.getPassengerList().size() < 2
+						&& !entity.hasMount()
+						&& entity.width < this.width
+						&& entity instanceof LivingEntity
+						&& !(entity instanceof WaterCreatureEntity)
+						&& !(entity instanceof PlayerEntity)) {
+						entity.ride(this);
+					} else {
+						this.pushAwayFrom(entity);
 					}
-
-					for (int aj = 0; aj < 2; aj++) {
-						this.dropItem(Items.STICK, 1, 0.0F);
-					}
-				}
-			}
-
-			this.pitch = 0.0F;
-			double ak = (double)this.yaw;
-			double al = this.prevX - this.x;
-			double am = this.prevZ - this.z;
-			if (al * al + am * am > 0.001) {
-				ak = (double)((float)(MathHelper.atan2(am, al) * 180.0 / Math.PI));
-			}
-
-			double an = MathHelper.wrapDegrees(ak - (double)this.yaw);
-			if (an > 20.0) {
-				an = 20.0;
-			}
-
-			if (an < -20.0) {
-				an = -20.0;
-			}
-
-			this.yaw = (float)((double)this.yaw + an);
-			this.setRotation(this.yaw, this.pitch);
-			if (!this.world.isClient) {
-				List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F));
-				if (list != null && !list.isEmpty()) {
-					for (int ao = 0; ao < list.size(); ao++) {
-						Entity entity = (Entity)list.get(ao);
-						if (entity != this.rider && entity.isPushable() && entity instanceof BoatEntity) {
-							entity.pushAwayFrom(this);
-						}
-					}
-				}
-
-				if (this.rider != null && this.rider.removed) {
-					this.rider = null;
 				}
 			}
 		}
 	}
 
-	@Override
-	public void updatePassengerPosition() {
-		if (this.rider != null) {
-			double d = Math.cos((double)this.yaw * Math.PI / 180.0) * 0.4;
-			double e = Math.sin((double)this.yaw * Math.PI / 180.0) * 0.4;
-			this.rider.updatePosition(this.x + d, this.y + this.getMountedHeightOffset() + this.rider.getHeightOffset(), this.z + e);
+	private void method_11335() {
+		if (this.field_12223 > 0 && !this.method_13003()) {
+			double d = this.x + (this.boatX - this.x) / (double)this.field_12223;
+			double e = this.y + (this.boatY - this.y) / (double)this.field_12223;
+			double f = this.z + (this.boatZ - this.z) / (double)this.field_12223;
+			double g = MathHelper.wrapDegrees(this.boatYaw - (double)this.yaw);
+			this.yaw = (float)((double)this.yaw + g / (double)this.field_12223);
+			this.pitch = (float)((double)this.pitch + (this.boatPitch - (double)this.pitch) / (double)this.field_12223);
+			this.field_12223--;
+			this.updatePosition(d, e, f);
+			this.setRotation(this.yaw, this.pitch);
 		}
+	}
+
+	public void setPaddleMoving(boolean leftMoving, boolean rightMoving) {
+		this.dataTracker.set(PADDLES_MOVING[0], leftMoving);
+		this.dataTracker.set(PADDLES_MOVING[1], rightMoving);
+	}
+
+	public float interpolatePaddlePhase(int paddle, float tickDelta) {
+		return this.isPaddleMoving(paddle)
+			? (float)MathHelper.clampedLerp((double)this.paddlePhases[paddle] - 0.01, (double)this.paddlePhases[paddle], (double)tickDelta)
+			: 0.0F;
+	}
+
+	private BoatEntity.Location checkLocation() {
+		BoatEntity.Location location = this.getUnderWaterLocation();
+		if (location != null) {
+			this.waterLevel = this.getBoundingBox().maxY;
+			return location;
+		} else if (this.checkBoatInWater()) {
+			return BoatEntity.Location.IN_WATER;
+		} else {
+			float f = this.method_11333();
+			if (f > 0.0F) {
+				this.field_12217 = f;
+				return BoatEntity.Location.ON_LAND;
+			} else {
+				return BoatEntity.Location.IN_AIR;
+			}
+		}
+	}
+
+	public float method_11332() {
+		Box box = this.getBoundingBox();
+		int i = MathHelper.floor(box.minX);
+		int j = MathHelper.ceil(box.maxX);
+		int k = MathHelper.floor(box.maxY);
+		int l = MathHelper.ceil(box.maxY - this.fallVelocity);
+		int m = MathHelper.floor(box.minZ);
+		int n = MathHelper.ceil(box.maxZ);
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
+
+		try {
+			label87:
+			for (int o = k; o < l; o++) {
+				float f = 0.0F;
+				int p = i;
+
+				while (true) {
+					if (p < j) {
+						for (int q = m; q < n; q++) {
+							pooled.setPosition(p, o, q);
+							BlockState blockState = this.world.getBlockState(pooled);
+							if (blockState.getMaterial() == Material.WATER) {
+								f = Math.max(f, method_11326(blockState, this.world, pooled));
+							}
+
+							if (f >= 1.0F) {
+								continue label87;
+							}
+						}
+
+						p++;
+					} else {
+						if (f < 1.0F) {
+							return (float)pooled.getY() + f;
+						}
+						break;
+					}
+				}
+			}
+
+			return (float)(l + 1);
+		} finally {
+			pooled.method_12576();
+		}
+	}
+
+	public float method_11333() {
+		Box box = this.getBoundingBox();
+		Box box2 = new Box(box.minX, box.minY - 0.001, box.minZ, box.maxX, box.minY, box.maxZ);
+		int i = MathHelper.floor(box2.minX) - 1;
+		int j = MathHelper.ceil(box2.maxX) + 1;
+		int k = MathHelper.floor(box2.minY) - 1;
+		int l = MathHelper.ceil(box2.maxY) + 1;
+		int m = MathHelper.floor(box2.minZ) - 1;
+		int n = MathHelper.ceil(box2.maxZ) + 1;
+		List<Box> list = Lists.newArrayList();
+		float f = 0.0F;
+		int o = 0;
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
+
+		try {
+			for (int p = i; p < j; p++) {
+				for (int q = m; q < n; q++) {
+					int r = (p != i && p != j - 1 ? 0 : 1) + (q != m && q != n - 1 ? 0 : 1);
+					if (r != 2) {
+						for (int s = k; s < l; s++) {
+							if (r <= 0 || s != k && s != l - 1) {
+								pooled.setPosition(p, s, q);
+								BlockState blockState = this.world.getBlockState(pooled);
+								blockState.addCollisionBoxesToList(this.world, pooled, box2, list, this);
+								if (!list.isEmpty()) {
+									f += blockState.getBlock().slipperiness;
+									o++;
+								}
+
+								list.clear();
+							}
+						}
+					}
+				}
+			}
+		} finally {
+			pooled.method_12576();
+		}
+
+		return f / (float)o;
+	}
+
+	private boolean checkBoatInWater() {
+		Box box = this.getBoundingBox();
+		int i = MathHelper.floor(box.minX);
+		int j = MathHelper.ceil(box.maxX);
+		int k = MathHelper.floor(box.minY);
+		int l = MathHelper.ceil(box.minY + 0.001);
+		int m = MathHelper.floor(box.minZ);
+		int n = MathHelper.ceil(box.maxZ);
+		boolean bl = false;
+		this.waterLevel = Double.MIN_VALUE;
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
+
+		try {
+			for (int o = i; o < j; o++) {
+				for (int p = k; p < l; p++) {
+					for (int q = m; q < n; q++) {
+						pooled.setPosition(o, p, q);
+						BlockState blockState = this.world.getBlockState(pooled);
+						if (blockState.getMaterial() == Material.WATER) {
+							float f = method_11330(blockState, this.world, pooled);
+							this.waterLevel = Math.max((double)f, this.waterLevel);
+							bl |= box.minY < (double)f;
+						}
+					}
+				}
+			}
+		} finally {
+			pooled.method_12576();
+		}
+
+		return bl;
+	}
+
+	@Nullable
+	private BoatEntity.Location getUnderWaterLocation() {
+		Box box = this.getBoundingBox();
+		double d = box.maxY + 0.001;
+		int i = MathHelper.floor(box.minX);
+		int j = MathHelper.ceil(box.maxX);
+		int k = MathHelper.floor(box.maxY);
+		int l = MathHelper.ceil(d);
+		int m = MathHelper.floor(box.minZ);
+		int n = MathHelper.ceil(box.maxZ);
+		boolean bl = false;
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
+
+		try {
+			for (int o = i; o < j; o++) {
+				for (int p = k; p < l; p++) {
+					for (int q = m; q < n; q++) {
+						pooled.setPosition(o, p, q);
+						BlockState blockState = this.world.getBlockState(pooled);
+						if (blockState.getMaterial() == Material.WATER && d < (double)method_11330(blockState, this.world, pooled)) {
+							if ((Integer)blockState.get(AbstractFluidBlock.LEVEL) != 0) {
+								return BoatEntity.Location.UNDER_FLOWING_WATER;
+							}
+
+							bl = true;
+						}
+					}
+				}
+			}
+		} finally {
+			pooled.method_12576();
+		}
+
+		return bl ? BoatEntity.Location.UNDER_WATER : null;
+	}
+
+	public static float method_11326(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		int i = (Integer)blockState.get(AbstractFluidBlock.LEVEL);
+		return (i & 7) == 0 && blockView.getBlockState(blockPos.up()).getMaterial() == Material.WATER ? 1.0F : 1.0F - AbstractFluidBlock.getHeightPercent(i);
+	}
+
+	public static float method_11330(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		return (float)blockPos.getY() + method_11326(blockState, blockView, blockPos);
+	}
+
+	private void updateVelocity() {
+		double d = -0.04F;
+		double e = d;
+		double f = 0.0;
+		this.velocityDecay = 0.05F;
+		if (this.lastLocation == BoatEntity.Location.IN_AIR && this.location != BoatEntity.Location.IN_AIR && this.location != BoatEntity.Location.ON_LAND) {
+			this.waterLevel = this.getBoundingBox().minY + (double)this.height;
+			this.updatePosition(this.x, (double)(this.method_11332() - this.height) + 0.101, this.z);
+			this.velocityY = 0.0;
+			this.fallVelocity = 0.0;
+			this.location = BoatEntity.Location.IN_WATER;
+		} else {
+			if (this.location == BoatEntity.Location.IN_WATER) {
+				f = (this.waterLevel - this.getBoundingBox().minY) / (double)this.height;
+				this.velocityDecay = 0.9F;
+			} else if (this.location == BoatEntity.Location.UNDER_FLOWING_WATER) {
+				e = -7.0E-4;
+				this.velocityDecay = 0.9F;
+			} else if (this.location == BoatEntity.Location.UNDER_WATER) {
+				f = 0.01F;
+				this.velocityDecay = 0.45F;
+			} else if (this.location == BoatEntity.Location.IN_AIR) {
+				this.velocityDecay = 0.9F;
+			} else if (this.location == BoatEntity.Location.ON_LAND) {
+				this.velocityDecay = this.field_12217;
+				if (this.getPrimaryPassenger() instanceof PlayerEntity) {
+					this.field_12217 /= 2.0F;
+				}
+			}
+
+			this.velocityX = this.velocityX * (double)this.velocityDecay;
+			this.velocityZ = this.velocityZ * (double)this.velocityDecay;
+			this.yawVelocity = this.yawVelocity * this.velocityDecay;
+			this.velocityY += e;
+			if (f > 0.0) {
+				double g = 0.65;
+				this.velocityY += f * (-d / 0.65);
+				double h = 0.75;
+				this.velocityY *= 0.75;
+			}
+		}
+	}
+
+	private void updatePaddles() {
+		if (this.hasPassengers()) {
+			float f = 0.0F;
+			if (this.pressingLeft) {
+				this.yawVelocity += -1.0F;
+			}
+
+			if (this.pressingRight) {
+				this.yawVelocity++;
+			}
+
+			if (this.pressingRight != this.pressingLeft && !this.pressingForward && !this.pressingBack) {
+				f += 0.005F;
+			}
+
+			this.yaw = this.yaw + this.yawVelocity;
+			if (this.pressingForward) {
+				f += 0.04F;
+			}
+
+			if (this.pressingBack) {
+				f -= 0.005F;
+			}
+
+			this.velocityX = this.velocityX + (double)(MathHelper.sin(-this.yaw * (float) (Math.PI / 180.0)) * f);
+			this.velocityZ = this.velocityZ + (double)(MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)) * f);
+			this.setPaddleMoving(this.pressingRight || this.pressingForward, this.pressingLeft || this.pressingForward);
+		}
+	}
+
+	@Override
+	public void updatePassengerPosition(Entity passenger) {
+		if (this.hasPassenger(passenger)) {
+			float f = 0.0F;
+			float g = (float)((this.removed ? 0.01F : this.getMountedHeightOffset()) + passenger.getHeightOffset());
+			if (this.getPassengerList().size() > 1) {
+				int i = this.getPassengerList().indexOf(passenger);
+				if (i == 0) {
+					f = 0.2F;
+				} else {
+					f = -0.6F;
+				}
+
+				if (passenger instanceof AnimalEntity) {
+					f = (float)((double)f + 0.2);
+				}
+			}
+
+			Vec3d vec3d = new Vec3d((double)f, 0.0, 0.0).rotateY(-this.yaw * (float) (Math.PI / 180.0) - (float) (Math.PI / 2));
+			passenger.updatePosition(this.x + vec3d.x, this.y + (double)g, this.z + vec3d.z);
+			passenger.yaw = passenger.yaw + this.yawVelocity;
+			passenger.setHeadYaw(passenger.getHeadRotation() + this.yawVelocity);
+			this.copyEntityData(passenger);
+			if (passenger instanceof AnimalEntity && this.getPassengerList().size() > 1) {
+				int j = passenger.getEntityId() % 2 == 0 ? 90 : 270;
+				passenger.setYaw(((AnimalEntity)passenger).bodyYaw + (float)j);
+				passenger.setHeadYaw(passenger.getHeadRotation() + (float)j);
+			}
+		}
+	}
+
+	protected void copyEntityData(Entity entity) {
+		entity.setYaw(this.yaw);
+		float f = MathHelper.wrapDegrees(entity.yaw - this.yaw);
+		float g = MathHelper.clamp(f, -105.0F, 105.0F);
+		entity.prevYaw += g - f;
+		entity.yaw += g - f;
+		entity.setHeadYaw(entity.yaw);
+	}
+
+	@Override
+	public void onPassengerLookAround(Entity passenger) {
+		this.copyEntityData(passenger);
 	}
 
 	@Override
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
+		nbt.putString("Type", this.getBoatType().getName());
 	}
 
 	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
-	}
-
-	@Override
-	public boolean openInventory(PlayerEntity player) {
-		if (this.rider != null && this.rider instanceof PlayerEntity && this.rider != player) {
-			return true;
-		} else {
-			if (!this.world.isClient) {
-				player.startRiding(this);
-			}
-
-			return true;
+		if (nbt.contains("Type", 8)) {
+			this.setBoatType(BoatEntity.Type.getType(nbt.getString("Type")));
 		}
 	}
 
 	@Override
-	protected void fall(double heightDifference, boolean onGround, Block landedBlock, BlockPos landedPosition) {
-		if (onGround) {
-			if (this.fallDistance > 3.0F) {
-				this.handleFallDamage(this.fallDistance, 1.0F);
-				if (!this.world.isClient && !this.removed) {
-					this.remove();
-					if (this.world.getGameRules().getBoolean("doEntityDrops")) {
-						for (int i = 0; i < 3; i++) {
-							this.dropItem(Item.fromBlock(Blocks.PLANKS), 1, 0.0F);
-						}
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+		if (!this.world.isClient && !playerEntity.isSneaking() && this.ticksUnderwater < 60.0F) {
+			playerEntity.ride(this);
+		}
 
-						for (int j = 0; j < 2; j++) {
-							this.dropItem(Items.STICK, 1, 0.0F);
+		return true;
+	}
+
+	@Override
+	protected void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPos) {
+		this.fallVelocity = this.velocityY;
+		if (!this.hasMount()) {
+			if (onGround) {
+				if (this.fallDistance > 3.0F) {
+					if (this.location != BoatEntity.Location.ON_LAND) {
+						this.fallDistance = 0.0F;
+						return;
+					}
+
+					this.handleFallDamage(this.fallDistance, 1.0F);
+					if (!this.world.isClient && !this.removed) {
+						this.remove();
+						if (this.world.getGameRules().getBoolean("doEntityDrops")) {
+							for (int i = 0; i < 3; i++) {
+								this.dropItem(new ItemStack(Item.fromBlock(Blocks.PLANKS), 1, this.getBoatType().getWoodType()), 0.0F);
+							}
+
+							for (int j = 0; j < 2; j++) {
+								this.dropItem(Items.STICK, 1, 0.0F);
+							}
 						}
 					}
 				}
 
 				this.fallDistance = 0.0F;
+			} else if (this.world.getBlockState(new BlockPos(this).down()).getMaterial() != Material.WATER && heightDifference < 0.0) {
+				this.fallDistance = (float)((double)this.fallDistance - heightDifference);
 			}
-		} else if (this.world.getBlockState(new BlockPos(this).down()).getBlock().getMaterial() != Material.WATER && heightDifference < 0.0) {
-			this.fallDistance = (float)((double)this.fallDistance - heightDifference);
 		}
 	}
 
+	public boolean isPaddleMoving(int paddle) {
+		return this.dataTracker.get(PADDLES_MOVING[paddle]) && this.getPrimaryPassenger() != null;
+	}
+
 	public void setDamageWobbleStrength(float wobbleStrength) {
-		this.dataTracker.setProperty(19, wobbleStrength);
+		this.dataTracker.set(DAMAGE_WOBBLE_STRENGTH, wobbleStrength);
 	}
 
 	public float getDamageWobbleStrength() {
-		return this.dataTracker.getFloat(19);
+		return this.dataTracker.get(DAMAGE_WOBBLE_STRENGTH);
 	}
 
 	public void setBubbleWobbleTicks(int wobbleTicks) {
-		this.dataTracker.setProperty(17, wobbleTicks);
+		this.dataTracker.set(DAMAGE_WOBBLE_TICKS, wobbleTicks);
 	}
 
 	public int getBubbleWobbleTicks() {
-		return this.dataTracker.getInt(17);
+		return this.dataTracker.get(DAMAGE_WOBBLE_TICKS);
 	}
 
 	public void setDamageWobbleSide(int side) {
-		this.dataTracker.setProperty(18, side);
+		this.dataTracker.set(DAMAGE_WOBBLE_SIDE, side);
 	}
 
 	public int getDamageWobbleSide() {
-		return this.dataTracker.getInt(18);
+		return this.dataTracker.get(DAMAGE_WOBBLE_SIDE);
 	}
 
-	public void method_3052(boolean bl) {
-		this.field_3877 = bl;
+	public void setBoatType(BoatEntity.Type type) {
+		this.dataTracker.set(BOAT_TYPE, type.ordinal());
+	}
+
+	public BoatEntity.Type getBoatType() {
+		return BoatEntity.Type.getType(this.dataTracker.get(BOAT_TYPE));
+	}
+
+	@Override
+	protected boolean canAddPassenger(Entity passenger) {
+		return this.getPassengerList().size() < 2;
+	}
+
+	@Nullable
+	@Override
+	public Entity getPrimaryPassenger() {
+		List<Entity> list = this.getPassengerList();
+		return list.isEmpty() ? null : (Entity)list.get(0);
+	}
+
+	public void setInputs(boolean pressingLeft, boolean pressingRight, boolean pressingForward, boolean pressingBack) {
+		this.pressingLeft = pressingLeft;
+		this.pressingRight = pressingRight;
+		this.pressingForward = pressingForward;
+		this.pressingBack = pressingBack;
+	}
+
+	public static enum Location {
+		IN_WATER,
+		UNDER_WATER,
+		UNDER_FLOWING_WATER,
+		ON_LAND,
+		IN_AIR;
+	}
+
+	public static enum Type {
+		OAK(PlanksBlock.WoodType.OAK.getId(), "oak"),
+		SPRUCE(PlanksBlock.WoodType.SPRUCE.getId(), "spruce"),
+		BIRCH(PlanksBlock.WoodType.BIRCH.getId(), "birch"),
+		JUNGLE(PlanksBlock.WoodType.JUNGLE.getId(), "jungle"),
+		ACACIA(PlanksBlock.WoodType.ACACIA.getId(), "acacia"),
+		DARK_OAK(PlanksBlock.WoodType.DARK_OAK.getId(), "dark_oak");
+
+		private final String name;
+		private final int woodType;
+
+		private Type(int j, String string2) {
+			this.name = string2;
+			this.woodType = j;
+		}
+
+		public String getName() {
+			return this.name;
+		}
+
+		public int getWoodType() {
+			return this.woodType;
+		}
+
+		public String toString() {
+			return this.name;
+		}
+
+		public static BoatEntity.Type getType(int type) {
+			if (type < 0 || type >= values().length) {
+				type = 0;
+			}
+
+			return values()[type];
+		}
+
+		public static BoatEntity.Type getType(String name) {
+			for (int i = 0; i < values().length; i++) {
+				if (values()[i].getName().equals(name)) {
+					return values()[i];
+				}
+			}
+
+			return values()[0];
+		}
 	}
 }

@@ -18,8 +18,7 @@ public class SaveOffCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		boolean bl = false;
 
 		for (int i = 0; i < minecraftServer.worlds.length; i++) {
@@ -33,7 +32,7 @@ public class SaveOffCommand extends AbstractCommand {
 		}
 
 		if (bl) {
-			run(source, this, "commands.save.disabled", new Object[0]);
+			run(commandSource, this, "commands.save.disabled", new Object[0]);
 		} else {
 			throw new CommandException("commands.save-off.alreadyOff");
 		}

@@ -23,13 +23,13 @@ public class ToggleDownfallCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		this.toggleDownfall();
-		run(source, this, "commands.downfall.success", new Object[0]);
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
+		this.method_12486(minecraftServer);
+		run(commandSource, this, "commands.downfall.success", new Object[0]);
 	}
 
-	protected void toggleDownfall() {
-		LevelProperties levelProperties = MinecraftServer.getServer().worlds[0].getLevelProperties();
+	protected void method_12486(MinecraftServer minecraftServer) {
+		LevelProperties levelProperties = minecraftServer.worlds[0].getLevelProperties();
 		levelProperties.setRaining(!levelProperties.isRaining());
 	}
 }

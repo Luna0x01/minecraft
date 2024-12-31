@@ -1,5 +1,6 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
@@ -12,6 +13,7 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -26,11 +28,22 @@ public class JukeboxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		if ((Boolean)state.get(HAS_RECORD)) {
-			this.removeRecord(world, pos, state);
-			state = state.with(HAS_RECORD, false);
-			world.setBlockState(pos, state, 2);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		if ((Boolean)blockState.get(HAS_RECORD)) {
+			this.removeRecord(world, blockPos, blockState);
+			blockState = blockState.with(HAS_RECORD, false);
+			world.setBlockState(blockPos, blockState, 2);
 			return true;
 		} else {
 			return false;
@@ -41,7 +54,7 @@ public class JukeboxBlock extends BlockWithEntity {
 		if (!world.isClient) {
 			BlockEntity blockEntity = world.getBlockEntity(pos);
 			if (blockEntity instanceof JukeboxBlock.JukeboxBlockEntity) {
-				((JukeboxBlock.JukeboxBlockEntity)blockEntity).setRecord(new ItemStack(stack.getItem(), 1, stack.getData()));
+				((JukeboxBlock.JukeboxBlockEntity)blockEntity).setRecord(stack.copy());
 				world.setBlockState(pos, state.with(HAS_RECORD, true), 2);
 			}
 		}
@@ -54,8 +67,8 @@ public class JukeboxBlock extends BlockWithEntity {
 				JukeboxBlock.JukeboxBlockEntity jukeboxBlockEntity = (JukeboxBlock.JukeboxBlockEntity)blockEntity;
 				ItemStack itemStack = jukeboxBlockEntity.getRecord();
 				if (itemStack != null) {
-					world.syncGlobalEvent(1005, pos, 0);
-					world.playMusicDisc(pos, null);
+					world.syncGlobalEvent(1010, pos, 0);
+					world.method_8509(pos, null);
 					jukeboxBlockEntity.setRecord(null);
 					float f = 0.7F;
 					double d = (double)(world.random.nextFloat() * f) + (double)(1.0F - f) * 0.5;
@@ -89,12 +102,12 @@ public class JukeboxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof JukeboxBlock.JukeboxBlockEntity) {
 			ItemStack itemStack = ((JukeboxBlock.JukeboxBlockEntity)blockEntity).getRecord();
@@ -107,8 +120,8 @@ public class JukeboxBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
@@ -135,23 +148,26 @@ public class JukeboxBlock extends BlockWithEntity {
 			if (nbt.contains("RecordItem", 10)) {
 				this.setRecord(ItemStack.fromNbt(nbt.getCompound("RecordItem")));
 			} else if (nbt.getInt("Record") > 0) {
-				this.setRecord(new ItemStack(Item.byRawId(nbt.getInt("Record")), 1, 0));
+				this.setRecord(new ItemStack(Item.byRawId(nbt.getInt("Record"))));
 			}
 		}
 
 		@Override
-		public void toNbt(NbtCompound nbt) {
+		public NbtCompound toNbt(NbtCompound nbt) {
 			super.toNbt(nbt);
 			if (this.getRecord() != null) {
 				nbt.put("RecordItem", this.getRecord().toNbt(new NbtCompound()));
 			}
+
+			return nbt;
 		}
 
+		@Nullable
 		public ItemStack getRecord() {
 			return this.record;
 		}
 
-		public void setRecord(ItemStack record) {
+		public void setRecord(@Nullable ItemStack record) {
 			this.record = record;
 			this.markDirty();
 		}

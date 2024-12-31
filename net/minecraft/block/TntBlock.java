@@ -1,16 +1,20 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.TntEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
-import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -35,10 +39,10 @@ public class TntBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (world.isReceivingRedstonePower(pos)) {
-			this.onBreakByPlayer(world, pos, state.with(EXPLODE, true));
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (world.isReceivingRedstonePower(blockPos)) {
+			this.onBreakByPlayer(world, blockPos, blockState.with(EXPLODE, true));
+			world.setAir(blockPos);
 		}
 	}
 
@@ -48,44 +52,54 @@ public class TntBlock extends Block {
 			TntEntity tntEntity = new TntEntity(
 				world, (double)((float)pos.getX() + 0.5F), (double)pos.getY(), (double)((float)pos.getZ() + 0.5F), explosion.getCausingEntity()
 			);
-			tntEntity.fuseTimer = world.random.nextInt(tntEntity.fuseTimer / 4) + tntEntity.fuseTimer / 8;
+			tntEntity.setFuse((short)(world.random.nextInt(tntEntity.getRemainingFuse() / 4) + tntEntity.getRemainingFuse() / 8));
 			world.spawnEntity(tntEntity);
 		}
 	}
 
 	@Override
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state) {
-		this.activateTnt(world, pos, state, null);
+		this.method_11639(world, pos, state, null);
 	}
 
-	public void activateTnt(World world, BlockPos pos, BlockState state, LivingEntity entity) {
+	public void method_11639(World world, BlockPos blockPos, BlockState blockState, LivingEntity livingEntity) {
 		if (!world.isClient) {
-			if ((Boolean)state.get(EXPLODE)) {
-				TntEntity tntEntity = new TntEntity(world, (double)((float)pos.getX() + 0.5F), (double)pos.getY(), (double)((float)pos.getZ() + 0.5F), entity);
+			if ((Boolean)blockState.get(EXPLODE)) {
+				TntEntity tntEntity = new TntEntity(
+					world, (double)((float)blockPos.getX() + 0.5F), (double)blockPos.getY(), (double)((float)blockPos.getZ() + 0.5F), livingEntity
+				);
 				world.spawnEntity(tntEntity);
-				world.playSound(tntEntity, "game.tnt.primed", 1.0F, 1.0F);
+				world.playSound(null, tntEntity.x, tntEntity.y, tntEntity.z, Sounds.ENTITY_TNT_PRIMED, SoundCategory.BLOCKS, 1.0F, 1.0F);
 			}
 		}
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		if (player.getMainHandStack() != null) {
-			Item item = player.getMainHandStack().getItem();
-			if (item == Items.FLINT_AND_STEEL || item == Items.FIRE_CHARGE) {
-				this.activateTnt(world, pos, state.with(EXPLODE, true), player);
-				world.setAir(pos);
-				if (item == Items.FLINT_AND_STEEL) {
-					player.getMainHandStack().damage(1, player);
-				} else if (!player.abilities.creativeMode) {
-					player.getMainHandStack().count--;
-				}
-
-				return true;
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		if (itemStack != null && (itemStack.getItem() == Items.FLINT_AND_STEEL || itemStack.getItem() == Items.FIRE_CHARGE)) {
+			this.method_11639(world, blockPos, blockState.with(EXPLODE, true), playerEntity);
+			world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), 11);
+			if (itemStack.getItem() == Items.FLINT_AND_STEEL) {
+				itemStack.damage(1, playerEntity);
+			} else if (!playerEntity.abilities.creativeMode) {
+				itemStack.count--;
 			}
-		}
 
-		return super.onUse(world, pos, state, player, direction, posX, posY, posZ);
+			return true;
+		} else {
+			return super.method_421(world, blockPos, blockState, playerEntity, hand, itemStack, direction, f, g, h);
+		}
 	}
 
 	@Override
@@ -93,7 +107,7 @@ public class TntBlock extends Block {
 		if (!world.isClient && entity instanceof AbstractArrowEntity) {
 			AbstractArrowEntity abstractArrowEntity = (AbstractArrowEntity)entity;
 			if (abstractArrowEntity.isOnFire()) {
-				this.activateTnt(
+				this.method_11639(
 					world,
 					pos,
 					world.getBlockState(pos).with(EXPLODE, true),

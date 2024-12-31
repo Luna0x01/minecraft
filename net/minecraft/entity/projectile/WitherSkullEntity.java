@@ -5,8 +5,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
@@ -14,6 +17,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 
 public class WitherSkullEntity extends ExplosiveProjectileEntity {
+	private static final TrackedData<Boolean> CHARGED = DataTracker.registerData(WitherSkullEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+
 	public WitherSkullEntity(World world) {
 		super(world);
 		this.setBounds(0.3125F, 0.3125F);
@@ -75,7 +80,7 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 					}
 
 					if (i > 0) {
-						((LivingEntity)hitResult.entity).addStatusEffect(new StatusEffectInstance(StatusEffect.WITHER.id, 20 * i, 1));
+						((LivingEntity)hitResult.entity).addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 20 * i, 1));
 					}
 				}
 			}
@@ -97,14 +102,19 @@ public class WitherSkullEntity extends ExplosiveProjectileEntity {
 
 	@Override
 	protected void initDataTracker() {
-		this.dataTracker.track(10, (byte)0);
+		this.dataTracker.startTracking(CHARGED, false);
 	}
 
 	public boolean isCharged() {
-		return this.dataTracker.getByte(10) == 1;
+		return this.dataTracker.get(CHARGED);
 	}
 
 	public void setCharged(boolean charged) {
-		this.dataTracker.setProperty(10, Byte.valueOf((byte)(charged ? 1 : 0)));
+		this.dataTracker.set(CHARGED, charged);
+	}
+
+	@Override
+	protected boolean isBurning() {
+		return false;
 	}
 }

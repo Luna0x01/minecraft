@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import com.google.common.base.Predicate;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -17,7 +18,7 @@ import net.minecraft.world.World;
 public class Leaves2Block extends LeavesBlock {
 	public static final EnumProperty<PlanksBlock.WoodType> VARIANT = EnumProperty.of(
 		"variant", PlanksBlock.WoodType.class, new Predicate<PlanksBlock.WoodType>() {
-			public boolean apply(PlanksBlock.WoodType woodType) {
+			public boolean apply(@Nullable PlanksBlock.WoodType woodType) {
 				return woodType.getId() >= 4;
 			}
 		}
@@ -30,7 +31,7 @@ public class Leaves2Block extends LeavesBlock {
 	@Override
 	protected void dropApple(World world, BlockPos pos, BlockState state, int dropChance) {
 		if (state.get(VARIANT) == PlanksBlock.WoodType.DARK_OAK && world.random.nextInt(dropChance) == 0) {
-			onBlockBreak(world, pos, new ItemStack(Items.APPLE, 1, 0));
+			onBlockBreak(world, pos, new ItemStack(Items.APPLE));
 		}
 	}
 
@@ -40,9 +41,8 @@ public class Leaves2Block extends LeavesBlock {
 	}
 
 	@Override
-	public int getMeta(World world, BlockPos pos) {
-		BlockState blockState = world.getBlockState(pos);
-		return blockState.getBlock().getData(blockState) & 3;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this, 1, blockState.getBlock().getData(blockState) & 3);
 	}
 
 	@Override
@@ -87,12 +87,12 @@ public class Leaves2Block extends LeavesBlock {
 	}
 
 	@Override
-	public void harvest(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be) {
-		if (!world.isClient && player.getMainHandStack() != null && player.getMainHandStack().getItem() == Items.SHEARS) {
-			player.incrementStat(Stats.BLOCK_STATS[Block.getIdByBlock(this)]);
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Item.fromBlock(this), 1, ((PlanksBlock.WoodType)state.get(VARIANT)).getId() - 4));
 		} else {
-			super.harvest(world, player, pos, state, be);
+			super.method_8651(world, player, pos, state, blockEntity, stack);
 		}
 	}
 }

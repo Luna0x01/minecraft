@@ -1,0 +1,54 @@
+package net.minecraft.client.render.entity;
+
+import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.entity.projectile.DragonFireballEntity;
+import net.minecraft.util.Identifier;
+
+public class DragonFireballEntityRenderer extends EntityRenderer<DragonFireballEntity> {
+	private static final Identifier TEXTURE = new Identifier("textures/entity/enderdragon/dragon_fireball.png");
+
+	public DragonFireballEntityRenderer(EntityRenderDispatcher entityRenderDispatcher) {
+		super(entityRenderDispatcher);
+	}
+
+	public void render(DragonFireballEntity dragonFireballEntity, double d, double e, double f, float g, float h) {
+		GlStateManager.pushMatrix();
+		this.bindTexture(dragonFireballEntity);
+		GlStateManager.translate((float)d, (float)e, (float)f);
+		GlStateManager.enableRescaleNormal();
+		GlStateManager.scale(2.0F, 2.0F, 2.0F);
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		float i = 1.0F;
+		float j = 0.5F;
+		float k = 0.25F;
+		GlStateManager.rotate(180.0F - this.dispatcher.yaw, 0.0F, 1.0F, 0.0F);
+		GlStateManager.rotate((float)(this.dispatcher.options.perspective == 2 ? -1 : 1) * -this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(dragonFireballEntity));
+		}
+
+		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_NORMAL);
+		bufferBuilder.vertex(-0.5, -0.25, 0.0).texture(0.0, 1.0).normal(0.0F, 1.0F, 0.0F).next();
+		bufferBuilder.vertex(0.5, -0.25, 0.0).texture(1.0, 1.0).normal(0.0F, 1.0F, 0.0F).next();
+		bufferBuilder.vertex(0.5, 0.75, 0.0).texture(1.0, 0.0).normal(0.0F, 1.0F, 0.0F).next();
+		bufferBuilder.vertex(-0.5, 0.75, 0.0).texture(0.0, 0.0).normal(0.0F, 1.0F, 0.0F).next();
+		tessellator.draw();
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
+		GlStateManager.disableRescaleNormal();
+		GlStateManager.popMatrix();
+		super.render(dragonFireballEntity, d, e, f, g, h);
+	}
+
+	protected Identifier getTexture(DragonFireballEntity dragonFireballEntity) {
+		return TEXTURE;
+	}
+}

@@ -20,9 +20,8 @@ public class SaveAllCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
-		source.sendMessage(new TranslatableText("commands.save.start"));
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
+		commandSource.sendMessage(new TranslatableText("commands.save.start"));
 		if (minecraftServer.getPlayerManager() != null) {
 			minecraftServer.getPlayerManager().saveAllPlayerData();
 		}
@@ -39,7 +38,7 @@ public class SaveAllCommand extends AbstractCommand {
 			}
 
 			if (args.length > 0 && "flush".equals(args[0])) {
-				source.sendMessage(new TranslatableText("commands.save.flushStart"));
+				commandSource.sendMessage(new TranslatableText("commands.save.flushStart"));
 
 				for (int j = 0; j < minecraftServer.worlds.length; j++) {
 					if (minecraftServer.worlds[j] != null) {
@@ -51,13 +50,13 @@ public class SaveAllCommand extends AbstractCommand {
 					}
 				}
 
-				source.sendMessage(new TranslatableText("commands.save.flushEnd"));
+				commandSource.sendMessage(new TranslatableText("commands.save.flushEnd"));
 			}
 		} catch (WorldSaveException var7) {
-			run(source, this, "commands.save.failed", new Object[]{var7.getMessage()});
+			run(commandSource, this, "commands.save.failed", new Object[]{var7.getMessage()});
 			return;
 		}
 
-		run(source, this, "commands.save.success", new Object[0]);
+		run(commandSource, this, "commands.save.success", new Object[0]);
 	}
 }

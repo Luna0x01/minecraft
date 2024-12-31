@@ -4,6 +4,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.Hand;
 
 public class NameTagItem extends Item {
 	public NameTagItem() {
@@ -11,17 +12,17 @@ public class NameTagItem extends Item {
 	}
 
 	@Override
-	public boolean canUseOnEntity(ItemStack stack, PlayerEntity player, LivingEntity entity) {
-		if (!stack.hasCustomName()) {
+	public boolean method_3353(ItemStack itemStack, PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
+		if (!itemStack.hasCustomName()) {
 			return false;
-		} else if (entity instanceof MobEntity) {
-			MobEntity mobEntity = (MobEntity)entity;
-			mobEntity.setCustomName(stack.getCustomName());
+		} else if (livingEntity instanceof MobEntity) {
+			MobEntity mobEntity = (MobEntity)livingEntity;
+			mobEntity.setCustomName(itemStack.getCustomName());
 			mobEntity.setPersistent();
-			stack.count--;
+			itemStack.count--;
 			return true;
 		} else {
-			return super.canUseOnEntity(stack, player, entity);
+			return super.method_3353(itemStack, playerEntity, livingEntity, hand);
 		}
 	}
 }

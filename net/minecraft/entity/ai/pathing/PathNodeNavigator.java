@@ -1,95 +1,115 @@
 package net.minecraft.entity.ai.pathing;
 
+import java.util.HashSet;
+import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ai.class_2769;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 
 public class PathNodeNavigator {
-	private PathMinHeap minHeap = new PathMinHeap();
-	private PathNode[] nodes = new PathNode[32];
-	private PathNodeMaker nodeMaker;
+	private final class_2769 field_13090 = new class_2769();
+	private final Set<PathNode> field_13091 = new HashSet();
+	private final PathNode[] nodes = new PathNode[32];
+	private final class_2771 field_13092;
 
-	public PathNodeNavigator(PathNodeMaker pathNodeMaker) {
-		this.nodeMaker = pathNodeMaker;
+	public PathNodeNavigator(class_2771 arg) {
+		this.field_13092 = arg;
 	}
 
-	public Path findPathToAny(BlockView world, Entity entity, Entity target, float maxDistance) {
-		return this.findPathToAny(world, entity, target.x, target.getBoundingBox().minY, target.z, maxDistance);
+	@Nullable
+	public PathMinHeap method_11941(BlockView blockView, MobEntity mobEntity, Entity entity, float f) {
+		return this.method_11939(blockView, mobEntity, entity.x, entity.getBoundingBox().minY, entity.z, f);
 	}
 
-	public Path findPathToAny(BlockView world, Entity entity, BlockPos pos, float maxDistance) {
-		return this.findPathToAny(
-			world, entity, (double)((float)pos.getX() + 0.5F), (double)((float)pos.getY() + 0.5F), (double)((float)pos.getZ() + 0.5F), maxDistance
+	@Nullable
+	public PathMinHeap method_11940(BlockView blockView, MobEntity mobEntity, BlockPos blockPos, float f) {
+		return this.method_11939(
+			blockView, mobEntity, (double)((float)blockPos.getX() + 0.5F), (double)((float)blockPos.getY() + 0.5F), (double)((float)blockPos.getZ() + 0.5F), f
 		);
 	}
 
-	private Path findPathToAny(BlockView world, Entity entity, double x, double y, double z, float maxDistance) {
-		this.minHeap.clear();
-		this.nodeMaker.init(world, entity);
-		PathNode pathNode = this.nodeMaker.getStart(entity);
-		PathNode pathNode2 = this.nodeMaker.getNode(entity, x, y, z);
-		Path path = this.findPathToAny(entity, pathNode, pathNode2, maxDistance);
-		this.nodeMaker.clear();
-		return path;
+	@Nullable
+	private PathMinHeap method_11939(BlockView blockView, MobEntity mobEntity, double d, double e, double f, float g) {
+		this.field_13090.method_11899();
+		this.field_13092.method_11915(blockView, mobEntity);
+		PathNode pathNode = this.field_13092.method_11918();
+		PathNode pathNode2 = this.field_13092.method_11911(d, e, f);
+		PathMinHeap pathMinHeap = this.method_11943(pathNode, pathNode2, g);
+		this.field_13092.method_11910();
+		return pathMinHeap;
 	}
 
-	private Path findPathToAny(Entity entity, PathNode startNode, PathNode endNode, float maxDistance) {
-		startNode.penalizedPathLength = 0.0F;
-		startNode.distanceToNearestTarget = startNode.getSquaredDistance(endNode);
-		startNode.heapWeight = startNode.distanceToNearestTarget;
-		this.minHeap.clear();
-		this.minHeap.push(startNode);
-		PathNode pathNode = startNode;
+	@Nullable
+	private PathMinHeap method_11943(PathNode pathNode, PathNode pathNode2, float f) {
+		pathNode.penalizedPathLength = 0.0F;
+		pathNode.distanceToNearestTarget = pathNode.method_11909(pathNode2);
+		pathNode.heapWeight = pathNode.distanceToNearestTarget;
+		this.field_13090.method_11899();
+		this.field_13091.clear();
+		this.field_13090.method_11901(pathNode);
+		PathNode pathNode3 = pathNode;
+		int i = 0;
 
-		while (!this.minHeap.isEmpty()) {
-			PathNode pathNode2 = this.minHeap.pop();
-			if (pathNode2.equals(endNode)) {
-				return this.createPath(startNode, endNode);
+		while (!this.field_13090.method_11905()) {
+			if (++i >= 200) {
+				break;
 			}
 
-			if (pathNode2.getSquaredDistance(endNode) < pathNode.getSquaredDistance(endNode)) {
-				pathNode = pathNode2;
+			PathNode pathNode4 = this.field_13090.method_11904();
+			if (pathNode4.equals(pathNode2)) {
+				pathNode3 = pathNode2;
+				break;
 			}
 
-			pathNode2.visited = true;
-			int i = this.nodeMaker.getSuccessors(this.nodes, entity, pathNode2, endNode, maxDistance);
+			if (pathNode4.method_11909(pathNode2) < pathNode3.method_11909(pathNode2)) {
+				pathNode3 = pathNode4;
+			}
 
-			for (int j = 0; j < i; j++) {
-				PathNode pathNode3 = this.nodes[j];
-				float f = pathNode2.penalizedPathLength + pathNode2.getSquaredDistance(pathNode3);
-				if (f < maxDistance * 2.0F && (!pathNode3.isInHeap() || f < pathNode3.penalizedPathLength)) {
-					pathNode3.previous = pathNode2;
-					pathNode3.penalizedPathLength = f;
-					pathNode3.distanceToNearestTarget = pathNode3.getSquaredDistance(endNode);
-					if (pathNode3.isInHeap()) {
-						this.minHeap.setNodeWeight(pathNode3, pathNode3.penalizedPathLength + pathNode3.distanceToNearestTarget);
+			pathNode4.visited = true;
+			int j = this.field_13092.method_11917(this.nodes, pathNode4, pathNode2, f);
+
+			for (int k = 0; k < j; k++) {
+				PathNode pathNode5 = this.nodes[k];
+				float g = pathNode4.method_11909(pathNode5);
+				pathNode5.field_13071 = pathNode4.field_13071 + g;
+				pathNode5.field_13072 = g + pathNode5.field_13073;
+				float h = pathNode4.penalizedPathLength + pathNode5.field_13072;
+				if (pathNode5.field_13071 < f && (!pathNode5.isInHeap() || h < pathNode5.penalizedPathLength)) {
+					pathNode5.previous = pathNode4;
+					pathNode5.penalizedPathLength = h;
+					pathNode5.distanceToNearestTarget = pathNode5.method_11909(pathNode2) + pathNode5.field_13073;
+					if (pathNode5.isInHeap()) {
+						this.field_13090.method_11902(pathNode5, pathNode5.penalizedPathLength + pathNode5.distanceToNearestTarget);
 					} else {
-						pathNode3.heapWeight = pathNode3.penalizedPathLength + pathNode3.distanceToNearestTarget;
-						this.minHeap.push(pathNode3);
+						pathNode5.heapWeight = pathNode5.penalizedPathLength + pathNode5.distanceToNearestTarget;
+						this.field_13090.method_11901(pathNode5);
 					}
 				}
 			}
 		}
 
-		return pathNode == startNode ? null : this.createPath(startNode, pathNode);
+		return pathNode3 == pathNode ? null : this.method_11942(pathNode, pathNode3);
 	}
 
-	private Path createPath(PathNode startNode, PathNode endNode) {
+	private PathMinHeap method_11942(PathNode pathNode, PathNode pathNode2) {
 		int i = 1;
 
-		for (PathNode pathNode = endNode; pathNode.previous != null; pathNode = pathNode.previous) {
+		for (PathNode pathNode3 = pathNode2; pathNode3.previous != null; pathNode3 = pathNode3.previous) {
 			i++;
 		}
 
 		PathNode[] pathNodes = new PathNode[i];
-		PathNode var7 = endNode;
+		PathNode var7 = pathNode2;
 		i--;
 
-		for (pathNodes[i] = endNode; var7.previous != null; pathNodes[i] = var7) {
+		for (pathNodes[i] = pathNode2; var7.previous != null; pathNodes[i] = var7) {
 			var7 = var7.previous;
 			i--;
 		}
 
-		return new Path(pathNodes);
+		return new PathMinHeap(pathNodes);
 	}
 }

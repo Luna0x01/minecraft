@@ -12,7 +12,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GeneratorConfig;
 
 public class NetherFortressStructure extends StructureFeature {
-	private List<Biome.SpawnEntry> monsterSpawns = Lists.newArrayList();
+	private final List<Biome.SpawnEntry> monsterSpawns = Lists.newArrayList();
 
 	public NetherFortressStructure() {
 		this.monsterSpawns.add(new Biome.SpawnEntry(BlazeEntity.class, 10, 2, 3));
@@ -55,14 +55,14 @@ public class NetherFortressStructure extends StructureFeature {
 		public FortressGeneratorConfig(World world, Random random, int i, int j) {
 			super(i, j);
 			NetherFortressPieces.StartPiece startPiece = new NetherFortressPieces.StartPiece(random, (i << 4) + 2, (j << 4) + 2);
-			this.children.add(startPiece);
-			startPiece.fillOpenings(startPiece, this.children, random);
+			this.field_13015.add(startPiece);
+			startPiece.fillOpenings(startPiece, this.field_13015, random);
 			List<StructurePiece> list = startPiece.pieces;
 
 			while (!list.isEmpty()) {
 				int k = random.nextInt(list.size());
 				StructurePiece structurePiece = (StructurePiece)list.remove(k);
-				structurePiece.fillOpenings(startPiece, this.children, random);
+				structurePiece.fillOpenings(startPiece, this.field_13015, random);
 			}
 
 			this.setBoundingBoxFromChildren();

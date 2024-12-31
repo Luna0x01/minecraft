@@ -26,9 +26,8 @@ public class DamageParticle extends Particle {
 		this.field_10610 = this.scale;
 		this.maxAge = (int)(6.0 / (Math.random() * 0.8 + 0.6));
 		this.maxAge = (int)((float)this.maxAge * j);
-		this.noClip = false;
 		this.setMiscTexture(65);
-		this.tick();
+		this.method_12241();
 	}
 
 	@Override
@@ -40,22 +39,22 @@ public class DamageParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		if (this.age++ >= this.maxAge) {
-			this.remove();
+			this.method_12251();
 		}
 
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
 		this.green = (float)((double)this.green * 0.96);
 		this.blue = (float)((double)this.blue * 0.9);
 		this.velocityX *= 0.7F;
 		this.velocityY *= 0.7F;
 		this.velocityZ *= 0.7F;
 		this.velocityY -= 0.02F;
-		if (this.onGround) {
+		if (this.field_13434) {
 			this.velocityX *= 0.7F;
 			this.velocityZ *= 0.7F;
 		}
@@ -74,6 +73,16 @@ public class DamageParticle extends Particle {
 			Particle particle = new DamageParticle(world, x, y, z, velocityX, velocityY, velocityZ);
 			particle.setColor(particle.getRed() * 0.3F, particle.getGreen() * 0.8F, particle.getBlue());
 			particle.method_5133();
+			return particle;
+		}
+	}
+
+	public static class Factory implements ParticleFactory {
+		@Override
+		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
+			Particle particle = new DamageParticle(world, x, y, z, velocityX, velocityY + 1.0, velocityZ, 1.0F);
+			particle.method_12245(20);
+			particle.setMiscTexture(67);
 			return particle;
 		}
 	}

@@ -3,7 +3,8 @@ package net.minecraft.world.chunk;
 import com.google.common.base.Predicate;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
@@ -36,18 +37,13 @@ public class EmptyChunk extends Chunk {
 	}
 
 	@Override
-	public Block getBlockAtPos(BlockPos pos) {
-		return Blocks.AIR;
+	public BlockState getBlockState(BlockPos pos) {
+		return Blocks.AIR.getDefaultState();
 	}
 
 	@Override
 	public int getBlockOpacityAtPos(BlockPos pos) {
 		return 255;
-	}
-
-	@Override
-	public int getBlockData(BlockPos pos) {
-		return 0;
 	}
 
 	@Override
@@ -81,6 +77,7 @@ public class EmptyChunk extends Chunk {
 		return false;
 	}
 
+	@Nullable
 	@Override
 	public BlockEntity getBlockEntity(BlockPos pos, Chunk.Status status) {
 		return null;
@@ -111,7 +108,7 @@ public class EmptyChunk extends Chunk {
 	}
 
 	@Override
-	public void method_9141(Entity entity, Box box, List<Entity> list, Predicate<? super Entity> pred) {
+	public void method_9141(@Nullable Entity entity, Box box, List<Entity> list, Predicate<? super Entity> pred) {
 	}
 
 	@Override

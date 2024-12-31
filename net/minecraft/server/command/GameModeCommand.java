@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -30,52 +32,38 @@ public class GameModeCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length <= 0) {
 			throw new IncorrectUsageException("commands.gamemode.usage");
 		} else {
-			LevelInfo.GameMode gameMode = this.method_3540(source, args[0]);
-			PlayerEntity playerEntity = args.length >= 2 ? getPlayer(source, args[1]) : getAsPlayer(source);
+			LevelInfo.GameMode gameMode = this.method_3540(commandSource, args[0]);
+			PlayerEntity playerEntity = args.length >= 2 ? method_4639(minecraftServer, commandSource, args[1]) : getAsPlayer(commandSource);
 			playerEntity.setGameMode(gameMode);
-			playerEntity.fallDistance = 0.0F;
-			if (source.getWorld().getGameRules().getBoolean("sendCommandFeedback")) {
-				playerEntity.sendMessage(new TranslatableText("gameMode.changed"));
+			Text text = new TranslatableText("gameMode." + gameMode.getName());
+			if (commandSource.getWorld().getGameRules().getBoolean("sendCommandFeedback")) {
+				playerEntity.sendMessage(new TranslatableText("gameMode.changed", text));
 			}
 
-			Text text = new TranslatableText("gameMode." + gameMode.getName());
-			if (playerEntity != source) {
-				run(source, this, 1, "commands.gamemode.success.other", new Object[]{playerEntity.getTranslationKey(), text});
+			if (playerEntity != commandSource) {
+				run(commandSource, this, 1, "commands.gamemode.success.other", new Object[]{playerEntity.getTranslationKey(), text});
 			} else {
-				run(source, this, 1, "commands.gamemode.success.self", new Object[]{text});
+				run(commandSource, this, 1, "commands.gamemode.success.self", new Object[]{text});
 			}
 		}
 	}
 
 	protected LevelInfo.GameMode method_3540(CommandSource commandSource, String string) throws InvalidNumberException {
-		if (string.equalsIgnoreCase(LevelInfo.GameMode.SURVIVAL.getName()) || string.equalsIgnoreCase("s")) {
-			return LevelInfo.GameMode.SURVIVAL;
-		} else if (string.equalsIgnoreCase(LevelInfo.GameMode.CREATIVE.getName()) || string.equalsIgnoreCase("c")) {
-			return LevelInfo.GameMode.CREATIVE;
-		} else if (string.equalsIgnoreCase(LevelInfo.GameMode.ADVENTURE.getName()) || string.equalsIgnoreCase("a")) {
-			return LevelInfo.GameMode.ADVENTURE;
-		} else {
-			return !string.equalsIgnoreCase(LevelInfo.GameMode.SPECTATOR.getName()) && !string.equalsIgnoreCase("sp")
-				? LevelInfo.getGameModeById(parseClampedInt(string, 0, LevelInfo.GameMode.values().length - 2))
-				: LevelInfo.GameMode.SPECTATOR;
-		}
+		LevelInfo.GameMode gameMode = LevelInfo.GameMode.method_11495(string, LevelInfo.GameMode.NOT_SET);
+		return gameMode == LevelInfo.GameMode.NOT_SET ? LevelInfo.getGameModeById(parseClampedInt(string, 0, LevelInfo.GameMode.values().length - 2)) : gameMode;
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, new String[]{"survival", "creative", "adventure", "spectator"});
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, new String[]{"survival", "creative", "adventure", "spectator"});
 		} else {
-			return args.length == 2 ? method_2894(args, this.method_3541()) : null;
+			return strings.length == 2 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
 		}
-	}
-
-	protected String[] method_3541() {
-		return MinecraftServer.getServer().getPlayerNames();
 	}
 
 	@Override

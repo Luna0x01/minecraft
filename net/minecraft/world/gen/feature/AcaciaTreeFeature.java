@@ -74,7 +74,7 @@ public class AcaciaTreeFeature extends FoliageFeature {
 						}
 
 						BlockPos blockPos2 = new BlockPos(p, t, q);
-						Material material = world.getBlockState(blockPos2).getBlock().getMaterial();
+						Material material = world.getBlockState(blockPos2).getMaterial();
 						if (material == Material.AIR || material == Material.FOLIAGE) {
 							this.setAcaciaLog(world, blockPos2);
 							r = t;
@@ -117,7 +117,7 @@ public class AcaciaTreeFeature extends FoliageFeature {
 								p += direction2.getOffsetX();
 								q += direction2.getOffsetZ();
 								BlockPos blockPos4 = new BlockPos(p, ab, q);
-								Material material2 = world.getBlockState(blockPos4).getBlock().getMaterial();
+								Material material2 = world.getBlockState(blockPos4).getMaterial();
 								if (material2 == Material.AIR || material2 == Material.FOLIAGE) {
 									this.setAcaciaLog(world, blockPos4);
 									r = ab;
@@ -163,7 +163,7 @@ public class AcaciaTreeFeature extends FoliageFeature {
 	}
 
 	private void setAcaciaLeaves(World world, BlockPos blockPos) {
-		Material material = world.getBlockState(blockPos).getBlock().getMaterial();
+		Material material = world.getBlockState(blockPos).getMaterial();
 		if (material == Material.AIR || material == Material.FOLIAGE) {
 			this.setBlockStateWithoutUpdatingNeighbors(world, blockPos, LEAVES);
 		}

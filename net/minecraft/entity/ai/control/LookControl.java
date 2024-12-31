@@ -49,8 +49,8 @@ public class LookControl {
 			double e = this.lookY - (this.entity.y + (double)this.entity.getEyeHeight());
 			double f = this.lookZ - this.entity.z;
 			double g = (double)MathHelper.sqrt(d * d + f * f);
-			float h = (float)(MathHelper.atan2(f, d) * 180.0 / (float) Math.PI) - 90.0F;
-			float i = (float)(-(MathHelper.atan2(e, g) * 180.0 / (float) Math.PI));
+			float h = (float)(MathHelper.atan2(f, d) * 180.0F / (float)Math.PI) - 90.0F;
+			float i = (float)(-(MathHelper.atan2(e, g) * 180.0F / (float)Math.PI));
 			this.entity.pitch = this.clampAndWrapAngle(this.entity.pitch, i, this.pitch);
 			this.entity.headYaw = this.clampAndWrapAngle(this.entity.headYaw, h, this.yaw);
 		} else {

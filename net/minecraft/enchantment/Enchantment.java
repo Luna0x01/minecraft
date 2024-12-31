@@ -1,78 +1,61 @@
 package net.minecraft.enchantment;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.SimpleRegistry;
 
 public abstract class Enchantment {
-	private static final Enchantment[] ENCHANTMENTS = new Enchantment[256];
-	public static final Enchantment[] ALL_ENCHANTMENTS;
-	private static final Map<Identifier, Enchantment> ENCHANTMENT_MAP = Maps.newHashMap();
-	public static final Enchantment PROTECTION = new ProtectionEnchantment(0, new Identifier("protection"), 10, 0);
-	public static final Enchantment FIRE_PROTECTION = new ProtectionEnchantment(1, new Identifier("fire_protection"), 5, 1);
-	public static final Enchantment FEATHER_FALLING = new ProtectionEnchantment(2, new Identifier("feather_falling"), 5, 2);
-	public static final Enchantment BLAST_PROTECTION = new ProtectionEnchantment(3, new Identifier("blast_protection"), 2, 3);
-	public static final Enchantment PROJECTILE_PROTECTION = new ProtectionEnchantment(4, new Identifier("projectile_protection"), 5, 4);
-	public static final Enchantment RESPIRATION = new RespirationEnchantment(5, new Identifier("respiration"), 2);
-	public static final Enchantment AQUA_AFFINITY = new AquaAffinityEnchantment(6, new Identifier("aqua_affinity"), 2);
-	public static final Enchantment THORNS = new ThornsEnchantment(7, new Identifier("thorns"), 1);
-	public static final Enchantment DEPTH_STRIDER = new DepthStriderEnchantment(8, new Identifier("depth_strider"), 2);
-	public static final Enchantment SHARPNESS = new DamageEnchantment(16, new Identifier("sharpness"), 10, 0);
-	public static final Enchantment SMITE = new DamageEnchantment(17, new Identifier("smite"), 5, 1);
-	public static final Enchantment BANE_OF_ARTHROPODS = new DamageEnchantment(18, new Identifier("bane_of_arthropods"), 5, 2);
-	public static final Enchantment KNOCKBACK = new KnockbackEnchantment(19, new Identifier("knockback"), 5);
-	public static final Enchantment FIRE_ASPECT = new FireAspectEnchantment(20, new Identifier("fire_aspect"), 2);
-	public static final Enchantment LOOTING = new BetterLootEnchantment(21, new Identifier("looting"), 2, EnchantmentTarget.WEAPON);
-	public static final Enchantment EFFICIENCY = new EfficiencyEnchantment(32, new Identifier("efficiency"), 10);
-	public static final Enchantment SILK_TOUCH = new SilkTouchEnchantment(33, new Identifier("silk_touch"), 1);
-	public static final Enchantment UNBREAKING = new UnbreakingEnchantment(34, new Identifier("unbreaking"), 5);
-	public static final Enchantment FORTUNE = new BetterLootEnchantment(35, new Identifier("fortune"), 2, EnchantmentTarget.DIGGER);
-	public static final Enchantment POWER = new PowerEnchantment(48, new Identifier("power"), 10);
-	public static final Enchantment PUNCH = new PunchEnchantment(49, new Identifier("punch"), 2);
-	public static final Enchantment FLAME = new FlameEnchantment(50, new Identifier("flame"), 2);
-	public static final Enchantment INFINITY = new InfinityEnchantment(51, new Identifier("infinity"), 1);
-	public static final Enchantment LUCK_OF_THE_SEA = new BetterLootEnchantment(61, new Identifier("luck_of_the_sea"), 2, EnchantmentTarget.FISHING_ROD);
-	public static final Enchantment LURE = new LureEnchantment(62, new Identifier("lure"), 2, EnchantmentTarget.FISHING_ROD);
-	public final int id;
-	private final int enchantmentType;
+	public static final SimpleRegistry<Identifier, Enchantment> REGISTRY = new SimpleRegistry<>();
+	private final EquipmentSlot[] wearableSlots;
+	private final Enchantment.Rarity rarity;
 	public EnchantmentTarget target;
 	protected String translationKey;
 
-	public static Enchantment byRawId(int id) {
-		return id >= 0 && id < ENCHANTMENTS.length ? ENCHANTMENTS[id] : null;
+	@Nullable
+	public static Enchantment byIndex(int id) {
+		return REGISTRY.getByRawId(id);
 	}
 
-	protected Enchantment(int i, Identifier identifier, int j, EnchantmentTarget enchantmentTarget) {
-		this.id = i;
-		this.enchantmentType = j;
-		this.target = enchantmentTarget;
-		if (ENCHANTMENTS[i] != null) {
-			throw new IllegalArgumentException("Duplicate enchantment id!");
-		} else {
-			ENCHANTMENTS[i] = this;
-			ENCHANTMENT_MAP.put(identifier, this);
-		}
+	public static int getId(Enchantment enchantment) {
+		return REGISTRY.getRawId(enchantment);
 	}
 
+	@Nullable
 	public static Enchantment getByName(String name) {
-		return (Enchantment)ENCHANTMENT_MAP.get(new Identifier(name));
+		return REGISTRY.get(new Identifier(name));
 	}
 
-	public static Set<Identifier> getSet() {
-		return ENCHANTMENT_MAP.keySet();
+	protected Enchantment(Enchantment.Rarity rarity, EnchantmentTarget enchantmentTarget, EquipmentSlot[] equipmentSlots) {
+		this.rarity = rarity;
+		this.target = enchantmentTarget;
+		this.wearableSlots = equipmentSlots;
 	}
 
-	public int getEnchantmentType() {
-		return this.enchantmentType;
+	@Nullable
+	public Iterable<ItemStack> method_11445(LivingEntity livingEntity) {
+		List<ItemStack> list = Lists.newArrayList();
+
+		for (EquipmentSlot equipmentSlot : this.wearableSlots) {
+			ItemStack itemStack = livingEntity.getStack(equipmentSlot);
+			if (itemStack != null) {
+				list.add(itemStack);
+			}
+		}
+
+		return list.size() > 0 ? list : null;
+	}
+
+	public Enchantment.Rarity getRarity() {
+		return this.rarity;
 	}
 
 	public int getMinimumLevel() {
@@ -114,7 +97,7 @@ public abstract class Enchantment {
 
 	public String getTranslatedName(int level) {
 		String string = CommonI18n.translate(this.getTranslationKey());
-		return string + " " + CommonI18n.translate("enchantment.level." + level);
+		return level == 1 && this.getMaximumLevel() == 1 ? string : string + " " + CommonI18n.translate("enchantment.level." + level);
 	}
 
 	public boolean isAcceptableItem(ItemStack stack) {
@@ -127,15 +110,65 @@ public abstract class Enchantment {
 	public void onDamaged(LivingEntity livingEntity, Entity entity, int power) {
 	}
 
-	static {
-		List<Enchantment> list = Lists.newArrayList();
+	public boolean isTreasure() {
+		return false;
+	}
 
-		for (Enchantment enchantment : ENCHANTMENTS) {
-			if (enchantment != null) {
-				list.add(enchantment);
-			}
+	public static void register() {
+		EquipmentSlot[] equipmentSlots = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+		REGISTRY.add(0, new Identifier("protection"), new ProtectionEnchantment(Enchantment.Rarity.COMMON, ProtectionEnchantment.ProtectionType.ALL, equipmentSlots));
+		REGISTRY.add(
+			1, new Identifier("fire_protection"), new ProtectionEnchantment(Enchantment.Rarity.UNCOMMON, ProtectionEnchantment.ProtectionType.FIRE, equipmentSlots)
+		);
+		REGISTRY.add(
+			2, new Identifier("feather_falling"), new ProtectionEnchantment(Enchantment.Rarity.UNCOMMON, ProtectionEnchantment.ProtectionType.FALL, equipmentSlots)
+		);
+		REGISTRY.add(
+			3, new Identifier("blast_protection"), new ProtectionEnchantment(Enchantment.Rarity.RARE, ProtectionEnchantment.ProtectionType.EXPLOSION, equipmentSlots)
+		);
+		REGISTRY.add(
+			4,
+			new Identifier("projectile_protection"),
+			new ProtectionEnchantment(Enchantment.Rarity.UNCOMMON, ProtectionEnchantment.ProtectionType.PROJECTILE, equipmentSlots)
+		);
+		REGISTRY.add(5, new Identifier("respiration"), new RespirationEnchantment(Enchantment.Rarity.RARE, equipmentSlots));
+		REGISTRY.add(6, new Identifier("aqua_affinity"), new AquaAffinityEnchantment(Enchantment.Rarity.RARE, equipmentSlots));
+		REGISTRY.add(7, new Identifier("thorns"), new ThornsEnchantment(Enchantment.Rarity.VERY_RARE, equipmentSlots));
+		REGISTRY.add(8, new Identifier("depth_strider"), new DepthStriderEnchantment(Enchantment.Rarity.RARE, equipmentSlots));
+		REGISTRY.add(9, new Identifier("frost_walker"), new FrostWalkerEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.FEET));
+		REGISTRY.add(16, new Identifier("sharpness"), new DamageEnchantment(Enchantment.Rarity.COMMON, 0, EquipmentSlot.MAINHAND));
+		REGISTRY.add(17, new Identifier("smite"), new DamageEnchantment(Enchantment.Rarity.UNCOMMON, 1, EquipmentSlot.MAINHAND));
+		REGISTRY.add(18, new Identifier("bane_of_arthropods"), new DamageEnchantment(Enchantment.Rarity.UNCOMMON, 2, EquipmentSlot.MAINHAND));
+		REGISTRY.add(19, new Identifier("knockback"), new KnockbackEnchantment(Enchantment.Rarity.UNCOMMON, EquipmentSlot.MAINHAND));
+		REGISTRY.add(20, new Identifier("fire_aspect"), new FireAspectEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.MAINHAND));
+		REGISTRY.add(21, new Identifier("looting"), new BetterLootEnchantment(Enchantment.Rarity.RARE, EnchantmentTarget.WEAPON, EquipmentSlot.MAINHAND));
+		REGISTRY.add(32, new Identifier("efficiency"), new EfficiencyEnchantment(Enchantment.Rarity.COMMON, EquipmentSlot.MAINHAND));
+		REGISTRY.add(33, new Identifier("silk_touch"), new SilkTouchEnchantment(Enchantment.Rarity.VERY_RARE, EquipmentSlot.MAINHAND));
+		REGISTRY.add(34, new Identifier("unbreaking"), new UnbreakingEnchantment(Enchantment.Rarity.UNCOMMON, EquipmentSlot.MAINHAND));
+		REGISTRY.add(35, new Identifier("fortune"), new BetterLootEnchantment(Enchantment.Rarity.RARE, EnchantmentTarget.DIGGER, EquipmentSlot.MAINHAND));
+		REGISTRY.add(48, new Identifier("power"), new PowerEnchantment(Enchantment.Rarity.COMMON, EquipmentSlot.MAINHAND));
+		REGISTRY.add(49, new Identifier("punch"), new PunchEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.MAINHAND));
+		REGISTRY.add(50, new Identifier("flame"), new FlameEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.MAINHAND));
+		REGISTRY.add(51, new Identifier("infinity"), new InfinityEnchantment(Enchantment.Rarity.VERY_RARE, EquipmentSlot.MAINHAND));
+		REGISTRY.add(61, new Identifier("luck_of_the_sea"), new BetterLootEnchantment(Enchantment.Rarity.RARE, EnchantmentTarget.FISHING_ROD, EquipmentSlot.MAINHAND));
+		REGISTRY.add(62, new Identifier("lure"), new LureEnchantment(Enchantment.Rarity.RARE, EnchantmentTarget.FISHING_ROD, EquipmentSlot.MAINHAND));
+		REGISTRY.add(70, new Identifier("mending"), new MendingEnchantment(Enchantment.Rarity.RARE, EquipmentSlot.values()));
+	}
+
+	public static enum Rarity {
+		COMMON(10),
+		UNCOMMON(5),
+		RARE(2),
+		VERY_RARE(1);
+
+		private final int chance;
+
+		private Rarity(int j) {
+			this.chance = j;
 		}
 
-		ALL_ENCHANTMENTS = (Enchantment[])list.toArray(new Enchantment[list.size()]);
+		public int getChance() {
+			return this.chance;
+		}
 	}
 }

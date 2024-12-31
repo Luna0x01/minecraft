@@ -7,8 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -16,7 +16,10 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
+import net.minecraft.server.world.ChunkGenerator;
+import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.TypeFilterableList;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -25,16 +28,18 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.LayeredBiomeSource;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.SingletonBiomeSource;
 import net.minecraft.world.level.LevelGeneratorType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Chunk {
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final ChunkSection EMPTY = null;
 	private final ChunkSection[] chunkSections = new ChunkSection[16];
 	private final byte[] biomeArray = new byte[256];
 	private final int[] surfaceCache = new int[256];
@@ -57,6 +62,7 @@ public class Chunk {
 	private long inhabitedTime;
 	private int field_4743 = 4096;
 	private ConcurrentLinkedQueue<BlockPos> blocks = Queues.newConcurrentLinkedQueue();
+	public boolean unloaded;
 
 	public Chunk(World world, int i, int j) {
 		this.entities = new TypeFilterableList[16];
@@ -81,15 +87,14 @@ public class Chunk {
 		for (int l = 0; l < 16; l++) {
 			for (int m = 0; m < 16; m++) {
 				for (int n = 0; n < k; n++) {
-					int o = l * k * 16 | m * k | n;
-					BlockState blockState = chunkBlockStateStorage.get(o);
-					if (blockState.getBlock().getMaterial() != Material.AIR) {
-						int p = n >> 4;
-						if (this.chunkSections[p] == null) {
-							this.chunkSections[p] = new ChunkSection(p << 4, bl);
+					BlockState blockState = chunkBlockStateStorage.get(l, n, m);
+					if (blockState.getMaterial() != Material.AIR) {
+						int o = n >> 4;
+						if (this.chunkSections[o] == EMPTY) {
+							this.chunkSections[o] = new ChunkSection(o << 4, bl);
 						}
 
-						this.chunkSections[p].setBlockState(l, n & 15, m, blockState);
+						this.chunkSections[o].setBlockState(l, n & 15, m, blockState);
 					}
 				}
 			}
@@ -108,14 +113,20 @@ public class Chunk {
 		return this.heightmap[z << 4 | x];
 	}
 
-	public int getHighestNonEmptySectionYOffset() {
+	@Nullable
+	private ChunkSection getHighestNonEmptySection() {
 		for (int i = this.chunkSections.length - 1; i >= 0; i--) {
-			if (this.chunkSections[i] != null) {
-				return this.chunkSections[i].getYOffset();
+			if (this.chunkSections[i] != EMPTY) {
+				return this.chunkSections[i];
 			}
 		}
 
-		return 0;
+		return null;
+	}
+
+	public int getHighestNonEmptySectionYOffset() {
+		ChunkSection chunkSection = this.getHighestNonEmptySection();
+		return chunkSection == null ? 0 : chunkSection.getYOffset();
 	}
 
 	public ChunkSection[] getBlockStorage() {
@@ -131,8 +142,8 @@ public class Chunk {
 				this.surfaceCache[j + (k << 4)] = -999;
 
 				for (int l = i + 16; l > 0; l--) {
-					Block block = this.getBlock(j, l - 1, k);
-					if (block.getOpacity() != 0) {
+					BlockState blockState = this.getBlockState(j, l - 1, k);
+					if (blockState.getOpacity() != 0) {
 						this.heightmap[k << 4 | j] = l;
 						if (l < this.minimumHeightmap) {
 							this.minimumHeightmap = l;
@@ -177,7 +188,7 @@ public class Chunk {
 						m -= o;
 						if (m > 0) {
 							ChunkSection chunkSection = this.chunkSections[n >> 4];
-							if (chunkSection != null) {
+							if (chunkSection != EMPTY) {
 								chunkSection.setSkyLight(j, n & 15, k, m);
 								this.world.onLightUpdate(new BlockPos((this.chunkX << 4) + j, n, (this.chunkZ << 4) + k));
 							}
@@ -274,7 +285,7 @@ public class Chunk {
 				if (j < i) {
 					for (int m = j; m < i; m++) {
 						ChunkSection chunkSection = this.chunkSections[m >> 4];
-						if (chunkSection != null) {
+						if (chunkSection != EMPTY) {
 							chunkSection.setSkyLight(x, m & 15, z, 15);
 							this.world.onLightUpdate(new BlockPos((this.chunkX << 4) + x, m, (this.chunkZ << 4) + z));
 						}
@@ -282,7 +293,7 @@ public class Chunk {
 				} else {
 					for (int n = i; n < j; n++) {
 						ChunkSection chunkSection2 = this.chunkSections[n >> 4];
-						if (chunkSection2 != null) {
+						if (chunkSection2 != EMPTY) {
 							chunkSection2.setSkyLight(x, n & 15, z, 0);
 							this.world.onLightUpdate(new BlockPos((this.chunkX << 4) + x, n, (this.chunkZ << 4) + z));
 						}
@@ -303,7 +314,7 @@ public class Chunk {
 					}
 
 					ChunkSection chunkSection3 = this.chunkSections[j >> 4];
-					if (chunkSection3 != null) {
+					if (chunkSection3 != EMPTY) {
 						chunkSection3.setSkyLight(x, j & 15, z, o);
 					}
 				}
@@ -334,89 +345,45 @@ public class Chunk {
 	}
 
 	public int getBlockOpacityAtPos(BlockPos pos) {
-		return this.getBlockAtPos(pos).getOpacity();
+		return this.getBlockState(pos).getOpacity();
 	}
 
 	private int getBlockOpacity(int x, int y, int z) {
-		return this.getBlock(x, y, z).getOpacity();
+		return this.getBlockState(x, y, z).getOpacity();
 	}
 
-	private Block getBlock(int x, int y, int z) {
-		Block block = Blocks.AIR;
-		if (y >= 0 && y >> 4 < this.chunkSections.length) {
-			ChunkSection chunkSection = this.chunkSections[y >> 4];
-			if (chunkSection != null) {
-				try {
-					block = chunkSection.getBlock(x, y & 15, z);
-				} catch (Throwable var8) {
-					CrashReport crashReport = CrashReport.create(var8, "Getting block");
-					throw new CrashException(crashReport);
-				}
-			}
-		}
-
-		return block;
+	public BlockState getBlockState(BlockPos pos) {
+		return this.getBlockState(pos.getX(), pos.getY(), pos.getZ());
 	}
 
-	public Block method_9131(int x, int y, int z) {
-		try {
-			return this.getBlock(x & 15, y, z & 15);
-		} catch (CrashException var6) {
-			CrashReportSection crashReportSection = var6.getReport().addElement("Block being got");
-			crashReportSection.add("Location", new Callable<String>() {
-				public String call() throws Exception {
-					return CrashReportSection.addBlockData(new BlockPos(Chunk.this.chunkX * 16 + x, y, Chunk.this.chunkZ * 16 + z));
-				}
-			});
-			throw var6;
-		}
-	}
-
-	public Block getBlockAtPos(BlockPos pos) {
-		try {
-			return this.getBlock(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
-		} catch (CrashException var4) {
-			CrashReportSection crashReportSection = var4.getReport().addElement("Block being got");
-			crashReportSection.add("Location", new Callable<String>() {
-				public String call() throws Exception {
-					return CrashReportSection.addBlockData(pos);
-				}
-			});
-			throw var4;
-		}
-	}
-
-	public BlockState method_9154(BlockPos pos) {
+	public BlockState getBlockState(int x, int y, int z) {
 		if (this.world.getGeneratorType() == LevelGeneratorType.DEBUG) {
 			BlockState blockState = null;
-			if (pos.getY() == 60) {
+			if (y == 60) {
 				blockState = Blocks.BARRIER.getDefaultState();
 			}
 
-			if (pos.getY() == 70) {
-				blockState = DebugChunkGenerator.method_9190(pos.getX(), pos.getZ());
+			if (y == 70) {
+				blockState = DebugChunkGenerator.method_9190(x, z);
 			}
 
 			return blockState == null ? Blocks.AIR.getDefaultState() : blockState;
 		} else {
 			try {
-				if (pos.getY() >= 0 && pos.getY() >> 4 < this.chunkSections.length) {
-					ChunkSection chunkSection = this.chunkSections[pos.getY() >> 4];
-					if (chunkSection != null) {
-						int i = pos.getX() & 15;
-						int j = pos.getY() & 15;
-						int k = pos.getZ() & 15;
-						return chunkSection.getBlockState(i, j, k);
+				if (y >= 0 && y >> 4 < this.chunkSections.length) {
+					ChunkSection chunkSection = this.chunkSections[y >> 4];
+					if (chunkSection != EMPTY) {
+						return chunkSection.getBlockState(x & 15, y & 15, z & 15);
 					}
 				}
 
 				return Blocks.AIR.getDefaultState();
-			} catch (Throwable var6) {
-				CrashReport crashReport = CrashReport.create(var6, "Getting block state");
+			} catch (Throwable var7) {
+				CrashReport crashReport = CrashReport.create(var7, "Getting block state");
 				CrashReportSection crashReportSection = crashReport.addElement("Block being got");
-				crashReportSection.add("Location", new Callable<String>() {
+				crashReportSection.add("Location", new CrashCallable<String>() {
 					public String call() throws Exception {
-						return CrashReportSection.addBlockData(pos);
+						return CrashReportSection.createPositionString(x, y, z);
 					}
 				});
 				throw new CrashException(crashReport);
@@ -424,19 +391,7 @@ public class Chunk {
 		}
 	}
 
-	private int getBlockData(int x, int y, int z) {
-		if (y >> 4 >= this.chunkSections.length) {
-			return 0;
-		} else {
-			ChunkSection chunkSection = this.chunkSections[y >> 4];
-			return chunkSection != null ? chunkSection.getBlockData(x, y & 15, z) : 0;
-		}
-	}
-
-	public int getBlockData(BlockPos pos) {
-		return this.getBlockData(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
-	}
-
+	@Nullable
 	public BlockState getBlockState(BlockPos pos, BlockState state) {
 		int i = pos.getX() & 15;
 		int j = pos.getY();
@@ -447,7 +402,7 @@ public class Chunk {
 		}
 
 		int m = this.heightmap[l];
-		BlockState blockState = this.method_9154(pos);
+		BlockState blockState = this.getBlockState(pos);
 		if (blockState == state) {
 			return null;
 		} else {
@@ -455,7 +410,7 @@ public class Chunk {
 			Block block2 = blockState.getBlock();
 			ChunkSection chunkSection = this.chunkSections[j >> 4];
 			boolean bl = false;
-			if (chunkSection == null) {
+			if (chunkSection == EMPTY) {
 				if (block == Blocks.AIR) {
 					return null;
 				}
@@ -473,14 +428,14 @@ public class Chunk {
 				}
 			}
 
-			if (chunkSection.getBlock(i, j & 15, k) != block) {
+			if (chunkSection.getBlockState(i, j & 15, k).getBlock() != block) {
 				return null;
 			} else {
 				if (bl) {
 					this.calculateSkyLight();
 				} else {
-					int n = block.getOpacity();
-					int o = block2.getOpacity();
+					int n = state.getOpacity();
+					int o = blockState.getOpacity();
 					if (n > 0) {
 						if (j >= m) {
 							this.lightBlock(i, j + 1, k);
@@ -528,7 +483,7 @@ public class Chunk {
 		int j = pos.getY();
 		int k = pos.getZ() & 15;
 		ChunkSection chunkSection = this.chunkSections[j >> 4];
-		if (chunkSection == null) {
+		if (chunkSection == EMPTY) {
 			return this.hasDirectSunlight(pos) ? lightType.defaultValue : 0;
 		} else if (lightType == LightType.SKY) {
 			return this.world.dimension.hasNoSkylight() ? 0 : chunkSection.getSkyLight(i, j & 15, k);
@@ -542,7 +497,7 @@ public class Chunk {
 		int j = pos.getY();
 		int k = pos.getZ() & 15;
 		ChunkSection chunkSection = this.chunkSections[j >> 4];
-		if (chunkSection == null) {
+		if (chunkSection == EMPTY) {
 			chunkSection = this.chunkSections[j >> 4] = new ChunkSection(j >> 4 << 4, !this.world.dimension.hasNoSkylight());
 			this.calculateSkyLight();
 		}
@@ -562,7 +517,7 @@ public class Chunk {
 		int j = pos.getY();
 		int k = pos.getZ() & 15;
 		ChunkSection chunkSection = this.chunkSections[j >> 4];
-		if (chunkSection == null) {
+		if (chunkSection == EMPTY) {
 			return !this.world.dimension.hasNoSkylight() && darkness < LightType.SKY.defaultValue ? LightType.SKY.defaultValue - darkness : 0;
 		} else {
 			int l = this.world.dimension.hasNoSkylight() ? 0 : chunkSection.getSkyLight(i, j & 15, k);
@@ -624,11 +579,14 @@ public class Chunk {
 		return j >= this.heightmap[k << 4 | i];
 	}
 
+	@Nullable
 	private BlockEntity createBlockEntity(BlockPos pos) {
-		Block block = this.getBlockAtPos(pos);
-		return !block.hasBlockEntity() ? null : ((BlockEntityProvider)block).createBlockEntity(this.world, this.getBlockData(pos));
+		BlockState blockState = this.getBlockState(pos);
+		Block block = blockState.getBlock();
+		return !block.hasBlockEntity() ? null : ((BlockEntityProvider)block).createBlockEntity(this.world, blockState.getBlock().getData(blockState));
 	}
 
+	@Nullable
 	public BlockEntity getBlockEntity(BlockPos pos, Chunk.Status status) {
 		BlockEntity blockEntity = (BlockEntity)this.blockEntities.get(pos);
 		if (blockEntity == null) {
@@ -655,8 +613,8 @@ public class Chunk {
 
 	public void method_9136(BlockPos pos, BlockEntity be) {
 		be.setWorld(this.world);
-		be.setPos(pos);
-		if (this.getBlockAtPos(pos) instanceof BlockEntityProvider) {
+		be.setPosition(pos);
+		if (this.getBlockState(pos).getBlock() instanceof BlockEntityProvider) {
 			if (this.blockEntities.containsKey(pos)) {
 				((BlockEntity)this.blockEntities.get(pos)).markRemoved();
 			}
@@ -704,7 +662,7 @@ public class Chunk {
 		this.modified = true;
 	}
 
-	public void method_9141(Entity entity, Box box, List<Entity> list, Predicate<? super Entity> pred) {
+	public void method_9141(@Nullable Entity entity, Box box, List<Entity> list, Predicate<? super Entity> pred) {
 		int i = MathHelper.floor((box.minY - 2.0) / 16.0);
 		int j = MathHelper.floor((box.maxY + 2.0) / 16.0);
 		i = MathHelper.clamp(i, 0, this.entities.length - 1);
@@ -775,48 +733,40 @@ public class Chunk {
 		return false;
 	}
 
-	public void decorateChunk(ChunkProvider provider1, ChunkProvider provider2, int chunkX, int chunkZ) {
-		boolean bl = provider1.chunkExists(chunkX, chunkZ - 1);
-		boolean bl2 = provider1.chunkExists(chunkX + 1, chunkZ);
-		boolean bl3 = provider1.chunkExists(chunkX, chunkZ + 1);
-		boolean bl4 = provider1.chunkExists(chunkX - 1, chunkZ);
-		boolean bl5 = provider1.chunkExists(chunkX - 1, chunkZ - 1);
-		boolean bl6 = provider1.chunkExists(chunkX + 1, chunkZ + 1);
-		boolean bl7 = provider1.chunkExists(chunkX - 1, chunkZ + 1);
-		boolean bl8 = provider1.chunkExists(chunkX + 1, chunkZ - 1);
-		if (bl2 && bl3 && bl6) {
-			if (!this.terrainPopulated) {
-				provider1.decorateChunk(provider2, chunkX, chunkZ);
-			} else {
-				provider1.isChunkModified(provider2, this, chunkX, chunkZ);
-			}
+	public void populateIfMissing(ChunkProvider chunkProvider, ChunkGenerator generator) {
+		Chunk chunk = chunkProvider.getLoadedChunk(this.chunkX, this.chunkZ - 1);
+		Chunk chunk2 = chunkProvider.getLoadedChunk(this.chunkX + 1, this.chunkZ);
+		Chunk chunk3 = chunkProvider.getLoadedChunk(this.chunkX, this.chunkZ + 1);
+		Chunk chunk4 = chunkProvider.getLoadedChunk(this.chunkX - 1, this.chunkZ);
+		if (chunk2 != null && chunk3 != null && chunkProvider.getLoadedChunk(this.chunkX + 1, this.chunkZ + 1) != null) {
+			this.populate(generator);
 		}
 
-		if (bl4 && bl3 && bl7) {
-			Chunk chunk = provider1.getChunk(chunkX - 1, chunkZ);
-			if (!chunk.terrainPopulated) {
-				provider1.decorateChunk(provider2, chunkX - 1, chunkZ);
-			} else {
-				provider1.isChunkModified(provider2, chunk, chunkX - 1, chunkZ);
-			}
+		if (chunk4 != null && chunk3 != null && chunkProvider.getLoadedChunk(this.chunkX - 1, this.chunkZ + 1) != null) {
+			chunk4.populate(generator);
 		}
 
-		if (bl && bl2 && bl8) {
-			Chunk chunk2 = provider1.getChunk(chunkX, chunkZ - 1);
-			if (!chunk2.terrainPopulated) {
-				provider1.decorateChunk(provider2, chunkX, chunkZ - 1);
-			} else {
-				provider1.isChunkModified(provider2, chunk2, chunkX, chunkZ - 1);
-			}
+		if (chunk != null && chunk2 != null && chunkProvider.getLoadedChunk(this.chunkX + 1, this.chunkZ - 1) != null) {
+			chunk.populate(generator);
 		}
 
-		if (bl5 && bl && bl4) {
-			Chunk chunk3 = provider1.getChunk(chunkX - 1, chunkZ - 1);
-			if (!chunk3.terrainPopulated) {
-				provider1.decorateChunk(provider2, chunkX - 1, chunkZ - 1);
-			} else {
-				provider1.isChunkModified(provider2, chunk3, chunkX - 1, chunkZ - 1);
+		if (chunk != null && chunk4 != null) {
+			Chunk chunk5 = chunkProvider.getLoadedChunk(this.chunkX - 1, this.chunkZ - 1);
+			if (chunk5 != null) {
+				chunk5.populate(generator);
 			}
+		}
+	}
+
+	protected void populate(ChunkGenerator chunkGenerator) {
+		if (this.isTerrainPopulated()) {
+			if (chunkGenerator.method_11762(this, this.chunkX, this.chunkZ)) {
+				this.setModified();
+			}
+		} else {
+			this.populate();
+			chunkGenerator.populate(this.chunkX, this.chunkZ);
+			this.setModified();
 		}
 	}
 
@@ -831,8 +781,8 @@ public class Chunk {
 			int m = -1;
 
 			while (blockPos.getY() > 0 && m == -1) {
-				Block block = this.getBlockAtPos(blockPos);
-				Material material = block.getMaterial();
+				BlockState blockState = this.getBlockState(blockPos);
+				Material material = blockState.getMaterial();
 				if (!material.blocksMovement() && !material.isFluid()) {
 					blockPos = blockPos.down();
 				} else {
@@ -858,7 +808,7 @@ public class Chunk {
 
 		while (!this.blocks.isEmpty()) {
 			BlockPos blockPos = (BlockPos)this.blocks.poll();
-			if (this.getBlockEntity(blockPos, Chunk.Status.CHECK) == null && this.getBlockAtPos(blockPos).hasBlockEntity()) {
+			if (this.getBlockEntity(blockPos, Chunk.Status.CHECK) == null && this.getBlockState(blockPos).getBlock().hasBlockEntity()) {
 				BlockEntity blockEntity = this.createBlockEntity(blockPos);
 				this.world.setBlockEntity(blockPos, blockEntity);
 				this.world.onRenderRegionUpdate(blockPos, blockPos);
@@ -868,6 +818,10 @@ public class Chunk {
 
 	public boolean isPopulated() {
 		return this.blockEntitiesPopulated && this.terrainPopulated && this.lightPopulated;
+	}
+
+	public boolean hasPopulatedBlockEntities() {
+		return this.blockEntitiesPopulated;
 	}
 
 	public ChunkPos getChunkPos() {
@@ -885,7 +839,7 @@ public class Chunk {
 
 		for (int i = startY; i <= endY; i += 16) {
 			ChunkSection chunkSection = this.chunkSections[i >> 4];
-			if (chunkSection != null && !chunkSection.isEmpty()) {
+			if (chunkSection != EMPTY && !chunkSection.isEmpty()) {
 				return false;
 			}
 		}
@@ -897,59 +851,40 @@ public class Chunk {
 		if (this.chunkSections.length != chunkSections.length) {
 			LOGGER.warn("Could not set level chunk sections, array length is " + chunkSections.length + " instead of " + this.chunkSections.length);
 		} else {
-			for (int i = 0; i < this.chunkSections.length; i++) {
-				this.chunkSections[i] = chunkSections[i];
-			}
+			System.arraycopy(chunkSections, 0, this.chunkSections, 0, this.chunkSections.length);
 		}
 	}
 
-	public void method_3895(byte[] bs, int i, boolean bl) {
-		int j = 0;
+	public void method_3895(PacketByteBuf packet, int i, boolean bl) {
 		boolean bl2 = !this.world.dimension.hasNoSkylight();
 
-		for (int k = 0; k < this.chunkSections.length; k++) {
-			if ((i & 1 << k) != 0) {
-				if (this.chunkSections[k] == null) {
-					this.chunkSections[k] = new ChunkSection(k << 4, bl2);
+		for (int j = 0; j < this.chunkSections.length; j++) {
+			ChunkSection chunkSection = this.chunkSections[j];
+			if ((i & 1 << j) == 0) {
+				if (bl && chunkSection != EMPTY) {
+					this.chunkSections[j] = EMPTY;
+				}
+			} else {
+				if (chunkSection == EMPTY) {
+					chunkSection = new ChunkSection(j << 4, bl2);
+					this.chunkSections[j] = chunkSection;
 				}
 
-				char[] cs = this.chunkSections[k].getBlockStates();
-
-				for (int l = 0; l < cs.length; l++) {
-					cs[l] = (char)((bs[j + 1] & 255) << 8 | bs[j] & 255);
-					j += 2;
-				}
-			} else if (bl && this.chunkSections[k] != null) {
-				this.chunkSections[k] = null;
-			}
-		}
-
-		for (int m = 0; m < this.chunkSections.length; m++) {
-			if ((i & 1 << m) != 0 && this.chunkSections[m] != null) {
-				ChunkNibbleArray chunkNibbleArray = this.chunkSections[m].getBlockLight();
-				System.arraycopy(bs, j, chunkNibbleArray.getValue(), 0, chunkNibbleArray.getValue().length);
-				j += chunkNibbleArray.getValue().length;
-			}
-		}
-
-		if (bl2) {
-			for (int n = 0; n < this.chunkSections.length; n++) {
-				if ((i & 1 << n) != 0 && this.chunkSections[n] != null) {
-					ChunkNibbleArray chunkNibbleArray2 = this.chunkSections[n].getSkyLight();
-					System.arraycopy(bs, j, chunkNibbleArray2.getValue(), 0, chunkNibbleArray2.getValue().length);
-					j += chunkNibbleArray2.getValue().length;
+				chunkSection.getBlockData().read(packet);
+				packet.readBytes(chunkSection.getBlockLight().getValue());
+				if (bl2) {
+					packet.readBytes(chunkSection.getSkyLight().getValue());
 				}
 			}
 		}
 
 		if (bl) {
-			System.arraycopy(bs, j, this.biomeArray, 0, this.biomeArray.length);
-			j += this.biomeArray.length;
+			packet.readBytes(this.biomeArray);
 		}
 
-		for (int o = 0; o < this.chunkSections.length; o++) {
-			if (this.chunkSections[o] != null && (i & 1 << o) != 0) {
-				this.chunkSections[o].calculateCounts();
+		for (int k = 0; k < this.chunkSections.length; k++) {
+			if (this.chunkSections[k] != EMPTY && (i & 1 << k) != 0) {
+				this.chunkSections[k].calculateCounts();
 			}
 		}
 
@@ -962,18 +897,18 @@ public class Chunk {
 		}
 	}
 
-	public Biome getBiomeAt(BlockPos pos, LayeredBiomeSource biomeSource) {
+	public Biome method_11771(BlockPos pos, SingletonBiomeSource biomeSource) {
 		int i = pos.getX() & 15;
 		int j = pos.getZ() & 15;
 		int k = this.biomeArray[j << 4 | i] & 255;
 		if (k == 255) {
-			Biome biome = biomeSource.getBiomeAt(pos, Biome.PLAINS);
-			k = biome.id;
+			Biome biome = biomeSource.method_11536(pos, Biomes.PLAINS);
+			k = Biome.getBiomeIndex(biome);
 			this.biomeArray[j << 4 | i] = (byte)(k & 0xFF);
 		}
 
 		Biome biome2 = Biome.byId(k);
-		return biome2 == null ? Biome.PLAINS : biome2;
+		return biome2 == null ? Biomes.PLAINS : biome2;
 	}
 
 	public byte[] getBiomeArray() {
@@ -995,30 +930,32 @@ public class Chunk {
 	}
 
 	public void method_3923() {
-		BlockPos blockPos = new BlockPos(this.chunkX << 4, 0, this.chunkZ << 4);
+		if (this.field_4743 < 4096) {
+			BlockPos blockPos = new BlockPos(this.chunkX << 4, 0, this.chunkZ << 4);
 
-		for (int i = 0; i < 8; i++) {
-			if (this.field_4743 >= 4096) {
-				return;
-			}
+			for (int i = 0; i < 8; i++) {
+				if (this.field_4743 >= 4096) {
+					return;
+				}
 
-			int j = this.field_4743 % 16;
-			int k = this.field_4743 / 16 % 16;
-			int l = this.field_4743 / 256;
-			this.field_4743++;
+				int j = this.field_4743 % 16;
+				int k = this.field_4743 / 16 % 16;
+				int l = this.field_4743 / 256;
+				this.field_4743++;
 
-			for (int m = 0; m < 16; m++) {
-				BlockPos blockPos2 = blockPos.add(k, (j << 4) + m, l);
-				boolean bl = m == 0 || m == 15 || k == 0 || k == 15 || l == 0 || l == 15;
-				if (this.chunkSections[j] == null && bl || this.chunkSections[j] != null && this.chunkSections[j].getBlock(k, m, l).getMaterial() == Material.AIR) {
-					for (Direction direction : Direction.values()) {
-						BlockPos blockPos3 = blockPos2.offset(direction);
-						if (this.world.getBlockState(blockPos3).getBlock().getLightLevel() > 0) {
-							this.world.method_8568(blockPos3);
+				for (int m = 0; m < 16; m++) {
+					BlockPos blockPos2 = blockPos.add(k, (j << 4) + m, l);
+					boolean bl = m == 0 || m == 15 || k == 0 || k == 15 || l == 0 || l == 15;
+					if (this.chunkSections[j] == EMPTY && bl || this.chunkSections[j] != EMPTY && this.chunkSections[j].getBlockState(k, m, l).getMaterial() == Material.AIR) {
+						for (Direction direction : Direction.values()) {
+							BlockPos blockPos3 = blockPos2.offset(direction);
+							if (this.world.getBlockState(blockPos3).getLuminance() > 0) {
+								this.world.method_8568(blockPos3);
+							}
 						}
-					}
 
-					this.world.method_8568(blockPos2);
+						this.world.method_8568(blockPos2);
+					}
 				}
 			}
 		}
@@ -1106,7 +1043,7 @@ public class Chunk {
 
 		for (int l = mutable.getY(); l > 0; l--) {
 			mutable.setPosition(mutable.getX(), l, mutable.getZ());
-			if (this.getBlockAtPos(mutable).getLightLevel() > 0) {
+			if (this.getBlockState(mutable).getLuminance() > 0) {
 				this.world.method_8568(mutable);
 			}
 		}

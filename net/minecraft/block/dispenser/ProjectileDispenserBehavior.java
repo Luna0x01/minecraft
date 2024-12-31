@@ -15,7 +15,7 @@ public abstract class ProjectileDispenserBehavior extends ItemDispenserBehavior 
 		World world = pointer.getWorld();
 		Position position = DispenserBlock.getPosition(pointer);
 		Direction direction = DispenserBlock.getDirection(pointer.getBlockStateData());
-		Projectile projectile = this.getProjectile(world, position);
+		Projectile projectile = this.createProjectile(world, position, stack);
 		projectile.setVelocity(
 			(double)direction.getOffsetX(), (double)((float)direction.getOffsetY() + 0.1F), (double)direction.getOffsetZ(), this.getForce(), this.getVariation()
 		);
@@ -29,7 +29,7 @@ public abstract class ProjectileDispenserBehavior extends ItemDispenserBehavior 
 		pointer.getWorld().syncGlobalEvent(1002, pointer.getBlockPos(), 0);
 	}
 
-	protected abstract Projectile getProjectile(World world, Position pos);
+	protected abstract Projectile createProjectile(World world, Position pos, ItemStack stack);
 
 	protected float getVariation() {
 		return 6.0F;

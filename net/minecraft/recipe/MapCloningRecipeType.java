@@ -1,5 +1,6 @@
 package net.minecraft.recipe;
 
+import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -33,6 +34,7 @@ public class MapCloningRecipeType implements RecipeType {
 		return itemStack != null && i > 0;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		int i = 0;
@@ -74,6 +76,7 @@ public class MapCloningRecipeType implements RecipeType {
 		return 9;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return null;

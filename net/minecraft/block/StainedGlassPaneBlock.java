@@ -9,6 +9,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -54,6 +56,32 @@ public class StainedGlassPaneBlock extends PaneBlock {
 	@Override
 	public int getData(BlockState state) {
 		return ((DyeColor)state.get(COLOR)).getId();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				return state.with(NORTH, state.get(SOUTH)).with(EAST, state.get(WEST)).with(SOUTH, state.get(NORTH)).with(WEST, state.get(EAST));
+			case COUNTERCLOCKWISE_90:
+				return state.with(NORTH, state.get(EAST)).with(EAST, state.get(SOUTH)).with(SOUTH, state.get(WEST)).with(WEST, state.get(NORTH));
+			case CLOCKWISE_90:
+				return state.with(NORTH, state.get(WEST)).with(EAST, state.get(NORTH)).with(SOUTH, state.get(EAST)).with(WEST, state.get(SOUTH));
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		switch (mirror) {
+			case LEFT_RIGHT:
+				return state.with(NORTH, state.get(SOUTH)).with(SOUTH, state.get(NORTH));
+			case FRONT_BACK:
+				return state.with(EAST, state.get(WEST)).with(WEST, state.get(EAST));
+			default:
+				return super.withMirror(state, mirror);
+		}
 	}
 
 	@Override

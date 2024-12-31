@@ -31,7 +31,7 @@ public class DirectConnectScreen extends Screen {
 		this.serverField.setMaxLength(128);
 		this.serverField.setFocused(true);
 		this.serverField.setText(this.client.options.lastServer);
-		((ButtonWidget)this.buttons.get(0)).active = this.serverField.getText().length() > 0 && this.serverField.getText().split(":").length > 0;
+		((ButtonWidget)this.buttons.get(0)).active = !this.serverField.getText().isEmpty() && this.serverField.getText().split(":").length > 0;
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public class DirectConnectScreen extends Screen {
 	@Override
 	protected void keyPressed(char id, int code) {
 		if (this.serverField.keyPressed(id, code)) {
-			((ButtonWidget)this.buttons.get(0)).active = this.serverField.getText().length() > 0 && this.serverField.getText().split(":").length > 0;
+			((ButtonWidget)this.buttons.get(0)).active = !this.serverField.getText().isEmpty() && this.serverField.getText().split(":").length > 0;
 		} else if (code == 28 || code == 156) {
 			this.buttonClicked((ButtonWidget)this.buttons.get(0));
 		}

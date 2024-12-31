@@ -44,8 +44,8 @@ public class SpruceTreeFeature extends FoliageFeature {
 				for (int o = blockPos.getX() - n; o <= blockPos.getX() + n && bl; o++) {
 					for (int p = blockPos.getZ() - n; p <= blockPos.getZ() + n && bl; p++) {
 						if (m >= 0 && m < 256) {
-							Block block = world.getBlockState(mutable.setPosition(o, m, p)).getBlock();
-							if (block.getMaterial() != Material.AIR && block.getMaterial() != Material.FOLIAGE) {
+							Material material = world.getBlockState(mutable.setPosition(o, m, p)).getMaterial();
+							if (material != Material.AIR && material != Material.FOLIAGE) {
 								bl = false;
 							}
 						} else {
@@ -58,8 +58,8 @@ public class SpruceTreeFeature extends FoliageFeature {
 			if (!bl) {
 				return false;
 			} else {
-				Block block2 = world.getBlockState(blockPos.down()).getBlock();
-				if ((block2 == Blocks.GRASS || block2 == Blocks.DIRT || block2 == Blocks.FARMLAND) && blockPos.getY() < 256 - i - 1) {
+				Block block = world.getBlockState(blockPos.down()).getBlock();
+				if ((block == Blocks.GRASS || block == Blocks.DIRT || block == Blocks.FARMLAND) && blockPos.getY() < 256 - i - 1) {
 					this.setDirt(world, blockPos.down());
 					int q = random.nextInt(2);
 					int r = 1;
@@ -75,7 +75,7 @@ public class SpruceTreeFeature extends FoliageFeature {
 								int y = x - blockPos.getZ();
 								if (Math.abs(w) != q || Math.abs(y) != q || q <= 0) {
 									BlockPos blockPos2 = new BlockPos(v, u, x);
-									if (!world.getBlockState(blockPos2).getBlock().isFullBlock()) {
+									if (!world.getBlockState(blockPos2).isFullBlock()) {
 										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, LEAVES);
 									}
 								}
@@ -96,8 +96,8 @@ public class SpruceTreeFeature extends FoliageFeature {
 					int z = random.nextInt(3);
 
 					for (int aa = 0; aa < i - z; aa++) {
-						Block block3 = world.getBlockState(blockPos.up(aa)).getBlock();
-						if (block3.getMaterial() == Material.AIR || block3.getMaterial() == Material.FOLIAGE) {
+						Material material2 = world.getBlockState(blockPos.up(aa)).getMaterial();
+						if (material2 == Material.AIR || material2 == Material.FOLIAGE) {
 							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(aa), LOG);
 						}
 					}

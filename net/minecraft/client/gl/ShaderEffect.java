@@ -8,9 +8,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.texture.Texture;
@@ -20,7 +20,6 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import org.apache.commons.io.IOUtils;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Matrix4f;
 
 public class ShaderEffect {
@@ -50,12 +49,11 @@ public class ShaderEffect {
 
 	public void parseEffect(TextureManager textureManager, Identifier identifier) throws IOException, JsonSyntaxException {
 		JsonParser jsonParser = new JsonParser();
-		InputStream inputStream = null;
+		Resource resource = null;
 
 		try {
-			Resource resource = this.resourceManager.getResource(identifier);
-			inputStream = resource.getInputStream();
-			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(inputStream, Charsets.UTF_8)).getAsJsonObject();
+			resource = this.resourceManager.getResource(identifier);
+			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), Charsets.UTF_8)).getAsJsonObject();
 			if (JsonHelper.hasArray(jsonObject, "targets")) {
 				JsonArray jsonArray = jsonObject.getAsJsonArray("targets");
 				int i = 0;
@@ -63,8 +61,8 @@ public class ShaderEffect {
 				for (JsonElement jsonElement : jsonArray) {
 					try {
 						this.parseTarget(jsonElement);
-					} catch (Exception var19) {
-						ShaderParseException shaderParseException = ShaderParseException.wrap(var19);
+					} catch (Exception var18) {
+						ShaderParseException shaderParseException = ShaderParseException.wrap(var18);
 						shaderParseException.addFaultyElement("targets[" + i + "]");
 						throw shaderParseException;
 					}
@@ -80,8 +78,8 @@ public class ShaderEffect {
 				for (JsonElement jsonElement2 : jsonArray2) {
 					try {
 						this.parsePass(textureManager, jsonElement2);
-					} catch (Exception var18) {
-						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var18);
+					} catch (Exception var17) {
+						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var17);
 						shaderParseException2.addFaultyElement("passes[" + j + "]");
 						throw shaderParseException2;
 					}
@@ -89,12 +87,12 @@ public class ShaderEffect {
 					j++;
 				}
 			}
-		} catch (Exception var20) {
-			ShaderParseException shaderParseException3 = ShaderParseException.wrap(var20);
+		} catch (Exception var19) {
+			ShaderParseException shaderParseException3 = ShaderParseException.wrap(var19);
 			shaderParseException3.addFaultyFile(identifier.getPath());
 			throw shaderParseException3;
 		} finally {
-			IOUtils.closeQuietly(inputStream);
+			IOUtils.closeQuietly(resource);
 		}
 	}
 
@@ -139,11 +137,14 @@ public class ShaderEffect {
 						Framebuffer framebuffer3 = this.getTarget(string5);
 						if (framebuffer3 == null) {
 							Identifier identifier = new Identifier("textures/effect/" + string5 + ".png");
+							Resource resource = null;
 
 							try {
-								this.resourceManager.getResource(identifier);
-							} catch (FileNotFoundException var24) {
+								resource = this.resourceManager.getResource(identifier);
+							} catch (FileNotFoundException var29) {
 								throw new ShaderParseException("Render target or texture '" + string5 + "' does not exist");
+							} finally {
+								IOUtils.closeQuietly(resource);
 							}
 
 							textureManager.bindTexture(identifier);
@@ -152,19 +153,19 @@ public class ShaderEffect {
 							int k = JsonHelper.getInt(jsonObject2, "height");
 							boolean bl = JsonHelper.getBoolean(jsonObject2, "bilinear");
 							if (bl) {
-								GL11.glTexParameteri(3553, 10241, 9729);
-								GL11.glTexParameteri(3553, 10240, 9729);
+								GlStateManager.method_12294(3553, 10241, 9729);
+								GlStateManager.method_12294(3553, 10240, 9729);
 							} else {
-								GL11.glTexParameteri(3553, 10241, 9728);
-								GL11.glTexParameteri(3553, 10240, 9728);
+								GlStateManager.method_12294(3553, 10241, 9728);
+								GlStateManager.method_12294(3553, 10240, 9728);
 							}
 
 							postProcessShader.addAuxTarget(string4, texture.getGlId(), j, k);
 						} else {
 							postProcessShader.addAuxTarget(string4, framebuffer3, framebuffer3.textureWidth, framebuffer3.textureHeight);
 						}
-					} catch (Exception var25) {
-						ShaderParseException shaderParseException = ShaderParseException.wrap(var25);
+					} catch (Exception var31) {
+						ShaderParseException shaderParseException = ShaderParseException.wrap(var31);
 						shaderParseException.addFaultyElement("auxtargets[" + i + "]");
 						throw shaderParseException;
 					}
@@ -180,8 +181,8 @@ public class ShaderEffect {
 				for (JsonElement jsonElement2 : jsonArray2) {
 					try {
 						this.parseUniform(jsonElement2);
-					} catch (Exception var23) {
-						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var23);
+					} catch (Exception var28) {
+						ShaderParseException shaderParseException2 = ShaderParseException.wrap(var28);
 						shaderParseException2.addFaultyElement("uniforms[" + l + "]");
 						throw shaderParseException2;
 					}

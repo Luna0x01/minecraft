@@ -1,10 +1,12 @@
 package net.minecraft.command;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -16,23 +18,23 @@ public class CommandStats {
 	private String[] names = BLANK;
 	private String[] objectives = BLANK;
 
-	public void execute(CommandSource source, CommandStats.Type type, int value) {
+	public void method_10792(MinecraftServer minecraftServer, CommandSource commandSource, CommandStats.Type type, int i) {
 		String string = this.names[type.getIndex()];
 		if (string != null) {
-			CommandSource commandSource = new CommandSource() {
+			CommandSource commandSource2 = new CommandSource() {
 				@Override
 				public String getTranslationKey() {
-					return source.getTranslationKey();
+					return commandSource.getTranslationKey();
 				}
 
 				@Override
 				public Text getName() {
-					return source.getName();
+					return commandSource.getName();
 				}
 
 				@Override
 				public void sendMessage(Text text) {
-					source.sendMessage(text);
+					commandSource.sendMessage(text);
 				}
 
 				@Override
@@ -42,50 +44,55 @@ public class CommandStats {
 
 				@Override
 				public BlockPos getBlockPos() {
-					return source.getBlockPos();
+					return commandSource.getBlockPos();
 				}
 
 				@Override
 				public Vec3d getPos() {
-					return source.getPos();
+					return commandSource.getPos();
 				}
 
 				@Override
 				public World getWorld() {
-					return source.getWorld();
+					return commandSource.getWorld();
 				}
 
 				@Override
 				public Entity getEntity() {
-					return source.getEntity();
+					return commandSource.getEntity();
 				}
 
 				@Override
 				public boolean sendCommandFeedback() {
-					return source.sendCommandFeedback();
+					return commandSource.sendCommandFeedback();
 				}
 
 				@Override
 				public void setStat(CommandStats.Type statsType, int value) {
-					source.setStat(statsType, value);
+					commandSource.setStat(statsType, value);
+				}
+
+				@Override
+				public MinecraftServer getMinecraftServer() {
+					return commandSource.getMinecraftServer();
 				}
 			};
 
 			String string2;
 			try {
-				string2 = AbstractCommand.method_10714(commandSource, string);
-			} catch (EntityNotFoundException var11) {
+				string2 = AbstractCommand.method_12706(minecraftServer, commandSource2, string);
+			} catch (EntityNotFoundException var12) {
 				return;
 			}
 
-			String string4 = this.objectives[type.getIndex()];
-			if (string4 != null) {
-				Scoreboard scoreboard = source.getWorld().getScoreboard();
-				ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(string4);
+			String string3 = this.objectives[type.getIndex()];
+			if (string3 != null) {
+				Scoreboard scoreboard = commandSource.getWorld().getScoreboard();
+				ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(string3);
 				if (scoreboardObjective != null) {
 					if (scoreboard.playerHasObjective(string2, scoreboardObjective)) {
 						ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(string2, scoreboardObjective);
-						scoreboardPlayerScore.setScore(value);
+						scoreboardPlayerScore.setScore(i);
 					}
 				}
 			}
@@ -125,8 +132,8 @@ public class CommandStats {
 		}
 	}
 
-	public static void method_10795(CommandStats stats, CommandStats.Type type, String name, String objective) {
-		if (name != null && name.length() != 0 && objective != null && objective.length() != 0) {
+	public static void method_10795(CommandStats stats, CommandStats.Type type, @Nullable String name, @Nullable String objective) {
+		if (name != null && !name.isEmpty() && objective != null && !objective.isEmpty()) {
 			if (stats.names == BLANK || stats.objectives == BLANK) {
 				stats.names = new String[SIZE];
 				stats.objectives = new String[SIZE];
@@ -199,6 +206,7 @@ public class CommandStats {
 			return strings;
 		}
 
+		@Nullable
 		public static CommandStats.Type getByName(String name) {
 			for (CommandStats.Type type : values()) {
 				if (type.getName().equals(name)) {

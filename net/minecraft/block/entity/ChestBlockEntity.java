@@ -1,7 +1,10 @@
 package net.minecraft.block.entity;
 
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.block.Block;
 import net.minecraft.block.ChestBlock;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.DoubleInventory;
@@ -11,12 +14,13 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.ChestScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 
-public class ChestBlockEntity extends LockableContainerBlockEntity implements Tickable, Inventory {
+public class ChestBlockEntity extends class_2737 implements Tickable, Inventory {
 	private ItemStack[] inventoryStacks = new ItemStack[27];
 	public boolean neighborChestsChecked;
 	public ChestBlockEntity neighborChestNorth;
@@ -27,15 +31,14 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 	public float animationAnglePrev;
 	public int viewerCount;
 	private int ticksOpen;
-	private int type;
+	private ChestBlock.Type field_12843;
 	private String translationKey;
 
 	public ChestBlockEntity() {
-		this.type = -1;
 	}
 
-	public ChestBlockEntity(int i) {
-		this.type = i;
+	public ChestBlockEntity(ChestBlock.Type type) {
+		this.field_12843 = type;
 	}
 
 	@Override
@@ -43,46 +46,35 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 		return 27;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
+		this.method_11662(null);
 		return this.inventoryStacks[slot];
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.inventoryStacks[slot] != null) {
-			if (this.inventoryStacks[slot].count <= amount) {
-				ItemStack itemStack = this.inventoryStacks[slot];
-				this.inventoryStacks[slot] = null;
-				this.markDirty();
-				return itemStack;
-			} else {
-				ItemStack itemStack2 = this.inventoryStacks[slot].split(amount);
-				if (this.inventoryStacks[slot].count == 0) {
-					this.inventoryStacks[slot] = null;
-				}
-
-				this.markDirty();
-				return itemStack2;
-			}
-		} else {
-			return null;
+		this.method_11662(null);
+		ItemStack itemStack = class_2960.method_12933(this.inventoryStacks, slot, amount);
+		if (itemStack != null) {
+			this.markDirty();
 		}
+
+		return itemStack;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.inventoryStacks[slot] != null) {
-			ItemStack itemStack = this.inventoryStacks[slot];
-			this.inventoryStacks[slot] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		this.method_11662(null);
+		return class_2960.method_12932(this.inventoryStacks, slot);
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
+		this.method_11662(null);
 		this.inventoryStacks[slot] = stack;
 		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
 			stack.count = this.getInvMaxStackAmount();
@@ -98,7 +90,7 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 
 	@Override
 	public boolean hasCustomName() {
-		return this.translationKey != null && this.translationKey.length() > 0;
+		return this.translationKey != null && !this.translationKey.isEmpty();
 	}
 
 	public void setTranslationKeyName(String name) {
@@ -108,39 +100,47 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
-		NbtList nbtList = nbt.getList("Items", 10);
 		this.inventoryStacks = new ItemStack[this.getInvSize()];
 		if (nbt.contains("CustomName", 8)) {
 			this.translationKey = nbt.getString("CustomName");
 		}
 
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			int j = nbtCompound.getByte("Slot") & 255;
-			if (j >= 0 && j < this.inventoryStacks.length) {
-				this.inventoryStacks[j] = ItemStack.fromNbt(nbtCompound);
+		if (!this.method_11661(nbt)) {
+			NbtList nbtList = nbt.getList("Items", 10);
+
+			for (int i = 0; i < nbtList.size(); i++) {
+				NbtCompound nbtCompound = nbtList.getCompound(i);
+				int j = nbtCompound.getByte("Slot") & 255;
+				if (j >= 0 && j < this.inventoryStacks.length) {
+					this.inventoryStacks[j] = ItemStack.fromNbt(nbtCompound);
+				}
 			}
 		}
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
-		NbtList nbtList = new NbtList();
+		if (!this.method_11663(nbt)) {
+			NbtList nbtList = new NbtList();
 
-		for (int i = 0; i < this.inventoryStacks.length; i++) {
-			if (this.inventoryStacks[i] != null) {
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putByte("Slot", (byte)i);
-				this.inventoryStacks[i].toNbt(nbtCompound);
-				nbtList.add(nbtCompound);
+			for (int i = 0; i < this.inventoryStacks.length; i++) {
+				if (this.inventoryStacks[i] != null) {
+					NbtCompound nbtCompound = new NbtCompound();
+					nbtCompound.putByte("Slot", (byte)i);
+					this.inventoryStacks[i].toNbt(nbtCompound);
+					nbtList.add(nbtCompound);
+				}
 			}
+
+			nbt.put("Items", nbtList);
 		}
 
-		nbt.put("Items", nbtList);
 		if (this.hasCustomName()) {
 			nbt.putString("CustomName", this.translationKey);
 		}
+
+		return nbt;
 	}
 
 	@Override
@@ -199,6 +199,7 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 		}
 	}
 
+	@Nullable
 	protected ChestBlockEntity getNeighborChest(Direction dir) {
 		BlockPos blockPos = this.pos.offset(dir);
 		if (this.isChest(blockPos)) {
@@ -218,7 +219,7 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 			return false;
 		} else {
 			Block block = this.world.getBlockState(pos).getBlock();
-			return block instanceof ChestBlock && ((ChestBlock)block).type == this.getChestType();
+			return block instanceof ChestBlock && ((ChestBlock)block).field_12621 == this.method_4806();
 		}
 	}
 
@@ -267,7 +268,7 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 				d += 0.5;
 			}
 
-			this.world.playSound(d, (double)j + 0.5, e, "random.chestopen", 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+			this.world.playSound(null, d, (double)j + 0.5, e, Sounds.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 		}
 
 		if (this.viewerCount == 0 && this.animationAngle > 0.0F || this.viewerCount > 0 && this.animationAngle < 1.0F) {
@@ -294,7 +295,7 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 					m += 0.5;
 				}
 
-				this.world.playSound(m, (double)j + 0.5, n, "random.chestclosed", 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+				this.world.playSound(null, m, (double)j + 0.5, n, Sounds.BLOCK_CHEST_CLOSE, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 			}
 
 			if (this.animationAngle < 0.0F) {
@@ -349,16 +350,16 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 		this.checkNeighborChests();
 	}
 
-	public int getChestType() {
-		if (this.type == -1) {
+	public ChestBlock.Type method_4806() {
+		if (this.field_12843 == null) {
 			if (this.world == null || !(this.getBlock() instanceof ChestBlock)) {
-				return 0;
+				return ChestBlock.Type.BASIC;
 			}
 
-			this.type = ((ChestBlock)this.getBlock()).type;
+			this.field_12843 = ((ChestBlock)this.getBlock()).field_12621;
 		}
 
-		return this.type;
+		return this.field_12843;
 	}
 
 	@Override
@@ -368,6 +369,7 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 
 	@Override
 	public ScreenHandler createScreenHandler(PlayerInventory inventory, PlayerEntity player) {
+		this.method_11662(player);
 		return new ChestScreenHandler(inventory, this, player);
 	}
 
@@ -387,6 +389,8 @@ public class ChestBlockEntity extends LockableContainerBlockEntity implements Ti
 
 	@Override
 	public void clear() {
+		this.method_11662(null);
+
 		for (int i = 0; i < this.inventoryStacks.length; i++) {
 			this.inventoryStacks[i] = null;
 		}

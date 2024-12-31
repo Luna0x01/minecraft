@@ -9,6 +9,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkBlockStateStorage;
 
 public class RavineCarver extends Carver {
+	protected static final BlockState field_12953 = Blocks.FLOWING_LAVA.getDefaultState();
+	protected static final BlockState field_12954 = Blocks.AIR.getDefaultState();
 	private float[] heightToHorizontalStretchFactor = new float[1024];
 
 	protected void carveRavine(
@@ -46,14 +48,14 @@ public class RavineCarver extends Carver {
 
 		for (int j = 0; j < 256; j++) {
 			if (j == 0 || random.nextInt(3) == 0) {
-				h = 1.0F + random.nextFloat() * random.nextFloat() * 1.0F;
+				h = 1.0F + random.nextFloat() * random.nextFloat();
 			}
 
 			this.heightToHorizontalStretchFactor[j] = h * h;
 		}
 
 		for (; branch < branchCount; branch++) {
-			double k = 1.5 + (double)(MathHelper.sin((float)branch * (float) Math.PI / (float)branchCount) * baseWidth * 1.0F);
+			double k = 1.5 + (double)(MathHelper.sin((float)branch * (float) Math.PI / (float)branchCount) * baseWidth);
 			double l = k * heightWidthRatio;
 			k *= (double)random.nextFloat() * 0.25 + 0.75;
 			l *= (double)random.nextFloat() * 0.25 + 0.75;
@@ -148,9 +150,9 @@ public class RavineCarver extends Carver {
 
 											if (blockState2.getBlock() == Blocks.STONE || blockState2.getBlock() == Blocks.DIRT || blockState2.getBlock() == Blocks.GRASS) {
 												if (ai - 1 < 10) {
-													chunkStorage.set(ae, ai, ag, Blocks.FLOWING_LAVA.getDefaultState());
+													chunkStorage.set(ae, ai, ag, field_12953);
 												} else {
-													chunkStorage.set(ae, ai, ag, Blocks.AIR.getDefaultState());
+													chunkStorage.set(ae, ai, ag, field_12954);
 													if (bl3 && chunkStorage.get(ae, ai - 1, ag).getBlock() == Blocks.DIRT) {
 														mutable.setPosition(ae + mainChunkX * 16, 0, ag + mainChunkZ * 16);
 														chunkStorage.set(ae, ai - 1, ag, this.world.getBiome(mutable).topBlock);
@@ -181,7 +183,7 @@ public class RavineCarver extends Carver {
 			int i = 1;
 
 			for (int j = 0; j < i; j++) {
-				float g = this.random.nextFloat() * (float) Math.PI * 2.0F;
+				float g = this.random.nextFloat() * (float) (Math.PI * 2);
 				float h = (this.random.nextFloat() - 0.5F) * 2.0F / 8.0F;
 				float k = (this.random.nextFloat() * 2.0F + this.random.nextFloat()) * 2.0F;
 				this.carveRavine(this.random.nextLong(), mainChunkX, mainChunkZ, chunkStorage, d, e, f, k, g, h, 0, 0, 3.0);

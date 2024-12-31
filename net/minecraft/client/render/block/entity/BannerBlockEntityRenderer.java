@@ -1,24 +1,16 @@
 package net.minecraft.client.render.block.entity;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.class_2871;
 import net.minecraft.client.render.entity.model.BannerBlockEntityModel;
-import net.minecraft.client.texture.ColorMaskTexture;
-import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEntity> {
-	private static final Map<String, BannerBlockEntityRenderer.TextureIdHolder> textures = Maps.newHashMap();
-	private static final Identifier BASE_TEXTURE = new Identifier("textures/entity/banner_base.png");
 	private BannerBlockEntityModel model = new BannerBlockEntityModel();
 
 	public void render(BannerBlockEntity bannerBlockEntity, double d, double e, double f, float g, int i) {
@@ -70,55 +62,8 @@ public class BannerBlockEntityRenderer extends BlockEntityRenderer<BannerBlockEn
 		GlStateManager.popMatrix();
 	}
 
+	@Nullable
 	private Identifier getTexture(BannerBlockEntity blockEntity) {
-		String string = blockEntity.getTextureIdentifier();
-		if (string.isEmpty()) {
-			return null;
-		} else {
-			BannerBlockEntityRenderer.TextureIdHolder textureIdHolder = (BannerBlockEntityRenderer.TextureIdHolder)textures.get(string);
-			if (textureIdHolder == null) {
-				if (textures.size() >= 256) {
-					long l = System.currentTimeMillis();
-					Iterator<String> iterator = textures.keySet().iterator();
-
-					while (iterator.hasNext()) {
-						String string2 = (String)iterator.next();
-						BannerBlockEntityRenderer.TextureIdHolder textureIdHolder2 = (BannerBlockEntityRenderer.TextureIdHolder)textures.get(string2);
-						if (l - textureIdHolder2.field_11012 > 60000L) {
-							MinecraftClient.getInstance().getTextureManager().close(textureIdHolder2.texture);
-							iterator.remove();
-						}
-					}
-
-					if (textures.size() >= 256) {
-						return null;
-					}
-				}
-
-				List<BannerBlockEntity.BannerPattern> list = blockEntity.getPatterns();
-				List<DyeColor> list2 = blockEntity.getColors();
-				List<String> list3 = Lists.newArrayList();
-
-				for (BannerBlockEntity.BannerPattern bannerPattern : list) {
-					list3.add("textures/entity/banner/" + bannerPattern.getName() + ".png");
-				}
-
-				textureIdHolder = new BannerBlockEntityRenderer.TextureIdHolder();
-				textureIdHolder.texture = new Identifier(string);
-				MinecraftClient.getInstance().getTextureManager().loadTexture(textureIdHolder.texture, new ColorMaskTexture(BASE_TEXTURE, list3, list2));
-				textures.put(string, textureIdHolder);
-			}
-
-			textureIdHolder.field_11012 = System.currentTimeMillis();
-			return textureIdHolder.texture;
-		}
-	}
-
-	static class TextureIdHolder {
-		public long field_11012;
-		public Identifier texture;
-
-		private TextureIdHolder() {
-		}
+		return class_2871.field_13540.method_12344(blockEntity.getTextureIdentifier(), blockEntity.getPatterns(), blockEntity.getColors());
 	}
 }

@@ -2,6 +2,8 @@ package net.minecraft.inventory;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.LiteralText;
@@ -38,33 +40,24 @@ public class SimpleInventory implements Inventory {
 		this.listeners.remove(listener);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
 		return slot >= 0 && slot < this.inventory.length ? this.inventory[slot] : null;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.inventory[slot] != null) {
-			if (this.inventory[slot].count <= amount) {
-				ItemStack itemStack = this.inventory[slot];
-				this.inventory[slot] = null;
-				this.markDirty();
-				return itemStack;
-			} else {
-				ItemStack itemStack2 = this.inventory[slot].split(amount);
-				if (this.inventory[slot].count == 0) {
-					this.inventory[slot] = null;
-				}
-
-				this.markDirty();
-				return itemStack2;
-			}
-		} else {
-			return null;
+		ItemStack itemStack = class_2960.method_12933(this.inventory, slot, amount);
+		if (itemStack != null) {
+			this.markDirty();
 		}
+
+		return itemStack;
 	}
 
+	@Nullable
 	public ItemStack fillInventoryWith(ItemStack stack) {
 		ItemStack itemStack = stack.copy();
 
@@ -97,6 +90,7 @@ public class SimpleInventory implements Inventory {
 		return itemStack;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
 		if (this.inventory[slot] != null) {
@@ -109,7 +103,7 @@ public class SimpleInventory implements Inventory {
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
 		this.inventory[slot] = stack;
 		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
 			stack.count = this.getInvMaxStackAmount();

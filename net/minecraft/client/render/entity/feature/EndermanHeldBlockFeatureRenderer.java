@@ -3,7 +3,6 @@ package net.minecraft.client.render.entity.feature;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.entity.EndermanEntityRenderer;
@@ -19,7 +18,7 @@ public class EndermanHeldBlockFeatureRenderer implements FeatureRenderer<Enderma
 
 	public void render(EndermanEntity endermanEntity, float f, float g, float h, float i, float j, float k, float l) {
 		BlockState blockState = endermanEntity.getCarriedBlock();
-		if (blockState.getBlock().getMaterial() != Material.AIR) {
+		if (blockState != null) {
 			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 			GlStateManager.enableRescaleNormal();
 			GlStateManager.pushMatrix();
@@ -32,7 +31,7 @@ public class EndermanHeldBlockFeatureRenderer implements FeatureRenderer<Enderma
 			int n = endermanEntity.getLightmapCoordinates(h);
 			int o = n % 65536;
 			int p = n / 65536;
-			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)o / 1.0F, (float)p / 1.0F);
+			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)o, (float)p);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			this.endermanRenderer.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			blockRenderManager.renderBlockEntity(blockState, 1.0F);

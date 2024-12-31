@@ -28,10 +28,10 @@ public class SmallFireballEntity extends ExplosiveProjectileEntity {
 	protected void onEntityHit(BlockHitResult hitResult) {
 		if (!this.world.isClient) {
 			if (hitResult.entity != null) {
-				boolean bl = hitResult.entity.damage(DamageSource.fire(this, this.target), 5.0F);
-				if (bl) {
-					this.dealDamage(this.target, hitResult.entity);
-					if (!hitResult.entity.isFireImmune()) {
+				if (!hitResult.entity.isFireImmune()) {
+					boolean bl = hitResult.entity.damage(DamageSource.fire(this, this.target), 5.0F);
+					if (bl) {
+						this.dealDamage(this.target, hitResult.entity);
 						hitResult.entity.setOnFireFor(5);
 					}
 				}

@@ -20,7 +20,7 @@ public class BiomeColors {
 	private static final BiomeColors.ColorProvider WATER_COLOR = new BiomeColors.ColorProvider() {
 		@Override
 		public int getColorAtPos(Biome biome, BlockPos pos) {
-			return biome.waterColor;
+			return biome.getWaterColor();
 		}
 	};
 

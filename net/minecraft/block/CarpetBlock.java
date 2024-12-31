@@ -10,20 +10,25 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class CarpetBlock extends Block {
 	public static final EnumProperty<DyeColor> COLOR = EnumProperty.of("color", DyeColor.class);
+	protected static final Box field_12837 = new Box(0.0, 0.0, 0.0, 1.0, 0.0625, 1.0);
 
 	protected CarpetBlock() {
 		super(Material.CARPET);
 		this.setDefaultState(this.stateManager.getDefaultState().with(COLOR, DyeColor.WHITE));
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.0625F, 1.0F);
 		this.setTickRandomly(true);
 		this.setItemGroup(ItemGroup.DECORATIONS);
-		this.setBoundingBoxWithData(0);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12837;
 	}
 
 	@Override
@@ -32,29 +37,13 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
-	}
-
-	@Override
-	public void setBlockItemBounds() {
-		this.setBoundingBoxWithData(0);
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.setBoundingBoxWithData(0);
-	}
-
-	protected void setBoundingBoxWithData(int data) {
-		int i = 0;
-		float f = (float)(1 * (1 + i)) / 16.0F;
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, f, 1.0F);
 	}
 
 	@Override
@@ -63,8 +52,8 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		this.continueToExist(world, pos, state);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		this.continueToExist(world, blockPos, blockState);
 	}
 
 	private boolean continueToExist(World world, BlockPos pos, BlockState state) {
@@ -82,8 +71,12 @@ public class CarpetBlock extends Block {
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
-		return facing == Direction.UP ? true : super.isSideInvisible(view, pos, facing);
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		if (direction == Direction.UP) {
+			return true;
+		} else {
+			return view.getBlockState(pos.offset(direction)).getBlock() == this ? true : super.method_8654(state, view, pos, direction);
+		}
 	}
 
 	@Override

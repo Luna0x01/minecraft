@@ -1,22 +1,32 @@
 package net.minecraft.structure;
 
-import com.google.common.collect.Lists;
-import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Map.Entry;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FlowerPotBlock;
 import net.minecraft.block.LeverBlock;
+import net.minecraft.block.PistonBlock;
 import net.minecraft.block.PlanksBlock;
+import net.minecraft.block.RepeaterBlock;
 import net.minecraft.block.SandstoneBlock;
+import net.minecraft.block.StairsBlock;
 import net.minecraft.block.StoneBrickBlock;
 import net.minecraft.block.StoneSlabBlock;
 import net.minecraft.block.TripwireBlock;
 import net.minecraft.block.TripwireHookBlock;
+import net.minecraft.block.VineBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.entity.mob.WitchEntity;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.WeightedRandomChestContent;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -27,6 +37,7 @@ public class TemplePieces {
 		StructurePieceManager.registerPiece(TemplePieces.DesertPyramid.class, "TeDP");
 		StructurePieceManager.registerPiece(TemplePieces.JunglePyramid.class, "TeJP");
 		StructurePieceManager.registerPiece(TemplePieces.SwampHut.class, "TeSH");
+		StructurePieceManager.registerPiece(TemplePieces.class_2761.class, "Iglu");
 	}
 
 	abstract static class AbstractPiece extends StructurePiece {
@@ -43,14 +54,11 @@ public class TemplePieces {
 			this.width = l;
 			this.height = m;
 			this.depth = n;
-			this.facing = Direction.DirectionType.HORIZONTAL.getRandomDirection(random);
-			switch (this.facing) {
-				case NORTH:
-				case SOUTH:
-					this.boundingBox = new BlockBox(i, j, k, i + l - 1, j + m - 1, k + n - 1);
-					break;
-				default:
-					this.boundingBox = new BlockBox(i, j, k, i + n - 1, j + m - 1, k + l - 1);
+			this.method_11853(Direction.DirectionType.HORIZONTAL.getRandomDirection(random));
+			if (this.method_11854().getAxis() == Direction.Axis.Z) {
+				this.boundingBox = new BlockBox(i, j, k, i + l - 1, j + m - 1, k + n - 1);
+			} else {
+				this.boundingBox = new BlockBox(i, j, k, i + n - 1, j + m - 1, k + l - 1);
 			}
 		}
 
@@ -101,20 +109,6 @@ public class TemplePieces {
 
 	public static class DesertPyramid extends TemplePieces.AbstractPiece {
 		private boolean[] chestsPlaced = new boolean[4];
-		private static final List<WeightedRandomChestContent> CHEST_LOOT_TABLE = Lists.newArrayList(
-			new WeightedRandomChestContent[]{
-				new WeightedRandomChestContent(Items.DIAMOND, 0, 1, 3, 3),
-				new WeightedRandomChestContent(Items.IRON_INGOT, 0, 1, 5, 10),
-				new WeightedRandomChestContent(Items.GOLD_INGOT, 0, 2, 7, 15),
-				new WeightedRandomChestContent(Items.EMERALD, 0, 1, 3, 2),
-				new WeightedRandomChestContent(Items.BONE, 0, 4, 6, 20),
-				new WeightedRandomChestContent(Items.ROTTEN_FLESH, 0, 3, 7, 16),
-				new WeightedRandomChestContent(Items.SADDLE, 0, 1, 1, 3),
-				new WeightedRandomChestContent(Items.IRON_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.GOLDEN_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.DIAMOND_HORSE_ARMOR, 0, 1, 1, 1)
-			}
-		);
 
 		public DesertPyramid() {
 		}
@@ -163,26 +157,26 @@ public class TemplePieces {
 				}
 			}
 
-			int m = this.getData(Blocks.SANDSTONE_STAIRS, 3);
-			int n = this.getData(Blocks.SANDSTONE_STAIRS, 2);
-			int o = this.getData(Blocks.SANDSTONE_STAIRS, 0);
-			int p = this.getData(Blocks.SANDSTONE_STAIRS, 1);
-			int q = ~DyeColor.ORANGE.getSwappedId() & 15;
-			int r = ~DyeColor.BLUE.getSwappedId() & 15;
+			BlockState blockState = Blocks.SANDSTONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
+			BlockState blockState2 = Blocks.SANDSTONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH);
+			BlockState blockState3 = Blocks.SANDSTONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.EAST);
+			BlockState blockState4 = Blocks.SANDSTONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.WEST);
+			int m = ~DyeColor.ORANGE.getSwappedId() & 15;
+			int n = ~DyeColor.BLUE.getSwappedId() & 15;
 			this.fillWithOutline(world, boundingBox, 0, 0, 0, 4, 9, 4, Blocks.SANDSTONE.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 1, 10, 1, 3, 10, 3, Blocks.SANDSTONE.getDefaultState(), Blocks.SANDSTONE.getDefaultState(), false);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(m), 2, 10, 0, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(n), 2, 10, 4, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(o), 0, 10, 2, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(p), 4, 10, 2, boundingBox);
+			this.setBlockState(world, blockState, 2, 10, 0, boundingBox);
+			this.setBlockState(world, blockState2, 2, 10, 4, boundingBox);
+			this.setBlockState(world, blockState3, 0, 10, 2, boundingBox);
+			this.setBlockState(world, blockState4, 4, 10, 2, boundingBox);
 			this.fillWithOutline(world, boundingBox, this.width - 5, 0, 0, this.width - 1, 9, 4, Blocks.SANDSTONE.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 			this.fillWithOutline(
 				world, boundingBox, this.width - 4, 10, 1, this.width - 2, 10, 3, Blocks.SANDSTONE.getDefaultState(), Blocks.SANDSTONE.getDefaultState(), false
 			);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(m), this.width - 3, 10, 0, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(n), this.width - 3, 10, 4, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(o), this.width - 5, 10, 2, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(p), this.width - 1, 10, 2, boundingBox);
+			this.setBlockState(world, blockState, this.width - 3, 10, 0, boundingBox);
+			this.setBlockState(world, blockState2, this.width - 3, 10, 4, boundingBox);
+			this.setBlockState(world, blockState3, this.width - 5, 10, 2, boundingBox);
+			this.setBlockState(world, blockState4, this.width - 1, 10, 2, boundingBox);
 			this.fillWithOutline(world, boundingBox, 8, 0, 0, 12, 4, 4, Blocks.SANDSTONE.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 9, 1, 0, 11, 3, 4, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 			this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), 9, 1, 1, boundingBox);
@@ -294,20 +288,20 @@ public class TemplePieces {
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), this.width - 7, 6, 10, boundingBox);
 			this.fillWithOutline(world, boundingBox, 2, 4, 4, 2, 6, 4, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, this.width - 3, 4, 4, this.width - 3, 6, 4, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(m), 2, 4, 5, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(m), 2, 3, 4, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(m), this.width - 3, 4, 5, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(m), this.width - 3, 3, 4, boundingBox);
+			this.setBlockState(world, blockState, 2, 4, 5, boundingBox);
+			this.setBlockState(world, blockState, 2, 3, 4, boundingBox);
+			this.setBlockState(world, blockState, this.width - 3, 4, 5, boundingBox);
+			this.setBlockState(world, blockState, this.width - 3, 3, 4, boundingBox);
 			this.fillWithOutline(world, boundingBox, 1, 1, 3, 2, 2, 3, Blocks.SANDSTONE.getDefaultState(), Blocks.SANDSTONE.getDefaultState(), false);
 			this.fillWithOutline(
 				world, boundingBox, this.width - 3, 1, 3, this.width - 2, 2, 3, Blocks.SANDSTONE.getDefaultState(), Blocks.SANDSTONE.getDefaultState(), false
 			);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.getDefaultState(), 1, 1, 2, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.getDefaultState(), this.width - 2, 1, 2, boundingBox);
+			this.setBlockState(world, Blocks.SANDSTONE.getDefaultState(), 1, 1, 2, boundingBox);
+			this.setBlockState(world, Blocks.SANDSTONE.getDefaultState(), this.width - 2, 1, 2, boundingBox);
 			this.setBlockState(world, Blocks.STONE_SLAB.stateFromData(StoneSlabBlock.SlabType.SANDSTONE.getId()), 1, 2, 2, boundingBox);
 			this.setBlockState(world, Blocks.STONE_SLAB.stateFromData(StoneSlabBlock.SlabType.SANDSTONE.getId()), this.width - 2, 2, 2, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(p), 2, 1, 2, boundingBox);
-			this.setBlockState(world, Blocks.SANDSTONE_STAIRS.stateFromData(o), this.width - 3, 1, 2, boundingBox);
+			this.setBlockState(world, blockState4, 2, 1, 2, boundingBox);
+			this.setBlockState(world, blockState3, this.width - 3, 1, 2, boundingBox);
 			this.fillWithOutline(world, boundingBox, 4, 3, 5, 4, 3, 18, Blocks.SANDSTONE.getDefaultState(), Blocks.SANDSTONE.getDefaultState(), false);
 			this.fillWithOutline(
 				world, boundingBox, this.width - 5, 3, 5, this.width - 5, 3, 17, Blocks.SANDSTONE.getDefaultState(), Blocks.SANDSTONE.getDefaultState(), false
@@ -315,73 +309,73 @@ public class TemplePieces {
 			this.fillWithOutline(world, boundingBox, 3, 1, 5, 4, 2, 16, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, this.width - 6, 1, 5, this.width - 5, 2, 16, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 
-			for (int s = 5; s <= 17; s += 2) {
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), 4, 1, s, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), 4, 2, s, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), this.width - 5, 1, s, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), this.width - 5, 2, s, boundingBox);
+			for (int o = 5; o <= 17; o += 2) {
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), 4, 1, o, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), 4, 2, o, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), this.width - 5, 1, o, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), this.width - 5, 2, o, boundingBox);
 			}
 
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 10, 0, 7, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 10, 0, 8, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 9, 0, 9, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 11, 0, 9, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 8, 0, 10, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 12, 0, 10, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 7, 0, 10, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 13, 0, 10, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 9, 0, 11, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 11, 0, 11, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 10, 0, 12, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 10, 0, 13, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(r), 10, 0, 10, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 10, 0, 7, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 10, 0, 8, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 9, 0, 9, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 11, 0, 9, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 8, 0, 10, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 12, 0, 10, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 7, 0, 10, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 13, 0, 10, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 9, 0, 11, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 11, 0, 11, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 10, 0, 12, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 10, 0, 13, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(n), 10, 0, 10, boundingBox);
 
-			for (int t = 0; t <= this.width - 1; t += this.width - 1) {
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 2, 1, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 2, 2, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 2, 3, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 3, 1, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 3, 2, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 3, 3, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 4, 1, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), t, 4, 2, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 4, 3, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 5, 1, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 5, 2, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 5, 3, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 6, 1, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), t, 6, 2, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 6, 3, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 7, 1, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 7, 2, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), t, 7, 3, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 8, 1, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 8, 2, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), t, 8, 3, boundingBox);
+			for (int p = 0; p <= this.width - 1; p += this.width - 1) {
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 2, 1, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 2, 2, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 2, 3, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 3, 1, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 3, 2, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 3, 3, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 4, 1, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), p, 4, 2, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 4, 3, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 5, 1, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 5, 2, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 5, 3, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 6, 1, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), p, 6, 2, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 6, 3, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 7, 1, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 7, 2, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), p, 7, 3, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 8, 1, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 8, 2, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), p, 8, 3, boundingBox);
 			}
 
-			for (int u = 2; u <= this.width - 3; u += this.width - 3 - 2) {
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u - 1, 2, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u, 2, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u + 1, 2, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u - 1, 3, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u, 3, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u + 1, 3, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u - 1, 4, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), u, 4, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u + 1, 4, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u - 1, 5, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u, 5, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u + 1, 5, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u - 1, 6, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), u, 6, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u + 1, 6, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u - 1, 7, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u, 7, 0, boundingBox);
-				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), u + 1, 7, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u - 1, 8, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u, 8, 0, boundingBox);
-				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), u + 1, 8, 0, boundingBox);
+			for (int q = 2; q <= this.width - 3; q += this.width - 3 - 2) {
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q - 1, 2, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q, 2, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q + 1, 2, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q - 1, 3, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q, 3, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q + 1, 3, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q - 1, 4, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), q, 4, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q + 1, 4, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q - 1, 5, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q, 5, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q + 1, 5, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q - 1, 6, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), q, 6, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q + 1, 6, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q - 1, 7, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q, 7, 0, boundingBox);
+				this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), q + 1, 7, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q - 1, 8, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q, 8, 0, boundingBox);
+				this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.SMOOTH.getId()), q + 1, 8, 0, boundingBox);
 			}
 
 			this.fillWithOutline(
@@ -399,9 +393,9 @@ public class TemplePieces {
 			);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 8, 6, 0, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 12, 6, 0, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 9, 5, 0, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 9, 5, 0, boundingBox);
 			this.setBlockState(world, Blocks.SANDSTONE.stateFromData(SandstoneBlock.SandstoneType.CHISELED.getId()), 10, 5, 0, boundingBox);
-			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(q), 11, 5, 0, boundingBox);
+			this.setBlockState(world, Blocks.STAINED_TERRACOTTA.stateFromData(m), 11, 5, 0, boundingBox);
 			this.fillWithOutline(
 				world,
 				boundingBox,
@@ -464,18 +458,9 @@ public class TemplePieces {
 
 			for (Direction direction : Direction.DirectionType.HORIZONTAL) {
 				if (!this.chestsPlaced[direction.getHorizontal()]) {
-					int v = direction.getOffsetX() * 2;
-					int w = direction.getOffsetZ() * 2;
-					this.chestsPlaced[direction.getHorizontal()] = this.placeChest(
-						world,
-						boundingBox,
-						random,
-						10 + v,
-						-11,
-						10 + w,
-						WeightedRandomChestContent.combineLootTables(CHEST_LOOT_TABLE, Items.ENCHANTED_BOOK.getLootTable(random)),
-						2 + random.nextInt(5)
-					);
+					int r = direction.getOffsetX() * 2;
+					int s = direction.getOffsetZ() * 2;
+					this.chestsPlaced[direction.getHorizontal()] = this.method_11852(world, boundingBox, random, 10 + r, -11, 10 + s, LootTables.DESERT_PYRAMID_CHEST);
 				}
 			}
 
@@ -488,23 +473,6 @@ public class TemplePieces {
 		private boolean hiddenChest;
 		private boolean placedTrap1;
 		private boolean placedTrap2;
-		private static final List<WeightedRandomChestContent> CHEST_LOOT_TABLE = Lists.newArrayList(
-			new WeightedRandomChestContent[]{
-				new WeightedRandomChestContent(Items.DIAMOND, 0, 1, 3, 3),
-				new WeightedRandomChestContent(Items.IRON_INGOT, 0, 1, 5, 10),
-				new WeightedRandomChestContent(Items.GOLD_INGOT, 0, 2, 7, 15),
-				new WeightedRandomChestContent(Items.EMERALD, 0, 1, 3, 2),
-				new WeightedRandomChestContent(Items.BONE, 0, 4, 6, 20),
-				new WeightedRandomChestContent(Items.ROTTEN_FLESH, 0, 3, 7, 16),
-				new WeightedRandomChestContent(Items.SADDLE, 0, 1, 1, 3),
-				new WeightedRandomChestContent(Items.IRON_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.GOLDEN_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.DIAMOND_HORSE_ARMOR, 0, 1, 1, 1)
-			}
-		);
-		private static final List<WeightedRandomChestContent> DISPENSER_LOOT_TABLE = Lists.newArrayList(
-			new WeightedRandomChestContent[]{new WeightedRandomChestContent(Items.ARROW, 0, 2, 7, 30)}
-		);
 		private static TemplePieces.JunglePyramid.Randomizer randomizer = new TemplePieces.JunglePyramid.Randomizer();
 
 		public JunglePyramid() {
@@ -537,10 +505,6 @@ public class TemplePieces {
 			if (!this.adjustToAverageHeight(world, boundingBox, 0)) {
 				return false;
 			} else {
-				int i = this.getData(Blocks.STONE_STAIRS, 3);
-				int j = this.getData(Blocks.STONE_STAIRS, 2);
-				int k = this.getData(Blocks.STONE_STAIRS, 0);
-				int l = this.getData(Blocks.STONE_STAIRS, 1);
 				this.fillRandomized(world, boundingBox, 0, -4, 0, this.width - 1, 0, this.depth - 1, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 2, 1, 2, 9, 2, 2, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 2, 1, 12, 9, 2, 12, false, random, randomizer);
@@ -568,22 +532,22 @@ public class TemplePieces {
 				this.setBlockState(world, Blocks.AIR.getDefaultState(), 1, 5, 9, boundingBox);
 				this.setBlockState(world, Blocks.AIR.getDefaultState(), 10, 5, 9, boundingBox);
 
-				for (int m = 0; m <= 14; m += 14) {
-					this.fillRandomized(world, boundingBox, 2, 4, m, 2, 5, m, false, random, randomizer);
-					this.fillRandomized(world, boundingBox, 4, 4, m, 4, 5, m, false, random, randomizer);
-					this.fillRandomized(world, boundingBox, 7, 4, m, 7, 5, m, false, random, randomizer);
-					this.fillRandomized(world, boundingBox, 9, 4, m, 9, 5, m, false, random, randomizer);
+				for (int i = 0; i <= 14; i += 14) {
+					this.fillRandomized(world, boundingBox, 2, 4, i, 2, 5, i, false, random, randomizer);
+					this.fillRandomized(world, boundingBox, 4, 4, i, 4, 5, i, false, random, randomizer);
+					this.fillRandomized(world, boundingBox, 7, 4, i, 7, 5, i, false, random, randomizer);
+					this.fillRandomized(world, boundingBox, 9, 4, i, 9, 5, i, false, random, randomizer);
 				}
 
 				this.fillRandomized(world, boundingBox, 5, 6, 0, 6, 6, 0, false, random, randomizer);
 
-				for (int n = 0; n <= 11; n += 11) {
-					for (int o = 2; o <= 12; o += 2) {
-						this.fillRandomized(world, boundingBox, n, 4, o, n, 5, o, false, random, randomizer);
+				for (int j = 0; j <= 11; j += 11) {
+					for (int k = 2; k <= 12; k += 2) {
+						this.fillRandomized(world, boundingBox, j, 4, k, j, 5, k, false, random, randomizer);
 					}
 
-					this.fillRandomized(world, boundingBox, n, 6, 5, n, 6, 5, false, random, randomizer);
-					this.fillRandomized(world, boundingBox, n, 6, 9, n, 6, 9, false, random, randomizer);
+					this.fillRandomized(world, boundingBox, j, 6, 5, j, 6, 5, false, random, randomizer);
+					this.fillRandomized(world, boundingBox, j, 6, 9, j, 6, 9, false, random, randomizer);
 				}
 
 				this.fillRandomized(world, boundingBox, 2, 7, 2, 2, 9, 2, false, random, randomizer);
@@ -595,43 +559,47 @@ public class TemplePieces {
 				this.fillRandomized(world, boundingBox, 4, 9, 10, 4, 9, 10, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 7, 9, 10, 7, 9, 10, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 5, 9, 7, 6, 9, 7, false, random, randomizer);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 5, 9, 6, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 6, 9, 6, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(j), 5, 9, 8, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(j), 6, 9, 8, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 4, 0, 0, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 5, 0, 0, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 6, 0, 0, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 7, 0, 0, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 4, 1, 8, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 4, 2, 9, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 4, 3, 10, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 7, 1, 8, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 7, 2, 9, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(i), 7, 3, 10, boundingBox);
+				BlockState blockState = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.EAST);
+				BlockState blockState2 = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.WEST);
+				BlockState blockState3 = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH);
+				BlockState blockState4 = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
+				this.setBlockState(world, blockState4, 5, 9, 6, boundingBox);
+				this.setBlockState(world, blockState4, 6, 9, 6, boundingBox);
+				this.setBlockState(world, blockState3, 5, 9, 8, boundingBox);
+				this.setBlockState(world, blockState3, 6, 9, 8, boundingBox);
+				this.setBlockState(world, blockState4, 4, 0, 0, boundingBox);
+				this.setBlockState(world, blockState4, 5, 0, 0, boundingBox);
+				this.setBlockState(world, blockState4, 6, 0, 0, boundingBox);
+				this.setBlockState(world, blockState4, 7, 0, 0, boundingBox);
+				this.setBlockState(world, blockState4, 4, 1, 8, boundingBox);
+				this.setBlockState(world, blockState4, 4, 2, 9, boundingBox);
+				this.setBlockState(world, blockState4, 4, 3, 10, boundingBox);
+				this.setBlockState(world, blockState4, 7, 1, 8, boundingBox);
+				this.setBlockState(world, blockState4, 7, 2, 9, boundingBox);
+				this.setBlockState(world, blockState4, 7, 3, 10, boundingBox);
 				this.fillRandomized(world, boundingBox, 4, 1, 9, 4, 1, 9, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 7, 1, 9, 7, 1, 9, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 4, 1, 10, 7, 2, 10, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 5, 4, 5, 6, 4, 5, false, random, randomizer);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(k), 4, 4, 5, boundingBox);
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(l), 7, 4, 5, boundingBox);
+				this.setBlockState(world, blockState, 4, 4, 5, boundingBox);
+				this.setBlockState(world, blockState2, 7, 4, 5, boundingBox);
 
-				for (int p = 0; p < 4; p++) {
-					this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(j), 5, 0 - p, 6 + p, boundingBox);
-					this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(j), 6, 0 - p, 6 + p, boundingBox);
-					this.setAir(world, boundingBox, 5, 0 - p, 7 + p, 6, 0 - p, 9 + p);
+				for (int l = 0; l < 4; l++) {
+					this.setBlockState(world, blockState3, 5, 0 - l, 6 + l, boundingBox);
+					this.setBlockState(world, blockState3, 6, 0 - l, 6 + l, boundingBox);
+					this.setAir(world, boundingBox, 5, 0 - l, 7 + l, 6, 0 - l, 9 + l);
 				}
 
 				this.setAir(world, boundingBox, 1, -3, 12, 10, -1, 13);
 				this.setAir(world, boundingBox, 1, -3, 1, 3, -1, 13);
 				this.setAir(world, boundingBox, 1, -3, 1, 9, -1, 5);
 
-				for (int q = 1; q <= 13; q += 2) {
-					this.fillRandomized(world, boundingBox, 1, -3, q, 1, -2, q, false, random, randomizer);
+				for (int m = 1; m <= 13; m += 2) {
+					this.fillRandomized(world, boundingBox, 1, -3, m, 1, -2, m, false, random, randomizer);
 				}
 
-				for (int r = 2; r <= 12; r += 2) {
-					this.fillRandomized(world, boundingBox, 1, -1, r, 3, -1, r, false, random, randomizer);
+				for (int n = 2; n <= 12; n += 2) {
+					this.fillRandomized(world, boundingBox, 1, -1, n, 3, -1, n, false, random, randomizer);
 				}
 
 				this.fillRandomized(world, boundingBox, 2, -2, 1, 5, -2, 1, false, random, randomizer);
@@ -639,20 +607,10 @@ public class TemplePieces {
 				this.fillRandomized(world, boundingBox, 6, -3, 1, 6, -3, 1, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 6, -1, 1, 6, -1, 1, false, random, randomizer);
 				this.setBlockState(
-					world,
-					Blocks.TRIPWIRE_HOOK.stateFromData(this.getData(Blocks.TRIPWIRE_HOOK, Direction.EAST.getHorizontal())).with(TripwireHookBlock.ATTACHED, true),
-					1,
-					-3,
-					8,
-					boundingBox
+					world, Blocks.TRIPWIRE_HOOK.getDefaultState().with(TripwireHookBlock.FACING, Direction.EAST).with(TripwireHookBlock.ATTACHED, true), 1, -3, 8, boundingBox
 				);
 				this.setBlockState(
-					world,
-					Blocks.TRIPWIRE_HOOK.stateFromData(this.getData(Blocks.TRIPWIRE_HOOK, Direction.WEST.getHorizontal())).with(TripwireHookBlock.ATTACHED, true),
-					4,
-					-3,
-					8,
-					boundingBox
+					world, Blocks.TRIPWIRE_HOOK.getDefaultState().with(TripwireHookBlock.FACING, Direction.WEST).with(TripwireHookBlock.ATTACHED, true), 4, -3, 8, boundingBox
 				);
 				this.setBlockState(world, Blocks.TRIPWIRE.getDefaultState().with(TripwireBlock.ATTACHED, true), 2, -3, 8, boundingBox);
 				this.setBlockState(world, Blocks.TRIPWIRE.getDefaultState().with(TripwireBlock.ATTACHED, true), 3, -3, 8, boundingBox);
@@ -666,13 +624,13 @@ public class TemplePieces {
 				this.setBlockState(world, Blocks.REDSTONE_WIRE.getDefaultState(), 4, -3, 1, boundingBox);
 				this.setBlockState(world, Blocks.MOSSY_COBBLESTONE.getDefaultState(), 3, -3, 1, boundingBox);
 				if (!this.placedTrap1) {
-					this.placedTrap1 = this.placeDispenser(world, boundingBox, random, 3, -2, 1, Direction.NORTH.getId(), DISPENSER_LOOT_TABLE, 2);
+					this.placedTrap1 = this.method_11851(world, boundingBox, random, 3, -2, 1, Direction.NORTH, LootTables.JUNGLE_TEMPLE_DISPENSER_CHEST);
 				}
 
-				this.setBlockState(world, Blocks.VINE.stateFromData(15), 3, -2, 2, boundingBox);
+				this.setBlockState(world, Blocks.VINE.getDefaultState().with(VineBlock.SOUTH, true), 3, -2, 2, boundingBox);
 				this.setBlockState(
 					world,
-					Blocks.TRIPWIRE_HOOK.stateFromData(this.getData(Blocks.TRIPWIRE_HOOK, Direction.NORTH.getHorizontal())).with(TripwireHookBlock.ATTACHED, true),
+					Blocks.TRIPWIRE_HOOK.getDefaultState().with(TripwireHookBlock.FACING, Direction.NORTH).with(TripwireHookBlock.ATTACHED, true),
 					7,
 					-3,
 					1,
@@ -680,7 +638,7 @@ public class TemplePieces {
 				);
 				this.setBlockState(
 					world,
-					Blocks.TRIPWIRE_HOOK.stateFromData(this.getData(Blocks.TRIPWIRE_HOOK, Direction.SOUTH.getHorizontal())).with(TripwireHookBlock.ATTACHED, true),
+					Blocks.TRIPWIRE_HOOK.getDefaultState().with(TripwireHookBlock.FACING, Direction.SOUTH).with(TripwireHookBlock.ATTACHED, true),
 					7,
 					-3,
 					5,
@@ -695,22 +653,13 @@ public class TemplePieces {
 				this.setBlockState(world, Blocks.MOSSY_COBBLESTONE.getDefaultState(), 9, -3, 4, boundingBox);
 				this.setBlockState(world, Blocks.REDSTONE_WIRE.getDefaultState(), 9, -2, 4, boundingBox);
 				if (!this.placedTrap2) {
-					this.placedTrap2 = this.placeDispenser(world, boundingBox, random, 9, -2, 3, Direction.WEST.getId(), DISPENSER_LOOT_TABLE, 2);
+					this.placedTrap2 = this.method_11851(world, boundingBox, random, 9, -2, 3, Direction.WEST, LootTables.JUNGLE_TEMPLE_DISPENSER_CHEST);
 				}
 
-				this.setBlockState(world, Blocks.VINE.stateFromData(15), 8, -1, 3, boundingBox);
-				this.setBlockState(world, Blocks.VINE.stateFromData(15), 8, -2, 3, boundingBox);
+				this.setBlockState(world, Blocks.VINE.getDefaultState().with(VineBlock.EAST, true), 8, -1, 3, boundingBox);
+				this.setBlockState(world, Blocks.VINE.getDefaultState().with(VineBlock.EAST, true), 8, -2, 3, boundingBox);
 				if (!this.mainChest) {
-					this.mainChest = this.placeChest(
-						world,
-						boundingBox,
-						random,
-						8,
-						-3,
-						3,
-						WeightedRandomChestContent.combineLootTables(CHEST_LOOT_TABLE, Items.ENCHANTED_BOOK.getLootTable(random)),
-						2 + random.nextInt(5)
-					);
+					this.mainChest = this.method_11852(world, boundingBox, random, 8, -3, 3, LootTables.JUNGLE_TEMPLE_CHEST);
 				}
 
 				this.setBlockState(world, Blocks.MOSSY_COBBLESTONE.getDefaultState(), 9, -3, 2, boundingBox);
@@ -727,53 +676,22 @@ public class TemplePieces {
 				this.setBlockState(world, Blocks.STONE_BRICKS.stateFromData(StoneBrickBlock.CHISELED_ID), 8, -2, 11, boundingBox);
 				this.setBlockState(world, Blocks.STONE_BRICKS.stateFromData(StoneBrickBlock.CHISELED_ID), 9, -2, 11, boundingBox);
 				this.setBlockState(world, Blocks.STONE_BRICKS.stateFromData(StoneBrickBlock.CHISELED_ID), 10, -2, 11, boundingBox);
-				this.setBlockState(
-					world,
-					Blocks.LEVER.stateFromData(LeverBlock.getDataFromDirection(Direction.getById(this.getData(Blocks.LEVER, Direction.NORTH.getId())))),
-					8,
-					-2,
-					12,
-					boundingBox
-				);
-				this.setBlockState(
-					world,
-					Blocks.LEVER.stateFromData(LeverBlock.getDataFromDirection(Direction.getById(this.getData(Blocks.LEVER, Direction.NORTH.getId())))),
-					9,
-					-2,
-					12,
-					boundingBox
-				);
-				this.setBlockState(
-					world,
-					Blocks.LEVER.stateFromData(LeverBlock.getDataFromDirection(Direction.getById(this.getData(Blocks.LEVER, Direction.NORTH.getId())))),
-					10,
-					-2,
-					12,
-					boundingBox
-				);
+				BlockState blockState5 = Blocks.LEVER.getDefaultState().with(LeverBlock.FACING, LeverBlock.LeverType.NORTH);
+				this.setBlockState(world, blockState5, 8, -2, 12, boundingBox);
+				this.setBlockState(world, blockState5, 9, -2, 12, boundingBox);
+				this.setBlockState(world, blockState5, 10, -2, 12, boundingBox);
 				this.fillRandomized(world, boundingBox, 8, -3, 8, 8, -3, 10, false, random, randomizer);
 				this.fillRandomized(world, boundingBox, 10, -3, 8, 10, -3, 10, false, random, randomizer);
 				this.setBlockState(world, Blocks.MOSSY_COBBLESTONE.getDefaultState(), 10, -2, 9, boundingBox);
 				this.setBlockState(world, Blocks.REDSTONE_WIRE.getDefaultState(), 8, -2, 9, boundingBox);
 				this.setBlockState(world, Blocks.REDSTONE_WIRE.getDefaultState(), 8, -2, 10, boundingBox);
 				this.setBlockState(world, Blocks.REDSTONE_WIRE.getDefaultState(), 10, -1, 9, boundingBox);
-				this.setBlockState(world, Blocks.STICKY_PISTON.stateFromData(Direction.UP.getId()), 9, -2, 8, boundingBox);
-				this.setBlockState(world, Blocks.STICKY_PISTON.stateFromData(this.getData(Blocks.STICKY_PISTON, Direction.WEST.getId())), 10, -2, 8, boundingBox);
-				this.setBlockState(world, Blocks.STICKY_PISTON.stateFromData(this.getData(Blocks.STICKY_PISTON, Direction.WEST.getId())), 10, -1, 8, boundingBox);
-				this.setBlockState(
-					world, Blocks.UNPOWERED_REPEATER.stateFromData(this.getData(Blocks.UNPOWERED_REPEATER, Direction.NORTH.getHorizontal())), 10, -2, 10, boundingBox
-				);
+				this.setBlockState(world, Blocks.STICKY_PISTON.getDefaultState().with(PistonBlock.FACING, Direction.UP), 9, -2, 8, boundingBox);
+				this.setBlockState(world, Blocks.STICKY_PISTON.getDefaultState().with(PistonBlock.FACING, Direction.WEST), 10, -2, 8, boundingBox);
+				this.setBlockState(world, Blocks.STICKY_PISTON.getDefaultState().with(PistonBlock.FACING, Direction.WEST), 10, -1, 8, boundingBox);
+				this.setBlockState(world, Blocks.UNPOWERED_REPEATER.getDefaultState().with(RepeaterBlock.DIRECTION, Direction.NORTH), 10, -2, 10, boundingBox);
 				if (!this.hiddenChest) {
-					this.hiddenChest = this.placeChest(
-						world,
-						boundingBox,
-						random,
-						9,
-						-3,
-						10,
-						WeightedRandomChestContent.combineLootTables(CHEST_LOOT_TABLE, Items.ENCHANTED_BOOK.getLootTable(random)),
-						2 + random.nextInt(5)
-					);
+					this.hiddenChest = this.method_11852(world, boundingBox, random, 9, -3, 10, LootTables.JUNGLE_TEMPLE_CHEST);
 				}
 
 				return true;
@@ -929,32 +847,95 @@ public class TemplePieces {
 				this.setBlockState(world, Blocks.CAULDRON.getDefaultState(), 4, 2, 6, boundingBox);
 				this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 1, 2, 1, boundingBox);
 				this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 5, 2, 1, boundingBox);
-				int i = this.getData(Blocks.WOODEN_STAIRS, 3);
-				int j = this.getData(Blocks.WOODEN_STAIRS, 1);
-				int k = this.getData(Blocks.WOODEN_STAIRS, 0);
-				int l = this.getData(Blocks.WOODEN_STAIRS, 2);
-				this.fillWithOutline(world, boundingBox, 0, 4, 1, 6, 4, 1, Blocks.SPRUCE_STAIRS.stateFromData(i), Blocks.SPRUCE_STAIRS.stateFromData(i), false);
-				this.fillWithOutline(world, boundingBox, 0, 4, 2, 0, 4, 7, Blocks.SPRUCE_STAIRS.stateFromData(k), Blocks.SPRUCE_STAIRS.stateFromData(k), false);
-				this.fillWithOutline(world, boundingBox, 6, 4, 2, 6, 4, 7, Blocks.SPRUCE_STAIRS.stateFromData(j), Blocks.SPRUCE_STAIRS.stateFromData(j), false);
-				this.fillWithOutline(world, boundingBox, 0, 4, 8, 6, 4, 8, Blocks.SPRUCE_STAIRS.stateFromData(l), Blocks.SPRUCE_STAIRS.stateFromData(l), false);
+				BlockState blockState = Blocks.SPRUCE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
+				BlockState blockState2 = Blocks.SPRUCE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.EAST);
+				BlockState blockState3 = Blocks.SPRUCE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.WEST);
+				BlockState blockState4 = Blocks.SPRUCE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH);
+				this.fillWithOutline(world, boundingBox, 0, 4, 1, 6, 4, 1, blockState, blockState, false);
+				this.fillWithOutline(world, boundingBox, 0, 4, 2, 0, 4, 7, blockState2, blockState2, false);
+				this.fillWithOutline(world, boundingBox, 6, 4, 2, 6, 4, 7, blockState3, blockState3, false);
+				this.fillWithOutline(world, boundingBox, 0, 4, 8, 6, 4, 8, blockState4, blockState4, false);
 
-				for (int m = 2; m <= 7; m += 5) {
-					for (int n = 1; n <= 5; n += 4) {
-						this.fillAirAndLiquidsDownwards(world, Blocks.LOG.getDefaultState(), n, -1, m, boundingBox);
+				for (int i = 2; i <= 7; i += 5) {
+					for (int j = 1; j <= 5; j += 4) {
+						this.fillAirAndLiquidsDownwards(world, Blocks.LOG.getDefaultState(), j, -1, i, boundingBox);
 					}
 				}
 
 				if (!this.witch) {
-					int o = this.applyXTransform(2, 5);
-					int p = this.applyYTransform(2);
-					int q = this.applyZTransform(2, 5);
-					if (boundingBox.contains(new BlockPos(o, p, q))) {
+					int k = this.applyXTransform(2, 5);
+					int l = this.applyYTransform(2);
+					int m = this.applyZTransform(2, 5);
+					if (boundingBox.contains(new BlockPos(k, l, m))) {
 						this.witch = true;
 						WitchEntity witchEntity = new WitchEntity(world);
-						witchEntity.refreshPositionAndAngles((double)o + 0.5, (double)p, (double)q + 0.5, 0.0F, 0.0F);
-						witchEntity.initialize(world.getLocalDifficulty(new BlockPos(o, p, q)), null);
+						witchEntity.refreshPositionAndAngles((double)k + 0.5, (double)l, (double)m + 0.5, 0.0F, 0.0F);
+						witchEntity.initialize(world.getLocalDifficulty(new BlockPos(k, l, m)), null);
 						world.spawnEntity(witchEntity);
 					}
+				}
+
+				return true;
+			}
+		}
+	}
+
+	public static class class_2761 extends TemplePieces.AbstractPiece {
+		private static final Identifier field_13009 = new Identifier("igloo/igloo_top");
+		private static final Identifier field_13010 = new Identifier("igloo/igloo_middle");
+		private static final Identifier field_13011 = new Identifier("igloo/igloo_bottom");
+
+		public class_2761() {
+		}
+
+		public class_2761(Random random, int i, int j) {
+			super(random, i, 64, j, 7, 5, 8);
+		}
+
+		@Override
+		public boolean generate(World world, Random random, BlockBox boundingBox) {
+			if (!this.adjustToAverageHeight(world, boundingBox, -1)) {
+				return false;
+			} else {
+				BlockBox blockBox = this.getBoundingBox();
+				BlockPos blockPos = new BlockPos(blockBox.minX, blockBox.minY, blockBox.minZ);
+				BlockRotation[] blockRotations = BlockRotation.values();
+				MinecraftServer minecraftServer = world.getServer();
+				class_2763 lv = world.getSaveHandler().method_11956();
+				StructurePlacementData structurePlacementData = new StructurePlacementData(
+					BlockMirror.NONE, blockRotations[random.nextInt(blockRotations.length)], false, Blocks.BARRIER, blockBox
+				);
+				Structure structure = lv.method_11861(minecraftServer, field_13009);
+				structure.method_11882(world, blockPos, structurePlacementData);
+				if (random.nextDouble() < 0.5) {
+					Structure structure2 = lv.method_11861(minecraftServer, field_13010);
+					Structure structure3 = lv.method_11861(minecraftServer, field_13011);
+					int i = random.nextInt(8) + 4;
+
+					for (int j = 0; j < i; j++) {
+						BlockPos blockPos2 = structure.method_11887(structurePlacementData, new BlockPos(3, -1 - j * 3, 5), structurePlacementData, new BlockPos(1, 2, 1));
+						structure2.method_11882(world, blockPos.add(blockPos2), structurePlacementData);
+					}
+
+					BlockPos blockPos3 = blockPos.add(
+						structure.method_11887(structurePlacementData, new BlockPos(3, -1 - i * 3, 5), structurePlacementData, new BlockPos(3, 5, 7))
+					);
+					structure3.method_11882(world, blockPos3, structurePlacementData);
+					Map<BlockPos, String> map = structure3.method_11890(blockPos3, structurePlacementData);
+
+					for (Entry<BlockPos, String> entry : map.entrySet()) {
+						if ("chest".equals(entry.getValue())) {
+							BlockPos blockPos4 = (BlockPos)entry.getKey();
+							world.setBlockState(blockPos4, Blocks.AIR.getDefaultState(), 3);
+							BlockEntity blockEntity = world.getBlockEntity(blockPos4.down());
+							if (blockEntity instanceof ChestBlockEntity) {
+								((ChestBlockEntity)blockEntity).method_11660(LootTables.IGLOO_CHEST_CHEST, random.nextLong());
+							}
+						}
+					}
+				} else {
+					BlockPos blockPos5 = Structure.method_11886(structurePlacementData, new BlockPos(3, 0, 5));
+					world.setBlockState(blockPos.add(blockPos5), Blocks.SNOW.getDefaultState(), 3);
 				}
 
 				return true;

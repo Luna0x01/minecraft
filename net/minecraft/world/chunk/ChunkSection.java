@@ -3,18 +3,19 @@ package net.minecraft.world.chunk;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.world.chunk.palette.PaletteContainer;
 
 public class ChunkSection {
 	private int yOffset;
 	private int containedBlockCount;
 	private int tickableBlockCount;
-	private char[] blockStates;
+	private PaletteContainer blockData;
 	private ChunkNibbleArray blockLight;
 	private ChunkNibbleArray skyLight;
 
 	public ChunkSection(int i, boolean bl) {
 		this.yOffset = i;
-		this.blockStates = new char[4096];
+		this.blockData = new PaletteContainer();
 		this.blockLight = new ChunkNibbleArray();
 		if (bl) {
 			this.skyLight = new ChunkNibbleArray();
@@ -22,8 +23,7 @@ public class ChunkSection {
 	}
 
 	public BlockState getBlockState(int x, int y, int z) {
-		BlockState blockState = Block.BLOCK_STATES.fromId(this.blockStates[y << 8 | z << 4 | x]);
-		return blockState != null ? blockState : Blocks.AIR.getDefaultState();
+		return this.blockData.getBlockState(x, y, z);
 	}
 
 	public void setBlockState(int x, int y, int z, BlockState state) {
@@ -44,16 +44,7 @@ public class ChunkSection {
 			}
 		}
 
-		this.blockStates[y << 8 | z << 4 | x] = (char)Block.BLOCK_STATES.getId(state);
-	}
-
-	public Block getBlock(int x, int y, int z) {
-		return this.getBlockState(x, y, z).getBlock();
-	}
-
-	public int getBlockData(int x, int y, int z) {
-		BlockState blockState = this.getBlockState(x, y, z);
-		return blockState.getBlock().getData(blockState);
+		this.blockData.setBlockState(x, y, z, state);
 	}
 
 	public boolean isEmpty() {
@@ -91,7 +82,7 @@ public class ChunkSection {
 		for (int i = 0; i < 16; i++) {
 			for (int j = 0; j < 16; j++) {
 				for (int k = 0; k < 16; k++) {
-					Block block = this.getBlock(i, j, k);
+					Block block = this.getBlockState(i, j, k).getBlock();
 					if (block != Blocks.AIR) {
 						this.containedBlockCount++;
 						if (block.ticksRandomly()) {
@@ -103,12 +94,8 @@ public class ChunkSection {
 		}
 	}
 
-	public char[] getBlockStates() {
-		return this.blockStates;
-	}
-
-	public void setBlockStates(char[] blockStates) {
-		this.blockStates = blockStates;
+	public PaletteContainer getBlockData() {
+		return this.blockData;
 	}
 
 	public ChunkNibbleArray getBlockLight() {

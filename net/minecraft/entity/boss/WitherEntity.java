@@ -3,8 +3,12 @@ package net.minecraft.entity.boss;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.class_2925;
+import net.minecraft.class_2957;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
@@ -14,6 +18,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
+import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.ProjectileAttackGoal;
@@ -23,21 +28,32 @@ import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 
-public class WitherEntity extends HostileEntity implements BossBarProvider, RangedAttackMob {
+public class WitherEntity extends HostileEntity implements RangedAttackMob {
+	private static final TrackedData<Integer> field_14717 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Integer> field_14719 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Integer> field_14722 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Integer>[] field_14720 = new TrackedData[]{field_14717, field_14719, field_14722};
+	private static final TrackedData<Integer> field_14721 = DataTracker.registerData(WitherEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private float[] sideHeadPitches = new float[2];
 	private float[] sideHeadYaws = new float[2];
 	private float[] prevSideHeadPitches = new float[2];
@@ -45,8 +61,9 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 	private int[] field_5376 = new int[2];
 	private int[] field_5377 = new int[2];
 	private int field_5378;
+	private final class_2925 field_14718 = (class_2925)new class_2925(this.getName(), class_2957.Color.PURPLE, class_2957.Division.PROGRESS).method_12921(true);
 	private static final Predicate<Entity> CAN_ATTACK_PREDICATE = new Predicate<Entity>() {
-		public boolean apply(Entity entity) {
+		public boolean apply(@Nullable Entity entity) {
 			return entity instanceof LivingEntity && ((LivingEntity)entity).getGroup() != EntityGroup.UNDEAD;
 		}
 	};
@@ -57,23 +74,28 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 		this.setBounds(0.9F, 3.5F);
 		this.isFireImmune = true;
 		((MobNavigation)this.getNavigation()).setCanSwim(true);
-		this.goals.add(0, new SwimGoal(this));
+		this.experiencePoints = 50;
+	}
+
+	@Override
+	protected void initGoals() {
+		this.goals.add(0, new WitherEntity.class_2995());
+		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new ProjectileAttackGoal(this, 1.0, 40, 20.0F));
 		this.goals.add(5, new WanderAroundGoal(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(7, new LookAroundGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, false));
 		this.attackGoals.add(2, new FollowTargetGoal(this, MobEntity.class, 0, false, false, CAN_ATTACK_PREDICATE));
-		this.experiencePoints = 50;
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(17, new Integer(0));
-		this.dataTracker.track(18, new Integer(0));
-		this.dataTracker.track(19, new Integer(0));
-		this.dataTracker.track(20, new Integer(0));
+		this.dataTracker.startTracking(field_14717, 0);
+		this.dataTracker.startTracking(field_14719, 0);
+		this.dataTracker.startTracking(field_14722, 0);
+		this.dataTracker.startTracking(field_14721, 0);
 	}
 
 	@Override
@@ -89,18 +111,18 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.wither.idle";
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_WITHER_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.wither.hurt";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_WITHER_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.wither.death";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_WITHER_DEATH;
 	}
 
 	@Override
@@ -154,8 +176,8 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 				double o = entity2.y + (double)entity2.getEyeHeight() - l;
 				double p = entity2.z - m;
 				double q = (double)MathHelper.sqrt(n * n + p * p);
-				float r = (float)(MathHelper.atan2(p, n) * 180.0 / (float) Math.PI) - 90.0F;
-				float s = (float)(-(MathHelper.atan2(o, q) * 180.0 / (float) Math.PI));
+				float r = (float)(MathHelper.atan2(p, n) * 180.0F / (float)Math.PI) - 90.0F;
+				float s = (float)(-(MathHelper.atan2(o, q) * 180.0F / (float)Math.PI));
 				this.sideHeadPitches[j] = this.getNextAngle(this.sideHeadPitches[j], s, 40.0F);
 				this.sideHeadYaws[j] = this.getNextAngle(this.sideHeadYaws[j], r, 10.0F);
 			} else {
@@ -192,9 +214,9 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 				this.world
 					.addParticle(
 						ParticleType.MOB_SPELL,
-						this.x + this.random.nextGaussian() * 1.0,
+						this.x + this.random.nextGaussian(),
 						this.y + (double)(this.random.nextFloat() * 3.3F),
-						this.z + this.random.nextGaussian() * 1.0,
+						this.z + this.random.nextGaussian(),
 						0.7F,
 						0.7F,
 						0.9F
@@ -209,7 +231,7 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 			int i = this.getInvulnerabilityTime() - 1;
 			if (i <= 0) {
 				this.world.createExplosion(this, this.x, this.y + (double)this.getEyeHeight(), this.z, 7.0F, false, this.world.getGameRules().getBoolean("mobGriefing"));
-				this.world.method_4689(1013, new BlockPos(this), 0);
+				this.world.method_4689(1023, new BlockPos(this), 0);
 			}
 
 			this.setInvulnerabilityTime(i);
@@ -290,8 +312,9 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 								int t = m + r;
 								int u = o + q;
 								BlockPos blockPos = new BlockPos(s, t, u);
-								Block block = this.world.getBlockState(blockPos).getBlock();
-								if (block.getMaterial() != Material.AIR && canDestroy(block)) {
+								BlockState blockState = this.world.getBlockState(blockPos);
+								Block block = blockState.getBlock();
+								if (blockState.getMaterial() != Material.AIR && canDestroy(block)) {
 									bl = this.world.removeBlock(blockPos, true) || bl;
 								}
 							}
@@ -299,7 +322,7 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 					}
 
 					if (bl) {
-						this.world.syncWorldEvent(null, 1012, new BlockPos(this), 0);
+						this.world.syncWorldEvent(null, 1022, new BlockPos(this), 0);
 					}
 				}
 			}
@@ -307,11 +330,19 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 			if (this.ticksAlive % 20 == 0) {
 				this.heal(1.0F);
 			}
+
+			this.field_14718.setHealth(this.getHealth() / this.getMaxHealth());
 		}
 	}
 
 	public static boolean canDestroy(Block block) {
-		return block != Blocks.BEDROCK && block != Blocks.END_PORTAL && block != Blocks.END_PORTAL_FRAME && block != Blocks.COMMAND_BLOCK && block != Blocks.BARRIER;
+		return block != Blocks.BEDROCK
+			&& block != Blocks.END_PORTAL
+			&& block != Blocks.END_PORTAL_FRAME
+			&& block != Blocks.COMMAND_BLOCK
+			&& block != Blocks.REPEATING_COMMAND_BLOCK
+			&& block != Blocks.CHAIN_COMMAND_BLOCK
+			&& block != Blocks.BARRIER;
 	}
 
 	public void onSummoned() {
@@ -324,15 +355,22 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 	}
 
 	@Override
-	public int getArmorProtectionValue() {
-		return 4;
+	public void onStartedTrackingBy(ServerPlayerEntity player) {
+		super.onStartedTrackingBy(player);
+		this.field_14718.method_12768(player);
+	}
+
+	@Override
+	public void onStoppedTrackingBy(ServerPlayerEntity player) {
+		super.onStoppedTrackingBy(player);
+		this.field_14718.method_12769(player);
 	}
 
 	private double getHeadX(int headIndex) {
 		if (headIndex <= 0) {
 			return this.x;
 		} else {
-			float f = (this.bodyYaw + (float)(180 * (headIndex - 1))) / 180.0F * (float) Math.PI;
+			float f = (this.bodyYaw + (float)(180 * (headIndex - 1))) * (float) (Math.PI / 180.0);
 			float g = MathHelper.cos(f);
 			return this.x + (double)g * 1.3;
 		}
@@ -346,7 +384,7 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 		if (headIndex <= 0) {
 			return this.z;
 		} else {
-			float f = (this.bodyYaw + (float)(180 * (headIndex - 1))) / 180.0F * (float) Math.PI;
+			float f = (this.bodyYaw + (float)(180 * (headIndex - 1))) * (float) (Math.PI / 180.0);
 			float g = MathHelper.sin(f);
 			return this.z + (double)g * 1.3;
 		}
@@ -370,7 +408,7 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 	}
 
 	private void shootSkullAt(int headIndex, double targetX, double targetY, double targetZ, boolean charged) {
-		this.world.syncWorldEvent(null, 1014, new BlockPos(this), 0);
+		this.world.syncWorldEvent(null, 1024, new BlockPos(this), 0);
 		double d = this.getHeadX(headIndex);
 		double e = this.getHeadY(headIndex);
 		double f = this.getHeadZ(headIndex);
@@ -464,6 +502,7 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(300.0);
 		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.6F);
 		this.initializeAttribute(EntityAttributes.GENERIC_FOLLOW_RANGE).setBaseValue(40.0);
+		this.initializeAttribute(EntityAttributes.GENERIC_ARMOR).setBaseValue(4.0);
 	}
 
 	public float getHeadYaw(int headIndex) {
@@ -475,19 +514,19 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 	}
 
 	public int getInvulnerabilityTime() {
-		return this.dataTracker.getInt(20);
+		return this.dataTracker.get(field_14721);
 	}
 
 	public void setInvulnerabilityTime(int time) {
-		this.dataTracker.setProperty(20, time);
+		this.dataTracker.set(field_14721, time);
 	}
 
 	public int getTrackedEntityId(int headIndex) {
-		return this.dataTracker.getInt(17 + headIndex);
+		return this.dataTracker.get(field_14720[headIndex]);
 	}
 
 	public void setTrackedEntityId(int headIndex, int id) {
-		this.dataTracker.setProperty(17 + headIndex, id);
+		this.dataTracker.set(field_14720[headIndex], id);
 	}
 
 	public boolean shouldRenderOverlay() {
@@ -500,7 +539,23 @@ public class WitherEntity extends HostileEntity implements BossBarProvider, Rang
 	}
 
 	@Override
-	public void startRiding(Entity entity) {
-		this.vehicle = null;
+	protected boolean canStartRiding(Entity entity) {
+		return false;
+	}
+
+	@Override
+	public boolean canUsePortals() {
+		return false;
+	}
+
+	class class_2995 extends Goal {
+		public class_2995() {
+			this.setCategoryBits(7);
+		}
+
+		@Override
+		public boolean canStart() {
+			return WitherEntity.this.getInvulnerabilityTime() > 0;
+		}
 	}
 }

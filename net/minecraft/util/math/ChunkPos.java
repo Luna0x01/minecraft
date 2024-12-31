@@ -1,5 +1,7 @@
 package net.minecraft.util.math;
 
+import net.minecraft.entity.Entity;
+
 public class ChunkPos {
 	public final int x;
 	public final int z;
@@ -7,6 +9,11 @@ public class ChunkPos {
 	public ChunkPos(int i, int j) {
 		this.x = i;
 		this.z = j;
+	}
+
+	public ChunkPos(BlockPos blockPos) {
+		this.x = blockPos.getX() >> 4;
+		this.z = blockPos.getZ() >> 4;
 	}
 
 	public static long getIdFromCoords(int x, int z) {
@@ -28,6 +35,14 @@ public class ChunkPos {
 			ChunkPos chunkPos = (ChunkPos)obj;
 			return this.x == chunkPos.x && this.z == chunkPos.z;
 		}
+	}
+
+	public double squaredDistanceToCenter(Entity entity) {
+		double d = (double)(this.x * 16 + 8);
+		double e = (double)(this.z * 16 + 8);
+		double f = d - entity.x;
+		double g = e - entity.z;
+		return f * f + g * g;
 	}
 
 	public int getCenterX() {

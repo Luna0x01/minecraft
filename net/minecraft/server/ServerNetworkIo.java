@@ -27,7 +27,6 @@ import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.DecoderHandler;
 import net.minecraft.network.LegacyQueryHandler;
@@ -40,6 +39,7 @@ import net.minecraft.server.network.IntegratedServerHandshakeNetworkHandler;
 import net.minecraft.server.network.ServerHandshakeNetworkHandler;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Lazy;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -161,17 +161,14 @@ public class ServerNetworkIo {
 			while (iterator.hasNext()) {
 				final ClientConnection clientConnection = (ClientConnection)iterator.next();
 				if (!clientConnection.hasChannel()) {
-					if (!clientConnection.isOpen()) {
-						iterator.remove();
-						clientConnection.handleDisconnection();
-					} else {
+					if (clientConnection.isOpen()) {
 						try {
 							clientConnection.tick();
 						} catch (Exception var8) {
 							if (clientConnection.isLocal()) {
 								CrashReport crashReport = CrashReport.create(var8, "Ticking memory connection");
 								CrashReportSection crashReportSection = crashReport.addElement("Ticking connection");
-								crashReportSection.add("Connection", new Callable<String>() {
+								crashReportSection.add("Connection", new CrashCallable<String>() {
 									public String call() throws Exception {
 										return clientConnection.toString();
 									}
@@ -188,6 +185,9 @@ public class ServerNetworkIo {
 							});
 							clientConnection.disableAutoRead();
 						}
+					} else {
+						iterator.remove();
+						clientConnection.handleDisconnection();
 					}
 				}
 			}

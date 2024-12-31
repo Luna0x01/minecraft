@@ -135,14 +135,14 @@ public class VillagerTradingScreen extends HandledScreen {
 			GlStateManager.enableColorMaterial();
 			GlStateManager.enableLighting();
 			this.itemRenderer.zOffset = 100.0F;
-			this.itemRenderer.renderInGuiWithOverrides(itemStack, i + 36, j + 24);
+			this.itemRenderer.method_12461(itemStack, i + 36, j + 24);
 			this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack, i + 36, j + 24);
 			if (itemStack2 != null) {
-				this.itemRenderer.renderInGuiWithOverrides(itemStack2, i + 62, j + 24);
+				this.itemRenderer.method_12461(itemStack2, i + 62, j + 24);
 				this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack2, i + 62, j + 24);
 			}
 
-			this.itemRenderer.renderInGuiWithOverrides(itemStack3, i + 120, j + 24);
+			this.itemRenderer.method_12461(itemStack3, i + 120, j + 24);
 			this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack3, i + 120, j + 24);
 			this.itemRenderer.zOffset = 0.0F;
 			GlStateManager.disableLighting();

@@ -2,6 +2,7 @@ package net.minecraft.world;
 
 import java.io.File;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.structure.class_2763;
 import net.minecraft.world.chunk.ChunkStorage;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.level.LevelProperties;
@@ -26,5 +27,5 @@ public interface SaveHandler {
 
 	File getDataFile(String fileName);
 
-	String getWorldName();
+	class_2763 method_11956();
 }

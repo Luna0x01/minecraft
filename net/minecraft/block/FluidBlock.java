@@ -16,9 +16,9 @@ public class FluidBlock extends AbstractFluidBlock {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (!this.canChangeFromLava(world, pos, state)) {
-			this.updateLevel(world, pos, state);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (!this.canChangeFromLava(world, blockPos, blockState)) {
+			this.updateLevel(world, blockPos, blockState);
 		}
 	}
 
@@ -38,6 +38,10 @@ public class FluidBlock extends AbstractFluidBlock {
 
 					for (int j = 0; j < i; j++) {
 						blockPos = blockPos.add(rand.nextInt(3) - 1, 1, rand.nextInt(3) - 1);
+						if (blockPos.getY() >= 0 && blockPos.getY() < 256 && !world.blockExists(blockPos)) {
+							return;
+						}
+
 						Block block = world.getBlockState(blockPos).getBlock();
 						if (block.material == Material.AIR) {
 							if (this.isAdjacentBurnable(world, blockPos)) {
@@ -51,6 +55,10 @@ public class FluidBlock extends AbstractFluidBlock {
 				} else {
 					for (int k = 0; k < 3; k++) {
 						BlockPos blockPos2 = pos.add(rand.nextInt(3) - 1, 0, rand.nextInt(3) - 1);
+						if (blockPos2.getY() >= 0 && blockPos2.getY() < 256 && !world.blockExists(blockPos2)) {
+							return;
+						}
+
 						if (world.isAir(blockPos2.up()) && this.isBurnable(world, blockPos2)) {
 							world.setBlockState(blockPos2.up(), Blocks.FIRE.getDefaultState());
 						}
@@ -71,6 +79,6 @@ public class FluidBlock extends AbstractFluidBlock {
 	}
 
 	private boolean isBurnable(World world, BlockPos pos) {
-		return world.getBlockState(pos).getBlock().getMaterial().isBurnable();
+		return pos.getY() >= 0 && pos.getY() < 256 && !world.blockExists(pos) ? false : world.getBlockState(pos).getMaterial().isBurnable();
 	}
 }

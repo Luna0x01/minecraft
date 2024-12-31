@@ -1,14 +1,22 @@
 package net.minecraft.entity;
 
+import com.google.common.base.Optional;
+import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.stat.Stats;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -18,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 public class ItemEntity extends Entity {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final TrackedData<Optional<ItemStack>> STACK = DataTracker.registerData(ItemEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private int age;
 	private int pickupDelay;
 	private int health = 5;
@@ -53,7 +62,7 @@ public class ItemEntity extends Entity {
 
 	@Override
 	protected void initDataTracker() {
-		this.getDataTracker().addEntry(10, 5);
+		this.getDataTracker().startTracking(STACK, Optional.absent());
 	}
 
 	@Override
@@ -74,11 +83,11 @@ public class ItemEntity extends Entity {
 			this.move(this.velocityX, this.velocityY, this.velocityZ);
 			boolean bl = (int)this.prevX != (int)this.x || (int)this.prevY != (int)this.y || (int)this.prevZ != (int)this.z;
 			if (bl || this.ticksAlive % 25 == 0) {
-				if (this.world.getBlockState(new BlockPos(this)).getBlock().getMaterial() == Material.LAVA) {
+				if (this.world.getBlockState(new BlockPos(this)).getMaterial() == Material.LAVA) {
 					this.velocityY = 0.2F;
 					this.velocityX = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
 					this.velocityZ = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
-					this.playSound("random.fizz", 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
+					this.playSound(Sounds.ENTITY_GENERIC_BURN, 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
 				}
 
 				if (!this.world.isClient) {
@@ -198,7 +207,7 @@ public class ItemEntity extends Entity {
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putShort("Health", (short)((byte)this.health));
+		nbt.putShort("Health", (short)this.health);
 		nbt.putShort("Age", (short)this.age);
 		nbt.putShort("PickupDelay", (short)this.pickupDelay);
 		if (this.getThrower() != null) {
@@ -216,7 +225,7 @@ public class ItemEntity extends Entity {
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
-		this.health = nbt.getShort("Health") & 255;
+		this.health = nbt.getShort("Health");
 		this.age = nbt.getShort("Age");
 		if (nbt.contains("PickupDelay")) {
 			this.pickupDelay = nbt.getShort("PickupDelay");
@@ -273,13 +282,25 @@ public class ItemEntity extends Entity {
 				}
 
 				if (!this.isSilent()) {
-					this.world.playSound((Entity)player, "random.pop", 0.2F, ((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.0F) * 2.0F);
+					this.world
+						.playSound(
+							null,
+							player.x,
+							player.y,
+							player.z,
+							Sounds.ENTITY_ITEM_PICKUP,
+							SoundCategory.PLAYERS,
+							0.2F,
+							((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.0F) * 2.0F
+						);
 				}
 
 				player.sendPickup(this, i);
 				if (itemStack.count <= 0) {
 					this.remove();
 				}
+
+				player.incrementStat(Stats.picked(itemStack.getItem()), i);
 			}
 		}
 	}
@@ -294,16 +315,19 @@ public class ItemEntity extends Entity {
 		return false;
 	}
 
+	@Nullable
 	@Override
-	public void teleportToDimension(int dimensionId) {
-		super.teleportToDimension(dimensionId);
-		if (!this.world.isClient) {
-			this.tryMerge();
+	public Entity changeDimension(int newDimension) {
+		Entity entity = super.changeDimension(newDimension);
+		if (!this.world.isClient && entity instanceof ItemEntity) {
+			((ItemEntity)entity).tryMerge();
 		}
+
+		return entity;
 	}
 
 	public ItemStack getItemStack() {
-		ItemStack itemStack = this.getDataTracker().getStack(10);
+		ItemStack itemStack = (ItemStack)this.getDataTracker().get(STACK).orNull();
 		if (itemStack == null) {
 			if (this.world != null) {
 				LOGGER.error("Item entity " + this.getEntityId() + " has no item?!");
@@ -315,9 +339,9 @@ public class ItemEntity extends Entity {
 		}
 	}
 
-	public void setItemStack(ItemStack itemStack) {
-		this.getDataTracker().setProperty(10, itemStack);
-		this.getDataTracker().markDirty(10);
+	public void setItemStack(@Nullable ItemStack itemStack) {
+		this.getDataTracker().set(STACK, Optional.fromNullable(itemStack));
+		this.getDataTracker().method_12754(STACK);
 	}
 
 	public String getOwner() {

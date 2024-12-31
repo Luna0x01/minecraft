@@ -2,6 +2,7 @@ package net.minecraft.entity.thrown;
 
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
@@ -30,10 +31,22 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 	private String ownerName;
 	private int inGroundTime;
 	private int field_4079;
+	public Entity field_14820;
+	private int field_14819;
 
 	public ThrowableEntity(World world) {
 		super(world);
 		this.setBounds(0.25F, 0.25F);
+	}
+
+	public ThrowableEntity(World world, double d, double e, double f) {
+		this(world);
+		this.updatePosition(d, e, f);
+	}
+
+	public ThrowableEntity(World world, LivingEntity livingEntity) {
+		this(world, livingEntity.x, livingEntity.y + (double)livingEntity.getEyeHeight() - 0.1F, livingEntity.z);
+		this.field_6932 = livingEntity;
 	}
 
 	@Override
@@ -51,35 +64,16 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		return distance < d * d;
 	}
 
-	public ThrowableEntity(World world, LivingEntity livingEntity) {
-		super(world);
-		this.field_6932 = livingEntity;
-		this.setBounds(0.25F, 0.25F);
-		this.refreshPositionAndAngles(livingEntity.x, livingEntity.y + (double)livingEntity.getEyeHeight(), livingEntity.z, livingEntity.yaw, livingEntity.pitch);
-		this.x = this.x - (double)(MathHelper.cos(this.yaw / 180.0F * (float) Math.PI) * 0.16F);
-		this.y -= 0.1F;
-		this.z = this.z - (double)(MathHelper.sin(this.yaw / 180.0F * (float) Math.PI) * 0.16F);
-		this.updatePosition(this.x, this.y, this.z);
-		float f = 0.4F;
-		this.velocityX = (double)(-MathHelper.sin(this.yaw / 180.0F * (float) Math.PI) * MathHelper.cos(this.pitch / 180.0F * (float) Math.PI) * f);
-		this.velocityZ = (double)(MathHelper.cos(this.yaw / 180.0F * (float) Math.PI) * MathHelper.cos(this.pitch / 180.0F * (float) Math.PI) * f);
-		this.velocityY = (double)(-MathHelper.sin((this.pitch + this.method_3235()) / 180.0F * (float) Math.PI) * f);
-		this.setVelocity(this.velocityX, this.velocityY, this.velocityZ, this.method_3234(), 1.0F);
-	}
-
-	public ThrowableEntity(World world, double d, double e, double f) {
-		super(world);
-		this.inGroundTime = 0;
-		this.setBounds(0.25F, 0.25F);
-		this.updatePosition(d, e, f);
-	}
-
-	protected float method_3234() {
-		return 1.5F;
-	}
-
-	protected float method_3235() {
-		return 0.0F;
+	public void setProperties(Entity user, float pitch, float yaw, float roll, float modifierZ, float modifierXYZ) {
+		float f = -MathHelper.sin(yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(pitch * (float) (Math.PI / 180.0));
+		float g = -MathHelper.sin((pitch + roll) * (float) (Math.PI / 180.0));
+		float h = MathHelper.cos(yaw * (float) (Math.PI / 180.0)) * MathHelper.cos(pitch * (float) (Math.PI / 180.0));
+		this.setVelocity((double)f, (double)g, (double)h, modifierZ, modifierXYZ);
+		this.velocityX = this.velocityX + user.velocityX;
+		this.velocityZ = this.velocityZ + user.velocityZ;
+		if (!user.onGround) {
+			this.velocityY = this.velocityY + user.velocityY;
+		}
 	}
 
 	@Override
@@ -98,8 +92,8 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		this.velocityY = y;
 		this.velocityZ = z;
 		float g = MathHelper.sqrt(x * x + z * z);
-		this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0 / (float) Math.PI);
-		this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)g) * 180.0 / (float) Math.PI);
+		this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
+		this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)g) * 180.0F / (float)Math.PI);
 		this.inGroundTime = 0;
 	}
 
@@ -110,8 +104,8 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		this.velocityZ = z;
 		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
 			float f = MathHelper.sqrt(x * x + z * z);
-			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0 / (float) Math.PI);
-			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0 / (float) Math.PI);
+			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
+			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
 		}
 	}
 
@@ -154,17 +148,22 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 			vec3d2 = new Vec3d(blockHitResult.pos.x, blockHitResult.pos.y, blockHitResult.pos.z);
 		}
 
-		if (!this.world.isClient) {
-			Entity entity = null;
-			List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0, 1.0, 1.0));
-			double d = 0.0;
-			LivingEntity livingEntity = this.getOwner();
+		Entity entity = null;
+		List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0));
+		double d = 0.0;
+		boolean bl = false;
 
-			for (int i = 0; i < list.size(); i++) {
-				Entity entity2 = (Entity)list.get(i);
-				if (entity2.collides() && (entity2 != livingEntity || this.field_4079 >= 5)) {
-					float f = 0.3F;
-					Box box = entity2.getBoundingBox().expand((double)f, (double)f, (double)f);
+		for (int i = 0; i < list.size(); i++) {
+			Entity entity2 = (Entity)list.get(i);
+			if (entity2.collides()) {
+				if (entity2 == this.field_14820) {
+					bl = true;
+				} else if (this.ticksAlive < 2 && this.field_14820 == null) {
+					this.field_14820 = entity2;
+					bl = true;
+				} else {
+					bl = false;
+					Box box = entity2.getBoundingBox().expand(0.3F);
 					BlockHitResult blockHitResult2 = box.method_585(vec3d, vec3d2);
 					if (blockHitResult2 != null) {
 						double e = vec3d.squaredDistanceTo(blockHitResult2.pos);
@@ -175,10 +174,18 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 					}
 				}
 			}
+		}
 
-			if (entity != null) {
-				blockHitResult = new BlockHitResult(entity);
+		if (this.field_14820 != null) {
+			if (bl) {
+				this.field_14819 = 2;
+			} else if (this.field_14819-- <= 0) {
+				this.field_14820 = null;
 			}
+		}
+
+		if (entity != null) {
+			blockHitResult = new BlockHitResult(entity);
 		}
 
 		if (blockHitResult != null) {
@@ -192,9 +199,9 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		this.x = this.x + this.velocityX;
 		this.y = this.y + this.velocityY;
 		this.z = this.z + this.velocityZ;
-		float g = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-		this.yaw = (float)(MathHelper.atan2(this.velocityX, this.velocityZ) * 180.0 / (float) Math.PI);
-		this.pitch = (float)(MathHelper.atan2(this.velocityY, (double)g) * 180.0 / (float) Math.PI);
+		float f = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
+		this.yaw = (float)(MathHelper.atan2(this.velocityX, this.velocityZ) * 180.0F / (float)Math.PI);
+		this.pitch = (float)(MathHelper.atan2(this.velocityY, (double)f) * 180.0F / (float)Math.PI);
 
 		while (this.pitch - this.prevPitch < -180.0F) {
 			this.prevPitch -= 360.0F;
@@ -214,30 +221,30 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 
 		this.pitch = this.prevPitch + (this.pitch - this.prevPitch) * 0.2F;
 		this.yaw = this.prevYaw + (this.yaw - this.prevYaw) * 0.2F;
-		float h = 0.99F;
-		float j = this.getGravity();
+		float g = 0.99F;
+		float h = this.getGravity();
 		if (this.isTouchingWater()) {
-			for (int k = 0; k < 4; k++) {
-				float l = 0.25F;
+			for (int j = 0; j < 4; j++) {
+				float k = 0.25F;
 				this.world
 					.addParticle(
 						ParticleType.BUBBLE,
-						this.x - this.velocityX * (double)l,
-						this.y - this.velocityY * (double)l,
-						this.z - this.velocityZ * (double)l,
+						this.x - this.velocityX * (double)k,
+						this.y - this.velocityY * (double)k,
+						this.z - this.velocityZ * (double)k,
 						this.velocityX,
 						this.velocityY,
 						this.velocityZ
 					);
 			}
 
-			h = 0.8F;
+			g = 0.8F;
 		}
 
-		this.velocityX *= (double)h;
-		this.velocityY *= (double)h;
-		this.velocityZ *= (double)h;
-		this.velocityY -= (double)j;
+		this.velocityX *= (double)g;
+		this.velocityY *= (double)g;
+		this.velocityZ *= (double)g;
+		this.velocityY -= (double)h;
 		this.updatePosition(this.x, this.y, this.z);
 	}
 
@@ -249,14 +256,14 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putShort("xTile", (short)this.blockX);
-		nbt.putShort("yTile", (short)this.blockY);
-		nbt.putShort("zTile", (short)this.blockZ);
+		nbt.putInt("xTile", this.blockX);
+		nbt.putInt("yTile", this.blockY);
+		nbt.putInt("zTile", this.blockZ);
 		Identifier identifier = Block.REGISTRY.getIdentifier(this.inBlock);
 		nbt.putString("inTile", identifier == null ? "" : identifier.toString());
 		nbt.putByte("shake", (byte)this.shake);
 		nbt.putByte("inGround", (byte)(this.inGround ? 1 : 0));
-		if ((this.ownerName == null || this.ownerName.length() == 0) && this.field_6932 instanceof PlayerEntity) {
+		if ((this.ownerName == null || this.ownerName.isEmpty()) && this.field_6932 instanceof PlayerEntity) {
 			this.ownerName = this.field_6932.getTranslationKey();
 		}
 
@@ -265,9 +272,9 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
-		this.blockX = nbt.getShort("xTile");
-		this.blockY = nbt.getShort("yTile");
-		this.blockZ = nbt.getShort("zTile");
+		this.blockX = nbt.getInt("xTile");
+		this.blockY = nbt.getInt("yTile");
+		this.blockZ = nbt.getInt("zTile");
 		if (nbt.contains("inTile", 8)) {
 			this.inBlock = Block.get(nbt.getString("inTile"));
 		} else {
@@ -278,15 +285,16 @@ public abstract class ThrowableEntity extends Entity implements Projectile {
 		this.inGround = nbt.getByte("inGround") == 1;
 		this.field_6932 = null;
 		this.ownerName = nbt.getString("ownerName");
-		if (this.ownerName != null && this.ownerName.length() == 0) {
+		if (this.ownerName != null && this.ownerName.isEmpty()) {
 			this.ownerName = null;
 		}
 
 		this.field_6932 = this.getOwner();
 	}
 
+	@Nullable
 	public LivingEntity getOwner() {
-		if (this.field_6932 == null && this.ownerName != null && this.ownerName.length() > 0) {
+		if (this.field_6932 == null && this.ownerName != null && !this.ownerName.isEmpty()) {
 			this.field_6932 = this.world.getPlayerByName(this.ownerName);
 			if (this.field_6932 == null && this.world instanceof ServerWorld) {
 				try {

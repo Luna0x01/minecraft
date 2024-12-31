@@ -17,8 +17,7 @@ public class IntegratedPlayerManager extends PlayerManager {
 	@Override
 	protected void savePlayerData(ServerPlayerEntity player) {
 		if (player.getTranslationKey().equals(this.getServer().getUserName())) {
-			this.userData = new NbtCompound();
-			player.writePlayerData(this.userData);
+			this.userData = player.toNbt(new NbtCompound());
 		}
 
 		super.savePlayerData(player);

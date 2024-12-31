@@ -1,7 +1,9 @@
 package net.minecraft.block.entity;
 
 import net.minecraft.block.Blocks;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.Tickable;
 
 public class EnderChestBlockEntity extends BlockEntity implements Tickable {
@@ -24,7 +26,7 @@ public class EnderChestBlockEntity extends BlockEntity implements Tickable {
 		if (this.viewerCount > 0 && this.animationProgress == 0.0F) {
 			double d = (double)i + 0.5;
 			double e = (double)k + 0.5;
-			this.world.playSound(d, (double)j + 0.5, e, "random.chestopen", 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+			this.world.playSound(null, d, (double)j + 0.5, e, Sounds.BLOCK_ENDERCHEST_OPEN, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 		}
 
 		if (this.viewerCount == 0 && this.animationProgress > 0.0F || this.viewerCount > 0 && this.animationProgress < 1.0F) {
@@ -43,7 +45,7 @@ public class EnderChestBlockEntity extends BlockEntity implements Tickable {
 			if (this.animationProgress < h && g >= h) {
 				double l = (double)i + 0.5;
 				double m = (double)k + 0.5;
-				this.world.playSound(l, (double)j + 0.5, m, "random.chestclosed", 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
+				this.world.playSound(null, l, (double)j + 0.5, m, Sounds.BLOCK_ENDERCHEST_CLOSE, SoundCategory.BLOCKS, 0.5F, this.world.random.nextFloat() * 0.1F + 0.9F);
 			}
 
 			if (this.animationProgress < 0.0F) {

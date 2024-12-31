@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -30,29 +32,28 @@ public class TestForCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.testfor.usage");
 		} else {
-			Entity entity = getEntity(source, args[0]);
+			Entity entity = method_10711(minecraftServer, commandSource, args[0]);
 			NbtCompound nbtCompound = null;
 			if (args.length >= 2) {
 				try {
 					nbtCompound = StringNbtReader.parse(method_10706(args, 1));
-				} catch (NbtException var6) {
-					throw new CommandException("commands.testfor.tagError", var6.getMessage());
+				} catch (NbtException var7) {
+					throw new CommandException("commands.testfor.tagError", var7.getMessage());
 				}
 			}
 
 			if (nbtCompound != null) {
-				NbtCompound nbtCompound2 = new NbtCompound();
-				entity.writePlayerData(nbtCompound2);
+				NbtCompound nbtCompound2 = getEntityNbt(entity);
 				if (!NbtHelper.matches(nbtCompound, nbtCompound2, true)) {
 					throw new CommandException("commands.testfor.failure", entity.getTranslationKey());
 				}
 			}
 
-			run(source, this, "commands.testfor.success", new Object[]{entity.getTranslationKey()});
+			run(commandSource, this, "commands.testfor.success", new Object[]{entity.getTranslationKey()});
 		}
 	}
 
@@ -62,7 +63,7 @@ public class TestForCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, MinecraftServer.getServer().getPlayerNames()) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
 	}
 }

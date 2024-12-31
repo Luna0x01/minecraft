@@ -2,6 +2,7 @@ package net.minecraft.world.gen.feature;
 
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
@@ -20,7 +21,7 @@ public class NetherSpringFeature extends Feature {
 	public boolean generate(World world, Random random, BlockPos blockPos) {
 		if (world.getBlockState(blockPos.up()).getBlock() != Blocks.NETHERRACK) {
 			return false;
-		} else if (world.getBlockState(blockPos).getBlock().getMaterial() != Material.AIR && world.getBlockState(blockPos).getBlock() != Blocks.NETHERRACK) {
+		} else if (world.getBlockState(blockPos).getMaterial() != Material.AIR && world.getBlockState(blockPos).getBlock() != Blocks.NETHERRACK) {
 			return false;
 		} else {
 			int i = 0;
@@ -66,8 +67,9 @@ public class NetherSpringFeature extends Feature {
 			}
 
 			if (!this.denySurfaceSpawn && i == 4 && j == 1 || i == 5) {
-				world.setBlockState(blockPos, this.block.getDefaultState(), 2);
-				world.scheduleTick(this.block, blockPos, random);
+				BlockState blockState = this.block.getDefaultState();
+				world.setBlockState(blockPos, blockState, 2);
+				world.method_11482(blockPos, blockState, random);
 			}
 
 			return true;

@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import javax.annotation.Nullable;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.Direction;
 
@@ -16,7 +17,7 @@ public class ModelElementFace {
 	public final String textureId;
 	public final ModelElementTexture textureReference;
 
-	public ModelElementFace(Direction direction, int i, String string, ModelElementTexture modelElementTexture) {
+	public ModelElementFace(@Nullable Direction direction, int i, String string, ModelElementTexture modelElementTexture) {
 		this.cullFace = direction;
 		this.tintIndex = i;
 		this.textureId = string;
@@ -41,6 +42,7 @@ public class ModelElementFace {
 			return JsonHelper.getString(object, "texture");
 		}
 
+		@Nullable
 		private Direction deserializeCullFace(JsonObject object) {
 			String string = JsonHelper.getString(object, "cullface", "");
 			return Direction.byName(string);

@@ -1,5 +1,7 @@
 package net.minecraft.util.math;
 
+import com.google.common.annotations.VisibleForTesting;
+import javax.annotation.Nullable;
 import net.minecraft.util.hit.BlockHitResult;
 
 public class Box {
@@ -19,13 +21,59 @@ public class Box {
 		this.maxZ = Math.max(f, i);
 	}
 
+	public Box(BlockPos blockPos) {
+		this(
+			(double)blockPos.getX(),
+			(double)blockPos.getY(),
+			(double)blockPos.getZ(),
+			(double)(blockPos.getX() + 1),
+			(double)(blockPos.getY() + 1),
+			(double)(blockPos.getZ() + 1)
+		);
+	}
+
 	public Box(BlockPos blockPos, BlockPos blockPos2) {
-		this.minX = (double)blockPos.getX();
-		this.minY = (double)blockPos.getY();
-		this.minZ = (double)blockPos.getZ();
-		this.maxX = (double)blockPos2.getX();
-		this.maxY = (double)blockPos2.getY();
-		this.maxZ = (double)blockPos2.getZ();
+		this((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ(), (double)blockPos2.getX(), (double)blockPos2.getY(), (double)blockPos2.getZ());
+	}
+
+	public Box withMaxY(double maxY) {
+		return new Box(this.minX, this.minY, this.minZ, this.maxX, maxY, this.maxZ);
+	}
+
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		} else if (!(other instanceof Box)) {
+			return false;
+		} else {
+			Box box = (Box)other;
+			if (Double.compare(box.minX, this.minX) != 0) {
+				return false;
+			} else if (Double.compare(box.minY, this.minY) != 0) {
+				return false;
+			} else if (Double.compare(box.minZ, this.minZ) != 0) {
+				return false;
+			} else if (Double.compare(box.maxX, this.maxX) != 0) {
+				return false;
+			} else {
+				return Double.compare(box.maxY, this.maxY) != 0 ? false : Double.compare(box.maxZ, this.maxZ) == 0;
+			}
+		}
+	}
+
+	public int hashCode() {
+		long l = Double.doubleToLongBits(this.minX);
+		int i = (int)(l ^ l >>> 32);
+		l = Double.doubleToLongBits(this.minY);
+		i = 31 * i + (int)(l ^ l >>> 32);
+		l = Double.doubleToLongBits(this.minZ);
+		i = 31 * i + (int)(l ^ l >>> 32);
+		l = Double.doubleToLongBits(this.maxX);
+		i = 31 * i + (int)(l ^ l >>> 32);
+		l = Double.doubleToLongBits(this.maxY);
+		i = 31 * i + (int)(l ^ l >>> 32);
+		l = Double.doubleToLongBits(this.maxZ);
+		return 31 * i + (int)(l ^ l >>> 32);
 	}
 
 	public Box stretch(double x, double y, double z) {
@@ -66,6 +114,10 @@ public class Box {
 		return new Box(d, e, f, g, h, i);
 	}
 
+	public Box expand(double value) {
+		return this.expand(value, value, value);
+	}
+
 	public Box union(Box box) {
 		double d = Math.min(this.minX, box.minX);
 		double e = Math.min(this.minY, box.minY);
@@ -76,18 +128,19 @@ public class Box {
 		return new Box(d, e, f, g, h, i);
 	}
 
-	public static Box createNewBox(double x1, double y1, double z1, double x2, double y2, double z2) {
-		double d = Math.min(x1, x2);
-		double e = Math.min(y1, y2);
-		double f = Math.min(z1, z2);
-		double g = Math.max(x1, x2);
-		double h = Math.max(y1, y2);
-		double i = Math.max(z1, z2);
-		return new Box(d, e, f, g, h, i);
-	}
-
 	public Box offset(double x, double y, double z) {
 		return new Box(this.minX + x, this.minY + y, this.minZ + z, this.maxX + x, this.maxY + y, this.maxZ + z);
+	}
+
+	public Box offset(BlockPos pos) {
+		return new Box(
+			this.minX + (double)pos.getX(),
+			this.minY + (double)pos.getY(),
+			this.minZ + (double)pos.getZ(),
+			this.maxX + (double)pos.getX(),
+			this.maxY + (double)pos.getY(),
+			this.maxZ + (double)pos.getZ()
+		);
 	}
 
 	public double method_583(Box box, double d) {
@@ -151,11 +204,11 @@ public class Box {
 	}
 
 	public boolean intersects(Box box) {
-		if (box.maxX <= this.minX || box.minX >= this.maxX) {
-			return false;
-		} else {
-			return box.maxY <= this.minY || box.minY >= this.maxY ? false : !(box.maxZ <= this.minZ) && !(box.minZ >= this.maxZ);
-		}
+		return this.intersects(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+	}
+
+	public boolean intersects(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+		return this.minX < maxX && this.maxX > minX && this.minY < maxY && this.maxY > minY && this.minZ < maxZ && this.maxZ > minZ;
 	}
 
 	public boolean contains(Vec3d vec) {
@@ -173,104 +226,86 @@ public class Box {
 		return (d + e + f) / 3.0;
 	}
 
-	public Box increment(double x, double y, double z) {
-		double d = this.minX + x;
-		double e = this.minY + y;
-		double f = this.minZ + z;
-		double g = this.maxX - x;
-		double h = this.maxY - y;
-		double i = this.maxZ - z;
-		return new Box(d, e, f, g, h, i);
+	public Box contract(double value) {
+		return this.expand(-value);
 	}
 
+	@Nullable
 	public BlockHitResult method_585(Vec3d vec1, Vec3d vec2) {
-		Vec3d vec3d = vec1.lerpForX(vec2, this.minX);
-		Vec3d vec3d2 = vec1.lerpForX(vec2, this.maxX);
-		Vec3d vec3d3 = vec1.lerpForY(vec2, this.minY);
-		Vec3d vec3d4 = vec1.lerpForY(vec2, this.maxY);
-		Vec3d vec3d5 = vec1.lerpForZ(vec2, this.minZ);
-		Vec3d vec3d6 = vec1.lerpForZ(vec2, this.maxZ);
-		if (!this.method_590(vec3d)) {
-			vec3d = null;
+		Vec3d vec3d = this.method_12111(this.minX, vec1, vec2);
+		Direction direction = Direction.WEST;
+		Vec3d vec3d2 = this.method_12111(this.maxX, vec1, vec2);
+		if (vec3d2 != null && this.method_12112(vec1, vec3d, vec3d2)) {
+			vec3d = vec3d2;
+			direction = Direction.EAST;
 		}
 
-		if (!this.method_590(vec3d2)) {
-			vec3d2 = null;
+		vec3d2 = this.method_12114(this.minY, vec1, vec2);
+		if (vec3d2 != null && this.method_12112(vec1, vec3d, vec3d2)) {
+			vec3d = vec3d2;
+			direction = Direction.DOWN;
 		}
 
-		if (!this.method_595(vec3d3)) {
-			vec3d3 = null;
+		vec3d2 = this.method_12114(this.maxY, vec1, vec2);
+		if (vec3d2 != null && this.method_12112(vec1, vec3d, vec3d2)) {
+			vec3d = vec3d2;
+			direction = Direction.UP;
 		}
 
-		if (!this.method_595(vec3d4)) {
-			vec3d4 = null;
+		vec3d2 = this.method_12117(this.minZ, vec1, vec2);
+		if (vec3d2 != null && this.method_12112(vec1, vec3d, vec3d2)) {
+			vec3d = vec3d2;
+			direction = Direction.NORTH;
 		}
 
-		if (!this.method_597(vec3d5)) {
-			vec3d5 = null;
+		vec3d2 = this.method_12117(this.maxZ, vec1, vec2);
+		if (vec3d2 != null && this.method_12112(vec1, vec3d, vec3d2)) {
+			vec3d = vec3d2;
+			direction = Direction.SOUTH;
 		}
 
-		if (!this.method_597(vec3d6)) {
-			vec3d6 = null;
-		}
-
-		Vec3d vec3d7 = null;
-		if (vec3d != null) {
-			vec3d7 = vec3d;
-		}
-
-		if (vec3d2 != null && (vec3d7 == null || vec1.squaredDistanceTo(vec3d2) < vec1.squaredDistanceTo(vec3d7))) {
-			vec3d7 = vec3d2;
-		}
-
-		if (vec3d3 != null && (vec3d7 == null || vec1.squaredDistanceTo(vec3d3) < vec1.squaredDistanceTo(vec3d7))) {
-			vec3d7 = vec3d3;
-		}
-
-		if (vec3d4 != null && (vec3d7 == null || vec1.squaredDistanceTo(vec3d4) < vec1.squaredDistanceTo(vec3d7))) {
-			vec3d7 = vec3d4;
-		}
-
-		if (vec3d5 != null && (vec3d7 == null || vec1.squaredDistanceTo(vec3d5) < vec1.squaredDistanceTo(vec3d7))) {
-			vec3d7 = vec3d5;
-		}
-
-		if (vec3d6 != null && (vec3d7 == null || vec1.squaredDistanceTo(vec3d6) < vec1.squaredDistanceTo(vec3d7))) {
-			vec3d7 = vec3d6;
-		}
-
-		if (vec3d7 == null) {
-			return null;
-		} else {
-			Direction direction = null;
-			if (vec3d7 == vec3d) {
-				direction = Direction.WEST;
-			} else if (vec3d7 == vec3d2) {
-				direction = Direction.EAST;
-			} else if (vec3d7 == vec3d3) {
-				direction = Direction.DOWN;
-			} else if (vec3d7 == vec3d4) {
-				direction = Direction.UP;
-			} else if (vec3d7 == vec3d5) {
-				direction = Direction.NORTH;
-			} else {
-				direction = Direction.SOUTH;
-			}
-
-			return new BlockHitResult(vec3d7, direction);
-		}
+		return vec3d == null ? null : new BlockHitResult(vec3d, direction);
 	}
 
-	private boolean method_590(Vec3d vec3d) {
-		return vec3d == null ? false : vec3d.y >= this.minY && vec3d.y <= this.maxY && vec3d.z >= this.minZ && vec3d.z <= this.maxZ;
+	@VisibleForTesting
+	boolean method_12112(Vec3d vec3d, @Nullable Vec3d vec3d2, Vec3d vec3d3) {
+		return vec3d2 == null || vec3d.squaredDistanceTo(vec3d3) < vec3d.squaredDistanceTo(vec3d2);
 	}
 
-	private boolean method_595(Vec3d vec3d) {
-		return vec3d == null ? false : vec3d.x >= this.minX && vec3d.x <= this.maxX && vec3d.z >= this.minZ && vec3d.z <= this.maxZ;
+	@Nullable
+	@VisibleForTesting
+	Vec3d method_12111(double d, Vec3d vec3d, Vec3d vec3d2) {
+		Vec3d vec3d3 = vec3d.method_12124(vec3d2, d);
+		return vec3d3 != null && this.intersectsYZ(vec3d3) ? vec3d3 : null;
 	}
 
-	private boolean method_597(Vec3d vec3d) {
-		return vec3d == null ? false : vec3d.x >= this.minX && vec3d.x <= this.maxX && vec3d.y >= this.minY && vec3d.y <= this.maxY;
+	@Nullable
+	@VisibleForTesting
+	Vec3d method_12114(double d, Vec3d vec3d, Vec3d vec3d2) {
+		Vec3d vec3d3 = vec3d.method_12125(vec3d2, d);
+		return vec3d3 != null && this.intersectsXZ(vec3d3) ? vec3d3 : null;
+	}
+
+	@Nullable
+	@VisibleForTesting
+	Vec3d method_12117(double d, Vec3d vec3d, Vec3d vec3d2) {
+		Vec3d vec3d3 = vec3d.method_12127(vec3d2, d);
+		return vec3d3 != null && this.intersectsXY(vec3d3) ? vec3d3 : null;
+	}
+
+	@VisibleForTesting
+	public boolean intersectsYZ(Vec3d vec) {
+		return vec.y >= this.minY && vec.y <= this.maxY && vec.z >= this.minZ && vec.z <= this.maxZ;
+	}
+
+	@VisibleForTesting
+	public boolean intersectsXZ(Vec3d vec) {
+		return vec.x >= this.minX && vec.x <= this.maxX && vec.z >= this.minZ && vec.z <= this.maxZ;
+	}
+
+	@VisibleForTesting
+	public boolean intersectsXY(Vec3d vec) {
+		return vec.x >= this.minX && vec.x <= this.maxX && vec.y >= this.minY && vec.y <= this.maxY;
 	}
 
 	public String toString() {

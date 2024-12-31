@@ -24,7 +24,7 @@ public class EnderDragonDeathFeature implements FeatureRenderer<EnderDragonEntit
 			GlStateManager.disableTexture();
 			GlStateManager.shadeModel(7425);
 			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(770, 1);
+			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE);
 			GlStateManager.disableAlphaTest();
 			GlStateManager.enableCull();
 			GlStateManager.depthMask(false);

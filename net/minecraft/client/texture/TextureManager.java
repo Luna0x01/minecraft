@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Callable;
 import net.minecraft.client.ClientTickable;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -61,7 +61,7 @@ public class TextureManager implements ClientTickable, ResourceReloadListener {
 			CrashReport crashReport = CrashReport.create(var9, "Registering texture");
 			CrashReportSection crashReportSection = crashReport.addElement("Resource location being registered");
 			crashReportSection.add("Resource location", identifier);
-			crashReportSection.add("Texture object class", new Callable<String>() {
+			crashReportSection.add("Texture object class", new CrashCallable<String>() {
 				public String call() throws Exception {
 					return texture.getClass().getName();
 				}

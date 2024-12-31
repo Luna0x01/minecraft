@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -50,6 +51,7 @@ public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
 		this.plate = new ModelPart(this, 0, 32);
 		this.plate.addCuboid(-6.0F, 11.0F, -6.0F, 12, 1, 12, f);
 		this.plate.setPivot(0.0F, 12.0F, 0.0F);
+		this.hat.visible = false;
 	}
 
 	@Override
@@ -107,10 +109,11 @@ public class ArmorStandEntityModel extends ArmorStandArmorEntityModel {
 	}
 
 	@Override
-	public void setArmAngle(float angle) {
-		boolean bl = this.rightArm.visible;
-		this.rightArm.visible = true;
-		super.setArmAngle(angle);
-		this.rightArm.visible = bl;
+	public void method_12221(float f, HandOption handOption) {
+		ModelPart modelPart = this.method_12223(handOption);
+		boolean bl = modelPart.visible;
+		modelPart.visible = true;
+		super.method_12221(f, handOption);
+		modelPart.visible = bl;
 	}
 }

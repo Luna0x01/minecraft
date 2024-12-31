@@ -62,7 +62,7 @@ public class EntityAttributesS2CPacket implements Packet<ClientPlayPacketListene
 			buf.writeVarInt(entry.getModifiers().size());
 
 			for (AttributeModifier attributeModifier : entry.getModifiers()) {
-				buf.writeUUID(attributeModifier.getId());
+				buf.writeUuid(attributeModifier.getId());
 				buf.writeDouble(attributeModifier.getAmount());
 				buf.writeByte(attributeModifier.getOperation());
 			}

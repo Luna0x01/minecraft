@@ -19,16 +19,16 @@ public class TransparentBlock extends Block {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
-		BlockState blockState = view.getBlockState(pos);
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		BlockState blockState = view.getBlockState(pos.offset(direction));
 		Block block = blockState.getBlock();
 		if (this == Blocks.GLASS || this == Blocks.STAINED_GLASS) {
-			if (view.getBlockState(pos.offset(facing.getOpposite())) != blockState) {
+			if (state != blockState) {
 				return true;
 			}
 
@@ -37,6 +37,6 @@ public class TransparentBlock extends Block {
 			}
 		}
 
-		return !this.ignoreSimilar && block == this ? false : super.isSideInvisible(view, pos, facing);
+		return !this.ignoreSimilar && block == this ? false : super.method_8654(state, view, pos, direction);
 	}
 }

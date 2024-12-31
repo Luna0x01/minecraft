@@ -6,27 +6,29 @@ import net.minecraft.entity.FireworkRocketEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class FireworkItem extends Item {
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
 		if (!world.isClient) {
 			FireworkRocketEntity fireworkRocketEntity = new FireworkRocketEntity(
-				world, (double)((float)pos.getX() + facingX), (double)((float)pos.getY() + facingY), (double)((float)pos.getZ() + facingZ), itemStack
+				world, (double)((float)blockPos.getX() + f), (double)((float)blockPos.getY() + g), (double)((float)blockPos.getZ() + h), itemStack
 			);
 			world.spawnEntity(fireworkRocketEntity);
-			if (!player.abilities.creativeMode) {
+			if (!playerEntity.abilities.creativeMode) {
 				itemStack.count--;
 			}
-
-			return true;
-		} else {
-			return false;
 		}
+
+		return ActionResult.SUCCESS;
 	}
 
 	@Override
@@ -39,12 +41,12 @@ public class FireworkItem extends Item {
 				}
 
 				NbtList nbtList = nbtCompound.getList("Explosions", 10);
-				if (nbtList != null && nbtList.size() > 0) {
+				if (nbtList != null && !nbtList.isEmpty()) {
 					for (int i = 0; i < nbtList.size(); i++) {
 						NbtCompound nbtCompound2 = nbtList.getCompound(i);
 						List<String> list = Lists.newArrayList();
 						FireworkChargeItem.addExplosionInfo(nbtCompound2, list);
-						if (list.size() > 0) {
+						if (!list.isEmpty()) {
 							for (int j = 1; j < list.size(); j++) {
 								list.set(j, "  " + (String)list.get(j));
 							}

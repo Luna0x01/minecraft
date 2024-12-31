@@ -47,7 +47,7 @@ public class RealmsConnect {
 							return;
 						}
 
-						RealmsConnect.this.connection.send(new HandshakeC2SPacket(47, string, i, NetworkState.LOGIN));
+						RealmsConnect.this.connection.send(new HandshakeC2SPacket(110, string, i, NetworkState.LOGIN));
 						if (RealmsConnect.this.aborted) {
 							return;
 						}
@@ -60,7 +60,6 @@ public class RealmsConnect {
 						}
 
 						RealmsConnect.LOGGER.error("Couldn't connect to world", var5);
-						MinecraftClient.getInstance().getResourcePackLoader().clear();
 						Realms.setScreen(
 							new DisconnectedRealmsScreen(
 								RealmsConnect.this.onlineScreen, "connect.failed", new TranslatableText("disconnect.genericReason", "Unknown host '" + string + "'")
@@ -90,6 +89,10 @@ public class RealmsConnect {
 
 	public void abort() {
 		this.aborted = true;
+		if (this.connection != null && this.connection.isOpen()) {
+			this.connection.disconnect(new TranslatableText("disconnect.genericReason"));
+			this.connection.handleDisconnection();
+		}
 	}
 
 	public void tick() {

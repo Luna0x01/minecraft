@@ -22,7 +22,6 @@ public class EmotionParticle extends Particle {
 		this.scale *= j;
 		this.prevScale = this.scale;
 		this.maxAge = 16;
-		this.noClip = false;
 		this.setMiscTexture(80);
 	}
 
@@ -35,16 +34,16 @@ public class EmotionParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		if (this.age++ >= this.maxAge) {
-			this.remove();
+			this.method_12251();
 		}
 
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
-		if (this.y == this.prevY) {
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
+		if (this.field_13429 == this.field_13426) {
 			this.velocityX *= 1.1;
 			this.velocityZ *= 1.1;
 		}
@@ -52,7 +51,7 @@ public class EmotionParticle extends Particle {
 		this.velocityX *= 0.86F;
 		this.velocityY *= 0.86F;
 		this.velocityZ *= 0.86F;
-		if (this.onGround) {
+		if (this.field_13434) {
 			this.velocityX *= 0.7F;
 			this.velocityZ *= 0.7F;
 		}

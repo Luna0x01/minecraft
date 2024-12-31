@@ -1,19 +1,18 @@
 package net.minecraft.world.dimension;
 
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.SingletonBiomeSource;
+import net.minecraft.world.class_2711;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.border.WorldBorder;
-import net.minecraft.world.chunk.ChunkProvider;
 import net.minecraft.world.chunk.NetherChunkGenerator;
 
 public class TheNetherDimension extends Dimension {
 	@Override
 	public void init() {
-		this.biomeSource = new SingletonBiomeSource(Biome.HELL, 0.0F);
+		this.field_4787 = new class_2711(Biomes.NETHER);
 		this.waterVaporizes = true;
 		this.hasNoSkylight = true;
-		this.dimensionType = -1;
 	}
 
 	@Override
@@ -32,7 +31,7 @@ public class TheNetherDimension extends Dimension {
 	}
 
 	@Override
-	public ChunkProvider createChunkGenerator() {
+	public ChunkGenerator getChunkGenerator() {
 		return new NetherChunkGenerator(this.world, this.world.getLevelProperties().hasStructures(), this.world.getSeed());
 	}
 
@@ -62,16 +61,6 @@ public class TheNetherDimension extends Dimension {
 	}
 
 	@Override
-	public String getName() {
-		return "Nether";
-	}
-
-	@Override
-	public String getPersistentStateSuffix() {
-		return "_nether";
-	}
-
-	@Override
 	public WorldBorder createWorldBorder() {
 		return new WorldBorder() {
 			@Override
@@ -84,5 +73,10 @@ public class TheNetherDimension extends Dimension {
 				return super.getCenterZ() / 8.0;
 			}
 		};
+	}
+
+	@Override
+	public DimensionType getDimensionType() {
+		return DimensionType.NETHER;
 	}
 }

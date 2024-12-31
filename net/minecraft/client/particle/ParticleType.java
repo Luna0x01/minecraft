@@ -1,9 +1,9 @@
 package net.minecraft.client.particle;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import javax.annotation.Nullable;
 
 public enum ParticleType {
 	EXPLOSION("explode", 0, true),
@@ -42,19 +42,23 @@ public enum ParticleType {
 	SLIME("slime", 33, false),
 	HEART("heart", 34, false),
 	BARRIER("barrier", 35, false),
-	ITEM_CRACK("iconcrack_", 36, false, 2),
-	BLOCK_CRACK("blockcrack_", 37, false, 1),
-	BLOCK_DUST("blockdust_", 38, false, 1),
+	ITEM_CRACK("iconcrack", 36, false, 2),
+	BLOCK_CRACK("blockcrack", 37, false, 1),
+	BLOCK_DUST("blockdust", 38, false, 1),
 	WATER_DROP("droplet", 39, false),
 	ITEM_TAKE("take", 40, false),
-	MOB_APPEARANCE("mobappearance", 41, true);
+	MOB_APPEARANCE("mobappearance", 41, true),
+	DRAGON_BREATH("dragonbreath", 42, false),
+	END_ROD("endRod", 43, false),
+	DAMAGE_INDICATOR("damageIndicator", 44, true),
+	SWEEP_ATTACK("sweepAttack", 45, true);
 
 	private final String name;
 	private final int id;
 	private final boolean alwaysShow;
 	private final int arguments;
 	private static final Map<Integer, ParticleType> TYPES = Maps.newHashMap();
-	private static final String[] NAMES;
+	private static final Map<String, ParticleType> field_13723 = Maps.newHashMap();
 
 	private ParticleType(String string2, int j, boolean bl, int k) {
 		this.name = string2;
@@ -67,8 +71,8 @@ public enum ParticleType {
 		this(string2, j, bl, 0);
 	}
 
-	public static String[] getNames() {
-		return NAMES;
+	public static Set<String> method_12581() {
+		return field_13723.keySet();
 	}
 
 	public String getName() {
@@ -87,24 +91,20 @@ public enum ParticleType {
 		return this.alwaysShow;
 	}
 
-	public boolean hasArguments() {
-		return this.arguments > 0;
-	}
-
+	@Nullable
 	public static ParticleType getById(int id) {
 		return (ParticleType)TYPES.get(id);
 	}
 
-	static {
-		List<String> list = Lists.newArrayList();
+	@Nullable
+	public static ParticleType method_12582(String string) {
+		return (ParticleType)field_13723.get(string);
+	}
 
+	static {
 		for (ParticleType particleType : values()) {
 			TYPES.put(particleType.getId(), particleType);
-			if (!particleType.getName().endsWith("_")) {
-				list.add(particleType.getName());
-			}
+			field_13723.put(particleType.getName(), particleType);
 		}
-
-		NAMES = (String[])list.toArray(new String[list.size()]);
 	}
 }

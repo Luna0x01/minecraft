@@ -1,5 +1,7 @@
 package net.minecraft.block.entity;
 
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FurnaceBlock;
@@ -41,44 +43,26 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		return this.stacks.length;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
 		return this.stacks[slot];
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.stacks[slot] != null) {
-			if (this.stacks[slot].count <= amount) {
-				ItemStack itemStack = this.stacks[slot];
-				this.stacks[slot] = null;
-				return itemStack;
-			} else {
-				ItemStack itemStack2 = this.stacks[slot].split(amount);
-				if (this.stacks[slot].count == 0) {
-					this.stacks[slot] = null;
-				}
-
-				return itemStack2;
-			}
-		} else {
-			return null;
-		}
+		return class_2960.method_12933(this.stacks, slot, amount);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.stacks[slot] != null) {
-			ItemStack itemStack = this.stacks[slot];
-			this.stacks[slot] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		return class_2960.method_12932(this.stacks, slot);
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
 		boolean bl = stack != null && stack.equalsIgnoreNbt(this.stacks[slot]) && ItemStack.equalsIgnoreDamage(stack, this.stacks[slot]);
 		this.stacks[slot] = stack;
 		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
@@ -99,7 +83,7 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 
 	@Override
 	public boolean hasCustomName() {
-		return this.customName != null && this.customName.length() > 0;
+		return this.customName != null && !this.customName.isEmpty();
 	}
 
 	public void setCustomName(String name) {
@@ -130,7 +114,7 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		nbt.putShort("BurnTime", (short)this.fuelTime);
 		nbt.putShort("CookTime", (short)this.cookTime);
@@ -150,6 +134,8 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		if (this.hasCustomName()) {
 			nbt.putString("CustomName", this.customName);
 		}
+
+		return nbt;
 	}
 
 	@Override
@@ -215,7 +201,7 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 		}
 	}
 
-	public int getStackCookTime(ItemStack stack) {
+	public int getStackCookTime(@Nullable ItemStack stack) {
 		return 200;
 	}
 
@@ -272,7 +258,7 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 					return 150;
 				}
 
-				if (block.getMaterial() == Material.WOOD) {
+				if (block.getDefaultState().getMaterial() == Material.WOOD) {
 					return 300;
 				}
 
@@ -324,8 +310,11 @@ public class FurnaceBlockEntity extends LockableContainerBlockEntity implements 
 	public boolean isValidInvStack(int slot, ItemStack stack) {
 		if (slot == 2) {
 			return false;
+		} else if (slot != 1) {
+			return true;
 		} else {
-			return slot != 1 ? true : isFuel(stack) || FurnaceFuelSlot.isBucket(stack);
+			ItemStack itemStack = this.stacks[1];
+			return isFuel(stack) || FurnaceFuelSlot.isBucket(stack) && (itemStack == null || itemStack.getItem() != Items.BUCKET);
 		}
 	}
 

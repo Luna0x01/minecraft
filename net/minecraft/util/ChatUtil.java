@@ -1,6 +1,7 @@
 package net.minecraft.util;
 
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 
 public class ChatUtil {
@@ -17,7 +18,7 @@ public class ChatUtil {
 		return FORMATTING_PATTERN.matcher(text).replaceAll("");
 	}
 
-	public static boolean isEmpty(String string) {
+	public static boolean isEmpty(@Nullable String string) {
 		return StringUtils.isEmpty(string);
 	}
 }

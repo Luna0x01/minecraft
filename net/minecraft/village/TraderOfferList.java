@@ -2,6 +2,7 @@ package net.minecraft.village;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import javax.annotation.Nullable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
@@ -16,7 +17,8 @@ public class TraderOfferList extends ArrayList<TradeOffer> {
 		this.fromNbt(nbtCompound);
 	}
 
-	public TradeOffer getValidRecipe(ItemStack firstBuyItem, ItemStack secondBuyItem, int index) {
+	@Nullable
+	public TradeOffer getValidRecipe(ItemStack firstBuyItem, @Nullable ItemStack secondBuyItem, int index) {
 		if (index > 0 && index < this.size()) {
 			TradeOffer tradeOffer = (TradeOffer)this.get(index);
 			return !this.method_8454(firstBuyItem, tradeOffer.getFirstStack())

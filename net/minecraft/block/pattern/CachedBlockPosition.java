@@ -1,6 +1,7 @@
 package net.minecraft.block.pattern;
 
 import com.google.common.base.Predicate;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
@@ -28,6 +29,7 @@ public class CachedBlockPosition {
 		return this.state;
 	}
 
+	@Nullable
 	public BlockEntity getBlockEntity() {
 		if (this.blockEntity == null && !this.cachedEntity) {
 			this.blockEntity = this.world.getBlockEntity(this.pos);
@@ -43,8 +45,16 @@ public class CachedBlockPosition {
 
 	public static Predicate<CachedBlockPosition> matchesBlockState(Predicate<BlockState> state) {
 		return new Predicate<CachedBlockPosition>() {
-			public boolean apply(CachedBlockPosition cachedBlockPosition) {
+			public boolean apply(@Nullable CachedBlockPosition cachedBlockPosition) {
 				return cachedBlockPosition != null && state.apply(cachedBlockPosition.getBlockState());
+			}
+		};
+	}
+
+	public static Predicate<CachedBlockPosition> method_11744(BlockState blockState) {
+		return new Predicate<CachedBlockPosition>() {
+			public boolean apply(@Nullable CachedBlockPosition cachedBlockPosition) {
+				return cachedBlockPosition != null && cachedBlockPosition.getBlockState().equals(blockState);
 			}
 		};
 	}

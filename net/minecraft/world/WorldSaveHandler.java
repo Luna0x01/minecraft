@@ -6,13 +6,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import javax.annotation.Nullable;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.structure.class_2763;
 import net.minecraft.world.chunk.ChunkStorage;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.level.LevelProperties;
+import net.minecraft.world.level.storage.LevelDataType;
+import net.minecraft.world.level.storage.LevelStorage;
 import net.minecraft.world.level.storage.WorldSaveException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,8 +29,11 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 	private final File dataDir;
 	private final long startTime = MinecraftServer.getTimeMillis();
 	private final String worldName;
+	private final class_2763 field_13097;
+	protected final DataFixerUpper field_13096;
 
-	public WorldSaveHandler(File file, String string, boolean bl) {
+	public WorldSaveHandler(File file, String string, boolean bl, DataFixerUpper dataFixerUpper) {
+		this.field_13096 = dataFixerUpper;
 		this.worldDir = new File(file, string);
 		this.worldDir.mkdirs();
 		this.playerDataDir = new File(this.worldDir, "playerdata");
@@ -34,6 +42,9 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 		this.worldName = string;
 		if (bl) {
 			this.playerDataDir.mkdirs();
+			this.field_13097 = new class_2763(new File(this.worldDir, "structures").toString());
+		} else {
+			this.field_13097 = null;
 		}
 
 		this.writeSessionLock();
@@ -87,31 +98,18 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 	public LevelProperties getLevelProperties() {
 		File file = new File(this.worldDir, "level.dat");
 		if (file.exists()) {
-			try {
-				NbtCompound nbtCompound = NbtIo.readCompressed(new FileInputStream(file));
-				NbtCompound nbtCompound2 = nbtCompound.getCompound("Data");
-				return new LevelProperties(nbtCompound2);
-			} catch (Exception var5) {
-				var5.printStackTrace();
+			LevelProperties levelProperties = LevelStorage.method_11950(file, this.field_13096);
+			if (levelProperties != null) {
+				return levelProperties;
 			}
 		}
 
 		file = new File(this.worldDir, "level.dat_old");
-		if (file.exists()) {
-			try {
-				NbtCompound nbtCompound3 = NbtIo.readCompressed(new FileInputStream(file));
-				NbtCompound nbtCompound4 = nbtCompound3.getCompound("Data");
-				return new LevelProperties(nbtCompound4);
-			} catch (Exception var4) {
-				var4.printStackTrace();
-			}
-		}
-
-		return null;
+		return file.exists() ? LevelStorage.method_11950(file, this.field_13096) : null;
 	}
 
 	@Override
-	public void saveWorld(LevelProperties properties, NbtCompound nbt) {
+	public void saveWorld(LevelProperties properties, @Nullable NbtCompound nbt) {
 		NbtCompound nbtCompound = properties.toNbt(nbt);
 		NbtCompound nbtCompound2 = new NbtCompound();
 		nbtCompound2.put("Data", nbtCompound);
@@ -141,40 +139,15 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 
 	@Override
 	public void saveWorld(LevelProperties properties) {
-		NbtCompound nbtCompound = properties.toNbt();
-		NbtCompound nbtCompound2 = new NbtCompound();
-		nbtCompound2.put("Data", nbtCompound);
-
-		try {
-			File file = new File(this.worldDir, "level.dat_new");
-			File file2 = new File(this.worldDir, "level.dat_old");
-			File file3 = new File(this.worldDir, "level.dat");
-			NbtIo.writeCompressed(nbtCompound2, new FileOutputStream(file));
-			if (file2.exists()) {
-				file2.delete();
-			}
-
-			file3.renameTo(file2);
-			if (file3.exists()) {
-				file3.delete();
-			}
-
-			file.renameTo(file3);
-			if (file.exists()) {
-				file.delete();
-			}
-		} catch (Exception var7) {
-			var7.printStackTrace();
-		}
+		this.saveWorld(properties, null);
 	}
 
 	@Override
 	public void savePlayerData(PlayerEntity player) {
 		try {
-			NbtCompound nbtCompound = new NbtCompound();
-			player.writePlayerData(nbtCompound);
-			File file = new File(this.playerDataDir, player.getUuid().toString() + ".dat.tmp");
-			File file2 = new File(this.playerDataDir, player.getUuid().toString() + ".dat");
+			NbtCompound nbtCompound = player.toNbt(new NbtCompound());
+			File file = new File(this.playerDataDir, player.getEntityName() + ".dat.tmp");
+			File file2 = new File(this.playerDataDir, player.getEntityName() + ".dat");
 			NbtIo.writeCompressed(nbtCompound, new FileOutputStream(file));
 			if (file2.exists()) {
 				file2.delete();
@@ -191,7 +164,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 		NbtCompound nbtCompound = null;
 
 		try {
-			File file = new File(this.playerDataDir, player.getUuid().toString() + ".dat");
+			File file = new File(this.playerDataDir, player.getEntityName() + ".dat");
 			if (file.exists() && file.isFile()) {
 				nbtCompound = NbtIo.readCompressed(new FileInputStream(file));
 			}
@@ -200,7 +173,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 		}
 
 		if (nbtCompound != null) {
-			player.fromNbt(nbtCompound);
+			player.fromNbt(this.field_13096.update(LevelDataType.PLAYER, nbtCompound));
 		}
 
 		return nbtCompound;
@@ -237,7 +210,7 @@ public class WorldSaveHandler implements SaveHandler, PlayerDataHandler {
 	}
 
 	@Override
-	public String getWorldName() {
-		return this.worldName;
+	public class_2763 method_11956() {
+		return this.field_13097;
 	}
 }

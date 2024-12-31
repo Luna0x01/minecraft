@@ -25,16 +25,6 @@ public class ExperienceBottleEntity extends ThrowableEntity {
 	}
 
 	@Override
-	protected float method_3234() {
-		return 0.7F;
-	}
-
-	@Override
-	protected float method_3235() {
-		return -20.0F;
-	}
-
-	@Override
 	protected void onCollision(BlockHitResult result) {
 		if (!this.world.isClient) {
 			this.world.syncGlobalEvent(2002, new BlockPos(this), 0);

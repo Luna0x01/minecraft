@@ -19,7 +19,7 @@ public class LightningEntityRenderer extends EntityRenderer<LightningBoltEntity>
 		GlStateManager.disableTexture();
 		GlStateManager.disableLighting();
 		GlStateManager.enableBlend();
-		GlStateManager.blendFunc(770, 1);
+		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE);
 		double[] ds = new double[8];
 		double[] es = new double[8];
 		double i = 0.0;

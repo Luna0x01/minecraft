@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferedImageSkinProvider;
@@ -18,14 +19,18 @@ import org.apache.logging.log4j.Logger;
 public class PlayerSkinTexture extends ResourceTexture {
 	private static final Logger field_8079 = LogManager.getLogger();
 	private static final AtomicInteger field_8080 = new AtomicInteger(0);
+	@Nullable
 	private final File field_8081;
 	private final String field_6548;
+	@Nullable
 	private final BufferedImageSkinProvider field_6549;
+	@Nullable
 	private BufferedImage field_6550;
+	@Nullable
 	private Thread field_6551;
 	private boolean field_6553;
 
-	public PlayerSkinTexture(File file, String string, Identifier identifier, BufferedImageSkinProvider bufferedImageSkinProvider) {
+	public PlayerSkinTexture(@Nullable File file, String string, Identifier identifier, @Nullable BufferedImageSkinProvider bufferedImageSkinProvider) {
 		super(identifier);
 		this.field_8081 = file;
 		this.field_6548 = string;

@@ -11,8 +11,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class Console implements CommandSource {
-	private static final Console INSTANCE = new Console();
-	private StringBuffer text = new StringBuffer();
+	private final StringBuffer text = new StringBuffer();
+	private final MinecraftServer field_13901;
+
+	public Console(MinecraftServer minecraftServer) {
+		this.field_13901 = minecraftServer;
+	}
 
 	@Override
 	public String getTranslationKey() {
@@ -36,17 +40,17 @@ public class Console implements CommandSource {
 
 	@Override
 	public BlockPos getBlockPos() {
-		return new BlockPos(0, 0, 0);
+		return BlockPos.ORIGIN;
 	}
 
 	@Override
 	public Vec3d getPos() {
-		return new Vec3d(0.0, 0.0, 0.0);
+		return Vec3d.ZERO;
 	}
 
 	@Override
 	public World getWorld() {
-		return MinecraftServer.getServer().getWorld();
+		return this.field_13901.getWorld();
 	}
 
 	@Override
@@ -61,5 +65,10 @@ public class Console implements CommandSource {
 
 	@Override
 	public void setStat(CommandStats.Type statsType, int value) {
+	}
+
+	@Override
+	public MinecraftServer getMinecraftServer() {
+		return this.field_13901;
 	}
 }

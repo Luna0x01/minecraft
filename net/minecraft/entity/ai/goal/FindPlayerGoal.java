@@ -3,6 +3,7 @@ package net.minecraft.entity.ai.goal;
 import com.google.common.base.Predicate;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
@@ -29,7 +30,7 @@ public class FindPlayerGoal extends Goal {
 		}
 
 		this.targetPredicate = new Predicate<Entity>() {
-			public boolean apply(Entity entity) {
+			public boolean apply(@Nullable Entity entity) {
 				if (!(entity instanceof PlayerEntity)) {
 					return false;
 				} else if (((PlayerEntity)entity).abilities.invulnerable) {

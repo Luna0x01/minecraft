@@ -2,13 +2,14 @@ package net.minecraft.world.biome;
 
 import java.util.Random;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.DesertWellFeature;
 
 public class DesertBiome extends Biome {
-	public DesertBiome(int i) {
-		super(i);
+	public DesertBiome(Biome.Settings settings) {
+		super(settings);
 		this.passiveEntries.clear();
 		this.topBlock = Blocks.SAND.getDefaultState();
 		this.baseBlock = Blocks.SAND.getDefaultState();
@@ -17,6 +18,7 @@ public class DesertBiome extends Biome {
 		this.biomeDecorator.sugarcanePerChunk = 50;
 		this.biomeDecorator.cactusPerChunk = 10;
 		this.passiveEntries.clear();
+		this.passiveEntries.add(new Biome.SpawnEntry(RabbitEntity.class, 4, 2, 3));
 	}
 
 	@Override

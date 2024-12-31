@@ -1,5 +1,6 @@
 package net.minecraft.village;
 
+import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -16,11 +17,11 @@ public class TradeOffer {
 		this.readNbt(nbtCompound);
 	}
 
-	public TradeOffer(ItemStack itemStack, ItemStack itemStack2, ItemStack itemStack3) {
+	public TradeOffer(ItemStack itemStack, @Nullable ItemStack itemStack2, ItemStack itemStack3) {
 		this(itemStack, itemStack2, itemStack3, 0, 7);
 	}
 
-	public TradeOffer(ItemStack itemStack, ItemStack itemStack2, ItemStack itemStack3, int i, int j) {
+	public TradeOffer(ItemStack itemStack, @Nullable ItemStack itemStack2, ItemStack itemStack3, int i, int j) {
 		this.stack1 = itemStack;
 		this.stack2 = itemStack2;
 		this.result = itemStack3;

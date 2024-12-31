@@ -5,6 +5,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageTracker;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.PacketByteBuf;
 
 public class CombatEventS2CPacket implements Packet<ClientPlayPacketListener> {
@@ -12,12 +14,16 @@ public class CombatEventS2CPacket implements Packet<ClientPlayPacketListener> {
 	public int entityId;
 	public int attackerEntityId;
 	public int timeSinceLastAttack;
-	public String deathMessage;
+	public Text deathMessage;
 
 	public CombatEventS2CPacket() {
 	}
 
 	public CombatEventS2CPacket(DamageTracker damageTracker, CombatEventS2CPacket.Type type) {
+		this(damageTracker, type, true);
+	}
+
+	public CombatEventS2CPacket(DamageTracker damageTracker, CombatEventS2CPacket.Type type, boolean bl) {
 		this.type = type;
 		LivingEntity livingEntity = damageTracker.getLastAttacker();
 		switch (type) {
@@ -28,7 +34,11 @@ public class CombatEventS2CPacket implements Packet<ClientPlayPacketListener> {
 			case ENTITY_DIED:
 				this.entityId = damageTracker.getEntity().getEntityId();
 				this.attackerEntityId = livingEntity == null ? -1 : livingEntity.getEntityId();
-				this.deathMessage = damageTracker.getDeathMessage().asUnformattedString();
+				if (bl) {
+					this.deathMessage = damageTracker.getDeathMessage();
+				} else {
+					this.deathMessage = new LiteralText("");
+				}
 		}
 	}
 
@@ -41,20 +51,20 @@ public class CombatEventS2CPacket implements Packet<ClientPlayPacketListener> {
 		} else if (this.type == CombatEventS2CPacket.Type.ENTITY_DIED) {
 			this.entityId = buf.readVarInt();
 			this.attackerEntityId = buf.readInt();
-			this.deathMessage = buf.readString(32767);
+			this.deathMessage = buf.readText();
 		}
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeEnum(this.type);
+		buf.writeEnumConstant(this.type);
 		if (this.type == CombatEventS2CPacket.Type.END_COMBAT) {
 			buf.writeVarInt(this.timeSinceLastAttack);
 			buf.writeInt(this.attackerEntityId);
 		} else if (this.type == CombatEventS2CPacket.Type.ENTITY_DIED) {
 			buf.writeVarInt(this.entityId);
 			buf.writeInt(this.attackerEntityId);
-			buf.writeString(this.deathMessage);
+			buf.writeText(this.deathMessage);
 		}
 	}
 

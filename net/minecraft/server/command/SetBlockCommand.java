@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -14,6 +16,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -34,32 +37,32 @@ public class SetBlockCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 4) {
 			throw new IncorrectUsageException("commands.setblock.usage");
 		} else {
-			source.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
-			BlockPos blockPos = getBlockPos(source, args, 0, false);
-			Block block = AbstractCommand.getBlock(source, args[3]);
+			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
+			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
+			Block block = AbstractCommand.getBlock(commandSource, args[3]);
 			int i = 0;
 			if (args.length >= 5) {
 				i = parseClampedInt(args[4], 0, 15);
 			}
 
-			World world = source.getWorld();
+			World world = commandSource.getWorld();
 			if (!world.blockExists(blockPos)) {
 				throw new CommandException("commands.setblock.outOfWorld");
 			} else {
 				NbtCompound nbtCompound = new NbtCompound();
 				boolean bl = false;
 				if (args.length >= 7 && block.hasBlockEntity()) {
-					String string = method_4635(source, args, 6).asUnformattedString();
+					String string = method_4635(commandSource, args, 6).asUnformattedString();
 
 					try {
 						nbtCompound = StringNbtReader.parse(string);
 						bl = true;
-					} catch (NbtException var12) {
-						throw new CommandException("commands.setblock.tagError", var12.getMessage());
+					} catch (NbtException var13) {
+						throw new CommandException("commands.setblock.tagError", var13.getMessage());
 					}
 				}
 
@@ -67,7 +70,7 @@ public class SetBlockCommand extends AbstractCommand {
 					if (args[5].equals("destroy")) {
 						world.removeBlock(blockPos, true);
 						if (block == Blocks.AIR) {
-							run(source, this, "commands.setblock.success", new Object[0]);
+							run(commandSource, this, "commands.setblock.success", new Object[0]);
 							return;
 						}
 					} else if (args[5].equals("keep") && !world.isAir(blockPos)) {
@@ -99,21 +102,21 @@ public class SetBlockCommand extends AbstractCommand {
 					}
 
 					world.updateNeighbors(blockPos, blockState.getBlock());
-					source.setStat(CommandStats.Type.AFFECTED_BLOCKS, 1);
-					run(source, this, "commands.setblock.success", new Object[0]);
+					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 1);
+					run(commandSource, this, "commands.setblock.success", new Object[0]);
 				}
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length > 0 && args.length <= 3) {
-			return method_10707(args, 0, pos);
-		} else if (args.length == 4) {
-			return method_10708(args, Block.REGISTRY.keySet());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length > 0 && strings.length <= 3) {
+			return method_10707(strings, 0, pos);
+		} else if (strings.length == 4) {
+			return method_10708(strings, Block.REGISTRY.getKeySet());
 		} else {
-			return args.length == 6 ? method_2894(args, new String[]{"replace", "destroy", "keep"}) : null;
+			return strings.length == 6 ? method_2894(strings, new String[]{"replace", "destroy", "keep"}) : Collections.emptyList();
 		}
 	}
 }

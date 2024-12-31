@@ -4,8 +4,8 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.mob.EndermanEntity;
 
 public class EndBiome extends Biome {
-	public EndBiome(int i) {
-		super(i);
+	public EndBiome(Biome.Settings settings) {
+		super(settings);
 		this.monsterEntries.clear();
 		this.passiveEntries.clear();
 		this.waterEntries.clear();

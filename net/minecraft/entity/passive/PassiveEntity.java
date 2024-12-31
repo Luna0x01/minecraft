@@ -1,17 +1,23 @@
 package net.minecraft.entity.passive;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
 public abstract class PassiveEntity extends PathAwareEntity {
+	private static final TrackedData<Boolean> field_14476 = DataTracker.registerData(PassiveEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	protected int field_11896;
 	protected int forcedAge;
 	protected int field_11898;
@@ -25,11 +31,10 @@ public abstract class PassiveEntity extends PathAwareEntity {
 	public abstract PassiveEntity breed(PassiveEntity entity);
 
 	@Override
-	public boolean method_2537(PlayerEntity playerEntity) {
-		ItemStack itemStack = playerEntity.inventory.getMainHandStack();
+	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
 		if (itemStack != null && itemStack.getItem() == Items.SPAWN_EGG) {
 			if (!this.world.isClient) {
-				Class<? extends Entity> class_ = EntityType.getEntityById(itemStack.getData());
+				Class<? extends Entity> class_ = EntityType.getEntityById(EntityType.getIdByName(SpawnEggItem.method_11407(itemStack)));
 				if (class_ != null && this.getClass() == class_) {
 					PassiveEntity passiveEntity = this.breed(this);
 					if (passiveEntity != null) {
@@ -42,9 +47,6 @@ public abstract class PassiveEntity extends PathAwareEntity {
 
 						if (!playerEntity.abilities.creativeMode) {
 							itemStack.count--;
-							if (itemStack.count <= 0) {
-								playerEntity.inventory.setInvStack(playerEntity.inventory.selectedSlot, null);
-							}
 						}
 					}
 				}
@@ -59,11 +61,15 @@ public abstract class PassiveEntity extends PathAwareEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(12, (byte)0);
+		this.dataTracker.startTracking(field_14476, false);
 	}
 
 	public int age() {
-		return this.world.isClient ? this.dataTracker.getByte(12) : this.field_11896;
+		if (this.world.isClient) {
+			return this.dataTracker.get(field_14476) ? -1 : 1;
+		} else {
+			return this.field_11896;
+		}
 	}
 
 	public void method_10925(int i, boolean bl) {
@@ -95,7 +101,7 @@ public abstract class PassiveEntity extends PathAwareEntity {
 	}
 
 	public void setAge(int i) {
-		this.dataTracker.setProperty(12, (byte)MathHelper.clamp(i, -1, 1));
+		this.dataTracker.set(field_14476, i < 0);
 		this.field_11896 = i;
 		this.method_5377(this.isBaby());
 	}
@@ -112,6 +118,15 @@ public abstract class PassiveEntity extends PathAwareEntity {
 		super.readCustomDataFromNbt(nbt);
 		this.setAge(nbt.getInt("Age"));
 		this.forcedAge = nbt.getInt("ForcedAge");
+	}
+
+	@Override
+	public void onTrackedDataSet(TrackedData<?> data) {
+		if (field_14476.equals(data)) {
+			this.method_5377(this.isBaby());
+		}
+
+		super.onTrackedDataSet(data);
 	}
 
 	@Override
@@ -134,8 +149,6 @@ public abstract class PassiveEntity extends PathAwareEntity {
 
 				this.field_11898--;
 			}
-
-			this.method_5377(this.isBaby());
 		} else {
 			int i = this.age();
 			if (i < 0) {

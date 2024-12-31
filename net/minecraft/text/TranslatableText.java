@@ -1,5 +1,6 @@
 package net.minecraft.text;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ public class TranslatableText extends BaseText {
 	private final Object[] args;
 	private final Object lock = new Object();
 	private long languageReloadTimestamp = -1L;
+	@VisibleForTesting
 	List<Text> translations = Lists.newArrayList();
 	public static final Pattern ARG_FORMAT = Pattern.compile("%(?:(\\d+)\\$)?([A-Za-z%]|$)");
 
@@ -29,6 +31,7 @@ public class TranslatableText extends BaseText {
 		}
 	}
 
+	@VisibleForTesting
 	synchronized void updateTranslations() {
 		synchronized (this.lock) {
 			long l = CommonI18n.getTimeLoaded();

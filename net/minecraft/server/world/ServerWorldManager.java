@@ -1,5 +1,8 @@
 package net.minecraft.server.world;
 
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -7,7 +10,9 @@ import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.sound.Sound;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldEventListener;
 
 public class ServerWorldManager implements WorldEventListener {
@@ -26,29 +31,32 @@ public class ServerWorldManager implements WorldEventListener {
 	@Override
 	public void onEntitySpawned(Entity entity) {
 		this.world.getEntityTracker().startTracking(entity);
+		if (entity instanceof ServerPlayerEntity) {
+			this.world.dimension.method_11786((ServerPlayerEntity)entity);
+		}
 	}
 
 	@Override
 	public void onEntityRemoved(Entity entity) {
 		this.world.getEntityTracker().method_2101(entity);
 		this.world.getScoreboard().resetEntityScore(entity);
+		if (entity instanceof ServerPlayerEntity) {
+			this.world.dimension.method_11787((ServerPlayerEntity)entity);
+		}
 	}
 
 	@Override
-	public void playSound(String name, double x, double y, double z, float volume, float pitch) {
+	public void method_3747(@Nullable PlayerEntity playerEntity, Sound sound, SoundCategory soundCategory, double d, double e, double f, float g, float h) {
 		this.server
 			.getPlayerManager()
-			.sendToAround(
-				x, y, z, volume > 1.0F ? (double)(16.0F * volume) : 16.0, this.world.dimension.getType(), new PlaySoundIdS2CPacket(name, x, y, z, volume, pitch)
-			);
-	}
-
-	@Override
-	public void playSound(PlayerEntity except, String name, double x, double y, double z, float volume, float pitch) {
-		this.server
-			.getPlayerManager()
-			.sendToAround(
-				except, x, y, z, volume > 1.0F ? (double)(16.0F * volume) : 16.0, this.world.dimension.getType(), new PlaySoundIdS2CPacket(name, x, y, z, volume, pitch)
+			.method_12828(
+				playerEntity,
+				d,
+				e,
+				f,
+				g > 1.0F ? (double)(16.0F * g) : 16.0,
+				this.world.dimension.getDimensionType().getId(),
+				new PlaySoundIdS2CPacket(sound, soundCategory, d, e, f, g, h)
 			);
 	}
 
@@ -57,8 +65,8 @@ public class ServerWorldManager implements WorldEventListener {
 	}
 
 	@Override
-	public void onBlockUpdate(BlockPos pos) {
-		this.world.getPlayerWorldManager().method_10748(pos);
+	public void method_11493(World world, BlockPos position, BlockState blockState, BlockState blockState2, int i) {
+		this.world.getPlayerWorldManager().method_10748(position);
 	}
 
 	@Override
@@ -66,20 +74,20 @@ public class ServerWorldManager implements WorldEventListener {
 	}
 
 	@Override
-	public void playMusicDisc(String id, BlockPos pos) {
+	public void method_8572(Sound sound, BlockPos blockPos) {
 	}
 
 	@Override
 	public void processWorldEvent(PlayerEntity player, int eventId, BlockPos pos, int data) {
 		this.server
 			.getPlayerManager()
-			.sendToAround(
+			.method_12828(
 				player,
 				(double)pos.getX(),
 				(double)pos.getY(),
 				(double)pos.getZ(),
 				64.0,
-				this.world.dimension.getType(),
+				this.world.dimension.getDimensionType().getId(),
 				new WorldEventS2CPacket(eventId, pos, data, false)
 			);
 	}

@@ -8,11 +8,13 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
+import net.minecraft.network.packet.c2s.play.GuiCloseC2SPacket;
 import net.minecraft.screen.BeaconScreenHandler;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.PacketByteBuf;
@@ -46,63 +48,65 @@ public class BeaconScreen extends HandledScreen {
 	public void tick() {
 		super.tick();
 		int i = this.beaconInventory.getProperty(0);
-		int j = this.beaconInventory.getProperty(1);
-		int k = this.beaconInventory.getProperty(2);
+		StatusEffect statusEffect = StatusEffect.byIndex(this.beaconInventory.getProperty(1));
+		StatusEffect statusEffect2 = StatusEffect.byIndex(this.beaconInventory.getProperty(2));
 		if (this.consumeGem && i >= 0) {
 			this.consumeGem = false;
+			int j = 100;
 
-			for (int l = 0; l <= 2; l++) {
-				int m = BeaconBlockEntity.EFFECTS[l].length;
-				int n = m * 22 + (m - 1) * 2;
+			for (int k = 0; k <= 2; k++) {
+				int l = BeaconBlockEntity.EFFECTS[k].length;
+				int m = l * 22 + (l - 1) * 2;
 
-				for (int o = 0; o < m; o++) {
-					int p = BeaconBlockEntity.EFFECTS[l][o].id;
+				for (int n = 0; n < l; n++) {
+					StatusEffect statusEffect3 = BeaconBlockEntity.EFFECTS[k][n];
 					BeaconScreen.EffectButtonWidget effectButtonWidget = new BeaconScreen.EffectButtonWidget(
-						l << 8 | p, this.x + 76 + o * 24 - n / 2, this.y + 22 + l * 25, p, l
+						j++, this.x + 76 + n * 24 - m / 2, this.y + 22 + k * 25, statusEffect3, k
 					);
 					this.buttons.add(effectButtonWidget);
-					if (l >= i) {
+					if (k >= i) {
 						effectButtonWidget.active = false;
-					} else if (p == j) {
+					} else if (statusEffect3 == statusEffect) {
 						effectButtonWidget.setDisabled(true);
 					}
 				}
 			}
 
-			int q = 3;
-			int r = BeaconBlockEntity.EFFECTS[q].length + 1;
-			int s = r * 22 + (r - 1) * 2;
+			int o = 3;
+			int p = BeaconBlockEntity.EFFECTS[o].length + 1;
+			int q = p * 22 + (p - 1) * 2;
 
-			for (int t = 0; t < r - 1; t++) {
-				int u = BeaconBlockEntity.EFFECTS[q][t].id;
-				BeaconScreen.EffectButtonWidget effectButtonWidget2 = new BeaconScreen.EffectButtonWidget(q << 8 | u, this.x + 167 + t * 24 - s / 2, this.y + 47, u, q);
+			for (int r = 0; r < p - 1; r++) {
+				StatusEffect statusEffect4 = BeaconBlockEntity.EFFECTS[o][r];
+				BeaconScreen.EffectButtonWidget effectButtonWidget2 = new BeaconScreen.EffectButtonWidget(j++, this.x + 167 + r * 24 - q / 2, this.y + 47, statusEffect4, o);
 				this.buttons.add(effectButtonWidget2);
-				if (q >= i) {
+				if (o >= i) {
 					effectButtonWidget2.active = false;
-				} else if (u == k) {
+				} else if (statusEffect4 == statusEffect2) {
 					effectButtonWidget2.setDisabled(true);
 				}
 			}
 
-			if (j > 0) {
+			if (statusEffect != null) {
 				BeaconScreen.EffectButtonWidget effectButtonWidget3 = new BeaconScreen.EffectButtonWidget(
-					q << 8 | j, this.x + 167 + (r - 1) * 24 - s / 2, this.y + 47, j, q
+					j++, this.x + 167 + (p - 1) * 24 - q / 2, this.y + 47, statusEffect, o
 				);
 				this.buttons.add(effectButtonWidget3);
-				if (q >= i) {
+				if (o >= i) {
 					effectButtonWidget3.active = false;
-				} else if (j == k) {
+				} else if (statusEffect == statusEffect2) {
 					effectButtonWidget3.setDisabled(true);
 				}
 			}
 		}
 
-		this.doneButton.active = this.beaconInventory.getInvStack(0) != null && j > 0;
+		this.doneButton.active = this.beaconInventory.getInvStack(0) != null && statusEffect != null;
 	}
 
 	@Override
 	protected void buttonClicked(ButtonWidget button) {
 		if (button.id == -2) {
+			this.client.player.networkHandler.sendPacket(new GuiCloseC2SPacket(this.client.player.openScreenHandler.syncId));
 			this.client.setScreen(null);
 		} else if (button.id == -1) {
 			String string = "MC|Beacon";
@@ -110,19 +114,19 @@ public class BeaconScreen extends HandledScreen {
 			packetByteBuf.writeInt(this.beaconInventory.getProperty(1));
 			packetByteBuf.writeInt(this.beaconInventory.getProperty(2));
 			this.client.getNetworkHandler().sendPacket(new CustomPayloadC2SPacket(string, packetByteBuf));
+			this.client.player.networkHandler.sendPacket(new GuiCloseC2SPacket(this.client.player.openScreenHandler.syncId));
 			this.client.setScreen(null);
 		} else if (button instanceof BeaconScreen.EffectButtonWidget) {
-			if (((BeaconScreen.EffectButtonWidget)button).isDisabled()) {
+			BeaconScreen.EffectButtonWidget effectButtonWidget = (BeaconScreen.EffectButtonWidget)button;
+			if (effectButtonWidget.isDisabled()) {
 				return;
 			}
 
-			int i = button.id;
-			int j = i & 0xFF;
-			int k = i >> 8;
-			if (k < 3) {
-				this.beaconInventory.setProperty(1, j);
+			int i = StatusEffect.getIndex(effectButtonWidget.field_13329);
+			if (effectButtonWidget.baseLevels < 3) {
+				this.beaconInventory.setProperty(1, i);
 			} else {
-				this.beaconInventory.setProperty(2, j);
+				this.beaconInventory.setProperty(2, i);
 			}
 
 			this.buttons.clear();
@@ -155,10 +159,10 @@ public class BeaconScreen extends HandledScreen {
 		int j = (this.height - this.backgroundHeight) / 2;
 		this.drawTexture(i, j, 0, 0, this.backgroundWidth, this.backgroundHeight);
 		this.itemRenderer.zOffset = 100.0F;
-		this.itemRenderer.renderInGuiWithOverrides(new ItemStack(Items.EMERALD), i + 42, j + 109);
-		this.itemRenderer.renderInGuiWithOverrides(new ItemStack(Items.DIAMOND), i + 42 + 22, j + 109);
-		this.itemRenderer.renderInGuiWithOverrides(new ItemStack(Items.GOLD_INGOT), i + 42 + 44, j + 109);
-		this.itemRenderer.renderInGuiWithOverrides(new ItemStack(Items.IRON_INGOT), i + 42 + 66, j + 109);
+		this.itemRenderer.method_12461(new ItemStack(Items.EMERALD), i + 42, j + 109);
+		this.itemRenderer.method_12461(new ItemStack(Items.DIAMOND), i + 42 + 22, j + 109);
+		this.itemRenderer.method_12461(new ItemStack(Items.GOLD_INGOT), i + 42 + 44, j + 109);
+		this.itemRenderer.method_12461(new ItemStack(Items.IRON_INGOT), i + 42 + 66, j + 109);
 		this.itemRenderer.zOffset = 0.0F;
 	}
 
@@ -232,26 +236,19 @@ public class BeaconScreen extends HandledScreen {
 	}
 
 	class EffectButtonWidget extends BeaconScreen.BaseButtonWidget {
-		private final int secondaryEffectId;
+		private final StatusEffect field_13329;
 		private final int baseLevels;
 
-		public EffectButtonWidget(int i, int j, int k, int l, int m) {
-			super(
-				i,
-				j,
-				k,
-				HandledScreen.INVENTORY_TEXTURE,
-				0 + StatusEffect.STATUS_EFFECTS[l].getIconLevel() % 8 * 18,
-				198 + StatusEffect.STATUS_EFFECTS[l].getIconLevel() / 8 * 18
-			);
-			this.secondaryEffectId = l;
-			this.baseLevels = m;
+		public EffectButtonWidget(int i, int j, int k, StatusEffect statusEffect, int l) {
+			super(i, j, k, HandledScreen.INVENTORY_TEXTURE, statusEffect.getIconLevel() % 8 * 18, 198 + statusEffect.getIconLevel() / 8 * 18);
+			this.field_13329 = statusEffect;
+			this.baseLevels = l;
 		}
 
 		@Override
 		public void renderToolTip(int mouseX, int mouseY) {
-			String string = I18n.translate(StatusEffect.STATUS_EFFECTS[this.secondaryEffectId].getTranslationKey());
-			if (this.baseLevels >= 3 && this.secondaryEffectId != StatusEffect.REGENERATION.id) {
+			String string = I18n.translate(this.field_13329.getTranslationKey());
+			if (this.baseLevels >= 3 && this.field_13329 != StatusEffects.REGENERATION) {
 				string = string + " II";
 			}
 

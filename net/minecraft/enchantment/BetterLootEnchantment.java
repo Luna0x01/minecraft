@@ -1,10 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class BetterLootEnchantment extends Enchantment {
-	protected BetterLootEnchantment(int i, Identifier identifier, int j, EnchantmentTarget enchantmentTarget) {
-		super(i, identifier, j, enchantmentTarget);
+	protected BetterLootEnchantment(Enchantment.Rarity rarity, EnchantmentTarget enchantmentTarget, EquipmentSlot... equipmentSlots) {
+		super(rarity, enchantmentTarget, equipmentSlots);
 		if (enchantmentTarget == EnchantmentTarget.DIGGER) {
 			this.setName("lootBonusDigger");
 		} else if (enchantmentTarget == EnchantmentTarget.FISHING_ROD) {
@@ -31,6 +31,6 @@ public class BetterLootEnchantment extends Enchantment {
 
 	@Override
 	public boolean differs(Enchantment other) {
-		return super.differs(other) && other.id != SILK_TOUCH.id;
+		return super.differs(other) && other != Enchantments.SILK_TOUCH;
 	}
 }

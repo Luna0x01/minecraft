@@ -64,9 +64,8 @@ public class InfestedBlock extends Block {
 	}
 
 	@Override
-	public int getMeta(World world, BlockPos pos) {
-		BlockState blockState = world.getBlockState(pos);
-		return blockState.getBlock().getData(blockState);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this, 1, blockState.getBlock().getData(blockState));
 	}
 
 	@Override

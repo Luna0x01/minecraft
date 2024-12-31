@@ -1,9 +1,7 @@
 package net.minecraft.scoreboard;
 
 import com.google.common.collect.Maps;
-import java.util.List;
 import java.util.Map;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Formatting;
 
 public interface ScoreboardCriterion {
@@ -14,6 +12,11 @@ public interface ScoreboardCriterion {
 	ScoreboardCriterion PLAYERS_KILLED = new GenericScoreboardCriteria("playerKillCount");
 	ScoreboardCriterion TOTAL_KILLED = new GenericScoreboardCriteria("totalKillCount");
 	ScoreboardCriterion HEALTH = new HealthScoreboardCriteria("health");
+	ScoreboardCriterion FOOD = new ReadOnlyScoreboardCriteria("food");
+	ScoreboardCriterion AIR = new ReadOnlyScoreboardCriteria("air");
+	ScoreboardCriterion ARMOR = new ReadOnlyScoreboardCriteria("armor");
+	ScoreboardCriterion XP = new ReadOnlyScoreboardCriteria("xp");
+	ScoreboardCriterion LEVEL = new ReadOnlyScoreboardCriteria("level");
 	ScoreboardCriterion[] TEAM_KILLS = new ScoreboardCriterion[]{
 		new TeamScoreboardCriteria("teamkill.", Formatting.BLACK),
 		new TeamScoreboardCriteria("teamkill.", Formatting.DARK_BLUE),
@@ -52,8 +55,6 @@ public interface ScoreboardCriterion {
 	};
 
 	String getName();
-
-	int method_4918(List<PlayerEntity> players);
 
 	boolean method_4919();
 

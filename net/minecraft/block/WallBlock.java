@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -23,6 +24,42 @@ public class WallBlock extends Block {
 	public static final BooleanProperty SOUTH = BooleanProperty.of("south");
 	public static final BooleanProperty WEST = BooleanProperty.of("west");
 	public static final EnumProperty<WallBlock.WallType> VARIANT = EnumProperty.of("variant", WallBlock.WallType.class);
+	protected static final Box[] field_12831 = new Box[]{
+		new Box(0.25, 0.0, 0.25, 0.75, 1.0, 0.75),
+		new Box(0.25, 0.0, 0.25, 0.75, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.25, 0.75, 1.0, 0.75),
+		new Box(0.0, 0.0, 0.25, 0.75, 1.0, 1.0),
+		new Box(0.25, 0.0, 0.0, 0.75, 1.0, 0.75),
+		new Box(0.3125, 0.0, 0.0, 0.6875, 0.875, 1.0),
+		new Box(0.0, 0.0, 0.0, 0.75, 1.0, 0.75),
+		new Box(0.0, 0.0, 0.0, 0.75, 1.0, 1.0),
+		new Box(0.25, 0.0, 0.25, 1.0, 1.0, 0.75),
+		new Box(0.25, 0.0, 0.25, 1.0, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.3125, 1.0, 0.875, 0.6875),
+		new Box(0.0, 0.0, 0.25, 1.0, 1.0, 1.0),
+		new Box(0.25, 0.0, 0.0, 1.0, 1.0, 0.75),
+		new Box(0.25, 0.0, 0.0, 1.0, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.75),
+		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+	};
+	protected static final Box[] field_12830 = new Box[]{
+		field_12831[0].withMaxY(1.5),
+		field_12831[1].withMaxY(1.5),
+		field_12831[2].withMaxY(1.5),
+		field_12831[3].withMaxY(1.5),
+		field_12831[4].withMaxY(1.5),
+		field_12831[5].withMaxY(1.5),
+		field_12831[6].withMaxY(1.5),
+		field_12831[7].withMaxY(1.5),
+		field_12831[8].withMaxY(1.5),
+		field_12831[9].withMaxY(1.5),
+		field_12831[10].withMaxY(1.5),
+		field_12831[11].withMaxY(1.5),
+		field_12831[12].withMaxY(1.5),
+		field_12831[13].withMaxY(1.5),
+		field_12831[14].withMaxY(1.5),
+		field_12831[15].withMaxY(1.5)
+	};
 
 	public WallBlock(Block block) {
 		super(block.material);
@@ -38,8 +75,42 @@ public class WallBlock extends Block {
 		);
 		this.setStrength(block.hardness);
 		this.setResistance(block.blastResistance / 3.0F);
-		this.setSound(block.sound);
+		this.setBlockSoundGroup(block.blockSoundGroup);
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		state = this.getBlockState(state, view, pos);
+		return field_12831[method_11643(state)];
+	}
+
+	@Nullable
+	@Override
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		state = this.getBlockState(state, world, pos);
+		return field_12830[method_11643(state)];
+	}
+
+	private static int method_11643(BlockState blockState) {
+		int i = 0;
+		if ((Boolean)blockState.get(NORTH)) {
+			i |= 1 << Direction.NORTH.getHorizontal();
+		}
+
+		if ((Boolean)blockState.get(EAST)) {
+			i |= 1 << Direction.EAST.getHorizontal();
+		}
+
+		if ((Boolean)blockState.get(SOUTH)) {
+			i |= 1 << Direction.SOUTH.getHorizontal();
+		}
+
+		if ((Boolean)blockState.get(WEST)) {
+			i |= 1 << Direction.WEST.getHorizontal();
+		}
+
+		return i;
 	}
 
 	@Override
@@ -48,7 +119,7 @@ public class WallBlock extends Block {
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -58,65 +129,19 @@ public class WallBlock extends Block {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		boolean bl = this.canWallConnectTo(view, pos.north());
-		boolean bl2 = this.canWallConnectTo(view, pos.south());
-		boolean bl3 = this.canWallConnectTo(view, pos.west());
-		boolean bl4 = this.canWallConnectTo(view, pos.east());
-		float f = 0.25F;
-		float g = 0.75F;
-		float h = 0.25F;
-		float i = 0.75F;
-		float j = 1.0F;
-		if (bl) {
-			h = 0.0F;
-		}
-
-		if (bl2) {
-			i = 1.0F;
-		}
-
-		if (bl3) {
-			f = 0.0F;
-		}
-
-		if (bl4) {
-			g = 1.0F;
-		}
-
-		if (bl && bl2 && !bl3 && !bl4) {
-			j = 0.8125F;
-			f = 0.3125F;
-			g = 0.6875F;
-		} else if (!bl && !bl2 && bl3 && bl4) {
-			j = 0.8125F;
-			h = 0.3125F;
-			i = 0.6875F;
-		}
-
-		this.setBoundingBox(f, 0.0F, h, g, j, i);
-	}
-
-	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		this.setBoundingBox(world, pos);
-		this.boundingBoxMaxY = 1.5;
-		return super.getCollisionBox(world, pos, state);
-	}
-
-	public boolean canWallConnectTo(BlockView view, BlockPos pos) {
-		Block block = view.getBlockState(pos).getBlock();
+	private boolean canWallConnectTo(BlockView view, BlockPos pos) {
+		BlockState blockState = view.getBlockState(pos);
+		Block block = blockState.getBlock();
 		if (block == Blocks.BARRIER) {
 			return false;
 		} else if (block == this || block instanceof FenceGateBlock) {
 			return true;
 		} else {
-			return block.material.isOpaque() && block.renderAsNormalBlock() ? block.material != Material.PUMPKIN : false;
+			return block.material.isOpaque() && blockState.method_11730() ? block.material != Material.PUMPKIN : false;
 		}
 	}
 
@@ -133,8 +158,8 @@ public class WallBlock extends Block {
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
-		return facing == Direction.DOWN ? super.isSideInvisible(view, pos, facing) : true;
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? super.method_8654(state, view, pos, direction) : true;
 	}
 
 	@Override
@@ -149,11 +174,12 @@ public class WallBlock extends Block {
 
 	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		return state.with(UP, !view.isAir(pos.up()))
-			.with(NORTH, this.canWallConnectTo(view, pos.north()))
-			.with(EAST, this.canWallConnectTo(view, pos.east()))
-			.with(SOUTH, this.canWallConnectTo(view, pos.south()))
-			.with(WEST, this.canWallConnectTo(view, pos.west()));
+		boolean bl = this.canWallConnectTo(view, pos.north());
+		boolean bl2 = this.canWallConnectTo(view, pos.east());
+		boolean bl3 = this.canWallConnectTo(view, pos.south());
+		boolean bl4 = this.canWallConnectTo(view, pos.west());
+		boolean bl5 = bl && !bl2 && bl3 && !bl4 || !bl && bl2 && !bl3 && bl4;
+		return state.with(UP, !bl5 || !view.isAir(pos.up())).with(NORTH, bl).with(EAST, bl2).with(SOUTH, bl3).with(WEST, bl4);
 	}
 
 	@Override

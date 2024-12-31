@@ -1,5 +1,6 @@
 package net.minecraft.screen;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -34,6 +35,7 @@ public class HopperScreenHandler extends ScreenHandler {
 		return this.inventory.canPlayerUseInv(player);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
 		ItemStack itemStack = null;

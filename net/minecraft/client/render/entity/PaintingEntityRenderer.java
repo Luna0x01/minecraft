@@ -27,7 +27,17 @@ public class PaintingEntityRenderer extends EntityRenderer<PaintingEntity> {
 		PaintingEntity.PaintingMotive paintingMotive = paintingEntity.type;
 		float i = 0.0625F;
 		GlStateManager.scale(i, i, i);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(paintingEntity));
+		}
+
 		this.method_1577(paintingEntity, paintingMotive.width, paintingMotive.height, paintingMotive.textureX, paintingMotive.textureY);
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();
 		super.render(paintingEntity, d, e, f, g, h);

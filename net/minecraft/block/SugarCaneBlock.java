@@ -1,9 +1,11 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
@@ -15,13 +17,17 @@ import net.minecraft.world.World;
 
 public class SugarCaneBlock extends Block {
 	public static final IntProperty AGE = IntProperty.of("age", 0, 15);
+	protected static final Box field_12734 = new Box(0.125, 0.0, 0.125, 0.875, 1.0, 0.875);
 
 	protected SugarCaneBlock() {
 		super(Material.PLANT);
 		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, 0));
-		float f = 0.375F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 1.0F, 0.5F + f);
 		this.setTickRandomly(true);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12734;
 	}
 
 	@Override
@@ -55,8 +61,11 @@ public class SugarCaneBlock extends Block {
 		} else if (block != Blocks.GRASS && block != Blocks.DIRT && block != Blocks.SAND) {
 			return false;
 		} else {
+			BlockPos blockPos = pos.down();
+
 			for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-				if (world.getBlockState(pos.offset(direction).down()).getBlock().getMaterial() == Material.WATER) {
+				BlockState blockState = world.getBlockState(blockPos.offset(direction));
+				if (blockState.getMaterial() == Material.WATER || blockState.getBlock() == Blocks.FROSTED_ICE) {
 					return true;
 				}
 			}
@@ -66,8 +75,8 @@ public class SugarCaneBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		this.placeSugarCaneBlock(world, pos, state);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		this.placeSugarCaneBlock(world, blockPos, blockState);
 	}
 
 	protected final boolean placeSugarCaneBlock(World world, BlockPos blockPos, BlockState blockState) {
@@ -84,34 +93,31 @@ public class SugarCaneBlock extends Block {
 		return this.canBePlacedAtPos(world, blockPos);
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.SUGARCANE;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.SUGARCANE;
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		return view.getBiome(pos).getGrassColor(pos);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Items.SUGARCANE);
 	}
 
 	@Override

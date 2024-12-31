@@ -1,10 +1,8 @@
 package net.minecraft.entity.effect;
 
-import net.minecraft.util.Identifier;
-
 public class InstantStatusEffect extends StatusEffect {
-	public InstantStatusEffect(int i, Identifier identifier, boolean bl, int j) {
-		super(i, identifier, bl, j);
+	public InstantStatusEffect(boolean bl, int i) {
+		super(bl, i);
 	}
 
 	@Override

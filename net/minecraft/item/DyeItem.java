@@ -5,6 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.Growable;
+import net.minecraft.block.Log1Block;
 import net.minecraft.block.PlanksBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
@@ -12,9 +13,12 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class DyeItem extends Item {
@@ -35,45 +39,45 @@ public class DyeItem extends Item {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		if (!player.canModify(pos.offset(direction), direction, itemStack)) {
-			return false;
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
+		if (!playerEntity.canModify(blockPos.offset(direction), direction, itemStack)) {
+			return ActionResult.FAIL;
 		} else {
 			DyeColor dyeColor = DyeColor.getById(itemStack.getData());
 			if (dyeColor == DyeColor.WHITE) {
-				if (fertilize(itemStack, world, pos)) {
+				if (fertilize(itemStack, world, blockPos)) {
 					if (!world.isClient) {
-						world.syncGlobalEvent(2005, pos, 0);
+						world.syncGlobalEvent(2005, blockPos, 0);
 					}
 
-					return true;
+					return ActionResult.SUCCESS;
 				}
 			} else if (dyeColor == DyeColor.BROWN) {
-				BlockState blockState = world.getBlockState(pos);
+				BlockState blockState = world.getBlockState(blockPos);
 				Block block = blockState.getBlock();
-				if (block == Blocks.LOG && blockState.get(PlanksBlock.VARIANT) == PlanksBlock.WoodType.JUNGLE) {
-					if (direction == Direction.DOWN) {
-						return false;
-					}
-
-					if (direction == Direction.UP) {
-						return false;
-					}
-
-					pos = pos.offset(direction);
-					if (world.isAir(pos)) {
-						BlockState blockState2 = Blocks.COCOA.getStateFromData(world, pos, direction, facingX, facingY, facingZ, 0, player);
-						world.setBlockState(pos, blockState2, 2);
-						if (!player.abilities.creativeMode) {
-							itemStack.count--;
+				if (block == Blocks.LOG && blockState.get(Log1Block.VARIANT) == PlanksBlock.WoodType.JUNGLE) {
+					if (direction != Direction.DOWN && direction != Direction.UP) {
+						blockPos = blockPos.offset(direction);
+						if (world.isAir(blockPos)) {
+							BlockState blockState2 = Blocks.COCOA.getStateFromData(world, blockPos, direction, f, g, h, 0, playerEntity);
+							world.setBlockState(blockPos, blockState2, 10);
+							if (!playerEntity.abilities.creativeMode) {
+								itemStack.count--;
+							}
 						}
+
+						return ActionResult.SUCCESS;
 					}
 
-					return true;
+					return ActionResult.FAIL;
 				}
+
+				return ActionResult.FAIL;
 			}
 
-			return false;
+			return ActionResult.PASS;
 		}
 	}
 
@@ -102,10 +106,8 @@ public class DyeItem extends Item {
 			i = 15;
 		}
 
-		Block block = world.getBlockState(pos).getBlock();
-		if (block.getMaterial() != Material.AIR) {
-			block.setBoundingBox(world, pos);
-
+		BlockState blockState = world.getBlockState(pos);
+		if (blockState.getMaterial() != Material.AIR) {
 			for (int j = 0; j < i; j++) {
 				double d = RANDOM.nextGaussian() * 0.02;
 				double e = RANDOM.nextGaussian() * 0.02;
@@ -113,7 +115,7 @@ public class DyeItem extends Item {
 				world.addParticle(
 					ParticleType.HAPPY_VILLAGER,
 					(double)((float)pos.getX() + RANDOM.nextFloat()),
-					(double)pos.getY() + (double)RANDOM.nextFloat() * block.getMaxY(),
+					(double)pos.getY() + (double)RANDOM.nextFloat() * blockState.getCollisionBox((BlockView)world, pos).maxY,
 					(double)((float)pos.getZ() + RANDOM.nextFloat()),
 					d,
 					e,
@@ -124,13 +126,13 @@ public class DyeItem extends Item {
 	}
 
 	@Override
-	public boolean canUseOnEntity(ItemStack stack, PlayerEntity player, LivingEntity entity) {
-		if (entity instanceof SheepEntity) {
-			SheepEntity sheepEntity = (SheepEntity)entity;
-			DyeColor dyeColor = DyeColor.getById(stack.getData());
+	public boolean method_3353(ItemStack itemStack, PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
+		if (livingEntity instanceof SheepEntity) {
+			SheepEntity sheepEntity = (SheepEntity)livingEntity;
+			DyeColor dyeColor = DyeColor.getById(itemStack.getData());
 			if (!sheepEntity.isSheared() && sheepEntity.getColor() != dyeColor) {
 				sheepEntity.setColor(dyeColor);
-				stack.count--;
+				itemStack.count--;
 			}
 
 			return true;

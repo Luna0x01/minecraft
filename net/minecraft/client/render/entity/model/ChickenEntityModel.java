@@ -77,8 +77,8 @@ public class ChickenEntityModel extends EntityModel {
 
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.head.posX = headPitch / (180.0F / (float)Math.PI);
-		this.head.posY = age / (180.0F / (float)Math.PI);
+		this.head.posX = headPitch * (float) (Math.PI / 180.0);
+		this.head.posY = age * (float) (Math.PI / 180.0);
 		this.beak.posX = this.head.posX;
 		this.beak.posY = this.head.posY;
 		this.wattle.posX = this.head.posX;

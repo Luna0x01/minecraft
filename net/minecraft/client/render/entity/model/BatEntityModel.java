@@ -56,9 +56,8 @@ public class BatEntityModel extends EntityModel {
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		if (((BatEntity)entity).isRoosting()) {
-			float f = 180.0F / (float)Math.PI;
-			this.head.posX = headPitch / (180.0F / (float)Math.PI);
-			this.head.posY = (float) Math.PI - age / (180.0F / (float)Math.PI);
+			this.head.posX = headPitch * (float) (Math.PI / 180.0);
+			this.head.posY = (float) Math.PI - age * (float) (Math.PI / 180.0);
 			this.head.posZ = (float) Math.PI;
 			this.head.setPivot(0.0F, -2.0F, 0.0F);
 			this.rightWing.setPivot(-3.0F, 0.0F, 3.0F);
@@ -71,9 +70,8 @@ public class BatEntityModel extends EntityModel {
 			this.leftWing.posY = -this.rightWing.posY;
 			this.leftWingTip.posY = -this.rightWingTip.posY;
 		} else {
-			float g = 180.0F / (float)Math.PI;
-			this.head.posX = headPitch / (180.0F / (float)Math.PI);
-			this.head.posY = age / (180.0F / (float)Math.PI);
+			this.head.posX = headPitch * (float) (Math.PI / 180.0);
+			this.head.posY = age * (float) (Math.PI / 180.0);
 			this.head.posZ = 0.0F;
 			this.head.setPivot(0.0F, 0.0F, 0.0F);
 			this.rightWing.setPivot(0.0F, 0.0F, 0.0F);

@@ -2,8 +2,6 @@ package net.minecraft.client.resource;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -12,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.option.GameOptions;
@@ -30,6 +30,7 @@ import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ZipResourcePack;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.comparator.LastModifiedFileComparator;
@@ -70,7 +71,7 @@ public class ResourcePackLoader {
 
 			for (ResourcePackLoader.Entry entry : this.availableResourcePacks) {
 				if (entry.getName().equals(string)) {
-					if (entry.getFormat() == 1 || gameOptions.incompatibleResourcePacks.contains(entry.getName())) {
+					if (entry.getFormat() == 2 || gameOptions.incompatibleResourcePacks.contains(entry.getName())) {
 						this.selectedResourcePacks.add(entry);
 						break;
 					}
@@ -125,6 +126,21 @@ public class ResourcePackLoader {
 		this.availableResourcePacks = list;
 	}
 
+	@Nullable
+	public ResourcePackLoader.Entry method_12499() {
+		if (this.serverContainer != null) {
+			ResourcePackLoader.Entry entry = new ResourcePackLoader.Entry(this.serverContainer);
+
+			try {
+				entry.loadIcon();
+				return entry;
+			} catch (IOException var3) {
+			}
+		}
+
+		return null;
+	}
+
 	public List<ResourcePackLoader.Entry> getAvailableResourcePacks() {
 		return ImmutableList.copyOf(this.availableResourcePacks);
 	}
@@ -143,29 +159,30 @@ public class ResourcePackLoader {
 	}
 
 	public ListenableFuture<Object> downloadResourcePack(String url, String hash) {
-		String string;
-		if (hash.matches("^[a-f0-9]{40}$")) {
-			string = hash;
-		} else {
-			string = "legacy";
-		}
-
+		String string = DigestUtils.sha1Hex(url);
+		String string2 = hash.matches("^[a-f0-9]{40}$") ? hash : "";
 		final File file = new File(this.serverResourcePackDir, string);
 		this.lock.lock();
 
 		try {
 			this.clear();
-			if (file.exists() && hash.length() == 40) {
+			if (file.exists()) {
 				try {
-					String string3 = Hashing.sha1().hashBytes(Files.toByteArray(file)).toString();
-					if (string3.equals(hash)) {
+					String string3 = DigestUtils.sha1Hex(new FileInputStream(file));
+					if (!string2.equals("") && string3.equals(string2)) {
+						LOGGER.info("Found file " + file + " matching requested hash " + string2);
 						return this.loadServerPack(file);
 					}
 
-					LOGGER.warn("File " + file + " had wrong hash (expected " + hash + ", found " + string3 + "). Deleting it.");
-					FileUtils.deleteQuietly(file);
-				} catch (IOException var13) {
-					LOGGER.warn("File " + file + " couldn't be hashed. Deleting it.", var13);
+					if (!string2.equals("") && !string3.equals(string2)) {
+						LOGGER.warn("File " + file + " had wrong hash (expected " + string2 + ", found " + string3 + "). Deleting it.");
+						FileUtils.deleteQuietly(file);
+					} else if (string2.equals("")) {
+						LOGGER.info("Found file " + file + " without verification hash");
+						return this.loadServerPack(file);
+					}
+				} catch (IOException var14) {
+					LOGGER.warn("File " + file + " couldn't be hashed. Deleting it.", var14);
 					FileUtils.deleteQuietly(file);
 				}
 			}
@@ -182,7 +199,7 @@ public class ResourcePackLoader {
 			final SettableFuture<Object> settableFuture = SettableFuture.create();
 			this.downloadTask = NetworkUtils.downloadResourcePack(file, url, map, 52428800, progressScreen, minecraftClient.getNetworkProxy());
 			Futures.addCallback(this.downloadTask, new FutureCallback<Object>() {
-				public void onSuccess(Object object) {
+				public void onSuccess(@Nullable Object object) {
 					ResourcePackLoader.this.loadServerPack(file);
 					settableFuture.set(null);
 				}
@@ -198,15 +215,19 @@ public class ResourcePackLoader {
 	}
 
 	private void deleteOldServerPack() {
-		List<File> list = Lists.newArrayList(FileUtils.listFiles(this.serverResourcePackDir, TrueFileFilter.TRUE, null));
-		Collections.sort(list, LastModifiedFileComparator.LASTMODIFIED_REVERSE);
-		int i = 0;
+		try {
+			List<File> list = Lists.newArrayList(FileUtils.listFiles(this.serverResourcePackDir, TrueFileFilter.TRUE, null));
+			Collections.sort(list, LastModifiedFileComparator.LASTMODIFIED_REVERSE);
+			int i = 0;
 
-		for (File file : list) {
-			if (i++ >= 10) {
-				LOGGER.info("Deleting old server resource pack " + file.getName());
-				FileUtils.deleteQuietly(file);
+			for (File file : list) {
+				if (i++ >= 10) {
+					LOGGER.info("Deleting old server resource pack " + file.getName());
+					FileUtils.deleteQuietly(file);
+				}
 			}
+		} catch (IllegalArgumentException var5) {
+			LOGGER.error("Error while deleting old server resource pack : " + var5.getMessage());
 		}
 	}
 
@@ -238,54 +259,58 @@ public class ResourcePackLoader {
 	}
 
 	public class Entry {
-		private final File resourcePackFile;
-		private ResourcePack resourcePack;
+		private ResourcePack field_13656;
 		private ResourcePackMetadata resourcePackData;
-		private BufferedImage image;
-		private Identifier id;
+		private Identifier field_13657;
 
 		private Entry(File file) {
-			this.resourcePackFile = file;
+			this((ResourcePack)(file.isDirectory() ? new DirectoryResourcePack(file) : new ZipResourcePack(file)));
+		}
+
+		private Entry(ResourcePack resourcePack) {
+			this.field_13656 = resourcePack;
 		}
 
 		public void loadIcon() throws IOException {
-			this.resourcePack = (ResourcePack)(this.resourcePackFile.isDirectory()
-				? new DirectoryResourcePack(this.resourcePackFile)
-				: new ZipResourcePack(this.resourcePackFile));
-			this.resourcePackData = this.resourcePack.parseMetadata(ResourcePackLoader.this.metadataSerializer, "pack");
-
-			try {
-				this.image = this.resourcePack.getIcon();
-			} catch (IOException var2) {
-			}
-
-			if (this.image == null) {
-				this.image = ResourcePackLoader.this.defaultResourcePack.getIcon();
-			}
-
+			this.resourcePackData = this.field_13656.parseMetadata(ResourcePackLoader.this.metadataSerializer, "pack");
 			this.close();
 		}
 
 		public void bindIcon(TextureManager textureManager) {
-			if (this.id == null) {
-				this.id = textureManager.registerDynamicTexture("texturepackicon", new NativeImageBackedTexture(this.image));
+			BufferedImage bufferedImage = null;
+
+			try {
+				bufferedImage = this.field_13656.getIcon();
+			} catch (IOException var5) {
 			}
 
-			textureManager.bindTexture(this.id);
+			if (bufferedImage == null) {
+				try {
+					bufferedImage = ResourcePackLoader.this.defaultResourcePack.getIcon();
+				} catch (IOException var4) {
+					throw new Error("Couldn't bind resource pack icon", var4);
+				}
+			}
+
+			if (this.field_13657 == null) {
+				this.field_13657 = textureManager.registerDynamicTexture("texturepackicon", new NativeImageBackedTexture(bufferedImage));
+			}
+
+			textureManager.bindTexture(this.field_13657);
 		}
 
 		public void close() {
-			if (this.resourcePack instanceof Closeable) {
-				IOUtils.closeQuietly((Closeable)this.resourcePack);
+			if (this.field_13656 instanceof Closeable) {
+				IOUtils.closeQuietly((Closeable)this.field_13656);
 			}
 		}
 
 		public ResourcePack getResourcePack() {
-			return this.resourcePack;
+			return this.field_13656;
 		}
 
 		public String getName() {
-			return this.resourcePack.getName();
+			return this.field_13656.getName();
 		}
 
 		public String getDescription() {
@@ -295,7 +320,7 @@ public class ResourcePackLoader {
 		}
 
 		public int getFormat() {
-			return this.resourcePackData.getPackFormat();
+			return this.resourcePackData == null ? 0 : this.resourcePackData.getPackFormat();
 		}
 
 		public boolean equals(Object object) {
@@ -311,9 +336,7 @@ public class ResourcePackLoader {
 		}
 
 		public String toString() {
-			return String.format(
-				"%s:%s:%d", this.resourcePackFile.getName(), this.resourcePackFile.isDirectory() ? "folder" : "zip", this.resourcePackFile.lastModified()
-			);
+			return String.format("%s:%s", this.field_13656.getName(), this.field_13656 instanceof DirectoryResourcePack ? "folder" : "zip");
 		}
 	}
 }

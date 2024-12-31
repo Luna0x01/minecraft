@@ -1,14 +1,19 @@
 package net.minecraft.item;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -26,59 +31,61 @@ public class BlockItem extends Item {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		BlockState blockState = world.getBlockState(pos);
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
+		BlockState blockState = world.getBlockState(blockPos);
 		Block block = blockState.getBlock();
-		if (!block.isReplaceable(world, pos)) {
-			pos = pos.offset(direction);
+		if (!block.method_8638(world, blockPos)) {
+			blockPos = blockPos.offset(direction);
 		}
 
-		if (itemStack.count == 0) {
-			return false;
-		} else if (!player.canModify(pos, direction, itemStack)) {
-			return false;
-		} else if (world.canBlockBePlaced(this.block, pos, false, direction, null, itemStack)) {
+		if (itemStack.count != 0
+			&& playerEntity.canModify(blockPos, direction, itemStack)
+			&& world.canBlockBePlaced(this.block, blockPos, false, direction, null, itemStack)) {
 			int i = this.getMeta(itemStack.getData());
-			BlockState blockState2 = this.block.getStateFromData(world, pos, direction, facingX, facingY, facingZ, i, player);
-			if (world.setBlockState(pos, blockState2, 3)) {
-				blockState2 = world.getBlockState(pos);
+			BlockState blockState2 = this.block.getStateFromData(world, blockPos, direction, f, g, h, i, playerEntity);
+			if (world.setBlockState(blockPos, blockState2, 11)) {
+				blockState2 = world.getBlockState(blockPos);
 				if (blockState2.getBlock() == this.block) {
-					setBlockEntityNbt(world, player, pos, itemStack);
-					this.block.onPlaced(world, pos, blockState2, player, itemStack);
+					setBlockEntityNbt(world, playerEntity, blockPos, itemStack);
+					this.block.onPlaced(world, blockPos, blockState2, playerEntity, itemStack);
 				}
 
-				world.playSound(
-					(double)((float)pos.getX() + 0.5F),
-					(double)((float)pos.getY() + 0.5F),
-					(double)((float)pos.getZ() + 0.5F),
-					this.block.sound.getSound(),
-					(this.block.sound.getVolume() + 1.0F) / 2.0F,
-					this.block.sound.getPitch() * 0.8F
+				BlockSoundGroup blockSoundGroup = this.block.getSoundGroup();
+				world.method_11486(
+					playerEntity,
+					blockPos,
+					blockSoundGroup.method_4194(),
+					SoundCategory.BLOCKS,
+					(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
+					blockSoundGroup.getPitch() * 0.8F
 				);
 				itemStack.count--;
 			}
 
-			return true;
+			return ActionResult.SUCCESS;
 		} else {
-			return false;
+			return ActionResult.FAIL;
 		}
 	}
 
-	public static boolean setBlockEntityNbt(World world, PlayerEntity player, BlockPos pos, ItemStack itemStack) {
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
+	public static boolean setBlockEntityNbt(World world, @Nullable PlayerEntity player, BlockPos pos, ItemStack itemStack) {
+		MinecraftServer minecraftServer = world.getServer();
 		if (minecraftServer == null) {
 			return false;
 		} else {
 			if (itemStack.hasNbt() && itemStack.getNbt().contains("BlockEntityTag", 10)) {
 				BlockEntity blockEntity = world.getBlockEntity(pos);
 				if (blockEntity != null) {
-					if (!world.isClient && blockEntity.shouldNotCopyNbtFromItem() && !minecraftServer.getPlayerManager().isOperator(player.getGameProfile())) {
+					if (!world.isClient
+						&& blockEntity.shouldNotCopyNbtFromItem()
+						&& (player == null || !minecraftServer.getPlayerManager().isOperator(player.getGameProfile()))) {
 						return false;
 					}
 
-					NbtCompound nbtCompound = new NbtCompound();
+					NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
 					NbtCompound nbtCompound2 = (NbtCompound)nbtCompound.copy();
-					blockEntity.toNbt(nbtCompound);
 					NbtCompound nbtCompound3 = (NbtCompound)itemStack.getNbt().get("BlockEntityTag");
 					nbtCompound.copyFrom(nbtCompound3);
 					nbtCompound.putInt("x", pos.getX());
@@ -100,7 +107,7 @@ public class BlockItem extends Item {
 		Block block = world.getBlockState(pos).getBlock();
 		if (block == Blocks.SNOW_LAYER) {
 			dir = Direction.UP;
-		} else if (!block.isReplaceable(world, pos)) {
+		} else if (!block.method_8638(world, pos)) {
 			pos = pos.offset(dir);
 		}
 

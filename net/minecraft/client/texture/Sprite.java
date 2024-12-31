@@ -4,10 +4,12 @@ import com.google.common.collect.Lists;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Callable;
+import net.minecraft.client.class_2901;
 import net.minecraft.client.resource.AnimationMetadata;
 import net.minecraft.client.resource.metadata.AnimationFrameResourceMetadata;
+import net.minecraft.resource.Resource;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -28,28 +30,13 @@ public class Sprite {
 	private float vMax;
 	protected int frameIndex;
 	protected int frameTicks;
-	private static String clockTexture = "builtin/clock";
-	private static String compassTexture = "builtin/compass";
 
 	protected Sprite(String string) {
 		this.name = string;
 	}
 
 	protected static Sprite get(Identifier ide) {
-		String string = ide.toString();
-		if (clockTexture.equals(string)) {
-			return new ClockSprite(string);
-		} else {
-			return (Sprite)(compassTexture.equals(string) ? new CompassSprite(string) : new Sprite(string));
-		}
-	}
-
-	public static void setClockTex(String name) {
-		clockTexture = name;
-	}
-
-	public static void setCompassTex(String name) {
-		compassTexture = name;
+		return new Sprite(ide.toString());
 	}
 
 	public void reInitialize(int u, int v, int x, int y, boolean rotation) {
@@ -105,6 +92,11 @@ public class Sprite {
 		return this.uMin + f * (float)frame / 16.0F;
 	}
 
+	public float method_12490(float f) {
+		float g = this.uMax - this.uMin;
+		return (f - this.uMin) / g * 16.0F;
+	}
+
 	public float getMinV() {
 		return this.vMin;
 	}
@@ -115,7 +107,12 @@ public class Sprite {
 
 	public float getFrameV(double frame) {
 		float f = this.vMax - this.vMin;
-		return this.vMin + f * ((float)frame / 16.0F);
+		return this.vMin + f * (float)frame / 16.0F;
+	}
+
+	public float method_12493(float f) {
+		float g = this.vMax - this.vMin;
+		return (f - this.vMin) / g * 16.0F;
 	}
 
 	public String getName() {
@@ -159,9 +156,9 @@ public class Sprite {
 					for (int m = 0; m < is[l].length; m++) {
 						int n = is[l][m];
 						int o = js[l][m];
-						int p = (int)((double)((n & 0xFF0000) >> 16) * d + (double)((o & 0xFF0000) >> 16) * (1.0 - d));
-						int q = (int)((double)((n & 0xFF00) >> 8) * d + (double)((o & 0xFF00) >> 8) * (1.0 - d));
-						int r = (int)((double)(n & 0xFF) * d + (double)(o & 0xFF) * (1.0 - d));
+						int p = this.method_12489(d, n >> 16 & 0xFF, o >> 16 & 0xFF);
+						int q = this.method_12489(d, n >> 8 & 0xFF, o >> 8 & 0xFF);
+						int r = this.method_12489(d, n & 0xFF, o & 0xFF);
 						this.field_11198[l][m] = n & 0xFF000000 | p << 16 | q << 8 | r;
 					}
 				}
@@ -169,6 +166,10 @@ public class Sprite {
 
 			TextureUtil.method_7027(this.field_11198, this.width, this.height, this.x, this.y, false, false);
 		}
+	}
+
+	private int method_12489(double d, int i, int j) {
+		return (int)(d * (double)i + (1.0 - d) * (double)j);
 	}
 
 	public int[][] method_5831(int i) {
@@ -187,56 +188,44 @@ public class Sprite {
 		this.height = height;
 	}
 
-	public void method_7009(BufferedImage[] bufferedImages, AnimationMetadata animationMetadata) throws IOException {
+	public void method_12491(class_2901 arg, boolean bl) throws IOException {
 		this.nullify();
-		int i = bufferedImages[0].getWidth();
-		int j = bufferedImages[0].getHeight();
-		this.width = i;
-		this.height = j;
-		int[][] is = new int[bufferedImages.length][];
-
-		for (int k = 0; k < bufferedImages.length; k++) {
-			BufferedImage bufferedImage = bufferedImages[k];
-			if (bufferedImage != null) {
-				if (k > 0 && (bufferedImage.getWidth() != i >> k || bufferedImage.getHeight() != j >> k)) {
-					throw new RuntimeException(
-						String.format("Unable to load miplevel: %d, image is size: %dx%d, expected %dx%d", k, bufferedImage.getWidth(), bufferedImage.getHeight(), i >> k, j >> k)
-					);
-				}
-
-				is[k] = new int[bufferedImage.getWidth() * bufferedImage.getHeight()];
-				bufferedImage.getRGB(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), is[k], 0, bufferedImage.getWidth());
-			}
+		this.width = arg.field_13651;
+		this.height = arg.field_13652;
+		if (bl) {
+			this.height = this.width;
+		} else if (arg.field_13652 != arg.field_13651) {
+			throw new RuntimeException("broken aspect ratio and not an animation");
 		}
+	}
 
+	public void method_12492(Resource resource, int i) throws IOException {
+		BufferedImage bufferedImage = TextureUtil.create(resource.getInputStream());
+		AnimationMetadata animationMetadata = resource.getMetadata("animation");
+		int[][] is = new int[i][];
+		is[0] = new int[bufferedImage.getWidth() * bufferedImage.getHeight()];
+		bufferedImage.getRGB(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), is[0], 0, bufferedImage.getWidth());
 		if (animationMetadata == null) {
-			if (j != i) {
-				throw new RuntimeException("broken aspect ratio and not an animation");
-			}
-
 			this.frames.add(is);
 		} else {
-			int l = j / i;
-			int m = i;
-			int n = i;
-			this.height = this.width;
+			int j = bufferedImage.getHeight() / this.width;
 			if (animationMetadata.getMetadataListSize() > 0) {
-				for (int o : animationMetadata.getIndices()) {
-					if (o >= l) {
-						throw new RuntimeException("invalid frameindex " + o);
+				for (int k : animationMetadata.getIndices()) {
+					if (k >= j) {
+						throw new RuntimeException("invalid frameindex " + k);
 					}
 
-					this.method_5839(o);
-					this.frames.set(o, method_7012(is, m, n, o));
+					this.method_5839(k);
+					this.frames.set(k, method_7012(is, this.width, this.width, k));
 				}
 
 				this.meta = animationMetadata;
 			} else {
 				List<AnimationFrameResourceMetadata> list = Lists.newArrayList();
 
-				for (int p = 0; p < l; p++) {
-					this.frames.add(method_7012(is, m, n, p));
-					list.add(new AnimationFrameResourceMetadata(p, -1));
+				for (int l = 0; l < j; l++) {
+					this.frames.add(method_7012(is, this.width, this.width, l));
+					list.add(new AnimationFrameResourceMetadata(l, -1));
 				}
 
 				this.meta = new AnimationMetadata(list, this.width, this.height, animationMetadata.getTime(), animationMetadata.shouldInterpolate());
@@ -256,7 +245,7 @@ public class Sprite {
 					CrashReport crashReport = CrashReport.create(var8, "Generating mipmaps for frame");
 					CrashReportSection crashReportSection = crashReport.addElement("Frame being iterated");
 					crashReportSection.add("Frame index", j);
-					crashReportSection.add("Frame sizes", new Callable<String>() {
+					crashReportSection.add("Frame sizes", new CrashCallable<String>() {
 						public String call() throws Exception {
 							StringBuilder stringBuilder = new StringBuilder();
 

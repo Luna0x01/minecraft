@@ -28,11 +28,11 @@ public abstract class AbstractProperty<T extends Comparable<T>> implements Prope
 	public boolean equals(Object obj) {
 		if (this == obj) {
 			return true;
-		} else if (obj != null && this.getClass() == obj.getClass()) {
-			AbstractProperty abstractProperty = (AbstractProperty)obj;
-			return this.type.equals(abstractProperty.type) && this.name.equals(abstractProperty.name);
-		} else {
+		} else if (!(obj instanceof AbstractProperty)) {
 			return false;
+		} else {
+			AbstractProperty<?> abstractProperty = (AbstractProperty<?>)obj;
+			return this.type.equals(abstractProperty.type) && this.name.equals(abstractProperty.name);
 		}
 	}
 

@@ -59,7 +59,7 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 					GlStateManager.matrixMode(5888);
 				} else if (this.christmas) {
 					this.bindTexture(CHRISTMAS_TEXTURE);
-				} else if (chestBlockEntity.getChestType() == 1) {
+				} else if (chestBlockEntity.method_4806() == ChestBlock.Type.TRAP) {
 					this.bindTexture(TRAPPED_TEXTURE);
 				} else {
 					this.bindTexture(NORMAL_TEXTURE);
@@ -75,7 +75,7 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 					GlStateManager.matrixMode(5888);
 				} else if (this.christmas) {
 					this.bindTexture(CHRISTMAS_DOUBLE_TEXTURE);
-				} else if (chestBlockEntity.getChestType() == 1) {
+				} else if (chestBlockEntity.method_4806() == ChestBlock.Type.TRAP) {
 					this.bindTexture(TRAPPED_DOUBLE_TEXTURE);
 				} else {
 					this.bindTexture(NORMAL_DOUBLE_TEXTURE);
@@ -137,7 +137,7 @@ public class ChestBlockEntityRenderer extends BlockEntityRenderer<ChestBlockEnti
 
 			h = 1.0F - h;
 			h = 1.0F - h * h * h;
-			chestBlockEntityModel2.lid.posX = -(h * (float) Math.PI / 2.0F);
+			chestBlockEntityModel2.lid.posX = -(h * (float) (Math.PI / 2));
 			chestBlockEntityModel2.renderParts();
 			GlStateManager.disableRescaleNormal();
 			GlStateManager.popMatrix();

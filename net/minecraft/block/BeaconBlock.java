@@ -1,5 +1,6 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
@@ -12,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -30,14 +32,25 @@ public class BeaconBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof BeaconBlockEntity) {
-				player.openInventory((BeaconBlockEntity)blockEntity);
-				player.incrementStat(Stats.INTERACTIONS_WITH_BEACON);
+				playerEntity.openInventory((BeaconBlockEntity)blockEntity);
+				playerEntity.incrementStat(Stats.INTERACTIONS_WITH_BEACON);
 			}
 
 			return true;
@@ -45,18 +58,18 @@ public class BeaconBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
@@ -71,11 +84,11 @@ public class BeaconBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (blockEntity instanceof BeaconBlockEntity) {
 			((BeaconBlockEntity)blockEntity).tickBeacon();
-			world.addBlockAction(pos, this, 1, 0);
+			world.addBlockAction(blockPos, this, 1, 0);
 		}
 	}
 

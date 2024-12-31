@@ -78,18 +78,20 @@ public final class LevelInfo {
 	}
 
 	public static enum GameMode {
-		NOT_SET(-1, ""),
-		SURVIVAL(0, "survival"),
-		CREATIVE(1, "creative"),
-		ADVENTURE(2, "adventure"),
-		SPECTATOR(3, "spectator");
+		NOT_SET(-1, "", ""),
+		SURVIVAL(0, "survival", "s"),
+		CREATIVE(1, "creative", "c"),
+		ADVENTURE(2, "adventure", "a"),
+		SPECTATOR(3, "spectator", "sp");
 
 		int id;
 		String name;
+		String field_12437;
 
-		private GameMode(int j, String string2) {
+		private GameMode(int j, String string2, String string3) {
 			this.id = j;
 			this.name = string2;
+			this.field_12437 = string3;
 		}
 
 		public int getId() {
@@ -133,23 +135,31 @@ public final class LevelInfo {
 		}
 
 		public static LevelInfo.GameMode byId(int id) {
-			for (LevelInfo.GameMode gameMode : values()) {
-				if (gameMode.id == id) {
-					return gameMode;
+			return method_11494(id, SURVIVAL);
+		}
+
+		public static LevelInfo.GameMode method_11494(int i, LevelInfo.GameMode gameMode) {
+			for (LevelInfo.GameMode gameMode2 : values()) {
+				if (gameMode2.id == i) {
+					return gameMode2;
 				}
 			}
 
-			return SURVIVAL;
+			return gameMode;
 		}
 
 		public static LevelInfo.GameMode byName(String name) {
-			for (LevelInfo.GameMode gameMode : values()) {
-				if (gameMode.name.equals(name)) {
-					return gameMode;
+			return method_11495(name, SURVIVAL);
+		}
+
+		public static LevelInfo.GameMode method_11495(String string, LevelInfo.GameMode gameMode) {
+			for (LevelInfo.GameMode gameMode2 : values()) {
+				if (gameMode2.name.equals(string) || gameMode2.field_12437.equals(string)) {
+					return gameMode2;
 				}
 			}
 
-			return SURVIVAL;
+			return gameMode;
 		}
 	}
 }

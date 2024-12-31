@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import com.google.common.base.Predicate;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.pattern.BlockPattern;
@@ -13,24 +14,26 @@ import net.minecraft.entity.passive.SnowGolemEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.state.StateManager;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
-public class PumpkinBlock extends FacingBlock {
+public class PumpkinBlock extends HorizontalFacingBlock {
 	private BlockPattern snowGolemDispenserPattern;
 	private BlockPattern snowGolemPattern;
 	private BlockPattern ironGolemDispenserPattern;
 	private BlockPattern ironGolemPattern;
 	private static final Predicate<BlockState> IS_GOLEM_HEAD_PREDICATE = new Predicate<BlockState>() {
-		public boolean apply(BlockState blockState) {
+		public boolean apply(@Nullable BlockState blockState) {
 			return blockState != null && (blockState.getBlock() == Blocks.PUMPKIN || blockState.getBlock() == Blocks.JACK_O_LANTERN);
 		}
 	};
 
 	protected PumpkinBlock() {
 		super(Material.PUMPKIN, MaterialColor.ORANGE);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
+		this.setDefaultState(this.stateManager.getDefaultState().with(DIRECTION, Direction.NORTH));
 		this.setTickRandomly(true);
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
@@ -110,27 +113,37 @@ public class PumpkinBlock extends FacingBlock {
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return world.getBlockState(pos).getBlock().material.isReplaceable() && World.isOpaque(world, pos.down());
+		return world.getBlockState(pos).getBlock().material.isReplaceable() && world.getBlockState(pos.down()).method_11739();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(DIRECTION, rotation.rotate(state.get(DIRECTION)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(DIRECTION)));
 	}
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return this.getDefaultState().with(FACING, entity.getHorizontalDirection().getOpposite());
+		return this.getDefaultState().with(DIRECTION, entity.getHorizontalDirection().getOpposite());
 	}
 
 	@Override
 	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, Direction.fromHorizontal(data));
+		return this.getDefaultState().with(DIRECTION, Direction.fromHorizontal(data));
 	}
 
 	@Override
 	public int getData(BlockState state) {
-		return ((Direction)state.get(FACING)).getHorizontal();
+		return ((Direction)state.get(DIRECTION)).getHorizontal();
 	}
 
 	@Override
 	protected StateManager appendProperties() {
-		return new StateManager(this, FACING);
+		return new StateManager(this, DIRECTION);
 	}
 
 	protected BlockPattern getSnowGolemDispenserPattern() {

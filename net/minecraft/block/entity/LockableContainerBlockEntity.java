@@ -17,11 +17,13 @@ public abstract class LockableContainerBlockEntity extends BlockEntity implement
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		if (this.lock != null) {
 			this.lock.toNbt(nbt);
 		}
+
+		return nbt;
 	}
 
 	@Override

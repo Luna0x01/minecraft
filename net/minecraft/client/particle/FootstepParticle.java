@@ -36,13 +36,13 @@ public class FootstepParticle extends Particle {
 		l *= 0.2F;
 		GlStateManager.disableLighting();
 		float m = 0.125F;
-		float n = (float)(this.x - field_1722);
-		float o = (float)(this.y - field_1723);
-		float p = (float)(this.z - field_1724);
-		float q = this.world.getBrightness(new BlockPos(this));
+		float n = (float)(this.field_13428 - field_1722);
+		float o = (float)(this.field_13429 - field_1723);
+		float p = (float)(this.field_13430 - field_1724);
+		float q = this.field_13424.getBrightness(new BlockPos(this.field_13428, this.field_13429, this.field_13430));
 		this.manager.bindTexture(FOOTPRINT);
 		GlStateManager.enableBlend();
-		GlStateManager.blendFunc(770, 771);
+		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 		builder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 		builder.vertex((double)(n - 0.125F), (double)o, (double)(p + 0.125F)).texture(0.0, 1.0).color(q, q, q, l).next();
 		builder.vertex((double)(n + 0.125F), (double)o, (double)(p + 0.125F)).texture(1.0, 1.0).color(q, q, q, l).next();
@@ -54,10 +54,10 @@ public class FootstepParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
+	public void method_12241() {
 		this.footstepAge++;
 		if (this.footstepAge == this.footstepMaxAge) {
-			this.remove();
+			this.method_12251();
 		}
 	}
 

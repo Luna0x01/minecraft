@@ -30,7 +30,7 @@ public class ResourcePackStatusC2SPacket implements Packet<ServerPlayPacketListe
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeString(this.shasum);
-		buf.writeEnum(this.status);
+		buf.writeEnumConstant(this.status);
 	}
 
 	public void apply(ServerPlayPacketListener serverPlayPacketListener) {

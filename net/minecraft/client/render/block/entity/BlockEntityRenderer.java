@@ -42,7 +42,7 @@ public abstract class BlockEntityRenderer<T extends BlockEntity> {
 		return this.dispatcher.getTextRenderer();
 	}
 
-	public boolean rendersOutsideBoundingBox() {
+	public boolean method_12410(T blockEntity) {
 		return false;
 	}
 }

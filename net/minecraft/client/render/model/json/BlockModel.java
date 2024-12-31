@@ -1,7 +1,9 @@
 package net.minecraft.client.render.model.json;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -12,18 +14,22 @@ import com.google.gson.JsonParseException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Type;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
+import net.minecraft.client.class_2874;
+import net.minecraft.client.class_2876;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class BlockModel {
 	private static final Logger LOGGER = LogManager.getLogger();
+	@VisibleForTesting
 	static final Gson GSON = new GsonBuilder()
 		.registerTypeAdapter(BlockModel.class, new BlockModel.Deserializer())
 		.registerTypeAdapter(ModelElement.class, new ModelElement.Deserializer())
@@ -31,43 +37,49 @@ public class BlockModel {
 		.registerTypeAdapter(ModelElementTexture.class, new ModelElementTexture.Deserializer())
 		.registerTypeAdapter(Transformation.class, new Transformation.Deserializer())
 		.registerTypeAdapter(ModelTransformation.class, new ModelTransformation.Deserializer())
+		.registerTypeAdapter(class_2874.class, new class_2874.class_2875())
 		.create();
 	private final List<ModelElement> elements;
 	private final boolean depth;
 	private final boolean ambientOcclusion;
 	private ModelTransformation transformation;
+	private final List<class_2874> field_13553;
 	public String field_10928 = "";
+	@VisibleForTesting
 	protected final Map<String, String> textureMap;
+	@VisibleForTesting
 	protected BlockModel parent;
+	@VisibleForTesting
 	protected Identifier id;
 
 	public static BlockModel getFromReader(Reader reader) {
-		return (BlockModel)GSON.fromJson(reader, BlockModel.class);
+		return JsonHelper.deserialize(GSON, reader, BlockModel.class, false);
 	}
 
 	public static BlockModel create(String value) {
 		return getFromReader(new StringReader(value));
 	}
 
-	protected BlockModel(List<ModelElement> list, Map<String, String> map, boolean bl, boolean bl2, ModelTransformation modelTransformation) {
-		this(null, list, map, bl, bl2, modelTransformation);
-	}
-
-	protected BlockModel(Identifier identifier, Map<String, String> map, boolean bl, boolean bl2, ModelTransformation modelTransformation) {
-		this(identifier, Collections.emptyList(), map, bl, bl2, modelTransformation);
-	}
-
-	private BlockModel(Identifier identifier, List<ModelElement> list, Map<String, String> map, boolean bl, boolean bl2, ModelTransformation modelTransformation) {
+	public BlockModel(
+		@Nullable Identifier identifier,
+		List<ModelElement> list,
+		Map<String, String> map,
+		boolean bl,
+		boolean bl2,
+		ModelTransformation modelTransformation,
+		List<class_2874> list2
+	) {
 		this.elements = list;
 		this.ambientOcclusion = bl;
 		this.depth = bl2;
 		this.textureMap = map;
 		this.id = identifier;
 		this.transformation = modelTransformation;
+		this.field_13553 = list2;
 	}
 
 	public List<ModelElement> getElements() {
-		return this.hasParent() ? this.parent.getElements() : this.elements;
+		return this.elements.isEmpty() && this.hasParent() ? this.parent.getElements() : this.elements;
 	}
 
 	private boolean hasParent() {
@@ -90,6 +102,24 @@ public class BlockModel {
 		if (this.id != null) {
 			this.parent = (BlockModel)models.get(this.id);
 		}
+	}
+
+	public Collection<Identifier> method_12352() {
+		Set<Identifier> set = Sets.newHashSet();
+
+		for (class_2874 lv : this.field_13553) {
+			set.add(lv.method_12368());
+		}
+
+		return set;
+	}
+
+	protected List<class_2874> method_12353() {
+		return this.field_13553;
+	}
+
+	public class_2876 method_12354() {
+		return this.field_13553.isEmpty() ? class_2876.field_13564 : new class_2876(this.field_13553);
 	}
 
 	public boolean isValidTexture(String texture) {
@@ -131,6 +161,7 @@ public class BlockModel {
 		return texture.charAt(0) == '#';
 	}
 
+	@Nullable
 	public Identifier getId() {
 		return this.id;
 	}
@@ -140,13 +171,17 @@ public class BlockModel {
 	}
 
 	public ModelTransformation getTransformation() {
-		Transformation transformation = this.getTransformation(ModelTransformation.Mode.THIRD_PERSON);
-		Transformation transformation2 = this.getTransformation(ModelTransformation.Mode.FIRST_PERSON);
-		Transformation transformation3 = this.getTransformation(ModelTransformation.Mode.HEAD);
-		Transformation transformation4 = this.getTransformation(ModelTransformation.Mode.GUI);
-		Transformation transformation5 = this.getTransformation(ModelTransformation.Mode.GROUND);
-		Transformation transformation6 = this.getTransformation(ModelTransformation.Mode.FIXED);
-		return new ModelTransformation(transformation, transformation2, transformation3, transformation4, transformation5, transformation6);
+		Transformation transformation = this.getTransformation(ModelTransformation.Mode.THIRD_PERSON_LEFT_HAND);
+		Transformation transformation2 = this.getTransformation(ModelTransformation.Mode.THIRD_PERSON_RIGHT_HAND);
+		Transformation transformation3 = this.getTransformation(ModelTransformation.Mode.FIRST_PERSON_LEFT_HAND);
+		Transformation transformation4 = this.getTransformation(ModelTransformation.Mode.FIRST_PERSON_RIGHT_HAND);
+		Transformation transformation5 = this.getTransformation(ModelTransformation.Mode.HEAD);
+		Transformation transformation6 = this.getTransformation(ModelTransformation.Mode.GUI);
+		Transformation transformation7 = this.getTransformation(ModelTransformation.Mode.GROUND);
+		Transformation transformation8 = this.getTransformation(ModelTransformation.Mode.FIXED);
+		return new ModelTransformation(
+			transformation, transformation2, transformation3, transformation4, transformation5, transformation6, transformation7, transformation8
+		);
 	}
 
 	private Transformation getTransformation(ModelTransformation.Mode mode) {
@@ -175,23 +210,28 @@ public class BlockModel {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			List<ModelElement> list = this.getElements(jsonDeserializationContext, jsonObject);
 			String string = this.getParentId(jsonObject);
-			boolean bl = StringUtils.isEmpty(string);
-			boolean bl2 = list.isEmpty();
-			if (bl2 && bl) {
-				throw new JsonParseException("BlockModel requires either elements or parent, found neither");
-			} else if (!bl && !bl2) {
-				throw new JsonParseException("BlockModel requires either elements or parent, found both");
-			} else {
-				Map<String, String> map = this.getTextureMap(jsonObject);
-				boolean bl3 = this.getAmbientOcclusion(jsonObject);
-				ModelTransformation modelTransformation = ModelTransformation.NONE;
-				if (jsonObject.has("display")) {
-					JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "display");
-					modelTransformation = (ModelTransformation)jsonDeserializationContext.deserialize(jsonObject2, ModelTransformation.class);
-				}
-
-				return bl2 ? new BlockModel(new Identifier(string), map, bl3, true, modelTransformation) : new BlockModel(list, map, bl3, true, modelTransformation);
+			Map<String, String> map = this.getTextureMap(jsonObject);
+			boolean bl = this.getAmbientOcclusion(jsonObject);
+			ModelTransformation modelTransformation = ModelTransformation.NONE;
+			if (jsonObject.has("display")) {
+				JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "display");
+				modelTransformation = (ModelTransformation)jsonDeserializationContext.deserialize(jsonObject2, ModelTransformation.class);
 			}
+
+			List<class_2874> list2 = this.method_12355(jsonDeserializationContext, jsonObject);
+			Identifier identifier = string.isEmpty() ? null : new Identifier(string);
+			return new BlockModel(identifier, list, map, bl, true, modelTransformation, list2);
+		}
+
+		protected List<class_2874> method_12355(JsonDeserializationContext jsonDeserializationContext, JsonObject jsonObject) {
+			List<class_2874> list = Lists.newArrayList();
+			if (jsonObject.has("overrides")) {
+				for (JsonElement jsonElement : JsonHelper.getArray(jsonObject, "overrides")) {
+					list.add((class_2874)jsonDeserializationContext.deserialize(jsonElement, class_2874.class));
+				}
+			}
+
+			return list;
 		}
 
 		private Map<String, String> getTextureMap(JsonObject json) {

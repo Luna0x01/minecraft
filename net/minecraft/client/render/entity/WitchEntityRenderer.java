@@ -15,7 +15,7 @@ public class WitchEntityRenderer extends MobEntityRenderer<WitchEntity> {
 	}
 
 	public void render(WitchEntity witchEntity, double d, double e, double f, float g, float h) {
-		((WitchEntityModel)this.model).field_5133 = witchEntity.getStackInHand() != null;
+		((WitchEntityModel)this.model).field_5133 = witchEntity.getMainHandStack() != null;
 		super.render(witchEntity, d, e, f, g, h);
 	}
 

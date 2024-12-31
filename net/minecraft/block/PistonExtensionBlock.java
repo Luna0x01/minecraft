@@ -1,14 +1,19 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.PistonBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -66,25 +71,37 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		if (!world.isClient && world.getBlockEntity(pos) == null) {
-			world.setAir(pos);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		if (!world.isClient && world.getBlockEntity(blockPos) == null) {
+			world.setAir(blockPos);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return null;
@@ -102,106 +119,39 @@ public class PistonExtensionBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public BlockHitResult rayTrace(World world, BlockPos pos, Vec3d start, Vec3d end) {
+	public BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
 		return null;
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
 		if (!world.isClient) {
-			world.getBlockEntity(pos);
+			world.getBlockEntity(blockPos);
 		}
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
 		PistonBlockEntity pistonBlockEntity = this.getPistonEntity(world, pos);
-		if (pistonBlockEntity == null) {
-			return null;
-		} else {
-			float f = pistonBlockEntity.getAmountExtended(0.0F);
-			if (pistonBlockEntity.isExtending()) {
-				f = 1.0F - f;
-			}
-
-			return this.getCollisionBox(world, pos, pistonBlockEntity.getPushedBlock(), f, pistonBlockEntity.getFacing());
-		}
+		return pistonBlockEntity == null ? null : pistonBlockEntity.method_11701(world, pos);
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		PistonBlockEntity pistonBlockEntity = this.getPistonEntity(view, pos);
-		if (pistonBlockEntity != null) {
-			BlockState blockState = pistonBlockEntity.getPushedBlock();
-			Block block = blockState.getBlock();
-			if (block == this || block.getMaterial() == Material.AIR) {
-				return;
-			}
-
-			float f = pistonBlockEntity.getAmountExtended(0.0F);
-			if (pistonBlockEntity.isExtending()) {
-				f = 1.0F - f;
-			}
-
-			block.setBoundingBox(view, pos);
-			if (block == Blocks.PISTON || block == Blocks.STICKY_PISTON) {
-				f = 0.0F;
-			}
-
-			Direction direction = pistonBlockEntity.getFacing();
-			this.boundingBoxMinX = block.getMinX() - (double)((float)direction.getOffsetX() * f);
-			this.boundingBoxMinY = block.getMinY() - (double)((float)direction.getOffsetY() * f);
-			this.boundingBoxMinZ = block.getMinZ() - (double)((float)direction.getOffsetZ() * f);
-			this.boundingBoxMaxX = block.getMaxX() - (double)((float)direction.getOffsetX() * f);
-			this.boundingBoxMaxY = block.getMaxY() - (double)((float)direction.getOffsetY() * f);
-			this.boundingBoxMaxZ = block.getMaxZ() - (double)((float)direction.getOffsetZ() * f);
-		}
+		return pistonBlockEntity != null ? pistonBlockEntity.method_11701(view, pos) : collisionBox;
 	}
 
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state, float progress, Direction dir) {
-		if (state.getBlock() != this && state.getBlock().getMaterial() != Material.AIR) {
-			Box box = state.getBlock().getCollisionBox(world, pos, state);
-			if (box == null) {
-				return null;
-			} else {
-				double d = box.minX;
-				double e = box.minY;
-				double f = box.minZ;
-				double g = box.maxX;
-				double h = box.maxY;
-				double i = box.maxZ;
-				if (dir.getOffsetX() < 0) {
-					d -= (double)((float)dir.getOffsetX() * progress);
-				} else {
-					g -= (double)((float)dir.getOffsetX() * progress);
-				}
-
-				if (dir.getOffsetY() < 0) {
-					e -= (double)((float)dir.getOffsetY() * progress);
-				} else {
-					h -= (double)((float)dir.getOffsetY() * progress);
-				}
-
-				if (dir.getOffsetZ() < 0) {
-					f -= (double)((float)dir.getOffsetZ() * progress);
-				} else {
-					i -= (double)((float)dir.getOffsetZ() * progress);
-				}
-
-				return new Box(d, e, f, g, h, i);
-			}
-		} else {
-			return null;
-		}
-	}
-
+	@Nullable
 	private PistonBlockEntity getPistonEntity(BlockView view, BlockPos pos) {
 		BlockEntity blockEntity = view.getBlockEntity(pos);
 		return blockEntity instanceof PistonBlockEntity ? (PistonBlockEntity)blockEntity : null;
 	}
 
+	@Nullable
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
 		return null;
 	}
 
@@ -210,6 +160,16 @@ public class PistonExtensionBlock extends BlockWithEntity {
 		return this.getDefaultState()
 			.with(FACING, PistonHeadBlock.getDirection(data))
 			.with(TYPE, (data & 8) > 0 ? PistonHeadBlock.PistonHeadType.STICKY : PistonHeadBlock.PistonHeadType.DEFAULT);
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

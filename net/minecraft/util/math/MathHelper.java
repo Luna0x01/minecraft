@@ -6,6 +6,7 @@ import java.util.UUID;
 public class MathHelper {
 	public static final float SQUARE_ROOT_OF_TWO = sqrt(2.0F);
 	private static final float[] SINE_TABLE = new float[65536];
+	private static final Random RANDOM = new Random();
 	private static final int[] MULTIPLY_DE_BRUIJN_BIT_POSITION;
 	private static final double SMALLEST_FRACTION_FREE_DOUBLE;
 	private static final double[] ARCSINE_TABLE;
@@ -146,6 +147,10 @@ public class MathHelper {
 		return (dividend % divisor + divisor) % divisor;
 	}
 
+	public static float floorMod(float dividend, float divisor) {
+		return (dividend % divisor + divisor) % divisor;
+	}
+
 	public static float wrapDegrees(float degrees) {
 		degrees %= 360.0F;
 		if (degrees >= 180.0F) {
@@ -167,6 +172,19 @@ public class MathHelper {
 
 		if (degrees < -180.0) {
 			degrees += 360.0;
+		}
+
+		return degrees;
+	}
+
+	public static int wrapDegrees(int degrees) {
+		degrees %= 360;
+		if (degrees >= 180) {
+			degrees -= 360;
+		}
+
+		if (degrees < -180) {
+			degrees += 360;
 		}
 
 		return degrees;
@@ -210,7 +228,7 @@ public class MathHelper {
 		return value != 0 && (value & value - 1) == 0;
 	}
 
-	private static int log2DeBruijn(int value) {
+	public static int log2DeBruijn(int value) {
 		value = isPowerOfTwo(value) ? value : smallestEncompassingPowerOfTwo(value);
 		return MULTIPLY_DE_BRUIJN_BIT_POSITION[(int)((long)value * 125613361L >> 27) & 31];
 	}
@@ -273,6 +291,10 @@ public class MathHelper {
 		long l = random.nextLong() & -61441L | 16384L;
 		long m = random.nextLong() & 4611686018427387903L | Long.MIN_VALUE;
 		return new UUID(l, m);
+	}
+
+	public static UUID randomUuid() {
+		return randomUuid(RANDOM);
 	}
 
 	public static double minusDiv(double numerator, double delta, double denominator) {
@@ -380,10 +402,18 @@ public class MathHelper {
 				throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
 		}
 
-		int af = clamp((int)(k * 255.0F), 0, 255);
-		int ag = clamp((int)(l * 255.0F), 0, 255);
-		int ah = clamp((int)(m * 255.0F), 0, 255);
-		return af << 16 | ag << 8 | ah;
+		int n = clamp((int)(k * 255.0F), 0, 255);
+		int o = clamp((int)(l * 255.0F), 0, 255);
+		int p = clamp((int)(m * 255.0F), 0, 255);
+		return n << 16 | o << 8 | p;
+	}
+
+	public static int idealHash(int value) {
+		value ^= value >>> 16;
+		value *= -2048144789;
+		value ^= value >>> 13;
+		value *= -1028477387;
+		return value ^ value >>> 16;
 	}
 
 	static {

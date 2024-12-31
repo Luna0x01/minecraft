@@ -25,12 +25,12 @@ public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEn
 		BlockPos blockPos = pistonBlockEntity.getPos();
 		BlockState blockState = pistonBlockEntity.getPushedBlock();
 		Block block = blockState.getBlock();
-		if (block.getMaterial() != Material.AIR && !(pistonBlockEntity.getAmountExtended(g) >= 1.0F)) {
+		if (blockState.getMaterial() != Material.AIR && !(pistonBlockEntity.getAmountExtended(g) >= 1.0F)) {
 			Tessellator tessellator = Tessellator.getInstance();
 			BufferBuilder bufferBuilder = tessellator.getBuffer();
 			this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			DiffuseLighting.disable();
-			GlStateManager.blendFunc(770, 771);
+			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 			GlStateManager.enableBlend();
 			GlStateManager.disableCull();
 			if (MinecraftClient.isAmbientOcclusionEnabled()) {
@@ -48,7 +48,7 @@ public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEn
 			World world = this.getWorld();
 			if (block == Blocks.PISTON_HEAD && pistonBlockEntity.getAmountExtended(g) < 0.5F) {
 				blockState = blockState.with(PistonHeadBlock.SHORT, true);
-				this.renderManager.getModelRenderer().render(world, this.renderManager.getModel(blockState, world, blockPos), blockState, blockPos, bufferBuilder, true);
+				this.method_12411(blockPos, blockState, bufferBuilder, world, true);
 			} else if (pistonBlockEntity.isSource() && !pistonBlockEntity.isExtending()) {
 				PistonHeadBlock.PistonHeadType pistonHeadType = block == Blocks.STICKY_PISTON
 					? PistonHeadBlock.PistonHeadType.STICKY
@@ -56,19 +56,23 @@ public class PistonBlockEntityRenderer extends BlockEntityRenderer<PistonBlockEn
 				BlockState blockState2 = Blocks.PISTON_HEAD
 					.getDefaultState()
 					.with(PistonHeadBlock.TYPE, pistonHeadType)
-					.with(PistonHeadBlock.FACING, blockState.get(PistonBlock.DIRECTION));
+					.with(PistonHeadBlock.FACING, blockState.get(PistonBlock.FACING));
 				blockState2 = blockState2.with(PistonHeadBlock.SHORT, pistonBlockEntity.getAmountExtended(g) >= 0.5F);
-				this.renderManager.getModelRenderer().render(world, this.renderManager.getModel(blockState2, world, blockPos), blockState2, blockPos, bufferBuilder, true);
+				this.method_12411(blockPos, blockState2, bufferBuilder, world, true);
 				bufferBuilder.offset((double)((float)d - (float)blockPos.getX()), (double)((float)e - (float)blockPos.getY()), (double)((float)f - (float)blockPos.getZ()));
-				blockState.with(PistonBlock.EXTENDED, true);
-				this.renderManager.getModelRenderer().render(world, this.renderManager.getModel(blockState, world, blockPos), blockState, blockPos, bufferBuilder, true);
+				blockState = blockState.with(PistonBlock.EXTENDED, true);
+				this.method_12411(blockPos, blockState, bufferBuilder, world, true);
 			} else {
-				this.renderManager.getModelRenderer().render(world, this.renderManager.getModel(blockState, world, blockPos), blockState, blockPos, bufferBuilder, false);
+				this.method_12411(blockPos, blockState, bufferBuilder, world, false);
 			}
 
 			bufferBuilder.offset(0.0, 0.0, 0.0);
 			tessellator.draw();
 			DiffuseLighting.enableNormally();
 		}
+	}
+
+	private boolean method_12411(BlockPos blockPos, BlockState blockState, BufferBuilder bufferBuilder, World world, boolean bl) {
+		return this.renderManager.getModelRenderer().method_12349(world, this.renderManager.method_12346(blockState), blockState, blockPos, bufferBuilder, bl);
 	}
 }

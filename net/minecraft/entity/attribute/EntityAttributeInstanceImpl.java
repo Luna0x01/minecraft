@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 public class EntityAttributeInstanceImpl implements EntityAttributeInstance {
 	private final AbstractEntityAttributeContainer field_6822;
@@ -62,6 +63,7 @@ public class EntityAttributeInstanceImpl implements EntityAttributeInstance {
 		return set;
 	}
 
+	@Nullable
 	@Override
 	public AttributeModifier getByUuid(UUID id) {
 		return (AttributeModifier)this.modifiersByUuid.get(id);
@@ -112,6 +114,14 @@ public class EntityAttributeInstanceImpl implements EntityAttributeInstance {
 
 		this.modifiersByUuid.remove(modifier.getId());
 		this.invalidateCache();
+	}
+
+	@Override
+	public void method_13093(UUID uUID) {
+		AttributeModifier attributeModifier = this.getByUuid(uUID);
+		if (attributeModifier != null) {
+			this.method_6193(attributeModifier);
+		}
 	}
 
 	@Override

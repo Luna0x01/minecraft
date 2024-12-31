@@ -17,7 +17,7 @@ public class ClayFeature extends Feature {
 
 	@Override
 	public boolean generate(World world, Random random, BlockPos blockPos) {
-		if (world.getBlockState(blockPos).getBlock().getMaterial() != Material.WATER) {
+		if (world.getBlockState(blockPos).getMaterial() != Material.WATER) {
 			return false;
 		} else {
 			int i = random.nextInt(this.count - 2) + 2;

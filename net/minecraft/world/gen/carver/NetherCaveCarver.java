@@ -8,6 +8,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkBlockStateStorage;
 
 public class NetherCaveCarver extends Carver {
+	protected static final BlockState field_12962 = Blocks.AIR.getDefaultState();
+
 	protected void carveCave(long seed, int mainChunkX, int mainChunkZ, ChunkBlockStateStorage chunkStorage, double x, double y, double z) {
 		this.carveCave(seed, mainChunkX, mainChunkZ, chunkStorage, x, y, z, 1.0F + this.random.nextFloat() * 6.0F, 0.0F, 0.0F, -1, -1, 0.5);
 	}
@@ -46,7 +48,7 @@ public class NetherCaveCarver extends Carver {
 		int j = random.nextInt(branchCount / 2) + branchCount / 4;
 
 		for (boolean bl2 = random.nextInt(6) == 0; branch < branchCount; branch++) {
-			double h = 1.5 + (double)(MathHelper.sin((float)branch * (float) Math.PI / (float)branchCount) * baseWidth * 1.0F);
+			double h = 1.5 + (double)(MathHelper.sin((float)branch * (float) Math.PI / (float)branchCount) * baseWidth);
 			double k = h * heightWidthRatio;
 			float l = MathHelper.cos(yAngle);
 			float m = MathHelper.sin(yAngle);
@@ -170,7 +172,7 @@ public class NetherCaveCarver extends Carver {
 									if (ai > -0.7 && ae * ae + ai * ai + ag * ag < 1.0) {
 										BlockState blockState2 = chunkStorage.get(ad, ah, af);
 										if (blockState2.getBlock() == Blocks.NETHERRACK || blockState2.getBlock() == Blocks.DIRT || blockState2.getBlock() == Blocks.GRASS) {
-											chunkStorage.set(ad, ah, af, Blocks.AIR.getDefaultState());
+											chunkStorage.set(ad, ah, af, field_12962);
 										}
 									}
 								}
@@ -204,7 +206,7 @@ public class NetherCaveCarver extends Carver {
 			}
 
 			for (int l = 0; l < k; l++) {
-				float g = this.random.nextFloat() * (float) Math.PI * 2.0F;
+				float g = this.random.nextFloat() * (float) (Math.PI * 2);
 				float h = (this.random.nextFloat() - 0.5F) * 2.0F / 8.0F;
 				float m = this.random.nextFloat() * 2.0F + this.random.nextFloat();
 				this.carveCave(this.random.nextLong(), mainChunkX, mainChunkZ, chunkStorage, d, e, f, m * 2.0F, g, h, 0, 0, 0.5);

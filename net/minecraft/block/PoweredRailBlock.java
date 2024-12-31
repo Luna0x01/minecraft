@@ -1,10 +1,13 @@
 package net.minecraft.block;
 
 import com.google.common.base.Predicate;
+import javax.annotation.Nullable;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Property;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -13,7 +16,7 @@ public class PoweredRailBlock extends AbstractRailBlock {
 		"shape",
 		AbstractRailBlock.RailShapeType.class,
 		new Predicate<AbstractRailBlock.RailShapeType>() {
-			public boolean apply(AbstractRailBlock.RailShapeType railShapeType) {
+			public boolean apply(@Nullable AbstractRailBlock.RailShapeType railShapeType) {
 				return railShapeType != AbstractRailBlock.RailShapeType.NORTH_EAST
 					&& railShapeType != AbstractRailBlock.RailShapeType.NORTH_WEST
 					&& railShapeType != AbstractRailBlock.RailShapeType.SOUTH_EAST
@@ -132,7 +135,7 @@ public class PoweredRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	protected void updateBlockState(World world, BlockPos pos, BlockState state, Block block) {
+	protected void updateBlockState(BlockState state, World world, BlockPos pos, Block neighbor) {
 		boolean bl = (Boolean)state.get(POWERED);
 		boolean bl2 = world.isReceivingRedstonePower(pos)
 			|| this.isPoweredByOtherRails(world, pos, state, true, 0)
@@ -165,6 +168,124 @@ public class PoweredRailBlock extends AbstractRailBlock {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+				}
+			case COUNTERCLOCKWISE_90:
+				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+					case NORTH_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.EAST_WEST);
+					case EAST_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+				}
+			case CLOCKWISE_90:
+				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+					case NORTH_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.EAST_WEST);
+					case EAST_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+				}
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		AbstractRailBlock.RailShapeType railShapeType = state.get(SHAPE);
+		switch (mirror) {
+			case LEFT_RIGHT:
+				switch (railShapeType) {
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					default:
+						return super.withMirror(state, mirror);
+				}
+			case FRONT_BACK:
+				switch (railShapeType) {
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case ASCENDING_NORTH:
+					case ASCENDING_SOUTH:
+					default:
+						break;
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+				}
+		}
+
+		return super.withMirror(state, mirror);
 	}
 
 	@Override

@@ -1,12 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class SilkTouchEnchantment extends Enchantment {
-	protected SilkTouchEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.DIGGER);
+	protected SilkTouchEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.DIGGER, equipmentSlots);
 		this.setName("untouching");
 	}
 
@@ -27,11 +25,6 @@ public class SilkTouchEnchantment extends Enchantment {
 
 	@Override
 	public boolean differs(Enchantment other) {
-		return super.differs(other) && other.id != FORTUNE.id;
-	}
-
-	@Override
-	public boolean isAcceptableItem(ItemStack stack) {
-		return stack.getItem() == Items.SHEARS ? true : super.isAcceptableItem(stack);
+		return super.differs(other) && other != Enchantments.FORTUNE;
 	}
 }

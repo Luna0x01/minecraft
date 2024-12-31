@@ -41,8 +41,8 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 				m = -1;
 			}
 
-			if (this.getFluidLevel(world, pos.up()) >= 0) {
-				int n = this.getFluidLevel(world, pos.up());
+			int n = this.method_11620(world.getBlockState(pos.up()));
+			if (n >= 0) {
 				if (n >= 8) {
 					m = n;
 				} else {
@@ -52,9 +52,9 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 
 			if (this.neighborSourceBlocks >= 2 && this.material == Material.WATER) {
 				BlockState blockState = world.getBlockState(pos.down());
-				if (blockState.getBlock().getMaterial().isSolid()) {
+				if (blockState.getMaterial().isSolid()) {
 					m = 0;
-				} else if (blockState.getBlock().getMaterial() == this.material && (Integer)blockState.get(LEVEL) == 0) {
+				} else if (blockState.getMaterial() == this.material && (Integer)blockState.get(LEVEL) == 0) {
 					m = 0;
 				}
 			}
@@ -82,9 +82,9 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 
 		BlockState blockState2 = world.getBlockState(pos.down());
 		if (this.canFlowTo(world, pos.down(), blockState2)) {
-			if (this.material == Material.LAVA && world.getBlockState(pos.down()).getBlock().getMaterial() == Material.WATER) {
+			if (this.material == Material.LAVA && world.getBlockState(pos.down()).getMaterial() == Material.WATER) {
 				world.setBlockState(pos.down(), Blocks.STONE.getDefaultState());
-				this.playExtinguishEffects(world, pos.down());
+				this.method_11619(world, pos.down());
 				return;
 			}
 
@@ -114,7 +114,7 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 		if (this.canFlowTo(world, pos, state)) {
 			if (state.getBlock() != Blocks.AIR) {
 				if (this.material == Material.LAVA) {
-					this.playExtinguishEffects(world, pos);
+					this.method_11619(world, pos);
 				} else {
 					state.getBlock().dropAsItem(world, pos, state, 0);
 				}
@@ -131,12 +131,12 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 			if (direction != dir) {
 				BlockPos blockPos = pos.offset(direction);
 				BlockState blockState = world.getBlockState(blockPos);
-				if (!this.blocksFluidFlow(world, blockPos, blockState) && (blockState.getBlock().getMaterial() != this.material || (Integer)blockState.get(LEVEL) > 0)) {
+				if (!this.blocksFluidFlow(world, blockPos, blockState) && (blockState.getMaterial() != this.material || (Integer)blockState.get(LEVEL) > 0)) {
 					if (!this.blocksFluidFlow(world, blockPos.down(), blockState)) {
 						return distance;
 					}
 
-					if (distance < 4) {
+					if (distance < this.method_11607(world)) {
 						int j = this.getFlowDistance(world, blockPos, distance + 1, direction.getOpposite());
 						if (j < i) {
 							i = j;
@@ -149,6 +149,10 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 		return i;
 	}
 
+	private int method_11607(World world) {
+		return this.material == Material.LAVA && !world.dimension.doesWaterVaporize() ? 2 : 4;
+	}
+
 	private Set<Direction> getFlowDirections(World world, BlockPos pos) {
 		int i = 1000;
 		Set<Direction> set = EnumSet.noneOf(Direction.class);
@@ -156,7 +160,7 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
 			BlockPos blockPos = pos.offset(direction);
 			BlockState blockState = world.getBlockState(blockPos);
-			if (!this.blocksFluidFlow(world, blockPos, blockState) && (blockState.getBlock().getMaterial() != this.material || (Integer)blockState.get(LEVEL) > 0)) {
+			if (!this.blocksFluidFlow(world, blockPos, blockState) && (blockState.getMaterial() != this.material || (Integer)blockState.get(LEVEL) > 0)) {
 				int j;
 				if (this.blocksFluidFlow(world, blockPos.down(), world.getBlockState(blockPos.down()))) {
 					j = this.getFlowDistance(world, blockPos, 1, direction.getOpposite());
@@ -188,7 +192,7 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 	}
 
 	protected int getFluidLevelFromNeighbor(World world, BlockPos pos, int baseFluidLevel) {
-		int i = this.getFluidLevel(world, pos);
+		int i = this.method_11620(world.getBlockState(pos));
 		if (i < 0) {
 			return baseFluidLevel;
 		} else {
@@ -205,7 +209,7 @@ public class FlowingFluidBlock extends AbstractFluidBlock {
 	}
 
 	private boolean canFlowTo(World world, BlockPos pos, BlockState state) {
-		Material material = state.getBlock().getMaterial();
+		Material material = state.getMaterial();
 		return material != this.material && material != Material.LAVA && !this.blocksFluidFlow(world, pos, state);
 	}
 

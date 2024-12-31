@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PlanksBlock;
@@ -42,7 +43,9 @@ public class RecipeDispatcher {
 		this.recipes.add(new MapUpscaleRecipeType());
 		this.recipes.add(new FireworkRecipeType());
 		this.recipes.add(new RepairingRecipeType());
+		this.recipes.add(new TippedArrowRecipeType());
 		new BannerRecipeDispatcher().registerRecipes(this);
+		new ShieldRecipeDispatcher().method_11444(this);
 		this.registerShapedRecipe(new ItemStack(Items.PAPER, 3), "###", '#', Items.SUGARCANE);
 		this.registerShapelessRecipe(new ItemStack(Items.BOOK, 1), Items.PAPER, Items.PAPER, Items.PAPER, Items.LEATHER);
 		this.registerShapelessRecipe(new ItemStack(Items.WRITABLE_BOOK, 1), Items.BOOK, new ItemStack(Items.DYE, 1, DyeColor.BLACK.getSwappedId()), Items.FEATHER);
@@ -111,7 +114,7 @@ public class RecipeDispatcher {
 		this.registerShapedRecipe(new ItemStack(Blocks.TNT, 1), "X#X", "#X#", "X#X", 'X', Items.GUNPOWDER, '#', Blocks.SAND);
 		this.registerShapedRecipe(new ItemStack(Blocks.STONE_SLAB, 6, StoneSlabBlock.SlabType.COBBLESTONE.getId()), "###", '#', Blocks.COBBLESTONE);
 		this.registerShapedRecipe(
-			new ItemStack(Blocks.STONE_SLAB, 6, StoneSlabBlock.SlabType.STONE.getId()), "###", '#', new ItemStack(Blocks.STONE, StoneBlock.StoneType.STONE.byId())
+			new ItemStack(Blocks.STONE_SLAB, 6, StoneSlabBlock.SlabType.STONE.getId()), "###", '#', new ItemStack(Blocks.STONE, 1, StoneBlock.StoneType.STONE.byId())
 		);
 		this.registerShapedRecipe(new ItemStack(Blocks.STONE_SLAB, 6, StoneSlabBlock.SlabType.SANDSTONE.getId()), "###", '#', Blocks.SANDSTONE);
 		this.registerShapedRecipe(new ItemStack(Blocks.STONE_SLAB, 6, StoneSlabBlock.SlabType.BRICK.getId()), "###", '#', Blocks.BRICKS);
@@ -119,6 +122,7 @@ public class RecipeDispatcher {
 		this.registerShapedRecipe(new ItemStack(Blocks.STONE_SLAB, 6, StoneSlabBlock.SlabType.NETHER_BRICK.getId()), "###", '#', Blocks.NETHER_BRICKS);
 		this.registerShapedRecipe(new ItemStack(Blocks.STONE_SLAB, 6, StoneSlabBlock.SlabType.QUARTZ.getId()), "###", '#', Blocks.QUARTZ_BLOCK);
 		this.registerShapedRecipe(new ItemStack(Blocks.STONE_SLAB2, 6, RedSandstoneSlabBlock.SlabType.RED_SANDSTONE.getId()), "###", '#', Blocks.RED_SANDSTONE);
+		this.registerShapedRecipe(new ItemStack(Blocks.PURPUR_SLAB, 6, 0), "###", '#', Blocks.PURPUR_BLOCK);
 		this.registerShapedRecipe(new ItemStack(Blocks.WOODEN_SLAB, 6, 0), "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.OAK.getId()));
 		this.registerShapedRecipe(
 			new ItemStack(Blocks.WOODEN_SLAB, 6, PlanksBlock.WoodType.BIRCH.getId()), "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.BIRCH.getId())
@@ -199,7 +203,12 @@ public class RecipeDispatcher {
 		this.registerShapedRecipe(new ItemStack(Items.MINECART_WITH_FURNACE, 1), "A", "B", 'A', Blocks.FURNACE, 'B', Items.MINECART);
 		this.registerShapedRecipe(new ItemStack(Items.MINECART_WITH_TNT, 1), "A", "B", 'A', Blocks.TNT, 'B', Items.MINECART);
 		this.registerShapedRecipe(new ItemStack(Items.MINECART_WITH_HOPPER, 1), "A", "B", 'A', Blocks.HOPPER, 'B', Items.MINECART);
-		this.registerShapedRecipe(new ItemStack(Items.BOAT, 1), "# #", "###", '#', Blocks.PLANKS);
+		this.registerShapedRecipe(new ItemStack(Items.BOAT, 1), "# #", "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.OAK.getId()));
+		this.registerShapedRecipe(new ItemStack(Items.SPRUCE_BOAT, 1), "# #", "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.SPRUCE.getId()));
+		this.registerShapedRecipe(new ItemStack(Items.BIRCH_BOAT, 1), "# #", "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.BIRCH.getId()));
+		this.registerShapedRecipe(new ItemStack(Items.JUNGLE_BOAT, 1), "# #", "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.JUNGLE.getId()));
+		this.registerShapedRecipe(new ItemStack(Items.ACACIA_BOAT, 1), "# #", "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.ACACIA.getId()));
+		this.registerShapedRecipe(new ItemStack(Items.DARK_OAK_BOAT, 1), "# #", "###", '#', new ItemStack(Blocks.PLANKS, 1, PlanksBlock.WoodType.DARK_OAK.getId()));
 		this.registerShapedRecipe(new ItemStack(Items.BUCKET, 1), "# #", " # ", '#', Items.IRON_INGOT);
 		this.registerShapedRecipe(new ItemStack(Items.FLOWER_POT, 1), "# #", " # ", '#', Items.BRICK);
 		this.registerShapelessRecipe(new ItemStack(Items.FLINT_AND_STEEL, 1), new ItemStack(Items.IRON_INGOT, 1), new ItemStack(Items.FLINT, 1));
@@ -231,9 +240,8 @@ public class RecipeDispatcher {
 		this.registerShapedRecipe(new ItemStack(Blocks.QUARTZ_STAIRS, 4), "#  ", "## ", "###", '#', Blocks.QUARTZ_BLOCK);
 		this.registerShapedRecipe(new ItemStack(Items.PAINTING, 1), "###", "#X#", "###", '#', Items.STICK, 'X', Blocks.WOOL);
 		this.registerShapedRecipe(new ItemStack(Items.ITEM_FRAME, 1), "###", "#X#", "###", '#', Items.STICK, 'X', Items.LEATHER);
-		this.registerShapedRecipe(new ItemStack(Items.GOLDEN_APPLE, 1, 0), "###", "#X#", "###", '#', Items.GOLD_INGOT, 'X', Items.APPLE);
-		this.registerShapedRecipe(new ItemStack(Items.GOLDEN_APPLE, 1, 1), "###", "#X#", "###", '#', Blocks.GOLD_BLOCK, 'X', Items.APPLE);
-		this.registerShapedRecipe(new ItemStack(Items.GOLDEN_CARROT, 1, 0), "###", "#X#", "###", '#', Items.GOLD_NUGGET, 'X', Items.CARROT);
+		this.registerShapedRecipe(new ItemStack(Items.GOLDEN_APPLE), "###", "#X#", "###", '#', Items.GOLD_INGOT, 'X', Items.APPLE);
+		this.registerShapedRecipe(new ItemStack(Items.GOLDEN_CARROT), "###", "#X#", "###", '#', Items.GOLD_NUGGET, 'X', Items.CARROT);
 		this.registerShapedRecipe(new ItemStack(Items.GLISTERING_MELON, 1), "###", "#X#", "###", '#', Items.GOLD_NUGGET, 'X', Items.MELON);
 		this.registerShapedRecipe(new ItemStack(Blocks.LEVER, 1), "X", "#", '#', Blocks.COBBLESTONE, 'X', Items.STICK);
 		this.registerShapedRecipe(new ItemStack(Blocks.TRIPWIRE_HOOK, 2), "I", "S", "#", '#', Blocks.PLANKS, 'S', Items.STICK, 'I', Items.IRON_INGOT);
@@ -284,10 +292,12 @@ public class RecipeDispatcher {
 		this.registerShapelessRecipe(new ItemStack(Items.FIRE_CHARGE, 3), Items.GUNPOWDER, Items.BLAZE_POWDER, Items.COAL);
 		this.registerShapelessRecipe(new ItemStack(Items.FIRE_CHARGE, 3), Items.GUNPOWDER, Items.BLAZE_POWDER, new ItemStack(Items.COAL, 1, 1));
 		this.registerShapedRecipe(new ItemStack(Blocks.DAYLIGHT_DETECTOR), "GGG", "QQQ", "WWW", 'G', Blocks.GLASS, 'Q', Items.QUARTZ, 'W', Blocks.WOODEN_SLAB);
+		this.registerShapedRecipe(new ItemStack(Items.END_CRYSTAL), "GGG", "GEG", "GTG", 'G', Blocks.GLASS, 'E', Items.EYE_OF_ENDER, 'T', Items.GHAST_TEAR);
 		this.registerShapedRecipe(new ItemStack(Blocks.HOPPER), "I I", "ICI", " I ", 'I', Items.IRON_INGOT, 'C', Blocks.CHEST);
 		this.registerShapedRecipe(
 			new ItemStack(Items.ARMOR_STAND, 1), "///", " / ", "/_/", '/', Items.STICK, '_', new ItemStack(Blocks.STONE_SLAB, 1, StoneSlabBlock.SlabType.STONE.getId())
 		);
+		this.registerShapedRecipe(new ItemStack(Blocks.END_ROD, 4), "/", "#", '/', Items.BLAZE_ROD, '#', Items.CHORUS_FRUIT_POPPED);
 		Collections.sort(this.recipes, new Comparator<RecipeType>() {
 			public int compare(RecipeType recipeType, RecipeType recipeType2) {
 				if (recipeType instanceof ShapelessRecipeType && recipeType2 instanceof ShapedRecipeType) {
@@ -381,6 +391,7 @@ public class RecipeDispatcher {
 		this.recipes.add(recipe);
 	}
 
+	@Nullable
 	public ItemStack matches(CraftingInventory inventory, World world) {
 		for (RecipeType recipeType : this.recipes) {
 			if (recipeType.matches(inventory, world)) {

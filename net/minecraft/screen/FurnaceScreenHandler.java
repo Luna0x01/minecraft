@@ -1,5 +1,6 @@
 package net.minecraft.screen;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.FurnaceBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -79,6 +80,7 @@ public class FurnaceScreenHandler extends ScreenHandler {
 		return this.inventory.canPlayerUseInv(player);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
 		ItemStack itemStack = null;

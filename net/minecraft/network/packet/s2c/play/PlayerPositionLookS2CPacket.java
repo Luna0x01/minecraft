@@ -14,17 +14,19 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 	private float yaw;
 	private float pitch;
 	private Set<PlayerPositionLookS2CPacket.Flag> flags;
+	private int teleportId;
 
 	public PlayerPositionLookS2CPacket() {
 	}
 
-	public PlayerPositionLookS2CPacket(double d, double e, double f, float g, float h, Set<PlayerPositionLookS2CPacket.Flag> set) {
+	public PlayerPositionLookS2CPacket(double d, double e, double f, float g, float h, Set<PlayerPositionLookS2CPacket.Flag> set, int i) {
 		this.x = d;
 		this.y = e;
 		this.z = f;
 		this.yaw = g;
 		this.pitch = h;
 		this.flags = set;
+		this.teleportId = i;
 	}
 
 	@Override
@@ -35,6 +37,7 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		this.yaw = buf.readFloat();
 		this.pitch = buf.readFloat();
 		this.flags = PlayerPositionLookS2CPacket.Flag.getFlags(buf.readUnsignedByte());
+		this.teleportId = buf.readVarInt();
 	}
 
 	@Override
@@ -45,6 +48,7 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		buf.writeFloat(this.yaw);
 		buf.writeFloat(this.pitch);
 		buf.writeByte(PlayerPositionLookS2CPacket.Flag.getBitField(this.flags));
+		buf.writeVarInt(this.teleportId);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -71,6 +75,10 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		return this.pitch;
 	}
 
+	public int getTeleportId() {
+		return this.teleportId;
+	}
+
 	public Set<PlayerPositionLookS2CPacket.Flag> getFlags() {
 		return this.flags;
 	}
@@ -82,7 +90,7 @@ public class PlayerPositionLookS2CPacket implements Packet<ClientPlayPacketListe
 		Y_ROT(3),
 		X_ROT(4);
 
-		private int shift;
+		private final int shift;
 
 		private Flag(int j) {
 			this.shift = j;

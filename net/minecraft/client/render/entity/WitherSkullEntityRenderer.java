@@ -39,7 +39,17 @@ public class WitherSkullEntityRenderer extends EntityRenderer<WitherSkullEntity>
 		GlStateManager.scale(-1.0F, -1.0F, 1.0F);
 		GlStateManager.enableAlphaTest();
 		this.bindTexture(witherSkullEntity);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(witherSkullEntity));
+		}
+
 		this.field_5214.render(witherSkullEntity, 0.0F, 0.0F, 0.0F, i, j, k);
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.popMatrix();
 		super.render(witherSkullEntity, d, e, f, g, h);
 	}

@@ -3,6 +3,7 @@ package net.minecraft.client.particle;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
@@ -24,7 +25,6 @@ public class CloudParticle extends Particle {
 		this.prevScale = this.scale;
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.3));
 		this.maxAge = (int)((float)this.maxAge * j);
-		this.noClip = false;
 	}
 
 	@Override
@@ -36,27 +36,30 @@ public class CloudParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		if (this.age++ >= this.maxAge) {
-			this.remove();
+			this.method_12251();
 		}
 
 		this.setMiscTexture(7 - this.age * 8 / this.maxAge);
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX *= 0.96F;
 		this.velocityY *= 0.96F;
 		this.velocityZ *= 0.96F;
-		PlayerEntity playerEntity = this.world.getClosestPlayer(this, 2.0);
-		if (playerEntity != null && this.y > playerEntity.getBoundingBox().minY) {
-			this.y = this.y + (playerEntity.getBoundingBox().minY - this.y) * 0.2;
-			this.velocityY = this.velocityY + (playerEntity.velocityY - this.velocityY) * 0.2;
-			this.updatePosition(this.x, this.y, this.z);
+		PlayerEntity playerEntity = this.field_13424.method_11478(this.field_13428, this.field_13429, this.field_13430, 2.0, false);
+		if (playerEntity != null) {
+			Box box = playerEntity.getBoundingBox();
+			if (this.field_13429 > box.minY) {
+				this.field_13429 = this.field_13429 + (box.minY - this.field_13429) * 0.2;
+				this.velocityY = this.velocityY + (playerEntity.velocityY - this.velocityY) * 0.2;
+				this.method_12247(this.field_13428, this.field_13429, this.field_13430);
+			}
 		}
 
-		if (this.onGround) {
+		if (this.field_13434) {
 			this.velocityX *= 0.7F;
 			this.velocityZ *= 0.7F;
 		}

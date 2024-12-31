@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -32,14 +33,15 @@ public abstract class WoodSlabBlock extends SlabBlock {
 		return ((PlanksBlock.WoodType)state.get(VARIANT)).getMaterialColor();
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.WOODEN_SLAB);
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(Blocks.WOODEN_SLAB);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Blocks.WOODEN_SLAB, 1, ((PlanksBlock.WoodType)blockState.get(VARIANT)).getId());
 	}
 
 	@Override
@@ -53,8 +55,8 @@ public abstract class WoodSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public Object getSlabType(ItemStack stack) {
-		return PlanksBlock.WoodType.getById(stack.getData() & 7);
+	public Comparable<?> method_11615(ItemStack itemStack) {
+		return PlanksBlock.WoodType.getById(itemStack.getData() & 7);
 	}
 
 	@Override

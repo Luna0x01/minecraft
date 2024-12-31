@@ -14,17 +14,15 @@ import net.minecraft.world.gen.feature.SpruceTreeFeature;
 public class ExtremeHillsBiome extends Biome {
 	private Feature field_5478 = new OreFeature(Blocks.MONSTER_EGG.getDefaultState().with(InfestedBlock.VARIANT, InfestedBlock.Variants.STONE), 9);
 	private SpruceTreeFeature field_7229 = new SpruceTreeFeature(false);
-	private int field_7230 = 0;
-	private int field_7231 = 1;
-	private int field_7232 = 2;
-	private int field_7233 = this.field_7230;
+	private final ExtremeHillsBiome.Type field_12529;
 
-	protected ExtremeHillsBiome(int i, boolean bl) {
-		super(i);
-		if (bl) {
+	protected ExtremeHillsBiome(ExtremeHillsBiome.Type type, Biome.Settings settings) {
+		super(settings);
+		if (type == ExtremeHillsBiome.Type.EXTRA_TREES) {
 			this.biomeDecorator.treesPerChunk = 3;
-			this.field_7233 = this.field_7231;
 		}
+
+		this.field_12529 = type;
 	}
 
 	@Override
@@ -59,10 +57,10 @@ public class ExtremeHillsBiome extends Biome {
 	public void method_6420(World world, Random random, ChunkBlockStateStorage chunkStorage, int i, int j, double d) {
 		this.topBlock = Blocks.GRASS.getDefaultState();
 		this.baseBlock = Blocks.DIRT.getDefaultState();
-		if ((d < -1.0 || d > 2.0) && this.field_7233 == this.field_7232) {
+		if ((d < -1.0 || d > 2.0) && this.field_12529 == ExtremeHillsBiome.Type.MUTATED) {
 			this.topBlock = Blocks.GRAVEL.getDefaultState();
 			this.baseBlock = Blocks.GRAVEL.getDefaultState();
-		} else if (d > 1.0 && this.field_7233 != this.field_7231) {
+		} else if (d > 1.0 && this.field_12529 != ExtremeHillsBiome.Type.EXTRA_TREES) {
 			this.topBlock = Blocks.STONE.getDefaultState();
 			this.baseBlock = Blocks.STONE.getDefaultState();
 		}
@@ -70,17 +68,9 @@ public class ExtremeHillsBiome extends Biome {
 		this.method_8590(world, random, chunkStorage, i, j, d);
 	}
 
-	private ExtremeHillsBiome method_6436(Biome biome) {
-		this.field_7233 = this.field_7232;
-		this.seedModifier(biome.field_4661, true);
-		this.setName(biome.name + " M");
-		this.setHeight(new Biome.Height(biome.depth, biome.variationModifier));
-		this.setTemperatureAndDownfall(biome.temperature, biome.downfall);
-		return this;
-	}
-
-	@Override
-	protected Biome getMutatedVariant(int id) {
-		return new ExtremeHillsBiome(id, false).method_6436(this);
+	public static enum Type {
+		NORMAL,
+		EXTRA_TREES,
+		MUTATED;
 	}
 }

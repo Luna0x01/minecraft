@@ -1,9 +1,7 @@
 package net.minecraft.block;
 
-import java.util.List;
 import java.util.Random;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.property.EnumProperty;
@@ -17,15 +15,12 @@ import net.minecraft.world.World;
 
 public abstract class SlabBlock extends Block {
 	public static final EnumProperty<SlabBlock.SlabType> HALF = EnumProperty.of("half", SlabBlock.SlabType.class);
+	protected static final Box field_12683 = new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0);
+	protected static final Box field_12684 = new Box(0.0, 0.5, 0.0, 1.0, 1.0, 1.0);
 
 	public SlabBlock(Material material) {
 		super(material);
-		if (this.isDoubleSlab()) {
-			this.fullBlock = true;
-		} else {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.5F, 1.0F);
-		}
-
+		this.fullBlock = this.isDoubleSlab();
 		this.setOpacity(255);
 	}
 
@@ -35,38 +30,21 @@ public abstract class SlabBlock extends Block {
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
 		if (this.isDoubleSlab()) {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+			return collisionBox;
 		} else {
-			BlockState blockState = view.getBlockState(pos);
-			if (blockState.getBlock() == this) {
-				if (blockState.get(HALF) == SlabBlock.SlabType.TOP) {
-					this.setBoundingBox(0.0F, 0.5F, 0.0F, 1.0F, 1.0F, 1.0F);
-				} else {
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.5F, 1.0F);
-				}
-			}
+			return state.get(HALF) == SlabBlock.SlabType.TOP ? field_12684 : field_12683;
 		}
 	}
 
 	@Override
-	public void setBlockItemBounds() {
-		if (this.isDoubleSlab()) {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-		} else {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.5F, 1.0F);
-		}
+	public boolean method_11568(BlockState state) {
+		return ((SlabBlock)state.getBlock()).isDoubleSlab() || state.get(HALF) == SlabBlock.SlabType.TOP;
 	}
 
 	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		this.setBoundingBox(world, pos);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-	}
-
-	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return this.isDoubleSlab();
 	}
 
@@ -86,52 +64,46 @@ public abstract class SlabBlock extends Block {
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return this.isDoubleSlab();
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
 		if (this.isDoubleSlab()) {
-			return super.isSideInvisible(view, pos, facing);
-		} else if (facing != Direction.UP && facing != Direction.DOWN && !super.isSideInvisible(view, pos, facing)) {
+			return super.method_8654(state, view, pos, direction);
+		} else if (direction != Direction.UP && direction != Direction.DOWN && !super.method_8654(state, view, pos, direction)) {
 			return false;
 		} else {
-			BlockPos blockPos = pos.offset(facing.getOpposite());
-			BlockState blockState = view.getBlockState(pos);
-			BlockState blockState2 = view.getBlockState(blockPos);
-			boolean bl = isSlab(blockState.getBlock()) && blockState.get(HALF) == SlabBlock.SlabType.TOP;
-			boolean bl2 = isSlab(blockState2.getBlock()) && blockState2.get(HALF) == SlabBlock.SlabType.TOP;
+			BlockState blockState = view.getBlockState(pos.offset(direction));
+			boolean bl = method_11616(blockState) && blockState.get(HALF) == SlabBlock.SlabType.TOP;
+			boolean bl2 = method_11616(state) && state.get(HALF) == SlabBlock.SlabType.TOP;
 			if (bl2) {
-				if (facing == Direction.DOWN) {
+				if (direction == Direction.DOWN) {
 					return true;
 				} else {
-					return facing == Direction.UP && super.isSideInvisible(view, pos, facing) ? true : !isSlab(blockState.getBlock()) || !bl;
+					return direction == Direction.UP && super.method_8654(state, view, pos, direction) ? true : !method_11616(blockState) || !bl;
 				}
-			} else if (facing == Direction.UP) {
+			} else if (direction == Direction.UP) {
 				return true;
 			} else {
-				return facing == Direction.DOWN && super.isSideInvisible(view, pos, facing) ? true : !isSlab(blockState.getBlock()) || bl;
+				return direction == Direction.DOWN && super.method_8654(state, view, pos, direction) ? true : !method_11616(blockState) || bl;
 			}
 		}
 	}
 
-	protected static boolean isSlab(Block block) {
-		return block == Blocks.STONE_SLAB || block == Blocks.WOODEN_SLAB || block == Blocks.STONE_SLAB2;
+	protected static boolean method_11616(BlockState blockState) {
+		Block block = blockState.getBlock();
+		return block == Blocks.STONE_SLAB || block == Blocks.WOODEN_SLAB || block == Blocks.STONE_SLAB2 || block == Blocks.PURPUR_SLAB;
 	}
 
 	public abstract String getVariantTranslationKey(int slabType);
-
-	@Override
-	public int getMeta(World world, BlockPos pos) {
-		return super.getMeta(world, pos) & 7;
-	}
 
 	public abstract boolean isDoubleSlab();
 
 	public abstract Property<?> getSlabProperty();
 
-	public abstract Object getSlabType(ItemStack stack);
+	public abstract Comparable<?> method_11615(ItemStack itemStack);
 
 	public static enum SlabType implements StringIdentifiable {
 		TOP("top"),

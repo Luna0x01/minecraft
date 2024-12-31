@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.util.StringIdentifiable;
 
 public enum Direction implements StringIdentifiable {
@@ -161,6 +162,7 @@ public enum Direction implements StringIdentifiable {
 		return this.axis;
 	}
 
+	@Nullable
 	public static Direction byName(String name) {
 		return name == null ? null : (Direction)DIRECTION_MAP.get(name.toLowerCase());
 	}
@@ -175,6 +177,10 @@ public enum Direction implements StringIdentifiable {
 
 	public static Direction fromRotation(double rotation) {
 		return fromHorizontal(MathHelper.floor(rotation / 90.0 + 0.5) & 3);
+	}
+
+	public float method_12578() {
+		return (float)((this.idHorizontal & 3) * 90);
 	}
 
 	public static Direction random(Random random) {
@@ -244,6 +250,7 @@ public enum Direction implements StringIdentifiable {
 			this.directionType = directionType;
 		}
 
+		@Nullable
 		public static Direction.Axis fromName(String name) {
 			return name == null ? null : (Direction.Axis)BY_NAME.get(name.toLowerCase());
 		}
@@ -264,7 +271,7 @@ public enum Direction implements StringIdentifiable {
 			return this.name;
 		}
 
-		public boolean apply(Direction direction) {
+		public boolean apply(@Nullable Direction direction) {
 			return direction != null && direction.getAxis() == this;
 		}
 
@@ -325,7 +332,7 @@ public enum Direction implements StringIdentifiable {
 			return directions[random.nextInt(directions.length)];
 		}
 
-		public boolean apply(Direction direction) {
+		public boolean apply(@Nullable Direction direction) {
 			return direction != null && direction.getAxis().getDirectionType() == this;
 		}
 

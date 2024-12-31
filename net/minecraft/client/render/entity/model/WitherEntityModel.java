@@ -56,8 +56,8 @@ public class WitherEntityModel extends EntityModel {
 		this.field_5136[1].posX = (0.065F + 0.05F * f) * (float) Math.PI;
 		this.field_5136[2].setPivot(-2.0F, 6.9F + MathHelper.cos(this.field_5136[1].posX) * 10.0F, -0.5F + MathHelper.sin(this.field_5136[1].posX) * 10.0F);
 		this.field_5136[2].posX = (0.265F + 0.1F * f) * (float) Math.PI;
-		this.field_5137[0].posY = age / (180.0F / (float)Math.PI);
-		this.field_5137[0].posX = headPitch / (180.0F / (float)Math.PI);
+		this.field_5137[0].posY = age * (float) (Math.PI / 180.0);
+		this.field_5137[0].posX = headPitch * (float) (Math.PI / 180.0);
 	}
 
 	@Override
@@ -65,8 +65,8 @@ public class WitherEntityModel extends EntityModel {
 		WitherEntity witherEntity = (WitherEntity)entity;
 
 		for (int i = 1; i < 3; i++) {
-			this.field_5137[i].posY = (witherEntity.getHeadYaw(i - 1) - entity.bodyYaw) / (180.0F / (float)Math.PI);
-			this.field_5137[i].posX = witherEntity.getHeadPitch(i - 1) / (180.0F / (float)Math.PI);
+			this.field_5137[i].posY = (witherEntity.getHeadYaw(i - 1) - entity.bodyYaw) * (float) (Math.PI / 180.0);
+			this.field_5137[i].posX = witherEntity.getHeadPitch(i - 1) * (float) (Math.PI / 180.0);
 		}
 	}
 }

@@ -74,8 +74,8 @@ public class BirchTreeFeature extends FoliageFeature {
 								int t = s - blockPos.getZ();
 								if (Math.abs(r) != p || Math.abs(t) != p || random.nextInt(2) != 0 && o != 0) {
 									BlockPos blockPos2 = new BlockPos(q, n, s);
-									Block block2 = world.getBlockState(blockPos2).getBlock();
-									if (block2.getMaterial() == Material.AIR || block2.getMaterial() == Material.FOLIAGE) {
+									Material material = world.getBlockState(blockPos2).getMaterial();
+									if (material == Material.AIR || material == Material.FOLIAGE) {
 										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, LEAVES);
 									}
 								}
@@ -84,8 +84,8 @@ public class BirchTreeFeature extends FoliageFeature {
 					}
 
 					for (int u = 0; u < i; u++) {
-						Block block3 = world.getBlockState(blockPos.up(u)).getBlock();
-						if (block3.getMaterial() == Material.AIR || block3.getMaterial() == Material.FOLIAGE) {
+						Material material2 = world.getBlockState(blockPos.up(u)).getMaterial();
+						if (material2 == Material.AIR || material2 == Material.FOLIAGE) {
 							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(u), LOG);
 						}
 					}

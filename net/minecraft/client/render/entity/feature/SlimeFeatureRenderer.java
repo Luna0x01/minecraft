@@ -19,7 +19,7 @@ public class SlimeFeatureRenderer implements FeatureRenderer<SlimeEntity> {
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			GlStateManager.enableNormalize();
 			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(770, 771);
+			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 			this.model.copy(this.renderer.getModel());
 			this.model.render(slimeEntity, f, g, i, j, k, l);
 			GlStateManager.disableBlend();

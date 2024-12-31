@@ -5,12 +5,13 @@ import net.minecraft.network.packet.s2c.play.BlockActionS2CPacket;
 import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.BossBarS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkLoadDistanceS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkMapS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkRenderDistanceCenterS2CPacket;
+import net.minecraft.network.packet.s2c.play.ChunkUnloadS2CPacket;
 import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.CombatEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
@@ -47,6 +48,7 @@ import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.network.packet.s2c.play.PaintingSpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlaySoundNameS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
@@ -62,12 +64,12 @@ import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerPropertyUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetCameraEntityS2CPacket;
+import net.minecraft.network.packet.s2c.play.SetPassengersS2CPacket;
 import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
 import net.minecraft.network.packet.s2c.play.StatsUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.TeamS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
-import net.minecraft.network.packet.s2c.play.UpdateEntityNbtS2CPacket;
-import net.minecraft.network.packet.s2c.play.UpdateSignS2CPacket;
+import net.minecraft.network.packet.s2c.play.VehicleMoveS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldBorderS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
 import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
@@ -131,6 +133,8 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onEntityAttach(EntityAttachS2CPacket packet);
 
+	void onSetPassengers(SetPassengersS2CPacket packet);
+
 	void onExplosion(ExplosionS2CPacket packet);
 
 	void onGameStateChange(GameStateChangeS2CPacket packet);
@@ -139,7 +143,7 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onChunkData(ChunkDataS2CPacket packet);
 
-	void onChunkMap(ChunkMapS2CPacket packet);
+	void onUnloadChunk(ChunkUnloadS2CPacket packet);
 
 	void onWorldEvent(WorldEventS2CPacket packet);
 
@@ -185,9 +189,9 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onWorldTimeUpdate(WorldTimeUpdateS2CPacket packet);
 
-	void onUpdateSign(UpdateSignS2CPacket packet);
-
 	void onPlaySound(PlaySoundIdS2CPacket packet);
+
+	void onPlaySoundName(PlaySoundNameS2CPacket packet);
 
 	void onChunkRenderDistanceCenter(ChunkRenderDistanceCenterS2CPacket packet);
 
@@ -207,11 +211,13 @@ public interface ClientPlayPacketListener extends PacketListener {
 
 	void onTitle(TitleS2CPacket packet);
 
-	void onChunkLoadDistance(ChunkLoadDistanceS2CPacket packet);
-
 	void onPlayerListHeader(PlayerListHeaderS2CPacket packet);
 
 	void onResourcePackSend(ResourcePackSendS2CPacket packet);
 
-	void onUpdateEntityNbt(UpdateEntityNbtS2CPacket packet);
+	void onBossBar(BossBarS2CPacket packet);
+
+	void onChunkLoadDistance(ChunkLoadDistanceS2CPacket packet);
+
+	void onVehicleMove(VehicleMoveS2CPacket packet);
 }

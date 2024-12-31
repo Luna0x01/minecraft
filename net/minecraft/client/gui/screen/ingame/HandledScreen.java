@@ -15,11 +15,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.ItemAction;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.input.Keyboard;
 
 public abstract class HandledScreen extends Screen {
-	protected static final Identifier INVENTORY_TEXTURE = new Identifier("textures/gui/container/inventory.png");
+	public static final Identifier INVENTORY_TEXTURE = new Identifier("textures/gui/container/inventory.png");
 	protected int backgroundWidth = 176;
 	protected int backgroundHeight = 166;
 	public ScreenHandler screenHandler;
@@ -80,7 +81,7 @@ public abstract class HandledScreen extends Screen {
 		this.focusedSlot = null;
 		int k = 240;
 		int l = 240;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)k / 1.0F, (float)l / 1.0F);
+		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)k, (float)l);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
 		for (int m = 0; m < this.screenHandler.slots.size(); m++) {
@@ -152,7 +153,7 @@ public abstract class HandledScreen extends Screen {
 		GlStateManager.translate(0.0F, 0.0F, 32.0F);
 		this.zOffset = 200.0F;
 		this.itemRenderer.zOffset = 200.0F;
-		this.itemRenderer.renderInGuiWithOverrides(stack, xPosition, yPosition);
+		this.itemRenderer.method_12461(stack, xPosition, yPosition);
 		this.itemRenderer.renderGuiItemOverlay(this.textRenderer, stack, xPosition, yPosition - (this.touchDragStack == null ? 0 : 8), amountText);
 		this.zOffset = 0.0F;
 		this.itemRenderer.zOffset = 0.0F;
@@ -200,7 +201,7 @@ public abstract class HandledScreen extends Screen {
 
 		this.zOffset = 100.0F;
 		this.itemRenderer.zOffset = 100.0F;
-		if (itemStack == null) {
+		if (itemStack == null && slot.doDrawHoveringEffect()) {
 			String string2 = slot.getBackgroundSprite();
 			if (string2 != null) {
 				Sprite sprite = this.client.getSpriteAtlasTexture().getSprite(string2);
@@ -218,7 +219,7 @@ public abstract class HandledScreen extends Screen {
 			}
 
 			GlStateManager.enableDepthTest();
-			this.itemRenderer.renderInGuiWithOverrides(itemStack, i, j);
+			this.itemRenderer.method_10249(this.client.player, itemStack, i, j);
 			this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack, i, j, string);
 		}
 
@@ -297,18 +298,18 @@ public abstract class HandledScreen extends Screen {
 				} else if (!this.isCursorDragging) {
 					if (this.client.player.inventory.getCursorStack() == null) {
 						if (button == this.client.options.pickItemKey.getCode() + 100) {
-							this.onMouseClick(slot, k, button, 3);
+							this.method_1131(slot, k, button, ItemAction.CLONE);
 						} else {
 							boolean bl3 = k != -999 && (Keyboard.isKeyDown(42) || Keyboard.isKeyDown(54));
-							int m = 0;
+							ItemAction itemAction = ItemAction.PICKUP;
 							if (bl3) {
 								this.quickMovingStack = slot != null && slot.hasStack() ? slot.getStack() : null;
-								m = 1;
+								itemAction = ItemAction.QUICK_MOVE;
 							} else if (k == -999) {
-								m = 4;
+								itemAction = ItemAction.THROW;
 							}
 
-							this.onMouseClick(slot, k, button, m);
+							this.method_1131(slot, k, button, itemAction);
 						}
 
 						this.cancelNextRelease = true;
@@ -347,9 +348,9 @@ public abstract class HandledScreen extends Screen {
 					long l = MinecraftClient.getTime();
 					if (this.touchHoveredSlot == slot) {
 						if (l - this.touchDropTimer > 500L) {
-							this.onMouseClick(this.touchDragSlotStart, this.touchDragSlotStart.id, 0, 0);
-							this.onMouseClick(slot, slot.id, 1, 0);
-							this.onMouseClick(this.touchDragSlotStart, this.touchDragSlotStart.id, 0, 0);
+							this.method_1131(this.touchDragSlotStart, this.touchDragSlotStart.id, 0, ItemAction.PICKUP);
+							this.method_1131(slot, slot.id, 1, ItemAction.PICKUP);
+							this.method_1131(this.touchDragSlotStart, this.touchDragSlotStart.id, 0, ItemAction.PICKUP);
 							this.touchDropTimer = l + 750L;
 							this.touchDragStack.count--;
 						}
@@ -395,12 +396,12 @@ public abstract class HandledScreen extends Screen {
 							&& slot2.hasStack()
 							&& slot2.inventory == slot.inventory
 							&& ScreenHandler.canInsertItemIntoSlot(slot2, this.quickMovingStack, true)) {
-							this.onMouseClick(slot2, slot2.id, button, 1);
+							this.method_1131(slot2, slot2.id, button, ItemAction.QUICK_MOVE);
 						}
 					}
 				}
 			} else {
-				this.onMouseClick(slot, k, button, 6);
+				this.method_1131(slot, k, button, ItemAction.PICKUP_ALL);
 			}
 
 			this.isDoubleClicking = false;
@@ -426,10 +427,10 @@ public abstract class HandledScreen extends Screen {
 
 					boolean bl2 = ScreenHandler.canInsertItemIntoSlot(slot, this.touchDragStack, false);
 					if (k != -1 && this.touchDragStack != null && bl2) {
-						this.onMouseClick(this.touchDragSlotStart, this.touchDragSlotStart.id, button, 0);
-						this.onMouseClick(slot, k, 0, 0);
+						this.method_1131(this.touchDragSlotStart, this.touchDragSlotStart.id, button, ItemAction.PICKUP);
+						this.method_1131(slot, k, 0, ItemAction.PICKUP);
 						if (this.client.player.inventory.getCursorStack() != null) {
-							this.onMouseClick(this.touchDragSlotStart, this.touchDragSlotStart.id, button, 0);
+							this.method_1131(this.touchDragSlotStart, this.touchDragSlotStart.id, button, ItemAction.PICKUP);
 							this.touchDropX = mouseX - i;
 							this.touchDropY = mouseY - j;
 							this.touchDropOriginSlot = this.touchDragSlotStart;
@@ -450,23 +451,23 @@ public abstract class HandledScreen extends Screen {
 					this.touchDragSlotStart = null;
 				}
 			} else if (this.isCursorDragging && !this.cursorDragSlots.isEmpty()) {
-				this.onMouseClick(null, -999, ScreenHandler.packClickData(0, this.heldButtonType), 5);
+				this.method_1131(null, -999, ScreenHandler.packClickData(0, this.heldButtonType), ItemAction.QUICK_CRAFT);
 
 				for (Slot slot3 : this.cursorDragSlots) {
-					this.onMouseClick(slot3, slot3.id, ScreenHandler.packClickData(1, this.heldButtonType), 5);
+					this.method_1131(slot3, slot3.id, ScreenHandler.packClickData(1, this.heldButtonType), ItemAction.QUICK_CRAFT);
 				}
 
-				this.onMouseClick(null, -999, ScreenHandler.packClickData(2, this.heldButtonType), 5);
+				this.method_1131(null, -999, ScreenHandler.packClickData(2, this.heldButtonType), ItemAction.QUICK_CRAFT);
 			} else if (this.client.player.inventory.getCursorStack() != null) {
 				if (button == this.client.options.pickItemKey.getCode() + 100) {
-					this.onMouseClick(slot, k, button, 3);
+					this.method_1131(slot, k, button, ItemAction.CLONE);
 				} else {
 					boolean bl3 = k != -999 && (Keyboard.isKeyDown(42) || Keyboard.isKeyDown(54));
 					if (bl3) {
 						this.quickMovingStack = slot != null && slot.hasStack() ? slot.getStack() : null;
 					}
 
-					this.onMouseClick(slot, k, button, bl3 ? 1 : 0);
+					this.method_1131(slot, k, button, bl3 ? ItemAction.QUICK_MOVE : ItemAction.PICKUP);
 				}
 			}
 		}
@@ -490,12 +491,12 @@ public abstract class HandledScreen extends Screen {
 		return pointX >= posX - 1 && pointX < posX + width + 1 && pointY >= posY - 1 && pointY < posY + height + 1;
 	}
 
-	protected void onMouseClick(Slot slot, int invSlot, int button, int slotAction) {
+	protected void method_1131(Slot slot, int i, int j, ItemAction itemAction) {
 		if (slot != null) {
-			invSlot = slot.id;
+			i = slot.id;
 		}
 
-		this.client.interactionManager.clickSlot(this.screenHandler.syncId, invSlot, button, slotAction, this.client.player);
+		this.client.interactionManager.method_1224(this.screenHandler.syncId, i, j, itemAction, this.client.player);
 	}
 
 	@Override
@@ -507,9 +508,9 @@ public abstract class HandledScreen extends Screen {
 		this.handleHotbarKeyPressed(code);
 		if (this.focusedSlot != null && this.focusedSlot.hasStack()) {
 			if (code == this.client.options.pickItemKey.getCode()) {
-				this.onMouseClick(this.focusedSlot, this.focusedSlot.id, 0, 3);
+				this.method_1131(this.focusedSlot, this.focusedSlot.id, 0, ItemAction.CLONE);
 			} else if (code == this.client.options.dropKey.getCode()) {
-				this.onMouseClick(this.focusedSlot, this.focusedSlot.id, hasControlDown() ? 1 : 0, 4);
+				this.method_1131(this.focusedSlot, this.focusedSlot.id, hasControlDown() ? 1 : 0, ItemAction.THROW);
 			}
 		}
 	}
@@ -518,7 +519,7 @@ public abstract class HandledScreen extends Screen {
 		if (this.client.player.inventory.getCursorStack() == null && this.focusedSlot != null) {
 			for (int i = 0; i < 9; i++) {
 				if (keyCode == this.client.options.hotbarKeys[i].getCode()) {
-					this.onMouseClick(this.focusedSlot, this.focusedSlot.id, i, 2);
+					this.method_1131(this.focusedSlot, this.focusedSlot.id, i, ItemAction.SWAP);
 					return true;
 				}
 			}

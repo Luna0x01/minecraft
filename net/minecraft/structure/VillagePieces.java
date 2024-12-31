@@ -7,23 +7,24 @@ import java.util.Random;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.CropBlock;
+import net.minecraft.block.LadderBlock;
 import net.minecraft.block.SandstoneBlock;
 import net.minecraft.block.StairsBlock;
 import net.minecraft.block.TorchBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.DyeColor;
-import net.minecraft.util.WeightedRandomChestContent;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.LayeredBiomeSource;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
+import net.minecraft.world.biome.SingletonBiomeSource;
 
 public class VillagePieces {
 	public static void registerPieces() {
@@ -167,7 +168,7 @@ public class VillagePieces {
 				int k = structurePiece.boundingBox.maxX - structurePiece.boundingBox.minX;
 				int l = structurePiece.boundingBox.maxZ - structurePiece.boundingBox.minZ;
 				int m = k > l ? k : l;
-				if (start.method_105().isValid(i, j, m / 2 + 4, VillageStructure.BIOMES)) {
+				if (start.method_105().method_3854(i, j, m / 2 + 4, VillageStructure.BIOMES)) {
 					pieces.add(structurePiece);
 					start.field_6246.add(structurePiece);
 					return structurePiece;
@@ -194,7 +195,7 @@ public class VillagePieces {
 				int k = structurePiece.boundingBox.maxX - structurePiece.boundingBox.minX;
 				int l = structurePiece.boundingBox.maxZ - structurePiece.boundingBox.minZ;
 				int m = k > l ? k : l;
-				if (start.method_105().isValid(i, j, m / 2 + 4, VillageStructure.BIOMES)) {
+				if (start.method_105().method_3854(i, j, m / 2 + 4, VillageStructure.BIOMES)) {
 					pieces.add(structurePiece);
 					start.field_6247.add(structurePiece);
 					return structurePiece;
@@ -237,8 +238,9 @@ public class VillagePieces {
 		}
 
 		protected StructurePiece fillNWOpening(VillagePieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return VillagePieces.generate(
 							start,
@@ -290,8 +292,9 @@ public class VillagePieces {
 		}
 
 		protected StructurePiece fillSEOpening(VillagePieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return VillagePieces.generate(
 							start,
@@ -445,27 +448,6 @@ public class VillagePieces {
 	}
 
 	public static class BlacksmithHouse extends VillagePieces.AbstractPiece {
-		private static final List<WeightedRandomChestContent> POSSIBLE_CHEST_CONTENT = Lists.newArrayList(
-			new WeightedRandomChestContent[]{
-				new WeightedRandomChestContent(Items.DIAMOND, 0, 1, 3, 3),
-				new WeightedRandomChestContent(Items.IRON_INGOT, 0, 1, 5, 10),
-				new WeightedRandomChestContent(Items.GOLD_INGOT, 0, 1, 3, 5),
-				new WeightedRandomChestContent(Items.BREAD, 0, 1, 3, 15),
-				new WeightedRandomChestContent(Items.APPLE, 0, 1, 3, 15),
-				new WeightedRandomChestContent(Items.IRON_PICKAXE, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_SWORD, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_CHESTPLATE, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_HELMET, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_LEGGINGS, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.IRON_BOOTS, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Item.fromBlock(Blocks.OBSIDIAN), 0, 3, 7, 5),
-				new WeightedRandomChestContent(Item.fromBlock(Blocks.SAPLING), 0, 3, 7, 5),
-				new WeightedRandomChestContent(Items.SADDLE, 0, 1, 1, 3),
-				new WeightedRandomChestContent(Items.IRON_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.GOLDEN_HORSE_ARMOR, 0, 1, 1, 1),
-				new WeightedRandomChestContent(Items.DIAMOND_HORSE_ARMOR, 0, 1, 1, 1)
-			}
-		);
 		private boolean hasChest;
 
 		public BlacksmithHouse() {
@@ -473,7 +455,7 @@ public class VillagePieces {
 
 		public BlacksmithHouse(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -542,17 +524,17 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 2, 1, 4, boundingBox);
 			this.setBlockState(world, Blocks.WOODEN_PRESSURE_PLATE.getDefaultState(), 2, 2, 4, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 1, 1, 5, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(this.getData(Blocks.WOODEN_STAIRS, 3)), 2, 1, 5, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(this.getData(Blocks.WOODEN_STAIRS, 1)), 1, 1, 4, boundingBox);
+			this.setBlockState(world, Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH), 2, 1, 5, boundingBox);
+			this.setBlockState(world, Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.WEST), 1, 1, 4, boundingBox);
 			if (!this.hasChest && boundingBox.contains(new BlockPos(this.applyXTransform(5, 5), this.applyYTransform(1), this.applyZTransform(5, 5)))) {
 				this.hasChest = true;
-				this.placeChest(world, boundingBox, random, 5, 1, 5, POSSIBLE_CHEST_CONTENT, 3 + random.nextInt(6));
+				this.method_11852(world, boundingBox, random, 5, 1, 5, LootTables.VILLAGE_BLACKSMITH_CHEST);
 			}
 
 			for (int i = 6; i <= 8; i++) {
-				if (this.getBlockAt(world, i, 0, -1, boundingBox).getBlock().getMaterial() == Material.AIR
-					&& this.getBlockAt(world, i, -1, -1, boundingBox).getBlock().getMaterial() != Material.AIR) {
-					this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), i, 0, -1, boundingBox);
+				if (this.getBlockAt(world, i, 0, -1, boundingBox).getMaterial() == Material.AIR
+					&& this.getBlockAt(world, i, -1, -1, boundingBox).getMaterial() != Material.AIR) {
+					this.setBlockState(world, Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH), i, 0, -1, boundingBox);
 				}
 			}
 
@@ -579,7 +561,7 @@ public class VillagePieces {
 
 		public BookHouse(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -608,13 +590,11 @@ public class VillagePieces {
 			this.fillWithOutline(world, boundingBox, 0, 5, 0, 8, 5, 5, Blocks.COBBLESTONE.getDefaultState(), Blocks.COBBLESTONE.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 0, 6, 1, 8, 6, 4, Blocks.COBBLESTONE.getDefaultState(), Blocks.COBBLESTONE.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 0, 7, 2, 8, 7, 3, Blocks.COBBLESTONE.getDefaultState(), Blocks.COBBLESTONE.getDefaultState(), false);
-			int i = this.getData(Blocks.WOODEN_STAIRS, 3);
-			int j = this.getData(Blocks.WOODEN_STAIRS, 2);
 
-			for (int k = -1; k <= 2; k++) {
-				for (int l = 0; l <= 8; l++) {
-					this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(i), l, 6 + k, k, boundingBox);
-					this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(j), l, 6 + k, 5 - k, boundingBox);
+			for (int i = -1; i <= 2; i++) {
+				for (int j = 0; j <= 8; j++) {
+					this.setBlockState(world, Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH), j, 6 + i, i, boundingBox);
+					this.setBlockState(world, Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH), j, 6 + i, 5 - i, boundingBox);
 				}
 			}
 
@@ -652,12 +632,12 @@ public class VillagePieces {
 			this.fillWithOutline(world, boundingBox, 1, 4, 4, 7, 4, 4, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 1, 3, 4, 7, 3, 4, Blocks.BOOKSHELF.getDefaultState(), Blocks.BOOKSHELF.getDefaultState(), false);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 7, 1, 4, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(this.getData(Blocks.WOODEN_STAIRS, 0)), 7, 1, 3, boundingBox);
-			int m = this.getData(Blocks.WOODEN_STAIRS, 3);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(m), 6, 1, 4, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(m), 5, 1, 4, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(m), 4, 1, 4, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(m), 3, 1, 4, boundingBox);
+			this.setBlockState(world, Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.EAST), 7, 1, 3, boundingBox);
+			BlockState blockState = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
+			this.setBlockState(world, blockState, 6, 1, 4, boundingBox);
+			this.setBlockState(world, blockState, 5, 1, 4, boundingBox);
+			this.setBlockState(world, blockState, 4, 1, 4, boundingBox);
+			this.setBlockState(world, blockState, 3, 1, 4, boundingBox);
 			this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 6, 1, 3, boundingBox);
 			this.setBlockState(world, Blocks.WOODEN_PRESSURE_PLATE.getDefaultState(), 6, 2, 3, boundingBox);
 			this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 4, 1, 3, boundingBox);
@@ -665,16 +645,16 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.CRAFTING_TABLE.getDefaultState(), 7, 1, 1, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 1, 1, 0, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 1, 2, 0, boundingBox);
-			this.placeDoor(world, boundingBox, random, 1, 1, 0, Direction.fromHorizontal(this.getData(Blocks.OAK_DOOR, 1)));
-			if (this.getBlockAt(world, 1, 0, -1, boundingBox).getBlock().getMaterial() == Material.AIR
-				&& this.getBlockAt(world, 1, -1, -1, boundingBox).getBlock().getMaterial() != Material.AIR) {
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 1, 0, -1, boundingBox);
+			this.placeDoor(world, boundingBox, random, 1, 1, 0, Direction.NORTH);
+			if (this.getBlockAt(world, 1, 0, -1, boundingBox).getMaterial() == Material.AIR
+				&& this.getBlockAt(world, 1, -1, -1, boundingBox).getMaterial() != Material.AIR) {
+				this.setBlockState(world, Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH), 1, 0, -1, boundingBox);
 			}
 
-			for (int n = 0; n < 6; n++) {
-				for (int o = 0; o < 9; o++) {
-					this.clearBlocksUpwards(world, o, 9, n, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), o, -1, n, boundingBox);
+			for (int k = 0; k < 6; k++) {
+				for (int l = 0; l < 9; l++) {
+					this.clearBlocksUpwards(world, l, 9, k, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), l, -1, k, boundingBox);
 				}
 			}
 
@@ -694,7 +674,7 @@ public class VillagePieces {
 
 		public Church(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -740,11 +720,14 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.COBBLESTONE.getDefaultState(), 2, 1, 7, boundingBox);
 			this.setBlockState(world, Blocks.COBBLESTONE.getDefaultState(), 3, 1, 6, boundingBox);
 			this.setBlockState(world, Blocks.COBBLESTONE.getDefaultState(), 3, 1, 7, boundingBox);
-			this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 1, 1, 5, boundingBox);
-			this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 2, 1, 6, boundingBox);
-			this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 3, 1, 5, boundingBox);
-			this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 1)), 1, 2, 7, boundingBox);
-			this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 0)), 3, 2, 7, boundingBox);
+			BlockState blockState = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
+			BlockState blockState2 = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.WEST);
+			BlockState blockState3 = Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.EAST);
+			this.setBlockState(world, blockState, 1, 1, 5, boundingBox);
+			this.setBlockState(world, blockState, 2, 1, 6, boundingBox);
+			this.setBlockState(world, blockState, 3, 1, 5, boundingBox);
+			this.setBlockState(world, blockState2, 1, 2, 7, boundingBox);
+			this.setBlockState(world, blockState3, 3, 2, 7, boundingBox);
 			this.setBlockState(world, Blocks.GLASS_PANE.getDefaultState(), 0, 2, 2, boundingBox);
 			this.setBlockState(world, Blocks.GLASS_PANE.getDefaultState(), 0, 3, 2, boundingBox);
 			this.setBlockState(world, Blocks.GLASS_PANE.getDefaultState(), 4, 2, 2, boundingBox);
@@ -760,28 +743,28 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.GLASS_PANE.getDefaultState(), 0, 3, 6, boundingBox);
 			this.setBlockState(world, Blocks.GLASS_PANE.getDefaultState(), 4, 3, 6, boundingBox);
 			this.setBlockState(world, Blocks.GLASS_PANE.getDefaultState(), 2, 3, 8, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing.getOpposite()), 2, 4, 7, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing.rotateYClockwise()), 1, 4, 6, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing.rotateYCounterclockwise()), 3, 4, 6, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing), 2, 4, 5, boundingBox);
-			int i = this.getData(Blocks.LADDER, 4);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.SOUTH), 2, 4, 7, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.EAST), 1, 4, 6, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.WEST), 3, 4, 6, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH), 2, 4, 5, boundingBox);
+			BlockState blockState4 = Blocks.LADDER.getDefaultState().with(LadderBlock.FACING, Direction.WEST);
 
-			for (int j = 1; j <= 9; j++) {
-				this.setBlockState(world, Blocks.LADDER.stateFromData(i), 3, j, 3, boundingBox);
+			for (int i = 1; i <= 9; i++) {
+				this.setBlockState(world, blockState4, 3, i, 3, boundingBox);
 			}
 
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 2, 1, 0, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 2, 2, 0, boundingBox);
-			this.placeDoor(world, boundingBox, random, 2, 1, 0, Direction.fromHorizontal(this.getData(Blocks.OAK_DOOR, 1)));
-			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getBlock().getMaterial() == Material.AIR
-				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getBlock().getMaterial() != Material.AIR) {
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 2, 0, -1, boundingBox);
+			this.placeDoor(world, boundingBox, random, 2, 1, 0, Direction.NORTH);
+			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getMaterial() == Material.AIR
+				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getMaterial() != Material.AIR) {
+				this.setBlockState(world, blockState, 2, 0, -1, boundingBox);
 			}
 
-			for (int k = 0; k < 9; k++) {
-				for (int l = 0; l < 5; l++) {
-					this.clearBlocksUpwards(world, l, 12, k, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), l, -1, k, boundingBox);
+			for (int j = 0; j < 9; j++) {
+				for (int k = 0; k < 5; k++) {
+					this.clearBlocksUpwards(world, k, 12, j, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), k, -1, j, boundingBox);
 				}
 			}
 
@@ -813,7 +796,7 @@ public class VillagePieces {
 
 		public FarmField(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.cropA = this.getCrop(random);
 			this.cropB = this.getCrop(random);
@@ -834,11 +817,15 @@ public class VillagePieces {
 		}
 
 		private Block getCrop(Random random) {
-			switch (random.nextInt(5)) {
+			switch (random.nextInt(10)) {
 				case 0:
-					return Blocks.CARROTS;
 				case 1:
+					return Blocks.CARROTS;
+				case 2:
+				case 3:
 					return Blocks.POTATOES;
+				case 4:
+					return Blocks.BEETROOTS;
 				default:
 					return Blocks.WHEAT;
 			}
@@ -874,16 +861,20 @@ public class VillagePieces {
 			this.fillWithOutline(world, boundingBox, 3, 0, 1, 3, 0, 7, Blocks.WATER.getDefaultState(), Blocks.WATER.getDefaultState(), false);
 
 			for (int i = 1; i <= 7; i++) {
-				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, 2, 7)), 1, 1, i, boundingBox);
-				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, 2, 7)), 2, 1, i, boundingBox);
-				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, 2, 7)), 4, 1, i, boundingBox);
-				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, 2, 7)), 5, 1, i, boundingBox);
+				int j = ((CropBlock)this.cropA).getMaxAge();
+				int k = j / 3;
+				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, k, j)), 1, 1, i, boundingBox);
+				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, k, j)), 2, 1, i, boundingBox);
+				int l = ((CropBlock)this.cropB).getMaxAge();
+				int m = l / 3;
+				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, m, l)), 4, 1, i, boundingBox);
+				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, m, l)), 5, 1, i, boundingBox);
 			}
 
-			for (int j = 0; j < 9; j++) {
-				for (int k = 0; k < 7; k++) {
-					this.clearBlocksUpwards(world, k, 4, j, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.DIRT.getDefaultState(), k, -1, j, boundingBox);
+			for (int n = 0; n < 9; n++) {
+				for (int o = 0; o < 7; o++) {
+					this.clearBlocksUpwards(world, o, 4, n, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.DIRT.getDefaultState(), o, -1, n, boundingBox);
 				}
 			}
 
@@ -897,7 +888,7 @@ public class VillagePieces {
 
 		public LampPost(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -922,11 +913,10 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 1, 1, 0, boundingBox);
 			this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 1, 2, 0, boundingBox);
 			this.setBlockState(world, Blocks.WOOL.stateFromData(DyeColor.WHITE.getSwappedId()), 1, 3, 0, boundingBox);
-			boolean bl = this.facing == Direction.EAST || this.facing == Direction.NORTH;
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing.rotateYClockwise()), bl ? 2 : 0, 3, 0, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing), 1, 3, 1, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing.rotateYCounterclockwise()), bl ? 0 : 2, 3, 0, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing.getOpposite()), 1, 3, -1, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.EAST), 2, 3, 0, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH), 1, 3, 1, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.WEST), 0, 3, 0, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.SOUTH), 1, 3, -1, boundingBox);
 			return true;
 		}
 	}
@@ -942,7 +932,7 @@ public class VillagePieces {
 
 		public LargeFarmField(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.cropA = this.getCrop(random);
 			this.cropB = this.getCrop(random);
@@ -966,14 +956,33 @@ public class VillagePieces {
 			this.cropB = Block.getById(structureNbt.getInt("CB"));
 			this.cropC = Block.getById(structureNbt.getInt("CC"));
 			this.cropD = Block.getById(structureNbt.getInt("CD"));
+			if (!(this.cropA instanceof CropBlock)) {
+				this.cropA = Blocks.WHEAT;
+			}
+
+			if (!(this.cropB instanceof CropBlock)) {
+				this.cropB = Blocks.CARROTS;
+			}
+
+			if (!(this.cropC instanceof CropBlock)) {
+				this.cropC = Blocks.POTATOES;
+			}
+
+			if (!(this.cropD instanceof CropBlock)) {
+				this.cropD = Blocks.BEETROOTS;
+			}
 		}
 
 		private Block getCrop(Random random) {
-			switch (random.nextInt(5)) {
+			switch (random.nextInt(10)) {
 				case 0:
-					return Blocks.CARROTS;
 				case 1:
+					return Blocks.CARROTS;
+				case 2:
+				case 3:
 					return Blocks.POTATOES;
+				case 4:
+					return Blocks.BEETROOTS;
 				default:
 					return Blocks.WHEAT;
 			}
@@ -1013,20 +1022,28 @@ public class VillagePieces {
 			this.fillWithOutline(world, boundingBox, 9, 0, 1, 9, 0, 7, Blocks.WATER.getDefaultState(), Blocks.WATER.getDefaultState(), false);
 
 			for (int i = 1; i <= 7; i++) {
-				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, 2, 7)), 1, 1, i, boundingBox);
-				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, 2, 7)), 2, 1, i, boundingBox);
-				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, 2, 7)), 4, 1, i, boundingBox);
-				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, 2, 7)), 5, 1, i, boundingBox);
-				this.setBlockState(world, this.cropC.stateFromData(MathHelper.nextInt(random, 2, 7)), 7, 1, i, boundingBox);
-				this.setBlockState(world, this.cropC.stateFromData(MathHelper.nextInt(random, 2, 7)), 8, 1, i, boundingBox);
-				this.setBlockState(world, this.cropD.stateFromData(MathHelper.nextInt(random, 2, 7)), 10, 1, i, boundingBox);
-				this.setBlockState(world, this.cropD.stateFromData(MathHelper.nextInt(random, 2, 7)), 11, 1, i, boundingBox);
+				int j = ((CropBlock)this.cropA).getMaxAge();
+				int k = j / 3;
+				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, k, j)), 1, 1, i, boundingBox);
+				this.setBlockState(world, this.cropA.stateFromData(MathHelper.nextInt(random, k, j)), 2, 1, i, boundingBox);
+				int l = ((CropBlock)this.cropB).getMaxAge();
+				int m = l / 3;
+				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, m, l)), 4, 1, i, boundingBox);
+				this.setBlockState(world, this.cropB.stateFromData(MathHelper.nextInt(random, m, l)), 5, 1, i, boundingBox);
+				int n = ((CropBlock)this.cropC).getMaxAge();
+				int o = n / 3;
+				this.setBlockState(world, this.cropC.stateFromData(MathHelper.nextInt(random, o, n)), 7, 1, i, boundingBox);
+				this.setBlockState(world, this.cropC.stateFromData(MathHelper.nextInt(random, o, n)), 8, 1, i, boundingBox);
+				int p = ((CropBlock)this.cropD).getMaxAge();
+				int q = p / 3;
+				this.setBlockState(world, this.cropD.stateFromData(MathHelper.nextInt(random, q, p)), 10, 1, i, boundingBox);
+				this.setBlockState(world, this.cropD.stateFromData(MathHelper.nextInt(random, q, p)), 11, 1, i, boundingBox);
 			}
 
-			for (int j = 0; j < 9; j++) {
-				for (int k = 0; k < 13; k++) {
-					this.clearBlocksUpwards(world, k, 4, j, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.DIRT.getDefaultState(), k, -1, j, boundingBox);
+			for (int r = 0; r < 9; r++) {
+				for (int s = 0; s < 13; s++) {
+					this.clearBlocksUpwards(world, s, 4, r, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.DIRT.getDefaultState(), s, -1, r, boundingBox);
 				}
 			}
 
@@ -1040,7 +1057,7 @@ public class VillagePieces {
 
 		public PeasantHouse(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -1085,13 +1102,14 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 0, 4, 3, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 8, 4, 2, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 8, 4, 3, boundingBox);
-			int i = this.getData(Blocks.WOODEN_STAIRS, 3);
-			int j = this.getData(Blocks.WOODEN_STAIRS, 2);
+			BlockState blockState = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
+			BlockState blockState2 = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH);
+			BlockState blockState3 = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.WEST);
 
-			for (int k = -1; k <= 2; k++) {
-				for (int l = 0; l <= 8; l++) {
-					this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(i), l, 4 + k, k, boundingBox);
-					this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(j), l, 4 + k, 5 - k, boundingBox);
+			for (int i = -1; i <= 2; i++) {
+				for (int j = 0; j <= 8; j++) {
+					this.setBlockState(world, blockState, j, 4 + i, i, boundingBox);
+					this.setBlockState(world, blockState2, j, 4 + i, 5 - i, boundingBox);
 				}
 			}
 
@@ -1110,29 +1128,29 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.OAK_FENCE.getDefaultState(), 2, 1, 3, boundingBox);
 			this.setBlockState(world, Blocks.WOODEN_PRESSURE_PLATE.getDefaultState(), 2, 2, 3, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 1, 1, 4, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(this.getData(Blocks.WOODEN_STAIRS, 3)), 2, 1, 4, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(this.getData(Blocks.WOODEN_STAIRS, 1)), 1, 1, 3, boundingBox);
+			this.setBlockState(world, blockState, 2, 1, 4, boundingBox);
+			this.setBlockState(world, blockState3, 1, 1, 3, boundingBox);
 			this.fillWithOutline(world, boundingBox, 5, 0, 1, 7, 0, 3, Blocks.DOUBLE_STONE_SLAB.getDefaultState(), Blocks.DOUBLE_STONE_SLAB.getDefaultState(), false);
 			this.setBlockState(world, Blocks.DOUBLE_STONE_SLAB.getDefaultState(), 6, 1, 1, boundingBox);
 			this.setBlockState(world, Blocks.DOUBLE_STONE_SLAB.getDefaultState(), 6, 1, 2, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 2, 1, 0, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 2, 2, 0, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing), 2, 3, 1, boundingBox);
-			this.placeDoor(world, boundingBox, random, 2, 1, 0, Direction.fromHorizontal(this.getData(Blocks.OAK_DOOR, 1)));
-			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getBlock().getMaterial() == Material.AIR
-				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getBlock().getMaterial() != Material.AIR) {
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 2, 0, -1, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH), 2, 3, 1, boundingBox);
+			this.placeDoor(world, boundingBox, random, 2, 1, 0, Direction.NORTH);
+			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getMaterial() == Material.AIR
+				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getMaterial() != Material.AIR) {
+				this.setBlockState(world, blockState, 2, 0, -1, boundingBox);
 			}
 
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 6, 1, 5, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 6, 2, 5, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing.getOpposite()), 6, 3, 4, boundingBox);
-			this.placeDoor(world, boundingBox, random, 6, 1, 5, Direction.fromHorizontal(this.getData(Blocks.OAK_DOOR, 1)));
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.SOUTH), 6, 3, 4, boundingBox);
+			this.placeDoor(world, boundingBox, random, 6, 1, 5, Direction.SOUTH);
 
-			for (int m = 0; m < 5; m++) {
-				for (int n = 0; n < 9; n++) {
-					this.clearBlocksUpwards(world, n, 7, m, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), n, -1, m, boundingBox);
+			for (int k = 0; k < 5; k++) {
+				for (int l = 0; l < 9; l++) {
+					this.clearBlocksUpwards(world, l, 7, k, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), l, -1, k, boundingBox);
 				}
 			}
 
@@ -1175,7 +1193,7 @@ public class VillagePieces {
 
 		public SingleHouse(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.terrace = random.nextBoolean();
 		}
@@ -1238,9 +1256,9 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 3, 3, 0, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 3, 2, 0, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 3, 1, 0, boundingBox);
-			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getBlock().getMaterial() == Material.AIR
-				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getBlock().getMaterial() != Material.AIR) {
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 2, 0, -1, boundingBox);
+			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getMaterial() == Material.AIR
+				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getMaterial() != Material.AIR) {
+				this.setBlockState(world, Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH), 2, 0, -1, boundingBox);
 			}
 
 			this.fillWithOutline(world, boundingBox, 1, 1, 1, 3, 3, 3, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
@@ -1264,19 +1282,19 @@ public class VillagePieces {
 			}
 
 			if (this.terrace) {
-				int i = this.getData(Blocks.LADDER, 3);
-				this.setBlockState(world, Blocks.LADDER.stateFromData(i), 3, 1, 3, boundingBox);
-				this.setBlockState(world, Blocks.LADDER.stateFromData(i), 3, 2, 3, boundingBox);
-				this.setBlockState(world, Blocks.LADDER.stateFromData(i), 3, 3, 3, boundingBox);
-				this.setBlockState(world, Blocks.LADDER.stateFromData(i), 3, 4, 3, boundingBox);
+				BlockState blockState = Blocks.LADDER.getDefaultState().with(LadderBlock.FACING, Direction.SOUTH);
+				this.setBlockState(world, blockState, 3, 1, 3, boundingBox);
+				this.setBlockState(world, blockState, 3, 2, 3, boundingBox);
+				this.setBlockState(world, blockState, 3, 3, 3, boundingBox);
+				this.setBlockState(world, blockState, 3, 4, 3, boundingBox);
 			}
 
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing), 2, 3, 1, boundingBox);
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH), 2, 3, 1, boundingBox);
 
-			for (int j = 0; j < 5; j++) {
-				for (int k = 0; k < 5; k++) {
-					this.clearBlocksUpwards(world, k, 6, j, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), k, -1, j, boundingBox);
+			for (int i = 0; i < 5; i++) {
+				for (int j = 0; j < 5; j++) {
+					this.clearBlocksUpwards(world, j, 6, i, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), j, -1, i, boundingBox);
 				}
 			}
 
@@ -1294,7 +1312,7 @@ public class VillagePieces {
 
 		public SingleMultifunctionalHouse(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.tall = random.nextBoolean();
 			this.tablePosition = random.nextInt(3);
@@ -1370,10 +1388,10 @@ public class VillagePieces {
 
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 1, 1, 0, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 1, 2, 0, boundingBox);
-			this.placeDoor(world, boundingBox, random, 1, 1, 0, Direction.fromHorizontal(this.getData(Blocks.OAK_DOOR, 1)));
-			if (this.getBlockAt(world, 1, 0, -1, boundingBox).getBlock().getMaterial() == Material.AIR
-				&& this.getBlockAt(world, 1, -1, -1, boundingBox).getBlock().getMaterial() != Material.AIR) {
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 1, 0, -1, boundingBox);
+			this.placeDoor(world, boundingBox, random, 1, 1, 0, Direction.NORTH);
+			if (this.getBlockAt(world, 1, 0, -1, boundingBox).getMaterial() == Material.AIR
+				&& this.getBlockAt(world, 1, -1, -1, boundingBox).getMaterial() != Material.AIR) {
+				this.setBlockState(world, Blocks.STONE_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH), 1, 0, -1, boundingBox);
 			}
 
 			for (int i = 0; i < 5; i++) {
@@ -1389,7 +1407,7 @@ public class VillagePieces {
 	}
 
 	public static class StartPiece extends VillagePieces.Well {
-		public LayeredBiomeSource biomeSource;
+		public SingletonBiomeSource field_13021;
 		public boolean isDesert;
 		public int field_94;
 		public VillagePieces.PieceData field_95;
@@ -1400,18 +1418,18 @@ public class VillagePieces {
 		public StartPiece() {
 		}
 
-		public StartPiece(LayeredBiomeSource layeredBiomeSource, int i, Random random, int j, int k, List<VillagePieces.PieceData> list, int l) {
+		public StartPiece(SingletonBiomeSource singletonBiomeSource, int i, Random random, int j, int k, List<VillagePieces.PieceData> list, int l) {
 			super(null, 0, random, j, k);
-			this.biomeSource = layeredBiomeSource;
+			this.field_13021 = singletonBiomeSource;
 			this.field_6245 = list;
 			this.field_94 = l;
-			Biome biome = layeredBiomeSource.getBiomeAt(new BlockPos(j, 0, k), Biome.DEFAULT);
-			this.isDesert = biome == Biome.DESERT || biome == Biome.DESERT_HILLS;
+			Biome biome = singletonBiomeSource.method_11536(new BlockPos(j, 0, k), Biomes.DEFAULT);
+			this.isDesert = biome == Biomes.DESERT || biome == Biomes.DESERT_HILLS;
 			this.setDesert(this.isDesert);
 		}
 
-		public LayeredBiomeSource method_105() {
-			return this.biomeSource;
+		public SingletonBiomeSource method_105() {
+			return this.field_13021;
 		}
 	}
 
@@ -1423,7 +1441,7 @@ public class VillagePieces {
 
 		public StraightRoad(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.length = Math.max(blockBox.getBlockCountX(), blockBox.getBlockCountZ());
 		}
@@ -1460,8 +1478,9 @@ public class VillagePieces {
 				}
 			}
 
-			if (bl && random.nextInt(3) > 0 && this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (bl && random.nextInt(3) > 0 && direction != null) {
+				switch (direction) {
 					case NORTH:
 						VillagePieces.method_93(
 							(VillagePieces.StartPiece)start,
@@ -1512,8 +1531,8 @@ public class VillagePieces {
 				}
 			}
 
-			if (bl && random.nextInt(3) > 0 && this.facing != null) {
-				switch (this.facing) {
+			if (bl && random.nextInt(3) > 0 && direction != null) {
+				switch (direction) {
 					case NORTH:
 						VillagePieces.method_93(
 							(VillagePieces.StartPiece)start,
@@ -1602,7 +1621,7 @@ public class VillagePieces {
 
 		public TinyHouse(VillagePieces.StartPiece startPiece, int i, Random random, BlockBox blockBox, Direction direction) {
 			super(startPiece, i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -1646,14 +1665,16 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 8, 4, 2, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 8, 4, 3, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 8, 4, 4, boundingBox);
-			int i = this.getData(Blocks.WOODEN_STAIRS, 3);
-			int j = this.getData(Blocks.WOODEN_STAIRS, 2);
+			BlockState blockState = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
+			BlockState blockState2 = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH);
+			BlockState blockState3 = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.WEST);
+			BlockState blockState4 = Blocks.WOODEN_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.EAST);
 
-			for (int k = -1; k <= 2; k++) {
-				for (int l = 0; l <= 8; l++) {
-					this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(i), l, 4 + k, k, boundingBox);
-					if ((k > -1 || l <= 1) && (k > 0 || l <= 3) && (k > 1 || l <= 4 || l >= 6)) {
-						this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(j), l, 4 + k, 5 - k, boundingBox);
+			for (int i = -1; i <= 2; i++) {
+				for (int j = 0; j <= 8; j++) {
+					this.setBlockState(world, blockState, j, 4 + i, i, boundingBox);
+					if ((i > -1 || j <= 1) && (i > 0 || j <= 3) && (i > 1 || j <= 4 || j >= 6)) {
+						this.setBlockState(world, blockState2, j, 4 + i, 5 - i, boundingBox);
 					}
 				}
 			}
@@ -1663,24 +1684,22 @@ public class VillagePieces {
 			this.fillWithOutline(world, boundingBox, 4, 5, 4, 4, 5, 10, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 6, 5, 4, 6, 5, 10, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 5, 6, 3, 5, 6, 10, Blocks.PLANKS.getDefaultState(), Blocks.PLANKS.getDefaultState(), false);
-			int m = this.getData(Blocks.WOODEN_STAIRS, 0);
 
-			for (int n = 4; n >= 1; n--) {
-				this.setBlockState(world, Blocks.PLANKS.getDefaultState(), n, 2 + n, 7 - n, boundingBox);
+			for (int k = 4; k >= 1; k--) {
+				this.setBlockState(world, Blocks.PLANKS.getDefaultState(), k, 2 + k, 7 - k, boundingBox);
 
-				for (int o = 8 - n; o <= 10; o++) {
-					this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(m), n, 2 + n, o, boundingBox);
+				for (int l = 8 - k; l <= 10; l++) {
+					this.setBlockState(world, blockState4, k, 2 + k, l, boundingBox);
 				}
 			}
 
-			int p = this.getData(Blocks.WOODEN_STAIRS, 1);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 6, 6, 3, boundingBox);
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 7, 5, 4, boundingBox);
-			this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(p), 6, 6, 4, boundingBox);
+			this.setBlockState(world, blockState3, 6, 6, 4, boundingBox);
 
-			for (int q = 6; q <= 8; q++) {
-				for (int r = 5; r <= 10; r++) {
-					this.setBlockState(world, Blocks.WOODEN_STAIRS.stateFromData(p), q, 12 - q, r, boundingBox);
+			for (int m = 6; m <= 8; m++) {
+				for (int n = 5; n <= 10; n++) {
+					this.setBlockState(world, blockState3, m, 12 - m, n, boundingBox);
 				}
 			}
 
@@ -1710,25 +1729,25 @@ public class VillagePieces {
 			this.setBlockState(world, Blocks.PLANKS.getDefaultState(), 5, 5, 10, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 2, 1, 0, boundingBox);
 			this.setBlockState(world, Blocks.AIR.getDefaultState(), 2, 2, 0, boundingBox);
-			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, this.facing), 2, 3, 1, boundingBox);
-			this.placeDoor(world, boundingBox, random, 2, 1, 0, Direction.fromHorizontal(this.getData(Blocks.OAK_DOOR, 1)));
+			this.setBlockState(world, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH), 2, 3, 1, boundingBox);
+			this.placeDoor(world, boundingBox, random, 2, 1, 0, Direction.NORTH);
 			this.fillWithOutline(world, boundingBox, 1, 0, -1, 3, 2, -1, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
-			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getBlock().getMaterial() == Material.AIR
-				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getBlock().getMaterial() != Material.AIR) {
-				this.setBlockState(world, Blocks.STONE_STAIRS.stateFromData(this.getData(Blocks.STONE_STAIRS, 3)), 2, 0, -1, boundingBox);
+			if (this.getBlockAt(world, 2, 0, -1, boundingBox).getMaterial() == Material.AIR
+				&& this.getBlockAt(world, 2, -1, -1, boundingBox).getMaterial() != Material.AIR) {
+				this.setBlockState(world, blockState, 2, 0, -1, boundingBox);
 			}
 
-			for (int s = 0; s < 5; s++) {
-				for (int t = 0; t < 9; t++) {
-					this.clearBlocksUpwards(world, t, 7, s, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), t, -1, s, boundingBox);
+			for (int o = 0; o < 5; o++) {
+				for (int p = 0; p < 9; p++) {
+					this.clearBlocksUpwards(world, p, 7, o, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), p, -1, o, boundingBox);
 				}
 			}
 
-			for (int u = 5; u < 11; u++) {
-				for (int v = 2; v < 9; v++) {
-					this.clearBlocksUpwards(world, v, 7, u, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), v, -1, u, boundingBox);
+			for (int q = 5; q < 11; q++) {
+				for (int r = 2; r < 9; r++) {
+					this.clearBlocksUpwards(world, r, 7, q, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.COBBLESTONE.getDefaultState(), r, -1, q, boundingBox);
 				}
 			}
 
@@ -1743,14 +1762,11 @@ public class VillagePieces {
 
 		public Well(VillagePieces.StartPiece startPiece, int i, Random random, int j, int k) {
 			super(startPiece, i);
-			this.facing = Direction.DirectionType.HORIZONTAL.getRandomDirection(random);
-			switch (this.facing) {
-				case NORTH:
-				case SOUTH:
-					this.boundingBox = new BlockBox(j, 64, k, j + 6 - 1, 78, k + 6 - 1);
-					break;
-				default:
-					this.boundingBox = new BlockBox(j, 64, k, j + 6 - 1, 78, k + 6 - 1);
+			this.method_11853(Direction.DirectionType.HORIZONTAL.getRandomDirection(random));
+			if (this.method_11854().getAxis() == Direction.Axis.Z) {
+				this.boundingBox = new BlockBox(j, 64, k, j + 6 - 1, 78, k + 6 - 1);
+			} else {
+				this.boundingBox = new BlockBox(j, 64, k, j + 6 - 1, 78, k + 6 - 1);
 			}
 		}
 

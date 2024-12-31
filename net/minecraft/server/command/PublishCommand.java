@@ -18,12 +18,12 @@ public class PublishCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		String string = MinecraftServer.getServer().getPort(LevelInfo.GameMode.SURVIVAL, false);
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
+		String string = minecraftServer.getPort(LevelInfo.GameMode.SURVIVAL, false);
 		if (string != null) {
-			run(source, this, "commands.publish.started", new Object[]{string});
+			run(commandSource, this, "commands.publish.started", new Object[]{string});
 		} else {
-			run(source, this, "commands.publish.failed", new Object[0]);
+			run(commandSource, this, "commands.publish.failed", new Object[0]);
 		}
 	}
 }

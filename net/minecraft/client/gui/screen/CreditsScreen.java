@@ -14,9 +14,11 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.sound.MusicTracker;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
+import net.minecraft.resource.Resource;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,12 +70,14 @@ public class CreditsScreen extends Screen {
 	public void init() {
 		if (this.credits == null) {
 			this.credits = Lists.newArrayList();
+			Resource resource = null;
 
 			try {
 				String string = "";
 				String string2 = "" + Formatting.WHITE + Formatting.OBFUSCATED + Formatting.GREEN + Formatting.AQUA;
 				int i = 274;
-				InputStream inputStream = this.client.getResourceManager().getResource(new Identifier("texts/end.txt")).getInputStream();
+				resource = this.client.getResourceManager().getResource(new Identifier("texts/end.txt"));
+				InputStream inputStream = resource.getInputStream();
 				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, Charsets.UTF_8));
 				Random random = new Random(8124371L);
 
@@ -109,8 +113,10 @@ public class CreditsScreen extends Screen {
 
 				inputStream.close();
 				this.creditsHeight = this.credits.size() * 12;
-			} catch (Exception var10) {
-				LOGGER.error("Couldn't load credits", var10);
+			} catch (Exception var14) {
+				LOGGER.error("Couldn't load credits", var14);
+			} finally {
+				IOUtils.closeQuietly(resource);
 			}
 		}
 	}
@@ -185,7 +191,7 @@ public class CreditsScreen extends Screen {
 		GlStateManager.popMatrix();
 		this.client.getTextureManager().bindTexture(VIGNETTE_TEXTURE);
 		GlStateManager.enableBlend();
-		GlStateManager.blendFunc(0, 769);
+		GlStateManager.method_12287(GlStateManager.class_2870.ZERO, GlStateManager.class_2866.ONE_MINUS_SRC_COLOR);
 		int n = this.width;
 		int o = this.height;
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);

@@ -1,10 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class PowerEnchantment extends Enchantment {
-	public PowerEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.BOW);
+	public PowerEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.BOW, equipmentSlots);
 		this.setName("arrowDamage");
 	}
 

@@ -1,8 +1,9 @@
 package net.minecraft.block.entity;
 
+import javax.annotation.Nullable;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.Identifier;
 
@@ -19,11 +20,12 @@ public class FlowerPotBlockEntity extends BlockEntity {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		Identifier identifier = Item.REGISTRY.getIdentifier(this.item);
 		nbt.putString("Item", identifier == null ? "" : identifier.toString());
 		nbt.putInt("Data", this.data);
+		return nbt;
 	}
 
 	@Override
@@ -38,13 +40,15 @@ public class FlowerPotBlockEntity extends BlockEntity {
 		this.data = nbt.getInt("Data");
 	}
 
+	@Nullable
 	@Override
-	public Packet getPacket() {
-		NbtCompound nbtCompound = new NbtCompound();
-		this.toNbt(nbtCompound);
-		nbtCompound.remove("Item");
-		nbtCompound.putInt("Item", Item.getRawId(this.item));
-		return new BlockEntityUpdateS2CPacket(this.pos, 5, nbtCompound);
+	public BlockEntityUpdateS2CPacket getUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 5, this.getUpdatePacketContent());
+	}
+
+	@Override
+	public NbtCompound getUpdatePacketContent() {
+		return this.toNbt(new NbtCompound());
 	}
 
 	public void setFlower(Item item, int data) {
@@ -52,6 +56,12 @@ public class FlowerPotBlockEntity extends BlockEntity {
 		this.data = data;
 	}
 
+	@Nullable
+	public ItemStack method_11659() {
+		return this.item == null ? null : new ItemStack(this.item, 1, this.data);
+	}
+
+	@Nullable
 	public Item getItem() {
 		return this.item;
 	}

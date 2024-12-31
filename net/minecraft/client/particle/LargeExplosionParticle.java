@@ -29,8 +29,8 @@ public class LargeExplosionParticle extends Particle {
 	protected LargeExplosionParticle(TextureManager textureManager, World world, double d, double e, double f, double g, double h, double i) {
 		super(world, d, e, f, 0.0, 0.0, 0.0);
 		this.textureManager = textureManager;
-		this.field_1713 = 6 + this.random.nextInt(4);
-		this.red = this.green = this.blue = this.random.nextFloat() * 0.6F + 0.4F;
+		this.field_1713 = 6 + this.field_13438.nextInt(4);
+		this.red = this.green = this.blue = this.field_13438.nextFloat() * 0.6F + 0.4F;
 		this.field_1715 = 1.0F - (float)g * 0.5F;
 	}
 
@@ -44,9 +44,9 @@ public class LargeExplosionParticle extends Particle {
 			float n = (float)(l / 4) / 4.0F;
 			float o = n + 0.24975F;
 			float p = 2.0F * this.field_1715;
-			float q = (float)(this.prevX + (this.x - this.prevX) * (double)tickDelta - field_1722);
-			float r = (float)(this.prevY + (this.y - this.prevY) * (double)tickDelta - field_1723);
-			float s = (float)(this.prevZ + (this.z - this.prevZ) * (double)tickDelta - field_1724);
+			float q = (float)(this.field_13425 + (this.field_13428 - this.field_13425) * (double)tickDelta - field_1722);
+			float r = (float)(this.field_13426 + (this.field_13429 - this.field_13426) * (double)tickDelta - field_1723);
+			float s = (float)(this.field_13427 + (this.field_13430 - this.field_13427) * (double)tickDelta - field_1724);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			GlStateManager.disableLighting();
 			DiffuseLighting.disable();
@@ -81,18 +81,18 @@ public class LargeExplosionParticle extends Particle {
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
+	public int method_12243(float f) {
 		return 61680;
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		this.field_1712++;
 		if (this.field_1712 == this.field_1713) {
-			this.remove();
+			this.method_12251();
 		}
 	}
 

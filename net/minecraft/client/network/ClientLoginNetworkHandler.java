@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.realms.RealmsScreenProxy;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkEncryptionUtils;
 import net.minecraft.network.NetworkState;
@@ -22,6 +23,7 @@ import net.minecraft.network.packet.s2c.login.LoginCompressionS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginDisconnectS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginHelloS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginSuccessS2CPacket;
+import net.minecraft.realms.DisconnectedRealmsScreen;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import org.apache.logging.log4j.LogManager;
@@ -87,7 +89,11 @@ public class ClientLoginNetworkHandler implements ClientLoginPacketListener {
 
 	@Override
 	public void onDisconnected(Text reason) {
-		this.client.setScreen(new DisconnectedScreen(this.parent, "connect.failed", reason));
+		if (this.parent != null && this.parent instanceof RealmsScreenProxy) {
+			this.client.setScreen(new DisconnectedRealmsScreen(((RealmsScreenProxy)this.parent).getRealmsScreen(), "connect.failed", reason).getProxy());
+		} else {
+			this.client.setScreen(new DisconnectedScreen(this.parent, "connect.failed", reason));
+		}
 	}
 
 	@Override

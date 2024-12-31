@@ -131,7 +131,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 			GlStateManager.enableRescaleNormal();
 			if (iconItem != null && iconItem.getItem() != null) {
 				DiffuseLighting.enable();
-				CustomizeFlatLevelScreen.this.itemRenderer.renderGuiItemModel(iconItem, x + 2, y + 2);
+				CustomizeFlatLevelScreen.this.itemRenderer.method_12455(iconItem, x + 2, y + 2);
 				DiffuseLighting.disable();
 			}
 
@@ -196,7 +196,7 @@ public class CustomizeFlatLevelScreen extends Screen {
 			Block block = blockState.getBlock();
 			Item item = Item.fromBlock(block);
 			ItemStack itemStack = block != Blocks.AIR && item != null ? new ItemStack(item, 1, block.getData(blockState)) : null;
-			String string = itemStack == null ? "Air" : item.getDisplayName(itemStack);
+			String string = itemStack == null ? I18n.translate("createWorld.customize.flat.air") : item.getDisplayName(itemStack);
 			if (item == null) {
 				if (block == Blocks.WATER || block == Blocks.FLOWING_WATER) {
 					item = Items.WATER_BUCKET;

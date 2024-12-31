@@ -16,8 +16,9 @@ public class FeatureState extends PersistentState {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		nbt.put("Features", this.features);
+		return nbt;
 	}
 
 	public void putFeature(NbtCompound nbt, int x, int z) {

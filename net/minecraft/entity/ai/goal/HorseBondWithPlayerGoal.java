@@ -1,5 +1,6 @@
 package net.minecraft.entity.ai.goal;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.RandomVectorGenerator;
@@ -20,7 +21,7 @@ public class HorseBondWithPlayerGoal extends Goal {
 
 	@Override
 	public boolean canStart() {
-		if (!this.horse.isTame() && this.horse.rider != null) {
+		if (!this.horse.isTame() && this.horse.hasPassengers()) {
 			Vec3d vec3d = RandomVectorGenerator.method_2799(this.horse, 5, 4);
 			if (vec3d == null) {
 				return false;
@@ -42,17 +43,22 @@ public class HorseBondWithPlayerGoal extends Goal {
 
 	@Override
 	public boolean shouldContinue() {
-		return !this.horse.getNavigation().isIdle() && this.horse.rider != null;
+		return !this.horse.getNavigation().isIdle() && this.horse.hasPassengers();
 	}
 
 	@Override
 	public void tick() {
 		if (this.horse.getRandom().nextInt(50) == 0) {
-			if (this.horse.rider instanceof PlayerEntity) {
+			Entity entity = (Entity)this.horse.getPassengerList().get(0);
+			if (entity == null) {
+				return;
+			}
+
+			if (entity instanceof PlayerEntity) {
 				int i = this.horse.getTemper();
 				int j = this.horse.getMaxTemper();
 				if (j > 0 && this.horse.getRandom().nextInt(j) < i) {
-					this.horse.bondWithPlayer((PlayerEntity)this.horse.rider);
+					this.horse.bondWithPlayer((PlayerEntity)entity);
 					this.horse.world.sendEntityStatus(this.horse, (byte)7);
 					return;
 				}
@@ -60,8 +66,7 @@ public class HorseBondWithPlayerGoal extends Goal {
 				this.horse.addTemper(5);
 			}
 
-			this.horse.rider.startRiding(null);
-			this.horse.rider = null;
+			this.horse.removeAllPassengers();
 			this.horse.playAngrySound();
 			this.horse.world.sendEntityStatus(this.horse, (byte)6);
 		}

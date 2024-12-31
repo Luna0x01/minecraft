@@ -2,6 +2,7 @@ package net.minecraft.entity.vehicle;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -10,6 +11,9 @@ import net.minecraft.block.PoweredRailBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -17,20 +21,23 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Nameable;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public abstract class AbstractMinecartEntity extends Entity implements Nameable {
+	private static final TrackedData<Integer> DAMAGE_WOBBLE_TICKS = DataTracker.registerData(AbstractMinecartEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Integer> DAMAGE_WOBBLE_SIDE = DataTracker.registerData(AbstractMinecartEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Float> DAMAGE_WOBBLE_STRENGTH = DataTracker.registerData(AbstractMinecartEntity.class, TrackedDataHandlerRegistry.FLOAT);
+	private static final TrackedData<Integer> CUSTOM_BLOCK_ID = DataTracker.registerData(AbstractMinecartEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Integer> CUSTOM_BLOCK_OFFSET = DataTracker.registerData(AbstractMinecartEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Boolean> CUSTOM_BLOCK_PRESENT = DataTracker.registerData(AbstractMinecartEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private boolean yawFlipped;
-	private String customName;
 	private static final int[][][] ADJACENT_RAIL_POSITIONS = new int[][][]{
 		{{0, 0, -1}, {0, 0, 1}},
 		{{-1, 0, 0}, {1, 0, 0}},
@@ -85,19 +92,21 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 
 	@Override
 	protected void initDataTracker() {
-		this.dataTracker.track(17, new Integer(0));
-		this.dataTracker.track(18, new Integer(1));
-		this.dataTracker.track(19, new Float(0.0F));
-		this.dataTracker.track(20, new Integer(0));
-		this.dataTracker.track(21, new Integer(6));
-		this.dataTracker.track(22, (byte)0);
+		this.dataTracker.startTracking(DAMAGE_WOBBLE_TICKS, 0);
+		this.dataTracker.startTracking(DAMAGE_WOBBLE_SIDE, 1);
+		this.dataTracker.startTracking(DAMAGE_WOBBLE_STRENGTH, 0.0F);
+		this.dataTracker.startTracking(CUSTOM_BLOCK_ID, 0);
+		this.dataTracker.startTracking(CUSTOM_BLOCK_OFFSET, 6);
+		this.dataTracker.startTracking(CUSTOM_BLOCK_PRESENT, false);
 	}
 
+	@Nullable
 	@Override
 	public Box getHardCollisionBox(Entity collidingEntity) {
 		return collidingEntity.isPushable() ? collidingEntity.getBoundingBox() : null;
 	}
 
+	@Nullable
 	@Override
 	public Box getBox() {
 		return null;
@@ -137,10 +146,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			this.setDamageWobbleStrength(this.getDamageWobbleStrength() + amount * 10.0F);
 			boolean bl = source.getAttacker() instanceof PlayerEntity && ((PlayerEntity)source.getAttacker()).abilities.creativeMode;
 			if (bl || this.getDamageWobbleStrength() > 40.0F) {
-				if (this.rider != null) {
-					this.rider.startRiding(null);
-				}
-
+				this.removeAllPassengers();
 				if (bl && !this.hasCustomName()) {
 					this.remove();
 				} else {
@@ -156,8 +162,8 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.remove();
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
 			ItemStack itemStack = new ItemStack(Items.MINECART, 1);
-			if (this.customName != null) {
-				itemStack.setCustomName(this.customName);
+			if (this.getTranslationKey() != null) {
+				itemStack.setCustomName(this.getTranslationKey());
 			}
 
 			this.dropItem(itemStack, 0.0F);
@@ -182,6 +188,11 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	@Override
+	public Direction getMovementDirection() {
+		return this.yawFlipped ? this.getHorizontalDirection().getOpposite().rotateYClockwise() : this.getHorizontalDirection().rotateYClockwise();
+	}
+
+	@Override
 	public void tick() {
 		if (this.getDamageWobbleTicks() > 0) {
 			this.setDamageWobbleTicks(this.getDamageWobbleTicks() - 1);
@@ -197,21 +208,21 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 
 		if (!this.world.isClient && this.world instanceof ServerWorld) {
 			this.world.profiler.push("portal");
-			MinecraftServer minecraftServer = ((ServerWorld)this.world).getServer();
+			MinecraftServer minecraftServer = this.world.getServer();
 			int i = this.getMaxNetherPortalTime();
 			if (this.changingDimension) {
 				if (minecraftServer.isNetherAllowed()) {
-					if (this.vehicle == null && this.netherPortalTime++ >= i) {
+					if (!this.hasMount() && this.netherPortalTime++ >= i) {
 						this.netherPortalTime = i;
 						this.netherPortalCooldown = this.getDefaultNetherPortalCooldown();
 						int j;
-						if (this.world.dimension.getType() == -1) {
+						if (this.world.dimension.getDimensionType().getId() == -1) {
 							j = 0;
 						} else {
 							j = -1;
 						}
 
-						this.teleportToDimension(j);
+						this.changeDimension(j);
 					}
 
 					this.changingDimension = false;
@@ -291,17 +302,9 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			this.setRotation(this.yaw, this.pitch);
 
 			for (Entity entity : this.world.getEntitiesIn(this, this.getBoundingBox().expand(0.2F, 0.0, 0.2F))) {
-				if (entity != this.rider && entity.isPushable() && entity instanceof AbstractMinecartEntity) {
+				if (!this.hasPassenger(entity) && entity.isPushable() && entity instanceof AbstractMinecartEntity) {
 					entity.pushAwayFrom(this);
 				}
-			}
-
-			if (this.rider != null && this.rider.removed) {
-				if (this.rider.vehicle == this) {
-					this.rider.vehicle = null;
-				}
-
-				this.rider = null;
 			}
 
 			this.updateWaterState();
@@ -382,11 +385,12 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 
 		this.velocityX = i * e / g;
 		this.velocityZ = i * f / g;
-		if (this.rider instanceof LivingEntity) {
-			double j = (double)((LivingEntity)this.rider).forwardSpeed;
+		Entity entity = this.getPassengerList().isEmpty() ? null : (Entity)this.getPassengerList().get(0);
+		if (entity instanceof LivingEntity) {
+			double j = (double)((LivingEntity)entity).forwardSpeed;
 			if (j > 0.0) {
-				double k = -Math.sin((double)(this.rider.yaw * (float) Math.PI / 180.0F));
-				double l = Math.cos((double)(this.rider.yaw * (float) Math.PI / 180.0F));
+				double k = -Math.sin((double)(entity.yaw * (float) (Math.PI / 180.0)));
+				double l = Math.cos((double)(entity.yaw * (float) (Math.PI / 180.0)));
 				double m = this.velocityX * this.velocityX + this.velocityZ * this.velocityZ;
 				if (m < 0.01) {
 					this.velocityX += k * 0.1;
@@ -433,7 +437,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 		this.updatePosition(this.x, this.y, this.z);
 		double v = this.velocityX;
 		double w = this.velocityZ;
-		if (this.rider != null) {
+		if (this.hasPassengers()) {
 			v *= 0.75;
 			w *= 0.75;
 		}
@@ -476,15 +480,15 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 				this.velocityX = this.velocityX + this.velocityX / ab * ac;
 				this.velocityZ = this.velocityZ + this.velocityZ / ab * ac;
 			} else if (railShapeType == AbstractRailBlock.RailShapeType.EAST_WEST) {
-				if (this.world.getBlockState(pos.west()).getBlock().isFullCube()) {
+				if (this.world.getBlockState(pos.west()).method_11734()) {
 					this.velocityX = 0.02;
-				} else if (this.world.getBlockState(pos.east()).getBlock().isFullCube()) {
+				} else if (this.world.getBlockState(pos.east()).method_11734()) {
 					this.velocityX = -0.02;
 				}
 			} else if (railShapeType == AbstractRailBlock.RailShapeType.NORTH_SOUTH) {
-				if (this.world.getBlockState(pos.north()).getBlock().isFullCube()) {
+				if (this.world.getBlockState(pos.north()).method_11734()) {
 					this.velocityZ = 0.02;
-				} else if (this.world.getBlockState(pos.south()).getBlock().isFullCube()) {
+				} else if (this.world.getBlockState(pos.south()).method_11734()) {
 					this.velocityZ = -0.02;
 				}
 			}
@@ -492,7 +496,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	protected void applySlowdown() {
-		if (this.rider != null) {
+		if (this.hasPassengers()) {
 			this.velocityX *= 0.997F;
 			this.velocityY *= 0.0;
 			this.velocityZ *= 0.997F;
@@ -601,30 +605,24 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	@Override
+	public Box getVisibilityBoundingBox() {
+		Box box = this.getBoundingBox();
+		return this.hasCustomBlock() ? box.expand((double)Math.abs(this.getBlockOffset()) / 16.0) : box;
+	}
+
+	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
 		if (nbt.getBoolean("CustomDisplayTile")) {
-			int i = nbt.getInt("DisplayData");
+			Block block;
 			if (nbt.contains("DisplayTile", 8)) {
-				Block block = Block.get(nbt.getString("DisplayTile"));
-				if (block == null) {
-					this.setCustomBlock(Blocks.AIR.getDefaultState());
-				} else {
-					this.setCustomBlock(block.stateFromData(i));
-				}
+				block = Block.get(nbt.getString("DisplayTile"));
 			} else {
-				Block block2 = Block.getById(nbt.getInt("DisplayTile"));
-				if (block2 == null) {
-					this.setCustomBlock(Blocks.AIR.getDefaultState());
-				} else {
-					this.setCustomBlock(block2.stateFromData(i));
-				}
+				block = Block.getById(nbt.getInt("DisplayTile"));
 			}
 
+			int i = nbt.getInt("DisplayData");
+			this.setCustomBlock(block == null ? Blocks.AIR.getDefaultState() : block.stateFromData(i));
 			this.setCustomBlockOffset(nbt.getInt("DisplayOffset"));
-		}
-
-		if (nbt.contains("CustomName", 8) && nbt.getString("CustomName").length() > 0) {
-			this.customName = nbt.getString("CustomName");
 		}
 	}
 
@@ -638,25 +636,21 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 			nbt.putInt("DisplayData", blockState.getBlock().getData(blockState));
 			nbt.putInt("DisplayOffset", this.getBlockOffset());
 		}
-
-		if (this.customName != null && this.customName.length() > 0) {
-			nbt.putString("CustomName", this.customName);
-		}
 	}
 
 	@Override
 	public void pushAwayFrom(Entity entity) {
 		if (!this.world.isClient) {
 			if (!entity.noClip && !this.noClip) {
-				if (entity != this.rider) {
+				if (!this.hasPassenger(entity)) {
 					if (entity instanceof LivingEntity
-						&& !(entity instanceof PlayerEntity)
-						&& !(entity instanceof IronGolemEntity)
 						&& this.getMinecartType() == AbstractMinecartEntity.Type.RIDEABLE
 						&& this.velocityX * this.velocityX + this.velocityZ * this.velocityZ > 0.01
-						&& this.rider == null
-						&& entity.vehicle == null) {
-						entity.startRiding(this);
+						&& !(entity instanceof PlayerEntity)
+						&& !(entity instanceof IronGolemEntity)
+						&& !this.hasPassengers()
+						&& !entity.hasMount()) {
+						entity.ride(this);
 					}
 
 					double d = entity.x - this.x;
@@ -683,7 +677,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 							double h = entity.x - this.x;
 							double i = entity.z - this.z;
 							Vec3d vec3d = new Vec3d(h, 0.0, i).normalize();
-							Vec3d vec3d2 = new Vec3d((double)MathHelper.cos(this.yaw * (float) Math.PI / 180.0F), 0.0, (double)MathHelper.sin(this.yaw * (float) Math.PI / 180.0F))
+							Vec3d vec3d2 = new Vec3d((double)MathHelper.cos(this.yaw * (float) (Math.PI / 180.0)), 0.0, (double)MathHelper.sin(this.yaw * (float) (Math.PI / 180.0)))
 								.normalize();
 							double j = Math.abs(vec3d.dotProduct(vec3d2));
 							if (j < 0.8F) {
@@ -747,33 +741,33 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	public void setDamageWobbleStrength(float damageWobbleStrength) {
-		this.dataTracker.setProperty(19, damageWobbleStrength);
+		this.dataTracker.set(DAMAGE_WOBBLE_STRENGTH, damageWobbleStrength);
 	}
 
 	public float getDamageWobbleStrength() {
-		return this.dataTracker.getFloat(19);
+		return this.dataTracker.get(DAMAGE_WOBBLE_STRENGTH);
 	}
 
 	public void setDamageWobbleTicks(int wobbleTicks) {
-		this.dataTracker.setProperty(17, wobbleTicks);
+		this.dataTracker.set(DAMAGE_WOBBLE_TICKS, wobbleTicks);
 	}
 
 	public int getDamageWobbleTicks() {
-		return this.dataTracker.getInt(17);
+		return this.dataTracker.get(DAMAGE_WOBBLE_TICKS);
 	}
 
 	public void setDamageWobbleSide(int wobbleSide) {
-		this.dataTracker.setProperty(18, wobbleSide);
+		this.dataTracker.set(DAMAGE_WOBBLE_SIDE, wobbleSide);
 	}
 
 	public int getDamageWobbleSide() {
-		return this.dataTracker.getInt(18);
+		return this.dataTracker.get(DAMAGE_WOBBLE_SIDE);
 	}
 
 	public abstract AbstractMinecartEntity.Type getMinecartType();
 
 	public BlockState getContainedBlock() {
-		return !this.hasCustomBlock() ? this.getDefaultContainedBlock() : Block.getStateFromRawId(this.getDataTracker().getInt(20));
+		return !this.hasCustomBlock() ? this.getDefaultContainedBlock() : Block.getStateFromRawId(this.getDataTracker().get(CUSTOM_BLOCK_ID));
 	}
 
 	public BlockState getDefaultContainedBlock() {
@@ -781,7 +775,7 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	public int getBlockOffset() {
-		return !this.hasCustomBlock() ? this.getDefaultBlockOffset() : this.getDataTracker().getInt(21);
+		return !this.hasCustomBlock() ? this.getDefaultBlockOffset() : this.getDataTracker().get(CUSTOM_BLOCK_OFFSET);
 	}
 
 	public int getDefaultBlockOffset() {
@@ -789,56 +783,21 @@ public abstract class AbstractMinecartEntity extends Entity implements Nameable 
 	}
 
 	public void setCustomBlock(BlockState state) {
-		this.getDataTracker().setProperty(20, Block.getByBlockState(state));
+		this.getDataTracker().set(CUSTOM_BLOCK_ID, Block.getByBlockState(state));
 		this.setCustomBlockPresent(true);
 	}
 
 	public void setCustomBlockOffset(int offset) {
-		this.getDataTracker().setProperty(21, offset);
+		this.getDataTracker().set(CUSTOM_BLOCK_OFFSET, offset);
 		this.setCustomBlockPresent(true);
 	}
 
 	public boolean hasCustomBlock() {
-		return this.getDataTracker().getByte(22) == 1;
+		return this.getDataTracker().get(CUSTOM_BLOCK_PRESENT);
 	}
 
 	public void setCustomBlockPresent(boolean present) {
-		this.getDataTracker().setProperty(22, (byte)(present ? 1 : 0));
-	}
-
-	@Override
-	public void setCustomName(String name) {
-		this.customName = name;
-	}
-
-	@Override
-	public String getTranslationKey() {
-		return this.customName != null ? this.customName : super.getTranslationKey();
-	}
-
-	@Override
-	public boolean hasCustomName() {
-		return this.customName != null;
-	}
-
-	@Override
-	public String getCustomName() {
-		return this.customName;
-	}
-
-	@Override
-	public Text getName() {
-		if (this.hasCustomName()) {
-			LiteralText literalText = new LiteralText(this.customName);
-			literalText.getStyle().setHoverEvent(this.getHoverEvent());
-			literalText.getStyle().setInsertion(this.getUuid().toString());
-			return literalText;
-		} else {
-			TranslatableText translatableText = new TranslatableText(this.getTranslationKey());
-			translatableText.getStyle().setHoverEvent(this.getHoverEvent());
-			translatableText.getStyle().setInsertion(this.getUuid().toString());
-			return translatableText;
-		}
+		this.getDataTracker().set(CUSTOM_BLOCK_PRESENT, present);
 	}
 
 	public static enum Type {

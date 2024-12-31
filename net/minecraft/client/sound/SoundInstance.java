@@ -1,9 +1,18 @@
 package net.minecraft.client.sound;
 
+import javax.annotation.Nullable;
+import net.minecraft.client.class_2906;
 import net.minecraft.util.Identifier;
 
 public interface SoundInstance {
 	Identifier getIdentifier();
+
+	@Nullable
+	SoundContainerImpl method_12532(SoundManager soundManager);
+
+	class_2906 method_12533();
+
+	SoundCategory getCategory();
 
 	boolean isRepeatable();
 

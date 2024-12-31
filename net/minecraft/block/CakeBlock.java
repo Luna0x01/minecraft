@@ -1,14 +1,17 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -17,6 +20,15 @@ import net.minecraft.world.World;
 
 public class CakeBlock extends Block {
 	public static final IntProperty BITES = IntProperty.of("bites", 0, 6);
+	protected static final Box[] field_12609 = new Box[]{
+		new Box(0.0625, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
+		new Box(0.1875, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
+		new Box(0.3125, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
+		new Box(0.4375, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
+		new Box(0.5625, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
+		new Box(0.6875, 0.0, 0.0625, 0.9375, 0.5, 0.9375),
+		new Box(0.8125, 0.0, 0.0625, 0.9375, 0.5, 0.9375)
+	};
 
 	protected CakeBlock() {
 		super(Material.CAKE);
@@ -25,59 +37,40 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		float f = 0.0625F;
-		float g = (float)(1 + (Integer)view.getBlockState(pos).get(BITES) * 2) / 16.0F;
-		float h = 0.5F;
-		this.setBoundingBox(g, 0.0F, f, 1.0F - f, h, 1.0F - f);
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12609[state.get(BITES)];
 	}
 
 	@Override
-	public void setBlockItemBounds() {
-		float f = 0.0625F;
-		float g = 0.5F;
-		this.setBoundingBox(f, 0.0F, f, 1.0F - f, g, 1.0F - f);
+	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
+		return blockState.getCollisionBox(world, blockPos);
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		float f = 0.0625F;
-		float g = (float)(1 + (Integer)state.get(BITES) * 2) / 16.0F;
-		float h = 0.5F;
-		return new Box(
-			(double)((float)pos.getX() + g),
-			(double)pos.getY(),
-			(double)((float)pos.getZ() + f),
-			(double)((float)(pos.getX() + 1) - f),
-			(double)((float)pos.getY() + h),
-			(double)((float)(pos.getZ() + 1) - f)
-		);
-	}
-
-	@Override
-	public Box getSelectionBox(World world, BlockPos pos) {
-		return this.getCollisionBox(world, pos, world.getBlockState(pos));
-	}
-
-	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		this.onCakeConsuming(world, pos, state, player);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		this.onCakeConsuming(world, blockPos, blockState, playerEntity);
 		return true;
-	}
-
-	@Override
-	public void onBlockBreakStart(World world, BlockPos pos, PlayerEntity player) {
-		this.onCakeConsuming(world, pos, world.getBlockState(pos), player);
 	}
 
 	private void onCakeConsuming(World world, BlockPos pos, BlockState state, PlayerEntity player) {
@@ -99,14 +92,14 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (!this.isOnSolidBlock(world, pos)) {
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (!this.isOnSolidBlock(world, blockPos)) {
+			world.setAir(blockPos);
 		}
 	}
 
 	private boolean isOnSolidBlock(World world, BlockPos pos) {
-		return world.getBlockState(pos.down()).getBlock().getMaterial().isSolid();
+		return world.getBlockState(pos.down()).getMaterial().isSolid();
 	}
 
 	@Override
@@ -114,14 +107,15 @@ public class CakeBlock extends Block {
 		return 0;
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return null;
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.CAKE;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Items.CAKE);
 	}
 
 	@Override
@@ -145,12 +139,12 @@ public class CakeBlock extends Block {
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
-		return (7 - (Integer)world.getBlockState(pos).get(BITES)) * 2;
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+		return (7 - (Integer)state.get(BITES)) * 2;
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 }

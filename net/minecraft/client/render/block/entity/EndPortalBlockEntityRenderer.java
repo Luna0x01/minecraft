@@ -37,7 +37,7 @@ public class EndPortalBlockEntityRenderer extends BlockEntityRenderer<EndPortalB
 				n = 65.0F;
 				o = 0.125F;
 				GlStateManager.enableBlend();
-				GlStateManager.blendFunc(770, 771);
+				GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 			}
 
 			if (m >= 1) {
@@ -46,7 +46,7 @@ public class EndPortalBlockEntityRenderer extends BlockEntityRenderer<EndPortalB
 
 			if (m == 1) {
 				GlStateManager.enableBlend();
-				GlStateManager.blendFunc(1, 1);
+				GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 				o = 0.5F;
 			}
 
@@ -64,10 +64,10 @@ public class EndPortalBlockEntityRenderer extends BlockEntityRenderer<EndPortalB
 			GlStateManager.genTex(GlStateManager.TexCoord.T, 9473, this.createBuffer(0.0F, 0.0F, 1.0F, 0.0F));
 			GlStateManager.genTex(GlStateManager.TexCoord.R, 9473, this.createBuffer(0.0F, 0.0F, 0.0F, 1.0F));
 			GlStateManager.genTex(GlStateManager.TexCoord.Q, 9474, this.createBuffer(0.0F, 1.0F, 0.0F, 0.0F));
-			GlStateManager.enableTexCoord(GlStateManager.TexCoord.S);
-			GlStateManager.enableTexCoord(GlStateManager.TexCoord.T);
-			GlStateManager.enableTexCoord(GlStateManager.TexCoord.R);
-			GlStateManager.enableTexCoord(GlStateManager.TexCoord.Q);
+			GlStateManager.method_12289(GlStateManager.TexCoord.S);
+			GlStateManager.method_12289(GlStateManager.TexCoord.T);
+			GlStateManager.method_12289(GlStateManager.TexCoord.R);
+			GlStateManager.method_12289(GlStateManager.TexCoord.Q);
 			GlStateManager.popMatrix();
 			GlStateManager.matrixMode(5890);
 			GlStateManager.pushMatrix();

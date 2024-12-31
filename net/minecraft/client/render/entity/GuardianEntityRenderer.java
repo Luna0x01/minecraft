@@ -12,7 +12,6 @@ import net.minecraft.entity.mob.GuardianEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import org.lwjgl.opengl.GL11;
 
 public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 	private static final Identifier GUARDIAN_TEX = new Identifier("textures/entity/guardian.png");
@@ -33,7 +32,7 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 				if (livingEntity != null) {
 					Vec3d vec3d = this.method_10214(livingEntity, (double)livingEntity.height * 0.5, 1.0F);
 					Vec3d vec3d2 = this.method_10214(guardianEntity, (double)guardianEntity.getEyeHeight(), 1.0F);
-					if (cameraView.isBoxInFrustum(Box.createNewBox(vec3d2.x, vec3d2.y, vec3d2.z, vec3d.x, vec3d.y, vec3d.z))) {
+					if (cameraView.isBoxInFrustum(new Box(vec3d2.x, vec3d2.y, vec3d2.z, vec3d.x, vec3d.y, vec3d.z))) {
 						return true;
 					}
 				}
@@ -63,15 +62,17 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 			Tessellator tessellator = Tessellator.getInstance();
 			BufferBuilder bufferBuilder = tessellator.getBuffer();
 			this.bindTexture(GUARDIAN_BEAM);
-			GL11.glTexParameterf(3553, 10242, 10497.0F);
-			GL11.glTexParameterf(3553, 10243, 10497.0F);
+			GlStateManager.method_12294(3553, 10242, 10497);
+			GlStateManager.method_12294(3553, 10243, 10497);
 			GlStateManager.disableLighting();
 			GlStateManager.disableCull();
 			GlStateManager.disableBlend();
 			GlStateManager.depthMask(true);
 			float j = 240.0F;
 			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, j, j);
-			GlStateManager.blendFuncSeparate(770, 1, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			float k = (float)guardianEntity.world.getLastUpdateTime() + h;
 			float l = k * 0.5F % 1.0F;
 			float m = guardianEntity.getEyeHeight();
@@ -90,8 +91,8 @@ public class GuardianEntityRenderer extends MobEntityRenderer<GuardianEntity> {
 			double r = (double)k * 0.05 * (1.0 - (double)(q & 1) * 2.5);
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
 			float s = i * i;
-			int t = 64 + (int)(s * 240.0F);
-			int u = 32 + (int)(s * 192.0F);
+			int t = 64 + (int)(s * 191.0F);
+			int u = 32 + (int)(s * 191.0F);
 			int v = 128 - (int)(s * 64.0F);
 			double w = (double)q * 0.2;
 			double x = w * 1.41;

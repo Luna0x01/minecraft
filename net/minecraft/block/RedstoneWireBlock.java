@@ -6,14 +6,18 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -28,6 +32,24 @@ public class RedstoneWireBlock extends Block {
 	public static final EnumProperty<RedstoneWireBlock.RedstoneWireType> SOUTH = EnumProperty.of("south", RedstoneWireBlock.RedstoneWireType.class);
 	public static final EnumProperty<RedstoneWireBlock.RedstoneWireType> WEST = EnumProperty.of("west", RedstoneWireBlock.RedstoneWireType.class);
 	public static final IntProperty POWER = IntProperty.of("power", 0, 15);
+	protected static final Box[] field_12731 = new Box[]{
+		new Box(0.1875, 0.0, 0.1875, 0.8125, 0.0625, 0.8125),
+		new Box(0.1875, 0.0, 0.1875, 0.8125, 0.0625, 1.0),
+		new Box(0.0, 0.0, 0.1875, 0.8125, 0.0625, 0.8125),
+		new Box(0.0, 0.0, 0.1875, 0.8125, 0.0625, 1.0),
+		new Box(0.1875, 0.0, 0.0, 0.8125, 0.0625, 0.8125),
+		new Box(0.1875, 0.0, 0.0, 0.8125, 0.0625, 1.0),
+		new Box(0.0, 0.0, 0.0, 0.8125, 0.0625, 0.8125),
+		new Box(0.0, 0.0, 0.0, 0.8125, 0.0625, 1.0),
+		new Box(0.1875, 0.0, 0.1875, 1.0, 0.0625, 0.8125),
+		new Box(0.1875, 0.0, 0.1875, 1.0, 0.0625, 1.0),
+		new Box(0.0, 0.0, 0.1875, 1.0, 0.0625, 0.8125),
+		new Box(0.0, 0.0, 0.1875, 1.0, 0.0625, 1.0),
+		new Box(0.1875, 0.0, 0.0, 1.0, 0.0625, 0.8125),
+		new Box(0.1875, 0.0, 0.0, 1.0, 0.0625, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.0625, 0.8125),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.0625, 1.0)
+	};
 	private boolean wiresGivePower = true;
 	private final Set<BlockPos> affectedNeighbors = Sets.newHashSet();
 
@@ -42,7 +64,36 @@ public class RedstoneWireBlock extends Block {
 				.with(WEST, RedstoneWireBlock.RedstoneWireType.NONE)
 				.with(POWER, 0)
 		);
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.0625F, 1.0F);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12731[method_11625(state.getBlockState(view, pos))];
+	}
+
+	private static int method_11625(BlockState blockState) {
+		int i = 0;
+		boolean bl = blockState.get(NORTH) != RedstoneWireBlock.RedstoneWireType.NONE;
+		boolean bl2 = blockState.get(EAST) != RedstoneWireBlock.RedstoneWireType.NONE;
+		boolean bl3 = blockState.get(SOUTH) != RedstoneWireBlock.RedstoneWireType.NONE;
+		boolean bl4 = blockState.get(WEST) != RedstoneWireBlock.RedstoneWireType.NONE;
+		if (bl || bl3 && !bl && !bl2 && !bl4) {
+			i |= 1 << Direction.NORTH.getHorizontal();
+		}
+
+		if (bl2 || bl4 && !bl && !bl2 && !bl3) {
+			i |= 1 << Direction.EAST.getHorizontal();
+		}
+
+		if (bl3 || bl && !bl2 && !bl3 && !bl4) {
+			i |= 1 << Direction.SOUTH.getHorizontal();
+		}
+
+		if (bl4 || bl2 && !bl && !bl3 && !bl4) {
+			i |= 1 << Direction.WEST.getHorizontal();
+		}
+
+		return i;
 	}
 
 	@Override
@@ -55,41 +106,45 @@ public class RedstoneWireBlock extends Block {
 
 	private RedstoneWireBlock.RedstoneWireType getWireType(BlockView view, BlockPos pos, Direction dir) {
 		BlockPos blockPos = pos.offset(dir);
-		Block block = view.getBlockState(pos.offset(dir)).getBlock();
-		if (!connectsTo(view.getBlockState(blockPos), dir) && (block.isNormalBlock() || !connectsTo(view.getBlockState(blockPos.down())))) {
-			Block block2 = view.getBlockState(pos.up()).getBlock();
-			return !block2.isNormalBlock() && block.isNormalBlock() && connectsTo(view.getBlockState(blockPos.up()))
-				? RedstoneWireBlock.RedstoneWireType.UP
-				: RedstoneWireBlock.RedstoneWireType.NONE;
+		BlockState blockState = view.getBlockState(pos.offset(dir));
+		if (!connectsTo(view.getBlockState(blockPos), dir) && (blockState.method_11734() || !connectsTo(view.getBlockState(blockPos.down())))) {
+			BlockState blockState2 = view.getBlockState(pos.up());
+			if (!blockState2.method_11734()) {
+				boolean bl = view.getBlockState(blockPos).method_11739() || view.getBlockState(blockPos).getBlock() == Blocks.GLOWSTONE;
+				if (bl && connectsTo(view.getBlockState(blockPos.up()))) {
+					if (blockState.method_11733()) {
+						return RedstoneWireBlock.RedstoneWireType.UP;
+					}
+
+					return RedstoneWireBlock.RedstoneWireType.SIDE;
+				}
+			}
+
+			return RedstoneWireBlock.RedstoneWireType.NONE;
 		} else {
 			return RedstoneWireBlock.RedstoneWireType.SIDE;
 		}
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		BlockState blockState = view.getBlockState(pos);
-		return blockState.getBlock() != this ? super.getBlockColor(view, pos, id) : this.getColorIntensity((Integer)blockState.get(POWER));
 	}
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return World.isOpaque(world, pos.down()) || world.getBlockState(pos.down()).getBlock() == Blocks.GLOWSTONE;
+		return world.getBlockState(pos.down()).method_11739() || world.getBlockState(pos.down()).getBlock() == Blocks.GLOWSTONE;
 	}
 
 	private BlockState update(World world, BlockPos pos, BlockState state) {
@@ -125,11 +180,11 @@ public class RedstoneWireBlock extends Block {
 				l = this.getPower(world, blockPos, l);
 			}
 
-			if (world.getBlockState(blockPos).getBlock().isFullCube() && !world.getBlockState(pos1.up()).getBlock().isFullCube()) {
+			if (world.getBlockState(blockPos).method_11734() && !world.getBlockState(pos1.up()).method_11734()) {
 				if (bl && pos1.getY() >= pos2.getY()) {
 					l = this.getPower(world, blockPos.up(), l);
 				}
-			} else if (!world.getBlockState(blockPos).getBlock().isFullCube() && bl && pos1.getY() <= pos2.getY()) {
+			} else if (!world.getBlockState(blockPos).method_11734() && bl && pos1.getY() <= pos2.getY()) {
 				l = this.getPower(world, blockPos.down(), l);
 			}
 		}
@@ -187,7 +242,7 @@ public class RedstoneWireBlock extends Block {
 
 			for (Direction direction3 : Direction.DirectionType.HORIZONTAL) {
 				BlockPos blockPos = pos.offset(direction3);
-				if (world.getBlockState(blockPos).getBlock().isFullCube()) {
+				if (world.getBlockState(blockPos).method_11734()) {
 					this.updateNeighbors(world, blockPos.up());
 				} else {
 					this.updateNeighbors(world, blockPos.down());
@@ -212,7 +267,7 @@ public class RedstoneWireBlock extends Block {
 
 			for (Direction direction3 : Direction.DirectionType.HORIZONTAL) {
 				BlockPos blockPos = pos.offset(direction3);
-				if (world.getBlockState(blockPos).getBlock().isFullCube()) {
+				if (world.getBlockState(blockPos).method_11734()) {
 					this.updateNeighbors(world, blockPos.up());
 				} else {
 					this.updateNeighbors(world, blockPos.down());
@@ -231,50 +286,51 @@ public class RedstoneWireBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
 		if (!world.isClient) {
-			if (this.canBePlacedAtPos(world, pos)) {
-				this.update(world, pos, state);
+			if (this.canBePlacedAtPos(world, blockPos)) {
+				this.update(world, blockPos, blockState);
 			} else {
-				this.dropAsItem(world, pos, state, 0);
-				world.setAir(pos);
+				this.dropAsItem(world, blockPos, blockState, 0);
+				world.setAir(blockPos);
 			}
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.REDSTONE;
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
-		return !this.wiresGivePower ? 0 : this.getWeakRedstonePower(view, pos, state, facing);
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return !this.wiresGivePower ? 0 : state.getWeakRedstonePower(world, pos, direction);
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		if (!this.wiresGivePower) {
 			return 0;
 		} else {
 			int i = (Integer)state.get(POWER);
 			if (i == 0) {
 				return 0;
-			} else if (facing == Direction.UP) {
+			} else if (direction == Direction.UP) {
 				return i;
 			} else {
 				EnumSet<Direction> enumSet = EnumSet.noneOf(Direction.class);
 
-				for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-					if (this.connectsTo(view, pos, direction)) {
-						enumSet.add(direction);
+				for (Direction direction2 : Direction.DirectionType.HORIZONTAL) {
+					if (this.connectsTo(world, pos, direction2)) {
+						enumSet.add(direction2);
 					}
 				}
 
-				if (facing.getAxis().isHorizontal() && enumSet.isEmpty()) {
+				if (direction.getAxis().isHorizontal() && enumSet.isEmpty()) {
 					return i;
 				} else {
-					return enumSet.contains(facing) && !enumSet.contains(facing.rotateYCounterclockwise()) && !enumSet.contains(facing.rotateYClockwise()) ? i : 0;
+					return enumSet.contains(direction) && !enumSet.contains(direction.rotateYCounterclockwise()) && !enumSet.contains(direction.rotateYClockwise()) ? i : 0;
 				}
 			}
 		}
@@ -283,15 +339,16 @@ public class RedstoneWireBlock extends Block {
 	private boolean connectsTo(BlockView view, BlockPos pos, Direction dir) {
 		BlockPos blockPos = pos.offset(dir);
 		BlockState blockState = view.getBlockState(blockPos);
-		Block block = blockState.getBlock();
-		boolean bl = block.isFullCube();
-		boolean bl2 = view.getBlockState(pos.up()).getBlock().isFullCube();
+		boolean bl = blockState.method_11734();
+		boolean bl2 = view.getBlockState(pos.up()).method_11734();
 		if (!bl2 && bl && connectsTo(view, blockPos.up())) {
 			return true;
 		} else if (connectsTo(blockState, dir)) {
 			return true;
 		} else {
-			return block == Blocks.POWERED_REPEATER && blockState.get(AbstractRedstoneGateBlock.FACING) == dir ? true : !bl && connectsTo(view, blockPos.down());
+			return blockState.getBlock() == Blocks.POWERED_REPEATER && blockState.get(AbstractRedstoneGateBlock.DIRECTION) == dir
+				? true
+				: !bl && connectsTo(view, blockPos.down());
 		}
 	}
 
@@ -303,53 +360,53 @@ public class RedstoneWireBlock extends Block {
 		return connectsTo(state, null);
 	}
 
-	protected static boolean connectsTo(BlockState state, Direction dir) {
+	protected static boolean connectsTo(BlockState state, @Nullable Direction dir) {
 		Block block = state.getBlock();
 		if (block == Blocks.REDSTONE_WIRE) {
 			return true;
-		} else if (Blocks.UNPOWERED_REPEATER.isComparator(block)) {
-			Direction direction = state.get(RepeaterBlock.FACING);
+		} else if (Blocks.UNPOWERED_REPEATER.method_11603(state)) {
+			Direction direction = state.get(RepeaterBlock.DIRECTION);
 			return direction == dir || direction.getOpposite() == dir;
 		} else {
-			return block.emitsRedstonePower() && dir != null;
+			return state.emitsRedstonePower() && dir != null;
 		}
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
+	public boolean emitsRedstonePower(BlockState state) {
 		return this.wiresGivePower;
 	}
 
-	private int getColorIntensity(int power) {
-		float f = (float)power / 15.0F;
+	public static int getColorIntensity(int i) {
+		float f = (float)i / 15.0F;
 		float g = f * 0.6F + 0.4F;
-		if (power == 0) {
+		if (i == 0) {
 			g = 0.3F;
 		}
 
 		float h = f * f * 0.7F - 0.5F;
-		float i = f * f * 0.6F - 0.7F;
+		float j = f * f * 0.6F - 0.7F;
 		if (h < 0.0F) {
 			h = 0.0F;
 		}
 
-		if (i < 0.0F) {
-			i = 0.0F;
+		if (j < 0.0F) {
+			j = 0.0F;
 		}
 
-		int j = MathHelper.clamp((int)(g * 255.0F), 0, 255);
-		int k = MathHelper.clamp((int)(h * 255.0F), 0, 255);
-		int l = MathHelper.clamp((int)(i * 255.0F), 0, 255);
-		return 0xFF000000 | j << 16 | k << 8 | l;
+		int k = MathHelper.clamp((int)(g * 255.0F), 0, 255);
+		int l = MathHelper.clamp((int)(h * 255.0F), 0, 255);
+		int m = MathHelper.clamp((int)(j * 255.0F), 0, 255);
+		return 0xFF000000 | k << 16 | l << 8 | m;
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		int i = (Integer)state.get(POWER);
 		if (i != 0) {
-			double d = (double)pos.getX() + 0.5 + ((double)rand.nextFloat() - 0.5) * 0.2;
+			double d = (double)pos.getX() + 0.5 + ((double)random.nextFloat() - 0.5) * 0.2;
 			double e = (double)((float)pos.getY() + 0.0625F);
-			double f = (double)pos.getZ() + 0.5 + ((double)rand.nextFloat() - 0.5) * 0.2;
+			double f = (double)pos.getZ() + 0.5 + ((double)random.nextFloat() - 0.5) * 0.2;
 			float g = (float)i / 15.0F;
 			float h = g * 0.6F + 0.4F;
 			float j = Math.max(0.0F, g * g * 0.7F - 0.5F);
@@ -359,8 +416,8 @@ public class RedstoneWireBlock extends Block {
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.REDSTONE;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Items.REDSTONE);
 	}
 
 	@Override
@@ -376,6 +433,32 @@ public class RedstoneWireBlock extends Block {
 	@Override
 	public int getData(BlockState state) {
 		return (Integer)state.get(POWER);
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				return state.with(NORTH, state.get(SOUTH)).with(EAST, state.get(WEST)).with(SOUTH, state.get(NORTH)).with(WEST, state.get(EAST));
+			case COUNTERCLOCKWISE_90:
+				return state.with(NORTH, state.get(EAST)).with(EAST, state.get(SOUTH)).with(SOUTH, state.get(WEST)).with(WEST, state.get(NORTH));
+			case CLOCKWISE_90:
+				return state.with(NORTH, state.get(WEST)).with(EAST, state.get(NORTH)).with(SOUTH, state.get(EAST)).with(WEST, state.get(SOUTH));
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		switch (mirror) {
+			case LEFT_RIGHT:
+				return state.with(NORTH, state.get(SOUTH)).with(SOUTH, state.get(NORTH));
+			case FRONT_BACK:
+				return state.with(EAST, state.get(WEST)).with(WEST, state.get(EAST));
+			default:
+				return super.withMirror(state, mirror);
+		}
 	}
 
 	@Override

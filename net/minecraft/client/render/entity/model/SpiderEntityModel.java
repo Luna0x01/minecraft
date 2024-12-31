@@ -73,8 +73,8 @@ public class SpiderEntityModel extends EntityModel {
 
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.field_1535.posY = age / (180.0F / (float)Math.PI);
-		this.field_1535.posX = headPitch / (180.0F / (float)Math.PI);
+		this.field_1535.posY = age * (float) (Math.PI / 180.0);
+		this.field_1535.posX = headPitch * (float) (Math.PI / 180.0);
 		float f = (float) (Math.PI / 4);
 		this.field_1538.posZ = -f;
 		this.field_1539.posZ = f;

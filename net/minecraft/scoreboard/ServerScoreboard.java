@@ -16,7 +16,7 @@ import net.minecraft.server.MinecraftServer;
 public class ServerScoreboard extends Scoreboard {
 	private final MinecraftServer server;
 	private final Set<ScoreboardObjective> objectives = Sets.newHashSet();
-	private ScoreboardState state;
+	private Runnable[] field_13845 = new Runnable[0];
 
 	public ServerScoreboard(MinecraftServer minecraftServer) {
 		this.server = minecraftServer;
@@ -135,18 +135,19 @@ public class ServerScoreboard extends Scoreboard {
 		this.markDirtyIfNull();
 	}
 
-	public void setScoreboardState(ScoreboardState state) {
-		this.state = state;
+	public void method_12759(Runnable runnable) {
+		this.field_13845 = (Runnable[])Arrays.copyOf(this.field_13845, this.field_13845.length + 1);
+		this.field_13845[this.field_13845.length - 1] = runnable;
 	}
 
 	protected void markDirtyIfNull() {
-		if (this.state != null) {
-			this.state.markDirty();
+		for (int i = 0; i < this.field_13845.length; i++) {
+			this.field_13845[i].run();
 		}
 	}
 
-	public List<Packet> createChangePackets(ScoreboardObjective scoreboardObjective) {
-		List<Packet> list = Lists.newArrayList();
+	public List<Packet<?>> createChangePackets(ScoreboardObjective scoreboardObjective) {
+		List<Packet<?>> list = Lists.newArrayList();
 		list.add(new ScoreboardObjectiveUpdateS2CPacket(scoreboardObjective, 0));
 
 		for (int i = 0; i < 19; i++) {
@@ -163,10 +164,10 @@ public class ServerScoreboard extends Scoreboard {
 	}
 
 	public void addScoreboardObjective(ScoreboardObjective objective) {
-		List<Packet> list = this.createChangePackets(objective);
+		List<Packet<?>> list = this.createChangePackets(objective);
 
 		for (ServerPlayerEntity serverPlayerEntity : this.server.getPlayerManager().getPlayers()) {
-			for (Packet packet : list) {
+			for (Packet<?> packet : list) {
 				serverPlayerEntity.networkHandler.sendPacket(packet);
 			}
 		}
@@ -174,8 +175,8 @@ public class ServerScoreboard extends Scoreboard {
 		this.objectives.add(objective);
 	}
 
-	public List<Packet> method_5301(ScoreboardObjective scoreboardObjective) {
-		List<Packet> list = Lists.newArrayList();
+	public List<Packet<?>> method_5301(ScoreboardObjective scoreboardObjective) {
+		List<Packet<?>> list = Lists.newArrayList();
 		list.add(new ScoreboardObjectiveUpdateS2CPacket(scoreboardObjective, 1));
 
 		for (int i = 0; i < 19; i++) {
@@ -188,10 +189,10 @@ public class ServerScoreboard extends Scoreboard {
 	}
 
 	public void removeScoreboardObjective(ScoreboardObjective objective) {
-		List<Packet> list = this.method_5301(objective);
+		List<Packet<?>> list = this.method_5301(objective);
 
 		for (ServerPlayerEntity serverPlayerEntity : this.server.getPlayerManager().getPlayers()) {
-			for (Packet packet : list) {
+			for (Packet<?> packet : list) {
 				serverPlayerEntity.networkHandler.sendPacket(packet);
 			}
 		}

@@ -1,6 +1,8 @@
 package net.minecraft.block.entity;
 
 import java.util.Random;
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -10,7 +12,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.Generic3x3ScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 
-public class DispenserBlockEntity extends LockableContainerBlockEntity implements Inventory {
+public class DispenserBlockEntity extends class_2737 implements Inventory {
 	private static final Random RANDOM = new Random();
 	private ItemStack[] items = new ItemStack[9];
 	protected String customName;
@@ -20,45 +22,34 @@ public class DispenserBlockEntity extends LockableContainerBlockEntity implement
 		return 9;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
+		this.method_11662(null);
 		return this.items[slot];
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.items[slot] != null) {
-			if (this.items[slot].count <= amount) {
-				ItemStack itemStack = this.items[slot];
-				this.items[slot] = null;
-				this.markDirty();
-				return itemStack;
-			} else {
-				ItemStack itemStack2 = this.items[slot].split(amount);
-				if (this.items[slot].count == 0) {
-					this.items[slot] = null;
-				}
-
-				this.markDirty();
-				return itemStack2;
-			}
-		} else {
-			return null;
+		this.method_11662(null);
+		ItemStack itemStack = class_2960.method_12933(this.items, slot, amount);
+		if (itemStack != null) {
+			this.markDirty();
 		}
+
+		return itemStack;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.items[slot] != null) {
-			ItemStack itemStack = this.items[slot];
-			this.items[slot] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		this.method_11662(null);
+		return class_2960.method_12932(this.items, slot);
 	}
 
 	public int chooseNonEmptySlot() {
+		this.method_11662(null);
 		int i = -1;
 		int j = 1;
 
@@ -72,7 +63,8 @@ public class DispenserBlockEntity extends LockableContainerBlockEntity implement
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
+		this.method_11662(null);
 		this.items[slot] = stack;
 		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
 			stack.count = this.getInvMaxStackAmount();
@@ -109,14 +101,16 @@ public class DispenserBlockEntity extends LockableContainerBlockEntity implement
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
-		NbtList nbtList = nbt.getList("Items", 10);
-		this.items = new ItemStack[this.getInvSize()];
+		if (!this.method_11661(nbt)) {
+			NbtList nbtList = nbt.getList("Items", 10);
+			this.items = new ItemStack[this.getInvSize()];
 
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			int j = nbtCompound.getByte("Slot") & 255;
-			if (j >= 0 && j < this.items.length) {
-				this.items[j] = ItemStack.fromNbt(nbtCompound);
+			for (int i = 0; i < nbtList.size(); i++) {
+				NbtCompound nbtCompound = nbtList.getCompound(i);
+				int j = nbtCompound.getByte("Slot") & 255;
+				if (j >= 0 && j < this.items.length) {
+					this.items[j] = ItemStack.fromNbt(nbtCompound);
+				}
 			}
 		}
 
@@ -126,23 +120,28 @@ public class DispenserBlockEntity extends LockableContainerBlockEntity implement
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
-		NbtList nbtList = new NbtList();
+		if (!this.method_11663(nbt)) {
+			NbtList nbtList = new NbtList();
 
-		for (int i = 0; i < this.items.length; i++) {
-			if (this.items[i] != null) {
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putByte("Slot", (byte)i);
-				this.items[i].toNbt(nbtCompound);
-				nbtList.add(nbtCompound);
+			for (int i = 0; i < this.items.length; i++) {
+				if (this.items[i] != null) {
+					NbtCompound nbtCompound = new NbtCompound();
+					nbtCompound.putByte("Slot", (byte)i);
+					this.items[i].toNbt(nbtCompound);
+					nbtList.add(nbtCompound);
+				}
 			}
+
+			nbt.put("Items", nbtList);
 		}
 
-		nbt.put("Items", nbtList);
 		if (this.hasCustomName()) {
 			nbt.putString("CustomName", this.customName);
 		}
+
+		return nbt;
 	}
 
 	@Override
@@ -177,6 +176,7 @@ public class DispenserBlockEntity extends LockableContainerBlockEntity implement
 
 	@Override
 	public ScreenHandler createScreenHandler(PlayerInventory inventory, PlayerEntity player) {
+		this.method_11662(player);
 		return new Generic3x3ScreenHandler(inventory, this);
 	}
 
@@ -196,6 +196,8 @@ public class DispenserBlockEntity extends LockableContainerBlockEntity implement
 
 	@Override
 	public void clear() {
+		this.method_11662(null);
+
 		for (int i = 0; i < this.items.length; i++) {
 			this.items[i] = null;
 		}

@@ -12,18 +12,19 @@ import net.minecraft.entity.mob.GuardianEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.BlockBox;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.GeneratorConfig;
 
 public class OceanMonumentStructure extends StructureFeature {
 	private int spacing = 32;
 	private int separation = 5;
-	public static final List<Biome> BIOMES = Arrays.asList(Biome.OCEAN, Biome.DEEP_OCEAN, Biome.RIVER, Biome.FROZEN_OCEAN, Biome.FROZEN_RIVER);
+	public static final List<Biome> BIOMES = Arrays.asList(Biomes.OCEAN, Biomes.DEEP_OCEAN, Biomes.RIVER, Biomes.FROZEN_OCEAN, Biomes.FROZEN_RIVER);
+	public static final List<Biome> field_13008 = Arrays.asList(Biomes.DEEP_OCEAN);
 	private static final List<Biome.SpawnEntry> MONSTER_SPAWNS = Lists.newArrayList();
 
 	public OceanMonumentStructure() {
@@ -66,11 +67,11 @@ public class OceanMonumentStructure extends StructureFeature {
 		k += (random.nextInt(this.spacing - this.separation) + random.nextInt(this.spacing - this.separation)) / 2;
 		l += (random.nextInt(this.spacing - this.separation) + random.nextInt(this.spacing - this.separation)) / 2;
 		if (i == k && j == l) {
-			if (this.world.getBiomeSource().getBiomeAt(new BlockPos(i * 16 + 8, 64, j * 16 + 8), null) != Biome.DEEP_OCEAN) {
+			if (!this.world.method_3726().method_3854(i * 16 + 8, j * 16 + 8, 16, field_13008)) {
 				return false;
 			}
 
-			boolean bl = this.world.getBiomeSource().isValid(i * 16 + 8, j * 16 + 8, 29, BIOMES);
+			boolean bl = this.world.method_3726().method_3854(i * 16 + 8, j * 16 + 8, 29, BIOMES);
 			if (bl) {
 				return true;
 			}
@@ -114,7 +115,7 @@ public class OceanMonumentStructure extends StructureFeature {
 			int i = chunkX * 16 + 8 - 29;
 			int j = chunkZ * 16 + 8 - 29;
 			Direction direction = Direction.DirectionType.HORIZONTAL.getRandomDirection(random);
-			this.children.add(new OceanMonumentPieces.MainBuilding(random, i, j, direction));
+			this.field_13015.add(new OceanMonumentPieces.MainBuilding(random, i, j, direction));
 			this.setBoundingBoxFromChildren();
 			this.initialized = true;
 		}
@@ -122,7 +123,7 @@ public class OceanMonumentStructure extends StructureFeature {
 		@Override
 		public void generateStructure(World world, Random random, BlockBox boundingBox) {
 			if (!this.initialized) {
-				this.children.clear();
+				this.field_13015.clear();
 				this.init(world, random, this.getChunkX(), this.getChunkZ());
 			}
 

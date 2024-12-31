@@ -3,6 +3,7 @@ package net.minecraft.block;
 import com.google.common.base.Predicate;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
@@ -13,6 +14,8 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Property;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -24,7 +27,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 		"shape",
 		AbstractRailBlock.RailShapeType.class,
 		new Predicate<AbstractRailBlock.RailShapeType>() {
-			public boolean apply(AbstractRailBlock.RailShapeType railShapeType) {
+			public boolean apply(@Nullable AbstractRailBlock.RailShapeType railShapeType) {
 				return railShapeType != AbstractRailBlock.RailShapeType.NORTH_EAST
 					&& railShapeType != AbstractRailBlock.RailShapeType.NORTH_WEST
 					&& railShapeType != AbstractRailBlock.RailShapeType.SOUTH_EAST
@@ -46,7 +49,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
@@ -71,16 +74,16 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		return state.get(POWERED) ? 15 : 0;
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		if (!(Boolean)state.get(POWERED)) {
 			return 0;
 		} else {
-			return facing == Direction.UP ? 15 : 0;
+			return direction == Direction.UP ? 15 : 0;
 		}
 	}
 
@@ -94,6 +97,7 @@ public class DetectorRailBlock extends AbstractRailBlock {
 
 		if (bl2 && !bl) {
 			world.setBlockState(pos, state.with(POWERED, true), 3);
+			this.method_11600(world, pos, state, true);
 			world.updateNeighborsAlways(pos, this);
 			world.updateNeighborsAlways(pos.down(), this);
 			world.onRenderRegionUpdate(pos, pos);
@@ -101,16 +105,28 @@ public class DetectorRailBlock extends AbstractRailBlock {
 
 		if (!bl2 && bl) {
 			world.setBlockState(pos, state.with(POWERED, false), 3);
+			this.method_11600(world, pos, state, false);
 			world.updateNeighborsAlways(pos, this);
 			world.updateNeighborsAlways(pos.down(), this);
 			world.onRenderRegionUpdate(pos, pos);
 		}
 
 		if (bl2) {
-			world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+			world.createAndScheduleBlockTick(new BlockPos(pos), this, this.getTickRate(world));
 		}
 
 		world.updateHorizontalAdjacent(pos, this);
+	}
+
+	protected void method_11600(World world, BlockPos blockPos, BlockState blockState, boolean bl) {
+		AbstractRailBlock.RailPlacementHelper railPlacementHelper = new AbstractRailBlock.RailPlacementHelper(world, blockPos, blockState);
+
+		for (BlockPos blockPos2 : railPlacementHelper.method_11551()) {
+			BlockState blockState2 = world.getBlockState(blockPos2);
+			if (blockState2 != null) {
+				blockState2.method_11707(world, blockPos2, blockState2.getBlock());
+			}
+		}
 	}
 
 	@Override
@@ -125,13 +141,13 @@ public class DetectorRailBlock extends AbstractRailBlock {
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
-		if ((Boolean)world.getBlockState(pos).get(POWERED)) {
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+		if ((Boolean)state.get(POWERED)) {
 			List<CommandBlockMinecartEntity> list = this.getDetectedMinecarts(world, pos, CommandBlockMinecartEntity.class);
 			if (!list.isEmpty()) {
 				return ((CommandBlockMinecartEntity)list.get(0)).getCommandExecutor().getSuccessCount();
@@ -177,6 +193,124 @@ public class DetectorRailBlock extends AbstractRailBlock {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+				}
+			case COUNTERCLOCKWISE_90:
+				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+					case NORTH_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.EAST_WEST);
+					case EAST_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+				}
+			case CLOCKWISE_90:
+				switch ((AbstractRailBlock.RailShapeType)state.get(SHAPE)) {
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					case NORTH_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.EAST_WEST);
+					case EAST_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+				}
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		AbstractRailBlock.RailShapeType railShapeType = state.get(SHAPE);
+		switch (mirror) {
+			case LEFT_RIGHT:
+				switch (railShapeType) {
+					case ASCENDING_NORTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_SOUTH);
+					case ASCENDING_SOUTH:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_NORTH);
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					default:
+						return super.withMirror(state, mirror);
+				}
+			case FRONT_BACK:
+				switch (railShapeType) {
+					case ASCENDING_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_WEST);
+					case ASCENDING_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.ASCENDING_EAST);
+					case ASCENDING_NORTH:
+					case ASCENDING_SOUTH:
+					default:
+						break;
+					case SOUTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_WEST);
+					case SOUTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.SOUTH_EAST);
+					case NORTH_WEST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_EAST);
+					case NORTH_EAST:
+						return state.with(SHAPE, AbstractRailBlock.RailShapeType.NORTH_WEST);
+				}
+		}
+
+		return super.withMirror(state, mirror);
 	}
 
 	@Override

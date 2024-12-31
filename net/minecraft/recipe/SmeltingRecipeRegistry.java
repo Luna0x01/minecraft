@@ -3,6 +3,7 @@ package net.minecraft.recipe;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StoneBrickBlock;
@@ -42,6 +43,7 @@ public class SmeltingRecipeRegistry {
 		this.addItem(Items.POTATO, new ItemStack(Items.BAKED_POTATO), 0.35F);
 		this.addBlock(Blocks.NETHERRACK, new ItemStack(Items.NETHERBRICK), 0.1F);
 		this.addItemStack(new ItemStack(Blocks.SPONGE, 1, 1), new ItemStack(Blocks.SPONGE, 1, 0), 0.15F);
+		this.addItem(Items.CHORUS_FRUIT, new ItemStack(Items.CHORUS_FRUIT_POPPED), 0.1F);
 
 		for (FishItem.FishType fishType : FishItem.FishType.values()) {
 			if (fishType.canBeCooked()) {
@@ -68,6 +70,7 @@ public class SmeltingRecipeRegistry {
 		this.PRODUCT_XP_MAP.put(product, xp);
 	}
 
+	@Nullable
 	public ItemStack getResult(ItemStack stack) {
 		for (Entry<ItemStack, ItemStack> entry : this.ORIGINAL_PRODUCT_MAP.entrySet()) {
 			if (this.stackEquals(stack, (ItemStack)entry.getKey())) {

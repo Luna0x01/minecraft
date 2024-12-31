@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -27,7 +29,7 @@ public class ExperienceCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length <= 0) {
 			throw new IncorrectUsageException("commands.xp.usage");
 		} else {
@@ -43,35 +45,31 @@ public class ExperienceCommand extends AbstractCommand {
 				i *= -1;
 			}
 
-			PlayerEntity playerEntity = args.length > 1 ? getPlayer(source, args[1]) : getAsPlayer(source);
+			PlayerEntity playerEntity = args.length > 1 ? method_4639(minecraftServer, commandSource, args[1]) : getAsPlayer(commandSource);
 			if (bl) {
-				source.setStat(CommandStats.Type.QUERY_RESULT, playerEntity.experienceLevel);
+				commandSource.setStat(CommandStats.Type.QUERY_RESULT, playerEntity.experienceLevel);
 				if (bl2) {
 					playerEntity.incrementXp(-i);
-					run(source, this, "commands.xp.success.negative.levels", new Object[]{i, playerEntity.getTranslationKey()});
+					run(commandSource, this, "commands.xp.success.negative.levels", new Object[]{i, playerEntity.getTranslationKey()});
 				} else {
 					playerEntity.incrementXp(i);
-					run(source, this, "commands.xp.success.levels", new Object[]{i, playerEntity.getTranslationKey()});
+					run(commandSource, this, "commands.xp.success.levels", new Object[]{i, playerEntity.getTranslationKey()});
 				}
 			} else {
-				source.setStat(CommandStats.Type.QUERY_RESULT, playerEntity.totalExperience);
+				commandSource.setStat(CommandStats.Type.QUERY_RESULT, playerEntity.totalExperience);
 				if (bl2) {
 					throw new CommandException("commands.xp.failure.widthdrawXp");
 				}
 
 				playerEntity.addExperience(i);
-				run(source, this, "commands.xp.success", new Object[]{i, playerEntity.getTranslationKey()});
+				run(commandSource, this, "commands.xp.success", new Object[]{i, playerEntity.getTranslationKey()});
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 2 ? method_2894(args, this.method_3485()) : null;
-	}
-
-	protected String[] method_3485() {
-		return MinecraftServer.getServer().getPlayerNames();
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 2 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
 	}
 
 	@Override

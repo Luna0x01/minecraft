@@ -23,6 +23,9 @@ public class GameRuleManager {
 		this.addGameRule("randomTickSpeed", "3", GameRuleManager.VariableType.NUMERICAL);
 		this.addGameRule("sendCommandFeedback", "true", GameRuleManager.VariableType.BOOLEAN);
 		this.addGameRule("reducedDebugInfo", "false", GameRuleManager.VariableType.BOOLEAN);
+		this.addGameRule("spectatorsGenerateChunks", "true", GameRuleManager.VariableType.BOOLEAN);
+		this.addGameRule("spawnRadius", "10", GameRuleManager.VariableType.NUMERICAL);
+		this.addGameRule("disableElytraMovementCheck", "false", GameRuleManager.VariableType.BOOLEAN);
 	}
 
 	public void addGameRule(String name, String defaultValue, GameRuleManager.VariableType variableType) {
@@ -66,8 +69,8 @@ public class GameRuleManager {
 
 	public void setNbt(NbtCompound nbt) {
 		for (String string : nbt.getKeys()) {
-			String string3 = nbt.getString(string);
-			this.setGameRule(string, string3);
+			String string2 = nbt.getString(string);
+			this.setGameRule(string, string2);
 		}
 	}
 

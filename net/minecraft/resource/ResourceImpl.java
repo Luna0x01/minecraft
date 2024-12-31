@@ -4,15 +4,18 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.resource.ResourceMetadataProvider;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.MetadataSerializer;
 import org.apache.commons.io.IOUtils;
 
-public class ResourceImpl implements Resource {
+public class ResourceImpl implements Resource, Closeable {
 	private final Map<String, ResourceMetadataProvider> metaProviders = Maps.newHashMap();
 	private final String packName;
 	private final Identifier id;
@@ -45,6 +48,7 @@ public class ResourceImpl implements Resource {
 		return this.metaInputStream != null;
 	}
 
+	@Nullable
 	@Override
 	public <T extends ResourceMetadataProvider> T getMetadata(String key) {
 		if (!this.hasMetadata()) {
@@ -94,5 +98,12 @@ public class ResourceImpl implements Resource {
 	public int hashCode() {
 		int i = this.packName != null ? this.packName.hashCode() : 0;
 		return 31 * i + (this.id != null ? this.id.hashCode() : 0);
+	}
+
+	public void close() throws IOException {
+		this.inputStream.close();
+		if (this.metaInputStream != null) {
+			this.metaInputStream.close();
+		}
 	}
 }

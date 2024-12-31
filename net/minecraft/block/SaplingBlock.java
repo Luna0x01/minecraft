@@ -10,6 +10,8 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.AcaciaTreeFeature;
 import net.minecraft.world.gen.feature.BigTreeFeature;
@@ -24,12 +26,16 @@ import net.minecraft.world.gen.feature.SpruceTreeFeature;
 public class SaplingBlock extends PlantBlock implements Growable {
 	public static final EnumProperty<PlanksBlock.WoodType> TYPE = EnumProperty.of("type", PlanksBlock.WoodType.class);
 	public static final IntProperty STAGE = IntProperty.of("stage", 0, 1);
+	protected static final Box field_12750 = new Box(0.099999994F, 0.0, 0.099999994F, 0.9F, 0.8F, 0.9F);
 
 	protected SaplingBlock() {
 		this.setDefaultState(this.stateManager.getDefaultState().with(TYPE, PlanksBlock.WoodType.OAK).with(STAGE, 0));
-		float f = 0.4F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, f * 2.0F, 0.5F + f);
 		this.setItemGroup(ItemGroup.DECORATIONS);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12750;
 	}
 
 	@Override

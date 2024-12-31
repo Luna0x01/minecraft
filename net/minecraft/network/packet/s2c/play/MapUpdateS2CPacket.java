@@ -11,6 +11,7 @@ import net.minecraft.util.PacketByteBuf;
 public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
 	private byte scale;
+	private boolean field_13774;
 	private MapIcon[] icons;
 	private int startX;
 	private int startZ;
@@ -21,9 +22,10 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	public MapUpdateS2CPacket() {
 	}
 
-	public MapUpdateS2CPacket(int i, byte b, Collection<MapIcon> collection, byte[] bs, int j, int k, int l, int m) {
+	public MapUpdateS2CPacket(int i, byte b, boolean bl, Collection<MapIcon> collection, byte[] bs, int j, int k, int l, int m) {
 		this.id = i;
 		this.scale = b;
+		this.field_13774 = bl;
 		this.icons = (MapIcon[])collection.toArray(new MapIcon[collection.size()]);
 		this.startX = j;
 		this.startZ = k;
@@ -42,6 +44,7 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void read(PacketByteBuf buf) throws IOException {
 		this.id = buf.readVarInt();
 		this.scale = buf.readByte();
+		this.field_13774 = buf.readBoolean();
 		this.icons = new MapIcon[buf.readVarInt()];
 
 		for (int i = 0; i < this.icons.length; i++) {
@@ -62,6 +65,7 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.id);
 		buf.writeByte(this.scale);
+		buf.writeBoolean(this.field_13774);
 		buf.writeVarInt(this.icons.length);
 
 		for (MapIcon mapIcon : this.icons) {
@@ -89,6 +93,7 @@ public class MapUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public void apply(MapState state) {
 		state.scale = this.scale;
+		state.trackingPosition = this.field_13774;
 		state.icons.clear();
 
 		for (int i = 0; i < this.icons.length; i++) {

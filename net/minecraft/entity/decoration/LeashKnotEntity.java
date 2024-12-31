@@ -1,5 +1,6 @@
 package net.minecraft.entity.decoration;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.FenceBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
@@ -7,9 +8,12 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class LeashKnotEntity extends AbstractDecorationEntity {
@@ -27,8 +31,15 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	protected void initDataTracker() {
-		super.initDataTracker();
+	public void updatePosition(double x, double y, double z) {
+		super.updatePosition((double)MathHelper.floor(x) + 0.5, (double)MathHelper.floor(y) + 0.5, (double)MathHelper.floor(z) + 0.5);
+	}
+
+	@Override
+	protected void updateAttachmentPosition() {
+		this.x = (double)this.pos.getX() + 0.5;
+		this.y = (double)this.pos.getY() + 0.5;
+		this.z = (double)this.pos.getZ() + 0.5;
 	}
 
 	@Override
@@ -56,7 +67,8 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	public void onBreak(Entity entity) {
+	public void onBreak(@Nullable Entity entity) {
+		this.playSound(Sounds.ENTITY_LEASHKNOT_BREAK, 1.0F, 1.0F);
 	}
 
 	@Override
@@ -73,34 +85,37 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	public boolean openInventory(PlayerEntity player) {
-		ItemStack itemStack = player.getStackInHand();
-		boolean bl = false;
-		if (itemStack != null && itemStack.getItem() == Items.LEAD && !this.world.isClient) {
-			double d = 7.0;
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+		if (this.world.isClient) {
+			return true;
+		} else {
+			boolean bl = false;
+			if (itemStack != null && itemStack.getItem() == Items.LEAD) {
+				double d = 7.0;
 
-			for (MobEntity mobEntity : this.world.getEntitiesInBox(MobEntity.class, new Box(this.x - d, this.y - d, this.z - d, this.x + d, this.y + d, this.z + d))) {
-				if (mobEntity.isLeashed() && mobEntity.getLeashOwner() == player) {
-					mobEntity.attachLeash(this, true);
-					bl = true;
-				}
-			}
-		}
-
-		if (!this.world.isClient && !bl) {
-			this.remove();
-			if (player.abilities.creativeMode) {
-				double e = 7.0;
-
-				for (MobEntity mobEntity2 : this.world.getEntitiesInBox(MobEntity.class, new Box(this.x - e, this.y - e, this.z - e, this.x + e, this.y + e, this.z + e))) {
-					if (mobEntity2.isLeashed() && mobEntity2.getLeashOwner() == this) {
-						mobEntity2.detachLeash(true, false);
+				for (MobEntity mobEntity : this.world.getEntitiesInBox(MobEntity.class, new Box(this.x - d, this.y - d, this.z - d, this.x + d, this.y + d, this.z + d))) {
+					if (mobEntity.isLeashed() && mobEntity.getLeashOwner() == playerEntity) {
+						mobEntity.attachLeash(this, true);
+						bl = true;
 					}
 				}
 			}
-		}
 
-		return true;
+			if (!bl) {
+				this.remove();
+				if (playerEntity.abilities.creativeMode) {
+					double e = 7.0;
+
+					for (MobEntity mobEntity2 : this.world.getEntitiesInBox(MobEntity.class, new Box(this.x - e, this.y - e, this.z - e, this.x + e, this.y + e, this.z + e))) {
+						if (mobEntity2.isLeashed() && mobEntity2.getLeashOwner() == this) {
+							mobEntity2.detachLeash(true, false);
+						}
+					}
+				}
+			}
+
+			return true;
+		}
 	}
 
 	@Override
@@ -112,6 +127,7 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 		LeashKnotEntity leashKnotEntity = new LeashKnotEntity(world, pos);
 		leashKnotEntity.teleporting = true;
 		world.spawnEntity(leashKnotEntity);
+		leashKnotEntity.onPlace();
 		return leashKnotEntity;
 	}
 
@@ -129,5 +145,10 @@ public class LeashKnotEntity extends AbstractDecorationEntity {
 		}
 
 		return null;
+	}
+
+	@Override
+	public void onPlace() {
+		this.playSound(Sounds.ENTITY_LEASHKNOT_PLACE, 1.0F, 1.0F);
 	}
 }

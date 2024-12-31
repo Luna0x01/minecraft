@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.StatsListener;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -19,11 +20,11 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
+import net.minecraft.sound.Sounds;
 import net.minecraft.stat.CraftingStat;
 import net.minecraft.stat.Stat;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.Identifier;
 import org.lwjgl.input.Mouse;
 
 public class StatsScreen extends Screen implements StatsListener {
@@ -147,7 +148,7 @@ public class StatsScreen extends Screen implements StatsListener {
 		this.renderIcon(x + 1, y + 1);
 		GlStateManager.enableRescaleNormal();
 		DiffuseLighting.enable();
-		this.itemRenderer.renderGuiItemModel(new ItemStack(item, 1, 0), x + 2, y + 2);
+		this.itemRenderer.method_12455(new ItemStack(item), x + 2, y + 2);
 		DiffuseLighting.disable();
 		GlStateManager.disableRescaleNormal();
 	}
@@ -188,12 +189,16 @@ public class StatsScreen extends Screen implements StatsListener {
 
 			for (CraftingStat craftingStat : Stats.MINE) {
 				boolean bl = false;
-				int i = Item.getRawId(craftingStat.getItem());
+				Item item = craftingStat.getItem();
 				if (StatsScreen.this.statHandler.getStatLevel(craftingStat) > 0) {
 					bl = true;
-				} else if (Stats.USED[i] != null && StatsScreen.this.statHandler.getStatLevel(Stats.USED[i]) > 0) {
+				} else if (Stats.used(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.used(item)) > 0) {
 					bl = true;
-				} else if (Stats.CRAFTING_STATS[i] != null && StatsScreen.this.statHandler.getStatLevel(Stats.CRAFTING_STATS[i]) > 0) {
+				} else if (Stats.crafted(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.crafted(item)) > 0) {
+					bl = true;
+				} else if (Stats.picked(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.picked(item)) > 0) {
+					bl = true;
+				} else if (Stats.dropped(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.dropped(item)) > 0) {
 					bl = true;
 				}
 
@@ -204,19 +209,25 @@ public class StatsScreen extends Screen implements StatsListener {
 
 			this.statComparator = new Comparator<CraftingStat>() {
 				public int compare(CraftingStat craftingStat, CraftingStat craftingStat2) {
-					int i = Item.getRawId(craftingStat.getItem());
-					int j = Item.getRawId(craftingStat2.getItem());
+					Item item = craftingStat.getItem();
+					Item item2 = craftingStat2.getItem();
 					Stat stat = null;
 					Stat stat2 = null;
 					if (BlockStatsListWidget.this.sortColumnMode == 2) {
-						stat = Stats.BLOCK_STATS[i];
-						stat2 = Stats.BLOCK_STATS[j];
+						stat = Stats.mined(Block.getBlockFromItem(item));
+						stat2 = Stats.mined(Block.getBlockFromItem(item2));
 					} else if (BlockStatsListWidget.this.sortColumnMode == 0) {
-						stat = Stats.CRAFTING_STATS[i];
-						stat2 = Stats.CRAFTING_STATS[j];
+						stat = Stats.crafted(item);
+						stat2 = Stats.crafted(item2);
 					} else if (BlockStatsListWidget.this.sortColumnMode == 1) {
-						stat = Stats.USED[i];
-						stat2 = Stats.USED[j];
+						stat = Stats.used(item);
+						stat2 = Stats.used(item2);
+					} else if (BlockStatsListWidget.this.sortColumnMode == 3) {
+						stat = Stats.picked(item);
+						stat2 = Stats.picked(item2);
+					} else if (BlockStatsListWidget.this.sortColumnMode == 4) {
+						stat = Stats.dropped(item);
+						stat2 = Stats.dropped(item2);
 					}
 
 					if (stat != null || stat2 != null) {
@@ -228,14 +239,14 @@ public class StatsScreen extends Screen implements StatsListener {
 							return -1;
 						}
 
-						int k = StatsScreen.this.statHandler.getStatLevel(stat);
-						int l = StatsScreen.this.statHandler.getStatLevel(stat2);
-						if (k != l) {
-							return (k - l) * BlockStatsListWidget.this.sortOrder;
+						int i = StatsScreen.this.statHandler.getStatLevel(stat);
+						int j = StatsScreen.this.statHandler.getStatLevel(stat2);
+						if (i != j) {
+							return (i - j) * BlockStatsListWidget.this.sortOrder;
 						}
 					}
 
-					return i - j;
+					return Item.getRawId(item) - Item.getRawId(item2);
 				}
 			};
 		}
@@ -260,6 +271,18 @@ public class StatsScreen extends Screen implements StatsListener {
 			} else {
 				StatsScreen.this.renderIcon(x + 215 - 18, y + 1, 54, 18);
 			}
+
+			if (this.headerMode == 3) {
+				StatsScreen.this.renderIcon(x + 265 - 18 + 1, y + 1 + 1, 90, 18);
+			} else {
+				StatsScreen.this.renderIcon(x + 265 - 18, y + 1, 90, 18);
+			}
+
+			if (this.headerMode == 4) {
+				StatsScreen.this.renderIcon(x + 315 - 18 + 1, y + 1 + 1, 108, 18);
+			} else {
+				StatsScreen.this.renderIcon(x + 315 - 18, y + 1, 108, 18);
+			}
 		}
 
 		@Override
@@ -267,18 +290,23 @@ public class StatsScreen extends Screen implements StatsListener {
 			CraftingStat craftingStat = this.getEntry(index);
 			Item item = craftingStat.getItem();
 			StatsScreen.this.renderStatItem(x + 40, y, item);
-			int i = Item.getRawId(item);
-			this.renderStat(Stats.CRAFTING_STATS[i], x + 115, y, index % 2 == 0);
-			this.renderStat(Stats.USED[i], x + 165, y, index % 2 == 0);
+			this.renderStat(Stats.crafted(item), x + 115, y, index % 2 == 0);
+			this.renderStat(Stats.used(item), x + 165, y, index % 2 == 0);
 			this.renderStat(craftingStat, x + 215, y, index % 2 == 0);
+			this.renderStat(Stats.picked(item), x + 265, y, index % 2 == 0);
+			this.renderStat(Stats.dropped(item), x + 315, y, index % 2 == 0);
 		}
 
 		@Override
 		protected String getText(int index) {
 			if (index == 0) {
 				return "stat.crafted";
+			} else if (index == 1) {
+				return "stat.used";
+			} else if (index == 3) {
+				return "stat.pickup";
 			} else {
-				return index == 1 ? "stat.used" : "stat.mined";
+				return index == 4 ? "stat.dropped" : "stat.mined";
 			}
 		}
 	}
@@ -303,6 +331,16 @@ public class StatsScreen extends Screen implements StatsListener {
 		@Override
 		protected boolean isEntrySelected(int index) {
 			return false;
+		}
+
+		@Override
+		public int getRowWidth() {
+			return 375;
+		}
+
+		@Override
+		protected int getScrollbarPosition() {
+			return this.width / 2 + 140;
 		}
 
 		@Override
@@ -334,6 +372,18 @@ public class StatsScreen extends Screen implements StatsListener {
 				StatsScreen.this.renderIcon(x + 215 - 18, y + 1, 0, 18);
 			}
 
+			if (this.headerMode == 3) {
+				StatsScreen.this.renderIcon(x + 265 - 18, y + 1, 0, 0);
+			} else {
+				StatsScreen.this.renderIcon(x + 265 - 18, y + 1, 0, 18);
+			}
+
+			if (this.headerMode == 4) {
+				StatsScreen.this.renderIcon(x + 315 - 18, y + 1, 0, 0);
+			} else {
+				StatsScreen.this.renderIcon(x + 315 - 18, y + 1, 0, 18);
+			}
+
 			if (this.sortColumnMode != -1) {
 				int i = 79;
 				int j = 18;
@@ -341,6 +391,10 @@ public class StatsScreen extends Screen implements StatsListener {
 					i = 129;
 				} else if (this.sortColumnMode == 2) {
 					i = 179;
+				} else if (this.sortColumnMode == 3) {
+					i = 229;
+				} else if (this.sortColumnMode == 4) {
+					i = 279;
 				}
 
 				if (this.sortOrder == 1) {
@@ -360,11 +414,15 @@ public class StatsScreen extends Screen implements StatsListener {
 				this.headerMode = 1;
 			} else if (mouseX >= 179 && mouseX < 215) {
 				this.headerMode = 2;
+			} else if (mouseX >= 229 && mouseX < 265) {
+				this.headerMode = 3;
+			} else if (mouseX >= 279 && mouseX < 315) {
+				this.headerMode = 4;
 			}
 
 			if (this.headerMode >= 0) {
 				this.changeSortOrder(this.headerMode);
-				this.client.getSoundManager().play(PositionedSoundInstance.master(new Identifier("gui.button.press"), 1.0F));
+				this.client.getSoundManager().play(PositionedSoundInstance.method_12521(Sounds.UI_BUTTON_CLICK, 1.0F));
 			}
 		}
 
@@ -397,7 +455,7 @@ public class StatsScreen extends Screen implements StatsListener {
 		protected void renderDecorations(int mouseX, int mouseY) {
 			if (mouseY >= this.yStart && mouseY <= this.yEnd) {
 				int i = this.getEntryAt(mouseX, mouseY);
-				int j = this.width / 2 - 92 - 16;
+				int j = (this.width - this.getRowWidth()) / 2;
 				if (i >= 0) {
 					if (mouseX < j + 40 || mouseX > j + 40 + 20) {
 						return;
@@ -411,16 +469,20 @@ public class StatsScreen extends Screen implements StatsListener {
 						string = this.getText(0);
 					} else if (mouseX >= j + 165 - 18 && mouseX <= j + 165) {
 						string = this.getText(1);
+					} else if (mouseX >= j + 215 - 18 && mouseX <= j + 215) {
+						string = this.getText(2);
+					} else if (mouseX >= j + 265 - 18 && mouseX <= j + 265) {
+						string = this.getText(3);
 					} else {
-						if (mouseX < j + 215 - 18 || mouseX > j + 215) {
+						if (mouseX < j + 315 - 18 || mouseX > j + 315) {
 							return;
 						}
 
-						string = this.getText(2);
+						string = this.getText(4);
 					}
 
 					string = ("" + I18n.translate(string)).trim();
-					if (string.length() > 0) {
+					if (!string.isEmpty()) {
 						int k = mouseX + 12;
 						int l = mouseY - 12;
 						int m = StatsScreen.this.textRenderer.getStringWidth(string);
@@ -437,7 +499,7 @@ public class StatsScreen extends Screen implements StatsListener {
 				ItemStack itemStack = new ItemStack(item);
 				String string = itemStack.getTranslationKey();
 				String string2 = ("" + I18n.translate(string + ".name")).trim();
-				if (string2.length() > 0) {
+				if (!string2.isEmpty()) {
 					int i = x + 12;
 					int j = y - 12;
 					int k = StatsScreen.this.textRenderer.getStringWidth(string2);
@@ -504,7 +566,7 @@ public class StatsScreen extends Screen implements StatsListener {
 		@Override
 		protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
 			EntityType.SpawnEggData spawnEggData = (EntityType.SpawnEggData)this.entries.get(index);
-			String string = I18n.translate("entity." + EntityType.getEntityName(spawnEggData.id) + ".name");
+			String string = I18n.translate("entity." + spawnEggData.name + ".name");
 			int i = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killEntityStat);
 			int j = StatsScreen.this.statHandler.getStatLevel(spawnEggData.killedByEntityStat);
 			String string2 = I18n.translate("stat.entityKills", i, string);
@@ -573,12 +635,16 @@ public class StatsScreen extends Screen implements StatsListener {
 
 			for (CraftingStat craftingStat : Stats.ITEM) {
 				boolean bl = false;
-				int i = Item.getRawId(craftingStat.getItem());
+				Item item = craftingStat.getItem();
 				if (StatsScreen.this.statHandler.getStatLevel(craftingStat) > 0) {
 					bl = true;
-				} else if (Stats.BROKEN[i] != null && StatsScreen.this.statHandler.getStatLevel(Stats.BROKEN[i]) > 0) {
+				} else if (Stats.broke(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.broke(item)) > 0) {
 					bl = true;
-				} else if (Stats.CRAFTING_STATS[i] != null && StatsScreen.this.statHandler.getStatLevel(Stats.CRAFTING_STATS[i]) > 0) {
+				} else if (Stats.crafted(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.crafted(item)) > 0) {
+					bl = true;
+				} else if (Stats.picked(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.picked(item)) > 0) {
+					bl = true;
+				} else if (Stats.dropped(item) != null && StatsScreen.this.statHandler.getStatLevel(Stats.dropped(item)) > 0) {
 					bl = true;
 				}
 
@@ -589,19 +655,27 @@ public class StatsScreen extends Screen implements StatsListener {
 
 			this.statComparator = new Comparator<CraftingStat>() {
 				public int compare(CraftingStat craftingStat, CraftingStat craftingStat2) {
-					int i = Item.getRawId(craftingStat.getItem());
-					int j = Item.getRawId(craftingStat2.getItem());
+					Item item = craftingStat.getItem();
+					Item item2 = craftingStat2.getItem();
+					int i = Item.getRawId(item);
+					int j = Item.getRawId(item2);
 					Stat stat = null;
 					Stat stat2 = null;
 					if (ItemStatsListWidget.this.sortColumnMode == 0) {
-						stat = Stats.BROKEN[i];
-						stat2 = Stats.BROKEN[j];
+						stat = Stats.broke(item);
+						stat2 = Stats.broke(item2);
 					} else if (ItemStatsListWidget.this.sortColumnMode == 1) {
-						stat = Stats.CRAFTING_STATS[i];
-						stat2 = Stats.CRAFTING_STATS[j];
+						stat = Stats.crafted(item);
+						stat2 = Stats.crafted(item2);
 					} else if (ItemStatsListWidget.this.sortColumnMode == 2) {
-						stat = Stats.USED[i];
-						stat2 = Stats.USED[j];
+						stat = Stats.used(item);
+						stat2 = Stats.used(item2);
+					} else if (ItemStatsListWidget.this.sortColumnMode == 3) {
+						stat = Stats.picked(item);
+						stat2 = Stats.picked(item2);
+					} else if (ItemStatsListWidget.this.sortColumnMode == 4) {
+						stat = Stats.dropped(item);
+						stat2 = Stats.dropped(item2);
 					}
 
 					if (stat != null || stat2 != null) {
@@ -645,6 +719,18 @@ public class StatsScreen extends Screen implements StatsListener {
 			} else {
 				StatsScreen.this.renderIcon(x + 215 - 18, y + 1, 36, 18);
 			}
+
+			if (this.headerMode == 3) {
+				StatsScreen.this.renderIcon(x + 265 - 18 + 1, y + 1 + 1, 90, 18);
+			} else {
+				StatsScreen.this.renderIcon(x + 265 - 18, y + 1, 90, 18);
+			}
+
+			if (this.headerMode == 4) {
+				StatsScreen.this.renderIcon(x + 315 - 18 + 1, y + 1 + 1, 108, 18);
+			} else {
+				StatsScreen.this.renderIcon(x + 315 - 18, y + 1, 108, 18);
+			}
 		}
 
 		@Override
@@ -652,18 +738,23 @@ public class StatsScreen extends Screen implements StatsListener {
 			CraftingStat craftingStat = this.getEntry(index);
 			Item item = craftingStat.getItem();
 			StatsScreen.this.renderStatItem(x + 40, y, item);
-			int i = Item.getRawId(item);
-			this.renderStat(Stats.BROKEN[i], x + 115, y, index % 2 == 0);
-			this.renderStat(Stats.CRAFTING_STATS[i], x + 165, y, index % 2 == 0);
+			this.renderStat(Stats.broke(item), x + 115, y, index % 2 == 0);
+			this.renderStat(Stats.crafted(item), x + 165, y, index % 2 == 0);
 			this.renderStat(craftingStat, x + 215, y, index % 2 == 0);
+			this.renderStat(Stats.picked(item), x + 265, y, index % 2 == 0);
+			this.renderStat(Stats.dropped(item), x + 315, y, index % 2 == 0);
 		}
 
 		@Override
 		protected String getText(int index) {
 			if (index == 1) {
 				return "stat.crafted";
+			} else if (index == 2) {
+				return "stat.used";
+			} else if (index == 3) {
+				return "stat.pickup";
 			} else {
-				return index == 2 ? "stat.used" : "stat.depleted";
+				return index == 4 ? "stat.dropped" : "stat.depleted";
 			}
 		}
 	}

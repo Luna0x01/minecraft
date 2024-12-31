@@ -50,7 +50,7 @@ public class ScoreboardPlayerUpdateS2CPacket implements Packet<ClientPlayPacketL
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeString(this.playerName);
-		buf.writeEnum(this.type);
+		buf.writeEnumConstant(this.type);
 		buf.writeString(this.objectiveName);
 		if (this.type != ScoreboardPlayerUpdateS2CPacket.UpdateType.REMOVE) {
 			buf.writeVarInt(this.score);

@@ -36,40 +36,28 @@ public class PlayerMoveC2SPacket implements Packet<ServerPlayPacketListener> {
 		buf.writeByte(this.onGround ? 1 : 0);
 	}
 
-	public double getX() {
-		return this.x;
+	public double method_12687(double d) {
+		return this.changePosition ? this.x : d;
 	}
 
-	public double getY() {
-		return this.y;
+	public double method_12689(double d) {
+		return this.changePosition ? this.y : d;
 	}
 
-	public double getZ() {
-		return this.z;
+	public double method_12691(double d) {
+		return this.changePosition ? this.z : d;
 	}
 
-	public float getYaw() {
-		return this.yaw;
+	public float method_12688(float f) {
+		return this.changeLook ? this.yaw : f;
 	}
 
-	public float getPitch() {
-		return this.pitch;
+	public float method_12690(float f) {
+		return this.changeLook ? this.pitch : f;
 	}
 
 	public boolean isOnGround() {
 		return this.onGround;
-	}
-
-	public boolean isPositionChanged() {
-		return this.changePosition;
-	}
-
-	public boolean isLookChanged() {
-		return this.changeLook;
-	}
-
-	public void setPositionChanged(boolean changePosition) {
-		this.changePosition = changePosition;
 	}
 
 	public static class Both extends PlayerMoveC2SPacket {

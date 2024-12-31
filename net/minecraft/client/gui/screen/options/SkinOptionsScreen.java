@@ -2,6 +2,8 @@ package net.minecraft.client.gui.screen.options;
 
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.OptionButtonWidget;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.entity.PlayerModelPart;
 import net.minecraft.client.resource.language.I18n;
 
@@ -28,7 +30,17 @@ public class SkinOptionsScreen extends Screen {
 			i++;
 		}
 
-		if (i % 2 == 1) {
+		this.buttons
+			.add(
+				new OptionButtonWidget(
+					199,
+					this.width / 2 - 155 + i % 2 * 160,
+					this.height / 6 + 24 * (i >> 1),
+					GameOptions.Option.MAIN_HAND,
+					this.client.options.getValueMessage(GameOptions.Option.MAIN_HAND)
+				)
+			);
+		if (++i % 2 == 1) {
 			i++;
 		}
 
@@ -41,6 +53,10 @@ public class SkinOptionsScreen extends Screen {
 			if (button.id == 200) {
 				this.client.options.save();
 				this.client.setScreen(this.parent);
+			} else if (button.id == 199) {
+				this.client.options.getBooleanValue(GameOptions.Option.MAIN_HAND, 1);
+				button.message = this.client.options.getValueMessage(GameOptions.Option.MAIN_HAND);
+				this.client.options.onPlayerModelPartChange();
 			} else if (button instanceof SkinOptionsScreen.SkinOptionButton) {
 				PlayerModelPart playerModelPart = ((SkinOptionsScreen.SkinOptionButton)button).part;
 				this.client.options.togglePlayerModelPart(playerModelPart);

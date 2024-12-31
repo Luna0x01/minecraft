@@ -1,7 +1,9 @@
 package net.minecraft.util.math;
 
 import com.google.common.base.Objects;
+import javax.annotation.concurrent.Immutable;
 
+@Immutable
 public class Vec3i implements Comparable<Vec3i> {
 	public static final Vec3i ZERO = new Vec3i(0, 0, 0);
 	private final int x;
@@ -63,6 +65,13 @@ public class Vec3i implements Comparable<Vec3i> {
 			this.getZ() * vec.getX() - this.getX() * vec.getZ(),
 			this.getX() * vec.getY() - this.getY() * vec.getX()
 		);
+	}
+
+	public double distanceTo(int x, int y, int z) {
+		double d = (double)(this.getX() - x);
+		double e = (double)(this.getY() - y);
+		double f = (double)(this.getZ() - z);
+		return Math.sqrt(d * d + e * e + f * f);
 	}
 
 	public double squaredDistanceTo(double x, double y, double z) {

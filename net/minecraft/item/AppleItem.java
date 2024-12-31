@@ -1,8 +1,9 @@
 package net.minecraft.item;
 
 import java.util.List;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.Rarity;
@@ -27,23 +28,22 @@ public class AppleItem extends FoodItem {
 	@Override
 	protected void eat(ItemStack stack, World world, PlayerEntity player) {
 		if (!world.isClient) {
-			player.addStatusEffect(new StatusEffectInstance(StatusEffect.ABSORPTION.id, 2400, 0));
-		}
-
-		if (stack.getData() > 0) {
-			if (!world.isClient) {
-				player.addStatusEffect(new StatusEffectInstance(StatusEffect.REGENERATION.id, 600, 4));
-				player.addStatusEffect(new StatusEffectInstance(StatusEffect.RESISTANCE.id, 6000, 0));
-				player.addStatusEffect(new StatusEffectInstance(StatusEffect.FIRE_RESISTANCE.id, 6000, 0));
+			if (stack.getData() > 0) {
+				player.incrementStat(AchievementsAndCriterions.field_14356);
+				player.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 400, 1));
+				player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 6000, 0));
+				player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 6000, 0));
+				player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 2400, 3));
+			} else {
+				player.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 1));
+				player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 2400, 0));
 			}
-		} else {
-			super.eat(stack, world, player);
 		}
 	}
 
 	@Override
 	public void appendItemStacks(Item item, ItemGroup group, List<ItemStack> list) {
-		list.add(new ItemStack(item, 1, 0));
+		list.add(new ItemStack(item));
 		list.add(new ItemStack(item, 1, 1));
 	}
 }

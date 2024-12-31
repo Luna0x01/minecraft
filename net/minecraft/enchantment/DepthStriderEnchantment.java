@@ -1,10 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class DepthStriderEnchantment extends Enchantment {
-	public DepthStriderEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.FEET);
+	public DepthStriderEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.FEET, equipmentSlots);
 		this.setName("waterWalker");
 	}
 
@@ -21,5 +21,10 @@ public class DepthStriderEnchantment extends Enchantment {
 	@Override
 	public int getMaximumLevel() {
 		return 3;
+	}
+
+	@Override
+	public boolean differs(Enchantment other) {
+		return super.differs(other) && other != Enchantments.FROST_WALKER;
 	}
 }

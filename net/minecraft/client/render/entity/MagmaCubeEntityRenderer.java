@@ -20,7 +20,6 @@ public class MagmaCubeEntityRenderer extends MobEntityRenderer<MagmaCubeEntity> 
 		int i = magmaCubeEntity.getSize();
 		float g = (magmaCubeEntity.lastStretch + (magmaCubeEntity.stretch - magmaCubeEntity.lastStretch) * f) / ((float)i * 0.5F + 1.0F);
 		float h = 1.0F / (g + 1.0F);
-		float j = (float)i;
-		GlStateManager.scale(h * j, 1.0F / h * j, h * j);
+		GlStateManager.scale(h * (float)i, 1.0F / h * (float)i, h * (float)i);
 	}
 }

@@ -131,68 +131,68 @@ public interface Text extends Iterable<Text> {
 		}
 
 		public JsonElement serialize(Text text, Type type, JsonSerializationContext jsonSerializationContext) {
-			if (text instanceof LiteralText && text.getStyle().isEmpty() && text.getSiblings().isEmpty()) {
-				return new JsonPrimitive(((LiteralText)text).getRawString());
-			} else {
-				JsonObject jsonObject = new JsonObject();
-				if (!text.getStyle().isEmpty()) {
-					this.serializeStyle(text.getStyle(), jsonObject, jsonSerializationContext);
-				}
-
-				if (!text.getSiblings().isEmpty()) {
-					JsonArray jsonArray = new JsonArray();
-
-					for (Text text2 : text.getSiblings()) {
-						jsonArray.add(this.serialize(text2, text2.getClass(), jsonSerializationContext));
-					}
-
-					jsonObject.add("extra", jsonArray);
-				}
-
-				if (text instanceof LiteralText) {
-					jsonObject.addProperty("text", ((LiteralText)text).getRawString());
-				} else if (text instanceof TranslatableText) {
-					TranslatableText translatableText = (TranslatableText)text;
-					jsonObject.addProperty("translate", translatableText.getKey());
-					if (translatableText.getArgs() != null && translatableText.getArgs().length > 0) {
-						JsonArray jsonArray2 = new JsonArray();
-
-						for (Object object : translatableText.getArgs()) {
-							if (object instanceof Text) {
-								jsonArray2.add(this.serialize((Text)object, object.getClass(), jsonSerializationContext));
-							} else {
-								jsonArray2.add(new JsonPrimitive(String.valueOf(object)));
-							}
-						}
-
-						jsonObject.add("with", jsonArray2);
-					}
-				} else if (text instanceof ScoreText) {
-					ScoreText scoreText = (ScoreText)text;
-					JsonObject jsonObject2 = new JsonObject();
-					jsonObject2.addProperty("name", scoreText.getName());
-					jsonObject2.addProperty("objective", scoreText.getObjective());
-					jsonObject2.addProperty("value", scoreText.computeValue());
-					jsonObject.add("score", jsonObject2);
-				} else {
-					if (!(text instanceof SelectorText)) {
-						throw new IllegalArgumentException("Don't know how to serialize " + text + " as a Component");
-					}
-
-					SelectorText selectorText = (SelectorText)text;
-					jsonObject.addProperty("selector", selectorText.getPattern());
-				}
-
-				return jsonObject;
+			JsonObject jsonObject = new JsonObject();
+			if (!text.getStyle().isEmpty()) {
+				this.serializeStyle(text.getStyle(), jsonObject, jsonSerializationContext);
 			}
+
+			if (!text.getSiblings().isEmpty()) {
+				JsonArray jsonArray = new JsonArray();
+
+				for (Text text2 : text.getSiblings()) {
+					jsonArray.add(this.serialize(text2, text2.getClass(), jsonSerializationContext));
+				}
+
+				jsonObject.add("extra", jsonArray);
+			}
+
+			if (text instanceof LiteralText) {
+				jsonObject.addProperty("text", ((LiteralText)text).getRawString());
+			} else if (text instanceof TranslatableText) {
+				TranslatableText translatableText = (TranslatableText)text;
+				jsonObject.addProperty("translate", translatableText.getKey());
+				if (translatableText.getArgs() != null && translatableText.getArgs().length > 0) {
+					JsonArray jsonArray2 = new JsonArray();
+
+					for (Object object : translatableText.getArgs()) {
+						if (object instanceof Text) {
+							jsonArray2.add(this.serialize((Text)object, object.getClass(), jsonSerializationContext));
+						} else {
+							jsonArray2.add(new JsonPrimitive(String.valueOf(object)));
+						}
+					}
+
+					jsonObject.add("with", jsonArray2);
+				}
+			} else if (text instanceof ScoreText) {
+				ScoreText scoreText = (ScoreText)text;
+				JsonObject jsonObject2 = new JsonObject();
+				jsonObject2.addProperty("name", scoreText.getName());
+				jsonObject2.addProperty("objective", scoreText.getObjective());
+				jsonObject2.addProperty("value", scoreText.computeValue());
+				jsonObject.add("score", jsonObject2);
+			} else {
+				if (!(text instanceof SelectorText)) {
+					throw new IllegalArgumentException("Don't know how to serialize " + text + " as a Component");
+				}
+
+				SelectorText selectorText = (SelectorText)text;
+				jsonObject.addProperty("selector", selectorText.getPattern());
+			}
+
+			return jsonObject;
 		}
 
 		public static String serialize(Text text) {
 			return GSON.toJson(text);
 		}
 
-		public static Text deserialize(String string) {
-			return (Text)GSON.fromJson(string, Text.class);
+		public static Text deserializeText(String string) {
+			return JsonHelper.deserialize(GSON, string, Text.class, false);
+		}
+
+		public static Text lenientDeserializeText(String string) {
+			return JsonHelper.deserialize(GSON, string, Text.class, true);
 		}
 
 		static {

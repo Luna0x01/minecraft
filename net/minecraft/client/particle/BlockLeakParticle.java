@@ -25,7 +25,7 @@ public class BlockLeakParticle extends Particle {
 		}
 
 		this.setMiscTexture(113);
-		this.setBounds(0.01F, 0.01F);
+		this.method_12244(0.01F, 0.01F);
 		this.gravityStrength = 0.06F;
 		this.material = material;
 		this.ticks = 40;
@@ -34,20 +34,15 @@ public class BlockLeakParticle extends Particle {
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
-		return this.material == Material.WATER ? super.getLightmapCoordinates(f) : 257;
+	public int method_12243(float f) {
+		return this.material == Material.WATER ? super.method_12243(f) : 257;
 	}
 
 	@Override
-	public float getBrightnessAtEyes(float f) {
-		return this.material == Material.WATER ? super.getBrightnessAtEyes(f) : 1.0F;
-	}
-
-	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		if (this.material == Material.WATER) {
 			this.red = 0.2F;
 			this.green = 0.3F;
@@ -68,18 +63,18 @@ public class BlockLeakParticle extends Particle {
 			this.setMiscTexture(112);
 		}
 
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX *= 0.98F;
 		this.velocityY *= 0.98F;
 		this.velocityZ *= 0.98F;
 		if (this.maxAge-- <= 0) {
-			this.remove();
+			this.method_12251();
 		}
 
-		if (this.onGround) {
+		if (this.field_13434) {
 			if (this.material == Material.WATER) {
-				this.remove();
-				this.world.addParticle(ParticleType.WATER, this.x, this.y, this.z, 0.0, 0.0, 0.0);
+				this.method_12251();
+				this.field_13424.addParticle(ParticleType.WATER, this.field_13428, this.field_13429, this.field_13430, 0.0, 0.0, 0.0);
 			} else {
 				this.setMiscTexture(114);
 			}
@@ -88,18 +83,18 @@ public class BlockLeakParticle extends Particle {
 			this.velocityZ *= 0.7F;
 		}
 
-		BlockPos blockPos = new BlockPos(this);
-		BlockState blockState = this.world.getBlockState(blockPos);
-		Material material = blockState.getBlock().getMaterial();
+		BlockPos blockPos = new BlockPos(this.field_13428, this.field_13429, this.field_13430);
+		BlockState blockState = this.field_13424.getBlockState(blockPos);
+		Material material = blockState.getMaterial();
 		if (material.isFluid() || material.isSolid()) {
 			double d = 0.0;
 			if (blockState.getBlock() instanceof AbstractFluidBlock) {
 				d = (double)AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL));
 			}
 
-			double e = (double)(MathHelper.floor(this.y) + 1) - d;
-			if (this.y < e) {
-				this.remove();
+			double e = (double)(MathHelper.floor(this.field_13429) + 1) - d;
+			if (this.field_13429 < e) {
+				this.method_12251();
 			}
 		}
 	}

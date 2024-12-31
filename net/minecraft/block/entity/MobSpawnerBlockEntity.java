@@ -1,8 +1,9 @@
 package net.minecraft.block.entity;
 
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
@@ -26,10 +27,11 @@ public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
 		}
 
 		@Override
-		public void setSpawnEntry(SpawnerBlockEntityBehavior.SpawnEntry spawnEntry) {
-			super.setSpawnEntry(spawnEntry);
+		public void setSpawnData(SpawnerBlockEntityBehaviorEntry data) {
+			super.setSpawnData(data);
 			if (this.getWorld() != null) {
-				this.getWorld().onBlockUpdate(MobSpawnerBlockEntity.this.pos);
+				BlockState blockState = this.getWorld().getBlockState(this.getPos());
+				this.getWorld().method_11481(MobSpawnerBlockEntity.this.pos, blockState, blockState, 4);
 			}
 		}
 	};
@@ -41,9 +43,10 @@ public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
-		this.behaviorHandler.serialize(nbt);
+		this.behaviorHandler.toTag(nbt);
+		return nbt;
 	}
 
 	@Override
@@ -51,12 +54,17 @@ public class MobSpawnerBlockEntity extends BlockEntity implements Tickable {
 		this.behaviorHandler.tick();
 	}
 
+	@Nullable
 	@Override
-	public Packet getPacket() {
-		NbtCompound nbtCompound = new NbtCompound();
-		this.toNbt(nbtCompound);
+	public BlockEntityUpdateS2CPacket getUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 1, this.getUpdatePacketContent());
+	}
+
+	@Override
+	public NbtCompound getUpdatePacketContent() {
+		NbtCompound nbtCompound = this.toNbt(new NbtCompound());
 		nbtCompound.remove("SpawnPotentials");
-		return new BlockEntityUpdateS2CPacket(this.pos, 1, nbtCompound);
+		return nbtCompound;
 	}
 
 	@Override

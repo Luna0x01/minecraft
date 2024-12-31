@@ -12,7 +12,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 
 public class FireballEntityRenderer extends EntityRenderer<ExplosiveProjectileEntity> {
-	private float speed;
+	private final float speed;
 
 	public FireballEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, float f) {
 		super(entityRenderDispatcher);
@@ -36,13 +36,23 @@ public class FireballEntityRenderer extends EntityRenderer<ExplosiveProjectileEn
 		float n = 0.5F;
 		float o = 0.25F;
 		GlStateManager.rotate(180.0F - this.dispatcher.yaw, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotate(-this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
+		GlStateManager.rotate((float)(this.dispatcher.options.perspective == 2 ? -1 : 1) * -this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(explosiveProjectileEntity));
+		}
+
 		bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE_NORMAL);
 		bufferBuilder.vertex(-0.5, -0.25, 0.0).texture((double)i, (double)l).normal(0.0F, 1.0F, 0.0F).next();
 		bufferBuilder.vertex(0.5, -0.25, 0.0).texture((double)j, (double)l).normal(0.0F, 1.0F, 0.0F).next();
 		bufferBuilder.vertex(0.5, 0.75, 0.0).texture((double)j, (double)k).normal(0.0F, 1.0F, 0.0F).next();
 		bufferBuilder.vertex(-0.5, 0.75, 0.0).texture((double)i, (double)k).normal(0.0F, 1.0F, 0.0F).next();
 		tessellator.draw();
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();
 		super.render(explosiveProjectileEntity, d, e, f, g, h);

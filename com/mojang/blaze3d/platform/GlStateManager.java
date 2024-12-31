@@ -1,29 +1,39 @@
 package com.mojang.blaze3d.platform;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import javax.annotation.Nullable;
+import net.minecraft.client.render.DiffuseLighting;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GLContext;
+import org.lwjgl.util.vector.Quaternion;
 
 public class GlStateManager {
+	private static final FloatBuffer field_13464 = BufferUtils.createFloatBuffer(16);
+	private static final FloatBuffer field_13465 = BufferUtils.createFloatBuffer(4);
 	private static GlStateManager.AlphaTestState ALPHA_TEST = new GlStateManager.AlphaTestState();
 	private static GlStateManager.BooleanState LIGHTING = new GlStateManager.BooleanState(2896);
 	private static GlStateManager.BooleanState[] LIGHTING_STATES = new GlStateManager.BooleanState[8];
-	private static GlStateManager.ColorMaterialState COLOR_MATERIAL = new GlStateManager.ColorMaterialState();
-	private static GlStateManager.BlendFuncState BLEND = new GlStateManager.BlendFuncState();
-	private static GlStateManager.DepthTestState DEPTH = new GlStateManager.DepthTestState();
-	private static GlStateManager.FogState FOG = new GlStateManager.FogState();
-	private static GlStateManager.CullFaceState CULL = new GlStateManager.CullFaceState();
-	private static GlStateManager.PolygonOffsetState POLY_OFFSET = new GlStateManager.PolygonOffsetState();
-	private static GlStateManager.LogicOpState COLOR_LOGIC = new GlStateManager.LogicOpState();
-	private static GlStateManager.TexGenState TEX_GEN = new GlStateManager.TexGenState();
-	private static GlStateManager.ClearState CLEAR = new GlStateManager.ClearState();
-	private static GlStateManager.StencilState STENCIL = new GlStateManager.StencilState();
-	private static GlStateManager.BooleanState NORMALIZE = new GlStateManager.BooleanState(2977);
-	private static int activeTexture = 0;
-	private static GlStateManager.Texture2DState[] TEXTURES = new GlStateManager.Texture2DState[8];
-	private static int modelShadeMode = 7425;
-	private static GlStateManager.BooleanState RESCALE_NORMAL = new GlStateManager.BooleanState(32826);
-	private static GlStateManager.ColorMask COLOR_MASK = new GlStateManager.ColorMask();
-	private static GlStateManager.Color4 COLOR = new GlStateManager.Color4();
+	private static GlStateManager.ColorMaterialState COLOR_MATERIAL;
+	private static GlStateManager.BlendFuncState BLEND;
+	private static GlStateManager.DepthTestState DEPTH;
+	private static GlStateManager.FogState FOG;
+	private static GlStateManager.CullFaceState CULL;
+	private static GlStateManager.PolygonOffsetState POLY_OFFSET;
+	private static GlStateManager.LogicOpState COLOR_LOGIC;
+	private static GlStateManager.TexGenState TEX_GEN;
+	private static GlStateManager.ClearState CLEAR;
+	private static GlStateManager.StencilState STENCIL;
+	private static GlStateManager.BooleanState NORMALIZE;
+	private static int activeTexture;
+	private static GlStateManager.Texture2DState[] TEXTURES;
+	private static int modelShadeMode;
+	private static GlStateManager.BooleanState RESCALE_NORMAL;
+	private static GlStateManager.ColorMask COLOR_MASK;
+	private static GlStateManager.Color4 COLOR;
 
 	public static void pushLightingAttributes() {
 		GL11.glPushAttrib(8256);
@@ -81,6 +91,18 @@ public class GlStateManager {
 		}
 	}
 
+	public static void method_12281(int i, int j, FloatBuffer floatBuffer) {
+		GL11.glLight(i, j, floatBuffer);
+	}
+
+	public static void method_12282(int i, FloatBuffer floatBuffer) {
+		GL11.glLightModel(i, floatBuffer);
+	}
+
+	public static void method_12272(float f, float g, float h) {
+		GL11.glNormal3f(f, g, h);
+	}
+
 	public static void disableDepthTest() {
 		DEPTH.capState.disable();
 	}
@@ -111,12 +133,20 @@ public class GlStateManager {
 		BLEND.capState.enable();
 	}
 
+	public static void method_12287(GlStateManager.class_2870 arg, GlStateManager.class_2866 arg2) {
+		blendFunc(arg.field_13529, arg2.field_13485);
+	}
+
 	public static void blendFunc(int srcFactor, int dstFactor) {
 		if (srcFactor != BLEND.srcFactorRGB || dstFactor != BLEND.dstFactorRGB) {
 			BLEND.srcFactorRGB = srcFactor;
 			BLEND.dstFactorRGB = dstFactor;
 			GL11.glBlendFunc(srcFactor, dstFactor);
 		}
+	}
+
+	public static void method_12288(GlStateManager.class_2870 arg, GlStateManager.class_2866 arg2, GlStateManager.class_2870 arg3, GlStateManager.class_2866 arg4) {
+		blendFuncSeparate(arg.field_13529, arg2.field_13485, arg3.field_13529, arg4.field_13485);
 	}
 
 	public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
@@ -132,6 +162,35 @@ public class GlStateManager {
 		}
 	}
 
+	public static void method_12305(int i) {
+		GL14.glBlendEquation(i);
+	}
+
+	public static void method_12309(int i) {
+		field_13465.put(0, (float)(i >> 16 & 0xFF) / 255.0F);
+		field_13465.put(1, (float)(i >> 8 & 0xFF) / 255.0F);
+		field_13465.put(2, (float)(i >> 0 & 0xFF) / 255.0F);
+		field_13465.put(3, (float)(i >> 24 & 0xFF) / 255.0F);
+		method_12297(8960, 8705, field_13465);
+		method_12274(8960, 8704, 34160);
+		method_12274(8960, 34161, 7681);
+		method_12274(8960, 34176, 34166);
+		method_12274(8960, 34192, 768);
+		method_12274(8960, 34162, 7681);
+		method_12274(8960, 34184, 5890);
+		method_12274(8960, 34200, 770);
+	}
+
+	public static void method_12315() {
+		method_12274(8960, 8704, 8448);
+		method_12274(8960, 34161, 8448);
+		method_12274(8960, 34162, 8448);
+		method_12274(8960, 34176, 5890);
+		method_12274(8960, 34184, 5890);
+		method_12274(8960, 34192, 768);
+		method_12274(8960, 34200, 770);
+	}
+
 	public static void enableFog() {
 		FOG.capState.enable();
 	}
@@ -140,7 +199,11 @@ public class GlStateManager {
 		FOG.capState.disable();
 	}
 
-	public static void fogMode(int mode) {
+	public static void method_12285(GlStateManager.class_2867 arg) {
+		fogMode(arg.field_13490);
+	}
+
+	private static void fogMode(int mode) {
 		if (mode != FOG.mode) {
 			FOG.mode = mode;
 			GL11.glFogi(2917, mode);
@@ -168,6 +231,14 @@ public class GlStateManager {
 		}
 	}
 
+	public static void method_12298(int i, FloatBuffer floatBuffer) {
+		GL11.glFog(i, floatBuffer);
+	}
+
+	public static void method_12300(int i, int j) {
+		GL11.glFogi(i, j);
+	}
+
 	public static void enableCull() {
 		CULL.capState.enable();
 	}
@@ -176,11 +247,19 @@ public class GlStateManager {
 		CULL.capState.disable();
 	}
 
-	public static void cullFace(int mode) {
+	public static void method_12284(GlStateManager.class_2865 arg) {
+		cullFace(arg.field_13469);
+	}
+
+	private static void cullFace(int mode) {
 		if (mode != CULL.mode) {
 			CULL.mode = mode;
 			GL11.glCullFace(mode);
 		}
+	}
+
+	public static void method_12306(int i, int j) {
+		GL11.glPolygonMode(i, j);
 	}
 
 	public static void enablePolyOffset() {
@@ -207,6 +286,10 @@ public class GlStateManager {
 		COLOR_LOGIC.capState.disable();
 	}
 
+	public static void method_9807(GlStateManager.class_2868 arg) {
+		logicOp(arg.field_13508);
+	}
+
 	public static void logicOp(int op) {
 		if (op != COLOR_LOGIC.op) {
 			COLOR_LOGIC.op = op;
@@ -214,8 +297,8 @@ public class GlStateManager {
 		}
 	}
 
-	public static void enableTexCoord(GlStateManager.TexCoord coord) {
-		getGenCoordState(coord).capState.enable();
+	public static void method_12289(GlStateManager.TexCoord texCoord) {
+		getGenCoordState(texCoord).capState.enable();
 	}
 
 	public static void disableTexCoord(GlStateManager.TexCoord coord) {
@@ -264,6 +347,30 @@ public class GlStateManager {
 		TEXTURES[activeTexture].capState.disable();
 	}
 
+	public static void method_12297(int i, int j, FloatBuffer floatBuffer) {
+		GL11.glTexEnv(i, j, floatBuffer);
+	}
+
+	public static void method_12274(int i, int j, int k) {
+		GL11.glTexEnvi(i, j, k);
+	}
+
+	public static void method_12273(int i, int j, float f) {
+		GL11.glTexEnvf(i, j, f);
+	}
+
+	public static void method_12293(int i, int j, float f) {
+		GL11.glTexParameterf(i, j, f);
+	}
+
+	public static void method_12294(int i, int j, int k) {
+		GL11.glTexParameteri(i, j, k);
+	}
+
+	public static int method_12301(int i, int j, int k) {
+		return GL11.glGetTexLevelParameteri(i, j, k);
+	}
+
 	public static int getTexLevelParameter() {
 		return GL11.glGenTextures();
 	}
@@ -283,6 +390,22 @@ public class GlStateManager {
 			TEXTURES[activeTexture].boundTexture = texture;
 			GL11.glBindTexture(3553, texture);
 		}
+	}
+
+	public static void method_12276(int i, int j, int k, int l, int m, int n, int o, int p, @Nullable IntBuffer intBuffer) {
+		GL11.glTexImage2D(i, j, k, l, m, n, o, p, intBuffer);
+	}
+
+	public static void method_12295(int i, int j, int k, int l, int m, int n, int o, int p, IntBuffer intBuffer) {
+		GL11.glTexSubImage2D(i, j, k, l, m, n, o, p, intBuffer);
+	}
+
+	public static void method_12275(int i, int j, int k, int l, int m, int n, int o, int p) {
+		GL11.glCopyTexSubImage2D(i, j, k, l, m, n, o, p);
+	}
+
+	public static void method_12278(int i, int j, int k, int l, IntBuffer intBuffer) {
+		GL11.glGetTexImage(i, j, k, l, intBuffer);
 	}
 
 	public static void enableNormalize() {
@@ -391,6 +514,41 @@ public class GlStateManager {
 		GL11.glMultMatrix(buffer);
 	}
 
+	public static void method_12291(Quaternion quaternion) {
+		multiMatrix(method_12290(field_13464, quaternion));
+	}
+
+	public static FloatBuffer method_12290(FloatBuffer floatBuffer, Quaternion quaternion) {
+		floatBuffer.clear();
+		float f = quaternion.x * quaternion.x;
+		float g = quaternion.x * quaternion.y;
+		float h = quaternion.x * quaternion.z;
+		float i = quaternion.x * quaternion.w;
+		float j = quaternion.y * quaternion.y;
+		float k = quaternion.y * quaternion.z;
+		float l = quaternion.y * quaternion.w;
+		float m = quaternion.z * quaternion.z;
+		float n = quaternion.z * quaternion.w;
+		floatBuffer.put(1.0F - 2.0F * (j + m));
+		floatBuffer.put(2.0F * (g + n));
+		floatBuffer.put(2.0F * (h - l));
+		floatBuffer.put(0.0F);
+		floatBuffer.put(2.0F * (g - n));
+		floatBuffer.put(1.0F - 2.0F * (f + m));
+		floatBuffer.put(2.0F * (k + i));
+		floatBuffer.put(0.0F);
+		floatBuffer.put(2.0F * (h + l));
+		floatBuffer.put(2.0F * (k - i));
+		floatBuffer.put(1.0F - 2.0F * (f + j));
+		floatBuffer.put(0.0F);
+		floatBuffer.put(0.0F);
+		floatBuffer.put(0.0F);
+		floatBuffer.put(0.0F);
+		floatBuffer.put(1.0F);
+		floatBuffer.rewind();
+		return floatBuffer;
+	}
+
 	public static void color(float red, float green, float blue, float alpha) {
 		if (red != COLOR.red || green != COLOR.green || blue != COLOR.blue || alpha != COLOR.alpha) {
 			COLOR.red = red;
@@ -405,12 +563,120 @@ public class GlStateManager {
 		color(red, green, blue, 1.0F);
 	}
 
+	public static void method_12292(float f, float g) {
+		GL11.glTexCoord2f(f, g);
+	}
+
+	public static void method_12308(float f, float g, float h) {
+		GL11.glVertex3f(f, g, h);
+	}
+
 	public static void clearColor() {
 		COLOR.red = COLOR.green = COLOR.blue = COLOR.alpha = -1.0F;
 	}
 
+	public static void method_12280(int i, int j, ByteBuffer byteBuffer) {
+		GL11.glNormalPointer(i, j, byteBuffer);
+	}
+
+	public static void method_12302(int i, int j, int k, int l) {
+		GL11.glTexCoordPointer(i, j, k, (long)l);
+	}
+
+	public static void method_12279(int i, int j, int k, ByteBuffer byteBuffer) {
+		GL11.glTexCoordPointer(i, j, k, byteBuffer);
+	}
+
+	public static void method_12307(int i, int j, int k, int l) {
+		GL11.glVertexPointer(i, j, k, (long)l);
+	}
+
+	public static void method_12296(int i, int j, int k, ByteBuffer byteBuffer) {
+		GL11.glVertexPointer(i, j, k, byteBuffer);
+	}
+
+	public static void method_12311(int i, int j, int k, int l) {
+		GL11.glColorPointer(i, j, k, (long)l);
+	}
+
+	public static void method_12303(int i, int j, int k, ByteBuffer byteBuffer) {
+		GL11.glColorPointer(i, j, k, byteBuffer);
+	}
+
+	public static void method_12316(int i) {
+		GL11.glDisableClientState(i);
+	}
+
+	public static void method_12317(int i) {
+		GL11.glEnableClientState(i);
+	}
+
+	public static void method_12318(int i) {
+		GL11.glBegin(i);
+	}
+
+	public static void method_12269() {
+		GL11.glEnd();
+	}
+
+	public static void method_12313(int i, int j, int k) {
+		GL11.glDrawArrays(i, j, k);
+	}
+
+	public static void method_12304(float f) {
+		GL11.glLineWidth(f);
+	}
+
 	public static void callList(int listId) {
 		GL11.glCallList(listId);
+	}
+
+	public static void method_12310(int i, int j) {
+		GL11.glDeleteLists(i, j);
+	}
+
+	public static void method_12312(int i, int j) {
+		GL11.glNewList(i, j);
+	}
+
+	public static void method_12270() {
+		GL11.glEndList();
+	}
+
+	public static int method_12319(int i) {
+		return GL11.glGenLists(i);
+	}
+
+	public static void method_12314(int i, int j) {
+		GL11.glPixelStorei(i, j);
+	}
+
+	public static void method_12277(int i, int j, int k, int l, int m, int n, IntBuffer intBuffer) {
+		GL11.glReadPixels(i, j, k, l, m, n, intBuffer);
+	}
+
+	public static int method_12271() {
+		return GL11.glGetError();
+	}
+
+	public static String method_12320(int i) {
+		return GL11.glGetString(i);
+	}
+
+	public static void method_12283(int i, IntBuffer intBuffer) {
+		GL11.glGetInteger(i, intBuffer);
+	}
+
+	public static int method_12321(int i) {
+		return GL11.glGetInteger(i);
+	}
+
+	public static void method_12286(GlStateManager.class_2869 arg) {
+		arg.method_12322();
+	}
+
+	public static void method_12299(GlStateManager.class_2869 arg) {
+		arg.method_12323();
 	}
 
 	static {
@@ -418,9 +684,28 @@ public class GlStateManager {
 			LIGHTING_STATES[i] = new GlStateManager.BooleanState(16384 + i);
 		}
 
+		COLOR_MATERIAL = new GlStateManager.ColorMaterialState();
+		BLEND = new GlStateManager.BlendFuncState();
+		DEPTH = new GlStateManager.DepthTestState();
+		FOG = new GlStateManager.FogState();
+		CULL = new GlStateManager.CullFaceState();
+		POLY_OFFSET = new GlStateManager.PolygonOffsetState();
+		COLOR_LOGIC = new GlStateManager.LogicOpState();
+		TEX_GEN = new GlStateManager.TexGenState();
+		CLEAR = new GlStateManager.ClearState();
+		STENCIL = new GlStateManager.StencilState();
+		NORMALIZE = new GlStateManager.BooleanState(2977);
+		activeTexture = 0;
+		TEXTURES = new GlStateManager.Texture2DState[8];
+
 		for (int j = 0; j < 8; j++) {
 			TEXTURES[j] = new GlStateManager.Texture2DState();
 		}
+
+		modelShadeMode = 7425;
+		RESCALE_NORMAL = new GlStateManager.BooleanState(32826);
+		COLOR_MASK = new GlStateManager.ColorMask();
+		COLOR = new GlStateManager.Color4();
 	}
 
 	static class AlphaTestState {
@@ -615,6 +900,242 @@ public class GlStateManager {
 		public int boundTexture = 0;
 
 		private Texture2DState() {
+		}
+	}
+
+	public static enum class_2865 {
+		FRONT(1028),
+		BACK(1029),
+		FRONT_AND_BACK(1032);
+
+		public final int field_13469;
+
+		private class_2865(int j) {
+			this.field_13469 = j;
+		}
+	}
+
+	public static enum class_2866 {
+		CONSTANT_ALPHA(32771),
+		CONSTANT_COLOR(32769),
+		DST_ALPHA(772),
+		DST_COLOR(774),
+		ONE(1),
+		ONE_MINUS_CONSTANT_ALPHA(32772),
+		ONE_MINUS_CONSTANT_COLOR(32770),
+		ONE_MINUS_DST_ALPHA(773),
+		ONE_MINUS_DST_COLOR(775),
+		ONE_MINUS_SRC_ALPHA(771),
+		ONE_MINUS_SRC_COLOR(769),
+		SRC_ALPHA(770),
+		SRC_COLOR(768),
+		ZERO(0);
+
+		public final int field_13485;
+
+		private class_2866(int j) {
+			this.field_13485 = j;
+		}
+	}
+
+	public static enum class_2867 {
+		LINEAR(9729),
+		EXP(2048),
+		EXP2(2049);
+
+		public final int field_13490;
+
+		private class_2867(int j) {
+			this.field_13490 = j;
+		}
+	}
+
+	public static enum class_2868 {
+		AND(5377),
+		AND_INVERTED(5380),
+		AND_REVERSE(5378),
+		CLEAR(5376),
+		COPY(5379),
+		COPY_INVERTED(5388),
+		EQUIV(5385),
+		INVERT(5386),
+		NAND(5390),
+		NOOP(5381),
+		NOR(5384),
+		OR(5383),
+		OR_INVERTED(5389),
+		OR_REVERSE(5387),
+		SET(5391),
+		XOR(5382);
+
+		public final int field_13508;
+
+		private class_2868(int j) {
+			this.field_13508 = j;
+		}
+	}
+
+	public static enum class_2869 {
+		DEFAULT {
+			@Override
+			public void method_12322() {
+				GlStateManager.disableAlphaTest();
+				GlStateManager.alphaFunc(519, 0.0F);
+				GlStateManager.disableLighting();
+				GlStateManager.method_12282(2899, DiffuseLighting.method_845(0.2F, 0.2F, 0.2F, 1.0F));
+
+				for (int i = 0; i < 8; i++) {
+					GlStateManager.disableLight(i);
+					GlStateManager.method_12281(16384 + i, 4608, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 1.0F));
+					GlStateManager.method_12281(16384 + i, 4611, DiffuseLighting.method_845(0.0F, 0.0F, 1.0F, 0.0F));
+					if (i == 0) {
+						GlStateManager.method_12281(16384 + i, 4609, DiffuseLighting.method_845(1.0F, 1.0F, 1.0F, 1.0F));
+						GlStateManager.method_12281(16384 + i, 4610, DiffuseLighting.method_845(1.0F, 1.0F, 1.0F, 1.0F));
+					} else {
+						GlStateManager.method_12281(16384 + i, 4609, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 1.0F));
+						GlStateManager.method_12281(16384 + i, 4610, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 1.0F));
+					}
+				}
+
+				GlStateManager.disableColorMaterial();
+				GlStateManager.colorMaterial(1032, 5634);
+				GlStateManager.disableDepthTest();
+				GlStateManager.depthFunc(513);
+				GlStateManager.depthMask(true);
+				GlStateManager.disableBlend();
+				GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO);
+				GlStateManager.method_12288(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO);
+				GlStateManager.method_12305(32774);
+				GlStateManager.disableFog();
+				GlStateManager.method_12300(2917, 2048);
+				GlStateManager.fogDensity(1.0F);
+				GlStateManager.fogStart(0.0F);
+				GlStateManager.fogEnd(1.0F);
+				GlStateManager.method_12298(2918, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 0.0F));
+				if (GLContext.getCapabilities().GL_NV_fog_distance) {
+					GlStateManager.method_12300(2917, 34140);
+				}
+
+				GlStateManager.polygonOffset(0.0F, 0.0F);
+				GlStateManager.disableColorLogic();
+				GlStateManager.logicOp(5379);
+				GlStateManager.disableTexCoord(GlStateManager.TexCoord.S);
+				GlStateManager.genTex(GlStateManager.TexCoord.S, 9216);
+				GlStateManager.genTex(GlStateManager.TexCoord.S, 9474, DiffuseLighting.method_845(1.0F, 0.0F, 0.0F, 0.0F));
+				GlStateManager.genTex(GlStateManager.TexCoord.S, 9217, DiffuseLighting.method_845(1.0F, 0.0F, 0.0F, 0.0F));
+				GlStateManager.disableTexCoord(GlStateManager.TexCoord.T);
+				GlStateManager.genTex(GlStateManager.TexCoord.T, 9216);
+				GlStateManager.genTex(GlStateManager.TexCoord.T, 9474, DiffuseLighting.method_845(0.0F, 1.0F, 0.0F, 0.0F));
+				GlStateManager.genTex(GlStateManager.TexCoord.T, 9217, DiffuseLighting.method_845(0.0F, 1.0F, 0.0F, 0.0F));
+				GlStateManager.disableTexCoord(GlStateManager.TexCoord.R);
+				GlStateManager.genTex(GlStateManager.TexCoord.R, 9216);
+				GlStateManager.genTex(GlStateManager.TexCoord.R, 9474, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 0.0F));
+				GlStateManager.genTex(GlStateManager.TexCoord.R, 9217, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 0.0F));
+				GlStateManager.disableTexCoord(GlStateManager.TexCoord.Q);
+				GlStateManager.genTex(GlStateManager.TexCoord.Q, 9216);
+				GlStateManager.genTex(GlStateManager.TexCoord.Q, 9474, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 0.0F));
+				GlStateManager.genTex(GlStateManager.TexCoord.Q, 9217, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 0.0F));
+				GlStateManager.activeTexture(0);
+				GlStateManager.method_12294(3553, 10240, 9729);
+				GlStateManager.method_12294(3553, 10241, 9986);
+				GlStateManager.method_12294(3553, 10242, 10497);
+				GlStateManager.method_12294(3553, 10243, 10497);
+				GlStateManager.method_12294(3553, 33085, 1000);
+				GlStateManager.method_12294(3553, 33083, 1000);
+				GlStateManager.method_12294(3553, 33082, -1000);
+				GlStateManager.method_12293(3553, 34049, 0.0F);
+				GlStateManager.method_12274(8960, 8704, 8448);
+				GlStateManager.method_12297(8960, 8705, DiffuseLighting.method_845(0.0F, 0.0F, 0.0F, 0.0F));
+				GlStateManager.method_12274(8960, 34161, 8448);
+				GlStateManager.method_12274(8960, 34162, 8448);
+				GlStateManager.method_12274(8960, 34176, 5890);
+				GlStateManager.method_12274(8960, 34177, 34168);
+				GlStateManager.method_12274(8960, 34178, 34166);
+				GlStateManager.method_12274(8960, 34184, 5890);
+				GlStateManager.method_12274(8960, 34185, 34168);
+				GlStateManager.method_12274(8960, 34186, 34166);
+				GlStateManager.method_12274(8960, 34192, 768);
+				GlStateManager.method_12274(8960, 34193, 768);
+				GlStateManager.method_12274(8960, 34194, 770);
+				GlStateManager.method_12274(8960, 34200, 770);
+				GlStateManager.method_12274(8960, 34201, 770);
+				GlStateManager.method_12274(8960, 34202, 770);
+				GlStateManager.method_12273(8960, 34163, 1.0F);
+				GlStateManager.method_12273(8960, 3356, 1.0F);
+				GlStateManager.disableNormalize();
+				GlStateManager.shadeModel(7425);
+				GlStateManager.disableRescaleNormal();
+				GlStateManager.colorMask(true, true, true, true);
+				GlStateManager.clearDepth(1.0);
+				GlStateManager.method_12304(1.0F);
+				GlStateManager.method_12272(0.0F, 0.0F, 1.0F);
+				GlStateManager.method_12306(1028, 6914);
+				GlStateManager.method_12306(1029, 6914);
+			}
+
+			@Override
+			public void method_12323() {
+			}
+		},
+		PLAYER_SKIN {
+			@Override
+			public void method_12322() {
+				GlStateManager.enableBlend();
+				GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+			}
+
+			@Override
+			public void method_12323() {
+				GlStateManager.disableBlend();
+			}
+		},
+		TRANSPARENT_MODEL {
+			@Override
+			public void method_12322() {
+				GlStateManager.color(1.0F, 1.0F, 1.0F, 0.15F);
+				GlStateManager.depthMask(false);
+				GlStateManager.enableBlend();
+				GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
+				GlStateManager.alphaFunc(516, 0.003921569F);
+			}
+
+			@Override
+			public void method_12323() {
+				GlStateManager.disableBlend();
+				GlStateManager.alphaFunc(516, 0.1F);
+				GlStateManager.depthMask(true);
+			}
+		};
+
+		private class_2869() {
+		}
+
+		public abstract void method_12322();
+
+		public abstract void method_12323();
+	}
+
+	public static enum class_2870 {
+		CONSTANT_ALPHA(32771),
+		CONSTANT_COLOR(32769),
+		DST_ALPHA(772),
+		DST_COLOR(774),
+		ONE(1),
+		ONE_MINUS_CONSTANT_ALPHA(32772),
+		ONE_MINUS_CONSTANT_COLOR(32770),
+		ONE_MINUS_DST_ALPHA(773),
+		ONE_MINUS_DST_COLOR(775),
+		ONE_MINUS_SRC_ALPHA(771),
+		ONE_MINUS_SRC_COLOR(769),
+		SRC_ALPHA(770),
+		SRC_ALPHA_SATURATE(776),
+		SRC_COLOR(768),
+		ZERO(0);
+
+		public final int field_13529;
+
+		private class_2870(int j) {
+			this.field_13529 = j;
 		}
 	}
 }

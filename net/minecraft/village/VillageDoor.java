@@ -93,4 +93,8 @@ public class VillageDoor {
 	public void method_11044(boolean bl) {
 		this.field_3667 = bl;
 	}
+
+	public Direction method_13116() {
+		return this.facing;
+	}
 }

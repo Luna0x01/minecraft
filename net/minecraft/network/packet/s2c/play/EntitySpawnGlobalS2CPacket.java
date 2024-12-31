@@ -6,13 +6,12 @@ import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
-import net.minecraft.util.math.MathHelper;
 
 public class EntitySpawnGlobalS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
-	private int x;
-	private int y;
-	private int z;
+	private double x;
+	private double y;
+	private double z;
 	private int entityTypeId;
 
 	public EntitySpawnGlobalS2CPacket() {
@@ -20,9 +19,9 @@ public class EntitySpawnGlobalS2CPacket implements Packet<ClientPlayPacketListen
 
 	public EntitySpawnGlobalS2CPacket(Entity entity) {
 		this.id = entity.getEntityId();
-		this.x = MathHelper.floor(entity.x * 32.0);
-		this.y = MathHelper.floor(entity.y * 32.0);
-		this.z = MathHelper.floor(entity.z * 32.0);
+		this.x = entity.x;
+		this.y = entity.y;
+		this.z = entity.z;
 		if (entity instanceof LightningBoltEntity) {
 			this.entityTypeId = 1;
 		}
@@ -32,18 +31,18 @@ public class EntitySpawnGlobalS2CPacket implements Packet<ClientPlayPacketListen
 	public void read(PacketByteBuf buf) throws IOException {
 		this.id = buf.readVarInt();
 		this.entityTypeId = buf.readByte();
-		this.x = buf.readInt();
-		this.y = buf.readInt();
-		this.z = buf.readInt();
+		this.x = buf.readDouble();
+		this.y = buf.readDouble();
+		this.z = buf.readDouble();
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.id);
 		buf.writeByte(this.entityTypeId);
-		buf.writeInt(this.x);
-		buf.writeInt(this.y);
-		buf.writeInt(this.z);
+		buf.writeDouble(this.x);
+		buf.writeDouble(this.y);
+		buf.writeDouble(this.z);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -54,15 +53,15 @@ public class EntitySpawnGlobalS2CPacket implements Packet<ClientPlayPacketListen
 		return this.id;
 	}
 
-	public int getX() {
+	public double getX() {
 		return this.x;
 	}
 
-	public int getY() {
+	public double getY() {
 		return this.y;
 	}
 
-	public int getZ() {
+	public double getZ() {
 		return this.z;
 	}
 

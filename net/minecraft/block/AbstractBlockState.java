@@ -6,18 +6,24 @@ import com.google.common.collect.Iterables;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.state.property.Property;
 
 public abstract class AbstractBlockState implements BlockState {
 	private static final Joiner JOINER = Joiner.on(',');
-	private static final Function<Entry<Property, Comparable>, String> BLOCKSTATE_PROPERTY_ENTRY_FUNCTION = new Function<Entry<Property, Comparable>, String>() {
-		public String apply(Entry<Property, Comparable> entry) {
+	private static final Function<Entry<Property<?>, Comparable<?>>, String> BLOCKSTATE_PROPERTY_ENTRY_FUNCTION = new Function<Entry<Property<?>, Comparable<?>>, String>() {
+		@Nullable
+		public String apply(@Nullable Entry<Property<?>, Comparable<?>> entry) {
 			if (entry == null) {
 				return "<NULL>";
 			} else {
-				Property property = (Property)entry.getKey();
-				return property.getName() + "=" + property.name((Comparable)entry.getValue());
+				Property<?> property = (Property<?>)entry.getKey();
+				return property.getName() + "=" + this.method_11705(property, (Comparable<?>)entry.getValue());
 			}
+		}
+
+		private <T extends Comparable<T>> String method_11705(Property<T> property, Comparable<?> comparable) {
+			return property.name((T)comparable);
 		}
 	};
 

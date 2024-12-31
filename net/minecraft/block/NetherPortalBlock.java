@@ -2,16 +2,22 @@ package net.minecraft.block;
 
 import com.google.common.cache.LoadingCache;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.pattern.BlockPattern;
 import net.minecraft.block.pattern.CachedBlockPosition;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
-import net.minecraft.item.Item;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.SpawnEggItem;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -20,11 +26,27 @@ import net.minecraft.world.World;
 
 public class NetherPortalBlock extends TransparentBlock {
 	public static final EnumProperty<Direction.Axis> AXIS = EnumProperty.of("axis", Direction.Axis.class, Direction.Axis.X, Direction.Axis.Z);
+	protected static final Box field_12715 = new Box(0.0, 0.0, 0.375, 1.0, 1.0, 0.625);
+	protected static final Box field_12716 = new Box(0.375, 0.0, 0.0, 0.625, 1.0, 1.0);
+	protected static final Box field_12717 = new Box(0.375, 0.0, 0.375, 0.625, 1.0, 0.625);
 
 	public NetherPortalBlock() {
 		super(Material.PORTAL, false);
 		this.setDefaultState(this.stateManager.getDefaultState().with(AXIS, Direction.Axis.X));
 		this.setTickRandomly(true);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((Direction.Axis)state.get(AXIS)) {
+			case X:
+				return field_12715;
+			case Y:
+			default:
+				return field_12717;
+			case Z:
+				return field_12716;
+		}
 	}
 
 	@Override
@@ -34,12 +56,14 @@ public class NetherPortalBlock extends TransparentBlock {
 			int i = pos.getY();
 			BlockPos blockPos = pos;
 
-			while (!World.isOpaque(world, blockPos) && blockPos.getY() > 0) {
+			while (!world.getBlockState(blockPos).method_11739() && blockPos.getY() > 0) {
 				blockPos = blockPos.down();
 			}
 
-			if (i > 0 && !world.getBlockState(blockPos.up()).getBlock().isFullCube()) {
-				Entity entity = SpawnEggItem.spawnEntity(world, 57, (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 1.1, (double)blockPos.getZ() + 0.5);
+			if (i > 0 && !world.getBlockState(blockPos.up()).method_11734()) {
+				Entity entity = SpawnEggItem.method_4628(
+					world, EntityType.method_13022(ZombiePigmanEntity.class), (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 1.1, (double)blockPos.getZ() + 0.5
+				);
 				if (entity != null) {
 					entity.netherPortalCooldown = entity.getDefaultNetherPortalCooldown();
 				}
@@ -47,25 +71,10 @@ public class NetherPortalBlock extends TransparentBlock {
 		}
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		Direction.Axis axis = view.getBlockState(pos).get(AXIS);
-		float f = 0.125F;
-		float g = 0.125F;
-		if (axis == Direction.Axis.X) {
-			f = 0.5F;
-		}
-
-		if (axis == Direction.Axis.Z) {
-			g = 0.5F;
-		}
-
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - g, 0.5F + f, 1.0F, 0.5F + g);
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	public static int getDataFromAxis(Direction.Axis axis) {
@@ -77,7 +86,7 @@ public class NetherPortalBlock extends TransparentBlock {
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -98,36 +107,36 @@ public class NetherPortalBlock extends TransparentBlock {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		Direction.Axis axis = state.get(AXIS);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		Direction.Axis axis = blockState.get(AXIS);
 		if (axis == Direction.Axis.X) {
-			NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.X);
+			NetherPortalBlock.AreaHelper areaHelper = new NetherPortalBlock.AreaHelper(world, blockPos, Direction.Axis.X);
 			if (!areaHelper.isValid() || areaHelper.foundPortalBlocks < areaHelper.width * areaHelper.height) {
-				world.setBlockState(pos, Blocks.AIR.getDefaultState());
+				world.setBlockState(blockPos, Blocks.AIR.getDefaultState());
 			}
 		} else if (axis == Direction.Axis.Z) {
-			NetherPortalBlock.AreaHelper areaHelper2 = new NetherPortalBlock.AreaHelper(world, pos, Direction.Axis.Z);
+			NetherPortalBlock.AreaHelper areaHelper2 = new NetherPortalBlock.AreaHelper(world, blockPos, Direction.Axis.Z);
 			if (!areaHelper2.isValid() || areaHelper2.foundPortalBlocks < areaHelper2.width * areaHelper2.height) {
-				world.setBlockState(pos, Blocks.AIR.getDefaultState());
+				world.setBlockState(blockPos, Blocks.AIR.getDefaultState());
 			}
 		}
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		pos = pos.offset(direction);
 		Direction.Axis axis = null;
-		BlockState blockState = view.getBlockState(pos);
-		if (view.getBlockState(pos).getBlock() == this) {
-			axis = blockState.get(AXIS);
+		if (state.getBlock() == this) {
+			axis = state.get(AXIS);
 			if (axis == null) {
 				return false;
 			}
 
-			if (axis == Direction.Axis.Z && facing != Direction.EAST && facing != Direction.WEST) {
+			if (axis == Direction.Axis.Z && direction != Direction.EAST && direction != Direction.WEST) {
 				return false;
 			}
 
-			if (axis == Direction.Axis.X && facing != Direction.SOUTH && facing != Direction.NORTH) {
+			if (axis == Direction.Axis.X && direction != Direction.SOUTH && direction != Direction.NORTH) {
 				return false;
 			}
 		}
@@ -138,12 +147,12 @@ public class NetherPortalBlock extends TransparentBlock {
 		boolean bl4 = view.getBlockState(pos.south()).getBlock() == this && view.getBlockState(pos.south(2)).getBlock() != this;
 		boolean bl5 = bl || bl2 || axis == Direction.Axis.X;
 		boolean bl6 = bl3 || bl4 || axis == Direction.Axis.Z;
-		if (bl5 && facing == Direction.WEST) {
+		if (bl5 && direction == Direction.WEST) {
 			return true;
-		} else if (bl5 && facing == Direction.EAST) {
+		} else if (bl5 && direction == Direction.EAST) {
 			return true;
 		} else {
-			return bl6 && facing == Direction.NORTH ? true : bl6 && facing == Direction.SOUTH;
+			return bl6 && direction == Direction.NORTH ? true : bl6 && direction == Direction.SOUTH;
 		}
 	}
 
@@ -159,39 +168,49 @@ public class NetherPortalBlock extends TransparentBlock {
 
 	@Override
 	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
-		if (entity.vehicle == null && entity.rider == null) {
+		if (!entity.hasMount() && !entity.hasPassengers() && entity.canUsePortals()) {
 			entity.setInNetherPortal(pos);
 		}
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (rand.nextInt(100) == 0) {
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, "portal.portal", 0.5F, rand.nextFloat() * 0.4F + 0.8F, false);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (random.nextInt(100) == 0) {
+			world.playSound(
+				(double)pos.getX() + 0.5,
+				(double)pos.getY() + 0.5,
+				(double)pos.getZ() + 0.5,
+				Sounds.BLOCK_PORTAL_AMBIENT,
+				SoundCategory.BLOCKS,
+				0.5F,
+				random.nextFloat() * 0.4F + 0.8F,
+				false
+			);
 		}
 
 		for (int i = 0; i < 4; i++) {
-			double d = (double)((float)pos.getX() + rand.nextFloat());
-			double e = (double)((float)pos.getY() + rand.nextFloat());
-			double f = (double)((float)pos.getZ() + rand.nextFloat());
-			double g = ((double)rand.nextFloat() - 0.5) * 0.5;
-			double h = ((double)rand.nextFloat() - 0.5) * 0.5;
-			double j = ((double)rand.nextFloat() - 0.5) * 0.5;
-			int k = rand.nextInt(2) * 2 - 1;
+			double d = (double)((float)pos.getX() + random.nextFloat());
+			double e = (double)((float)pos.getY() + random.nextFloat());
+			double f = (double)((float)pos.getZ() + random.nextFloat());
+			double g = ((double)random.nextFloat() - 0.5) * 0.5;
+			double h = ((double)random.nextFloat() - 0.5) * 0.5;
+			double j = ((double)random.nextFloat() - 0.5) * 0.5;
+			int k = random.nextInt(2) * 2 - 1;
 			if (world.getBlockState(pos.west()).getBlock() != this && world.getBlockState(pos.east()).getBlock() != this) {
 				d = (double)pos.getX() + 0.5 + 0.25 * (double)k;
-				g = (double)(rand.nextFloat() * 2.0F * (float)k);
+				g = (double)(random.nextFloat() * 2.0F * (float)k);
 			} else {
 				f = (double)pos.getZ() + 0.5 + 0.25 * (double)k;
-				j = (double)(rand.nextFloat() * 2.0F * (float)k);
+				j = (double)(random.nextFloat() * 2.0F * (float)k);
 			}
 
 			world.addParticle(ParticleType.NETHER_PORTAL, d, e, f, g, h, j);
 		}
 	}
 
+	@Nullable
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
 		return null;
 	}
 
@@ -203,6 +222,24 @@ public class NetherPortalBlock extends TransparentBlock {
 	@Override
 	public int getData(BlockState state) {
 		return getDataFromAxis(state.get(AXIS));
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case COUNTERCLOCKWISE_90:
+			case CLOCKWISE_90:
+				switch ((Direction.Axis)state.get(AXIS)) {
+					case X:
+						return state.with(AXIS, Direction.Axis.Z);
+					case Z:
+						return state.with(AXIS, Direction.Axis.X);
+					default:
+						return state;
+				}
+			default:
+				return state;
+		}
 	}
 
 	@Override
@@ -240,7 +277,7 @@ public class NetherPortalBlock extends TransparentBlock {
 				for (int k = 0; k < areaHelper.getWidth(); k++) {
 					for (int l = 0; l < areaHelper.getHeight(); l++) {
 						CachedBlockPosition cachedBlockPosition = result.translate(k, l, 1);
-						if (cachedBlockPosition.getBlockState() != null && cachedBlockPosition.getBlockState().getBlock().getMaterial() != Material.AIR) {
+						if (cachedBlockPosition.getBlockState() != null && cachedBlockPosition.getBlockState().getMaterial() != Material.AIR) {
 							is[axisDirection.ordinal()]++;
 						}
 					}

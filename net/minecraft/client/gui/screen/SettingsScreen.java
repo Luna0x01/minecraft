@@ -11,11 +11,6 @@ import net.minecraft.client.gui.widget.OptionButtonWidget;
 import net.minecraft.client.gui.widget.OptionSliderWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.sound.SoundCategory;
-import net.minecraft.client.sound.SoundManager;
-import net.minecraft.client.sound.WeightedSoundSet;
-import net.minecraft.client.util.TwitchStreamProvider;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -69,39 +64,26 @@ public class SettingsScreen extends Screen implements IdentifiableBooleanConsume
 				this.difficultyButton.active = false;
 			}
 		} else {
-			OptionButtonWidget optionButtonWidget2 = new OptionButtonWidget(
-				GameOptions.Option.REALMS_NOTIFICATIONS.getOrdinal(),
-				this.width / 2 - 155 + i % 2 * 160,
-				this.height / 6 - 12 + 24 * (i >> 1),
-				GameOptions.Option.REALMS_NOTIFICATIONS,
-				this.options.getValueMessage(GameOptions.Option.REALMS_NOTIFICATIONS)
-			);
-			this.buttons.add(optionButtonWidget2);
+			this.buttons
+				.add(
+					new OptionButtonWidget(
+						GameOptions.Option.REALMS_NOTIFICATIONS.getOrdinal(),
+						this.width / 2 - 155 + i % 2 * 160,
+						this.height / 6 - 12 + 24 * (i >> 1),
+						GameOptions.Option.REALMS_NOTIFICATIONS,
+						this.options.getValueMessage(GameOptions.Option.REALMS_NOTIFICATIONS)
+					)
+				);
 		}
 
 		this.buttons.add(new ButtonWidget(110, this.width / 2 - 155, this.height / 6 + 48 - 6, 150, 20, I18n.translate("options.skinCustomisation")));
-		this.buttons
-			.add(
-				new ButtonWidget(8675309, this.width / 2 + 5, this.height / 6 + 48 - 6, 150, 20, "Super Secret Settings...") {
-					@Override
-					public void playDownSound(SoundManager soundManager) {
-						WeightedSoundSet weightedSoundSet = soundManager.getSoundSet(
-							SoundCategory.ANIMALS, SoundCategory.BLOCKS, SoundCategory.MOBS, SoundCategory.PLAYERS, SoundCategory.WEATHER
-						);
-						if (weightedSoundSet != null) {
-							soundManager.play(PositionedSoundInstance.master(weightedSoundSet.getIdentifier(), 0.5F));
-						}
-					}
-				}
-			);
-		this.buttons.add(new ButtonWidget(106, this.width / 2 - 155, this.height / 6 + 72 - 6, 150, 20, I18n.translate("options.sounds")));
-		this.buttons.add(new ButtonWidget(107, this.width / 2 + 5, this.height / 6 + 72 - 6, 150, 20, I18n.translate("options.stream")));
-		this.buttons.add(new ButtonWidget(101, this.width / 2 - 155, this.height / 6 + 96 - 6, 150, 20, I18n.translate("options.video")));
-		this.buttons.add(new ButtonWidget(100, this.width / 2 + 5, this.height / 6 + 96 - 6, 150, 20, I18n.translate("options.controls")));
-		this.buttons.add(new ButtonWidget(102, this.width / 2 - 155, this.height / 6 + 120 - 6, 150, 20, I18n.translate("options.language")));
-		this.buttons.add(new ButtonWidget(103, this.width / 2 + 5, this.height / 6 + 120 - 6, 150, 20, I18n.translate("options.chat.title")));
-		this.buttons.add(new ButtonWidget(105, this.width / 2 - 155, this.height / 6 + 144 - 6, 150, 20, I18n.translate("options.resourcepack")));
-		this.buttons.add(new ButtonWidget(104, this.width / 2 + 5, this.height / 6 + 144 - 6, 150, 20, I18n.translate("options.snooper.view")));
+		this.buttons.add(new ButtonWidget(106, this.width / 2 + 5, this.height / 6 + 48 - 6, 150, 20, I18n.translate("options.sounds")));
+		this.buttons.add(new ButtonWidget(101, this.width / 2 - 155, this.height / 6 + 72 - 6, 150, 20, I18n.translate("options.video")));
+		this.buttons.add(new ButtonWidget(100, this.width / 2 + 5, this.height / 6 + 72 - 6, 150, 20, I18n.translate("options.controls")));
+		this.buttons.add(new ButtonWidget(102, this.width / 2 - 155, this.height / 6 + 96 - 6, 150, 20, I18n.translate("options.language")));
+		this.buttons.add(new ButtonWidget(103, this.width / 2 + 5, this.height / 6 + 96 - 6, 150, 20, I18n.translate("options.chat.title")));
+		this.buttons.add(new ButtonWidget(105, this.width / 2 - 155, this.height / 6 + 120 - 6, 150, 20, I18n.translate("options.resourcepack")));
+		this.buttons.add(new ButtonWidget(104, this.width / 2 + 5, this.height / 6 + 120 - 6, 150, 20, I18n.translate("options.snooper.view")));
 		this.buttons.add(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 168, I18n.translate("gui.done")));
 	}
 
@@ -156,10 +138,6 @@ public class SettingsScreen extends Screen implements IdentifiableBooleanConsume
 				this.client.setScreen(new SkinOptionsScreen(this));
 			}
 
-			if (button.id == 8675309) {
-				this.client.gameRenderer.superSecretSettings();
-			}
-
 			if (button.id == 101) {
 				this.client.options.save();
 				this.client.setScreen(new VideoOptionsScreen(this, this.options));
@@ -198,16 +176,6 @@ public class SettingsScreen extends Screen implements IdentifiableBooleanConsume
 			if (button.id == 106) {
 				this.client.options.save();
 				this.client.setScreen(new SoundsScreen(this, this.options));
-			}
-
-			if (button.id == 107) {
-				this.client.options.save();
-				TwitchStreamProvider twitchStreamProvider = this.client.getTwitchStreamProvider();
-				if (twitchStreamProvider.isLoginSuccessful() && twitchStreamProvider.isRunning()) {
-					this.client.setScreen(new StreamScreen(this, this.options));
-				} else {
-					TwitchErrorScreen.openNew(this);
-				}
 			}
 		}
 	}

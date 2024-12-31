@@ -2,20 +2,23 @@ package net.minecraft.world.chunk;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityCategory;
-import net.minecraft.util.ProgressListener;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
-public class DebugChunkGenerator implements ChunkProvider {
+public class DebugChunkGenerator implements ChunkGenerator {
 	private static final List<BlockState> field_10119 = Lists.newArrayList();
 	private static final int field_10120;
 	private static final int field_10121;
+	protected static final BlockState field_12956 = Blocks.AIR.getDefaultState();
+	protected static final BlockState field_12957 = Blocks.BARRIER.getDefaultState();
 	private final World world;
 
 	public DebugChunkGenerator(World world) {
@@ -23,14 +26,14 @@ public class DebugChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public Chunk getChunk(int x, int z) {
+	public Chunk generate(int x, int z) {
 		ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
 
 		for (int i = 0; i < 16; i++) {
 			for (int j = 0; j < 16; j++) {
 				int k = x * 16 + i;
 				int l = z * 16 + j;
-				chunkBlockStateStorage.set(i, 60, j, Blocks.BARRIER.getDefaultState());
+				chunkBlockStateStorage.set(i, 60, j, field_12957);
 				BlockState blockState = method_9190(k, l);
 				if (blockState != null) {
 					chunkBlockStateStorage.set(i, 70, j, blockState);
@@ -40,11 +43,11 @@ public class DebugChunkGenerator implements ChunkProvider {
 
 		Chunk chunk = new Chunk(this.world, chunkBlockStateStorage, x, z);
 		chunk.calculateSkyLight();
-		Biome[] biomes = this.world.getBiomeSource().method_3861(null, x * 16, z * 16, 16, 16);
+		Biome[] biomes = this.world.method_3726().method_11540(null, x * 16, z * 16, 16, 16);
 		byte[] bs = chunk.getBiomeArray();
 
 		for (int m = 0; m < bs.length; m++) {
-			bs[m] = (byte)biomes[m].id;
+			bs[m] = (byte)Biome.getBiomeIndex(biomes[m]);
 		}
 
 		chunk.calculateSkyLight();
@@ -52,7 +55,7 @@ public class DebugChunkGenerator implements ChunkProvider {
 	}
 
 	public static BlockState method_9190(int i, int j) {
-		BlockState blockState = null;
+		BlockState blockState = field_12956;
 		if (i > 0 && j > 0 && i % 2 != 0 && j % 2 != 0) {
 			i /= 2;
 			j /= 2;
@@ -68,41 +71,12 @@ public class DebugChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean chunkExists(int x, int z) {
-		return true;
+	public void populate(int x, int z) {
 	}
 
 	@Override
-	public void decorateChunk(ChunkProvider provider, int x, int z) {
-	}
-
-	@Override
-	public boolean isChunkModified(ChunkProvider chunkProvider, Chunk chunk, int x, int z) {
+	public boolean method_11762(Chunk chunk, int x, int z) {
 		return false;
-	}
-
-	@Override
-	public boolean saveChunks(boolean saveEntities, ProgressListener progressListener) {
-		return true;
-	}
-
-	@Override
-	public void flushChunks() {
-	}
-
-	@Override
-	public boolean tickChunks() {
-		return false;
-	}
-
-	@Override
-	public boolean isSavingEnabled() {
-		return true;
-	}
-
-	@Override
-	public String getChunkProviderName() {
-		return "DebugLevelSource";
 	}
 
 	@Override
@@ -111,23 +85,14 @@ public class DebugChunkGenerator implements ChunkProvider {
 		return biome.getSpawnEntries(category);
 	}
 
+	@Nullable
 	@Override
-	public BlockPos getNearestStructurePos(World world, String structureName, BlockPos pos) {
+	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
 		return null;
 	}
 
 	@Override
-	public int getLoadedChunksCount() {
-		return 0;
-	}
-
-	@Override
-	public void handleInitialLoad(Chunk chunk, int x, int z) {
-	}
-
-	@Override
-	public Chunk getChunk(BlockPos pos) {
-		return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
+	public void method_4702(Chunk chunk, int x, int z) {
 	}
 
 	static {

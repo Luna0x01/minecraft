@@ -19,8 +19,8 @@ public class TntEntityRenderer extends EntityRenderer<TntEntity> {
 		BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)d, (float)e + 0.5F, (float)f);
-		if ((float)tntEntity.fuseTimer - h + 1.0F < 10.0F) {
-			float i = 1.0F - ((float)tntEntity.fuseTimer - h + 1.0F) / 10.0F;
+		if ((float)tntEntity.getRemainingFuse() - h + 1.0F < 10.0F) {
+			float i = 1.0F - ((float)tntEntity.getRemainingFuse() - h + 1.0F) / 10.0F;
 			i = MathHelper.clamp(i, 0.0F, 1.0F);
 			i *= i;
 			i *= i;
@@ -28,16 +28,23 @@ public class TntEntityRenderer extends EntityRenderer<TntEntity> {
 			GlStateManager.scale(j, j, j);
 		}
 
-		float k = (1.0F - ((float)tntEntity.fuseTimer - h + 1.0F) / 100.0F) * 0.8F;
+		float k = (1.0F - ((float)tntEntity.getRemainingFuse() - h + 1.0F) / 100.0F) * 0.8F;
 		this.bindTexture(tntEntity);
+		GlStateManager.rotate(-90.0F, 0.0F, 1.0F, 0.0F);
 		GlStateManager.translate(-0.5F, -0.5F, 0.5F);
 		blockRenderManager.renderBlockEntity(Blocks.TNT.getDefaultState(), tntEntity.getBrightnessAtEyes(h));
 		GlStateManager.translate(0.0F, 0.0F, 1.0F);
-		if (tntEntity.fuseTimer / 5 % 2 == 0) {
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(tntEntity));
+			blockRenderManager.renderBlockEntity(Blocks.TNT.getDefaultState(), 1.0F);
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		} else if (tntEntity.getRemainingFuse() / 5 % 2 == 0) {
 			GlStateManager.disableTexture();
 			GlStateManager.disableLighting();
 			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(770, 772);
+			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.DST_ALPHA);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, k);
 			GlStateManager.polygonOffset(-3.0F, -3.0F);
 			GlStateManager.enablePolyOffset();

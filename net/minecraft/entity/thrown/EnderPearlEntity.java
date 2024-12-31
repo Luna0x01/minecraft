@@ -1,5 +1,7 @@
 package net.minecraft.entity.thrown;
 
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -7,6 +9,7 @@ import net.minecraft.entity.mob.EndermiteEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class EnderPearlEntity extends ThrowableEntity {
@@ -36,6 +39,22 @@ public class EnderPearlEntity extends ThrowableEntity {
 			result.entity.damage(DamageSource.thrownProjectile(this, livingEntity), 0.0F);
 		}
 
+		if (result.type == BlockHitResult.Type.BLOCK) {
+			BlockPos blockPos = result.getBlockPos();
+			BlockEntity blockEntity = this.world.getBlockEntity(blockPos);
+			if (blockEntity instanceof EndGatewayBlockEntity) {
+				EndGatewayBlockEntity endGatewayBlockEntity = (EndGatewayBlockEntity)blockEntity;
+				if (livingEntity != null) {
+					endGatewayBlockEntity.teleport(livingEntity);
+					this.remove();
+					return;
+				}
+
+				endGatewayBlockEntity.teleport(this);
+				return;
+			}
+		}
+
 		for (int i = 0; i < 32; i++) {
 			this.world
 				.addParticle(
@@ -54,8 +73,8 @@ public class EnderPearlEntity extends ThrowableEntity {
 						this.world.spawnEntity(endermiteEntity);
 					}
 
-					if (livingEntity.hasVehicle()) {
-						livingEntity.startRiding(null);
+					if (livingEntity.hasMount()) {
+						this.stopRiding();
 					}
 
 					livingEntity.refreshPositionAfterTeleport(this.x, this.y, this.z);

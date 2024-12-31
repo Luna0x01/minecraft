@@ -10,12 +10,7 @@ public abstract class AmbientEntity extends MobEntity implements EntityCategoryP
 	}
 
 	@Override
-	public boolean isTameable() {
-		return false;
-	}
-
-	@Override
-	protected boolean method_2537(PlayerEntity playerEntity) {
+	public boolean method_2537(PlayerEntity playerEntity) {
 		return false;
 	}
 }

@@ -2,12 +2,10 @@ package net.minecraft.client.gl;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.nio.ByteBuffer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.TextureUtil;
-import org.lwjgl.opengl.GL11;
 
 public class Framebuffer {
 	public int textureWidth;
@@ -88,7 +86,7 @@ public class Framebuffer {
 
 			this.setTexFilter(9728);
 			GlStateManager.bindTexture(this.colorAttachment);
-			GL11.glTexImage2D(3553, 0, 32856, this.textureWidth, this.textureHeight, 0, 6408, 5121, (ByteBuffer)null);
+			GlStateManager.method_12276(3553, 0, 32856, this.textureWidth, this.textureHeight, 0, 6408, 5121, null);
 			GLX.advancedBindFramebuffer(GLX.framebuffer, this.fbo);
 			GLX.advancedFrameBufferTexture2D(GLX.framebuffer, GLX.colorAttachment, 3553, this.colorAttachment, 0);
 			if (this.useDepthAttachment) {
@@ -106,10 +104,10 @@ public class Framebuffer {
 		if (GLX.supportsFbo()) {
 			this.texFilter = texFilter;
 			GlStateManager.bindTexture(this.colorAttachment);
-			GL11.glTexParameterf(3553, 10241, (float)texFilter);
-			GL11.glTexParameterf(3553, 10240, (float)texFilter);
-			GL11.glTexParameterf(3553, 10242, 10496.0F);
-			GL11.glTexParameterf(3553, 10243, 10496.0F);
+			GlStateManager.method_12294(3553, 10241, texFilter);
+			GlStateManager.method_12294(3553, 10240, texFilter);
+			GlStateManager.method_12294(3553, 10242, 10496);
+			GlStateManager.method_12294(3553, 10243, 10496);
 			GlStateManager.bindTexture(0);
 		}
 	}

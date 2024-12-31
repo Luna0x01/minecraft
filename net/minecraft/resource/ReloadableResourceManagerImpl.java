@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.client.resource.FallbackResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.MetadataSerializer;
@@ -76,8 +77,8 @@ public class ReloadableResourceManagerImpl implements ReloadableResourceManager 
 	public void reload(List<ResourcePack> resourcePacks) {
 		this.clear();
 		LOGGER.info("Reloading ResourceManager: " + JOINER.join(Iterables.transform(resourcePacks, new Function<ResourcePack, String>() {
-			public String apply(ResourcePack resourcePack) {
-				return resourcePack.getName();
+			public String apply(@Nullable ResourcePack resourcePack) {
+				return resourcePack == null ? "<NULL>" : resourcePack.getName();
 			}
 		})));
 

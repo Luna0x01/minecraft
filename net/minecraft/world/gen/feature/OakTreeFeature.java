@@ -28,7 +28,7 @@ public class OakTreeFeature extends FoliageFeature {
 	public boolean generate(World world, Random random, BlockPos blockPos) {
 		int i = random.nextInt(4) + 5;
 
-		while (world.getBlockState(blockPos.down()).getBlock().getMaterial() == Material.WATER) {
+		while (world.getBlockState(blockPos.down()).getMaterial() == Material.WATER) {
 			blockPos = blockPos.down();
 		}
 
@@ -49,8 +49,9 @@ public class OakTreeFeature extends FoliageFeature {
 				for (int l = blockPos.getX() - k; l <= blockPos.getX() + k && bl; l++) {
 					for (int m = blockPos.getZ() - k; m <= blockPos.getZ() + k && bl; m++) {
 						if (j >= 0 && j < 256) {
-							Block block = world.getBlockState(mutable.setPosition(l, j, m)).getBlock();
-							if (block.getMaterial() != Material.AIR && block.getMaterial() != Material.FOLIAGE) {
+							BlockState blockState = world.getBlockState(mutable.setPosition(l, j, m));
+							Block block = blockState.getBlock();
+							if (blockState.getMaterial() != Material.AIR && blockState.getMaterial() != Material.FOLIAGE) {
 								if (block != Blocks.WATER && block != Blocks.FLOWING_WATER) {
 									bl = false;
 								} else if (j > blockPos.getY()) {
@@ -82,7 +83,7 @@ public class OakTreeFeature extends FoliageFeature {
 								int t = s - blockPos.getZ();
 								if (Math.abs(r) != p || Math.abs(t) != p || random.nextInt(2) != 0 && o != 0) {
 									BlockPos blockPos2 = new BlockPos(q, n, s);
-									if (!world.getBlockState(blockPos2).getBlock().isFullBlock()) {
+									if (!world.getBlockState(blockPos2).isFullBlock()) {
 										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, LEAVES);
 									}
 								}
@@ -91,8 +92,12 @@ public class OakTreeFeature extends FoliageFeature {
 					}
 
 					for (int u = 0; u < i; u++) {
-						Block block3 = world.getBlockState(blockPos.up(u)).getBlock();
-						if (block3.getMaterial() == Material.AIR || block3.getMaterial() == Material.FOLIAGE || block3 == Blocks.FLOWING_WATER || block3 == Blocks.WATER) {
+						BlockState blockState2 = world.getBlockState(blockPos.up(u));
+						Block block3 = blockState2.getBlock();
+						if (blockState2.getMaterial() == Material.AIR
+							|| blockState2.getMaterial() == Material.FOLIAGE
+							|| block3 == Blocks.FLOWING_WATER
+							|| block3 == Blocks.WATER) {
 							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(u), LOG);
 						}
 					}
@@ -105,24 +110,24 @@ public class OakTreeFeature extends FoliageFeature {
 						for (int y = blockPos.getX() - x; y <= blockPos.getX() + x; y++) {
 							for (int z = blockPos.getZ() - x; z <= blockPos.getZ() + x; z++) {
 								mutable2.setPosition(y, v, z);
-								if (world.getBlockState(mutable2).getBlock().getMaterial() == Material.FOLIAGE) {
+								if (world.getBlockState(mutable2).getMaterial() == Material.FOLIAGE) {
 									BlockPos blockPos3 = mutable2.west();
 									BlockPos blockPos4 = mutable2.east();
 									BlockPos blockPos5 = mutable2.north();
 									BlockPos blockPos6 = mutable2.south();
-									if (random.nextInt(4) == 0 && world.getBlockState(blockPos3).getBlock().getMaterial() == Material.AIR) {
+									if (random.nextInt(4) == 0 && world.getBlockState(blockPos3).getMaterial() == Material.AIR) {
 										this.generateVines(world, blockPos3, VineBlock.EAST);
 									}
 
-									if (random.nextInt(4) == 0 && world.getBlockState(blockPos4).getBlock().getMaterial() == Material.AIR) {
+									if (random.nextInt(4) == 0 && world.getBlockState(blockPos4).getMaterial() == Material.AIR) {
 										this.generateVines(world, blockPos4, VineBlock.WEST);
 									}
 
-									if (random.nextInt(4) == 0 && world.getBlockState(blockPos5).getBlock().getMaterial() == Material.AIR) {
+									if (random.nextInt(4) == 0 && world.getBlockState(blockPos5).getMaterial() == Material.AIR) {
 										this.generateVines(world, blockPos5, VineBlock.SOUTH);
 									}
 
-									if (random.nextInt(4) == 0 && world.getBlockState(blockPos6).getBlock().getMaterial() == Material.AIR) {
+									if (random.nextInt(4) == 0 && world.getBlockState(blockPos6).getMaterial() == Material.AIR) {
 										this.generateVines(world, blockPos6, VineBlock.NORTH);
 									}
 								}
@@ -145,7 +150,7 @@ public class OakTreeFeature extends FoliageFeature {
 		this.setBlockStateWithoutUpdatingNeighbors(world, blockPos, blockState);
 		int i = 4;
 
-		for (BlockPos var6 = blockPos.down(); world.getBlockState(var6).getBlock().getMaterial() == Material.AIR && i > 0; i--) {
+		for (BlockPos var6 = blockPos.down(); world.getBlockState(var6).getMaterial() == Material.AIR && i > 0; i--) {
 			this.setBlockStateWithoutUpdatingNeighbors(world, var6, blockState);
 			var6 = var6.down();
 		}

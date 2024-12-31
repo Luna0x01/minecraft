@@ -1,7 +1,5 @@
 package net.minecraft.scoreboard;
 
-import java.util.List;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Formatting;
 
 public class TeamScoreboardCriteria implements ScoreboardCriterion {
@@ -15,11 +13,6 @@ public class TeamScoreboardCriteria implements ScoreboardCriterion {
 	@Override
 	public String getName() {
 		return this.name;
-	}
-
-	@Override
-	public int method_4918(List<PlayerEntity> players) {
-		return 0;
 	}
 
 	@Override

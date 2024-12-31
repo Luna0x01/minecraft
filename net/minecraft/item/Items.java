@@ -11,6 +11,8 @@ public class Items {
 	public static final Item APPLE;
 	public static final BowItem BOW;
 	public static final Item ARROW;
+	public static final Item SPECTRAL_ARROW;
+	public static final Item TIPPED_ARROW;
 	public static final Item COAL;
 	public static final Item DIAMOND;
 	public static final Item IRON_INGOT;
@@ -87,6 +89,11 @@ public class Items {
 	public static final Item REDSTONE;
 	public static final Item SNOWBALL;
 	public static final Item BOAT;
+	public static final Item SPRUCE_BOAT;
+	public static final Item BIRCH_BOAT;
+	public static final Item JUNGLE_BOAT;
+	public static final Item ACACIA_BOAT;
+	public static final Item DARK_OAK_BOAT;
 	public static final Item LEATHER;
 	public static final Item MILK_BUCKET;
 	public static final Item BRICK;
@@ -134,7 +141,10 @@ public class Items {
 	public static final Item GOLD_NUGGET;
 	public static final Item NETHER_WART;
 	public static final PotionItem POTION;
+	public static final PotionItem SPLASH_POTION;
+	public static final PotionItem LINGERING_POTION;
 	public static final Item GLASS_BOTTLE;
+	public static final Item DRAGON_BREATH;
 	public static final Item SPIDER_EYE;
 	public static final Item FERMENTED_SPIDER_EYE;
 	public static final Item BLAZE_POWDER;
@@ -191,9 +201,22 @@ public class Items {
 	public static final Item PRISMARINE_SHARD;
 	public static final Item PRISMARINE_CRYSTALS;
 	public static final Item BANNER;
+	public static final Item END_CRYSTAL;
+	public static final Item SHIELD;
+	public static final Item ELYTRA;
+	public static final Item CHORUS_FRUIT;
+	public static final Item CHORUS_FRUIT_POPPED;
+	public static final Item BEETROOT_SEED;
+	public static final Item BEETROOT;
+	public static final Item BEETROOT_SOUP;
 
 	private static Item getById(String id) {
-		return Item.REGISTRY.get(new Identifier(id));
+		Item item = Item.REGISTRY.get(new Identifier(id));
+		if (item == null) {
+			throw new IllegalStateException("Invalid Item requested: " + id);
+		} else {
+			return item;
+		}
 	}
 
 	static {
@@ -207,6 +230,8 @@ public class Items {
 			APPLE = getById("apple");
 			BOW = (BowItem)getById("bow");
 			ARROW = getById("arrow");
+			SPECTRAL_ARROW = getById("spectral_arrow");
+			TIPPED_ARROW = getById("tipped_arrow");
 			COAL = getById("coal");
 			DIAMOND = getById("diamond");
 			IRON_INGOT = getById("iron_ingot");
@@ -283,6 +308,11 @@ public class Items {
 			REDSTONE = getById("redstone");
 			SNOWBALL = getById("snowball");
 			BOAT = getById("boat");
+			SPRUCE_BOAT = getById("spruce_boat");
+			BIRCH_BOAT = getById("birch_boat");
+			JUNGLE_BOAT = getById("jungle_boat");
+			ACACIA_BOAT = getById("acacia_boat");
+			DARK_OAK_BOAT = getById("dark_oak_boat");
 			LEATHER = getById("leather");
 			MILK_BUCKET = getById("milk_bucket");
 			BRICK = getById("brick");
@@ -330,7 +360,10 @@ public class Items {
 			GOLD_NUGGET = getById("gold_nugget");
 			NETHER_WART = getById("nether_wart");
 			POTION = (PotionItem)getById("potion");
+			SPLASH_POTION = (PotionItem)getById("splash_potion");
+			LINGERING_POTION = (PotionItem)getById("lingering_potion");
 			GLASS_BOTTLE = getById("glass_bottle");
+			DRAGON_BREATH = getById("dragon_breath");
 			SPIDER_EYE = getById("spider_eye");
 			FERMENTED_SPIDER_EYE = getById("fermented_spider_eye");
 			BLAZE_POWDER = getById("blaze_powder");
@@ -387,6 +420,14 @@ public class Items {
 			PRISMARINE_SHARD = getById("prismarine_shard");
 			PRISMARINE_CRYSTALS = getById("prismarine_crystals");
 			BANNER = getById("banner");
+			END_CRYSTAL = getById("end_crystal");
+			SHIELD = getById("shield");
+			ELYTRA = getById("elytra");
+			CHORUS_FRUIT = getById("chorus_fruit");
+			CHORUS_FRUIT_POPPED = getById("chorus_fruit_popped");
+			BEETROOT_SEED = getById("beetroot_seeds");
+			BEETROOT = getById("beetroot");
+			BEETROOT_SOUP = getById("beetroot_soup");
 		}
 	}
 }

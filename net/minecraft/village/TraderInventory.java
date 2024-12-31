@@ -1,5 +1,7 @@
 package net.minecraft.village;
 
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
@@ -25,40 +27,24 @@ public class TraderInventory implements Inventory {
 		return this.inventory.length;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
 		return this.inventory[slot];
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.inventory[slot] != null) {
-			if (slot == 2) {
-				ItemStack itemStack = this.inventory[slot];
-				this.inventory[slot] = null;
-				return itemStack;
-			} else if (this.inventory[slot].count <= amount) {
-				ItemStack itemStack2 = this.inventory[slot];
-				this.inventory[slot] = null;
-				if (this.method_3282(slot)) {
-					this.updateRecipes();
-				}
-
-				return itemStack2;
-			} else {
-				ItemStack itemStack3 = this.inventory[slot].split(amount);
-				if (this.inventory[slot].count == 0) {
-					this.inventory[slot] = null;
-				}
-
-				if (this.method_3282(slot)) {
-					this.updateRecipes();
-				}
-
-				return itemStack3;
-			}
+		if (slot == 2 && this.inventory[slot] != null) {
+			return class_2960.method_12933(this.inventory, slot, this.inventory[slot].count);
 		} else {
-			return null;
+			ItemStack itemStack = class_2960.method_12933(this.inventory, slot, amount);
+			if (itemStack != null && this.method_3282(slot)) {
+				this.updateRecipes();
+			}
+
+			return itemStack;
 		}
 	}
 
@@ -66,19 +52,14 @@ public class TraderInventory implements Inventory {
 		return slot == 0 || slot == 1;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.inventory[slot] != null) {
-			ItemStack itemStack = this.inventory[slot];
-			this.inventory[slot] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		return class_2960.method_12932(this.inventory, slot);
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
 		this.inventory[slot] = stack;
 		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
 			stack.count = this.getInvMaxStackAmount();

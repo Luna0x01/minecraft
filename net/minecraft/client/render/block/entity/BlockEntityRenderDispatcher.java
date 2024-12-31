@@ -4,17 +4,20 @@ import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.block.entity.EnchantingTableBlockEntity;
+import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.block.entity.EndPortalBlockEntity;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.entity.PistonBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
+import net.minecraft.block.entity.StructureBlockEntity;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.entity.Entity;
@@ -48,9 +51,11 @@ public class BlockEntityRenderDispatcher {
 		this.renderers.put(EnderChestBlockEntity.class, new EnderChestBlockEntityRenderer());
 		this.renderers.put(EnchantingTableBlockEntity.class, new EnchantingTableBlockEntityRenderer());
 		this.renderers.put(EndPortalBlockEntity.class, new EndPortalBlockEntityRenderer());
+		this.renderers.put(EndGatewayBlockEntity.class, new EndGatewayBlockEntityRenderer());
 		this.renderers.put(BeaconBlockEntity.class, new BeaconBlockEntityRenderer());
 		this.renderers.put(SkullBlockEntity.class, new SkullBlockEntityRenderer());
 		this.renderers.put(BannerBlockEntity.class, new BannerBlockEntityRenderer());
+		this.renderers.put(StructureBlockEntity.class, new StructureBlockEntityRenderer());
 
 		for (BlockEntityRenderer<?> blockEntityRenderer : this.renderers.values()) {
 			blockEntityRenderer.setDispatcher(this);
@@ -67,7 +72,8 @@ public class BlockEntityRenderDispatcher {
 		return (BlockEntityRenderer<T>)blockEntityRenderer;
 	}
 
-	public <T extends BlockEntity> BlockEntityRenderer<T> getRenderer(BlockEntity entity) {
+	@Nullable
+	public <T extends BlockEntity> BlockEntityRenderer<T> getRenderer(@Nullable BlockEntity entity) {
 		return entity == null ? null : this.render(entity.getClass());
 	}
 
@@ -91,7 +97,7 @@ public class BlockEntityRenderDispatcher {
 			int i = this.world.getLight(blockEntity.getPos(), 0);
 			int j = i % 65536;
 			int k = i / 65536;
-			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)j / 1.0F, (float)k / 1.0F);
+			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)j, (float)k);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			BlockPos blockPos = blockEntity.getPos();
 			this.renderEntity(
@@ -118,8 +124,11 @@ public class BlockEntityRenderDispatcher {
 		}
 	}
 
-	public void setWorld(World world) {
+	public void setWorld(@Nullable World world) {
 		this.world = world;
+		if (world == null) {
+			this.entity = null;
+		}
 	}
 
 	public TextRenderer getTextRenderer() {

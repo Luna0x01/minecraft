@@ -1,7 +1,7 @@
 package net.minecraft.entity;
 
 import com.google.common.collect.Maps;
-import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.mob.BlazeEntity;
@@ -37,44 +37,44 @@ import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.passive.WolfEntity;
 
 public class EntityLocations {
-	private static final HashMap<Class, MobEntity.Location> LOCATION_MAP = Maps.newHashMap();
+	private static final Map<Class<?>, MobEntity.Location> field_14564 = Maps.newHashMap();
 
-	public static MobEntity.Location getLocation(Class entityClass) {
-		return (MobEntity.Location)LOCATION_MAP.get(entityClass);
+	public static MobEntity.Location getLocation(Class<?> entityClass) {
+		return (MobEntity.Location)field_14564.get(entityClass);
 	}
 
 	static {
-		LOCATION_MAP.put(BatEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(ChickenEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(CowEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(HorseBaseEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(MooshroomEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(OcelotEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(PigEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(RabbitEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(SheepEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(SnowGolemEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(SquidEntity.class, MobEntity.Location.IN_WATER);
-		LOCATION_MAP.put(IronGolemEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(WolfEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(VillagerEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(EnderDragonEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(WitherEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(BlazeEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(CaveSpiderEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(CreeperEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(EndermanEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(EndermiteEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(GhastEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(GiantEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(GuardianEntity.class, MobEntity.Location.IN_WATER);
-		LOCATION_MAP.put(MagmaCubeEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(ZombiePigmanEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(SilverfishEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(SkeletonEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(SlimeEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(SpiderEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(WitchEntity.class, MobEntity.Location.ON_GROUND);
-		LOCATION_MAP.put(ZombieEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(BatEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(ChickenEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(CowEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(HorseBaseEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(MooshroomEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(OcelotEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(PigEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(RabbitEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SheepEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SnowGolemEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SquidEntity.class, MobEntity.Location.IN_WATER);
+		field_14564.put(IronGolemEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(WolfEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(VillagerEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(EnderDragonEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(WitherEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(BlazeEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(CaveSpiderEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(CreeperEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(EndermanEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(EndermiteEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(GhastEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(GiantEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(GuardianEntity.class, MobEntity.Location.IN_WATER);
+		field_14564.put(MagmaCubeEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(ZombiePigmanEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SilverfishEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SkeletonEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SlimeEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(SpiderEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(WitchEntity.class, MobEntity.Location.ON_GROUND);
+		field_14564.put(ZombieEntity.class, MobEntity.Location.ON_GROUND);
 	}
 }

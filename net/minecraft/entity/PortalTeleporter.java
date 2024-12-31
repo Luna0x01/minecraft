@@ -1,15 +1,15 @@
 package net.minecraft.entity;
 
-import com.google.common.collect.Lists;
-import java.util.Iterator;
-import java.util.List;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.Random;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.NetherPortalBlock;
 import net.minecraft.block.pattern.BlockPattern;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.collection.LongObjectStorage;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
@@ -18,8 +18,7 @@ import net.minecraft.util.math.MathHelper;
 public class PortalTeleporter {
 	private final ServerWorld world;
 	private final Random random;
-	private final LongObjectStorage<PortalTeleporter.Position> field_5472 = new LongObjectStorage<>();
-	private final List<Long> field_5473 = Lists.newArrayList();
+	private final Long2ObjectMap<PortalTeleporter.Position> cache = new Long2ObjectOpenHashMap(4096);
 
 	public PortalTeleporter(ServerWorld serverWorld) {
 		this.world = serverWorld;
@@ -27,7 +26,7 @@ public class PortalTeleporter {
 	}
 
 	public void method_8583(Entity entity, float f) {
-		if (this.world.dimension.getType() != 1) {
+		if (this.world.dimension.getDimensionType().getId() != 1) {
 			if (!this.method_8584(entity, f)) {
 				this.method_3803(entity);
 				this.method_8584(entity, f);
@@ -64,8 +63,8 @@ public class PortalTeleporter {
 		boolean bl = true;
 		BlockPos blockPos = BlockPos.ORIGIN;
 		long l = ChunkPos.getIdFromCoords(j, k);
-		if (this.field_5472.contains(l)) {
-			PortalTeleporter.Position position = this.field_5472.get(l);
+		if (this.cache.containsKey(l)) {
+			PortalTeleporter.Position position = (PortalTeleporter.Position)this.cache.get(l);
 			d = 0.0;
 			blockPos = position;
 			position.pos = this.world.getLastUpdateTime();
@@ -99,8 +98,7 @@ public class PortalTeleporter {
 
 		if (d >= 0.0) {
 			if (bl) {
-				this.field_5472.set(l, new PortalTeleporter.Position(blockPos, this.world.getLastUpdateTime()));
-				this.field_5473.add(l);
+				this.cache.put(l, new PortalTeleporter.Position(blockPos, this.world.getLastUpdateTime()));
 			}
 
 			double g = (double)blockPos.getX() + 0.5;
@@ -149,7 +147,12 @@ public class PortalTeleporter {
 			entity.velocityX = u * (double)q + v * (double)t;
 			entity.velocityZ = u * (double)s + v * (double)r;
 			entity.yaw = f - (float)(entity.getLastNetherPortalDirection().getOpposite().getHorizontal() * 90) + (float)(result.getForwards().getHorizontal() * 90);
-			entity.refreshPositionAndAngles(g, h, o, entity.yaw, entity.pitch);
+			if (entity instanceof ServerPlayerEntity) {
+				((ServerPlayerEntity)entity).networkHandler.requestTeleport(g, h, o, entity.yaw, entity.pitch);
+			} else {
+				entity.refreshPositionAndAngles(g, h, o, entity.yaw, entity.pitch);
+			}
+
 			return true;
 		} else {
 			return false;
@@ -197,7 +200,7 @@ public class PortalTeleporter {
 										int ab = t + z;
 										int ac = s + (y - 1) * w - x * v;
 										mutable.setPosition(aa, ab, ac);
-										if (z < 0 && !this.world.getBlockState(mutable).getBlock().getMaterial().isSolid() || z >= 0 && !this.world.isAir(mutable)) {
+										if (z < 0 && !this.world.getBlockState(mutable).getMaterial().isSolid() || z >= 0 && !this.world.isAir(mutable)) {
 											continue label296;
 										}
 									}
@@ -243,7 +246,7 @@ public class PortalTeleporter {
 										int ao = ah + am;
 										int ap = af + (al - 1) * ak;
 										mutable.setPosition(an, ao, ap);
-										if (am < 0 && !this.world.getBlockState(mutable).getBlock().getMaterial().isSolid() || am >= 0 && !this.world.isAir(mutable)) {
+										if (am < 0 && !this.world.getBlockState(mutable).getMaterial().isSolid() || am >= 0 && !this.world.isAir(mutable)) {
 											continue label233;
 										}
 									}
@@ -321,15 +324,13 @@ public class PortalTeleporter {
 
 	public void method_4698(long l) {
 		if (l % 100L == 0L) {
-			Iterator<Long> iterator = this.field_5473.iterator();
 			long m = l - 300L;
+			ObjectIterator<PortalTeleporter.Position> objectIterator = this.cache.values().iterator();
 
-			while (iterator.hasNext()) {
-				Long long_ = (Long)iterator.next();
-				PortalTeleporter.Position position = this.field_5472.get(long_);
+			while (objectIterator.hasNext()) {
+				PortalTeleporter.Position position = (PortalTeleporter.Position)objectIterator.next();
 				if (position == null || position.pos < m) {
-					iterator.remove();
-					this.field_5472.remove(long_);
+					objectIterator.remove();
 				}
 			}
 		}

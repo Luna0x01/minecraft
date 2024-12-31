@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -8,7 +10,7 @@ import net.minecraft.command.CommandStats;
 import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.command.InvalidNumberException;
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.server.MinecraftServer;
@@ -31,50 +33,44 @@ public class EnchantCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 2) {
 			throw new IncorrectUsageException("commands.enchant.usage");
 		} else {
-			PlayerEntity playerEntity = getPlayer(source, args[0]);
-			source.setStat(CommandStats.Type.AFFECTED_ITEMS, 0);
+			LivingEntity livingEntity = method_12702(minecraftServer, commandSource, args[0], LivingEntity.class);
+			commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, 0);
 
-			int i;
+			Enchantment enchantment;
 			try {
-				i = parseClampedInt(args[1], 0);
+				enchantment = Enchantment.byIndex(parseClampedInt(args[1], 0));
 			} catch (InvalidNumberException var12) {
-				Enchantment enchantment = Enchantment.getByName(args[1]);
-				if (enchantment == null) {
-					throw var12;
-				}
-
-				i = enchantment.id;
+				enchantment = Enchantment.getByName(args[1]);
 			}
 
-			int k = 1;
-			ItemStack itemStack = playerEntity.getMainHandStack();
-			if (itemStack == null) {
-				throw new CommandException("commands.enchant.noItem");
+			if (enchantment == null) {
+				throw new InvalidNumberException("commands.enchant.notFound", Enchantment.getId(enchantment));
 			} else {
-				Enchantment enchantment2 = Enchantment.byRawId(i);
-				if (enchantment2 == null) {
-					throw new InvalidNumberException("commands.enchant.notFound", i);
-				} else if (!enchantment2.isAcceptableItem(itemStack)) {
+				int i = 1;
+				ItemStack itemStack = livingEntity.getMainHandStack();
+				if (itemStack == null) {
+					throw new CommandException("commands.enchant.noItem");
+				} else if (!enchantment.isAcceptableItem(itemStack)) {
 					throw new CommandException("commands.enchant.cantEnchant");
 				} else {
 					if (args.length >= 3) {
-						k = parseClampedInt(args[2], enchantment2.getMinimumLevel(), enchantment2.getMaximumLevel());
+						i = parseClampedInt(args[2], enchantment.getMinimumLevel(), enchantment.getMaximumLevel());
 					}
 
 					if (itemStack.hasNbt()) {
 						NbtList nbtList = itemStack.getEnchantments();
 						if (nbtList != null) {
-							for (int l = 0; l < nbtList.size(); l++) {
-								int m = nbtList.getCompound(l).getShort("id");
-								if (Enchantment.byRawId(m) != null) {
-									Enchantment enchantment3 = Enchantment.byRawId(m);
-									if (!enchantment3.differs(enchantment2)) {
+							for (int j = 0; j < nbtList.size(); j++) {
+								int k = nbtList.getCompound(j).getShort("id");
+								if (Enchantment.byIndex(k) != null) {
+									Enchantment enchantment2 = Enchantment.byIndex(k);
+									if (!enchantment.differs(enchantment2)) {
 										throw new CommandException(
-											"commands.enchant.cantCombine", enchantment2.getTranslatedName(k), enchantment3.getTranslatedName(nbtList.getCompound(l).getShort("lvl"))
+											"commands.enchant.cantCombine", enchantment.getTranslatedName(i), enchantment2.getTranslatedName(nbtList.getCompound(j).getShort("lvl"))
 										);
 									}
 								}
@@ -82,25 +78,21 @@ public class EnchantCommand extends AbstractCommand {
 						}
 					}
 
-					itemStack.addEnchantment(enchantment2, k);
-					run(source, this, "commands.enchant.success", new Object[0]);
-					source.setStat(CommandStats.Type.AFFECTED_ITEMS, 1);
+					itemStack.addEnchantment(enchantment, i);
+					run(commandSource, this, "commands.enchant.success", new Object[0]);
+					commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, 1);
 				}
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, this.method_4113());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, server.getPlayerNames());
 		} else {
-			return args.length == 2 ? method_10708(args, Enchantment.getSet()) : null;
+			return strings.length == 2 ? method_10708(strings, Enchantment.REGISTRY.getKeySet()) : Collections.emptyList();
 		}
-	}
-
-	protected String[] method_4113() {
-		return MinecraftServer.getServer().getPlayerNames();
 	}
 
 	@Override

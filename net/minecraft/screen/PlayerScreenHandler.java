@@ -1,6 +1,8 @@
 package net.minecraft.screen;
 
-import net.minecraft.block.Blocks;
+import javax.annotation.Nullable;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.CraftingInventory;
@@ -9,12 +11,11 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.CraftingResultSlot;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ArmorItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.recipe.RecipeDispatcher;
 
 public class PlayerScreenHandler extends ScreenHandler {
+	private static final EquipmentSlot[] field_12272 = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 	public CraftingInventory craftingInventory = new CraftingInventory(this, 2, 2);
 	public Inventory craftingResultInventory = new CraftingResultInventory();
 	public boolean onServer;
@@ -23,50 +24,62 @@ public class PlayerScreenHandler extends ScreenHandler {
 	public PlayerScreenHandler(PlayerInventory playerInventory, boolean bl, PlayerEntity playerEntity) {
 		this.onServer = bl;
 		this.owner = playerEntity;
-		this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInventory, this.craftingResultInventory, 0, 144, 36));
+		this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInventory, this.craftingResultInventory, 0, 154, 28));
 
 		for (int i = 0; i < 2; i++) {
 			for (int j = 0; j < 2; j++) {
-				this.addSlot(new Slot(this.craftingInventory, j + i * 2, 88 + j * 18, 26 + i * 18));
+				this.addSlot(new Slot(this.craftingInventory, j + i * 2, 98 + j * 18, 18 + i * 18));
 			}
 		}
 
 		for (int k = 0; k < 4; k++) {
-			final int l = k;
-			this.addSlot(new Slot(playerInventory, playerInventory.getInvSize() - 1 - k, 8, 8 + k * 18) {
+			final EquipmentSlot equipmentSlot = field_12272[k];
+			this.addSlot(new Slot(playerInventory, 36 + (3 - k), 8, 8 + k * 18) {
 				@Override
 				public int getMaxStackAmount() {
 					return 1;
 				}
 
 				@Override
-				public boolean canInsert(ItemStack stack) {
+				public boolean canInsert(@Nullable ItemStack stack) {
 					if (stack == null) {
 						return false;
-					} else if (stack.getItem() instanceof ArmorItem) {
-						return ((ArmorItem)stack.getItem()).slot == l;
 					} else {
-						return stack.getItem() != Item.fromBlock(Blocks.PUMPKIN) && stack.getItem() != Items.SKULL ? false : l == 0;
+						EquipmentSlot equipmentSlot = MobEntity.method_13083(stack);
+						return equipmentSlot == equipmentSlot;
 					}
 				}
 
+				@Nullable
 				@Override
 				public String getBackgroundSprite() {
-					return ArmorItem.EMPTY[l];
+					return ArmorItem.EMPTY[equipmentSlot.method_13032()];
 				}
 			});
 		}
 
-		for (int m = 0; m < 3; m++) {
-			for (int n = 0; n < 9; n++) {
-				this.addSlot(new Slot(playerInventory, n + (m + 1) * 9, 8 + n * 18, 84 + m * 18));
+		for (int l = 0; l < 3; l++) {
+			for (int m = 0; m < 9; m++) {
+				this.addSlot(new Slot(playerInventory, m + (l + 1) * 9, 8 + m * 18, 84 + l * 18));
 			}
 		}
 
-		for (int o = 0; o < 9; o++) {
-			this.addSlot(new Slot(playerInventory, o, 8 + o * 18, 142));
+		for (int n = 0; n < 9; n++) {
+			this.addSlot(new Slot(playerInventory, n, 8 + n * 18, 142));
 		}
 
+		this.addSlot(new Slot(playerInventory, 40, 77, 62) {
+			@Override
+			public boolean canInsert(@Nullable ItemStack stack) {
+				return super.canInsert(stack);
+			}
+
+			@Nullable
+			@Override
+			public String getBackgroundSprite() {
+				return "minecraft:items/empty_armor_slot_shield";
+			}
+		});
 		this.onContentChanged(this.craftingInventory);
 	}
 
@@ -94,6 +107,7 @@ public class PlayerScreenHandler extends ScreenHandler {
 		return true;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
 		ItemStack itemStack = null;
@@ -101,6 +115,7 @@ public class PlayerScreenHandler extends ScreenHandler {
 		if (slot != null && slot.hasStack()) {
 			ItemStack itemStack2 = slot.getStack();
 			itemStack = itemStack2.copy();
+			EquipmentSlot equipmentSlot = MobEntity.method_13083(itemStack);
 			if (invSlot == 0) {
 				if (!this.insertItem(itemStack2, 9, 45, true)) {
 					return null;
@@ -115,8 +130,8 @@ public class PlayerScreenHandler extends ScreenHandler {
 				if (!this.insertItem(itemStack2, 9, 45, false)) {
 					return null;
 				}
-			} else if (itemStack.getItem() instanceof ArmorItem && !((Slot)this.slots.get(5 + ((ArmorItem)itemStack.getItem()).slot)).hasStack()) {
-				int i = 5 + ((ArmorItem)itemStack.getItem()).slot;
+			} else if (equipmentSlot.getType() == EquipmentSlot.Type.ARMOR && !((Slot)this.slots.get(8 - equipmentSlot.method_13032())).hasStack()) {
+				int i = 8 - equipmentSlot.method_13032();
 				if (!this.insertItem(itemStack2, i, i + 1, false)) {
 					return null;
 				}

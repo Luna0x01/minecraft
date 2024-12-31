@@ -4,10 +4,13 @@ import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.ChunkPlayerManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.collection.Weighting;
 import net.minecraft.util.math.BlockPos;
@@ -41,7 +44,10 @@ public final class MobSpawnerHelper {
 							if (!this.field_9222.contains(chunkPos)) {
 								i++;
 								if (!bl2 && world.getWorldBorder().contains(chunkPos)) {
-									this.field_9222.add(chunkPos);
+									ChunkPlayerManager chunkPlayerManager = world.getPlayerWorldManager().method_12811(chunkPos.x, chunkPos.z);
+									if (chunkPlayerManager != null && chunkPlayerManager.method_12805()) {
+										this.field_9222.add(chunkPos);
+									}
 								}
 							}
 						}
@@ -57,14 +63,16 @@ public final class MobSpawnerHelper {
 					int r = world.getPersistentEntityCount(entityCategory.getCategoryClass());
 					int s = entityCategory.getSpawnCap() * i / field_9221;
 					if (r <= s) {
-						label129:
+						BlockPos.Mutable mutable = new BlockPos.Mutable();
+
+						label134:
 						for (ChunkPos chunkPos2 : this.field_9222) {
 							BlockPos blockPos2 = findSpawnLocation(world, chunkPos2.x, chunkPos2.z);
 							int t = blockPos2.getX();
 							int u = blockPos2.getY();
 							int v = blockPos2.getZ();
-							Block block = world.getBlockState(blockPos2).getBlock();
-							if (!block.isFullCube()) {
+							BlockState blockState = world.getBlockState(blockPos2);
+							if (!blockState.method_11734()) {
 								int w = 0;
 
 								for (int x = 0; x < 3; x++) {
@@ -74,28 +82,29 @@ public final class MobSpawnerHelper {
 									int ab = 6;
 									Biome.SpawnEntry spawnEntry = null;
 									EntityData entityData = null;
+									int ac = MathHelper.ceil(Math.random() * 4.0);
 
-									for (int ac = 0; ac < 4; ac++) {
+									for (int ad = 0; ad < ac; ad++) {
 										y += world.random.nextInt(ab) - world.random.nextInt(ab);
 										z += world.random.nextInt(1) - world.random.nextInt(1);
 										aa += world.random.nextInt(ab) - world.random.nextInt(ab);
-										BlockPos blockPos3 = new BlockPos(y, z, aa);
+										mutable.setPosition(y, z, aa);
 										float f = (float)y + 0.5F;
 										float g = (float)aa + 0.5F;
 										if (!world.isPlayerInRange((double)f, (double)z, (double)g, 24.0) && !(blockPos.squaredDistanceTo((double)f, (double)z, (double)g) < 576.0)) {
 											if (spawnEntry == null) {
-												spawnEntry = world.method_10754(entityCategory, blockPos3);
+												spawnEntry = world.method_10754(entityCategory, mutable);
 												if (spawnEntry == null) {
 													break;
 												}
 											}
 
-											if (world.method_10753(entityCategory, spawnEntry, blockPos3) && isSpawnable(EntityLocations.getLocation(spawnEntry.entity), world, blockPos3)) {
+											if (world.method_10753(entityCategory, spawnEntry, mutable) && isSpawnable(EntityLocations.getLocation(spawnEntry.entity), world, mutable)) {
 												MobEntity mobEntity;
 												try {
 													mobEntity = (MobEntity)spawnEntry.entity.getConstructor(World.class).newInstance(world);
-												} catch (Exception var35) {
-													var35.printStackTrace();
+												} catch (Exception var36) {
+													var36.printStackTrace();
 													return o;
 												}
 
@@ -105,10 +114,12 @@ public final class MobSpawnerHelper {
 													if (mobEntity.hasNoSpawnCollisions()) {
 														w++;
 														world.spawnEntity(mobEntity);
+													} else {
+														mobEntity.remove();
 													}
 
 													if (w >= mobEntity.getLimitPerChunk()) {
-														continue label129;
+														continue label134;
 													}
 												}
 
@@ -136,23 +147,31 @@ public final class MobSpawnerHelper {
 		return new BlockPos(i, l, j);
 	}
 
+	public static boolean method_11496(BlockState blockState) {
+		if (blockState.method_11733()) {
+			return false;
+		} else if (blockState.emitsRedstonePower()) {
+			return false;
+		} else {
+			return blockState.getMaterial().isFluid() ? false : !AbstractRailBlock.isRail(blockState);
+		}
+	}
+
 	public static boolean isSpawnable(MobEntity.Location location, World world, BlockPos pos) {
 		if (!world.getWorldBorder().contains(pos)) {
 			return false;
 		} else {
-			Block block = world.getBlockState(pos).getBlock();
+			BlockState blockState = world.getBlockState(pos);
 			if (location == MobEntity.Location.IN_WATER) {
-				return block.getMaterial().isFluid()
-					&& world.getBlockState(pos.down()).getBlock().getMaterial().isFluid()
-					&& !world.getBlockState(pos.up()).getBlock().isFullCube();
+				return blockState.getMaterial().isFluid() && world.getBlockState(pos.down()).getMaterial().isFluid() && !world.getBlockState(pos.up()).method_11734();
 			} else {
 				BlockPos blockPos = pos.down();
-				if (!World.isOpaque(world, blockPos)) {
+				if (!world.getBlockState(blockPos).method_11739()) {
 					return false;
 				} else {
-					Block block2 = world.getBlockState(blockPos).getBlock();
-					boolean bl = block2 != Blocks.BEDROCK && block2 != Blocks.BARRIER;
-					return bl && !block.isFullCube() && !block.getMaterial().isFluid() && !world.getBlockState(pos.up()).getBlock().isFullCube();
+					Block block = world.getBlockState(blockPos).getBlock();
+					boolean bl = block != Blocks.BEDROCK && block != Blocks.BARRIER;
+					return bl && method_11496(blockState) && method_11496(world.getBlockState(pos.up()));
 				}
 			}
 		}
@@ -162,7 +181,7 @@ public final class MobSpawnerHelper {
 		List<Biome.SpawnEntry> list = biome.getSpawnEntries(EntityCategory.PASSIVE);
 		if (!list.isEmpty()) {
 			while (random.nextFloat() < biome.getMaxSpawnLimit()) {
-				Biome.SpawnEntry spawnEntry = Weighting.rand(world.random, list);
+				Biome.SpawnEntry spawnEntry = Weighting.getRandom(world.random, list);
 				int i = spawnEntry.minGroupSize + random.nextInt(1 + spawnEntry.maxGroupSize - spawnEntry.minGroupSize);
 				EntityData entityData = null;
 				int j = x + random.nextInt(randomX);

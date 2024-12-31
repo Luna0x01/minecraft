@@ -95,7 +95,9 @@ public class DelegatingRealmsSimpleScrolledSelectionListWidget extends ListWidge
 			this.renderHoleBackground(0, this.yStart, 255, 255);
 			this.renderHoleBackground(this.yEnd, this.height, 255, 255);
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 0, 1);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ZERO, GlStateManager.class_2866.ONE
+			);
 			GlStateManager.disableAlphaTest();
 			GlStateManager.shadeModel(7425);
 			GlStateManager.disableTexture();

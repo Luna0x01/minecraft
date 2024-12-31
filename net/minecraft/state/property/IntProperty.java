@@ -1,5 +1,6 @@
 package net.minecraft.state.property;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Collection;
@@ -34,24 +35,31 @@ public class IntProperty extends AbstractProperty<Integer> {
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
-		} else if (object == null || this.getClass() != object.getClass()) {
-			return false;
-		} else if (!super.equals(object)) {
-			return false;
-		} else {
+		} else if (object instanceof IntProperty && super.equals(object)) {
 			IntProperty intProperty = (IntProperty)object;
 			return this.values.equals(intProperty.values);
+		} else {
+			return false;
 		}
 	}
 
 	@Override
 	public int hashCode() {
-		int i = super.hashCode();
-		return 31 * i + this.values.hashCode();
+		return 31 * super.hashCode() + this.values.hashCode();
 	}
 
 	public static IntProperty of(String name, int min, int max) {
 		return new IntProperty(name, min, max);
+	}
+
+	@Override
+	public Optional<Integer> method_11749(String string) {
+		try {
+			Integer integer = Integer.valueOf(string);
+			return this.values.contains(integer) ? Optional.of(integer) : Optional.absent();
+		} catch (NumberFormatException var3) {
+			return Optional.absent();
+		}
 	}
 
 	public String name(Integer integer) {

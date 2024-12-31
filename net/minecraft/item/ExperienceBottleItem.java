@@ -1,10 +1,14 @@
 package net.minecraft.item;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.thrown.ExperienceBottleEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class ExperienceBottleItem extends Item {
@@ -18,17 +22,28 @@ public class ExperienceBottleItem extends Item {
 	}
 
 	@Override
-	public ItemStack onStartUse(ItemStack stack, World world, PlayerEntity player) {
-		if (!player.abilities.creativeMode) {
-			stack.count--;
+	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+		if (!playerEntity.abilities.creativeMode) {
+			itemStack.count--;
 		}
 
-		world.playSound((Entity)player, "random.bow", 0.5F, 0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F));
+		world.playSound(
+			null,
+			playerEntity.x,
+			playerEntity.y,
+			playerEntity.z,
+			Sounds.ENTITY_EXPERIENCE_BOTTLE_THROW,
+			SoundCategory.NEUTRAL,
+			0.5F,
+			0.4F / (RANDOM.nextFloat() * 0.4F + 0.8F)
+		);
 		if (!world.isClient) {
-			world.spawnEntity(new ExperienceBottleEntity(world, player));
+			ExperienceBottleEntity experienceBottleEntity = new ExperienceBottleEntity(world, playerEntity);
+			experienceBottleEntity.setProperties(playerEntity, playerEntity.pitch, playerEntity.yaw, -20.0F, 0.7F, 1.0F);
+			world.spawnEntity(experienceBottleEntity);
 		}
 
-		player.incrementStat(Stats.USED[Item.getRawId(this)]);
-		return stack;
+		playerEntity.incrementStat(Stats.used(this));
+		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 }

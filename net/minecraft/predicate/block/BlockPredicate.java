@@ -1,6 +1,7 @@
 package net.minecraft.predicate.block;
 
 import com.google.common.base.Predicate;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 
@@ -15,7 +16,7 @@ public class BlockPredicate implements Predicate<BlockState> {
 		return new BlockPredicate(block);
 	}
 
-	public boolean apply(BlockState blockState) {
+	public boolean apply(@Nullable BlockState blockState) {
 		return blockState != null && blockState.getBlock() == this.block;
 	}
 }

@@ -1,5 +1,6 @@
 package net.minecraft.entity.passive;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
@@ -9,20 +10,26 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
-import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class CowEntity extends AnimalEntity {
 	public CowEntity(World world) {
 		super(world);
-		this.setBounds(0.9F, 1.3F);
-		((MobNavigation)this.getNavigation()).method_11027(true);
+		this.setBounds(0.9F, 1.4F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 2.0));
 		this.goals.add(2, new BreedGoal(this, 1.0));
@@ -41,23 +48,23 @@ public class CowEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.cow.say";
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_COW_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.cow.hurt";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_COW_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.cow.hurt";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_COW_DEATH;
 	}
 
 	@Override
 	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound("mob.cow.step", 0.15F, 1.0F);
+		this.playSound(Sounds.ENTITY_COW_STEP, 0.15F, 1.0F);
 	}
 
 	@Override
@@ -65,43 +72,25 @@ public class CowEntity extends AnimalEntity {
 		return 0.4F;
 	}
 
+	@Nullable
 	@Override
-	protected Item getDefaultDrop() {
-		return Items.LEATHER;
+	protected Identifier getLootTableId() {
+		return LootTables.COW_ENTITIE;
 	}
 
 	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		int i = this.random.nextInt(3) + this.random.nextInt(1 + lootingMultiplier);
-
-		for (int j = 0; j < i; j++) {
-			this.dropItem(Items.LEATHER, 1);
-		}
-
-		i = this.random.nextInt(3) + 1 + this.random.nextInt(1 + lootingMultiplier);
-
-		for (int k = 0; k < i; k++) {
-			if (this.isOnFire()) {
-				this.dropItem(Items.COOKED_BEEF, 1);
-			} else {
-				this.dropItem(Items.BEEF, 1);
-			}
-		}
-	}
-
-	@Override
-	public boolean method_2537(PlayerEntity playerEntity) {
-		ItemStack itemStack = playerEntity.inventory.getMainHandStack();
+	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
 		if (itemStack != null && itemStack.getItem() == Items.BUCKET && !playerEntity.abilities.creativeMode && !this.isBaby()) {
-			if (itemStack.count-- == 1) {
-				playerEntity.inventory.setInvStack(playerEntity.inventory.selectedSlot, new ItemStack(Items.MILK_BUCKET));
+			playerEntity.playSound(Sounds.ENTITY_COW_MILK, 1.0F, 1.0F);
+			if (--itemStack.count == 0) {
+				playerEntity.equipStack(hand, new ItemStack(Items.MILK_BUCKET));
 			} else if (!playerEntity.inventory.insertStack(new ItemStack(Items.MILK_BUCKET))) {
-				playerEntity.dropItem(new ItemStack(Items.MILK_BUCKET, 1, 0), false);
+				playerEntity.dropItem(new ItemStack(Items.MILK_BUCKET), false);
 			}
 
 			return true;
 		} else {
-			return super.method_2537(playerEntity);
+			return super.method_13079(playerEntity, hand, itemStack);
 		}
 	}
 
@@ -111,6 +100,6 @@ public class CowEntity extends AnimalEntity {
 
 	@Override
 	public float getEyeHeight() {
-		return this.height;
+		return this.isBaby() ? this.height : 1.3F;
 	}
 }

@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import net.minecraft.block.AbstractFluidBlock;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.entity.Entity;
@@ -13,7 +12,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 
 public class Camera {
@@ -31,7 +29,7 @@ public class Camera {
 	public static void update(PlayerEntity player, boolean thirdPerson) {
 		GlStateManager.getFloat(2982, MODEL_MATRIX);
 		GlStateManager.getFloat(2983, PROJECTION_MATRIX);
-		GL11.glGetInteger(2978, VIEWPORT);
+		GlStateManager.method_12283(2978, VIEWPORT);
 		float f = (float)((VIEWPORT.get(0) + VIEWPORT.get(2)) / 2);
 		float g = (float)((VIEWPORT.get(1) + VIEWPORT.get(3)) / 2);
 		GLU.gluUnProject(f, g, 0.0F, MODEL_MATRIX, PROJECTION_MATRIX, VIEWPORT, OBJECT_POS);
@@ -39,11 +37,11 @@ public class Camera {
 		int i = thirdPerson ? 1 : 0;
 		float h = player.pitch;
 		float j = player.yaw;
-		rotationX = MathHelper.cos(j * (float) Math.PI / 180.0F) * (float)(1 - i * 2);
-		rotationZ = MathHelper.sin(j * (float) Math.PI / 180.0F) * (float)(1 - i * 2);
-		rotationYZ = -rotationZ * MathHelper.sin(h * (float) Math.PI / 180.0F) * (float)(1 - i * 2);
-		rotationXY = rotationX * MathHelper.sin(h * (float) Math.PI / 180.0F) * (float)(1 - i * 2);
-		rotationXZ = MathHelper.cos(h * (float) Math.PI / 180.0F);
+		rotationX = MathHelper.cos(j * (float) (Math.PI / 180.0)) * (float)(1 - i * 2);
+		rotationZ = MathHelper.sin(j * (float) (Math.PI / 180.0)) * (float)(1 - i * 2);
+		rotationYZ = -rotationZ * MathHelper.sin(h * (float) (Math.PI / 180.0)) * (float)(1 - i * 2);
+		rotationXY = rotationX * MathHelper.sin(h * (float) (Math.PI / 180.0)) * (float)(1 - i * 2);
+		rotationXZ = MathHelper.cos(h * (float) (Math.PI / 180.0));
 	}
 
 	public static Vec3d getEntityPos(Entity entity, double delta) {
@@ -56,24 +54,23 @@ public class Camera {
 		return new Vec3d(g, h, i);
 	}
 
-	public static Block getSubmergedBlock(World world, Entity entity, float delta) {
-		Vec3d vec3d = getEntityPos(entity, (double)delta);
+	public static BlockState method_9371(World world, Entity entity, float f) {
+		Vec3d vec3d = getEntityPos(entity, (double)f);
 		BlockPos blockPos = new BlockPos(vec3d);
 		BlockState blockState = world.getBlockState(blockPos);
-		Block block = blockState.getBlock();
-		if (block.getMaterial().isFluid()) {
-			float f = 0.0F;
+		if (blockState.getMaterial().isFluid()) {
+			float g = 0.0F;
 			if (blockState.getBlock() instanceof AbstractFluidBlock) {
-				f = AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL)) - 0.11111111F;
+				g = AbstractFluidBlock.getHeightPercent((Integer)blockState.get(AbstractFluidBlock.LEVEL)) - 0.11111111F;
 			}
 
-			float g = (float)(blockPos.getY() + 1) - f;
-			if (vec3d.y >= (double)g) {
-				block = world.getBlockState(blockPos.up()).getBlock();
+			float h = (float)(blockPos.getY() + 1) - g;
+			if (vec3d.y >= (double)h) {
+				blockState = world.getBlockState(blockPos.up());
 			}
 		}
 
-		return block;
+		return blockState;
 	}
 
 	public static Vec3d getPosition() {

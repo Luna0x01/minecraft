@@ -30,6 +30,7 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.Queue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import net.minecraft.network.encryption.PacketDecryptor;
 import net.minecraft.network.encryption.PacketEncryptor;
@@ -46,7 +47,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
-public class ClientConnection extends SimpleChannelInboundHandler<Packet> {
+public class ClientConnection extends SimpleChannelInboundHandler<Packet<?>> {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final Marker MARKER_NETWORK = MarkerManager.getMarker("NETWORK");
 	public static final Marker MARKER_NETWORK_PACKETS = MarkerManager.getMarker("NETWORK_PACKETS", MARKER_NETWORK);
@@ -110,13 +111,14 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet> {
 			translatableText = new TranslatableText("disconnect.genericReason", "Internal Exception: " + throwable);
 		}
 
+		LOGGER.debug(throwable);
 		this.disconnect(translatableText);
 	}
 
-	protected void channelRead0(ChannelHandlerContext channelHandlerContext, Packet packet) throws Exception {
+	protected void channelRead0(ChannelHandlerContext channelHandlerContext, Packet<?> packet) throws Exception {
 		if (this.channel.isOpen()) {
 			try {
-				packet.apply(this.packetListener);
+				((Packet<PacketListener>)packet).apply(this.packetListener);
 			} catch (OffThreadException var4) {
 			}
 		}
@@ -128,7 +130,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet> {
 		this.packetListener = listener;
 	}
 
-	public void send(Packet packet) {
+	public void send(Packet<?> packet) {
 		if (this.isOpen()) {
 			this.sendQueuedPackets();
 			this.sendImmediately(packet, null);
@@ -144,7 +146,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet> {
 	}
 
 	public void send(
-		Packet packet,
+		Packet<?> packet,
 		GenericFutureListener<? extends Future<? super Void>> genericFutureListener,
 		GenericFutureListener<? extends Future<? super Void>>... genericFutureListeners
 	) {
@@ -167,7 +169,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet> {
 		}
 	}
 
-	private void sendImmediately(Packet packet, GenericFutureListener<? extends Future<? super Void>>[] listeners) {
+	private void sendImmediately(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>>[] listeners) {
 		final NetworkState networkState = NetworkState.getPacketHandlerState(packet);
 		final NetworkState networkState2 = (NetworkState)this.channel.attr(ATTR_KEY_PROTOCOL).get();
 		if (networkState2 != networkState) {
@@ -329,7 +331,7 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet> {
 			}
 
 			if (this.channel.pipeline().get("compress") instanceof PacketDeflater) {
-				((PacketDeflater)this.channel.pipeline().get("decompress")).setCompressionThreshold(compressionThreshold);
+				((PacketDeflater)this.channel.pipeline().get("compress")).setCompressionThreshold(compressionThreshold);
 			} else {
 				this.channel.pipeline().addBefore("encoder", "compress", new PacketDeflater(compressionThreshold));
 			}
@@ -346,24 +348,24 @@ public class ClientConnection extends SimpleChannelInboundHandler<Packet> {
 
 	public void handleDisconnection() {
 		if (this.channel != null && !this.channel.isOpen()) {
-			if (!this.disconnected) {
+			if (this.disconnected) {
+				LOGGER.warn("handleDisconnection() called twice");
+			} else {
 				this.disconnected = true;
 				if (this.getDisconnectReason() != null) {
 					this.getPacketListener().onDisconnected(this.getDisconnectReason());
 				} else if (this.getPacketListener() != null) {
 					this.getPacketListener().onDisconnected(new LiteralText("Disconnected"));
 				}
-			} else {
-				LOGGER.warn("handleDisconnection() called twice");
 			}
 		}
 	}
 
 	static class PacketWrapper {
-		private final Packet packet;
+		private final Packet<?> packet;
 		private final GenericFutureListener<? extends Future<? super Void>>[] field_8444;
 
-		public PacketWrapper(Packet packet, GenericFutureListener<? extends Future<? super Void>>... genericFutureListeners) {
+		public PacketWrapper(Packet<?> packet, GenericFutureListener<? extends Future<? super Void>>... genericFutureListeners) {
 			this.packet = packet;
 			this.field_8444 = genericFutureListeners;
 		}

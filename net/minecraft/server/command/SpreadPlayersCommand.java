@@ -3,10 +3,12 @@ package net.minecraft.server.command;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
@@ -42,12 +44,12 @@ public class SpreadPlayersCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 6) {
 			throw new IncorrectUsageException("commands.spreadplayers.usage");
 		} else {
 			int i = 0;
-			BlockPos blockPos = source.getBlockPos();
+			BlockPos blockPos = commandSource.getBlockPos();
 			double d = parseDouble((double)blockPos.getX(), args[i++], true);
 			double e = parseDouble((double)blockPos.getZ(), args[i++], true);
 			double f = parseClampedDouble(args[i++], 0.0);
@@ -58,14 +60,14 @@ public class SpreadPlayersCommand extends AbstractCommand {
 			while (i < args.length) {
 				String string = args[i++];
 				if (PlayerSelector.method_4091(string)) {
-					List<Entity> list2 = PlayerSelector.method_10866(source, string, Entity.class);
-					if (list2.size() == 0) {
+					List<Entity> list2 = PlayerSelector.method_10866(commandSource, string, Entity.class);
+					if (list2.isEmpty()) {
 						throw new EntityNotFoundException();
 					}
 
 					list.addAll(list2);
 				} else {
-					PlayerEntity playerEntity = MinecraftServer.getServer().getPlayerManager().getPlayer(string);
+					PlayerEntity playerEntity = minecraftServer.getPlayerManager().getPlayer(string);
 					if (playerEntity == null) {
 						throw new PlayerNotFoundException();
 					}
@@ -74,12 +76,12 @@ public class SpreadPlayersCommand extends AbstractCommand {
 				}
 			}
 
-			source.setStat(CommandStats.Type.AFFECTED_ENTITIES, list.size());
+			commandSource.setStat(CommandStats.Type.AFFECTED_ENTITIES, list.size());
 			if (list.isEmpty()) {
 				throw new EntityNotFoundException();
 			} else {
-				source.sendMessage(new TranslatableText("commands.spreadplayers.spreading." + (bl ? "teams" : "players"), list.size(), g, d, e, f));
-				this.method_5549(source, list, new SpreadPlayersCommand.Pile(d, e), f, g, ((Entity)list.get(0)).world, bl);
+				commandSource.sendMessage(new TranslatableText("commands.spreadplayers.spreading." + (bl ? "teams" : "players"), list.size(), g, d, e, f));
+				this.method_5549(commandSource, list, new SpreadPlayersCommand.Pile(d, e), f, g, ((Entity)list.get(0)).world, bl);
 			}
 		}
 	}
@@ -228,8 +230,8 @@ public class SpreadPlayersCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length >= 1 && args.length <= 2 ? method_10712(args, 0, pos) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length >= 1 && strings.length <= 2 ? method_10712(strings, 0, pos) : Collections.emptyList();
 	}
 
 	static class Pile {
@@ -291,7 +293,7 @@ public class SpreadPlayersCommand extends AbstractCommand {
 
 			while (blockPos.getY() > 0) {
 				blockPos = blockPos.down();
-				if (world.getBlockState(blockPos).getBlock().getMaterial() != Material.AIR) {
+				if (world.getBlockState(blockPos).getMaterial() != Material.AIR) {
 					return blockPos.getY() + 1;
 				}
 			}
@@ -304,7 +306,7 @@ public class SpreadPlayersCommand extends AbstractCommand {
 
 			while (blockPos.getY() > 0) {
 				blockPos = blockPos.down();
-				Material material = world.getBlockState(blockPos).getBlock().getMaterial();
+				Material material = world.getBlockState(blockPos).getMaterial();
 				if (material != Material.AIR) {
 					return !material.isFluid() && material != Material.FIRE;
 				}

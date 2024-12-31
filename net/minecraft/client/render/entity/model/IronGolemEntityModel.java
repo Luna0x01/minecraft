@@ -60,8 +60,8 @@ public class IronGolemEntityModel extends EntityModel {
 
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.field_1551.posY = age / (180.0F / (float)Math.PI);
-		this.field_1551.posX = headPitch / (180.0F / (float)Math.PI);
+		this.field_1551.posY = age * (float) (Math.PI / 180.0);
+		this.field_1551.posX = headPitch * (float) (Math.PI / 180.0);
 		this.field_1555.posX = -1.5F * this.method_1182(handSwing, 13.0F) * handSwingAmount;
 		this.field_1556.posX = 1.5F * this.method_1182(handSwing, 13.0F) * handSwingAmount;
 		this.field_1555.posY = 0.0F;

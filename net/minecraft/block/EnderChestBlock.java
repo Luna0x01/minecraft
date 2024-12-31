@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.block.material.Material;
@@ -14,35 +15,46 @@ import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class EnderChestBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
+	protected static final Box field_12662 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.875, 0.9375);
 
 	protected EnderChestBlock() {
 		super(Material.STONE);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
 		this.setItemGroup(ItemGroup.DECORATIONS);
-		this.setBoundingBox(0.0625F, 0.0F, 0.0625F, 0.9375F, 0.875F, 0.9375F);
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12662;
+	}
+
+	@Override
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public int getBlockType() {
-		return 2;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.ENTITYBLOCK_ANIMATED;
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.OBSIDIAN);
@@ -69,19 +81,30 @@ public class EnderChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		EnderChestInventory enderChestInventory = player.getEnderChestInventory();
-		BlockEntity blockEntity = world.getBlockEntity(pos);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		EnderChestInventory enderChestInventory = playerEntity.getEnderChestInventory();
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
 		if (enderChestInventory == null || !(blockEntity instanceof EnderChestBlockEntity)) {
 			return true;
-		} else if (world.getBlockState(pos.up()).getBlock().isFullCube()) {
+		} else if (world.getBlockState(blockPos.up()).method_11734()) {
 			return true;
 		} else if (world.isClient) {
 			return true;
 		} else {
 			enderChestInventory.setBlockEntity((EnderChestBlockEntity)blockEntity);
-			player.openInventory(enderChestInventory);
-			player.incrementStat(Stats.ENDERCHEST_OPENED);
+			playerEntity.openInventory(enderChestInventory);
+			playerEntity.incrementStat(Stats.ENDERCHEST_OPENED);
 			return true;
 		}
 	}
@@ -92,16 +115,16 @@ public class EnderChestBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		for (int i = 0; i < 3; i++) {
-			int j = rand.nextInt(2) * 2 - 1;
-			int k = rand.nextInt(2) * 2 - 1;
+			int j = random.nextInt(2) * 2 - 1;
+			int k = random.nextInt(2) * 2 - 1;
 			double d = (double)pos.getX() + 0.5 + 0.25 * (double)j;
-			double e = (double)((float)pos.getY() + rand.nextFloat());
+			double e = (double)((float)pos.getY() + random.nextFloat());
 			double f = (double)pos.getZ() + 0.5 + 0.25 * (double)k;
-			double g = (double)(rand.nextFloat() * (float)j);
-			double h = ((double)rand.nextFloat() - 0.5) * 0.125;
-			double l = (double)(rand.nextFloat() * (float)k);
+			double g = (double)(random.nextFloat() * (float)j);
+			double h = ((double)random.nextFloat() - 0.5) * 0.125;
+			double l = (double)(random.nextFloat() * (float)k);
 			world.addParticle(ParticleType.NETHER_PORTAL, d, e, f, g, h, l);
 		}
 	}
@@ -119,6 +142,16 @@ public class EnderChestBlock extends BlockWithEntity {
 	@Override
 	public int getData(BlockState state) {
 		return ((Direction)state.get(FACING)).getId();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

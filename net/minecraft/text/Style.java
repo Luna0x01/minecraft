@@ -9,6 +9,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
+import javax.annotation.Nullable;
 import net.minecraft.util.Formatting;
 
 public class Style {
@@ -23,6 +24,7 @@ public class Style {
 	private HoverEvent hoverEvent;
 	private String insertion;
 	private static final Style ROOT = new Style() {
+		@Nullable
 		@Override
 		public Formatting getColor() {
 			return null;
@@ -53,16 +55,19 @@ public class Style {
 			return false;
 		}
 
+		@Nullable
 		@Override
 		public ClickEvent getClickEvent() {
 			return null;
 		}
 
+		@Nullable
 		@Override
 		public HoverEvent getHoverEvent() {
 			return null;
 		}
 
+		@Nullable
 		@Override
 		public String getInsertion() {
 			return null;
@@ -134,6 +139,7 @@ public class Style {
 		}
 	};
 
+	@Nullable
 	public Formatting getColor() {
 		return this.formatting == null ? this.getParent().getColor() : this.formatting;
 	}
@@ -169,14 +175,17 @@ public class Style {
 			&& this.hoverEvent == null;
 	}
 
+	@Nullable
 	public ClickEvent getClickEvent() {
 		return this.clickEvent == null ? this.getParent().getClickEvent() : this.clickEvent;
 	}
 
+	@Nullable
 	public HoverEvent getHoverEvent() {
 		return this.hoverEvent == null ? this.getParent().getHoverEvent() : this.hoverEvent;
 	}
 
+	@Nullable
 	public String getInsertion() {
 		return this.insertion == null ? this.getParent().getInsertion() : this.insertion;
 	}
@@ -351,6 +360,7 @@ public class Style {
 	}
 
 	public static class Serializer implements JsonDeserializer<Style>, JsonSerializer<Style> {
+		@Nullable
 		public Style deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			if (jsonElement.isJsonObject()) {
 				Style style = new Style();
@@ -418,6 +428,7 @@ public class Style {
 			}
 		}
 
+		@Nullable
 		public JsonElement serialize(Style style, Type type, JsonSerializationContext jsonSerializationContext) {
 			if (style.isEmpty()) {
 				return null;

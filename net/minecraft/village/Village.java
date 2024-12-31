@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.UUID;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
@@ -15,10 +16,10 @@ import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -84,7 +85,7 @@ public class Village {
 	}
 
 	private boolean method_11054(BlockPos blockPos, BlockPos blockPos2) {
-		if (!World.isOpaque(this.world, blockPos2.down())) {
+		if (!this.world.getBlockState(blockPos2.down()).method_11739()) {
 			return false;
 		} else {
 			int i = blockPos2.getX() - blockPos.getX() / 2;
@@ -93,7 +94,7 @@ public class Village {
 			for (int k = i; k < i + blockPos.getX(); k++) {
 				for (int l = blockPos2.getY(); l < blockPos2.getY() + blockPos.getY(); l++) {
 					for (int m = j; m < j + blockPos.getZ(); m++) {
-						if (this.world.getBlockState(new BlockPos(k, l, m)).getBlock().isFullCube()) {
+						if (this.world.getBlockState(new BlockPos(k, l, m)).method_11734()) {
 							return false;
 						}
 					}
@@ -195,8 +196,15 @@ public class Village {
 			}
 
 			if (j < i) {
-				villageDoor = villageDoor2;
-				i = j;
+				BlockPos blockPos = villageDoor2.getPos1();
+				Direction direction = villageDoor2.method_13116();
+				if (this.world.getBlockState(blockPos.offset(direction, 1)).getBlock().blocksMovement(this.world, blockPos.offset(direction, 1))
+					&& this.world.getBlockState(blockPos.offset(direction, -1)).getBlock().blocksMovement(this.world, blockPos.offset(direction, -1))
+					&& this.world.getBlockState(blockPos.up().offset(direction, 1)).getBlock().blocksMovement(this.world, blockPos.up().offset(direction, 1))
+					&& this.world.getBlockState(blockPos.up().offset(direction, -1)).getBlock().blocksMovement(this.world, blockPos.up().offset(direction, -1))) {
+					villageDoor = villageDoor2;
+					i = j;
+				}
 			}
 		}
 
@@ -311,14 +319,15 @@ public class Village {
 	}
 
 	private boolean method_11058(BlockPos pos) {
-		Block block = this.world.getBlockState(pos).getBlock();
-		return block instanceof DoorBlock ? block.getMaterial() == Material.WOOD : false;
+		BlockState blockState = this.world.getBlockState(pos);
+		Block block = blockState.getBlock();
+		return block instanceof DoorBlock ? blockState.getMaterial() == Material.WOOD : false;
 	}
 
 	private void method_2834() {
 		int i = this.doors.size();
 		if (i == 0) {
-			this.min = new BlockPos(0, 0, 0);
+			this.min = BlockPos.ORIGIN;
 			this.radius = 0;
 		} else {
 			this.min = new BlockPos(this.max.getX() / i, this.max.getY() / i, this.max.getZ() / i);
@@ -375,7 +384,7 @@ public class Village {
 		for (int j = 0; j < nbtList2.size(); j++) {
 			NbtCompound nbtCompound2 = nbtList2.getCompound(j);
 			if (nbtCompound2.contains("UUID")) {
-				UserCache userCache = MinecraftServer.getServer().getUserCache();
+				UserCache userCache = this.world.getServer().getUserCache();
 				GameProfile gameProfile = userCache.getByUuid(UUID.fromString(nbtCompound2.getString("UUID")));
 				if (gameProfile != null) {
 					this.players.put(gameProfile.getName(), nbtCompound2.getInt("S"));
@@ -417,7 +426,7 @@ public class Village {
 
 		for (String string : this.players.keySet()) {
 			NbtCompound nbtCompound2 = new NbtCompound();
-			UserCache userCache = MinecraftServer.getServer().getUserCache();
+			UserCache userCache = this.world.getServer().getUserCache();
 			GameProfile gameProfile = userCache.findByName(string);
 			if (gameProfile != null) {
 				nbtCompound2.putString("UUID", gameProfile.getId().toString());

@@ -2,7 +2,9 @@ package net.minecraft.screen;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.player.PlayerEntity;
@@ -36,6 +38,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 	public int enchantmentPower;
 	public int[] enchantmentId = new int[3];
 	public int[] enchantmentLevel = new int[]{-1, -1, -1};
+	public int[] field_12271 = new int[]{-1, -1, -1};
 
 	public EnchantingScreenHandler(PlayerInventory playerInventory, World world) {
 		this(playerInventory, world, BlockPos.ORIGIN);
@@ -47,7 +50,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		this.enchantmentPower = playerInventory.player.getEnchantmentTableSeed();
 		this.addSlot(new Slot(this.inventory, 0, 15, 47) {
 			@Override
-			public boolean canInsert(ItemStack stack) {
+			public boolean canInsert(@Nullable ItemStack stack) {
 				return true;
 			}
 
@@ -58,7 +61,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		});
 		this.addSlot(new Slot(this.inventory, 1, 35, 47) {
 			@Override
-			public boolean canInsert(ItemStack stack) {
+			public boolean canInsert(@Nullable ItemStack stack) {
 				return stack.getItem() == Items.DYE && DyeColor.getById(stack.getData()) == DyeColor.BLUE;
 			}
 		});
@@ -74,16 +77,23 @@ public class EnchantingScreenHandler extends ScreenHandler {
 		}
 	}
 
+	protected void method_11351(ScreenHandlerListener screenHandlerListener) {
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 0, this.enchantmentId[0]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 1, this.enchantmentId[1]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 2, this.enchantmentId[2]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 3, this.enchantmentPower & -16);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 4, this.enchantmentLevel[0]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 5, this.enchantmentLevel[1]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 6, this.enchantmentLevel[2]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 7, this.field_12271[0]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 8, this.field_12271[1]);
+		screenHandlerListener.onScreenHandlerPropertyUpdate(this, 9, this.field_12271[2]);
+	}
+
 	@Override
 	public void addListener(ScreenHandlerListener listener) {
 		super.addListener(listener);
-		listener.onScreenHandlerPropertyUpdate(this, 0, this.enchantmentId[0]);
-		listener.onScreenHandlerPropertyUpdate(this, 1, this.enchantmentId[1]);
-		listener.onScreenHandlerPropertyUpdate(this, 2, this.enchantmentId[2]);
-		listener.onScreenHandlerPropertyUpdate(this, 3, this.enchantmentPower & -16);
-		listener.onScreenHandlerPropertyUpdate(this, 4, this.enchantmentLevel[0]);
-		listener.onScreenHandlerPropertyUpdate(this, 5, this.enchantmentLevel[1]);
-		listener.onScreenHandlerPropertyUpdate(this, 6, this.enchantmentLevel[2]);
+		this.method_11351(listener);
 	}
 
 	@Override
@@ -92,13 +102,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 
 		for (int i = 0; i < this.listeners.size(); i++) {
 			ScreenHandlerListener screenHandlerListener = (ScreenHandlerListener)this.listeners.get(i);
-			screenHandlerListener.onScreenHandlerPropertyUpdate(this, 0, this.enchantmentId[0]);
-			screenHandlerListener.onScreenHandlerPropertyUpdate(this, 1, this.enchantmentId[1]);
-			screenHandlerListener.onScreenHandlerPropertyUpdate(this, 2, this.enchantmentId[2]);
-			screenHandlerListener.onScreenHandlerPropertyUpdate(this, 3, this.enchantmentPower & -16);
-			screenHandlerListener.onScreenHandlerPropertyUpdate(this, 4, this.enchantmentLevel[0]);
-			screenHandlerListener.onScreenHandlerPropertyUpdate(this, 5, this.enchantmentLevel[1]);
-			screenHandlerListener.onScreenHandlerPropertyUpdate(this, 6, this.enchantmentLevel[2]);
+			this.method_11351(screenHandlerListener);
 		}
 	}
 
@@ -110,6 +114,8 @@ public class EnchantingScreenHandler extends ScreenHandler {
 			this.enchantmentPower = value;
 		} else if (id >= 4 && id <= 6) {
 			this.enchantmentLevel[id - 4] = value;
+		} else if (id >= 7 && id <= 9) {
+			this.field_12271[id - 7] = value;
 		} else {
 			super.setProperty(id, value);
 		}
@@ -160,6 +166,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 					for (int m = 0; m < 3; m++) {
 						this.enchantmentId[m] = EnchantmentHelper.calculateRequiredExperienceLevel(this.random, m, j, itemStack);
 						this.enchantmentLevel[m] = -1;
+						this.field_12271[m] = -1;
 						if (this.enchantmentId[m] < m + 1) {
 							this.enchantmentId[m] = 0;
 						}
@@ -170,7 +177,8 @@ public class EnchantingScreenHandler extends ScreenHandler {
 							List<EnchantmentLevelEntry> list = this.getRandomEnchantments(itemStack, n, this.enchantmentId[n]);
 							if (list != null && !list.isEmpty()) {
 								EnchantmentLevelEntry enchantmentLevelEntry = (EnchantmentLevelEntry)list.get(this.random.nextInt(list.size()));
-								this.enchantmentLevel[n] = enchantmentLevelEntry.enchantment.id | enchantmentLevelEntry.level << 8;
+								this.enchantmentLevel[n] = Enchantment.getId(enchantmentLevelEntry.enchantment);
+								this.field_12271[n] = enchantmentLevelEntry.level;
 							}
 						}
 					}
@@ -181,6 +189,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 				for (int i = 0; i < 3; i++) {
 					this.enchantmentId[i] = 0;
 					this.enchantmentLevel[i] = -1;
+					this.field_12271[i] = -1;
 				}
 			}
 		}
@@ -236,8 +245,8 @@ public class EnchantingScreenHandler extends ScreenHandler {
 
 	private List<EnchantmentLevelEntry> getRandomEnchantments(ItemStack stack, int modifier, int i) {
 		this.random.setSeed((long)(this.enchantmentPower + modifier));
-		List<EnchantmentLevelEntry> list = EnchantmentHelper.getEnchantmentInfoEntries(this.random, stack, i);
-		if (stack.getItem() == Items.BOOK && list != null && list.size() > 1) {
+		List<EnchantmentLevelEntry> list = EnchantmentHelper.generateEnchantments(this.random, stack, i, false);
+		if (stack.getItem() == Items.BOOK && list.size() > 1) {
 			list.remove(this.random.nextInt(list.size()));
 		}
 
@@ -269,6 +278,7 @@ public class EnchantingScreenHandler extends ScreenHandler {
 			: !(player.squaredDistanceTo((double)this.pos.getX() + 0.5, (double)this.pos.getY() + 0.5, (double)this.pos.getZ() + 0.5) > 64.0);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
 		ItemStack itemStack = null;

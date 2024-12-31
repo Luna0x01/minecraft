@@ -16,6 +16,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.mojang.authlib.Agent;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.ProfileLookupCallback;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -34,16 +35,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.MinecraftServer;
 import org.apache.commons.io.IOUtils;
 
 public class UserCache {
 	public static final SimpleDateFormat EXPIRATION_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+	private static boolean useRemote;
 	private final Map<String, UserCache.Entry> byName = Maps.newHashMap();
 	private final Map<UUID, UserCache.Entry> byUuid = Maps.newHashMap();
 	private final LinkedList<GameProfile> profiles = Lists.newLinkedList();
-	private final MinecraftServer server;
+	private final GameProfileRepository profileRepository;
 	protected final Gson gson;
 	private final File cacheFile;
 	private static final ParameterizedType ENTRY_LIST_TYPE = new ParameterizedType() {
@@ -60,8 +62,8 @@ public class UserCache {
 		}
 	};
 
-	public UserCache(MinecraftServer minecraftServer, File file) {
-		this.server = minecraftServer;
+	public UserCache(GameProfileRepository gameProfileRepository, File file) {
+		this.profileRepository = gameProfileRepository;
 		this.cacheFile = file;
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeHierarchyAdapter(UserCache.Entry.class, new UserCache.JsonConverter());
@@ -69,7 +71,7 @@ public class UserCache {
 		this.load();
 	}
 
-	private static GameProfile method_8188(MinecraftServer minecraftServer, String string) {
+	private static GameProfile findProfileByName(GameProfileRepository repository, String name) {
 		final GameProfile[] gameProfiles = new GameProfile[1];
 		ProfileLookupCallback profileLookupCallback = new ProfileLookupCallback() {
 			public void onProfileLookupSucceeded(GameProfile gameProfile) {
@@ -80,14 +82,22 @@ public class UserCache {
 				gameProfiles[0] = null;
 			}
 		};
-		minecraftServer.getGameProfileRepo().findProfilesByNames(new String[]{string}, Agent.MINECRAFT, profileLookupCallback);
-		if (!minecraftServer.isOnlineMode() && gameProfiles[0] == null) {
-			UUID uUID = PlayerEntity.getUuidFromProfile(new GameProfile(null, string));
-			GameProfile gameProfile = new GameProfile(uUID, string);
+		repository.findProfilesByNames(new String[]{name}, Agent.MINECRAFT, profileLookupCallback);
+		if (!shouldUseRemote() && gameProfiles[0] == null) {
+			UUID uUID = PlayerEntity.getUuidFromProfile(new GameProfile(null, name));
+			GameProfile gameProfile = new GameProfile(uUID, name);
 			profileLookupCallback.onProfileLookupSucceeded(gameProfile);
 		}
 
 		return gameProfiles[0];
+	}
+
+	public static void setUseRemote(boolean useRemote) {
+		UserCache.useRemote = useRemote;
+	}
+
+	private static boolean shouldUseRemote() {
+		return useRemote;
 	}
 
 	public void add(GameProfile profile) {
@@ -117,6 +127,7 @@ public class UserCache {
 		this.save();
 	}
 
+	@Nullable
 	public GameProfile findByName(String name) {
 		String string = name.toLowerCase(Locale.ROOT);
 		UserCache.Entry entry = (UserCache.Entry)this.byName.get(string);
@@ -132,7 +143,7 @@ public class UserCache {
 			this.profiles.remove(gameProfile);
 			this.profiles.addFirst(gameProfile);
 		} else {
-			GameProfile gameProfile2 = method_8188(this.server, string);
+			GameProfile gameProfile2 = findProfileByName(this.profileRepository, string);
 			if (gameProfile2 != null) {
 				this.add(gameProfile2);
 				entry = (UserCache.Entry)this.byName.get(string);
@@ -148,6 +159,7 @@ public class UserCache {
 		return (String[])list.toArray(new String[list.size()]);
 	}
 
+	@Nullable
 	public GameProfile getByUuid(UUID uuid) {
 		UserCache.Entry entry = (UserCache.Entry)this.byUuid.get(uuid);
 		return entry == null ? null : entry.getProfile();
@@ -173,10 +185,11 @@ public class UserCache {
 			this.byName.clear();
 			this.byUuid.clear();
 			this.profiles.clear();
-
-			for (UserCache.Entry entry : Lists.reverse(list)) {
-				if (entry != null) {
-					this.add(entry.getProfile(), entry.getExpirationDate());
+			if (list != null) {
+				for (UserCache.Entry entry : Lists.reverse(list)) {
+					if (entry != null) {
+						this.add(entry.getProfile(), entry.getExpirationDate());
+					}
 				}
 			}
 		} catch (FileNotFoundException var9) {

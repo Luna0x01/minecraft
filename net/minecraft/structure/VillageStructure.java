@@ -9,10 +9,11 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.GeneratorConfig;
 
 public class VillageStructure extends StructureFeature {
-	public static final List<Biome> BIOMES = Arrays.asList(Biome.PLAINS, Biome.DESERT, Biome.SAVANNA);
+	public static final List<Biome> BIOMES = Arrays.asList(Biomes.PLAINS, Biomes.DESERT, Biomes.SAVANNA);
 	private int size;
 	private int distance = 32;
 	private int field_4973 = 8;
@@ -57,7 +58,7 @@ public class VillageStructure extends StructureFeature {
 		k += random.nextInt(this.distance - this.field_4973);
 		l += random.nextInt(this.distance - this.field_4973);
 		if (i == k && j == l) {
-			boolean bl = this.world.getBiomeSource().isValid(i * 16 + 8, j * 16 + 8, 0, BIOMES);
+			boolean bl = this.world.method_3726().method_3854(i * 16 + 8, j * 16 + 8, 0, BIOMES);
 			if (bl) {
 				return true;
 			}
@@ -80,9 +81,9 @@ public class VillageStructure extends StructureFeature {
 		public VillageGeneratorConfig(World world, Random random, int i, int j, int k) {
 			super(i, j);
 			List<VillagePieces.PieceData> list = VillagePieces.getPieceData(random, k);
-			VillagePieces.StartPiece startPiece = new VillagePieces.StartPiece(world.getBiomeSource(), 0, random, (i << 4) + 2, (j << 4) + 2, list, k);
-			this.children.add(startPiece);
-			startPiece.fillOpenings(startPiece, this.children, random);
+			VillagePieces.StartPiece startPiece = new VillagePieces.StartPiece(world.method_3726(), 0, random, (i << 4) + 2, (j << 4) + 2, list, k);
+			this.field_13015.add(startPiece);
+			startPiece.fillOpenings(startPiece, this.field_13015, random);
 			List<StructurePiece> list2 = startPiece.field_6247;
 			List<StructurePiece> list3 = startPiece.field_6246;
 
@@ -90,18 +91,18 @@ public class VillageStructure extends StructureFeature {
 				if (list2.isEmpty()) {
 					int l = random.nextInt(list3.size());
 					StructurePiece structurePiece = (StructurePiece)list3.remove(l);
-					structurePiece.fillOpenings(startPiece, this.children, random);
+					structurePiece.fillOpenings(startPiece, this.field_13015, random);
 				} else {
 					int m = random.nextInt(list2.size());
 					StructurePiece structurePiece2 = (StructurePiece)list2.remove(m);
-					structurePiece2.fillOpenings(startPiece, this.children, random);
+					structurePiece2.fillOpenings(startPiece, this.field_13015, random);
 				}
 			}
 
 			this.setBoundingBoxFromChildren();
 			int n = 0;
 
-			for (StructurePiece structurePiece3 : this.children) {
+			for (StructurePiece structurePiece3 : this.field_13015) {
 				if (!(structurePiece3 instanceof VillagePieces.DelegatingPiece)) {
 					n++;
 				}

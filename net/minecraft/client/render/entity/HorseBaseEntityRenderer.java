@@ -3,19 +3,16 @@ package net.minecraft.client.render.entity;
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.model.HorseBaseEntityModel;
 import net.minecraft.client.texture.LayeredTexture;
+import net.minecraft.entity.HorseType;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.util.Identifier;
 
 public class HorseBaseEntityRenderer extends MobEntityRenderer<HorseBaseEntity> {
 	private static final Map<String, Identifier> MODEL_IDENTIFIERS = Maps.newHashMap();
-	private static final Identifier WHITE_HORSE = new Identifier("textures/entity/horse/horse_white.png");
-	private static final Identifier MULE = new Identifier("textures/entity/horse/mule.png");
-	private static final Identifier DONKEY = new Identifier("textures/entity/horse/donkey.png");
-	private static final Identifier ZOMBIE_HORSE = new Identifier("textures/entity/horse/horse_zombie.png");
-	private static final Identifier SKELETON_HORSE = new Identifier("textures/entity/horse/horse_skeleton.png");
 
 	public HorseBaseEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, HorseBaseEntityModel horseBaseEntityModel, float f) {
 		super(entityRenderDispatcher, horseBaseEntityModel, f);
@@ -23,10 +20,10 @@ public class HorseBaseEntityRenderer extends MobEntityRenderer<HorseBaseEntity> 
 
 	protected void scale(HorseBaseEntity horseBaseEntity, float f) {
 		float g = 1.0F;
-		int i = horseBaseEntity.getType();
-		if (i == 1) {
+		HorseType horseType = horseBaseEntity.method_13129();
+		if (horseType == HorseType.DONKEY) {
 			g *= 0.87F;
-		} else if (i == 2) {
+		} else if (horseType == HorseType.MULE) {
 			g *= 0.92F;
 		}
 
@@ -35,25 +32,10 @@ public class HorseBaseEntityRenderer extends MobEntityRenderer<HorseBaseEntity> 
 	}
 
 	protected Identifier getTexture(HorseBaseEntity horseBaseEntity) {
-		if (!horseBaseEntity.method_6271()) {
-			switch (horseBaseEntity.getType()) {
-				case 0:
-				default:
-					return WHITE_HORSE;
-				case 1:
-					return DONKEY;
-				case 2:
-					return MULE;
-				case 3:
-					return ZOMBIE_HORSE;
-				case 4:
-					return SKELETON_HORSE;
-			}
-		} else {
-			return this.method_5756(horseBaseEntity);
-		}
+		return !horseBaseEntity.method_6271() ? horseBaseEntity.method_13129().getTexturePath() : this.method_5756(horseBaseEntity);
 	}
 
+	@Nullable
 	private Identifier method_5756(HorseBaseEntity horse) {
 		String string = horse.method_6272();
 		if (!horse.method_11071()) {

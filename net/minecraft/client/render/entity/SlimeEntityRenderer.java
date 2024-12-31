@@ -20,10 +20,12 @@ public class SlimeEntityRenderer extends MobEntityRenderer<SlimeEntity> {
 	}
 
 	protected void scale(SlimeEntity slimeEntity, float f) {
-		float g = (float)slimeEntity.getSize();
-		float h = (slimeEntity.lastStretch + (slimeEntity.stretch - slimeEntity.lastStretch) * f) / (g * 0.5F + 1.0F);
-		float i = 1.0F / (h + 1.0F);
-		GlStateManager.scale(i * g, 1.0F / i * g, i * g);
+		float g = 0.999F;
+		GlStateManager.scale(g, g, g);
+		float h = (float)slimeEntity.getSize();
+		float i = (slimeEntity.lastStretch + (slimeEntity.stretch - slimeEntity.lastStretch) * f) / (h * 0.5F + 1.0F);
+		float j = 1.0F / (i + 1.0F);
+		GlStateManager.scale(j * h, 1.0F / j * h, j * h);
 	}
 
 	protected Identifier getTexture(SlimeEntity slimeEntity) {

@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.ByteBuffer;
 import java.util.List;
-import org.lwjgl.opengl.GL11;
 
 public class BufferRenderer {
 	public void draw(BufferBuilder builder) {
@@ -22,26 +21,26 @@ public class BufferRenderer {
 				byteBuffer.position(vertexFormat.getIndex(j));
 				switch (type) {
 					case POSITION:
-						GL11.glVertexPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GL11.glEnableClientState(32884);
+						GlStateManager.method_12296(vertexFormatElement.getCount(), k, i, byteBuffer);
+						GlStateManager.method_12317(32884);
 						break;
 					case UV:
 						GLX.gl13ClientActiveTexture(GLX.textureUnit + l);
-						GL11.glTexCoordPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GL11.glEnableClientState(32888);
+						GlStateManager.method_12279(vertexFormatElement.getCount(), k, i, byteBuffer);
+						GlStateManager.method_12317(32888);
 						GLX.gl13ClientActiveTexture(GLX.textureUnit);
 						break;
 					case COLOR:
-						GL11.glColorPointer(vertexFormatElement.getCount(), k, i, byteBuffer);
-						GL11.glEnableClientState(32886);
+						GlStateManager.method_12303(vertexFormatElement.getCount(), k, i, byteBuffer);
+						GlStateManager.method_12317(32886);
 						break;
 					case NORMAL:
-						GL11.glNormalPointer(k, i, byteBuffer);
-						GL11.glEnableClientState(32885);
+						GlStateManager.method_12280(k, i, byteBuffer);
+						GlStateManager.method_12317(32885);
 				}
 			}
 
-			GL11.glDrawArrays(builder.getDrawMode(), 0, builder.getVertexCount());
+			GlStateManager.method_12313(builder.getDrawMode(), 0, builder.getVertexCount());
 			int m = 0;
 
 			for (int n = list.size(); m < n; m++) {
@@ -50,19 +49,19 @@ public class BufferRenderer {
 				int o = vertexFormatElement2.getIndex();
 				switch (type2) {
 					case POSITION:
-						GL11.glDisableClientState(32884);
+						GlStateManager.method_12316(32884);
 						break;
 					case UV:
 						GLX.gl13ClientActiveTexture(GLX.textureUnit + o);
-						GL11.glDisableClientState(32888);
+						GlStateManager.method_12316(32888);
 						GLX.gl13ClientActiveTexture(GLX.textureUnit);
 						break;
 					case COLOR:
-						GL11.glDisableClientState(32886);
+						GlStateManager.method_12316(32886);
 						GlStateManager.clearColor();
 						break;
 					case NORMAL:
-						GL11.glDisableClientState(32885);
+						GlStateManager.method_12316(32885);
 				}
 			}
 		}

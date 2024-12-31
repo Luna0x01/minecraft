@@ -12,8 +12,10 @@ import java.util.Comparator;
 import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.util.math.MathHelper;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class BufferBuilder {
+	private static final Logger field_13461 = LogManager.getLogger();
 	private ByteBuffer buffer;
 	private IntBuffer intBuffer;
 	private ShortBuffer shortBuffer;
@@ -37,22 +39,23 @@ public class BufferBuilder {
 	}
 
 	private void grow(int size) {
-		if (size > this.intBuffer.remaining()) {
-			int i = this.buffer.capacity();
-			int j = i % 2097152;
-			int k = j + (((this.intBuffer.position() + size) * 4 - j) / 2097152 + 1) * 2097152;
-			LogManager.getLogger().warn("Needed to grow BufferBuilder buffer: Old size " + i + " bytes, new size " + k + " bytes.");
-			int l = this.intBuffer.position();
-			ByteBuffer byteBuffer = GlAllocationUtils.allocateByteBuffer(k);
+		int i = (this.vertexCount + 1) * this.format.getVertexSize() + this.format.getIndex(this.currentElementId);
+		if (size > this.intBuffer.remaining() || i >= this.buffer.capacity()) {
+			int j = this.buffer.capacity();
+			int k = j % 2097152;
+			int l = k + (((this.intBuffer.position() + size) * 4 - k) / 2097152 + 1) * 2097152;
+			field_13461.debug("Needed to grow BufferBuilder buffer: Old size " + j + " bytes, new size " + l + " bytes.");
+			int m = this.intBuffer.position();
+			ByteBuffer byteBuffer = GlAllocationUtils.allocateByteBuffer(l);
 			this.buffer.position(0);
 			byteBuffer.put(this.buffer);
 			byteBuffer.rewind();
 			this.buffer = byteBuffer;
 			this.floatBuffer = this.buffer.asFloatBuffer().asReadOnlyBuffer();
 			this.intBuffer = this.buffer.asIntBuffer();
-			this.intBuffer.position(l);
+			this.intBuffer.position(m);
 			this.shortBuffer = this.buffer.asShortBuffer();
-			this.shortBuffer.position(l << 1);
+			this.shortBuffer.position(m << 1);
 		}
 	}
 

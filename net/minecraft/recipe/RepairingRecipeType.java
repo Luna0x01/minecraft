@@ -2,6 +2,7 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -28,6 +29,7 @@ public class RepairingRecipeType implements RecipeType {
 		return list.size() == 2;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		List<ItemStack> list = Lists.newArrayList();
@@ -70,6 +72,7 @@ public class RepairingRecipeType implements RecipeType {
 		return 4;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return null;

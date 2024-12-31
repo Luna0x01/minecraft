@@ -1,32 +1,37 @@
 package net.minecraft.util.collection;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 
 public class Weighting {
-	public static int getRate(Collection<? extends Weighting.Weight> pool) {
+	public static int getWeightSum(List<? extends Weighting.Weight> pool) {
 		int i = 0;
+		int j = 0;
 
-		for (Weighting.Weight weight : pool) {
+		for (int k = pool.size(); j < k; j++) {
+			Weighting.Weight weight = (Weighting.Weight)pool.get(j);
 			i += weight.weight;
 		}
 
 		return i;
 	}
 
-	public static <T extends Weighting.Weight> T pickRandomly(Random rand, Collection<T> entries, int rate) {
-		if (rate <= 0) {
+	public static <T extends Weighting.Weight> T getRandom(Random random, List<T> pool, int totalWeight) {
+		if (totalWeight <= 0) {
 			throw new IllegalArgumentException();
 		} else {
-			int i = rand.nextInt(rate);
-			return pick(entries, i);
+			int i = random.nextInt(totalWeight);
+			return getAt(pool, i);
 		}
 	}
 
-	public static <T extends Weighting.Weight> T pick(Collection<T> entries, int rate) {
-		for (T weight : entries) {
-			rate -= weight.weight;
-			if (rate < 0) {
+	public static <T extends Weighting.Weight> T getAt(List<T> pool, int totalWeight) {
+		int i = 0;
+
+		for (int j = pool.size(); i < j; i++) {
+			T weight = (T)pool.get(i);
+			totalWeight -= weight.weight;
+			if (totalWeight < 0) {
 				return weight;
 			}
 		}
@@ -34,8 +39,8 @@ public class Weighting {
 		return null;
 	}
 
-	public static <T extends Weighting.Weight> T rand(Random rand, Collection<T> entries) {
-		return pickRandomly(rand, entries, getRate(entries));
+	public static <T extends Weighting.Weight> T getRandom(Random random, List<T> pool) {
+		return getRandom(random, pool, getWeightSum(pool));
 	}
 
 	public static class Weight {

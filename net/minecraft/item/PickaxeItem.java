@@ -3,6 +3,7 @@ package net.minecraft.item;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 
@@ -33,16 +34,19 @@ public class PickaxeItem extends ToolItem {
 			Blocks.SANDSTONE,
 			Blocks.RED_SANDSTONE,
 			Blocks.STONE,
-			Blocks.STONE_SLAB
+			Blocks.STONE_SLAB,
+			Blocks.STONE_BUTTON,
+			Blocks.STONE_PRESSURE_PLATE
 		}
 	);
 
 	protected PickaxeItem(Item.ToolMaterialType toolMaterialType) {
-		super(2.0F, toolMaterialType, EFFECTIVE_BLOCKS);
+		super(1.0F, -2.8F, toolMaterialType, EFFECTIVE_BLOCKS);
 	}
 
 	@Override
-	public boolean isEffectiveOn(Block block) {
+	public boolean method_3346(BlockState blockState) {
+		Block block = blockState.getBlock();
 		if (block == Blocks.OBSIDIAN) {
 			return this.material.getMiningLevel() == 3;
 		} else if (block == Blocks.DIAMOND_BLOCK || block == Blocks.DIAMOND_ORE) {
@@ -56,10 +60,11 @@ public class PickaxeItem extends ToolItem {
 		} else if (block == Blocks.LAPIS_LAZULI_BLOCK || block == Blocks.LAPIS_LAZULI_ORE) {
 			return this.material.getMiningLevel() >= 1;
 		} else if (block != Blocks.REDSTONE_ORE && block != Blocks.LIT_REDSTONE_ORE) {
-			if (block.getMaterial() == Material.STONE) {
+			Material material = blockState.getMaterial();
+			if (material == Material.STONE) {
 				return true;
 			} else {
-				return block.getMaterial() == Material.IRON ? true : block.getMaterial() == Material.ANVIL;
+				return material == Material.IRON ? true : material == Material.ANVIL;
 			}
 		} else {
 			return this.material.getMiningLevel() >= 2;
@@ -67,9 +72,8 @@ public class PickaxeItem extends ToolItem {
 	}
 
 	@Override
-	public float getMiningSpeedMultiplier(ItemStack stack, Block block) {
-		return block.getMaterial() != Material.IRON && block.getMaterial() != Material.ANVIL && block.getMaterial() != Material.STONE
-			? super.getMiningSpeedMultiplier(stack, block)
-			: this.miningSpeed;
+	public float getBlockBreakingSpeed(ItemStack stack, BlockState state) {
+		Material material = state.getMaterial();
+		return material != Material.IRON && material != Material.ANVIL && material != Material.STONE ? super.getBlockBreakingSpeed(stack, state) : this.miningSpeed;
 	}
 }

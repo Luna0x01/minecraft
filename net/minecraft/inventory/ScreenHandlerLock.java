@@ -1,7 +1,9 @@
 package net.minecraft.inventory;
 
+import javax.annotation.concurrent.Immutable;
 import net.minecraft.nbt.NbtCompound;
 
+@Immutable
 public class ScreenHandlerLock {
 	public static final ScreenHandlerLock NONE = new ScreenHandlerLock("");
 	private final String key;

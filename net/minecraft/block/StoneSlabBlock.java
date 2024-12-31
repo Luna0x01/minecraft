@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -32,14 +33,15 @@ public abstract class StoneSlabBlock extends SlabBlock {
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.STONE_SLAB);
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(Blocks.STONE_SLAB);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Blocks.STONE_SLAB, 1, ((StoneSlabBlock.SlabType)blockState.get(VARIANT)).getId());
 	}
 
 	@Override
@@ -53,8 +55,8 @@ public abstract class StoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public Object getSlabType(ItemStack stack) {
-		return StoneSlabBlock.SlabType.getById(stack.getData() & 7);
+	public Comparable<?> method_11615(ItemStack itemStack) {
+		return StoneSlabBlock.SlabType.getById(itemStack.getData() & 7);
 	}
 
 	@Override

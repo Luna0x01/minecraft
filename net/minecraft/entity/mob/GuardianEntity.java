@@ -1,7 +1,7 @@
 package net.minecraft.entity.mob;
 
 import com.google.common.base.Predicate;
-import net.minecraft.block.Blocks;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
@@ -18,19 +18,21 @@ import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.entity.ai.pathing.SwimNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.SquidEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.item.FishItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.GameStateChangeS2CPacket;
-import net.minecraft.util.WeightedRandomFishingLoot;
-import net.minecraft.util.collection.Weighting;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -38,6 +40,8 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 
 public class GuardianEntity extends HostileEntity {
+	private static final TrackedData<Byte> field_14755 = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final TrackedData<Integer> field_14756 = DataTracker.registerData(GuardianEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private float spikesExtension;
 	private float prevSpikesExtension;
 	private float spikesExtensionRate;
@@ -52,6 +56,12 @@ public class GuardianEntity extends HostileEntity {
 		super(world);
 		this.experiencePoints = 10;
 		this.setBounds(0.85F, 0.85F);
+		this.entityMotionHelper = new GuardianEntity.GuardianMoveControl(this);
+		this.prevSpikesExtension = this.spikesExtension = this.random.nextFloat();
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(4, new GuardianEntity.FireBeamGoal(this));
 		GoToWalkTargetGoal goToWalkTargetGoal;
 		this.goals.add(5, goToWalkTargetGoal = new GoToWalkTargetGoal(this, 1.0));
@@ -62,8 +72,6 @@ public class GuardianEntity extends HostileEntity {
 		this.wanderAroundGoal.setCategoryBits(3);
 		goToWalkTargetGoal.setCategoryBits(3);
 		this.attackGoals.add(1, new FollowTargetGoal(this, LivingEntity.class, 10, true, false, new GuardianEntity.AttackPredicate(this)));
-		this.entityMotionHelper = new GuardianEntity.GuardianMoveControl(this);
-		this.prevSpikesExtension = this.spikesExtension = this.random.nextFloat();
 	}
 
 	@Override
@@ -95,20 +103,20 @@ public class GuardianEntity extends HostileEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(16, 0);
-		this.dataTracker.track(17, 0);
+		this.dataTracker.startTracking(field_14755, (byte)0);
+		this.dataTracker.startTracking(field_14756, 0);
 	}
 
 	private boolean method_11192(int i) {
-		return (this.dataTracker.getInt(16) & i) != 0;
+		return (this.dataTracker.get(field_14755) & i) != 0;
 	}
 
 	private void method_11193(int i, boolean bl) {
-		int j = this.dataTracker.getInt(16);
+		byte b = this.dataTracker.get(field_14755);
 		if (bl) {
-			this.dataTracker.setProperty(16, j | i);
+			this.dataTracker.set(field_14755, (byte)(b | i));
 		} else {
-			this.dataTracker.setProperty(16, j & ~i);
+			this.dataTracker.set(field_14755, (byte)(b & ~i));
 		}
 	}
 
@@ -136,7 +144,9 @@ public class GuardianEntity extends HostileEntity {
 			this.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(8.0);
 			this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(80.0);
 			this.setPersistent();
-			this.wanderAroundGoal.setChance(400);
+			if (this.wanderAroundGoal != null) {
+				this.wanderAroundGoal.setChance(400);
+			}
 		}
 	}
 
@@ -146,11 +156,11 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	private void setBeamTarget(int progress) {
-		this.dataTracker.setProperty(17, progress);
+		this.dataTracker.set(field_14756, progress);
 	}
 
 	public boolean hasBeamTarget() {
-		return this.dataTracker.getInt(17) != 0;
+		return this.dataTracker.get(field_14756) != 0;
 	}
 
 	public LivingEntity getBeamTarget() {
@@ -160,7 +170,7 @@ public class GuardianEntity extends HostileEntity {
 			if (this.cachedBeamTarget != null) {
 				return this.cachedBeamTarget;
 			} else {
-				Entity entity = this.world.getEntityById(this.dataTracker.getInt(17));
+				Entity entity = this.world.getEntityById(this.dataTracker.get(field_14756));
 				if (entity instanceof LivingEntity) {
 					this.cachedBeamTarget = (LivingEntity)entity;
 					return this.cachedBeamTarget;
@@ -174,13 +184,13 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	public void method_8364(int i) {
-		super.method_8364(i);
-		if (i == 16) {
+	public void onTrackedDataSet(TrackedData<?> data) {
+		super.onTrackedDataSet(data);
+		if (field_14755.equals(data)) {
 			if (this.isElder() && this.width < 1.0F) {
 				this.setBounds(1.9975F, 1.9975F);
 			}
-		} else if (i == 17) {
+		} else if (field_14756.equals(data)) {
 			this.beamTicks = 0;
 			this.cachedBeamTarget = null;
 		}
@@ -192,29 +202,29 @@ public class GuardianEntity extends HostileEntity {
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		if (!this.isTouchingWater()) {
-			return "mob.guardian.land.idle";
+	protected Sound ambientSound() {
+		if (this.isElder()) {
+			return this.isTouchingWater() ? Sounds.ENTITY_ELDER_GUARDIAN_AMBIENT : Sounds.ENTITY_ELDER_GUARDIAN_AMBIENT_LAND;
 		} else {
-			return this.isElder() ? "mob.guardian.elder.idle" : "mob.guardian.idle";
+			return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_AMBIENT : Sounds.ENTITY_GUARDIAN_AMBIENT_LAND;
 		}
 	}
 
 	@Override
-	protected String getHurtSound() {
-		if (!this.isTouchingWater()) {
-			return "mob.guardian.land.hit";
+	protected Sound method_13048() {
+		if (this.isElder()) {
+			return this.isTouchingWater() ? Sounds.ENTITY_ELDER_GUARDIAN_HURT : Sounds.ENTITY_ELDER_GUARDIAN_HURT_LAND;
 		} else {
-			return this.isElder() ? "mob.guardian.elder.hit" : "mob.guardian.hit";
+			return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_HURT : Sounds.ENTITY_GUARDIAN_HURT_LAND;
 		}
 	}
 
 	@Override
-	protected String getDeathSound() {
-		if (!this.isTouchingWater()) {
-			return "mob.guardian.land.death";
+	protected Sound deathSound() {
+		if (this.isElder()) {
+			return this.isTouchingWater() ? Sounds.ENTITY_ELDER_GUARDIAN_DEATH : Sounds.ENTITY_ELDER_GUARDIAN_DEATH_LAND;
 		} else {
-			return this.isElder() ? "mob.guardian.elder.death" : "mob.guardian.death";
+			return this.isTouchingWater() ? Sounds.ENTITY_GUARDIAN_DEATH : Sounds.ENTITY_GUARDIAN_DEATH_LAND;
 		}
 	}
 
@@ -230,9 +240,7 @@ public class GuardianEntity extends HostileEntity {
 
 	@Override
 	public float getPathfindingFavor(BlockPos pos) {
-		return this.world.getBlockState(pos).getBlock().getMaterial() == Material.WATER
-			? 10.0F + this.world.getBrightness(pos) - 0.5F
-			: super.getPathfindingFavor(pos);
+		return this.world.getBlockState(pos).getMaterial() == Material.WATER ? 10.0F + this.world.getBrightness(pos) - 0.5F : super.getPathfindingFavor(pos);
 	}
 
 	@Override
@@ -242,7 +250,7 @@ public class GuardianEntity extends HostileEntity {
 			if (!this.isTouchingWater()) {
 				this.spikesExtensionRate = 2.0F;
 				if (this.velocityY > 0.0 && this.flopping && !this.isSilent()) {
-					this.world.playSound(this.x, this.y, this.z, "mob.guardian.flop", 1.0F, 1.0F, false);
+					this.world.playSound(this.x, this.y, this.z, Sounds.ENTITY_GUARDIAN_FLOP, this.getSoundCategory(), 1.0F, 1.0F, false);
 				}
 
 				this.flopping = this.velocityY < 0.0 && this.world.renderAsNormalBlock(new BlockPos(this).down(), false);
@@ -349,10 +357,10 @@ public class GuardianEntity extends HostileEntity {
 			int k = 6000;
 			int l = 2;
 			if ((this.ticksAlive + this.getEntityId()) % 1200 == 0) {
-				StatusEffect statusEffect = StatusEffect.MINING_FATIGUE;
+				StatusEffect statusEffect = StatusEffects.MINING_FATIGUE;
 
 				for (ServerPlayerEntity serverPlayerEntity : this.world.method_8536(ServerPlayerEntity.class, new Predicate<ServerPlayerEntity>() {
-					public boolean apply(ServerPlayerEntity serverPlayerEntity) {
+					public boolean apply(@Nullable ServerPlayerEntity serverPlayerEntity) {
 						return GuardianEntity.this.squaredDistanceTo(serverPlayerEntity) < 2500.0 && serverPlayerEntity.interactionManager.isSurvival();
 					}
 				})) {
@@ -360,7 +368,7 @@ public class GuardianEntity extends HostileEntity {
 						|| serverPlayerEntity.getEffectInstance(statusEffect).getAmplifier() < 2
 						|| serverPlayerEntity.getEffectInstance(statusEffect).getDuration() < 1200) {
 						serverPlayerEntity.networkHandler.sendPacket(new GameStateChangeS2CPacket(10, 0.0F));
-						serverPlayerEntity.addStatusEffect(new StatusEffectInstance(statusEffect.id, 6000, 2));
+						serverPlayerEntity.addStatusEffect(new StatusEffectInstance(statusEffect, 6000, 2));
 					}
 				}
 			}
@@ -371,28 +379,10 @@ public class GuardianEntity extends HostileEntity {
 		}
 	}
 
+	@Nullable
 	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		int i = this.random.nextInt(3) + this.random.nextInt(lootingMultiplier + 1);
-		if (i > 0) {
-			this.dropItem(new ItemStack(Items.PRISMARINE_SHARD, i, 0), 1.0F);
-		}
-
-		if (this.random.nextInt(3 + lootingMultiplier) > 1) {
-			this.dropItem(new ItemStack(Items.RAW_FISH, 1, FishItem.FishType.COD.getId()), 1.0F);
-		} else if (this.random.nextInt(3 + lootingMultiplier) > 1) {
-			this.dropItem(new ItemStack(Items.PRISMARINE_CRYSTALS, 1, 0), 1.0F);
-		}
-
-		if (allowDrops && this.isElder()) {
-			this.dropItem(new ItemStack(Blocks.SPONGE, 1, 1), 1.0F);
-		}
-	}
-
-	@Override
-	protected void method_4473() {
-		ItemStack itemStack = Weighting.<WeightedRandomFishingLoot>rand(this.random, FishingBobberEntity.getFishingLoot()).getItemStack(this.random);
-		this.dropItem(itemStack, 1.0F);
+	protected Identifier getLootTableId() {
+		return this.isElder() ? LootTables.ELDER_GUARDIAN_ENTITIE : LootTables.GUARDIAN_ENTITIE;
 	}
 
 	@Override
@@ -416,11 +406,13 @@ public class GuardianEntity extends HostileEntity {
 			LivingEntity livingEntity = (LivingEntity)source.getSource();
 			if (!source.isExplosive()) {
 				livingEntity.damage(DamageSource.thorns(this), 2.0F);
-				livingEntity.playSound("damage.thorns", 0.5F, 1.0F);
 			}
 		}
 
-		this.wanderAroundGoal.ignoreChanceOnce();
+		if (this.wanderAroundGoal != null) {
+			this.wanderAroundGoal.ignoreChanceOnce();
+		}
+
 		return super.damage(source, amount);
 	}
 
@@ -456,7 +448,7 @@ public class GuardianEntity extends HostileEntity {
 			this.guardian = guardianEntity;
 		}
 
-		public boolean apply(LivingEntity livingEntity) {
+		public boolean apply(@Nullable LivingEntity livingEntity) {
 			return (livingEntity instanceof PlayerEntity || livingEntity instanceof SquidEntity) && livingEntity.squaredDistanceTo(this.guardian) > 9.0;
 		}
 	}
@@ -521,7 +513,6 @@ public class GuardianEntity extends HostileEntity {
 					livingEntity.damage(DamageSource.magic(this.guardian, this.guardian), f);
 					livingEntity.damage(DamageSource.mob(this.guardian), (float)this.guardian.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getValue());
 					this.guardian.setTarget(null);
-				} else if (this.beamTicks >= 60 && this.beamTicks % 20 == 0) {
 				}
 
 				super.tick();
@@ -539,21 +530,21 @@ public class GuardianEntity extends HostileEntity {
 
 		@Override
 		public void updateMovement() {
-			if (this.moving && !this.guardian.getNavigation().isIdle()) {
+			if (this.state == MoveControl.MoveStatus.MOVE_TO && !this.guardian.getNavigation().isIdle()) {
 				double d = this.targetX - this.guardian.x;
 				double e = this.targetY - this.guardian.y;
 				double f = this.targetZ - this.guardian.z;
 				double g = d * d + e * e + f * f;
 				g = (double)MathHelper.sqrt(g);
 				e /= g;
-				float h = (float)(MathHelper.atan2(f, d) * 180.0 / (float) Math.PI) - 90.0F;
-				this.guardian.yaw = this.wrapDegrees(this.guardian.yaw, h, 30.0F);
+				float h = (float)(MathHelper.atan2(f, d) * 180.0F / (float)Math.PI) - 90.0F;
+				this.guardian.yaw = this.wrapDegrees(this.guardian.yaw, h, 90.0F);
 				this.guardian.bodyYaw = this.guardian.yaw;
 				float i = (float)(this.speed * this.guardian.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).getValue());
 				this.guardian.setMovementSpeed(this.guardian.getMovementSpeed() + (i - this.guardian.getMovementSpeed()) * 0.125F);
 				double j = Math.sin((double)(this.guardian.ticksAlive + this.guardian.getEntityId()) * 0.5) * 0.05;
-				double k = Math.cos((double)(this.guardian.yaw * (float) Math.PI / 180.0F));
-				double l = Math.sin((double)(this.guardian.yaw * (float) Math.PI / 180.0F));
+				double k = Math.cos((double)(this.guardian.yaw * (float) (Math.PI / 180.0)));
+				double l = Math.sin((double)(this.guardian.yaw * (float) (Math.PI / 180.0)));
 				this.guardian.velocityX += j * k;
 				this.guardian.velocityZ += j * l;
 				j = Math.sin((double)(this.guardian.ticksAlive + this.guardian.getEntityId()) * 0.75) * 0.05;
@@ -561,7 +552,7 @@ public class GuardianEntity extends HostileEntity {
 				this.guardian.velocityY = this.guardian.velocityY + (double)this.guardian.getMovementSpeed() * e * 0.1;
 				LookControl lookControl = this.guardian.getLookControl();
 				double m = this.guardian.x + d / g * 2.0;
-				double n = (double)this.guardian.getEyeHeight() + this.guardian.y + e / g * 1.0;
+				double n = (double)this.guardian.getEyeHeight() + this.guardian.y + e / g;
 				double o = this.guardian.z + f / g * 2.0;
 				double p = lookControl.getLookX();
 				double q = lookControl.getLookY();

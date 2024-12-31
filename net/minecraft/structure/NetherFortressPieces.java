@@ -3,13 +3,14 @@ package net.minecraft.structure;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.StairsBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.WeightedRandomChestContent;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -89,23 +90,6 @@ public class NetherFortressPieces {
 	}
 
 	abstract static class AbstractPiece extends StructurePiece {
-		protected static final List<WeightedRandomChestContent> POSSIBLE_CHEST_CONTENTS = Lists.newArrayList(
-			new WeightedRandomChestContent[]{
-				new WeightedRandomChestContent(Items.DIAMOND, 0, 1, 3, 5),
-				new WeightedRandomChestContent(Items.IRON_INGOT, 0, 1, 5, 5),
-				new WeightedRandomChestContent(Items.GOLD_INGOT, 0, 1, 3, 15),
-				new WeightedRandomChestContent(Items.GOLDEN_SWORD, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.GOLDEN_CHESTPLATE, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.FLINT_AND_STEEL, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.NETHER_WART, 0, 3, 7, 5),
-				new WeightedRandomChestContent(Items.SADDLE, 0, 1, 1, 10),
-				new WeightedRandomChestContent(Items.GOLDEN_HORSE_ARMOR, 0, 1, 1, 8),
-				new WeightedRandomChestContent(Items.IRON_HORSE_ARMOR, 0, 1, 1, 5),
-				new WeightedRandomChestContent(Items.DIAMOND_HORSE_ARMOR, 0, 1, 1, 3),
-				new WeightedRandomChestContent(Item.fromBlock(Blocks.OBSIDIAN), 0, 2, 4, 2)
-			}
-		);
-
 		public AbstractPiece() {
 		}
 
@@ -186,7 +170,7 @@ public class NetherFortressPieces {
 			int x,
 			int y,
 			int z,
-			Direction orientation,
+			@Nullable Direction orientation,
 			int chainLength,
 			boolean inside
 		) {
@@ -211,8 +195,9 @@ public class NetherFortressPieces {
 		protected StructurePiece fillForwardOpening(
 			NetherFortressPieces.StartPiece start, List<StructurePiece> pieces, Random random, int leftRightOffset, int heightOffset, boolean inside
 		) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return this.generate(
 							start,
@@ -221,7 +206,7 @@ public class NetherFortressPieces {
 							this.boundingBox.minX + leftRightOffset,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.minZ - 1,
-							this.facing,
+							direction,
 							this.getChainLength(),
 							inside
 						);
@@ -233,7 +218,7 @@ public class NetherFortressPieces {
 							this.boundingBox.minX + leftRightOffset,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.maxZ + 1,
-							this.facing,
+							direction,
 							this.getChainLength(),
 							inside
 						);
@@ -245,7 +230,7 @@ public class NetherFortressPieces {
 							this.boundingBox.minX - 1,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.minZ + leftRightOffset,
-							this.facing,
+							direction,
 							this.getChainLength(),
 							inside
 						);
@@ -257,7 +242,7 @@ public class NetherFortressPieces {
 							this.boundingBox.maxX + 1,
 							this.boundingBox.minY + heightOffset,
 							this.boundingBox.minZ + leftRightOffset,
-							this.facing,
+							direction,
 							this.getChainLength(),
 							inside
 						);
@@ -270,8 +255,9 @@ public class NetherFortressPieces {
 		protected StructurePiece fillNWOpening(
 			NetherFortressPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset, boolean inside
 		) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return this.generate(
 							start,
@@ -329,8 +315,9 @@ public class NetherFortressPieces {
 		protected StructurePiece fillSEOpening(
 			NetherFortressPieces.StartPiece start, List<StructurePiece> pieces, Random random, int heightOffset, int leftRightOffset, boolean inside
 		) {
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						return this.generate(
 							start,
@@ -396,20 +383,17 @@ public class NetherFortressPieces {
 
 		public BridgeCrossing(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
 		protected BridgeCrossing(Random random, int i, int j) {
 			super(0);
-			this.facing = Direction.DirectionType.HORIZONTAL.getRandomDirection(random);
-			switch (this.facing) {
-				case NORTH:
-				case SOUTH:
-					this.boundingBox = new BlockBox(i, 64, j, i + 19 - 1, 73, j + 19 - 1);
-					break;
-				default:
-					this.boundingBox = new BlockBox(i, 64, j, i + 19 - 1, 73, j + 19 - 1);
+			this.method_11853(Direction.DirectionType.HORIZONTAL.getRandomDirection(random));
+			if (this.method_11854().getAxis() == Direction.Axis.Z) {
+				this.boundingBox = new BlockBox(i, 64, j, i + 19 - 1, 73, j + 19 - 1);
+			} else {
+				this.boundingBox = new BlockBox(i, 64, j, i + 19 - 1, 73, j + 19 - 1);
 			}
 		}
 
@@ -479,7 +463,7 @@ public class NetherFortressPieces {
 
 		public BridgeEnd(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.seed = random.nextInt();
 		}
@@ -541,7 +525,7 @@ public class NetherFortressPieces {
 
 		public BridgePiece(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -595,7 +579,7 @@ public class NetherFortressPieces {
 
 		public BridgePlatform(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -668,7 +652,7 @@ public class NetherFortressPieces {
 
 		public BridgeSmallCrossing(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -725,7 +709,7 @@ public class NetherFortressPieces {
 
 		public BridgeStairs(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -781,14 +765,15 @@ public class NetherFortressPieces {
 
 		public CorridorBalcony(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
 		@Override
 		public void fillOpenings(StructurePiece start, List<StructurePiece> pieces, Random random) {
 			int i = 1;
-			if (this.facing == Direction.WEST || this.facing == Direction.NORTH) {
+			Direction direction = this.method_11854();
+			if (direction == Direction.WEST || direction == Direction.NORTH) {
 				i = 5;
 			}
 
@@ -843,7 +828,7 @@ public class NetherFortressPieces {
 
 		public CorridorCrossing(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -889,7 +874,7 @@ public class NetherFortressPieces {
 
 		public CorridorExit(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -981,10 +966,11 @@ public class NetherFortressPieces {
 			this.fillWithOutline(world, boundingBox, 5, 5, 5, 7, 5, 7, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 6, 1, 6, 6, 4, 6, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 			this.setBlockState(world, Blocks.NETHER_BRICKS.getDefaultState(), 6, 0, 6, boundingBox);
-			this.setBlockState(world, Blocks.FLOWING_LAVA.getDefaultState(), 6, 5, 6, boundingBox);
+			BlockState blockState = Blocks.FLOWING_LAVA.getDefaultState();
+			this.setBlockState(world, blockState, 6, 5, 6, boundingBox);
 			BlockPos blockPos = new BlockPos(this.applyXTransform(6, 6), this.applyYTransform(5), this.applyZTransform(6, 6));
 			if (boundingBox.contains(blockPos)) {
-				world.scheduleTick(Blocks.FLOWING_LAVA, blockPos, random);
+				world.method_11482(blockPos, blockState, random);
 			}
 
 			return true;
@@ -999,7 +985,7 @@ public class NetherFortressPieces {
 
 		public CorridorLeftTurn(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.containsChest = random.nextInt(3) == 0;
 		}
@@ -1043,7 +1029,7 @@ public class NetherFortressPieces {
 			this.fillWithOutline(world, boundingBox, 3, 3, 4, 3, 4, 4, Blocks.NETHER_BRICK_FENCE.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 			if (this.containsChest && boundingBox.contains(new BlockPos(this.applyXTransform(3, 3), this.applyYTransform(2), this.applyZTransform(3, 3)))) {
 				this.containsChest = false;
-				this.placeChest(world, boundingBox, random, 3, 2, 3, POSSIBLE_CHEST_CONTENTS, 2 + random.nextInt(4));
+				this.method_11852(world, boundingBox, random, 3, 2, 3, LootTables.NETHER_BRIDGE_CHEST);
 			}
 
 			this.fillWithOutline(world, boundingBox, 0, 6, 0, 4, 6, 4, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
@@ -1064,7 +1050,7 @@ public class NetherFortressPieces {
 
 		public CorridorNetherWartsRoom(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -1132,28 +1118,28 @@ public class NetherFortressPieces {
 				);
 			}
 
-			int k = this.getData(Blocks.NETHER_BRICK_STAIRS, 3);
+			BlockState blockState = Blocks.NETHER_BRICK_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.NORTH);
 
-			for (int l = 0; l <= 6; l++) {
-				int m = l + 4;
+			for (int k = 0; k <= 6; k++) {
+				int l = k + 4;
 
-				for (int n = 5; n <= 7; n++) {
-					this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(k), n, 5 + l, m, boundingBox);
+				for (int m = 5; m <= 7; m++) {
+					this.setBlockState(world, blockState, m, 5 + k, l, boundingBox);
 				}
 
-				if (m >= 5 && m <= 8) {
-					this.fillWithOutline(world, boundingBox, 5, 5, m, 7, l + 4, m, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
-				} else if (m >= 9 && m <= 10) {
-					this.fillWithOutline(world, boundingBox, 5, 8, m, 7, l + 4, m, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
+				if (l >= 5 && l <= 8) {
+					this.fillWithOutline(world, boundingBox, 5, 5, l, 7, k + 4, l, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
+				} else if (l >= 9 && l <= 10) {
+					this.fillWithOutline(world, boundingBox, 5, 8, l, 7, k + 4, l, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 				}
 
-				if (l >= 1) {
-					this.fillWithOutline(world, boundingBox, 5, 6 + l, m, 7, 9 + l, m, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
+				if (k >= 1) {
+					this.fillWithOutline(world, boundingBox, 5, 6 + k, l, 7, 9 + k, l, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
 				}
 			}
 
-			for (int o = 5; o <= 7; o++) {
-				this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(k), o, 12, 11, boundingBox);
+			for (int n = 5; n <= 7; n++) {
+				this.setBlockState(world, blockState, n, 12, 11, boundingBox);
 			}
 
 			this.fillWithOutline(world, boundingBox, 5, 6, 7, 5, 7, 7, Blocks.NETHER_BRICK_FENCE.getDefaultState(), Blocks.NETHER_BRICK_FENCE.getDefaultState(), false);
@@ -1165,16 +1151,16 @@ public class NetherFortressPieces {
 			this.fillWithOutline(world, boundingBox, 9, 5, 2, 10, 5, 3, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 9, 5, 9, 10, 5, 10, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 10, 5, 4, 10, 5, 8, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
-			int p = this.getData(Blocks.NETHER_BRICK_STAIRS, 0);
-			int q = this.getData(Blocks.NETHER_BRICK_STAIRS, 1);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(q), 4, 5, 2, boundingBox);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(q), 4, 5, 3, boundingBox);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(q), 4, 5, 9, boundingBox);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(q), 4, 5, 10, boundingBox);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(p), 8, 5, 2, boundingBox);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(p), 8, 5, 3, boundingBox);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(p), 8, 5, 9, boundingBox);
-			this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(p), 8, 5, 10, boundingBox);
+			BlockState blockState2 = blockState.with(StairsBlock.FACING, Direction.EAST);
+			BlockState blockState3 = blockState.with(StairsBlock.FACING, Direction.WEST);
+			this.setBlockState(world, blockState3, 4, 5, 2, boundingBox);
+			this.setBlockState(world, blockState3, 4, 5, 3, boundingBox);
+			this.setBlockState(world, blockState3, 4, 5, 9, boundingBox);
+			this.setBlockState(world, blockState3, 4, 5, 10, boundingBox);
+			this.setBlockState(world, blockState2, 8, 5, 2, boundingBox);
+			this.setBlockState(world, blockState2, 8, 5, 3, boundingBox);
+			this.setBlockState(world, blockState2, 8, 5, 9, boundingBox);
+			this.setBlockState(world, blockState2, 8, 5, 10, boundingBox);
 			this.fillWithOutline(world, boundingBox, 3, 4, 4, 4, 4, 8, Blocks.SOULSAND.getDefaultState(), Blocks.SOULSAND.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 8, 4, 4, 9, 4, 8, Blocks.SOULSAND.getDefaultState(), Blocks.SOULSAND.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 3, 5, 4, 4, 5, 8, Blocks.NETHER_WART.getDefaultState(), Blocks.NETHER_WART.getDefaultState(), false);
@@ -1186,17 +1172,17 @@ public class NetherFortressPieces {
 			this.fillWithOutline(world, boundingBox, 0, 0, 4, 3, 1, 8, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 			this.fillWithOutline(world, boundingBox, 9, 0, 4, 12, 1, 8, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 
-			for (int r = 4; r <= 8; r++) {
-				for (int s = 0; s <= 2; s++) {
-					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), r, -1, s, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), r, -1, 12 - s, boundingBox);
+			for (int o = 4; o <= 8; o++) {
+				for (int p = 0; p <= 2; p++) {
+					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), o, -1, p, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), o, -1, 12 - p, boundingBox);
 				}
 			}
 
-			for (int t = 0; t <= 2; t++) {
-				for (int u = 4; u <= 8; u++) {
-					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), t, -1, u, boundingBox);
-					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), 12 - t, -1, u, boundingBox);
+			for (int q = 0; q <= 2; q++) {
+				for (int r = 4; r <= 8; r++) {
+					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), q, -1, r, boundingBox);
+					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), 12 - q, -1, r, boundingBox);
 				}
 			}
 
@@ -1212,7 +1198,7 @@ public class NetherFortressPieces {
 
 		public CorridorRightTurn(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.containsChest = random.nextInt(3) == 0;
 		}
@@ -1256,7 +1242,7 @@ public class NetherFortressPieces {
 			this.fillWithOutline(world, boundingBox, 3, 3, 4, 3, 4, 4, Blocks.NETHER_BRICK_FENCE.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
 			if (this.containsChest && boundingBox.contains(new BlockPos(this.applyXTransform(1, 3), this.applyYTransform(2), this.applyZTransform(1, 3)))) {
 				this.containsChest = false;
-				this.placeChest(world, boundingBox, random, 1, 2, 3, POSSIBLE_CHEST_CONTENTS, 2 + random.nextInt(4));
+				this.method_11852(world, boundingBox, random, 1, 2, 3, LootTables.NETHER_BRIDGE_CHEST);
 			}
 
 			this.fillWithOutline(world, boundingBox, 0, 6, 0, 4, 6, 4, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
@@ -1277,7 +1263,7 @@ public class NetherFortressPieces {
 
 		public CorridorStairs(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -1297,34 +1283,34 @@ public class NetherFortressPieces {
 
 		@Override
 		public boolean generate(World world, Random random, BlockBox boundingBox) {
-			int i = this.getData(Blocks.NETHER_BRICK_STAIRS, 2);
+			BlockState blockState = Blocks.NETHER_BRICK_STAIRS.getDefaultState().with(StairsBlock.FACING, Direction.SOUTH);
 
-			for (int j = 0; j <= 9; j++) {
-				int k = Math.max(1, 7 - j);
-				int l = Math.min(Math.max(k + 5, 14 - j), 13);
-				int m = j;
-				this.fillWithOutline(world, boundingBox, 0, 0, j, 4, k, j, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
-				this.fillWithOutline(world, boundingBox, 1, k + 1, j, 3, l - 1, j, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
-				if (j <= 6) {
-					this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(i), 1, k + 1, j, boundingBox);
-					this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(i), 2, k + 1, j, boundingBox);
-					this.setBlockState(world, Blocks.NETHER_BRICK_STAIRS.stateFromData(i), 3, k + 1, j, boundingBox);
+			for (int i = 0; i <= 9; i++) {
+				int j = Math.max(1, 7 - i);
+				int k = Math.min(Math.max(j + 5, 14 - i), 13);
+				int l = i;
+				this.fillWithOutline(world, boundingBox, 0, 0, i, 4, j, i, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
+				this.fillWithOutline(world, boundingBox, 1, j + 1, i, 3, k - 1, i, Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState(), false);
+				if (i <= 6) {
+					this.setBlockState(world, blockState, 1, j + 1, i, boundingBox);
+					this.setBlockState(world, blockState, 2, j + 1, i, boundingBox);
+					this.setBlockState(world, blockState, 3, j + 1, i, boundingBox);
 				}
 
-				this.fillWithOutline(world, boundingBox, 0, l, j, 4, l, j, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
-				this.fillWithOutline(world, boundingBox, 0, k + 1, j, 0, l - 1, j, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
-				this.fillWithOutline(world, boundingBox, 4, k + 1, j, 4, l - 1, j, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
-				if ((j & 1) == 0) {
+				this.fillWithOutline(world, boundingBox, 0, k, i, 4, k, i, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
+				this.fillWithOutline(world, boundingBox, 0, j + 1, i, 0, k - 1, i, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
+				this.fillWithOutline(world, boundingBox, 4, j + 1, i, 4, k - 1, i, Blocks.NETHER_BRICKS.getDefaultState(), Blocks.NETHER_BRICKS.getDefaultState(), false);
+				if ((i & 1) == 0) {
 					this.fillWithOutline(
-						world, boundingBox, 0, k + 2, j, 0, k + 3, j, Blocks.NETHER_BRICK_FENCE.getDefaultState(), Blocks.NETHER_BRICK_FENCE.getDefaultState(), false
+						world, boundingBox, 0, j + 2, i, 0, j + 3, i, Blocks.NETHER_BRICK_FENCE.getDefaultState(), Blocks.NETHER_BRICK_FENCE.getDefaultState(), false
 					);
 					this.fillWithOutline(
-						world, boundingBox, 4, k + 2, j, 4, k + 3, j, Blocks.NETHER_BRICK_FENCE.getDefaultState(), Blocks.NETHER_BRICK_FENCE.getDefaultState(), false
+						world, boundingBox, 4, j + 2, i, 4, j + 3, i, Blocks.NETHER_BRICK_FENCE.getDefaultState(), Blocks.NETHER_BRICK_FENCE.getDefaultState(), false
 					);
 				}
 
-				for (int n = 0; n <= 4; n++) {
-					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), n, -1, m, boundingBox);
+				for (int m = 0; m <= 4; m++) {
+					this.fillAirAndLiquidsDownwards(world, Blocks.NETHER_BRICKS.getDefaultState(), m, -1, l, boundingBox);
 				}
 			}
 
@@ -1365,7 +1351,7 @@ public class NetherFortressPieces {
 
 		public SmallCorridor(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 

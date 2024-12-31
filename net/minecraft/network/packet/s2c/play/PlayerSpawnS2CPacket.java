@@ -3,26 +3,23 @@ package net.minecraft.network.packet.s2c.play;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
-import net.minecraft.util.math.MathHelper;
 
 public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
 	private UUID uuid;
-	private int x;
-	private int y;
-	private int z;
+	private double field_13740;
+	private double field_13741;
+	private double field_13742;
 	private byte yaw;
 	private byte pitch;
-	private int handStackId;
 	private DataTracker tracker;
-	private List<DataTracker.DataEntry> dataTrackerEntries;
+	private List<DataTracker.DataEntry<?>> dataTrackerEntries;
 
 	public PlayerSpawnS2CPacket() {
 	}
@@ -30,13 +27,11 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public PlayerSpawnS2CPacket(PlayerEntity playerEntity) {
 		this.id = playerEntity.getEntityId();
 		this.uuid = playerEntity.getGameProfile().getId();
-		this.x = MathHelper.floor(playerEntity.x * 32.0);
-		this.y = MathHelper.floor(playerEntity.y * 32.0);
-		this.z = MathHelper.floor(playerEntity.z * 32.0);
+		this.field_13740 = playerEntity.x;
+		this.field_13741 = playerEntity.y;
+		this.field_13742 = playerEntity.z;
 		this.yaw = (byte)((int)(playerEntity.yaw * 256.0F / 360.0F));
 		this.pitch = (byte)((int)(playerEntity.pitch * 256.0F / 360.0F));
-		ItemStack itemStack = playerEntity.inventory.getMainHandStack();
-		this.handStackId = itemStack == null ? 0 : Item.getRawId(itemStack.getItem());
 		this.tracker = playerEntity.getDataTracker();
 	}
 
@@ -44,25 +39,23 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	public void read(PacketByteBuf buf) throws IOException {
 		this.id = buf.readVarInt();
 		this.uuid = buf.readUuid();
-		this.x = buf.readInt();
-		this.y = buf.readInt();
-		this.z = buf.readInt();
+		this.field_13740 = buf.readDouble();
+		this.field_13741 = buf.readDouble();
+		this.field_13742 = buf.readDouble();
 		this.yaw = buf.readByte();
 		this.pitch = buf.readByte();
-		this.handStackId = buf.readShort();
-		this.dataTrackerEntries = DataTracker.deserializePacket(buf);
+		this.dataTrackerEntries = DataTracker.method_12753(buf);
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.id);
-		buf.writeUUID(this.uuid);
-		buf.writeInt(this.x);
-		buf.writeInt(this.y);
-		buf.writeInt(this.z);
+		buf.writeUuid(this.uuid);
+		buf.writeDouble(this.field_13740);
+		buf.writeDouble(this.field_13741);
+		buf.writeDouble(this.field_13742);
 		buf.writeByte(this.yaw);
 		buf.writeByte(this.pitch);
-		buf.writeShort(this.handStackId);
 		this.tracker.write(buf);
 	}
 
@@ -70,7 +63,8 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		clientPlayPacketListener.onPlayerSpawn(this);
 	}
 
-	public List<DataTracker.DataEntry> getDataTrackerEntries() {
+	@Nullable
+	public List<DataTracker.DataEntry<?>> getDataTrackerEntries() {
 		if (this.dataTrackerEntries == null) {
 			this.dataTrackerEntries = this.tracker.getEntries();
 		}
@@ -86,16 +80,16 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.uuid;
 	}
 
-	public int getX() {
-		return this.x;
+	public double method_12628() {
+		return this.field_13740;
 	}
 
-	public int getY() {
-		return this.y;
+	public double method_12629() {
+		return this.field_13741;
 	}
 
-	public int getZ() {
-		return this.z;
+	public double method_12630() {
+		return this.field_13742;
 	}
 
 	public byte getYaw() {
@@ -104,9 +98,5 @@ public class PlayerSpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public byte getPitch() {
 		return this.pitch;
-	}
-
-	public int getHandStackId() {
-		return this.handStackId;
 	}
 }

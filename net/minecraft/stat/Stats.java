@@ -6,6 +6,7 @@ import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -20,74 +21,119 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 
 public class Stats {
-	protected static Map<String, Stat> ID_TO_STAT = Maps.newHashMap();
-	public static List<Stat> ALL = Lists.newArrayList();
-	public static List<Stat> GENERAL = Lists.newArrayList();
-	public static List<CraftingStat> ITEM = Lists.newArrayList();
-	public static List<CraftingStat> MINE = Lists.newArrayList();
-	public static Stat GAMES_LEFT = new SimpleStat("stat.leaveGame", new TranslatableText("stat.leaveGame")).localOnly().addStat();
-	public static Stat MINUTES_PLAYED = new SimpleStat("stat.playOneMinute", new TranslatableText("stat.playOneMinute"), Stat.TIME_PROVIDER).localOnly().addStat();
-	public static Stat TIME_SINCE_DEATH = new SimpleStat("stat.timeSinceDeath", new TranslatableText("stat.timeSinceDeath"), Stat.TIME_PROVIDER)
+	protected static final Map<String, Stat> ID_TO_STAT = Maps.newHashMap();
+	public static final List<Stat> ALL = Lists.newArrayList();
+	public static final List<Stat> GENERAL = Lists.newArrayList();
+	public static final List<CraftingStat> ITEM = Lists.newArrayList();
+	public static final List<CraftingStat> MINE = Lists.newArrayList();
+	public static final Stat GAMES_LEFT = new SimpleStat("stat.leaveGame", new TranslatableText("stat.leaveGame")).localOnly().addStat();
+	public static final Stat MINUTES_PLAYED = new SimpleStat("stat.playOneMinute", new TranslatableText("stat.playOneMinute"), Stat.TIME_PROVIDER)
 		.localOnly()
 		.addStat();
-	public static Stat CM_WALKED = new SimpleStat("stat.walkOneCm", new TranslatableText("stat.walkOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_SNEAKED = new SimpleStat("stat.crouchOneCm", new TranslatableText("stat.crouchOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_SPRINTED = new SimpleStat("stat.sprintOneCm", new TranslatableText("stat.sprintOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_SWUM = new SimpleStat("stat.swimOneCm", new TranslatableText("stat.swimOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_FALLEN = new SimpleStat("stat.fallOneCm", new TranslatableText("stat.fallOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_CLIMB = new SimpleStat("stat.climbOneCm", new TranslatableText("stat.climbOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_FLOWN = new SimpleStat("stat.flyOneCm", new TranslatableText("stat.flyOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_DIVED = new SimpleStat("stat.diveOneCm", new TranslatableText("stat.diveOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_MINECART = new SimpleStat("stat.minecartOneCm", new TranslatableText("stat.minecartOneCm"), Stat.DISTANCE_PROVIDER)
+	public static final Stat TIME_SINCE_DEATH = new SimpleStat("stat.timeSinceDeath", new TranslatableText("stat.timeSinceDeath"), Stat.TIME_PROVIDER)
 		.localOnly()
 		.addStat();
-	public static Stat CM_SAILED = new SimpleStat("stat.boatOneCm", new TranslatableText("stat.boatOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_PIG = new SimpleStat("stat.pigOneCm", new TranslatableText("stat.pigOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat CM_HORSE = new SimpleStat("stat.horseOneCm", new TranslatableText("stat.horseOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
-	public static Stat JUMPS = new SimpleStat("stat.jump", new TranslatableText("stat.jump")).localOnly().addStat();
-	public static Stat DROPS = new SimpleStat("stat.drop", new TranslatableText("stat.drop")).localOnly().addStat();
-	public static Stat DAMAGE_DEALT = new SimpleStat("stat.damageDealt", new TranslatableText("stat.damageDealt"), Stat.DAMAGE_PROVIDER).addStat();
-	public static Stat DAMAGE_TAKEN = new SimpleStat("stat.damageTaken", new TranslatableText("stat.damageTaken"), Stat.DAMAGE_PROVIDER).addStat();
-	public static Stat DEATHS = new SimpleStat("stat.deaths", new TranslatableText("stat.deaths")).addStat();
-	public static Stat MOB_KILLS = new SimpleStat("stat.mobKills", new TranslatableText("stat.mobKills")).addStat();
-	public static Stat ANIMALS_BRED = new SimpleStat("stat.animalsBred", new TranslatableText("stat.animalsBred")).addStat();
-	public static Stat PLAYERS_KILLED = new SimpleStat("stat.playerKills", new TranslatableText("stat.playerKills")).addStat();
-	public static Stat FISH_CAUGHT = new SimpleStat("stat.fishCaught", new TranslatableText("stat.fishCaught")).addStat();
-	public static Stat JUNK_FISHED = new SimpleStat("stat.junkFished", new TranslatableText("stat.junkFished")).addStat();
-	public static Stat TREASURE_FISHED = new SimpleStat("stat.treasureFished", new TranslatableText("stat.treasureFished")).addStat();
-	public static Stat TIMES_TALKED_TO_VILLAGER = new SimpleStat("stat.talkedToVillager", new TranslatableText("stat.talkedToVillager")).addStat();
-	public static Stat TRADED_WITH_VILLAGER = new SimpleStat("stat.tradedWithVillager", new TranslatableText("stat.tradedWithVillager")).addStat();
-	public static Stat CAKE_SLICES_EATEN = new SimpleStat("stat.cakeSlicesEaten", new TranslatableText("stat.cakeSlicesEaten")).addStat();
-	public static Stat CAULDRONS_FILLED = new SimpleStat("stat.cauldronFilled", new TranslatableText("stat.cauldronFilled")).addStat();
-	public static Stat CAULDRONS_USED = new SimpleStat("stat.cauldronUsed", new TranslatableText("stat.cauldronUsed")).addStat();
-	public static Stat ARMOR_CLEANED = new SimpleStat("stat.armorCleaned", new TranslatableText("stat.armorCleaned")).addStat();
-	public static Stat BANNER_CLEANED = new SimpleStat("stat.bannerCleaned", new TranslatableText("stat.bannerCleaned")).addStat();
-	public static Stat INTERACTIONS_WITH_BREWING_STAND = new SimpleStat("stat.brewingstandInteraction", new TranslatableText("stat.brewingstandInteraction"))
+	public static final Stat SNEAK_TIME = new SimpleStat("stat.sneakTime", new TranslatableText("stat.sneakTime"), Stat.TIME_PROVIDER).localOnly().addStat();
+	public static final Stat CM_WALKED = new SimpleStat("stat.walkOneCm", new TranslatableText("stat.walkOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_SNEAKED = new SimpleStat("stat.crouchOneCm", new TranslatableText("stat.crouchOneCm"), Stat.DISTANCE_PROVIDER)
+		.localOnly()
 		.addStat();
-	public static Stat INTERACTIONS_WITH_BEACON = new SimpleStat("stat.beaconInteraction", new TranslatableText("stat.beaconInteraction")).addStat();
-	public static Stat INTERACTIONS_WITH_DROPPER = new SimpleStat("stat.dropperInspected", new TranslatableText("stat.dropperInspected")).addStat();
-	public static Stat INTERACTIONS_WITH_HOPPER = new SimpleStat("stat.hopperInspected", new TranslatableText("stat.hopperInspected")).addStat();
-	public static Stat INTERACTIONS_WITH_DISPENSER = new SimpleStat("stat.dispenserInspected", new TranslatableText("stat.dispenserInspected")).addStat();
-	public static Stat NOTEBLOCK_PLAYED = new SimpleStat("stat.noteblockPlayed", new TranslatableText("stat.noteblockPlayed")).addStat();
-	public static Stat NOTEBLOCK_TUNED = new SimpleStat("stat.noteblockTuned", new TranslatableText("stat.noteblockTuned")).addStat();
-	public static Stat FLOWER_POTTED = new SimpleStat("stat.flowerPotted", new TranslatableText("stat.flowerPotted")).addStat();
-	public static Stat TRAPPED_CHEST_TRIGGERED = new SimpleStat("stat.trappedChestTriggered", new TranslatableText("stat.trappedChestTriggered")).addStat();
-	public static Stat ENDERCHEST_OPENED = new SimpleStat("stat.enderchestOpened", new TranslatableText("stat.enderchestOpened")).addStat();
-	public static Stat ITEM_ENCHANTED = new SimpleStat("stat.itemEnchanted", new TranslatableText("stat.itemEnchanted")).addStat();
-	public static Stat RECORD_PLAYED = new SimpleStat("stat.recordPlayed", new TranslatableText("stat.recordPlayed")).addStat();
-	public static Stat FURNACE_INTERACTION = new SimpleStat("stat.furnaceInteraction", new TranslatableText("stat.furnaceInteraction")).addStat();
-	public static Stat INTERACT_WITH_CRAFTING_TABLE = new SimpleStat("stat.craftingTableInteraction", new TranslatableText("stat.workbenchInteraction")).addStat();
-	public static Stat CHEST_OPENED = new SimpleStat("stat.chestOpened", new TranslatableText("stat.chestOpened")).addStat();
-	public static final Stat[] BLOCK_STATS = new Stat[4096];
-	public static final Stat[] CRAFTING_STATS = new Stat[32000];
-	public static final Stat[] USED = new Stat[32000];
-	public static final Stat[] BROKEN = new Stat[32000];
+	public static final Stat CM_SPRINTED = new SimpleStat("stat.sprintOneCm", new TranslatableText("stat.sprintOneCm"), Stat.DISTANCE_PROVIDER)
+		.localOnly()
+		.addStat();
+	public static final Stat CM_SWUM = new SimpleStat("stat.swimOneCm", new TranslatableText("stat.swimOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_FALLEN = new SimpleStat("stat.fallOneCm", new TranslatableText("stat.fallOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_CLIMB = new SimpleStat("stat.climbOneCm", new TranslatableText("stat.climbOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_FLOWN = new SimpleStat("stat.flyOneCm", new TranslatableText("stat.flyOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_DIVED = new SimpleStat("stat.diveOneCm", new TranslatableText("stat.diveOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_MINECART = new SimpleStat("stat.minecartOneCm", new TranslatableText("stat.minecartOneCm"), Stat.DISTANCE_PROVIDER)
+		.localOnly()
+		.addStat();
+	public static final Stat CM_SAILED = new SimpleStat("stat.boatOneCm", new TranslatableText("stat.boatOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_PIG = new SimpleStat("stat.pigOneCm", new TranslatableText("stat.pigOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat CM_HORSE = new SimpleStat("stat.horseOneCm", new TranslatableText("stat.horseOneCm"), Stat.DISTANCE_PROVIDER).localOnly().addStat();
+	public static final Stat AVIATE_ONE_CM = new SimpleStat("stat.aviateOneCm", new TranslatableText("stat.aviateOneCm"), Stat.DISTANCE_PROVIDER)
+		.localOnly()
+		.addStat();
+	public static final Stat JUMPS = new SimpleStat("stat.jump", new TranslatableText("stat.jump")).localOnly().addStat();
+	public static final Stat DROPS = new SimpleStat("stat.drop", new TranslatableText("stat.drop")).localOnly().addStat();
+	public static final Stat DAMAGE_DEALT = new SimpleStat("stat.damageDealt", new TranslatableText("stat.damageDealt"), Stat.DAMAGE_PROVIDER).addStat();
+	public static final Stat DAMAGE_TAKEN = new SimpleStat("stat.damageTaken", new TranslatableText("stat.damageTaken"), Stat.DAMAGE_PROVIDER).addStat();
+	public static final Stat DEATHS = new SimpleStat("stat.deaths", new TranslatableText("stat.deaths")).addStat();
+	public static final Stat MOB_KILLS = new SimpleStat("stat.mobKills", new TranslatableText("stat.mobKills")).addStat();
+	public static final Stat ANIMALS_BRED = new SimpleStat("stat.animalsBred", new TranslatableText("stat.animalsBred")).addStat();
+	public static final Stat PLAYERS_KILLED = new SimpleStat("stat.playerKills", new TranslatableText("stat.playerKills")).addStat();
+	public static final Stat field_14357 = new SimpleStat("stat.fishCaught", new TranslatableText("stat.fishCaught")).addStat();
+	public static final Stat field_14358 = new SimpleStat("stat.junkFished", new TranslatableText("stat.junkFished")).addStat();
+	public static final Stat field_14359 = new SimpleStat("stat.treasureFished", new TranslatableText("stat.treasureFished")).addStat();
+	public static final Stat TALKED_TO_VILLAGER = new SimpleStat("stat.talkedToVillager", new TranslatableText("stat.talkedToVillager")).addStat();
+	public static final Stat TRADED_WITH_VILLAGER = new SimpleStat("stat.tradedWithVillager", new TranslatableText("stat.tradedWithVillager")).addStat();
+	public static final Stat CAKE_SLICES_EATEN = new SimpleStat("stat.cakeSlicesEaten", new TranslatableText("stat.cakeSlicesEaten")).addStat();
+	public static final Stat CAULDRONS_FILLED = new SimpleStat("stat.cauldronFilled", new TranslatableText("stat.cauldronFilled")).addStat();
+	public static final Stat CAULDRONS_USED = new SimpleStat("stat.cauldronUsed", new TranslatableText("stat.cauldronUsed")).addStat();
+	public static final Stat ARMOR_CLEANED = new SimpleStat("stat.armorCleaned", new TranslatableText("stat.armorCleaned")).addStat();
+	public static final Stat BANNER_CLEANED = new SimpleStat("stat.bannerCleaned", new TranslatableText("stat.bannerCleaned")).addStat();
+	public static final Stat INTERACTIONS_WITH_BREWING_STAND = new SimpleStat("stat.brewingstandInteraction", new TranslatableText("stat.brewingstandInteraction"))
+		.addStat();
+	public static final Stat INTERACTIONS_WITH_BEACON = new SimpleStat("stat.beaconInteraction", new TranslatableText("stat.beaconInteraction")).addStat();
+	public static final Stat INTERACTIONS_WITH_DROPPER = new SimpleStat("stat.dropperInspected", new TranslatableText("stat.dropperInspected")).addStat();
+	public static final Stat INTERACTIONS_WITH_HOPPER = new SimpleStat("stat.hopperInspected", new TranslatableText("stat.hopperInspected")).addStat();
+	public static final Stat INTERACTIONS_WITH_DISPENSER = new SimpleStat("stat.dispenserInspected", new TranslatableText("stat.dispenserInspected")).addStat();
+	public static final Stat NOTEBLOCK_PLAYED = new SimpleStat("stat.noteblockPlayed", new TranslatableText("stat.noteblockPlayed")).addStat();
+	public static final Stat NOTEBLOCK_TUNED = new SimpleStat("stat.noteblockTuned", new TranslatableText("stat.noteblockTuned")).addStat();
+	public static final Stat FLOWER_POTTED = new SimpleStat("stat.flowerPotted", new TranslatableText("stat.flowerPotted")).addStat();
+	public static final Stat TRAPPED_CHEST_TRIGGERED = new SimpleStat("stat.trappedChestTriggered", new TranslatableText("stat.trappedChestTriggered")).addStat();
+	public static final Stat ENDERCHEST_OPENED = new SimpleStat("stat.enderchestOpened", new TranslatableText("stat.enderchestOpened")).addStat();
+	public static final Stat ITEM_ENCHANTED = new SimpleStat("stat.itemEnchanted", new TranslatableText("stat.itemEnchanted")).addStat();
+	public static final Stat RECORD_PLAYED = new SimpleStat("stat.recordPlayed", new TranslatableText("stat.recordPlayed")).addStat();
+	public static final Stat FURNACE_INTERACTION = new SimpleStat("stat.furnaceInteraction", new TranslatableText("stat.furnaceInteraction")).addStat();
+	public static final Stat INTERACT_WITH_CRAFTING_TABLE = new SimpleStat("stat.craftingTableInteraction", new TranslatableText("stat.workbenchInteraction"))
+		.addStat();
+	public static final Stat CHEST_OPENED = new SimpleStat("stat.chestOpened", new TranslatableText("stat.chestOpened")).addStat();
+	public static final Stat SLEEP_IN_BED = new SimpleStat("stat.sleepInBed", new TranslatableText("stat.sleepInBed")).addStat();
+	private static final Stat[] MINED = new Stat[4096];
+	private static final Stat[] CRAFTED = new Stat[32000];
+	private static final Stat[] USED = new Stat[32000];
+	private static final Stat[] BROKEN = new Stat[32000];
+	private static final Stat[] PICKED_UP = new Stat[32000];
+	private static final Stat[] DROPPED = new Stat[32000];
+
+	@Nullable
+	public static Stat mined(Block block) {
+		return MINED[Block.getIdByBlock(block)];
+	}
+
+	@Nullable
+	public static Stat crafted(Item item) {
+		return CRAFTED[Item.getRawId(item)];
+	}
+
+	@Nullable
+	public static Stat used(Item item) {
+		return USED[Item.getRawId(item)];
+	}
+
+	@Nullable
+	public static Stat broke(Item item) {
+		return BROKEN[Item.getRawId(item)];
+	}
+
+	@Nullable
+	public static Stat picked(Item item) {
+		return PICKED_UP[Item.getRawId(item)];
+	}
+
+	@Nullable
+	public static Stat dropped(Item item) {
+		return DROPPED[Item.getRawId(item)];
+	}
 
 	public static void setup() {
 		loadBlockStats();
 		loadUseStats();
 		loadBreakStats();
 		loadCraftingStats();
+		method_12851();
 		AchievementsAndCriterions.load();
 		EntityType.load();
 	}
@@ -110,13 +156,12 @@ public class Stats {
 				int i = Item.getRawId(item);
 				String string = method_10801(item);
 				if (string != null) {
-					CRAFTING_STATS[i] = new CraftingStat("stat.craftItem.", string, new TranslatableText("stat.craftItem", new ItemStack(item).toHoverableText()), item)
-						.addStat();
+					CRAFTED[i] = new CraftingStat("stat.craftItem.", string, new TranslatableText("stat.craftItem", new ItemStack(item).toHoverableText()), item).addStat();
 				}
 			}
 		}
 
-		method_8293(CRAFTING_STATS);
+		method_8293(CRAFTED);
 	}
 
 	private static void loadBlockStats() {
@@ -126,14 +171,13 @@ public class Stats {
 				int i = Block.getIdByBlock(block);
 				String string = method_10801(item);
 				if (string != null && block.hasStats()) {
-					BLOCK_STATS[i] = new CraftingStat("stat.mineBlock.", string, new TranslatableText("stat.mineBlock", new ItemStack(block).toHoverableText()), item)
-						.addStat();
-					MINE.add((CraftingStat)BLOCK_STATS[i]);
+					MINED[i] = new CraftingStat("stat.mineBlock.", string, new TranslatableText("stat.mineBlock", new ItemStack(block).toHoverableText()), item).addStat();
+					MINE.add((CraftingStat)MINED[i]);
 				}
 			}
 		}
 
-		method_8293(BLOCK_STATS);
+		method_8293(MINED);
 	}
 
 	private static void loadUseStats() {
@@ -160,6 +204,21 @@ public class Stats {
 				String string = method_10801(item);
 				if (string != null && item.isDamageable()) {
 					BROKEN[i] = new CraftingStat("stat.breakItem.", string, new TranslatableText("stat.breakItem", new ItemStack(item).toHoverableText()), item).addStat();
+				}
+			}
+		}
+
+		method_8293(BROKEN);
+	}
+
+	private static void method_12851() {
+		for (Item item : Item.REGISTRY) {
+			if (item != null) {
+				int i = Item.getRawId(item);
+				String string = method_10801(item);
+				if (string != null) {
+					PICKED_UP[i] = new CraftingStat("stat.pickup.", string, new TranslatableText("stat.pickup", new ItemStack(item).toHoverableText()), item).addStat();
+					DROPPED[i] = new CraftingStat("stat.drop.", string, new TranslatableText("stat.drop", new ItemStack(item).toHoverableText()), item).addStat();
 				}
 			}
 		}
@@ -203,17 +262,19 @@ public class Stats {
 	}
 
 	public static Stat createKillEntityStat(EntityType.SpawnEggData spawnEggData) {
-		String string = EntityType.getEntityName(spawnEggData.id);
-		return string == null
+		return spawnEggData.name == null
 			? null
-			: new Stat("stat.killEntity." + string, new TranslatableText("stat.entityKill", new TranslatableText("entity." + string + ".name"))).addStat();
+			: new Stat("stat.killEntity." + spawnEggData.name, new TranslatableText("stat.entityKill", new TranslatableText("entity." + spawnEggData.name + ".name")))
+				.addStat();
 	}
 
 	public static Stat createKilledByEntityStat(EntityType.SpawnEggData spawnEggData) {
-		String string = EntityType.getEntityName(spawnEggData.id);
-		return string == null
+		return spawnEggData.name == null
 			? null
-			: new Stat("stat.entityKilledBy." + string, new TranslatableText("stat.entityKilledBy", new TranslatableText("entity." + string + ".name"))).addStat();
+			: new Stat(
+					"stat.entityKilledBy." + spawnEggData.name, new TranslatableText("stat.entityKilledBy", new TranslatableText("entity." + spawnEggData.name + ".name"))
+				)
+				.addStat();
 	}
 
 	public static Stat getAStat(String id) {

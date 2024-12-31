@@ -2,9 +2,9 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.color.world.GrassColors;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -15,49 +15,35 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class TallPlantBlock extends PlantBlock implements Growable {
 	public static final EnumProperty<TallPlantBlock.GrassType> TYPE = EnumProperty.of("type", TallPlantBlock.GrassType.class);
+	protected static final Box field_12800 = new Box(0.099999994F, 0.0, 0.099999994F, 0.9F, 0.8F, 0.9F);
 
 	protected TallPlantBlock() {
 		super(Material.REPLACEABLE_PLANT);
 		this.setDefaultState(this.stateManager.getDefaultState().with(TYPE, TallPlantBlock.GrassType.DEAD_BUSH));
-		float f = 0.4F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 0.8F, 0.5F + f);
 	}
 
 	@Override
-	public int getColor() {
-		return GrassColors.getColor(0.5, 1.0);
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12800;
 	}
 
 	@Override
 	public boolean canPlantAt(World world, BlockPos pos, BlockState state) {
-		return this.canPlantOnTop(world.getBlockState(pos.down()).getBlock());
+		return this.method_11579(world.getBlockState(pos.down()));
 	}
 
 	@Override
-	public boolean isReplaceable(World world, BlockPos pos) {
+	public boolean method_8638(BlockView blockView, BlockPos blockPos) {
 		return true;
 	}
 
-	@Override
-	public int getColor(BlockState state) {
-		if (state.getBlock() != this) {
-			return super.getColor(state);
-		} else {
-			TallPlantBlock.GrassType grassType = state.get(TYPE);
-			return grassType == TallPlantBlock.GrassType.DEAD_BUSH ? 16777215 : GrassColors.getColor(0.5, 1.0);
-		}
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		return view.getBiome(pos).getGrassColor(pos);
-	}
-
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return random.nextInt(8) == 0 ? Items.WHEAT_SEEDS : null;
@@ -69,19 +55,18 @@ public class TallPlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void harvest(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be) {
-		if (!world.isClient && player.getMainHandStack() != null && player.getMainHandStack().getItem() == Items.SHEARS) {
-			player.incrementStat(Stats.BLOCK_STATS[Block.getIdByBlock(this)]);
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Blocks.TALLGRASS, 1, ((TallPlantBlock.GrassType)state.get(TYPE)).getId()));
 		} else {
-			super.harvest(world, player, pos, state, be);
+			super.method_8651(world, player, pos, state, blockEntity, stack);
 		}
 	}
 
 	@Override
-	public int getMeta(World world, BlockPos pos) {
-		BlockState blockState = world.getBlockState(pos);
-		return blockState.getBlock().getData(blockState);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this, 1, blockState.getBlock().getData(blockState));
 	}
 
 	@Override

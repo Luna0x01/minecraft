@@ -5,7 +5,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexBuffer;
 import net.minecraft.client.world.BuiltChunk;
-import org.lwjgl.opengl.GL11;
 
 public class VboChunkRenderManager extends AbstractChunkRenderManager {
 	@Override
@@ -29,11 +28,11 @@ public class VboChunkRenderManager extends AbstractChunkRenderManager {
 	}
 
 	private void method_9929() {
-		GL11.glVertexPointer(3, 5126, 28, 0L);
-		GL11.glColorPointer(4, 5121, 28, 12L);
-		GL11.glTexCoordPointer(2, 5126, 28, 16L);
+		GlStateManager.method_12307(3, 5126, 28, 0);
+		GlStateManager.method_12311(4, 5121, 28, 12);
+		GlStateManager.method_12302(2, 5126, 28, 16);
 		GLX.gl13ClientActiveTexture(GLX.lightmapTextureUnit);
-		GL11.glTexCoordPointer(2, 5122, 28, 24L);
+		GlStateManager.method_12302(2, 5122, 28, 24);
 		GLX.gl13ClientActiveTexture(GLX.textureUnit);
 	}
 }

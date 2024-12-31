@@ -56,7 +56,7 @@ public class StainedGlassBlock extends TransparentBlock {
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 

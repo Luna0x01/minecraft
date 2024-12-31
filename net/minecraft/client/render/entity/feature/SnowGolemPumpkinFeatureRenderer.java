@@ -16,7 +16,7 @@ public class SnowGolemPumpkinFeatureRenderer implements FeatureRenderer<SnowGole
 	}
 
 	public void render(SnowGolemEntity snowGolemEntity, float f, float g, float h, float i, float j, float k, float l) {
-		if (!snowGolemEntity.isInvisible()) {
+		if (!snowGolemEntity.isInvisible() && !snowGolemEntity.method_13124()) {
 			GlStateManager.pushMatrix();
 			this.snowGolemRenderer.getModel().field_1532.preRender(0.0625F);
 			float m = 0.625F;

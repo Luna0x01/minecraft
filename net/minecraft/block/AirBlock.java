@@ -1,8 +1,10 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class AirBlock extends Block {
@@ -11,17 +13,18 @@ public class AirBlock extends Block {
 	}
 
 	@Override
-	public int getBlockType() {
-		return -1;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.INVISIBLE;
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
 		return null;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
@@ -35,7 +38,12 @@ public class AirBlock extends Block {
 	}
 
 	@Override
-	public boolean isReplaceable(World world, BlockPos pos) {
+	public boolean method_8638(BlockView blockView, BlockPos blockPos) {
 		return true;
+	}
+
+	@Override
+	public boolean method_11562(BlockState state) {
+		return false;
 	}
 }

@@ -2,6 +2,7 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.collection.IntArrayCache;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class XBiomeLayer extends Layer {
 	public XBiomeLayer(long l, Layer layer) {
@@ -18,42 +19,48 @@ public class XBiomeLayer extends Layer {
 			for (int n = 0; n < k; n++) {
 				this.method_145((long)(n + i), (long)(m + j));
 				int o = is[n + 1 + (m + 1) * (k + 2)];
-				if (!this.method_6592(is, js, n, m, k, o, Biome.EXTREME_HILLS.id, Biome.EXTREME_HILLS_EDGE.id)
-					&& !this.method_6594(is, js, n, m, k, o, Biome.MESA_PLATEAU_F.id, Biome.MESA.id)
-					&& !this.method_6594(is, js, n, m, k, o, Biome.MESA_PLATEAU.id, Biome.MESA.id)
-					&& !this.method_6594(is, js, n, m, k, o, Biome.MEGA_TAIGA.id, Biome.TAIGA.id)) {
-					if (o == Biome.DESERT.id) {
+				if (!this.method_6592(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.EXTREME_HILLS), Biome.getBiomeIndex(Biomes.ExTREME_HILLS_SMALLER))
+					&& !this.method_6594(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.MESA_ROCK), Biome.getBiomeIndex(Biomes.MESA))
+					&& !this.method_6594(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.MESA_CLEAR_ROCK), Biome.getBiomeIndex(Biomes.MESA))
+					&& !this.method_6594(is, js, n, m, k, o, Biome.getBiomeIndex(Biomes.REDWOOD_TAIGA), Biome.getBiomeIndex(Biomes.TAIGA))) {
+					if (o == Biome.getBiomeIndex(Biomes.DESERT)) {
 						int p = is[n + 1 + (m + 1 - 1) * (k + 2)];
 						int q = is[n + 1 + 1 + (m + 1) * (k + 2)];
 						int r = is[n + 1 - 1 + (m + 1) * (k + 2)];
 						int s = is[n + 1 + (m + 1 + 1) * (k + 2)];
-						if (p != Biome.ICE_PLAINS.id && q != Biome.ICE_PLAINS.id && r != Biome.ICE_PLAINS.id && s != Biome.ICE_PLAINS.id) {
+						if (p != Biome.getBiomeIndex(Biomes.ICE_FLATS)
+							&& q != Biome.getBiomeIndex(Biomes.ICE_FLATS)
+							&& r != Biome.getBiomeIndex(Biomes.ICE_FLATS)
+							&& s != Biome.getBiomeIndex(Biomes.ICE_FLATS)) {
 							js[n + m * k] = o;
 						} else {
-							js[n + m * k] = Biome.EXTREME_HILLS_PLUS.id;
+							js[n + m * k] = Biome.getBiomeIndex(Biomes.EXTREME_HILLS_WITH_TREES);
 						}
-					} else if (o == Biome.SWAMPLAND.id) {
+					} else if (o == Biome.getBiomeIndex(Biomes.SWAMP)) {
 						int t = is[n + 1 + (m + 1 - 1) * (k + 2)];
 						int u = is[n + 1 + 1 + (m + 1) * (k + 2)];
 						int v = is[n + 1 - 1 + (m + 1) * (k + 2)];
 						int w = is[n + 1 + (m + 1 + 1) * (k + 2)];
-						if (t == Biome.DESERT.id
-							|| u == Biome.DESERT.id
-							|| v == Biome.DESERT.id
-							|| w == Biome.DESERT.id
-							|| t == Biome.COLD_TAIGA.id
-							|| u == Biome.COLD_TAIGA.id
-							|| v == Biome.COLD_TAIGA.id
-							|| w == Biome.COLD_TAIGA.id
-							|| t == Biome.ICE_PLAINS.id
-							|| u == Biome.ICE_PLAINS.id
-							|| v == Biome.ICE_PLAINS.id
-							|| w == Biome.ICE_PLAINS.id) {
-							js[n + m * k] = Biome.PLAINS.id;
-						} else if (t != Biome.JUNGLE.id && w != Biome.JUNGLE.id && u != Biome.JUNGLE.id && v != Biome.JUNGLE.id) {
+						if (t == Biome.getBiomeIndex(Biomes.DESERT)
+							|| u == Biome.getBiomeIndex(Biomes.DESERT)
+							|| v == Biome.getBiomeIndex(Biomes.DESERT)
+							|| w == Biome.getBiomeIndex(Biomes.DESERT)
+							|| t == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
+							|| u == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
+							|| v == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
+							|| w == Biome.getBiomeIndex(Biomes.TAIGA_COLD)
+							|| t == Biome.getBiomeIndex(Biomes.ICE_FLATS)
+							|| u == Biome.getBiomeIndex(Biomes.ICE_FLATS)
+							|| v == Biome.getBiomeIndex(Biomes.ICE_FLATS)
+							|| w == Biome.getBiomeIndex(Biomes.ICE_FLATS)) {
+							js[n + m * k] = Biome.getBiomeIndex(Biomes.PLAINS);
+						} else if (t != Biome.getBiomeIndex(Biomes.JUNGLE)
+							&& w != Biome.getBiomeIndex(Biomes.JUNGLE)
+							&& u != Biome.getBiomeIndex(Biomes.JUNGLE)
+							&& v != Biome.getBiomeIndex(Biomes.JUNGLE)) {
 							js[n + m * k] = o;
 						} else {
-							js[n + m * k] = Biome.JUNGLE_EDGE.id;
+							js[n + m * k] = Biome.getBiomeIndex(Biomes.JUNGLE_EDGE);
 						}
 					} else {
 						js[n + m * k] = o;

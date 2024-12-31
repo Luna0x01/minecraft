@@ -1,10 +1,20 @@
 package com.mojang.blaze3d.platform;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.util.Util;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.lwjgl.Sys;
 import org.lwjgl.opengl.ARBFramebufferObject;
 import org.lwjgl.opengl.ARBMultitexture;
 import org.lwjgl.opengl.ARBShaderObjects;
@@ -24,6 +34,7 @@ import oshi.SystemInfo;
 import oshi.hardware.Processor;
 
 public class GLX {
+	private static final Logger field_13708 = LogManager.getLogger();
 	public static boolean nvidia;
 	public static boolean amd;
 	public static int framebuffer;
@@ -35,7 +46,7 @@ public class GLX {
 	public static int incompleteFramebufferAttachmentMiss;
 	public static int incompleteFramebufferAttachmentDraw;
 	public static int incompleteFramebufferAttachmentRead;
-	private static int type;
+	private static GLX.class_2908 field_13709;
 	public static boolean advanced;
 	private static boolean shaders;
 	private static boolean arbShaderObjects;
@@ -146,7 +157,7 @@ public class GLX {
 			contextDescription = contextDescription + "Using framebuffer objects because ";
 			if (contextCapabilities.OpenGL30) {
 				contextDescription = contextDescription + "OpenGL 3.0 is supported and separate blending is supported.\n";
-				type = 0;
+				field_13709 = GLX.class_2908.BASE;
 				framebuffer = 36160;
 				renderbuffer = 36161;
 				colorAttachment = 36064;
@@ -158,7 +169,7 @@ public class GLX {
 				incompleteFramebufferAttachmentRead = 36060;
 			} else if (contextCapabilities.GL_ARB_framebuffer_object) {
 				contextDescription = contextDescription + "ARB_framebuffer_object is supported and separate blending is supported.\n";
-				type = 1;
+				field_13709 = GLX.class_2908.ARB;
 				framebuffer = 36160;
 				renderbuffer = 36161;
 				colorAttachment = 36064;
@@ -170,7 +181,7 @@ public class GLX {
 				incompleteFramebufferAttachmentRead = 36060;
 			} else if (contextCapabilities.GL_EXT_framebuffer_object) {
 				contextDescription = contextDescription + "EXT_framebuffer_object is supported.\n";
-				type = 2;
+				field_13709 = GLX.class_2908.EXT;
 				framebuffer = 36160;
 				renderbuffer = 36161;
 				colorAttachment = 36064;
@@ -477,14 +488,14 @@ public class GLX {
 
 	public static void advancedBindFramebuffer(int i, int j) {
 		if (advanced) {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					GL30.glBindFramebuffer(i, j);
 					break;
-				case 1:
+				case ARB:
 					ARBFramebufferObject.glBindFramebuffer(i, j);
 					break;
-				case 2:
+				case EXT:
 					EXTFramebufferObject.glBindFramebufferEXT(i, j);
 			}
 		}
@@ -492,14 +503,14 @@ public class GLX {
 
 	public static void advancedBindRenderBuffer(int i, int j) {
 		if (advanced) {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					GL30.glBindRenderbuffer(i, j);
 					break;
-				case 1:
+				case ARB:
 					ARBFramebufferObject.glBindRenderbuffer(i, j);
 					break;
-				case 2:
+				case EXT:
 					EXTFramebufferObject.glBindRenderbufferEXT(i, j);
 			}
 		}
@@ -507,14 +518,14 @@ public class GLX {
 
 	public static void advancedDeleteRenderBuffers(int renderbuffer) {
 		if (advanced) {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					GL30.glDeleteRenderbuffers(renderbuffer);
 					break;
-				case 1:
+				case ARB:
 					ARBFramebufferObject.glDeleteRenderbuffers(renderbuffer);
 					break;
-				case 2:
+				case EXT:
 					EXTFramebufferObject.glDeleteRenderbuffersEXT(renderbuffer);
 			}
 		}
@@ -522,14 +533,14 @@ public class GLX {
 
 	public static void advancedDeleteFrameBuffers(int framebuffer) {
 		if (advanced) {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					GL30.glDeleteFramebuffers(framebuffer);
 					break;
-				case 1:
+				case ARB:
 					ARBFramebufferObject.glDeleteFramebuffers(framebuffer);
 					break;
-				case 2:
+				case EXT:
 					EXTFramebufferObject.glDeleteFramebuffersEXT(framebuffer);
 			}
 		}
@@ -539,12 +550,12 @@ public class GLX {
 		if (!advanced) {
 			return -1;
 		} else {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					return GL30.glGenFramebuffers();
-				case 1:
+				case ARB:
 					return ARBFramebufferObject.glGenFramebuffers();
-				case 2:
+				case EXT:
 					return EXTFramebufferObject.glGenFramebuffersEXT();
 				default:
 					return -1;
@@ -556,12 +567,12 @@ public class GLX {
 		if (!advanced) {
 			return -1;
 		} else {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					return GL30.glGenRenderbuffers();
-				case 1:
+				case ARB:
 					return ARBFramebufferObject.glGenRenderbuffers();
-				case 2:
+				case EXT:
 					return EXTFramebufferObject.glGenRenderbuffersEXT();
 				default:
 					return -1;
@@ -571,14 +582,14 @@ public class GLX {
 
 	public static void advancedRenderBufferStorage(int target, int internalFormat, int width, int height) {
 		if (advanced) {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					GL30.glRenderbufferStorage(target, internalFormat, width, height);
 					break;
-				case 1:
+				case ARB:
 					ARBFramebufferObject.glRenderbufferStorage(target, internalFormat, width, height);
 					break;
-				case 2:
+				case EXT:
 					EXTFramebufferObject.glRenderbufferStorageEXT(target, internalFormat, width, height);
 			}
 		}
@@ -586,14 +597,14 @@ public class GLX {
 
 	public static void advancedFramebufferRenderbuffer(int target, int attachment, int renderBufferTarget, int renderBuffer) {
 		if (advanced) {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					GL30.glFramebufferRenderbuffer(target, attachment, renderBufferTarget, renderBuffer);
 					break;
-				case 1:
+				case ARB:
 					ARBFramebufferObject.glFramebufferRenderbuffer(target, attachment, renderBufferTarget, renderBuffer);
 					break;
-				case 2:
+				case EXT:
 					EXTFramebufferObject.glFramebufferRenderbufferEXT(target, attachment, renderBufferTarget, renderBuffer);
 			}
 		}
@@ -603,12 +614,12 @@ public class GLX {
 		if (!advanced) {
 			return -1;
 		} else {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					return GL30.glCheckFramebufferStatus(framebuffer);
-				case 1:
+				case ARB:
 					return ARBFramebufferObject.glCheckFramebufferStatus(framebuffer);
-				case 2:
+				case EXT:
 					return EXTFramebufferObject.glCheckFramebufferStatusEXT(framebuffer);
 				default:
 					return -1;
@@ -618,14 +629,14 @@ public class GLX {
 
 	public static void advancedFrameBufferTexture2D(int target, int attachment, int textarget, int texture, int level) {
 		if (advanced) {
-			switch (type) {
-				case 0:
+			switch (field_13709) {
+				case BASE:
 					GL30.glFramebufferTexture2D(target, attachment, textarget, texture, level);
 					break;
-				case 1:
+				case ARB:
 					ARBFramebufferObject.glFramebufferTexture2D(target, attachment, textarget, texture, level);
 					break;
-				case 2:
+				case EXT:
 					EXTFramebufferObject.glFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
 			}
 		}
@@ -673,5 +684,68 @@ public class GLX {
 
 	public static String getProcessor() {
 		return processor == null ? "<unknown>" : processor;
+	}
+
+	public static void method_12554(int i) {
+		GlStateManager.disableTexture();
+		GlStateManager.depthMask(false);
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		bufferBuilder.begin(1, VertexFormats.POSITION_COLOR);
+		GL11.glLineWidth(2.0F);
+		bufferBuilder.vertex(0.0, 0.0, 0.0).color(255, 0, 0, 255).next();
+		bufferBuilder.vertex((double)i, 0.0, 0.0).color(255, 0, 0, 255).next();
+		bufferBuilder.vertex(0.0, 0.0, 0.0).color(0, 255, 0, 255).next();
+		bufferBuilder.vertex(0.0, (double)i, 0.0).color(0, 255, 0, 255).next();
+		bufferBuilder.vertex(0.0, 0.0, 0.0).color(0, 0, 255, 255).next();
+		bufferBuilder.vertex(0.0, 0.0, (double)i).color(0, 0, 255, 255).next();
+		tessellator.draw();
+		GL11.glLineWidth(1.0F);
+		GlStateManager.depthMask(true);
+		GlStateManager.enableTexture();
+	}
+
+	public static void method_12553(File file) {
+		String string = file.getAbsolutePath();
+		if (Util.getOperatingSystem() == Util.OperatingSystem.MACOS) {
+			try {
+				field_13708.info(string);
+				Runtime.getRuntime().exec(new String[]{"/usr/bin/open", string});
+				return;
+			} catch (IOException var7) {
+				field_13708.error("Couldn't open file", var7);
+			}
+		} else if (Util.getOperatingSystem() == Util.OperatingSystem.WINDOWS) {
+			String string2 = String.format("cmd.exe /C start \"Open file\" \"%s\"", string);
+
+			try {
+				Runtime.getRuntime().exec(string2);
+				return;
+			} catch (IOException var6) {
+				field_13708.error("Couldn't open file", var6);
+			}
+		}
+
+		boolean bl = false;
+
+		try {
+			Class<?> class_ = Class.forName("java.awt.Desktop");
+			Object object = class_.getMethod("getDesktop").invoke(null);
+			class_.getMethod("browse", URI.class).invoke(object, file.toURI());
+		} catch (Throwable var5) {
+			field_13708.error("Couldn't open link", var5);
+			bl = true;
+		}
+
+		if (bl) {
+			field_13708.info("Opening via system class!");
+			Sys.openURL("file://" + string);
+		}
+	}
+
+	static enum class_2908 {
+		BASE,
+		ARB,
+		EXT;
 	}
 }

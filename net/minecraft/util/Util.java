@@ -1,7 +1,9 @@
 package net.minecraft.util;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.Logger;
 
 public class Util {
@@ -22,6 +24,7 @@ public class Util {
 		}
 	}
 
+	@Nullable
 	public static <V> V executeTask(FutureTask<V> task, Logger logger) {
 		try {
 			task.run();
@@ -33,6 +36,10 @@ public class Util {
 		}
 
 		return null;
+	}
+
+	public static <T> T getLast(List<T> list) {
+		return (T)list.get(list.size() - 1);
 	}
 
 	public static enum OperatingSystem {

@@ -58,7 +58,7 @@ public class DarkOakTreeFeature extends FoliageFeature {
 
 					int s = k + r;
 					BlockPos blockPos3 = new BlockPos(o, s, p);
-					Material material = world.getBlockState(blockPos3).getBlock().getMaterial();
+					Material material = world.getBlockState(blockPos3).getMaterial();
 					if (material == Material.AIR || material == Material.FOLIAGE) {
 						this.setDarkOakLog(world, blockPos3);
 						this.setDarkOakLog(world, blockPos3.east());
@@ -168,8 +168,8 @@ public class DarkOakTreeFeature extends FoliageFeature {
 
 	private void setDarkOakLeaves(World world, int posX, int posY, int posZ) {
 		BlockPos blockPos = new BlockPos(posX, posY, posZ);
-		Block block = world.getBlockState(blockPos).getBlock();
-		if (block.getMaterial() == Material.AIR) {
+		Material material = world.getBlockState(blockPos).getMaterial();
+		if (material == Material.AIR) {
 			this.setBlockStateWithoutUpdatingNeighbors(world, blockPos, LEAVES);
 		}
 	}

@@ -11,7 +11,7 @@ import net.minecraft.util.DyeColor;
 public class DyeRecipeDispatcher {
 	public void register(RecipeDispatcher recipes) {
 		for (int i = 0; i < 16; i++) {
-			recipes.registerShapelessRecipe(new ItemStack(Blocks.WOOL, 1, i), new ItemStack(Items.DYE, 1, 15 - i), new ItemStack(Item.fromBlock(Blocks.WOOL), 1, 0));
+			recipes.registerShapelessRecipe(new ItemStack(Blocks.WOOL, 1, i), new ItemStack(Items.DYE, 1, 15 - i), new ItemStack(Item.fromBlock(Blocks.WOOL)));
 			recipes.registerShapedRecipe(
 				new ItemStack(Blocks.STAINED_TERRACOTTA, 8, 15 - i), "###", "#X#", "###", '#', new ItemStack(Blocks.TERRACOTTA), 'X', new ItemStack(Items.DYE, 1, i)
 			);
@@ -128,6 +128,7 @@ public class DyeRecipeDispatcher {
 		recipes.registerShapelessRecipe(
 			new ItemStack(Items.DYE, 2, DyeColor.PINK.getSwappedId()), new ItemStack(Blocks.DOUBLE_PLANT, 1, DoublePlantBlock.DoublePlantType.PAEONIA.getId())
 		);
+		recipes.registerShapelessRecipe(new ItemStack(Items.DYE, 1, DyeColor.RED.getSwappedId()), new ItemStack(Items.BEETROOT, 1));
 
 		for (int j = 0; j < 16; j++) {
 			recipes.registerShapedRecipe(new ItemStack(Blocks.CARPET, 3, j), "##", '#', new ItemStack(Blocks.WOOL, 1, j));

@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 
@@ -115,16 +116,6 @@ public class PlayerEntityModel extends BiPedModel {
 		}
 	}
 
-	public void renderRightArm() {
-		this.rightArm.render(0.0625F);
-		this.rightSleeve.render(0.0625F);
-	}
-
-	public void renderLeftArm() {
-		this.leftArm.render(0.0625F);
-		this.leftSleeve.render(0.0625F);
-	}
-
 	@Override
 	public void setVisible(boolean visible) {
 		super.setVisible(visible);
@@ -138,13 +129,15 @@ public class PlayerEntityModel extends BiPedModel {
 	}
 
 	@Override
-	public void setArmAngle(float angle) {
+	public void method_12221(float f, HandOption handOption) {
+		ModelPart modelPart = this.method_12223(handOption);
 		if (this.thinArms) {
-			this.rightArm.pivotX++;
-			this.rightArm.preRender(angle);
-			this.rightArm.pivotX--;
+			float g = 0.5F * (float)(handOption == HandOption.RIGHT ? 1 : -1);
+			modelPart.pivotX += g;
+			modelPart.preRender(f);
+			modelPart.pivotX -= g;
 		} else {
-			this.rightArm.preRender(angle);
+			modelPart.preRender(f);
 		}
 	}
 }

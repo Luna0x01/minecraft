@@ -1,7 +1,7 @@
 package net.minecraft.client.sound;
 
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.MathHelper;
 
 public class MinecartMovingSoundInstance extends MovingSoundInstance {
@@ -9,7 +9,7 @@ public class MinecartMovingSoundInstance extends MovingSoundInstance {
 	private float field_8146 = 0.0F;
 
 	public MinecartMovingSoundInstance(AbstractMinecartEntity abstractMinecartEntity) {
-		super(new Identifier("minecraft:minecart.base"));
+		super(Sounds.ENTITY_MINECART_RIDING, SoundCategory.NEUTRAL);
 		this.minecart = abstractMinecartEntity;
 		this.repeat = true;
 		this.repeatDelay = 0;

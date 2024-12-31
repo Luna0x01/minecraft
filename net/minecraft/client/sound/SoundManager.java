@@ -1,6 +1,5 @@
 package net.minecraft.client.sound;
 
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.FileNotFoundException;
@@ -9,26 +8,34 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
+import net.minecraft.client.class_2906;
+import net.minecraft.client.class_2907;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.sound.Sound;
 import net.minecraft.sound.SoundEntry;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Tickable;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SoundManager implements ResourceReloadListener, Tickable {
+	public static final class_2906 field_13702 = new class_2906("meta:missing_sound", 1.0F, 1.0F, 1, class_2906.class_1898.FILE, false);
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Gson GSON = new GsonBuilder().registerTypeAdapter(SoundEntry.class, new SoundEntryDeserializer()).create();
+	private static final Gson GSON = new GsonBuilder()
+		.registerTypeHierarchyAdapter(Text.class, new Text.Serializer())
+		.registerTypeAdapter(SoundEntry.class, new SoundEntryDeserializer())
+		.create();
 	private static final ParameterizedType TYPE = new ParameterizedType() {
 		public Type[] getActualTypeArguments() {
 			return new Type[]{String.class, SoundEntry.class};
@@ -42,7 +49,6 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 			return null;
 		}
 	};
-	public static final Sound MISSING_SOUND = new Sound(new Identifier("meta:missing_sound"), 0.0, 0.0, false);
 	private final SoundRegistry loadedSounds = new SoundRegistry();
 	private final SoundSystem soundSystem;
 	private final ResourceManager resourceManager;
@@ -54,7 +60,6 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 
 	@Override
 	public void reload(ResourceManager resourceManager) {
-		this.soundSystem.reloadSounds();
 		this.loadedSounds.clearRegistry();
 
 		for (String string : resourceManager.getAllNamespaces()) {
@@ -73,6 +78,24 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 			} catch (IOException var11) {
 			}
 		}
+
+		for (Identifier identifier : this.loadedSounds.getKeySet()) {
+			SoundContainerImpl soundContainerImpl = this.loadedSounds.get(identifier);
+			if (soundContainerImpl.method_12551() instanceof TranslatableText) {
+				String string2 = ((TranslatableText)soundContainerImpl.method_12551()).getKey();
+				if (!I18n.method_12500(string2)) {
+					LOGGER.debug("Missing subtitle {} for event: {}", new Object[]{string2, identifier});
+				}
+			}
+		}
+
+		for (Identifier identifier2 : this.loadedSounds.getKeySet()) {
+			if (Sound.REGISTRY.get(identifier2) == null) {
+				LOGGER.debug("Not having sound event for: {}", new Object[]{identifier2});
+			}
+		}
+
+		this.soundSystem.reloadSounds();
 	}
 
 	protected Map<String, SoundEntry> readSounds(InputStream inputStream) {
@@ -87,71 +110,75 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 	}
 
 	private void register(Identifier id, SoundEntry entry) {
-		boolean bl = !this.loadedSounds.containsKey(id);
-		WeightedSoundSet weightedSoundSet2;
-		if (!bl && !entry.canReplace()) {
-			weightedSoundSet2 = this.loadedSounds.get(id);
-		} else {
+		SoundContainerImpl soundContainerImpl = this.loadedSounds.get(id);
+		boolean bl = soundContainerImpl == null;
+		if (bl || entry.canReplace()) {
 			if (!bl) {
 				LOGGER.debug("Replaced sound event location {}", new Object[]{id});
 			}
 
-			weightedSoundSet2 = new WeightedSoundSet(id, 1.0, 1.0, entry.getCategory());
-			this.loadedSounds.add(weightedSoundSet2);
+			soundContainerImpl = new SoundContainerImpl(id, entry.method_7058());
+			this.loadedSounds.method_12547(soundContainerImpl);
 		}
 
-		for (final SoundEntry.Entry entry2 : entry.getSounds()) {
-			String string = entry2.method_7059();
-			Identifier identifier = new Identifier(string);
-			final String string2 = string.contains(":") ? identifier.getNamespace() : id.getNamespace();
-			SoundContainer<Sound> soundContainer2;
-			switch (entry2.method_7069()) {
+		for (class_2906 lv : entry.getSounds()) {
+			final Identifier identifier = lv.method_12522();
+			SoundContainer<class_2906> soundContainer;
+			switch (lv.method_12527()) {
 				case FILE:
-					Identifier identifier2 = new Identifier(string2, "sounds/" + identifier.getPath() + ".ogg");
-					InputStream inputStream = null;
-
-					try {
-						inputStream = this.resourceManager.getResource(identifier2).getInputStream();
-					} catch (FileNotFoundException var18) {
-						LOGGER.warn("File {} does not exist, cannot add it to event {}", new Object[]{identifier2, id});
+					if (!this.method_12542(lv, id)) {
 						continue;
-					} catch (IOException var19) {
-						LOGGER.warn("Could not load sound file " + identifier2 + ", cannot add it to event " + id, var19);
-						continue;
-					} finally {
-						IOUtils.closeQuietly(inputStream);
 					}
 
-					soundContainer2 = new SoundContainerImpl(
-						new Sound(identifier2, (double)entry2.method_7067(), (double)entry2.method_7065(), entry2.method_7070()), entry2.method_7068()
-					);
+					soundContainer = lv;
 					break;
-				case EVENT:
-					soundContainer2 = new SoundContainer<Sound>() {
-						final Identifier field_8219 = new Identifier(string2, entry2.method_7059());
-
+				case SOUND_EVENT:
+					soundContainer = new SoundContainer<class_2906>() {
 						@Override
 						public int getWeight() {
-							WeightedSoundSet weightedSoundSet = SoundManager.this.loadedSounds.get(this.field_8219);
-							return weightedSoundSet == null ? 0 : weightedSoundSet.getWeight();
+							SoundContainerImpl soundContainerImpl = SoundManager.this.loadedSounds.get(identifier);
+							return soundContainerImpl == null ? 0 : soundContainerImpl.getWeight();
 						}
 
-						public Sound getSound() {
-							WeightedSoundSet weightedSoundSet = SoundManager.this.loadedSounds.get(this.field_8219);
-							return weightedSoundSet == null ? SoundManager.MISSING_SOUND : weightedSoundSet.getSound();
+						public class_2906 getSound() {
+							SoundContainerImpl soundContainerImpl = SoundManager.this.loadedSounds.get(identifier);
+							return soundContainerImpl == null ? SoundManager.field_13702 : soundContainerImpl.getSound();
 						}
 					};
 					break;
 				default:
-					throw new IllegalStateException("IN YOU FACE");
+					throw new IllegalStateException("Unknown SoundEventRegistration type: " + lv.method_12527());
 			}
 
-			weightedSoundSet2.add(soundContainer2);
+			soundContainerImpl.method_12549(soundContainer);
 		}
 	}
 
-	public WeightedSoundSet get(Identifier id) {
-		return this.loadedSounds.get(id);
+	private boolean method_12542(class_2906 arg, Identifier identifier) {
+		Identifier identifier2 = arg.method_12523();
+		Resource resource = null;
+
+		boolean var6;
+		try {
+			resource = this.resourceManager.getResource(identifier2);
+			resource.getInputStream();
+			return true;
+		} catch (FileNotFoundException var11) {
+			LOGGER.warn("File {} does not exist, cannot add it to event {}", new Object[]{identifier2, identifier});
+			return false;
+		} catch (IOException var12) {
+			LOGGER.warn("Could not load sound file " + identifier2 + ", cannot add it to event " + identifier, var12);
+			var6 = false;
+		} finally {
+			IOUtils.closeQuietly(resource);
+		}
+
+		return var6;
+	}
+
+	@Nullable
+	public SoundContainerImpl method_12545(Identifier identifier) {
+		return this.loadedSounds.get(identifier);
 	}
 
 	public void play(SoundInstance sound) {
@@ -199,20 +226,19 @@ public class SoundManager implements ResourceReloadListener, Tickable {
 		this.soundSystem.stop(instance);
 	}
 
-	public WeightedSoundSet getSoundSet(SoundCategory... categories) {
-		List<WeightedSoundSet> list = Lists.newArrayList();
-
-		for (Identifier identifier : this.loadedSounds.keySet()) {
-			WeightedSoundSet weightedSoundSet = this.loadedSounds.get(identifier);
-			if (ArrayUtils.contains(categories, weightedSoundSet.getSoundCategory())) {
-				list.add(weightedSoundSet);
-			}
-		}
-
-		return list.isEmpty() ? null : (WeightedSoundSet)list.get(new Random().nextInt(list.size()));
-	}
-
 	public boolean isPlaying(SoundInstance instance) {
 		return this.soundSystem.isPlaying(instance);
+	}
+
+	public void method_12543(class_2907 arg) {
+		this.soundSystem.method_12536(arg);
+	}
+
+	public void method_12546(class_2907 arg) {
+		this.soundSystem.method_12538(arg);
+	}
+
+	public void stopSound(String string, SoundCategory soundCategory) {
+		this.soundSystem.method_12537(string, soundCategory);
 	}
 }

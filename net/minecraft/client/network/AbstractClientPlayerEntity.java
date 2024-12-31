@@ -1,6 +1,7 @@
 package net.minecraft.client.network;
 
 import com.mojang.authlib.GameProfile;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DownloadedSkinParser;
 import net.minecraft.client.texture.PlayerSkinTexture;
@@ -18,6 +19,9 @@ import net.minecraft.world.level.LevelInfo;
 
 public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 	private PlayerListEntry cachedScoreboardEntry;
+	public float field_13449;
+	public float field_13450;
+	public float field_13451;
 
 	public AbstractClientPlayerEntity(World world, GameProfile gameProfile) {
 		super(world, gameProfile);
@@ -29,10 +33,17 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 		return playerListEntry != null && playerListEntry.getGameMode() == LevelInfo.GameMode.SPECTATOR;
 	}
 
+	@Override
+	public boolean isCreative() {
+		PlayerListEntry playerListEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getGameProfile().getId());
+		return playerListEntry != null && playerListEntry.getGameMode() == LevelInfo.GameMode.CREATIVE;
+	}
+
 	public boolean canRenderCapeTexture() {
 		return this.getPlayerListEntry() != null;
 	}
 
+	@Nullable
 	protected PlayerListEntry getPlayerListEntry() {
 		if (this.cachedScoreboardEntry == null) {
 			this.cachedScoreboardEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getUuid());
@@ -51,9 +62,20 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 		return playerListEntry == null ? DefaultSkinHelper.getTexture(this.getUuid()) : playerListEntry.getSkinTexture();
 	}
 
+	@Nullable
 	public Identifier getSkinId() {
 		PlayerListEntry playerListEntry = this.getPlayerListEntry();
 		return playerListEntry == null ? null : playerListEntry.getElytraTexture();
+	}
+
+	public boolean method_12263() {
+		return this.getPlayerListEntry() != null;
+	}
+
+	@Nullable
+	public Identifier method_12264() {
+		PlayerListEntry playerListEntry = this.getPlayerListEntry();
+		return playerListEntry == null ? null : playerListEntry.method_12240();
 	}
 
 	public static PlayerSkinTexture loadSkin(Identifier id, String playerName) {
@@ -93,8 +115,8 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
 			f = 1.0F;
 		}
 
-		if (this.isUsingItem() && this.getUsedItem().getItem() == Items.BOW) {
-			int i = this.getRemainingUseTime();
+		if (this.method_13061() && this.method_13064() != null && this.method_13064().getItem() == Items.BOW) {
+			int i = this.method_13066();
 			float g = (float)i / 20.0F;
 			if (g > 1.0F) {
 				g = 1.0F;

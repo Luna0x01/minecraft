@@ -2,15 +2,22 @@ package net.minecraft.block;
 
 import java.util.Random;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.HugeMushroomFeature;
 
 public class MushroomPlantBlock extends PlantBlock implements Growable {
+	protected static final Box field_12713 = new Box(0.3F, 0.0, 0.3F, 0.7F, 0.4F, 0.7F);
+
 	protected MushroomPlantBlock() {
-		float f = 0.2F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, f * 2.0F, 0.5F + f);
 		this.setTickRandomly(true);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12713;
 	}
 
 	@Override
@@ -49,8 +56,8 @@ public class MushroomPlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	protected boolean canPlantOnTop(Block block) {
-		return block.isFullBlock();
+	protected boolean method_11579(BlockState blockState) {
+		return blockState.isFullBlock();
 	}
 
 	@Override
@@ -62,7 +69,7 @@ public class MushroomPlantBlock extends PlantBlock implements Growable {
 			} else {
 				return blockState.getBlock() == Blocks.DIRT && blockState.get(DirtBlock.VARIANT) == DirtBlock.DirtType.PODZOL
 					? true
-					: world.getLightLevel(pos) < 13 && this.canPlantOnTop(blockState.getBlock());
+					: world.getLightLevel(pos) < 13 && this.method_11579(blockState);
 			}
 		} else {
 			return false;

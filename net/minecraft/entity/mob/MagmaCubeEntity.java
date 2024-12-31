@@ -1,9 +1,12 @@
 package net.minecraft.entity.mob;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 
@@ -32,8 +35,9 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	public int getArmorProtectionValue() {
-		return this.getSize() * 3;
+	protected void setSize(int size) {
+		super.setSize(size);
+		this.initializeAttribute(EntityAttributes.GENERIC_ARMOR).setBaseValue((double)(size * 3));
 	}
 
 	@Override
@@ -56,24 +60,10 @@ public class MagmaCubeEntity extends SlimeEntity {
 		return new MagmaCubeEntity(this.world);
 	}
 
+	@Nullable
 	@Override
-	protected Item getDefaultDrop() {
-		return Items.MAGMA_CREAM;
-	}
-
-	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		Item item = this.getDefaultDrop();
-		if (item != null && this.getSize() > 1) {
-			int i = this.random.nextInt(4) - 2;
-			if (lootingMultiplier > 0) {
-				i += this.random.nextInt(lootingMultiplier + 1);
-			}
-
-			for (int j = 0; j < i; j++) {
-				this.dropItem(item, 1);
-			}
-		}
+	protected Identifier getLootTableId() {
+		return !this.method_13242() ? LootTables.MAGMA_CUBE_ENTITIE : LootTables.EMPTY;
 	}
 
 	@Override
@@ -118,12 +108,22 @@ public class MagmaCubeEntity extends SlimeEntity {
 	}
 
 	@Override
-	protected String getSound() {
-		return this.getSize() > 1 ? "mob.magmacube.big" : "mob.magmacube.small";
+	protected Sound method_13048() {
+		return this.method_13242() ? Sounds.ENTITY_SMALL_MAGMACUBE_HURT : Sounds.ENTITY_MAGMACUBE_HURT;
 	}
 
 	@Override
-	protected boolean method_3097() {
-		return true;
+	protected Sound deathSound() {
+		return this.method_13242() ? Sounds.ENTITY_SMALL_MAGMACUBE_DEATH : Sounds.ENTITY_MAGMACUBE_DEATH;
+	}
+
+	@Override
+	protected Sound method_13240() {
+		return this.method_13242() ? Sounds.ENTITY_SMALL_MAGMACUBE_SQUISH : Sounds.ENTITY_MAGMACUBE_SQUISH;
+	}
+
+	@Override
+	protected Sound method_13241() {
+		return Sounds.ENTITY_MAGMACUBE_JUMP;
 	}
 }

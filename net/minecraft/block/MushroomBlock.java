@@ -1,12 +1,16 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -41,14 +45,15 @@ public class MushroomBlock extends Block {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(this.block);
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(this.block);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this.block);
 	}
 
 	@Override
@@ -64,6 +69,130 @@ public class MushroomBlock extends Block {
 	@Override
 	public int getData(BlockState state) {
 		return ((MushroomBlock.MushroomType)state.get(VARIANT)).getId();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
+					case STEM:
+						break;
+					case NORTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
+					case NORTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
+					case NORTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
+					case WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
+					case EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
+					case SOUTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
+					case SOUTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
+					case SOUTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
+					default:
+						return state;
+				}
+			case COUNTERCLOCKWISE_90:
+				switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
+					case STEM:
+						break;
+					case NORTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
+					case NORTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
+					case NORTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
+					case WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
+					case EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
+					case SOUTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
+					case SOUTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
+					case SOUTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
+					default:
+						return state;
+				}
+			case CLOCKWISE_90:
+				switch ((MushroomBlock.MushroomType)state.get(VARIANT)) {
+					case STEM:
+						break;
+					case NORTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
+					case NORTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
+					case NORTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
+					case WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
+					case EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
+					case SOUTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
+					case SOUTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
+					case SOUTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
+					default:
+						return state;
+				}
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		MushroomBlock.MushroomType mushroomType = state.get(VARIANT);
+		switch (mirror) {
+			case LEFT_RIGHT:
+				switch (mushroomType) {
+					case NORTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
+					case NORTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH);
+					case NORTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
+					case WEST:
+					case EAST:
+					default:
+						return super.withMirror(state, mirror);
+					case SOUTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
+					case SOUTH:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH);
+					case SOUTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
+				}
+			case FRONT_BACK:
+				switch (mushroomType) {
+					case NORTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_EAST);
+					case NORTH:
+					case SOUTH:
+					default:
+						break;
+					case NORTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.NORTH_WEST);
+					case WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.EAST);
+					case EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.WEST);
+					case SOUTH_WEST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_EAST);
+					case SOUTH_EAST:
+						return state.with(VARIANT, MushroomBlock.MushroomType.SOUTH_WEST);
+				}
+		}
+
+		return super.withMirror(state, mirror);
 	}
 
 	@Override

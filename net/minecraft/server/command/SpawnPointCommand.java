@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -26,25 +28,30 @@ public class SpawnPointCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length > 1 && args.length < 4) {
 			throw new IncorrectUsageException("commands.spawnpoint.usage");
 		} else {
-			ServerPlayerEntity serverPlayerEntity = args.length > 0 ? getPlayer(source, args[0]) : getAsPlayer(source);
-			BlockPos blockPos = args.length > 3 ? getBlockPos(source, args, 1, true) : serverPlayerEntity.getBlockPos();
+			ServerPlayerEntity serverPlayerEntity = args.length > 0 ? method_4639(minecraftServer, commandSource, args[0]) : getAsPlayer(commandSource);
+			BlockPos blockPos = args.length > 3 ? getBlockPos(commandSource, args, 1, true) : serverPlayerEntity.getBlockPos();
 			if (serverPlayerEntity.world != null) {
 				serverPlayerEntity.setPlayerSpawn(blockPos, true);
-				run(source, this, "commands.spawnpoint.success", new Object[]{serverPlayerEntity.getTranslationKey(), blockPos.getX(), blockPos.getY(), blockPos.getZ()});
+				run(
+					commandSource,
+					this,
+					"commands.spawnpoint.success",
+					new Object[]{serverPlayerEntity.getTranslationKey(), blockPos.getX(), blockPos.getY(), blockPos.getZ()}
+				);
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, MinecraftServer.getServer().getPlayerNames());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, server.getPlayerNames());
 		} else {
-			return args.length > 1 && args.length <= 4 ? method_10707(args, 1, pos) : null;
+			return strings.length > 1 && strings.length <= 4 ? method_10707(strings, 1, pos) : Collections.emptyList();
 		}
 	}
 

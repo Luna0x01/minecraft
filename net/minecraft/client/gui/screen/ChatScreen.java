@@ -1,28 +1,25 @@
 package net.minecraft.client.gui.screen;
 
-import com.google.common.collect.Lists;
-import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.class_2844;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
+import net.minecraft.entity.ai.pathing.PathNodeMaker;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
-public class ChatScreen extends Screen {
+public class ChatScreen extends Screen implements class_2844 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private String originalChatText = "";
 	private int messageHistorySize = -1;
-	private boolean foundNames;
-	private boolean waiting;
-	private int currentSelection;
-	private List<String> suggestions = Lists.newArrayList();
+	private PathNodeMaker field_13320;
 	protected TextFieldWidget chatField;
 	private String lastChatFieldText = "";
 
@@ -43,6 +40,7 @@ public class ChatScreen extends Screen {
 		this.chatField.setFocused(true);
 		this.chatField.setText(this.lastChatFieldText);
 		this.chatField.setFocusUnlocked(false);
+		this.field_13320 = new ChatScreen.class_2843(this.chatField);
 	}
 
 	@Override
@@ -58,18 +56,18 @@ public class ChatScreen extends Screen {
 
 	@Override
 	protected void keyPressed(char id, int code) {
-		this.waiting = false;
+		this.field_13320.method_12188();
 		if (code == 15) {
-			this.showSuggestion();
+			this.field_13320.method_12183();
 		} else {
-			this.foundNames = false;
+			this.field_13320.method_12187();
 		}
 
 		if (code == 1) {
 			this.client.setScreen(null);
 		} else if (code == 28 || code == 156) {
 			String string = this.chatField.getText().trim();
-			if (string.length() > 0) {
+			if (!string.isEmpty()) {
 				this.sendMessage(string);
 			}
 
@@ -130,56 +128,6 @@ public class ChatScreen extends Screen {
 		}
 	}
 
-	public void showSuggestion() {
-		if (this.foundNames) {
-			this.chatField.eraseCharacters(this.chatField.getWordSkipPosition(-1, this.chatField.getCursor(), false) - this.chatField.getCursor());
-			if (this.currentSelection >= this.suggestions.size()) {
-				this.currentSelection = 0;
-			}
-		} else {
-			int i = this.chatField.getWordSkipPosition(-1, this.chatField.getCursor(), false);
-			this.suggestions.clear();
-			this.currentSelection = 0;
-			String string = this.chatField.getText().substring(i).toLowerCase();
-			String string2 = this.chatField.getText().substring(0, this.chatField.getCursor());
-			this.requestAutocomplete(string2, string);
-			if (this.suggestions.isEmpty()) {
-				return;
-			}
-
-			this.foundNames = true;
-			this.chatField.eraseCharacters(i - this.chatField.getCursor());
-		}
-
-		if (this.suggestions.size() > 1) {
-			StringBuilder stringBuilder = new StringBuilder();
-
-			for (String string3 : this.suggestions) {
-				if (stringBuilder.length() > 0) {
-					stringBuilder.append(", ");
-				}
-
-				stringBuilder.append(string3);
-			}
-
-			this.client.inGameHud.getChatHud().addMessage(new LiteralText(stringBuilder.toString()), 1);
-		}
-
-		this.chatField.write((String)this.suggestions.get(this.currentSelection++));
-	}
-
-	private void requestAutocomplete(String partialMessage, String nextWord) {
-		if (partialMessage.length() >= 1) {
-			BlockPos blockPos = null;
-			if (this.client.result != null && this.client.result.type == BlockHitResult.Type.BLOCK) {
-				blockPos = this.client.result.getBlockPos();
-			}
-
-			this.client.player.networkHandler.sendPacket(new RequestCommandCompletionsC2SPacket(partialMessage, blockPos));
-			this.waiting = true;
-		}
-	}
-
 	public void setChatFromHistory(int index) {
 		int i = this.messageHistorySize + index;
 		int j = this.client.inGameHud.getChatHud().getMessageHistory().size();
@@ -211,31 +159,50 @@ public class ChatScreen extends Screen {
 		super.render(mouseX, mouseY, tickDelta);
 	}
 
-	public void setSuggestions(String[] suggestions) {
-		if (this.waiting) {
-			this.foundNames = false;
-			this.suggestions.clear();
-
-			for (String string : suggestions) {
-				if (string.length() > 0) {
-					this.suggestions.add(string);
-				}
-			}
-
-			String string2 = this.chatField.getText().substring(this.chatField.getWordSkipPosition(-1, this.chatField.getCursor(), false));
-			String string3 = StringUtils.getCommonPrefix(suggestions);
-			if (string3.length() > 0 && !string2.equalsIgnoreCase(string3)) {
-				this.chatField.eraseCharacters(this.chatField.getWordSkipPosition(-1, this.chatField.getCursor(), false) - this.chatField.getCursor());
-				this.chatField.write(string3);
-			} else if (this.suggestions.size() > 0) {
-				this.foundNames = true;
-				this.showSuggestion();
-			}
-		}
-	}
-
 	@Override
 	public boolean shouldPauseGame() {
 		return false;
+	}
+
+	@Override
+	public void method_12182(String... strings) {
+		this.field_13320.method_12185(strings);
+	}
+
+	public static class class_2843 extends PathNodeMaker {
+		private MinecraftClient field_13321 = MinecraftClient.getInstance();
+
+		public class_2843(TextFieldWidget textFieldWidget) {
+			super(textFieldWidget, false);
+		}
+
+		@Override
+		public void method_12183() {
+			super.method_12183();
+			if (this.field_13328.size() > 1) {
+				StringBuilder stringBuilder = new StringBuilder();
+
+				for (String string : this.field_13328) {
+					if (stringBuilder.length() > 0) {
+						stringBuilder.append(", ");
+					}
+
+					stringBuilder.append(string);
+				}
+
+				this.field_13321.inGameHud.getChatHud().addMessage(new LiteralText(stringBuilder.toString()), 1);
+			}
+		}
+
+		@Nullable
+		@Override
+		public BlockPos method_12186() {
+			BlockPos blockPos = null;
+			if (this.field_13321.result != null && this.field_13321.result.type == BlockHitResult.Type.BLOCK) {
+				blockPos = this.field_13321.result.getBlockPos();
+			}
+
+			return blockPos;
+		}
 	}
 }

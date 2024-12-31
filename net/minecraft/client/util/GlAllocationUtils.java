@@ -1,17 +1,17 @@
 package net.minecraft.client.util;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 
 public class GlAllocationUtils {
 	public static synchronized int genLists(int i) {
-		int j = GL11.glGenLists(i);
+		int j = GlStateManager.method_12319(i);
 		if (j == 0) {
-			int k = GL11.glGetError();
+			int k = GlStateManager.method_12271();
 			String string = "No error code reported";
 			if (k != 0) {
 				string = GLU.gluErrorString(k);
@@ -24,11 +24,11 @@ public class GlAllocationUtils {
 	}
 
 	public static synchronized void deleteLists(int i, int j) {
-		GL11.glDeleteLists(i, j);
+		GlStateManager.method_12310(i, j);
 	}
 
 	public static synchronized void deleteSingletonList(int i) {
-		GL11.glDeleteLists(i, 1);
+		deleteLists(i, 1);
 	}
 
 	public static synchronized ByteBuffer allocateByteBuffer(int size) {

@@ -69,7 +69,7 @@ public class SignEditScreen extends Screen {
 		}
 
 		String string = this.sign.text[this.currentRow].asUnformattedString();
-		if (code == 14 && string.length() > 0) {
+		if (code == 14 && !string.isEmpty()) {
 			string = string.substring(0, string.length() - 1);
 		}
 

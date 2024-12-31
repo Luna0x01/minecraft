@@ -1,5 +1,7 @@
 package net.minecraft.inventory;
 
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.LiteralText;
@@ -14,6 +16,7 @@ public class CraftingResultInventory implements Inventory {
 		return 1;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
 		return this.stacks[0];
@@ -34,30 +37,20 @@ public class CraftingResultInventory implements Inventory {
 		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.stacks[0] != null) {
-			ItemStack itemStack = this.stacks[0];
-			this.stacks[0] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		return class_2960.method_12932(this.stacks, 0);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.stacks[0] != null) {
-			ItemStack itemStack = this.stacks[0];
-			this.stacks[0] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		return class_2960.method_12932(this.stacks, 0);
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
 		this.stacks[0] = stack;
 	}
 

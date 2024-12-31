@@ -29,10 +29,10 @@ public class BarrierParticle extends Particle {
 		float m = this.sprite.getMinV();
 		float n = this.sprite.getMaxV();
 		float o = 0.5F;
-		float p = (float)(this.prevX + (this.x - this.prevX) * (double)tickDelta - field_1722);
-		float q = (float)(this.prevY + (this.y - this.prevY) * (double)tickDelta - field_1723);
-		float r = (float)(this.prevZ + (this.z - this.prevZ) * (double)tickDelta - field_1724);
-		int s = this.getLightmapCoordinates(tickDelta);
+		float p = (float)(this.field_13425 + (this.field_13428 - this.field_13425) * (double)tickDelta - field_1722);
+		float q = (float)(this.field_13426 + (this.field_13429 - this.field_13426) * (double)tickDelta - field_1723);
+		float r = (float)(this.field_13427 + (this.field_13430 - this.field_13427) * (double)tickDelta - field_1724);
+		int s = this.method_12243(tickDelta);
 		int t = s >> 16 & 65535;
 		int u = s & 65535;
 		builder.vertex((double)(p - g * 0.5F - j * 0.5F), (double)(q - h * 0.5F), (double)(r - i * 0.5F - k * 0.5F))

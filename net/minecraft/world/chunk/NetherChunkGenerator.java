@@ -2,14 +2,15 @@ package net.minecraft.world.chunk;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FallingBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.predicate.block.BlockPredicate;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.structure.NetherFortressStructure;
-import net.minecraft.util.ProgressListener;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
@@ -26,7 +27,13 @@ import net.minecraft.world.gen.feature.NetherFireFeature;
 import net.minecraft.world.gen.feature.NetherSpringFeature;
 import net.minecraft.world.gen.feature.OreFeature;
 
-public class NetherChunkGenerator implements ChunkProvider {
+public class NetherChunkGenerator implements ChunkGenerator {
+	protected static final BlockState field_12963 = Blocks.AIR.getDefaultState();
+	protected static final BlockState field_12964 = Blocks.NETHERRACK.getDefaultState();
+	protected static final BlockState field_12965 = Blocks.BEDROCK.getDefaultState();
+	protected static final BlockState field_12966 = Blocks.LAVA.getDefaultState();
+	protected static final BlockState field_12967 = Blocks.GRAVEL.getDefaultState();
+	protected static final BlockState field_12968 = Blocks.SOULSAND.getDefaultState();
 	private final World world;
 	private final boolean hasStructures;
 	private final Random random;
@@ -107,11 +114,11 @@ public class NetherChunkGenerator implements ChunkProvider {
 							for (int ag = 0; ag < 4; ag++) {
 								BlockState blockState = null;
 								if (r * 8 + w < l) {
-									blockState = Blocks.LAVA.getDefaultState();
+									blockState = field_12966;
 								}
 
 								if (ae > 0.0) {
-									blockState = Blocks.NETHERRACK.getDefaultState();
+									blockState = field_12964;
 								}
 
 								int ah = ac + p * 4;
@@ -148,35 +155,35 @@ public class NetherChunkGenerator implements ChunkProvider {
 				boolean bl2 = this.field_4815[l + m * 16] + this.random.nextDouble() * 0.2 > 0.0;
 				int n = (int)(this.field_4816[l + m * 16] / 3.0 + 3.0 + this.random.nextDouble() * 0.25);
 				int o = -1;
-				BlockState blockState = Blocks.NETHERRACK.getDefaultState();
-				BlockState blockState2 = Blocks.NETHERRACK.getDefaultState();
+				BlockState blockState = field_12964;
+				BlockState blockState2 = field_12964;
 
 				for (int p = 127; p >= 0; p--) {
 					if (p < 127 - this.random.nextInt(5) && p > this.random.nextInt(5)) {
 						BlockState blockState3 = chunkBlockStateStorage.get(m, p, l);
-						if (blockState3.getBlock() == null || blockState3.getBlock().getMaterial() == Material.AIR) {
+						if (blockState3.getBlock() == null || blockState3.getMaterial() == Material.AIR) {
 							o = -1;
 						} else if (blockState3.getBlock() == Blocks.NETHERRACK) {
 							if (o == -1) {
 								if (n <= 0) {
-									blockState = null;
-									blockState2 = Blocks.NETHERRACK.getDefaultState();
+									blockState = field_12963;
+									blockState2 = field_12964;
 								} else if (p >= k - 4 && p <= k + 1) {
-									blockState = Blocks.NETHERRACK.getDefaultState();
-									blockState2 = Blocks.NETHERRACK.getDefaultState();
+									blockState = field_12964;
+									blockState2 = field_12964;
 									if (bl2) {
-										blockState = Blocks.GRAVEL.getDefaultState();
-										blockState2 = Blocks.NETHERRACK.getDefaultState();
+										blockState = field_12967;
+										blockState2 = field_12964;
 									}
 
 									if (bl) {
-										blockState = Blocks.SOULSAND.getDefaultState();
-										blockState2 = Blocks.SOULSAND.getDefaultState();
+										blockState = field_12968;
+										blockState2 = field_12968;
 									}
 								}
 
-								if (p < k && (blockState == null || blockState.getBlock().getMaterial() == Material.AIR)) {
-									blockState = Blocks.LAVA.getDefaultState();
+								if (p < k && (blockState == null || blockState.getMaterial() == Material.AIR)) {
+									blockState = field_12966;
 								}
 
 								o = n;
@@ -191,7 +198,7 @@ public class NetherChunkGenerator implements ChunkProvider {
 							}
 						}
 					} else {
-						chunkBlockStateStorage.set(m, p, l, Blocks.BEDROCK.getDefaultState());
+						chunkBlockStateStorage.set(m, p, l, field_12965);
 					}
 				}
 			}
@@ -199,22 +206,22 @@ public class NetherChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public Chunk getChunk(int x, int z) {
+	public Chunk generate(int x, int z) {
 		this.random.setSeed((long)x * 341873128712L + (long)z * 132897987541L);
 		ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
 		this.method_9191(x, z, chunkBlockStateStorage);
 		this.method_9192(x, z, chunkBlockStateStorage);
-		this.cave.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
+		this.cave.method_4004(this.world, x, z, chunkBlockStateStorage);
 		if (this.hasStructures) {
-			this.fortressFeature.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
+			this.fortressFeature.method_4004(this.world, x, z, chunkBlockStateStorage);
 		}
 
 		Chunk chunk = new Chunk(this.world, chunkBlockStateStorage, x, z);
-		Biome[] biomes = this.world.getBiomeSource().method_3861(null, x * 16, z * 16, 16, 16);
+		Biome[] biomes = this.world.method_3726().method_11540(null, x * 16, z * 16, 16, 16);
 		byte[] bs = chunk.getBiomeArray();
 
 		for (int i = 0; i < bs.length; i++) {
-			bs[i] = (byte)biomes[i].id;
+			bs[i] = (byte)Biome.getBiomeIndex(biomes[i]);
 		}
 
 		chunk.method_3922();
@@ -289,12 +296,7 @@ public class NetherChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean chunkExists(int x, int z) {
-		return true;
-	}
-
-	@Override
-	public void decorateChunk(ChunkProvider provider, int x, int z) {
+	public void populate(int x, int z) {
 		FallingBlock.instantFall = true;
 		BlockPos blockPos = new BlockPos(x * 16, 0, z * 16);
 		ChunkPos chunkPos = new ChunkPos(x, z);
@@ -339,32 +341,8 @@ public class NetherChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean isChunkModified(ChunkProvider chunkProvider, Chunk chunk, int x, int z) {
+	public boolean method_11762(Chunk chunk, int x, int z) {
 		return false;
-	}
-
-	@Override
-	public boolean saveChunks(boolean saveEntities, ProgressListener progressListener) {
-		return true;
-	}
-
-	@Override
-	public void flushChunks() {
-	}
-
-	@Override
-	public boolean tickChunks() {
-		return false;
-	}
-
-	@Override
-	public boolean isSavingEnabled() {
-		return true;
-	}
-
-	@Override
-	public String getChunkProviderName() {
-		return "HellRandomLevelSource";
 	}
 
 	@Override
@@ -383,23 +361,14 @@ public class NetherChunkGenerator implements ChunkProvider {
 		return biome.getSpawnEntries(category);
 	}
 
+	@Nullable
 	@Override
-	public BlockPos getNearestStructurePos(World world, String structureName, BlockPos pos) {
+	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
 		return null;
 	}
 
 	@Override
-	public int getLoadedChunksCount() {
-		return 0;
-	}
-
-	@Override
-	public void handleInitialLoad(Chunk chunk, int x, int z) {
-		this.fortressFeature.carveRegion(this, this.world, x, z, null);
-	}
-
-	@Override
-	public Chunk getChunk(BlockPos pos) {
-		return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
+	public void method_4702(Chunk chunk, int x, int z) {
+		this.fortressFeature.method_4004(this.world, x, z, null);
 	}
 }

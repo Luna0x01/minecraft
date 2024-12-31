@@ -4,11 +4,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.decoration.AbstractDecorationEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.BatEntity;
 import net.minecraft.entity.passive.SquidEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -25,11 +25,15 @@ import net.minecraft.entity.thrown.SnowballEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.network.Packet;
+import net.minecraft.network.packet.s2c.play.EntityAttachS2CPacket;
+import net.minecraft.network.packet.s2c.play.SetPassengersS2CPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.collection.IntObjectStorage;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,13 +50,23 @@ public class EntityTracker {
 		this.field_2786 = serverWorld.getServer().getPlayerManager().method_1978();
 	}
 
+	public static long method_12764(double d) {
+		return MathHelper.lfloor(d * 4096.0);
+	}
+
+	public static void method_12766(Entity entity, double d, double e, double f) {
+		entity.tracedX = method_12764(d);
+		entity.tracedY = method_12764(e);
+		entity.tracedZ = method_12764(f);
+	}
+
 	public void startTracking(Entity entity) {
 		if (entity instanceof ServerPlayerEntity) {
 			this.startTracking(entity, 512, 2);
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
 
 			for (TrackedEntityInstance trackedEntityInstance : this.trackedEntities) {
-				if (trackedEntityInstance.trackedEntity != serverPlayerEntity) {
+				if (trackedEntityInstance.method_12794() != serverPlayerEntity) {
 					trackedEntityInstance.method_2184(serverPlayerEntity);
 				}
 			}
@@ -88,6 +102,8 @@ public class EntityTracker {
 			this.startTracking(entity, 64, 3, true);
 		} else if (entity instanceof WitherEntity) {
 			this.startTracking(entity, 80, 3, false);
+		} else if (entity instanceof ShulkerBulletEntity) {
+			this.startTracking(entity, 80, 3, true);
 		} else if (entity instanceof BatEntity) {
 			this.startTracking(entity, 80, 3, false);
 		} else if (entity instanceof EnderDragonEntity) {
@@ -104,6 +120,8 @@ public class EntityTracker {
 			this.startTracking(entity, 160, 3, true);
 		} else if (entity instanceof ExperienceOrbEntity) {
 			this.startTracking(entity, 160, 20, true);
+		} else if (entity instanceof AreaEffectCloudEntity) {
+			this.startTracking(entity, 160, Integer.MAX_VALUE, true);
 		} else if (entity instanceof EndCrystalEntity) {
 			this.startTracking(entity, 256, Integer.MAX_VALUE, false);
 		}
@@ -114,24 +132,20 @@ public class EntityTracker {
 	}
 
 	public void startTracking(Entity entity, int i, int j, boolean bl) {
-		if (i > this.field_2786) {
-			i = this.field_2786;
-		}
-
 		try {
 			if (this.trackedEntityIds.hasEntry(entity.getEntityId())) {
 				throw new IllegalStateException("Entity is already tracked!");
 			}
 
-			TrackedEntityInstance trackedEntityInstance = new TrackedEntityInstance(entity, i, j, bl);
+			TrackedEntityInstance trackedEntityInstance = new TrackedEntityInstance(entity, i, this.field_2786, j, bl);
 			this.trackedEntities.add(trackedEntityInstance);
 			this.trackedEntityIds.set(entity.getEntityId(), trackedEntityInstance);
 			trackedEntityInstance.method_2185(this.world.playerEntities);
-		} catch (Throwable var11) {
-			CrashReport crashReport = CrashReport.create(var11, "Adding entity to track");
+		} catch (Throwable var10) {
+			CrashReport crashReport = CrashReport.create(var10, "Adding entity to track");
 			CrashReportSection crashReportSection = crashReport.addElement("Entity To Track");
 			crashReportSection.add("Tracking range", i + " blocks");
-			crashReportSection.add("Update interval", new Callable<String>() {
+			crashReportSection.add("Update interval", new CrashCallable<String>() {
 				public String call() throws Exception {
 					String string = "Once per " + j + " ticks";
 					if (j == Integer.MAX_VALUE) {
@@ -142,13 +156,12 @@ public class EntityTracker {
 				}
 			});
 			entity.populateCrashReport(crashReportSection);
-			CrashReportSection crashReportSection2 = crashReport.addElement("Entity That Is Already Tracked");
-			this.trackedEntityIds.get(entity.getEntityId()).trackedEntity.populateCrashReport(crashReportSection2);
+			this.trackedEntityIds.get(entity.getEntityId()).method_12794().populateCrashReport(crashReport.addElement("Entity That Is Already Tracked"));
 
 			try {
 				throw new CrashException(crashReport);
-			} catch (CrashException var10) {
-				LOGGER.error("\"Silently\" catching entity tracking error.", var10);
+			} catch (CrashException var9) {
+				LOGGER.error("\"Silently\" catching entity tracking error.", var9);
 			}
 		}
 	}
@@ -174,8 +187,11 @@ public class EntityTracker {
 
 		for (TrackedEntityInstance trackedEntityInstance : this.trackedEntities) {
 			trackedEntityInstance.method_2181(this.world.playerEntities);
-			if (trackedEntityInstance.field_2872 && trackedEntityInstance.trackedEntity instanceof ServerPlayerEntity) {
-				list.add((ServerPlayerEntity)trackedEntityInstance.trackedEntity);
+			if (trackedEntityInstance.field_2872) {
+				Entity entity = trackedEntityInstance.method_12794();
+				if (entity instanceof ServerPlayerEntity) {
+					list.add((ServerPlayerEntity)entity);
+				}
 			}
 		}
 
@@ -183,7 +199,7 @@ public class EntityTracker {
 			ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)list.get(i);
 
 			for (TrackedEntityInstance trackedEntityInstance2 : this.trackedEntities) {
-				if (trackedEntityInstance2.trackedEntity != serverPlayerEntity) {
+				if (trackedEntityInstance2.method_12794() != serverPlayerEntity) {
 					trackedEntityInstance2.method_2184(serverPlayerEntity);
 				}
 			}
@@ -192,7 +208,7 @@ public class EntityTracker {
 
 	public void method_10747(ServerPlayerEntity serverPlayerEntity) {
 		for (TrackedEntityInstance trackedEntityInstance : this.trackedEntities) {
-			if (trackedEntityInstance.trackedEntity == serverPlayerEntity) {
+			if (trackedEntityInstance.method_12794() == serverPlayerEntity) {
 				trackedEntityInstance.method_2185(this.world.playerEntities);
 			} else {
 				trackedEntityInstance.method_2184(serverPlayerEntity);
@@ -200,14 +216,14 @@ public class EntityTracker {
 		}
 	}
 
-	public void sendToOtherTrackingEntities(Entity entity, Packet packet) {
+	public void sendToOtherTrackingEntities(Entity entity, Packet<?> packet) {
 		TrackedEntityInstance trackedEntityInstance = this.trackedEntityIds.get(entity.getEntityId());
 		if (trackedEntityInstance != null) {
 			trackedEntityInstance.method_2179(packet);
 		}
 	}
 
-	public void sendToAllTrackingEntities(Entity entity, Packet packet) {
+	public void sendToAllTrackingEntities(Entity entity, Packet<?> packet) {
 		TrackedEntityInstance trackedEntityInstance = this.trackedEntityIds.get(entity.getEntityId());
 		if (trackedEntityInstance != null) {
 			trackedEntityInstance.method_2183(packet);
@@ -221,12 +237,41 @@ public class EntityTracker {
 	}
 
 	public void method_4410(ServerPlayerEntity playerEntity, Chunk chunk) {
+		List<Entity> list = Lists.newArrayList();
+		List<Entity> list2 = Lists.newArrayList();
+
 		for (TrackedEntityInstance trackedEntityInstance : this.trackedEntities) {
-			if (trackedEntityInstance.trackedEntity != playerEntity
-				&& trackedEntityInstance.trackedEntity.chunkX == chunk.chunkX
-				&& trackedEntityInstance.trackedEntity.chunkZ == chunk.chunkZ) {
+			Entity entity = trackedEntityInstance.method_12794();
+			if (entity != playerEntity && entity.chunkX == chunk.chunkX && entity.chunkZ == chunk.chunkZ) {
 				trackedEntityInstance.method_2184(playerEntity);
+				if (entity instanceof MobEntity && ((MobEntity)entity).getLeashOwner() != null) {
+					list.add(entity);
+				}
+
+				if (!entity.getPassengerList().isEmpty()) {
+					list2.add(entity);
+				}
 			}
+		}
+
+		if (!list.isEmpty()) {
+			for (Entity entity2 : list) {
+				playerEntity.networkHandler.sendPacket(new EntityAttachS2CPacket(entity2, ((MobEntity)entity2).getLeashOwner()));
+			}
+		}
+
+		if (!list2.isEmpty()) {
+			for (Entity entity3 : list2) {
+				playerEntity.networkHandler.sendPacket(new SetPassengersS2CPacket(entity3));
+			}
+		}
+	}
+
+	public void method_12765(int i) {
+		this.field_2786 = (i - 1) * 16;
+
+		for (TrackedEntityInstance trackedEntityInstance : this.trackedEntities) {
+			trackedEntityInstance.method_12793(this.field_2786);
 		}
 	}
 }

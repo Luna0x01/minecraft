@@ -2,6 +2,8 @@ package net.minecraft.client.render.model;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -20,7 +22,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.BlockStateMapper;
+import net.minecraft.client.Variant;
+import net.minecraft.client.class_2877;
+import net.minecraft.client.class_2882;
+import net.minecraft.client.class_2885;
+import net.minecraft.client.class_2903;
 import net.minecraft.client.render.block.BlockModelShapes;
 import net.minecraft.client.render.model.json.BlockModel;
 import net.minecraft.client.render.model.json.ItemModelGenerator;
@@ -50,6 +61,7 @@ public class ModelLoader {
 			new Identifier("blocks/water_still"),
 			new Identifier("blocks/lava_flow"),
 			new Identifier("blocks/lava_still"),
+			new Identifier("blocks/water_overlay"),
 			new Identifier("blocks/destroy_stage_0"),
 			new Identifier("blocks/destroy_stage_1"),
 			new Identifier("blocks/destroy_stage_2"),
@@ -63,34 +75,30 @@ public class ModelLoader {
 			new Identifier("items/empty_armor_slot_helmet"),
 			new Identifier("items/empty_armor_slot_chestplate"),
 			new Identifier("items/empty_armor_slot_leggings"),
-			new Identifier("items/empty_armor_slot_boots")
+			new Identifier("items/empty_armor_slot_boots"),
+			new Identifier("items/empty_armor_slot_shield")
 		}
 	);
 	private static final Logger LOGGER = LogManager.getLogger();
 	protected static final ModelIdentifier MISSING_ID = new ModelIdentifier("builtin/missing", "missing");
+	private static final String field_13659 = "{    'textures': {       'particle': 'missingno',       'missingno': 'missingno'    },    'elements': [         {  'from': [ 0, 0, 0 ],            'to': [ 16, 16, 16 ],            'faces': {                'down':  { 'uv': [ 0, 0, 16, 16 ], 'cullface': 'down',  'texture': '#missingno' },                'up':    { 'uv': [ 0, 0, 16, 16 ], 'cullface': 'up',    'texture': '#missingno' },                'north': { 'uv': [ 0, 0, 16, 16 ], 'cullface': 'north', 'texture': '#missingno' },                'south': { 'uv': [ 0, 0, 16, 16 ], 'cullface': 'south', 'texture': '#missingno' },                'west':  { 'uv': [ 0, 0, 16, 16 ], 'cullface': 'west',  'texture': '#missingno' },                'east':  { 'uv': [ 0, 0, 16, 16 ], 'cullface': 'east',  'texture': '#missingno' }            }        }    ]}"
+		.replaceAll("'", "\"");
 	private static final Map<String, String> BUILTIN_MODEL_DEFINITIONS = Maps.newHashMap();
 	private static final Joiner JOINER = Joiner.on(" -> ");
 	private final ResourceManager resourceManager;
 	private final Map<Identifier, Sprite> sprites = Maps.newHashMap();
 	private final Map<Identifier, BlockModel> bakedModels = Maps.newLinkedHashMap();
-	private final Map<ModelIdentifier, ModelVariantMap.Variant> variants = Maps.newLinkedHashMap();
+	private final Map<ModelIdentifier, class_2877> variants = Maps.newLinkedHashMap();
+	private final Map<ModelVariantMap, Collection<ModelIdentifier>> field_13660 = Maps.newLinkedHashMap();
 	private final SpriteAtlasTexture atlas;
-	private final BlockModelShapes BLOCK_MODEL_SHAPES;
+	private final BlockModelShapes field_13661;
 	private final BakedQuadFactory BAKED_QUAD_FACTORY = new BakedQuadFactory();
 	private final ItemModelGenerator ITEM_MODEL_GENERATOR = new ItemModelGenerator();
 	private MutableRegistry<ModelIdentifier, BakedModel> field_11309 = new MutableRegistry<>();
-	private static final BlockModel BUILTIN_GENERATED = BlockModel.create(
-		"{\"elements\":[{  \"from\": [0, 0, 0],   \"to\": [16, 16, 16],   \"faces\": {       \"down\": {\"uv\": [0, 0, 16, 16], \"texture\":\"\"}   }}]}"
-	);
-	private static final BlockModel BUILTIN_COMPASS = BlockModel.create(
-		"{\"elements\":[{  \"from\": [0, 0, 0],   \"to\": [16, 16, 16],   \"faces\": {       \"down\": {\"uv\": [0, 0, 16, 16], \"texture\":\"\"}   }}]}"
-	);
-	private static final BlockModel BUILTIN_CLOCK = BlockModel.create(
-		"{\"elements\":[{  \"from\": [0, 0, 0],   \"to\": [16, 16, 16],   \"faces\": {       \"down\": {\"uv\": [0, 0, 16, 16], \"texture\":\"\"}   }}]}"
-	);
-	private static final BlockModel BUILTIN_ENTITY = BlockModel.create(
-		"{\"elements\":[{  \"from\": [0, 0, 0],   \"to\": [16, 16, 16],   \"faces\": {       \"down\": {\"uv\": [0, 0, 16, 16], \"texture\":\"\"}   }}]}"
-	);
+	private static final String field_13662 = "{    'elements': [        {   'from': [0, 0, 0],            'to': [16, 16, 16],            'faces': {                'down': {'uv': [0, 0, 16, 16], 'texture': '' }            }        }    ]}"
+		.replaceAll("'", "\"");
+	private static final BlockModel field_13663 = BlockModel.create(field_13662);
+	private static final BlockModel field_13664 = BlockModel.create(field_13662);
 	private Map<String, Identifier> modelsToBake = Maps.newLinkedHashMap();
 	private final Map<Identifier, ModelVariantMap> modelVariants = Maps.newHashMap();
 	private Map<Item, List<String>> modelVariantNames = Maps.newIdentityHashMap();
@@ -98,173 +106,227 @@ public class ModelLoader {
 	public ModelLoader(ResourceManager resourceManager, SpriteAtlasTexture spriteAtlasTexture, BlockModelShapes blockModelShapes) {
 		this.resourceManager = resourceManager;
 		this.atlas = spriteAtlasTexture;
-		this.BLOCK_MODEL_SHAPES = blockModelShapes;
+		this.field_13661 = blockModelShapes;
 	}
 
 	public Registry<ModelIdentifier, BakedModel> method_10383() {
+		this.method_12511();
 		this.method_10393();
 		this.method_10407();
 		this.method_10409();
 		this.method_10411();
+		this.method_12515();
 		this.method_10404();
 		return this.field_11309;
 	}
 
-	private void method_10393() {
-		this.method_10390(this.BLOCK_MODEL_SHAPES.getBlockStateMapper().getBlockStateMap().values());
-		this.variants
-			.put(
-				MISSING_ID,
-				new ModelVariantMap.Variant(
-					MISSING_ID.getVariant(),
-					Lists.newArrayList(new ModelVariantMap.Entry[]{new ModelVariantMap.Entry(new Identifier(MISSING_ID.getPath()), ModelRotation.X0_Y0, false, 1)})
-				)
-			);
-		Identifier identifier = new Identifier("item_frame");
-		ModelVariantMap modelVariantMap = this.method_10391(identifier);
-		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "normal"));
-		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "map"));
-		this.method_10396();
-		this.load();
-	}
+	private void method_12511() {
+		BlockStateMapper blockStateMapper = this.field_13661.getBlockStateMapper();
 
-	private void method_10390(Collection<ModelIdentifier> collection) {
-		for (ModelIdentifier modelIdentifier : collection) {
-			try {
-				ModelVariantMap modelVariantMap = this.method_10391(modelIdentifier);
-
+		for (Block block : Block.REGISTRY) {
+			for (final Identifier identifier : blockStateMapper.method_12403(block)) {
 				try {
-					this.method_10387(modelVariantMap, modelIdentifier);
-				} catch (Exception var6) {
-					LOGGER.warn("Unable to load variant: " + modelIdentifier.getVariant() + " from " + modelIdentifier);
+					ModelVariantMap modelVariantMap = this.method_12508(identifier);
+					Map<BlockState, ModelIdentifier> map = blockStateMapper.method_12404(block);
+					if (modelVariantMap.method_12357()) {
+						Collection<ModelIdentifier> collection = Sets.newHashSet(map.values());
+						modelVariantMap.method_12359().method_12387(block.getStateManager());
+						this.field_13660.put(modelVariantMap, Lists.newArrayList(Iterables.filter(collection, new Predicate<ModelIdentifier>() {
+							public boolean apply(@Nullable ModelIdentifier modelIdentifier) {
+								return identifier.equals(modelIdentifier);
+							}
+						})));
+					}
+
+					for (Entry<BlockState, ModelIdentifier> entry : map.entrySet()) {
+						ModelIdentifier modelIdentifier = (ModelIdentifier)entry.getValue();
+						if (identifier.equals(modelIdentifier)) {
+							try {
+								this.variants.put(modelIdentifier, modelVariantMap.method_10030(modelIdentifier.getVariant()));
+							} catch (RuntimeException var12) {
+								if (!modelVariantMap.method_12357()) {
+									LOGGER.warn("Unable to load variant: " + modelIdentifier.getVariant() + " from " + modelIdentifier);
+								}
+							}
+						}
+					}
+				} catch (Exception var13) {
+					LOGGER.warn("Unable to load definition " + identifier, var13);
 				}
-			} catch (Exception var7) {
-				LOGGER.warn("Unable to load definition " + modelIdentifier, var7);
 			}
 		}
 	}
 
-	private void method_10387(ModelVariantMap modelVariantMap, ModelIdentifier modelIdentifier) {
-		this.variants.put(modelIdentifier, modelVariantMap.getVariant(modelIdentifier.getVariant()));
+	private void method_10393() {
+		this.variants
+			.put(MISSING_ID, new class_2877(Lists.newArrayList(new Variant[]{new Variant(new Identifier(MISSING_ID.getPath()), ModelRotation.X0_Y0, false, 1)})));
+		Identifier identifier = new Identifier("item_frame");
+		ModelVariantMap modelVariantMap = this.method_12508(identifier);
+		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "normal"));
+		this.method_10387(modelVariantMap, new ModelIdentifier(identifier, "map"));
+		this.method_12512();
+		this.method_12513();
+		this.method_12514();
 	}
 
-	private ModelVariantMap method_10391(Identifier identifier) {
+	private void method_10387(ModelVariantMap modelVariantMap, ModelIdentifier modelIdentifier) {
+		this.variants.put(modelIdentifier, modelVariantMap.method_10030(modelIdentifier.getVariant()));
+	}
+
+	private ModelVariantMap method_12508(Identifier identifier) {
 		Identifier identifier2 = this.method_10395(identifier);
 		ModelVariantMap modelVariantMap = (ModelVariantMap)this.modelVariants.get(identifier2);
 		if (modelVariantMap == null) {
-			List<ModelVariantMap> list = Lists.newArrayList();
-
-			try {
-				for (Resource resource : this.resourceManager.getAllResources(identifier2)) {
-					InputStream inputStream = null;
-
-					try {
-						inputStream = resource.getInputStream();
-						ModelVariantMap modelVariantMap2 = ModelVariantMap.fromReader(new InputStreamReader(inputStream, Charsets.UTF_8));
-						list.add(modelVariantMap2);
-					} catch (Exception var13) {
-						throw new RuntimeException(
-							"Encountered an exception when loading model definition of '"
-								+ identifier
-								+ "' from: '"
-								+ resource.getId()
-								+ "' in resourcepack: '"
-								+ resource.getResourcePackName()
-								+ "'",
-							var13
-						);
-					} finally {
-						IOUtils.closeQuietly(inputStream);
-					}
-				}
-			} catch (IOException var15) {
-				throw new RuntimeException("Encountered an exception when loading model definition of model " + identifier2.toString(), var15);
-			}
-
-			modelVariantMap = new ModelVariantMap(list);
+			modelVariantMap = this.method_12510(identifier, identifier2);
 			this.modelVariants.put(identifier2, modelVariantMap);
 		}
 
 		return modelVariantMap;
 	}
 
+	private ModelVariantMap method_12510(Identifier identifier, Identifier identifier2) {
+		List<ModelVariantMap> list = Lists.newArrayList();
+
+		try {
+			for (Resource resource : this.resourceManager.getAllResources(identifier2)) {
+				list.add(this.method_12509(identifier, resource));
+			}
+		} catch (IOException var6) {
+			throw new RuntimeException("Encountered an exception when loading model definition of model " + identifier2.toString(), var6);
+		}
+
+		return new ModelVariantMap(list);
+	}
+
+	private ModelVariantMap method_12509(Identifier identifier, Resource resource) {
+		InputStream inputStream = null;
+
+		ModelVariantMap exception;
+		try {
+			inputStream = resource.getInputStream();
+			exception = ModelVariantMap.fromReader(new InputStreamReader(inputStream, Charsets.UTF_8));
+		} catch (Exception var8) {
+			throw new RuntimeException(
+				"Encountered an exception when loading model definition of '"
+					+ identifier
+					+ "' from: '"
+					+ resource.getId()
+					+ "' in resourcepack: '"
+					+ resource.getResourcePackName()
+					+ "'",
+				var8
+			);
+		} finally {
+			IOUtils.closeQuietly(inputStream);
+		}
+
+		return exception;
+	}
+
 	private Identifier method_10395(Identifier identifier) {
 		return new Identifier(identifier.getNamespace(), "blockstates/" + identifier.getPath() + ".json");
 	}
 
-	private void method_10396() {
-		for (ModelIdentifier modelIdentifier : this.variants.keySet()) {
-			for (ModelVariantMap.Entry entry : ((ModelVariantMap.Variant)this.variants.get(modelIdentifier)).getEntries()) {
-				Identifier identifier = entry.getId();
-				if (this.bakedModels.get(identifier) == null) {
-					try {
-						BlockModel blockModel = this.getModel(identifier);
-						this.bakedModels.put(identifier, blockModel);
-					} catch (Exception var7) {
-						LOGGER.warn("Unable to load block model: '" + identifier + "' for variant: '" + modelIdentifier + "'", var7);
-					}
+	private void method_12512() {
+		for (Entry<ModelIdentifier, class_2877> entry : this.variants.entrySet()) {
+			this.method_12505((ModelIdentifier)entry.getKey(), (class_2877)entry.getValue());
+		}
+	}
+
+	private void method_12513() {
+		for (Entry<ModelVariantMap, Collection<ModelIdentifier>> entry : this.field_13660.entrySet()) {
+			ModelIdentifier modelIdentifier = (ModelIdentifier)((Collection)entry.getValue()).iterator().next();
+
+			for (class_2877 lv : ((ModelVariantMap)entry.getKey()).method_12356()) {
+				this.method_12505(modelIdentifier, lv);
+			}
+		}
+	}
+
+	private void method_12505(ModelIdentifier modelIdentifier, class_2877 arg) {
+		for (Variant variant : arg.method_12375()) {
+			Identifier identifier = variant.getIdentifier();
+			if (this.bakedModels.get(identifier) == null) {
+				try {
+					this.bakedModels.put(identifier, this.getModel(identifier));
+				} catch (Exception var7) {
+					LOGGER.warn("Unable to load block model: '{}' for variant: '{}': {} ", new Object[]{identifier, modelIdentifier, var7});
 				}
 			}
 		}
 	}
 
 	private BlockModel getModel(Identifier id) throws IOException {
-		String string = id.getPath();
-		if ("builtin/generated".equals(string)) {
-			return BUILTIN_GENERATED;
-		} else if ("builtin/compass".equals(string)) {
-			return BUILTIN_COMPASS;
-		} else if ("builtin/clock".equals(string)) {
-			return BUILTIN_CLOCK;
-		} else if ("builtin/entity".equals(string)) {
-			return BUILTIN_ENTITY;
-		} else {
-			Reader reader;
-			if (string.startsWith("builtin/")) {
-				String string2 = string.substring("builtin/".length());
-				String string3 = (String)BUILTIN_MODEL_DEFINITIONS.get(string2);
-				if (string3 == null) {
-					throw new FileNotFoundException(id.toString());
+		Reader reader = null;
+		Resource resource = null;
+
+		BlockModel blockModel;
+		try {
+			String string = id.getPath();
+			if ("builtin/generated".equals(string)) {
+				return field_13663;
+			}
+
+			if (!"builtin/entity".equals(string)) {
+				if (string.startsWith("builtin/")) {
+					String string2 = string.substring("builtin/".length());
+					String string3 = (String)BUILTIN_MODEL_DEFINITIONS.get(string2);
+					if (string3 == null) {
+						throw new FileNotFoundException(id.toString());
+					}
+
+					reader = new StringReader(string3);
+				} else {
+					resource = this.resourceManager.getResource(this.derelativizeId(id));
+					reader = new InputStreamReader(resource.getInputStream(), Charsets.UTF_8);
 				}
 
-				reader = new StringReader(string3);
-			} else {
-				Resource resource = this.resourceManager.getResource(this.derelativizeId(id));
-				reader = new InputStreamReader(resource.getInputStream(), Charsets.UTF_8);
-			}
-
-			BlockModel var11;
-			try {
-				BlockModel blockModel = BlockModel.getFromReader(reader);
+				blockModel = BlockModel.getFromReader(reader);
 				blockModel.field_10928 = id.toString();
-				var11 = blockModel;
-			} finally {
-				reader.close();
+				return blockModel;
 			}
 
-			return var11;
+			blockModel = field_13664;
+		} finally {
+			IOUtils.closeQuietly(reader);
+			IOUtils.closeQuietly(resource);
 		}
+
+		return blockModel;
 	}
 
 	private Identifier derelativizeId(Identifier id) {
 		return new Identifier(id.getNamespace(), "models/" + id.getPath() + ".json");
 	}
 
-	private void load() {
+	private void method_12514() {
 		this.method_10402();
 
 		for (Item item : Item.REGISTRY) {
 			for (String string : this.method_10392(item)) {
 				Identifier identifier = this.method_10389(string);
-				this.modelsToBake.put(string, identifier);
-				if (this.bakedModels.get(identifier) == null) {
-					try {
-						BlockModel blockModel = this.getModel(identifier);
-						this.bakedModels.put(identifier, blockModel);
-					} catch (Exception var8) {
-						LOGGER.warn("Unable to load item model: '" + identifier + "' for item: '" + Item.REGISTRY.getIdentifier(item) + "'", var8);
+				Identifier identifier2 = Item.REGISTRY.getIdentifier(item);
+				this.method_12506(string, identifier, identifier2);
+				if (item.hasProperties()) {
+					BlockModel blockModel = (BlockModel)this.bakedModels.get(identifier);
+					if (blockModel != null) {
+						for (Identifier identifier3 : blockModel.method_12352()) {
+							this.method_12506(identifier3.toString(), identifier3, identifier2);
+						}
 					}
 				}
+			}
+		}
+	}
+
+	private void method_12506(String string, Identifier identifier, Identifier identifier2) {
+		this.modelsToBake.put(string, identifier);
+		if (this.bakedModels.get(identifier) == null) {
+			try {
+				BlockModel blockModel = this.getModel(identifier);
+				this.bakedModels.put(identifier, blockModel);
+			} catch (Exception var5) {
+				LOGGER.warn("Unable to load item model: '" + identifier + "' for item: '" + identifier2 + "'", var5);
 			}
 		}
 	}
@@ -456,9 +518,7 @@ public class ModelLoader {
 			);
 		this.modelVariantNames
 			.put(Item.fromBlock(Blocks.DOUBLE_PLANT), Lists.newArrayList(new String[]{"sunflower", "syringa", "double_grass", "double_fern", "double_rose", "paeonia"}));
-		this.modelVariantNames.put(Items.BOW, Lists.newArrayList(new String[]{"bow", "bow_pulling_0", "bow_pulling_1", "bow_pulling_2"}));
 		this.modelVariantNames.put(Items.COAL, Lists.newArrayList(new String[]{"coal", "charcoal"}));
-		this.modelVariantNames.put(Items.FISHING_ROD, Lists.newArrayList(new String[]{"fishing_rod", "fishing_rod_cast"}));
 		this.modelVariantNames.put(Items.RAW_FISH, Lists.newArrayList(new String[]{"cod", "salmon", "clownfish", "pufferfish"}));
 		this.modelVariantNames.put(Items.COOKED_FISH, Lists.newArrayList(new String[]{"cooked_cod", "cooked_salmon"}));
 		this.modelVariantNames
@@ -485,11 +545,15 @@ public class ModelLoader {
 					}
 				)
 			);
-		this.modelVariantNames.put(Items.POTION, Lists.newArrayList(new String[]{"bottle_drinkable", "bottle_splash"}));
-		this.modelVariantNames.put(Items.SKULL, Lists.newArrayList(new String[]{"skull_skeleton", "skull_wither", "skull_zombie", "skull_char", "skull_creeper"}));
+		this.modelVariantNames.put(Items.POTION, Lists.newArrayList(new String[]{"bottle_drinkable"}));
+		this.modelVariantNames
+			.put(Items.SKULL, Lists.newArrayList(new String[]{"skull_skeleton", "skull_wither", "skull_zombie", "skull_char", "skull_creeper", "skull_dragon"}));
+		this.modelVariantNames.put(Items.SPLASH_POTION, Lists.newArrayList(new String[]{"bottle_splash"}));
+		this.modelVariantNames.put(Items.LINGERING_POTION, Lists.newArrayList(new String[]{"bottle_lingering"}));
 		this.modelVariantNames.put(Item.fromBlock(Blocks.OAK_FENCE_GATE), Lists.newArrayList(new String[]{"oak_fence_gate"}));
 		this.modelVariantNames.put(Item.fromBlock(Blocks.OAK_FENCE), Lists.newArrayList(new String[]{"oak_fence"}));
 		this.modelVariantNames.put(Items.OAK_DOOR, Lists.newArrayList(new String[]{"oak_door"}));
+		this.modelVariantNames.put(Items.BOAT, Lists.newArrayList(new String[]{"oak_boat"}));
 	}
 
 	private List<String> method_10392(Item item) {
@@ -506,40 +570,89 @@ public class ModelLoader {
 		return new Identifier(identifier.getNamespace(), "item/" + identifier.getPath());
 	}
 
-	private void method_10404() {
+	private void method_12515() {
 		for (ModelIdentifier modelIdentifier : this.variants.keySet()) {
-			WeightedBakedModel.Builder builder = new WeightedBakedModel.Builder();
-			int i = 0;
-
-			for (ModelVariantMap.Entry entry : ((ModelVariantMap.Variant)this.variants.get(modelIdentifier)).getEntries()) {
-				BlockModel blockModel = (BlockModel)this.bakedModels.get(entry.getId());
-				if (blockModel != null && blockModel.method_10018()) {
-					i++;
-					builder.add(this.method_10386(blockModel, entry.getRotation(), entry.hasUvLock()), entry.getWeight());
-				} else {
-					LOGGER.warn("Missing model for: " + modelIdentifier);
-				}
-			}
-
-			if (i == 0) {
-				LOGGER.warn("No weighted models for: " + modelIdentifier);
-			} else if (i == 1) {
-				this.field_11309.put(modelIdentifier, builder.getFirst());
-			} else {
-				this.field_11309.put(modelIdentifier, builder.build());
+			BakedModel bakedModel = this.method_12504((class_2877)this.variants.get(modelIdentifier), modelIdentifier.toString());
+			if (bakedModel != null) {
+				this.field_11309.put(modelIdentifier, bakedModel);
 			}
 		}
 
-		for (Entry<String, Identifier> entry2 : this.modelsToBake.entrySet()) {
-			Identifier identifier = (Identifier)entry2.getValue();
-			ModelIdentifier modelIdentifier2 = new ModelIdentifier((String)entry2.getKey(), "inventory");
-			BlockModel blockModel2 = (BlockModel)this.bakedModels.get(identifier);
-			if (blockModel2 == null || !blockModel2.method_10018()) {
-				LOGGER.warn("Missing model for: " + identifier);
-			} else if (this.method_10397(blockModel2)) {
-				this.field_11309.put(modelIdentifier2, new BuiltinBakedModel(blockModel2.getTransformation()));
+		for (Entry<ModelVariantMap, Collection<ModelIdentifier>> entry : this.field_13660.entrySet()) {
+			ModelVariantMap modelVariantMap = (ModelVariantMap)entry.getKey();
+			class_2882 lv = modelVariantMap.method_12359();
+			String string = Block.REGISTRY.getIdentifier(lv.method_12389().getBlock()).toString();
+			class_2903.class_2904 lv2 = new class_2903.class_2904();
+
+			for (class_2885 lv3 : lv.method_12386()) {
+				BakedModel bakedModel2 = this.method_12504(lv3.method_12393(), "selector of " + string);
+				if (bakedModel2 != null) {
+					lv2.method_12518(lv3.method_12394(lv.method_12389()), bakedModel2);
+				}
+			}
+
+			BakedModel bakedModel3 = lv2.method_12517();
+
+			for (ModelIdentifier modelIdentifier2 : (Collection)entry.getValue()) {
+				if (!modelVariantMap.method_12358(modelIdentifier2.getVariant())) {
+					this.field_11309.put(modelIdentifier2, bakedModel3);
+				}
+			}
+		}
+	}
+
+	@Nullable
+	private BakedModel method_12504(class_2877 arg, String string) {
+		if (arg.method_12375().isEmpty()) {
+			return null;
+		} else {
+			WeightedBakedModel.Builder builder = new WeightedBakedModel.Builder();
+			int i = 0;
+
+			for (Variant variant : arg.method_12375()) {
+				BlockModel blockModel = (BlockModel)this.bakedModels.get(variant.getIdentifier());
+				if (blockModel == null || !blockModel.method_10018()) {
+					LOGGER.warn("Missing model for: " + string);
+				} else if (blockModel.getElements().isEmpty()) {
+					LOGGER.warn("Missing elements for: " + string);
+				} else {
+					BakedModel bakedModel = this.method_10386(blockModel, variant.getRotation(), variant.getUvLock());
+					if (bakedModel != null) {
+						i++;
+						builder.add(bakedModel, variant.getWeight());
+					}
+				}
+			}
+
+			BakedModel bakedModel2 = null;
+			if (i == 0) {
+				LOGGER.warn("No weighted models for: " + string);
+			} else if (i == 1) {
+				bakedModel2 = builder.getFirst();
 			} else {
-				this.field_11309.put(modelIdentifier2, this.method_10386(blockModel2, ModelRotation.X0_Y0, false));
+				bakedModel2 = builder.build();
+			}
+
+			return bakedModel2;
+		}
+	}
+
+	private void method_10404() {
+		for (Entry<String, Identifier> entry : this.modelsToBake.entrySet()) {
+			Identifier identifier = (Identifier)entry.getValue();
+			ModelIdentifier modelIdentifier = new ModelIdentifier((String)entry.getKey(), "inventory");
+			BlockModel blockModel = (BlockModel)this.bakedModels.get(identifier);
+			if (blockModel == null || !blockModel.method_10018()) {
+				LOGGER.warn("Missing model for: " + identifier);
+			} else if (blockModel.getElements().isEmpty()) {
+				LOGGER.warn("Missing elements for: " + identifier);
+			} else if (this.method_10397(blockModel)) {
+				this.field_11309.put(modelIdentifier, new BuiltinBakedModel(blockModel.getTransformation(), blockModel.method_12354()));
+			} else {
+				BakedModel bakedModel = this.method_10386(blockModel, ModelRotation.X0_Y0, false);
+				if (bakedModel != null) {
+					this.field_11309.put(modelIdentifier, bakedModel);
+				}
 			}
 		}
 	}
@@ -554,10 +667,10 @@ public class ModelLoader {
 		});
 
 		for (ModelIdentifier modelIdentifier : list) {
-			ModelVariantMap.Variant variant = (ModelVariantMap.Variant)this.variants.get(modelIdentifier);
+			class_2877 lv = (class_2877)this.variants.get(modelIdentifier);
 
-			for (ModelVariantMap.Entry entry : variant.getEntries()) {
-				BlockModel blockModel = (BlockModel)this.bakedModels.get(entry.getId());
+			for (Variant variant : lv.method_12375()) {
+				BlockModel blockModel = (BlockModel)this.bakedModels.get(variant.getIdentifier());
 				if (blockModel == null) {
 					LOGGER.warn("Missing model for: " + modelIdentifier);
 				} else {
@@ -566,27 +679,44 @@ public class ModelLoader {
 			}
 		}
 
-		set.addAll(DEFAULT_TEXTURES);
-		return set;
-	}
-
-	private BakedModel method_10386(BlockModel blockModel, ModelRotation modelRotation, boolean bl) {
-		Sprite sprite = (Sprite)this.sprites.get(new Identifier(blockModel.resolveTexture("particle")));
-		BasicBakedModel.Builder builder = new BasicBakedModel.Builder(blockModel).setParticle(sprite);
-
-		for (ModelElement modelElement : blockModel.getElements()) {
-			for (Direction direction : modelElement.faces.keySet()) {
-				ModelElementFace modelElementFace = (ModelElementFace)modelElement.faces.get(direction);
-				Sprite sprite2 = (Sprite)this.sprites.get(new Identifier(blockModel.resolveTexture(modelElementFace.textureId)));
-				if (modelElementFace.cullFace == null) {
-					builder.addQuad(this.method_10384(modelElement, modelElementFace, sprite2, direction, modelRotation, bl));
-				} else {
-					builder.addQuad(modelRotation.rotate(modelElementFace.cullFace), this.method_10384(modelElement, modelElementFace, sprite2, direction, modelRotation, bl));
+		for (ModelVariantMap modelVariantMap : this.field_13660.keySet()) {
+			for (class_2877 lv2 : modelVariantMap.method_12359().method_12388()) {
+				for (Variant variant2 : lv2.method_12375()) {
+					BlockModel blockModel2 = (BlockModel)this.bakedModels.get(variant2.getIdentifier());
+					if (blockModel2 == null) {
+						LOGGER.warn("Missing model for: " + Block.REGISTRY.getIdentifier(modelVariantMap.method_12359().method_12389().getBlock()));
+					} else {
+						set.addAll(this.method_10385(blockModel2));
+					}
 				}
 			}
 		}
 
-		return builder.build();
+		set.addAll(DEFAULT_TEXTURES);
+		return set;
+	}
+
+	@Nullable
+	private BakedModel method_10386(BlockModel blockModel, ModelRotation modelRotation, boolean bl) {
+		Sprite sprite = (Sprite)this.sprites.get(new Identifier(blockModel.resolveTexture("particle")));
+		BasicBakedModel.Builder builder = new BasicBakedModel.Builder(blockModel, blockModel.method_12354()).setParticle(sprite);
+		if (blockModel.getElements().isEmpty()) {
+			return null;
+		} else {
+			for (ModelElement modelElement : blockModel.getElements()) {
+				for (Direction direction : modelElement.faces.keySet()) {
+					ModelElementFace modelElementFace = (ModelElementFace)modelElement.faces.get(direction);
+					Sprite sprite2 = (Sprite)this.sprites.get(new Identifier(blockModel.resolveTexture(modelElementFace.textureId)));
+					if (modelElementFace.cullFace == null) {
+						builder.addQuad(this.method_10384(modelElement, modelElementFace, sprite2, direction, modelRotation, bl));
+					} else {
+						builder.addQuad(modelRotation.rotate(modelElementFace.cullFace), this.method_10384(modelElement, modelElementFace, sprite2, direction, modelRotation, bl));
+					}
+				}
+			}
+
+			return builder.build();
+		}
 	}
 
 	private BakedQuad method_10384(
@@ -612,31 +742,32 @@ public class ModelLoader {
 
 		for (Identifier identifier : this.bakedModels.keySet()) {
 			set.add(identifier);
-			Identifier identifier2 = ((BlockModel)this.bakedModels.get(identifier)).getId();
-			if (identifier2 != null) {
-				deque.add(identifier2);
-			}
+			this.method_12507(deque, set, (BlockModel)this.bakedModels.get(identifier));
 		}
 
 		while (!deque.isEmpty()) {
-			Identifier identifier3 = (Identifier)deque.pop();
+			Identifier identifier2 = (Identifier)deque.pop();
 
 			try {
-				if (this.bakedModels.get(identifier3) != null) {
+				if (this.bakedModels.get(identifier2) != null) {
 					continue;
 				}
 
-				BlockModel blockModel = this.getModel(identifier3);
-				this.bakedModels.put(identifier3, blockModel);
-				Identifier identifier4 = blockModel.getId();
-				if (identifier4 != null && !set.contains(identifier4)) {
-					deque.add(identifier4);
-				}
-			} catch (Exception var6) {
-				LOGGER.warn("In parent chain: " + JOINER.join(this.method_10403(identifier3)) + "; unable to load model: '" + identifier3 + "'", var6);
+				BlockModel blockModel = this.getModel(identifier2);
+				this.bakedModels.put(identifier2, blockModel);
+				this.method_12507(deque, set, blockModel);
+			} catch (Exception var5) {
+				LOGGER.warn("In parent chain: " + JOINER.join(this.method_10403(identifier2)) + "; unable to load model: '" + identifier2 + "'", var5);
 			}
 
-			set.add(identifier3);
+			set.add(identifier2);
+		}
+	}
+
+	private void method_12507(Deque<Identifier> deque, Set<Identifier> set, BlockModel blockModel) {
+		Identifier identifier = blockModel.getId();
+		if (identifier != null && !set.contains(identifier)) {
+			deque.add(identifier);
 		}
 	}
 
@@ -651,6 +782,7 @@ public class ModelLoader {
 		return list;
 	}
 
+	@Nullable
 	private Identifier method_10405(Identifier identifier) {
 		for (Entry<Identifier, BlockModel> entry : this.bakedModels.entrySet()) {
 			BlockModel blockModel = (BlockModel)entry.getValue();
@@ -702,20 +834,13 @@ public class ModelLoader {
 				set.add(new Identifier(blockModel.resolveTexture("particle")));
 				if (this.method_10394(blockModel)) {
 					for (String string : ItemModelGenerator.LAYERS) {
-						Identifier identifier2 = new Identifier(blockModel.resolveTexture(string));
-						if (blockModel.getRootModel() == BUILTIN_COMPASS && !SpriteAtlasTexture.MISSING.equals(identifier2)) {
-							Sprite.setCompassTex(identifier2.toString());
-						} else if (blockModel.getRootModel() == BUILTIN_CLOCK && !SpriteAtlasTexture.MISSING.equals(identifier2)) {
-							Sprite.setClockTex(identifier2.toString());
-						}
-
-						set.add(identifier2);
+						set.add(new Identifier(blockModel.resolveTexture(string)));
 					}
 				} else if (!this.method_10397(blockModel)) {
 					for (ModelElement modelElement : blockModel.getElements()) {
 						for (ModelElementFace modelElementFace : modelElement.faces.values()) {
-							Identifier identifier3 = new Identifier(blockModel.resolveTexture(modelElementFace.textureId));
-							set.add(identifier3);
+							Identifier identifier2 = new Identifier(blockModel.resolveTexture(modelElementFace.textureId));
+							set.add(identifier2);
 						}
 					}
 				}
@@ -725,21 +850,16 @@ public class ModelLoader {
 		return set;
 	}
 
-	private boolean method_10394(BlockModel blockModel) {
-		if (blockModel == null) {
-			return false;
-		} else {
-			BlockModel blockModel2 = blockModel.getRootModel();
-			return blockModel2 == BUILTIN_GENERATED || blockModel2 == BUILTIN_COMPASS || blockModel2 == BUILTIN_CLOCK;
-		}
+	private boolean method_10394(@Nullable BlockModel blockModel) {
+		return blockModel == null ? false : blockModel.getRootModel() == field_13663;
 	}
 
-	private boolean method_10397(BlockModel blockModel) {
+	private boolean method_10397(@Nullable BlockModel blockModel) {
 		if (blockModel == null) {
 			return false;
 		} else {
 			BlockModel blockModel2 = blockModel.getRootModel();
-			return blockModel2 == BUILTIN_ENTITY;
+			return blockModel2 == field_13664;
 		}
 	}
 
@@ -770,13 +890,8 @@ public class ModelLoader {
 	}
 
 	static {
-		BUILTIN_MODEL_DEFINITIONS.put(
-			"missing",
-			"{ \"textures\": {   \"particle\": \"missingno\",   \"missingno\": \"missingno\"}, \"elements\": [ {     \"from\": [ 0, 0, 0 ],     \"to\": [ 16, 16, 16 ],     \"faces\": {         \"down\":  { \"uv\": [ 0, 0, 16, 16 ], \"cullface\": \"down\", \"texture\": \"#missingno\" },         \"up\":    { \"uv\": [ 0, 0, 16, 16 ], \"cullface\": \"up\", \"texture\": \"#missingno\" },         \"north\": { \"uv\": [ 0, 0, 16, 16 ], \"cullface\": \"north\", \"texture\": \"#missingno\" },         \"south\": { \"uv\": [ 0, 0, 16, 16 ], \"cullface\": \"south\", \"texture\": \"#missingno\" },         \"west\":  { \"uv\": [ 0, 0, 16, 16 ], \"cullface\": \"west\", \"texture\": \"#missingno\" },         \"east\":  { \"uv\": [ 0, 0, 16, 16 ], \"cullface\": \"east\", \"texture\": \"#missingno\" }    }}]}"
-		);
-		BUILTIN_GENERATED.field_10928 = "generation marker";
-		BUILTIN_COMPASS.field_10928 = "compass generation marker";
-		BUILTIN_CLOCK.field_10928 = "class generation marker";
-		BUILTIN_ENTITY.field_10928 = "block entity marker";
+		BUILTIN_MODEL_DEFINITIONS.put("missing", field_13659);
+		field_13663.field_10928 = "generation marker";
+		field_13664.field_10928 = "block entity marker";
 	}
 }

@@ -40,7 +40,7 @@ public class HorseScreen extends HandledScreen {
 			this.drawTexture(i + 79, j + 17, 0, this.backgroundHeight, 90, 54);
 		}
 
-		if (this.entity.drawHoverEffect()) {
+		if (this.entity.method_13129().method_13152()) {
 			this.drawTexture(i + 7, j + 35, 0, this.backgroundHeight + 54, 18, 18);
 		}
 

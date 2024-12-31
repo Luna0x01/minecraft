@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import com.google.common.base.Predicate;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.RenderLayer;
@@ -9,19 +10,25 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class TorchBlock extends Block {
 	public static final DirectionProperty FACING = DirectionProperty.of("facing", new Predicate<Direction>() {
-		public boolean apply(Direction direction) {
+		public boolean apply(@Nullable Direction direction) {
 			return direction != Direction.DOWN;
 		}
 	});
+	protected static final Box field_12804 = new Box(0.4F, 0.0, 0.4F, 0.6F, 0.6F, 0.6F);
+	protected static final Box field_12805 = new Box(0.35F, 0.2F, 0.7F, 0.65F, 0.8F, 1.0);
+	protected static final Box field_12806 = new Box(0.35F, 0.2F, 0.0, 0.65F, 0.8F, 0.3F);
+	protected static final Box field_12807 = new Box(0.7F, 0.2F, 0.35F, 1.0, 0.8F, 0.65F);
+	protected static final Box field_12808 = new Box(0.0, 0.2F, 0.35F, 0.3F, 0.8F, 0.65F);
 
 	protected TorchBlock() {
 		super(Material.DECORATION);
@@ -31,22 +38,39 @@ public class TorchBlock extends Block {
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((Direction)state.get(FACING)) {
+			case EAST:
+				return field_12808;
+			case WEST:
+				return field_12807;
+			case SOUTH:
+				return field_12806;
+			case NORTH:
+				return field_12805;
+			default:
+				return field_12804;
+		}
+	}
+
+	@Nullable
+	@Override
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	private boolean canBePlacedAt(World world, BlockPos pos) {
-		if (World.isOpaque(world, pos)) {
+		if (world.getBlockState(pos).method_11739()) {
 			return true;
 		} else {
 			Block block = world.getBlockState(pos).getBlock();
@@ -92,8 +116,8 @@ public class TorchBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		this.neighborUpdate(world, pos, state);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		this.neighborUpdate(world, blockPos, blockState);
 	}
 
 	protected boolean neighborUpdate(World world, BlockPos pos, BlockState state) {
@@ -134,27 +158,7 @@ public class TorchBlock extends Block {
 	}
 
 	@Override
-	public BlockHitResult rayTrace(World world, BlockPos pos, Vec3d start, Vec3d end) {
-		Direction direction = world.getBlockState(pos).get(FACING);
-		float f = 0.15F;
-		if (direction == Direction.EAST) {
-			this.setBoundingBox(0.0F, 0.2F, 0.5F - f, f * 2.0F, 0.8F, 0.5F + f);
-		} else if (direction == Direction.WEST) {
-			this.setBoundingBox(1.0F - f * 2.0F, 0.2F, 0.5F - f, 1.0F, 0.8F, 0.5F + f);
-		} else if (direction == Direction.SOUTH) {
-			this.setBoundingBox(0.5F - f, 0.2F, 0.0F, 0.5F + f, 0.8F, f * 2.0F);
-		} else if (direction == Direction.NORTH) {
-			this.setBoundingBox(0.5F - f, 0.2F, 1.0F - f * 2.0F, 0.5F + f, 0.8F, 1.0F);
-		} else {
-			f = 0.1F;
-			this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 0.6F, 0.5F + f);
-		}
-
-		return super.rayTrace(world, pos, start, end);
-	}
-
-	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		Direction direction = state.get(FACING);
 		double d = (double)pos.getX() + 0.5;
 		double e = (double)pos.getY() + 0.7;
@@ -223,6 +227,16 @@ public class TorchBlock extends Block {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

@@ -2,20 +2,20 @@ package net.minecraft.client.render;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import net.minecraft.block.AbstractSignBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -44,6 +44,7 @@ import net.minecraft.client.render.world.ListedChunkRenderManager;
 import net.minecraft.client.render.world.VboChunkRenderFactoryImpl;
 import net.minecraft.client.render.world.VboChunkRenderManager;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
@@ -57,15 +58,20 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.item.DyeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.item.MusicDiscItem;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionUtil;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypeFilterableList;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -75,12 +81,12 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldEventListener;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
@@ -123,7 +129,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	private double lastCameraZ = Double.MIN_VALUE;
 	private double lastCameraPitch = Double.MIN_VALUE;
 	private double lastCameraYaw = Double.MIN_VALUE;
-	private final ChunkBuilder chunkBuilder = new ChunkBuilder();
+	private ChunkBuilder chunkBuilder = null;
 	private AbstractChunkRenderManager chunkRenderManager;
 	private int renderDistance = -1;
 	private int totalEntityCount = 2;
@@ -140,14 +146,16 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	private double lastTranslucentSortY;
 	private double lastTranslucentSortZ;
 	private boolean needsTerrainUpdate = true;
+	private boolean field_13537 = false;
+	private final Set<BlockPos> field_13538 = Sets.newHashSet();
 
 	public WorldRenderer(MinecraftClient minecraftClient) {
 		this.client = minecraftClient;
 		this.entityRenderDispatcher = minecraftClient.getEntityRenderManager();
 		this.textureManager = minecraftClient.getTextureManager();
 		this.textureManager.bindTexture(FORCEFIELD);
-		GL11.glTexParameteri(3553, 10242, 10497);
-		GL11.glTexParameteri(3553, 10243, 10497);
+		GlStateManager.method_12294(3553, 10242, 10497);
+		GlStateManager.method_12294(3553, 10243, 10497);
 		GlStateManager.bindTexture(0);
 		this.fillDestroySprites();
 		this.vbo = GLX.supportsVbo();
@@ -209,18 +217,16 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	public void drawEntityOutlineFramebuffer() {
 		if (this.isEntityOutline()) {
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 0, 1);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ZERO, GlStateManager.class_2866.ONE
+			);
 			this.entityOutlineFramebuffer.drawInternal(this.client.width, this.client.height, false);
 			GlStateManager.disableBlend();
 		}
 	}
 
 	protected boolean isEntityOutline() {
-		return this.entityOutlineFramebuffer != null
-			&& this.entityOutlineShader != null
-			&& this.client.player != null
-			&& this.client.player.isSpectator()
-			&& this.client.options.spectatorOutlines.isPressed();
+		return this.entityOutlineFramebuffer != null && this.entityOutlineShader != null && this.client.player != null;
 	}
 
 	private void renderDarkSky() {
@@ -243,10 +249,10 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			this.darkSkyBuffer.data(bufferBuilder.getByteBuffer());
 		} else {
 			this.darkSkyList = GlAllocationUtils.genLists(1);
-			GL11.glNewList(this.darkSkyList, 4864);
+			GlStateManager.method_12312(this.darkSkyList, 4864);
 			this.renderSkyHalf(bufferBuilder, -16.0F, true);
 			tessellator.draw();
-			GL11.glEndList();
+			GlStateManager.method_12270();
 		}
 	}
 
@@ -270,10 +276,10 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			this.lightSkyBuffer.data(bufferBuilder.getByteBuffer());
 		} else {
 			this.lightSkyList = GlAllocationUtils.genLists(1);
-			GL11.glNewList(this.lightSkyList, 4864);
+			GlStateManager.method_12312(this.lightSkyList, 4864);
 			this.renderSkyHalf(bufferBuilder, 16.0F, false);
 			tessellator.draw();
-			GL11.glEndList();
+			GlStateManager.method_12270();
 		}
 	}
 
@@ -320,10 +326,10 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		} else {
 			this.starsList = GlAllocationUtils.genLists(1);
 			GlStateManager.pushMatrix();
-			GL11.glNewList(this.starsList, 4864);
+			GlStateManager.method_12312(this.starsList, 4864);
 			this.renderStars(bufferBuilder);
 			tessellator.draw();
-			GL11.glEndList();
+			GlStateManager.method_12270();
 			GlStateManager.popMatrix();
 		}
 	}
@@ -373,7 +379,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		}
 	}
 
-	public void setWorld(ClientWorld world) {
+	public void setWorld(@Nullable ClientWorld world) {
 		if (this.world != null) {
 			this.world.removeListener(this);
 		}
@@ -389,11 +395,24 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		if (world != null) {
 			world.addListener(this);
 			this.reload();
+		} else {
+			this.chunksToRebuild.clear();
+			this.visibleChunks.clear();
+			this.chunks = null;
+			if (this.chunkBuilder != null) {
+				this.chunkBuilder.method_12421();
+			}
+
+			this.chunkBuilder = null;
 		}
 	}
 
 	public void reload() {
 		if (this.world != null) {
+			if (this.chunkBuilder == null) {
+				this.chunkBuilder = new ChunkBuilder();
+			}
+
 			this.needsTerrainUpdate = true;
 			Blocks.LEAVES.setGraphics(this.client.options.fancyGraphics);
 			Blocks.LEAVES2.setGraphics(this.client.options.fancyGraphics);
@@ -480,78 +499,86 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				Entity entity3 = (Entity)this.world.entities.get(j);
 				this.hiddenEntityCount++;
 				if (entity3.shouldRender(d, e, f)) {
-					this.entityRenderDispatcher.renderEntity(entity3, tickDelta);
+					this.entityRenderDispatcher.method_12448(entity3, tickDelta, false);
 				}
-			}
-
-			if (this.isEntityOutline()) {
-				GlStateManager.depthFunc(519);
-				GlStateManager.disableFog();
-				this.entityOutlineFramebuffer.clear();
-				this.entityOutlineFramebuffer.bind(false);
-				this.world.profiler.swap("entityOutlines");
-				DiffuseLighting.disable();
-				this.entityRenderDispatcher.method_10206(true);
-
-				for (int k = 0; k < list.size(); k++) {
-					Entity entity4 = (Entity)list.get(k);
-					boolean bl = this.client.getCameraEntity() instanceof LivingEntity && ((LivingEntity)this.client.getCameraEntity()).isSleeping();
-					boolean bl2 = entity4.shouldRender(d, e, f)
-						&& (entity4.ignoreCameraFrustum || cameraView.isBoxInFrustum(entity4.getBoundingBox()) || entity4.rider == this.client.player)
-						&& entity4 instanceof PlayerEntity;
-					if ((entity4 != this.client.getCameraEntity() || this.client.options.perspective != 0 || bl) && bl2) {
-						this.entityRenderDispatcher.renderEntity(entity4, tickDelta);
-					}
-				}
-
-				this.entityRenderDispatcher.method_10206(false);
-				DiffuseLighting.enableNormally();
-				GlStateManager.depthMask(false);
-				this.entityOutlineShader.render(tickDelta);
-				GlStateManager.enableLighting();
-				GlStateManager.depthMask(true);
-				this.client.getFramebuffer().bind(false);
-				GlStateManager.enableFog();
-				GlStateManager.enableBlend();
-				GlStateManager.enableColorMaterial();
-				GlStateManager.depthFunc(515);
-				GlStateManager.enableDepthTest();
-				GlStateManager.enableAlphaTest();
 			}
 
 			this.world.profiler.swap("entities");
+			List<Entity> list2 = Lists.newArrayList();
+			List<Entity> list3 = Lists.newArrayList();
+			BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 			for (WorldRenderer.ChunkInfo chunkInfo : this.visibleChunks) {
 				Chunk chunk = this.world.getChunk(chunkInfo.chunk.getPos());
 				TypeFilterableList<Entity> typeFilterableList = chunk.getEntities()[chunkInfo.chunk.getPos().getY() / 16];
 				if (!typeFilterableList.isEmpty()) {
-					for (Entity entity5 : typeFilterableList) {
-						boolean bl3 = this.entityRenderDispatcher.shouldRender(entity5, cameraView, d, e, f) || entity5.rider == this.client.player;
-						if (bl3) {
-							boolean bl4 = this.client.getCameraEntity() instanceof LivingEntity ? ((LivingEntity)this.client.getCameraEntity()).isSleeping() : false;
-							if (entity5 == this.client.getCameraEntity() && this.client.options.perspective == 0 && !bl4
-								|| entity5.y >= 0.0 && entity5.y < 256.0 && !this.world.blockExists(new BlockPos(entity5))) {
-								continue;
+					for (Entity entity4 : typeFilterableList) {
+						boolean bl = this.entityRenderDispatcher.shouldRender(entity4, cameraView, d, e, f) || entity4.hasPassengerDeep(this.client.player);
+						if (bl) {
+							boolean bl2 = this.client.getCameraEntity() instanceof LivingEntity ? ((LivingEntity)this.client.getCameraEntity()).isSleeping() : false;
+							if ((entity4 != this.client.getCameraEntity() || this.client.options.perspective != 0 || bl2)
+								&& (!(entity4.y >= 0.0) || !(entity4.y < 256.0) || this.world.blockExists(pooled.set(entity4)))) {
+								this.hiddenEntityCount++;
+								this.entityRenderDispatcher.method_12448(entity4, tickDelta, false);
+								if (this.method_12337(entity4, entity2, cameraView)) {
+									list2.add(entity4);
+								}
+
+								if (this.entityRenderDispatcher.method_12449(entity4)) {
+									list3.add(entity4);
+								}
 							}
-
-							this.hiddenEntityCount++;
-							this.entityRenderDispatcher.renderEntity(entity5, tickDelta);
-						}
-
-						if (!bl3 && entity5 instanceof WitherSkullEntity) {
-							this.client.getEntityRenderManager().method_10204(entity5, tickDelta);
 						}
 					}
 				}
+			}
+
+			pooled.method_12576();
+			if (!list3.isEmpty()) {
+				for (Entity entity5 : list3) {
+					this.entityRenderDispatcher.method_12447(entity5, tickDelta);
+				}
+			}
+
+			if (this.isEntityOutline() && (!list2.isEmpty() || this.field_13537)) {
+				this.world.profiler.swap("entityOutlines");
+				this.entityOutlineFramebuffer.clear();
+				this.field_13537 = !list2.isEmpty();
+				if (!list2.isEmpty()) {
+					GlStateManager.depthFunc(519);
+					GlStateManager.disableFog();
+					this.entityOutlineFramebuffer.bind(false);
+					DiffuseLighting.disable();
+					this.entityRenderDispatcher.method_10206(true);
+
+					for (int k = 0; k < list2.size(); k++) {
+						this.entityRenderDispatcher.method_12448((Entity)list2.get(k), tickDelta, false);
+					}
+
+					this.entityRenderDispatcher.method_10206(false);
+					DiffuseLighting.enableNormally();
+					GlStateManager.depthMask(false);
+					this.entityOutlineShader.render(tickDelta);
+					GlStateManager.enableLighting();
+					GlStateManager.depthMask(true);
+					GlStateManager.enableFog();
+					GlStateManager.enableBlend();
+					GlStateManager.enableColorMaterial();
+					GlStateManager.depthFunc(515);
+					GlStateManager.enableDepthTest();
+					GlStateManager.enableAlphaTest();
+				}
+
+				this.client.getFramebuffer().bind(false);
 			}
 
 			this.world.profiler.swap("blockentities");
 			DiffuseLighting.enableNormally();
 
 			for (WorldRenderer.ChunkInfo chunkInfo2 : this.visibleChunks) {
-				List<BlockEntity> list2 = chunkInfo2.chunk.method_10170().getBlockEntities();
-				if (!list2.isEmpty()) {
-					for (BlockEntity blockEntity : list2) {
+				List<BlockEntity> list4 = chunkInfo2.chunk.method_10170().getBlockEntities();
+				if (!list4.isEmpty()) {
+					for (BlockEntity blockEntity : list4) {
 						BlockEntityRenderDispatcher.INSTANCE.renderEntity(blockEntity, tickDelta, -1);
 					}
 				}
@@ -592,29 +619,48 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		}
 	}
 
+	private boolean method_12337(Entity entity, Entity entity2, CameraView cameraView) {
+		boolean bl = entity2 instanceof LivingEntity && ((LivingEntity)entity2).isSleeping();
+		if (entity == entity2 && this.client.options.perspective == 0 && !bl) {
+			return false;
+		} else if (entity.isGlowing()) {
+			return true;
+		} else {
+			return this.client.player.isSpectator() && this.client.options.spectatorOutlines.isPressed() && entity instanceof PlayerEntity
+				? entity.ignoreCameraFrustum || cameraView.isBoxInFrustum(entity.getBoundingBox()) || entity.hasPassengerDeep(this.client.player)
+				: false;
+		}
+	}
+
 	public String getChunksDebugString() {
 		int i = this.chunks.chunks.length;
-		int j = 0;
+		int j = this.method_12338();
+		return String.format(
+			"C: %d/%d %sD: %d, L: %d, %s",
+			j,
+			i,
+			this.client.chunkCullingEnabled ? "(s) " : "",
+			this.renderDistance,
+			this.field_13538.size(),
+			this.chunkBuilder == null ? "null" : this.chunkBuilder.getDebugString()
+		);
+	}
+
+	protected int method_12338() {
+		int i = 0;
 
 		for (WorldRenderer.ChunkInfo chunkInfo : this.visibleChunks) {
 			ChunkAssemblyHelper chunkAssemblyHelper = chunkInfo.chunk.field_11070;
 			if (chunkAssemblyHelper != ChunkAssemblyHelper.UNSUPPORTED && !chunkAssemblyHelper.method_10142()) {
-				j++;
+				i++;
 			}
 		}
 
-		return String.format("C: %d/%d %sD: %d, %s", j, i, this.client.chunkCullingEnabled ? "(s) " : "", this.renderDistance, this.chunkBuilder.getDebugString());
+		return i;
 	}
 
 	public String getEntitiesDebugString() {
-		return "E: "
-			+ this.hiddenEntityCount
-			+ "/"
-			+ this.renderedEntityCount
-			+ ", B: "
-			+ this.blockEntityCount
-			+ ", I: "
-			+ (this.renderedEntityCount - this.blockEntityCount - this.hiddenEntityCount);
+		return "E: " + this.hiddenEntityCount + "/" + this.renderedEntityCount + ", B: " + this.blockEntityCount;
 	}
 
 	public void setupTerrain(Entity entity, double tickDelta, CameraView cameraView, int frame, boolean spectator) {
@@ -665,10 +711,12 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		this.lastCameraPitch = (double)entity.pitch;
 		this.lastCameraYaw = (double)entity.yaw;
 		boolean bl = this.capturedFrustum != null;
+		this.client.profiler.swap("update");
 		if (!bl && this.needsTerrainUpdate) {
 			this.needsTerrainUpdate = false;
 			this.visibleChunks = Lists.newArrayList();
-			Queue<WorldRenderer.ChunkInfo> queue = Lists.newLinkedList();
+			Queue<WorldRenderer.ChunkInfo> queue = Queues.newArrayDeque();
+			Entity.setRenderDistanceMultiplier(MathHelper.clamp((double)this.client.options.viewDistance / 8.0, 1.0, 2.5));
 			boolean bl2 = this.client.chunkCullingEnabled;
 			if (builtChunk != null) {
 				boolean bl3 = false;
@@ -687,7 +735,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				if (bl3 && !spectator) {
 					this.visibleChunks.add(chunkInfo);
 				} else {
-					if (spectator && this.world.getBlockState(blockPos).getBlock().hasTransparency()) {
+					if (spectator && this.world.getBlockState(blockPos).isFullBoundsCubeForCulling()) {
 						bl2 = false;
 					}
 
@@ -700,13 +748,15 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				for (int k = -this.renderDistance; k <= this.renderDistance; k++) {
 					for (int l = -this.renderDistance; l <= this.renderDistance; l++) {
 						BuiltChunk builtChunk2 = this.chunks.getRenderedChunk(new BlockPos((k << 4) + 8, j, (l << 4) + 8));
-						if (builtChunk2 != null && cameraView.isBoxInFrustum(builtChunk2.field_11071)) {
+						if (builtChunk2 != null && cameraView.isBoxInFrustum(builtChunk2.field_13615)) {
 							builtChunk2.method_10156(frame);
 							queue.add(new WorldRenderer.ChunkInfo(builtChunk2, null, 0));
 						}
 					}
 				}
 			}
+
+			this.client.profiler.push("iteration");
 
 			while (!queue.isEmpty()) {
 				WorldRenderer.ChunkInfo chunkInfo2 = (WorldRenderer.ChunkInfo)queue.poll();
@@ -717,26 +767,28 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 				for (Direction direction3 : Direction.values()) {
 					BuiltChunk builtChunk4 = this.getAdjacentChunk(blockPos2, builtChunk3, direction3);
-					if ((!bl2 || !chunkInfo2.facingSet.contains(direction3.getOpposite()))
+					if ((!bl2 || !chunkInfo2.method_12341(direction3.getOpposite()))
 						&& (!bl2 || direction2 == null || builtChunk3.method_10170().isVisibleThrough(direction2.getOpposite(), direction3))
 						&& builtChunk4 != null
 						&& builtChunk4.method_10156(frame)
-						&& cameraView.isBoxInFrustum(builtChunk4.field_11071)) {
+						&& cameraView.isBoxInFrustum(builtChunk4.field_13615)) {
 						WorldRenderer.ChunkInfo chunkInfo3 = new WorldRenderer.ChunkInfo(builtChunk4, direction3, chunkInfo2.propagationLevel + 1);
-						chunkInfo3.facingSet.addAll(chunkInfo2.facingSet);
-						chunkInfo3.facingSet.add(direction3);
+						chunkInfo3.method_12340(chunkInfo2.field_13539, direction3);
 						queue.add(chunkInfo3);
 					}
 				}
 			}
+
+			this.client.profiler.pop();
 		}
 
+		this.client.profiler.swap("captureFrustum");
 		if (this.field_10813) {
 			this.captureFrustum(g, h, i);
 			this.field_10813 = false;
 		}
 
-		this.chunkBuilder.clear();
+		this.client.profiler.swap("rebuildNear");
 		Set<BuiltChunk> set2 = this.chunksToRebuild;
 		this.chunksToRebuild = Sets.newLinkedHashSet();
 
@@ -744,13 +796,15 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			BuiltChunk builtChunk5 = chunkInfo4.chunk;
 			if (builtChunk5.method_10173() || set2.contains(builtChunk5)) {
 				this.needsTerrainUpdate = true;
-				if (this.isInChunk(blockPos2, chunkInfo4.chunk)) {
+				BlockPos blockPos4 = builtChunk5.getPos().add(8, 8, 8);
+				boolean bl4 = blockPos4.getSquaredDistance(blockPos) < 768.0;
+				if (!builtChunk5.method_12431() && !bl4) {
+					this.chunksToRebuild.add(builtChunk5);
+				} else {
 					this.client.profiler.push("build near");
 					this.chunkBuilder.upload(builtChunk5);
-					builtChunk5.method_10162(false);
+					builtChunk5.method_12430();
 					this.client.profiler.pop();
-				} else {
-					this.chunksToRebuild.add(builtChunk5);
 				}
 			}
 		}
@@ -759,22 +813,13 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		this.client.profiler.pop();
 	}
 
-	private boolean isInChunk(BlockPos pos, BuiltChunk chunk) {
-		BlockPos blockPos = chunk.getPos();
-		if (MathHelper.abs(pos.getX() - blockPos.getX()) > 16) {
-			return false;
-		} else {
-			return MathHelper.abs(pos.getY() - blockPos.getY()) > 16 ? false : MathHelper.abs(pos.getZ() - blockPos.getZ()) <= 16;
-		}
-	}
-
 	private Set<Direction> getOpenChunkFaces(BlockPos pos) {
 		ChunkOcclusionDataBuilder chunkOcclusionDataBuilder = new ChunkOcclusionDataBuilder();
 		BlockPos blockPos = new BlockPos(pos.getX() >> 4 << 4, pos.getY() >> 4 << 4, pos.getZ() >> 4 << 4);
 		Chunk chunk = this.world.getChunk(blockPos);
 
 		for (BlockPos.Mutable mutable : BlockPos.mutableIterate(blockPos, blockPos.add(15, 15, 15))) {
-			if (chunk.getBlockAtPos(mutable).hasTransparency()) {
+			if (chunk.getBlockState(mutable).isFullBoundsCubeForCulling()) {
 				chunkOcclusionDataBuilder.markClosed(mutable);
 			}
 		}
@@ -782,8 +827,9 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		return chunkOcclusionDataBuilder.getOpenFaces(pos);
 	}
 
+	@Nullable
 	private BuiltChunk getAdjacentChunk(BlockPos pos, BuiltChunk chunk, Direction direction) {
-		BlockPos blockPos = chunk.method_10161(direction);
+		BlockPos blockPos = chunk.method_12428(direction);
 		if (MathHelper.abs(pos.getX() - blockPos.getX()) > this.renderDistance * 16) {
 			return null;
 		} else if (blockPos.getY() < 0 || blockPos.getY() >= 256) {
@@ -885,13 +931,13 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	private void renderLayer(RenderLayer renderLayer) {
 		this.client.gameRenderer.enableLightmap();
 		if (GLX.supportsVbo()) {
-			GL11.glEnableClientState(32884);
+			GlStateManager.method_12317(32884);
 			GLX.gl13ClientActiveTexture(GLX.textureUnit);
-			GL11.glEnableClientState(32888);
+			GlStateManager.method_12317(32888);
 			GLX.gl13ClientActiveTexture(GLX.lightmapTextureUnit);
-			GL11.glEnableClientState(32888);
+			GlStateManager.method_12317(32888);
 			GLX.gl13ClientActiveTexture(GLX.textureUnit);
-			GL11.glEnableClientState(32886);
+			GlStateManager.method_12317(32886);
 		}
 
 		this.chunkRenderManager.render(renderLayer);
@@ -901,15 +947,15 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				int i = vertexFormatElement.getIndex();
 				switch (type) {
 					case POSITION:
-						GL11.glDisableClientState(32884);
+						GlStateManager.method_12316(32884);
 						break;
 					case UV:
 						GLX.gl13ClientActiveTexture(GLX.textureUnit + i);
-						GL11.glDisableClientState(32888);
+						GlStateManager.method_12316(32888);
 						GLX.gl13ClientActiveTexture(GLX.textureUnit);
 						break;
 					case COLOR:
-						GL11.glDisableClientState(32886);
+						GlStateManager.method_12316(32886);
 						GlStateManager.clearColor();
 				}
 			}
@@ -933,13 +979,28 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		if (this.ticks % 20 == 0) {
 			this.clearBlockBreakingInfo(this.blockBreakingInfos.values().iterator());
 		}
+
+		if (!this.field_13538.isEmpty() && !this.chunkBuilder.method_12422() && this.chunksToRebuild.isEmpty()) {
+			Iterator<BlockPos> iterator = this.field_13538.iterator();
+
+			while (iterator.hasNext()) {
+				BlockPos blockPos = (BlockPos)iterator.next();
+				iterator.remove();
+				int i = blockPos.getX();
+				int j = blockPos.getY();
+				int k = blockPos.getZ();
+				this.method_1378(i - 1, j - 1, k - 1, i + 1, j + 1, k + 1, false);
+			}
+		}
 	}
 
 	private void renderEndSky() {
 		GlStateManager.disableFog();
 		GlStateManager.disableAlphaTest();
 		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		DiffuseLighting.disable();
 		GlStateManager.depthMask(false);
 		this.textureManager.bindTexture(END_SKY);
@@ -983,7 +1044,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	}
 
 	public void renderSky(float tickDelta, int anaglyphFilter) {
-		if (this.client.world.dimension.getType() == 1) {
+		if (this.client.world.dimension.getDimensionType().getId() == 1) {
 			this.renderEndSky();
 		} else if (this.client.world.dimension.canPlayersSleep()) {
 			GlStateManager.disableTexture();
@@ -1008,11 +1069,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			GlStateManager.color(f, g, h);
 			if (this.vbo) {
 				this.lightSkyBuffer.bind();
-				GL11.glEnableClientState(32884);
-				GL11.glVertexPointer(3, 5126, 12, 0L);
+				GlStateManager.method_12317(32884);
+				GlStateManager.method_12307(3, 5126, 12, 0);
 				this.lightSkyBuffer.draw(7);
 				this.lightSkyBuffer.unbind();
-				GL11.glDisableClientState(32884);
+				GlStateManager.method_12316(32884);
 			} else {
 				GlStateManager.callList(this.lightSkyList);
 			}
@@ -1020,7 +1081,9 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			GlStateManager.disableFog();
 			GlStateManager.disableAlphaTest();
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			DiffuseLighting.disable();
 			float[] fs = this.world.dimension.getBackgroundColor(this.world.getSkyAngle(tickDelta), tickDelta);
 			if (fs != null) {
@@ -1047,7 +1110,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				int r = 16;
 
 				for (int s = 0; s <= 16; s++) {
-					float t = (float)s * (float) Math.PI * 2.0F / 16.0F;
+					float t = (float)s * (float) (Math.PI * 2) / 16.0F;
 					float u = MathHelper.sin(t);
 					float v = MathHelper.cos(t);
 					bufferBuilder.vertex((double)(u * 120.0F), (double)(v * 120.0F), (double)(-v * 40.0F * fs[3])).color(fs[0], fs[1], fs[2], 0.0F).next();
@@ -1059,7 +1122,9 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			}
 
 			GlStateManager.enableTexture();
-			GlStateManager.blendFuncSeparate(770, 1, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			GlStateManager.pushMatrix();
 			float w = 1.0F - this.world.getRainGradient(tickDelta);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, w);
@@ -1094,11 +1159,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				GlStateManager.color(af, af, af, af);
 				if (this.vbo) {
 					this.starsBuffer.bind();
-					GL11.glEnableClientState(32884);
-					GL11.glVertexPointer(3, 5126, 12, 0L);
+					GlStateManager.method_12317(32884);
+					GlStateManager.method_12307(3, 5126, 12, 0);
 					this.starsBuffer.draw(7);
 					this.starsBuffer.unbind();
-					GL11.glDisableClientState(32884);
+					GlStateManager.method_12316(32884);
 				} else {
 					GlStateManager.callList(this.starsList);
 				}
@@ -1117,11 +1182,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				GlStateManager.translate(0.0F, 12.0F, 0.0F);
 				if (this.vbo) {
 					this.darkSkyBuffer.bind();
-					GL11.glEnableClientState(32884);
-					GL11.glVertexPointer(3, 5126, 12, 0L);
+					GlStateManager.method_12317(32884);
+					GlStateManager.method_12307(3, 5126, 12, 0);
 					this.darkSkyBuffer.draw(7);
 					this.darkSkyBuffer.unbind();
-					GL11.glDisableClientState(32884);
+					GlStateManager.method_12316(32884);
 				} else {
 					GlStateManager.callList(this.darkSkyList);
 				}
@@ -1175,14 +1240,17 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				this.renderFancyClouds(tickDelta, anaglyphFilter);
 			} else {
 				GlStateManager.disableCull();
-				float f = (float)(this.client.getCameraEntity().prevTickY + (this.client.getCameraEntity().y - this.client.getCameraEntity().prevTickY) * (double)tickDelta);
+				Entity entity = this.client.getCameraEntity();
+				float f = (float)(entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta);
 				int i = 32;
 				int j = 8;
 				Tessellator tessellator = Tessellator.getInstance();
 				BufferBuilder bufferBuilder = tessellator.getBuffer();
 				this.textureManager.bindTexture(CLOUDS);
 				GlStateManager.enableBlend();
-				GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+				GlStateManager.method_12288(
+					GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+				);
 				Vec3d vec3d = this.world.getCloudColor(tickDelta);
 				float g = (float)vec3d.x;
 				float h = (float)vec3d.y;
@@ -1198,8 +1266,8 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 				float o = 4.8828125E-4F;
 				double d = (double)((float)this.ticks + tickDelta);
-				double e = this.client.getCameraEntity().prevX + (this.client.getCameraEntity().x - this.client.getCameraEntity().prevX) * (double)tickDelta + d * 0.03F;
-				double p = this.client.getCameraEntity().prevZ + (this.client.getCameraEntity().z - this.client.getCameraEntity().prevZ) * (double)tickDelta;
+				double e = entity.prevX + (entity.x - entity.prevX) * (double)tickDelta + d * 0.03F;
+				double p = entity.prevZ + (entity.z - entity.prevZ) * (double)tickDelta;
 				int q = MathHelper.floor(e / 2048.0);
 				int r = MathHelper.floor(p / 2048.0);
 				e -= (double)(q * 2048);
@@ -1244,15 +1312,15 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 	private void renderFancyClouds(float tickDelta, int anaglyphFilter) {
 		GlStateManager.disableCull();
-		float f = (float)(this.client.getCameraEntity().prevTickY + (this.client.getCameraEntity().y - this.client.getCameraEntity().prevTickY) * (double)tickDelta);
+		Entity entity = this.client.getCameraEntity();
+		float f = (float)(entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		float g = 12.0F;
 		float h = 4.0F;
 		double d = (double)((float)this.ticks + tickDelta);
-		double e = (this.client.getCameraEntity().prevX + (this.client.getCameraEntity().x - this.client.getCameraEntity().prevX) * (double)tickDelta + d * 0.03F)
-			/ 12.0;
-		double i = (this.client.getCameraEntity().prevZ + (this.client.getCameraEntity().z - this.client.getCameraEntity().prevZ) * (double)tickDelta) / 12.0 + 0.33F;
+		double e = (entity.prevX + (entity.x - entity.prevX) * (double)tickDelta + d * 0.03F) / 12.0;
+		double i = (entity.prevZ + (entity.z - entity.prevZ) * (double)tickDelta) / 12.0 + 0.33F;
 		float j = this.world.dimension.getCloudHeight() - f + 0.33F;
 		int k = MathHelper.floor(e / 2048.0);
 		int l = MathHelper.floor(i / 2048.0);
@@ -1260,7 +1328,9 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		i -= (double)(l * 2048);
 		this.textureManager.bindTexture(CLOUDS);
 		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		Vec3d vec3d = this.world.getCloudColor(tickDelta);
 		float m = (float)vec3d.x;
 		float n = (float)vec3d.y;
@@ -1479,11 +1549,18 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 
 			while (iterator.hasNext()) {
 				BuiltChunk builtChunk = (BuiltChunk)iterator.next();
-				if (!this.chunkBuilder.send(builtChunk)) {
+				boolean bl;
+				if (builtChunk.method_12431()) {
+					bl = this.chunkBuilder.upload(builtChunk);
+				} else {
+					bl = this.chunkBuilder.send(builtChunk);
+				}
+
+				if (!bl) {
 					break;
 				}
 
-				builtChunk.method_10162(false);
+				builtChunk.method_12430();
 				iterator.remove();
 				long l = limitTime - System.nanoTime();
 				if (l < 0L) {
@@ -1508,7 +1585,9 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 			double g = entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta;
 			double h = entity.prevTickZ + (entity.z - entity.prevTickZ) * (double)tickDelta;
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 1, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			this.textureManager.bindTexture(FORCEFIELD);
 			GlStateManager.depthMask(false);
 			GlStateManager.pushMatrix();
@@ -1602,7 +1681,9 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	}
 
 	private void preDrawBlockDamage() {
-		GlStateManager.blendFuncSeparate(774, 768, 1, 0);
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.DST_COLOR, GlStateManager.class_2866.SRC_COLOR, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		GlStateManager.enableBlend();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 0.5F);
 		GlStateManager.polygonOffset(-3.0F, -3.0F);
@@ -1645,7 +1726,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 						iterator.remove();
 					} else {
 						BlockState blockState = this.world.getBlockState(blockPos);
-						if (blockState.getBlock().getMaterial() != Material.AIR) {
+						if (blockState.getMaterial() != Material.AIR) {
 							int j = blockBreakingInfo.getStage();
 							Sprite sprite = this.destroySprites[j];
 							BlockRenderManager blockRenderManager = this.client.getBlockRenderManager();
@@ -1664,20 +1745,20 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	public void drawBlockOutline(PlayerEntity player, BlockHitResult hitResult, int i, float tickDelta) {
 		if (i == 0 && hitResult.type == BlockHitResult.Type.BLOCK) {
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			GlStateManager.color(0.0F, 0.0F, 0.0F, 0.4F);
-			GL11.glLineWidth(2.0F);
+			GlStateManager.method_12304(2.0F);
 			GlStateManager.disableTexture();
 			GlStateManager.depthMask(false);
-			float f = 0.002F;
 			BlockPos blockPos = hitResult.getBlockPos();
-			Block block = this.world.getBlockState(blockPos).getBlock();
-			if (block.getMaterial() != Material.AIR && this.world.getWorldBorder().contains(blockPos)) {
-				block.setBoundingBox(this.world, blockPos);
+			BlockState blockState = this.world.getBlockState(blockPos);
+			if (blockState.getMaterial() != Material.AIR && this.world.getWorldBorder().contains(blockPos)) {
 				double d = player.prevTickX + (player.x - player.prevTickX) * (double)tickDelta;
 				double e = player.prevTickY + (player.y - player.prevTickY) * (double)tickDelta;
-				double g = player.prevTickZ + (player.z - player.prevTickZ) * (double)tickDelta;
-				drawBox(block.getSelectionBox(this.world, blockPos).expand(0.002F, 0.002F, 0.002F).offset(-d, -e, -g));
+				double f = player.prevTickZ + (player.z - player.prevTickZ) * (double)tickDelta;
+				drawBox(blockState.method_11722(this.world, blockPos).expand(0.002F).offset(-d, -e, -f));
 			}
 
 			GlStateManager.depthMask(true);
@@ -1744,57 +1825,50 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		tessellator.draw();
 	}
 
-	private void updateBlock(int i, int j, int k, int l, int m, int n) {
-		this.chunks.scheduleRebuild(i, j, k, l, m, n);
+	private void method_1378(int i, int j, int k, int l, int m, int n, boolean bl) {
+		this.chunks.method_9935(i, j, k, l, m, n, bl);
 	}
 
 	@Override
-	public void onBlockUpdate(BlockPos pos) {
-		int i = pos.getX();
-		int j = pos.getY();
-		int k = pos.getZ();
-		this.updateBlock(i - 1, j - 1, k - 1, i + 1, j + 1, k + 1);
+	public void method_11493(World world, BlockPos position, BlockState blockState, BlockState blockState2, int i) {
+		int j = position.getX();
+		int k = position.getY();
+		int l = position.getZ();
+		this.method_1378(j - 1, k - 1, l - 1, j + 1, k + 1, l + 1, (i & 8) != 0);
 	}
 
 	@Override
 	public void onLightUpdate(BlockPos pos) {
-		int i = pos.getX();
-		int j = pos.getY();
-		int k = pos.getZ();
-		this.updateBlock(i - 1, j - 1, k - 1, i + 1, j + 1, k + 1);
+		this.field_13538.add(pos.toImmutable());
 	}
 
 	@Override
 	public void onRenderRegionUpdate(int x1, int y1, int z1, int x2, int y2, int z2) {
-		this.updateBlock(x1 - 1, y1 - 1, z1 - 1, x2 + 1, y2 + 1, z2 + 1);
+		this.method_1378(x1 - 1, y1 - 1, z1 - 1, x2 + 1, y2 + 1, z2 + 1, false);
 	}
 
 	@Override
-	public void playMusicDisc(String id, BlockPos pos) {
-		SoundInstance soundInstance = (SoundInstance)this.playingSongs.get(pos);
+	public void method_8572(@Nullable Sound sound, BlockPos blockPos) {
+		SoundInstance soundInstance = (SoundInstance)this.playingSongs.get(blockPos);
 		if (soundInstance != null) {
 			this.client.getSoundManager().stop(soundInstance);
-			this.playingSongs.remove(pos);
+			this.playingSongs.remove(blockPos);
 		}
 
-		if (id != null) {
-			MusicDiscItem musicDiscItem = MusicDiscItem.getByName(id);
+		if (sound != null) {
+			MusicDiscItem musicDiscItem = MusicDiscItem.method_11401(sound);
 			if (musicDiscItem != null) {
 				this.client.inGameHud.setRecordPlayingOverlay(musicDiscItem.getDescription());
 			}
 
-			SoundInstance var5 = PositionedSoundInstance.method_7053(new Identifier(id), (float)pos.getX(), (float)pos.getY(), (float)pos.getZ());
-			this.playingSongs.put(pos, var5);
+			SoundInstance var5 = PositionedSoundInstance.method_7053(sound, (float)blockPos.getX(), (float)blockPos.getY(), (float)blockPos.getZ());
+			this.playingSongs.put(blockPos, var5);
 			this.client.getSoundManager().play(var5);
 		}
 	}
 
 	@Override
-	public void playSound(String name, double x, double y, double z, float volume, float pitch) {
-	}
-
-	@Override
-	public void playSound(PlayerEntity except, String name, double x, double y, double z, float volume, float pitch) {
+	public void method_3747(@Nullable PlayerEntity playerEntity, Sound sound, SoundCategory soundCategory, double d, double e, double f, float g, float h) {
 	}
 
 	@Override
@@ -1809,7 +1883,7 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				crashReportSection.add("Parameters", args);
 			}
 
-			crashReportSection.add("Position", new Callable<String>() {
+			crashReportSection.add("Position", new CrashCallable<String>() {
 				public String call() throws Exception {
 					return CrashReportSection.createPositionString(x, y, z);
 				}
@@ -1822,25 +1896,24 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		this.addParticle(type.getId(), type.getAlwaysShow(), d, e, f, g, h, i, is);
 	}
 
+	@Nullable
 	private Particle addParticleInternal(int i, boolean bl, double d, double e, double f, double g, double h, double j, int... is) {
-		if (this.client != null && this.client.getCameraEntity() != null && this.client.particleManager != null) {
+		Entity entity = this.client.getCameraEntity();
+		if (this.client != null && entity != null && this.client.particleManager != null) {
 			int k = this.client.options.particle;
 			if (k == 1 && this.world.random.nextInt(3) == 0) {
 				k = 2;
 			}
 
-			double l = this.client.getCameraEntity().x - d;
-			double m = this.client.getCameraEntity().y - e;
-			double n = this.client.getCameraEntity().z - f;
+			double l = entity.x - d;
+			double m = entity.y - e;
+			double n = entity.z - f;
 			if (bl) {
 				return this.client.particleManager.addParticle(i, d, e, f, g, h, j, is);
+			} else if (l * l + m * m + n * n > 1024.0) {
+				return null;
 			} else {
-				double o = 16.0;
-				if (l * l + m * m + n * n > 256.0) {
-					return null;
-				} else {
-					return k > 1 ? null : this.client.particleManager.addParticle(i, d, e, f, g, h, j, is);
-				}
+				return k > 1 ? null : this.client.particleManager.addParticle(i, d, e, f, g, h, j, is);
 			}
 		} else {
 			return null;
@@ -1861,26 +1934,27 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	@Override
 	public void processGlobalEvent(int eventId, BlockPos pos, int j) {
 		switch (eventId) {
-			case 1013:
-			case 1018:
-				if (this.client.getCameraEntity() != null) {
-					double d = (double)pos.getX() - this.client.getCameraEntity().x;
-					double e = (double)pos.getY() - this.client.getCameraEntity().y;
-					double f = (double)pos.getZ() - this.client.getCameraEntity().z;
+			case 1023:
+			case 1028:
+				Entity entity = this.client.getCameraEntity();
+				if (entity != null) {
+					double d = (double)pos.getX() - entity.x;
+					double e = (double)pos.getY() - entity.y;
+					double f = (double)pos.getZ() - entity.z;
 					double g = Math.sqrt(d * d + e * e + f * f);
-					double h = this.client.getCameraEntity().x;
-					double i = this.client.getCameraEntity().y;
-					double k = this.client.getCameraEntity().z;
+					double h = entity.x;
+					double i = entity.y;
+					double k = entity.z;
 					if (g > 0.0) {
 						h += d / g * 2.0;
 						i += e / g * 2.0;
 						k += f / g * 2.0;
 					}
 
-					if (eventId == 1013) {
-						this.world.playSound(h, i, k, "mob.wither.spawn", 1.0F, 1.0F, false);
+					if (eventId == 1023) {
+						this.world.playSound(h, i, k, Sounds.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 1.0F, 1.0F, false);
 					} else {
-						this.world.playSound(h, i, k, "mob.enderdragon.end", 5.0F, 1.0F, false);
+						this.world.playSound(h, i, k, Sounds.ENTITY_ENDERDRAGON_DEATH, SoundCategory.HOSTILE, 5.0F, 1.0F, false);
 					}
 				}
 		}
@@ -1891,68 +1965,120 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		Random random = this.world.random;
 		switch (eventId) {
 			case 1000:
-				this.world.playSound(pos, "random.click", 1.0F, 1.0F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_DISPENSER_DISPENSE, SoundCategory.BLOCKS, 1.0F, 1.0F, false);
 				break;
 			case 1001:
-				this.world.playSound(pos, "random.click", 1.0F, 1.2F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.2F, false);
 				break;
 			case 1002:
-				this.world.playSound(pos, "random.bow", 1.0F, 1.2F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_DISPENSER_LAUNCH, SoundCategory.BLOCKS, 1.0F, 1.2F, false);
 				break;
 			case 1003:
-				this.world.playSound(pos, "random.door_open", 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				this.world.method_9669(pos, Sounds.ENTITY_ENDEREYE_LAUNCH, SoundCategory.NEUTRAL, 1.0F, 1.2F, false);
 				break;
 			case 1004:
-				this.world.playSound(pos, "random.fizz", 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F, false);
+				this.world.method_9669(pos, Sounds.ENTITY_FIREWORK_SHOOT, SoundCategory.NEUTRAL, 1.0F, 1.2F, false);
 				break;
 			case 1005:
-				if (Item.byRawId(data) instanceof MusicDiscItem) {
-					this.world.playMusicDisc(pos, "records." + ((MusicDiscItem)Item.byRawId(data)).recordType);
-				} else {
-					this.world.playMusicDisc(pos, null);
-				}
+				this.world.method_9669(pos, Sounds.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 1006:
-				this.world.playSound(pos, "random.door_close", 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_WOODEN_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 1007:
-				this.world.playSound(pos, "mob.ghast.charge", 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_WOODEN_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 1008:
-				this.world.playSound(pos, "mob.ghast.fireball", 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_FENCE_GATE_OPEN, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 1009:
-				this.world.playSound(pos, "mob.ghast.fireball", 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F, false);
 				break;
 			case 1010:
-				this.world.playSound(pos, "mob.zombie.wood", 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				if (Item.byRawId(data) instanceof MusicDiscItem) {
+					this.world.method_8509(pos, ((MusicDiscItem)Item.byRawId(data)).method_11402());
+				} else {
+					this.world.method_8509(pos, null);
+				}
 				break;
 			case 1011:
-				this.world.playSound(pos, "mob.zombie.metal", 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_IRON_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 1012:
-				this.world.playSound(pos, "mob.zombie.woodbreak", 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_WOODEN_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				break;
+			case 1013:
+				this.world.method_9669(pos, Sounds.BLOCK_WOODEN_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 1014:
-				this.world.playSound(pos, "mob.wither.shoot", 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.BLOCK_FENCE_GATE_CLOSE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 1015:
-				this.world.playSound(pos, "mob.bat.takeoff", 0.05F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.ENTITY_GHAST_WARN, SoundCategory.HOSTILE, 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
 				break;
 			case 1016:
-				this.world.playSound(pos, "mob.zombie.infect", 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.ENTITY_GHAST_SHOOT, SoundCategory.HOSTILE, 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
 				break;
 			case 1017:
-				this.world.playSound(pos, "mob.zombie.unfect", 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				this.world.method_9669(pos, Sounds.ENTITY_ENDERDRAGON_SHOOT, SoundCategory.HOSTILE, 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				break;
+			case 1018:
+				this.world.method_9669(pos, Sounds.ENTITY_BLAZE_SHOOT, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				break;
+			case 1019:
+				this.world
+					.method_9669(pos, Sounds.ENTITY_ZOMBIE_ATTACK_DOOR_WOOD, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
 				break;
 			case 1020:
-				this.world.playSound(pos, "random.anvil_break", 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				this.world
+					.method_9669(pos, Sounds.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
 				break;
 			case 1021:
-				this.world.playSound(pos, "random.anvil_use", 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				this.world
+					.method_9669(pos, Sounds.ENTITY_ZOMBIE_BREAK_DOOR_WOOD, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
 				break;
 			case 1022:
-				this.world.playSound(pos, "random.anvil_land", 0.3F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				this.world.method_9669(pos, Sounds.ENTITY_WITHER_BREAK_BLOCK, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				break;
+			case 1024:
+				this.world.method_9669(pos, Sounds.ENTITY_WITHER_SHOOT, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				break;
+			case 1025:
+				this.world.method_9669(pos, Sounds.ENTITY_BAT_TAKEOFF, SoundCategory.NEUTRAL, 0.05F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				break;
+			case 1026:
+				this.world.method_9669(pos, Sounds.ENTITY_ZOMBIE_INFECT, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				break;
+			case 1027:
+				this.world
+					.method_9669(pos, Sounds.ENTITY_ZOMBIE_VILLAGER_CONVERTED, SoundCategory.NEUTRAL, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F, false);
+				break;
+			case 1029:
+				this.world.method_9669(pos, Sounds.BLOCK_ANVIL_DESTROY, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				break;
+			case 1030:
+				this.world.method_9669(pos, Sounds.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				break;
+			case 1031:
+				this.world.method_9669(pos, Sounds.BLOCK_ANVIL_LAND, SoundCategory.BLOCKS, 0.3F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				break;
+			case 1032:
+				this.client.getSoundManager().play(PositionedSoundInstance.method_12521(Sounds.BLOCK_PORTAL_TRAVEL, random.nextFloat() * 0.4F + 0.8F));
+				break;
+			case 1033:
+				this.world.method_9669(pos, Sounds.BLOCK_CHORUS_FLOWER_GROW, SoundCategory.BLOCKS, 1.0F, 1.0F, false);
+				break;
+			case 1034:
+				this.world.method_9669(pos, Sounds.BLOCK_CHORUS_FLOWER_DEATH, SoundCategory.BLOCKS, 1.0F, 1.0F, false);
+				break;
+			case 1035:
+				this.world.method_9669(pos, Sounds.BLOCK_BREWING_STAND_BREW, SoundCategory.BLOCKS, 1.0F, 1.0F, false);
+				break;
+			case 1036:
+				this.world.method_9669(pos, Sounds.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				break;
+			case 1037:
+				this.world.method_9669(pos, Sounds.BLOCK_IRON_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 2000:
 				int i = data % 3 - 1;
@@ -1974,18 +2100,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				break;
 			case 2001:
 				Block block = Block.getById(data & 4095);
-				if (block.getMaterial() != Material.AIR) {
-					this.client
-						.getSoundManager()
-						.play(
-							new PositionedSoundInstance(
-								new Identifier(block.sound.getDigSound()),
-								(block.sound.getVolume() + 1.0F) / 2.0F,
-								block.sound.getPitch() * 0.8F,
-								(float)pos.getX() + 0.5F,
-								(float)pos.getY() + 0.5F,
-								(float)pos.getZ() + 0.5F
-							)
+				if (block.getDefaultState().getMaterial() != Material.AIR) {
+					BlockSoundGroup blockSoundGroup = block.getSoundGroup();
+					this.world
+						.method_9669(
+							pos, blockSoundGroup.method_11629(), SoundCategory.BLOCKS, (blockSoundGroup.getVolume() + 1.0F) / 2.0F, blockSoundGroup.getPitch() * 0.8F, false
 						);
 				}
 
@@ -2005,19 +2124,16 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 						random.nextGaussian() * 0.15,
 						random.nextDouble() * 0.2,
 						random.nextGaussian() * 0.15,
-						Item.getRawId(Items.POTION),
-						data
+						Item.getRawId(Items.SPLASH_POTION)
 					);
 				}
 
-				int z = Items.POTION.getColor(data);
+				Potion potion = Potion.byIndex(data);
+				int z = PotionUtil.getColor(potion);
 				float aa = (float)(z >> 16 & 0xFF) / 255.0F;
 				float ab = (float)(z >> 8 & 0xFF) / 255.0F;
 				float ac = (float)(z >> 0 & 0xFF) / 255.0F;
-				ParticleType particleType = ParticleType.SPELL;
-				if (Items.POTION.isInstant(data)) {
-					particleType = ParticleType.INSTANT_SPELL;
-				}
+				ParticleType particleType = potion.method_11415() ? ParticleType.INSTANT_SPELL : ParticleType.SPELL;
 
 				for (int ad = 0; ad < 100; ad++) {
 					double ae = random.nextDouble() * 4.0;
@@ -2029,11 +2145,11 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 					if (particle != null) {
 						float aj = 0.75F + random.nextFloat() * 0.25F;
 						particle.setColor(aa * aj, ab * aj, ac * aj);
-						particle.move((float)ae);
+						particle.method_12249((float)ae);
 					}
 				}
 
-				this.world.playSound(pos, "game.potion.smash", 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				this.world.method_9669(pos, Sounds.ENTITY_SPLASH_POTION_BREAK, SoundCategory.NEUTRAL, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
 				break;
 			case 2003:
 				double q = (double)pos.getX() + 0.5;
@@ -2069,6 +2185,39 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 				break;
 			case 2005:
 				DyeItem.spawnParticles(this.world, pos, data);
+				break;
+			case 2006:
+				for (int ao = 0; ao < 200; ao++) {
+					float ap = random.nextFloat() * 4.0F;
+					float aq = random.nextFloat() * (float) (Math.PI * 2);
+					double ar = (double)(MathHelper.cos(aq) * ap);
+					double as = 0.01 + random.nextDouble() * 0.5;
+					double at = (double)(MathHelper.sin(aq) * ap);
+					Particle particle2 = this.addParticleInternal(
+						ParticleType.DRAGON_BREATH.getId(), false, (double)pos.getX() + ar * 0.1, (double)pos.getY() + 0.3, (double)pos.getZ() + at * 0.1, ar, as, at
+					);
+					if (particle2 != null) {
+						particle2.method_12249(ap);
+					}
+				}
+
+				this.world.method_9669(pos, Sounds.ENTITY_ENDERDRAGON_FIREBALL_EXPLODE, SoundCategory.HOSTILE, 1.0F, this.world.random.nextFloat() * 0.1F + 0.9F, false);
+				break;
+			case 3000:
+				this.world
+					.addParticle(ParticleType.HUGE_EXPLOSION, true, (double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, 0.0, 0.0, 0.0, new int[0]);
+				this.world
+					.method_9669(
+						pos,
+						Sounds.BLOCK_END_GATEWAY_SPAWN,
+						SoundCategory.BLOCKS,
+						10.0F,
+						(1.0F + (this.world.random.nextFloat() - this.world.random.nextFloat()) * 0.2F) * 0.7F,
+						false
+					);
+				break;
+			case 3001:
+				this.world.method_9669(pos, Sounds.ENTITY_ENDERDRAGON_GROWL, SoundCategory.HOSTILE, 64.0F, 0.8F + this.world.random.nextFloat() * 0.3F, false);
 		}
 	}
 
@@ -2091,6 +2240,10 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 		}
 	}
 
+	public boolean method_12339() {
+		return this.chunksToRebuild.isEmpty() && this.chunkBuilder.method_12420();
+	}
+
 	public void scheduleTerrainUpdate() {
 		this.needsTerrainUpdate = true;
 	}
@@ -2105,13 +2258,21 @@ public class WorldRenderer implements WorldEventListener, ResourceReloadListener
 	class ChunkInfo {
 		final BuiltChunk chunk;
 		final Direction direction;
-		final Set<Direction> facingSet = EnumSet.noneOf(Direction.class);
+		byte field_13539;
 		final int propagationLevel;
 
-		private ChunkInfo(BuiltChunk builtChunk, Direction direction, int i) {
+		private ChunkInfo(BuiltChunk builtChunk, Direction direction, @Nullable int i) {
 			this.chunk = builtChunk;
 			this.direction = direction;
 			this.propagationLevel = i;
+		}
+
+		public void method_12340(byte b, Direction direction) {
+			this.field_13539 = (byte)(this.field_13539 | b | 1 << direction.ordinal());
+		}
+
+		public boolean method_12341(Direction direction) {
+			return (this.field_13539 & 1 << direction.ordinal()) > 0;
 		}
 	}
 }

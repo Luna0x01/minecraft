@@ -1,6 +1,6 @@
 package net.minecraft.entity.mob;
 
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -15,7 +15,7 @@ public abstract class FlyingEntity extends MobEntity {
 	}
 
 	@Override
-	protected void fall(double heightDifference, boolean onGround, Block landedBlock, BlockPos landedPosition) {
+	protected void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPos) {
 	}
 
 	@Override

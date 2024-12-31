@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import com.google.common.base.Predicate;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.HopperBlockEntity;
 import net.minecraft.block.material.Material;
@@ -17,6 +18,9 @@ import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -26,38 +30,35 @@ import net.minecraft.world.World;
 
 public class HopperBlock extends BlockWithEntity {
 	public static final DirectionProperty FACING = DirectionProperty.of("facing", new Predicate<Direction>() {
-		public boolean apply(Direction direction) {
+		public boolean apply(@Nullable Direction direction) {
 			return direction != Direction.UP;
 		}
 	});
 	public static final BooleanProperty ENABLED = BooleanProperty.of("enabled");
+	protected static final Box field_12685 = new Box(0.0, 0.0, 0.0, 1.0, 0.625, 1.0);
+	protected static final Box field_12686 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.125);
+	protected static final Box field_12687 = new Box(0.0, 0.0, 0.875, 1.0, 1.0, 1.0);
+	protected static final Box field_12688 = new Box(0.875, 0.0, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12689 = new Box(0.0, 0.0, 0.0, 0.125, 1.0, 1.0);
 
 	public HopperBlock() {
 		super(Material.IRON, MaterialColor.STONE);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.DOWN).with(ENABLED, true));
 		this.setItemGroup(ItemGroup.REDSTONE);
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return collisionBox;
 	}
 
 	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.625F, 1.0F);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		float f = 0.125F;
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, f, 1.0F, 1.0F);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, f);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		this.setBoundingBox(1.0F - f, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		this.setBoundingBox(0.0F, 0.0F, 1.0F - f, 1.0F, 1.0F, 1.0F);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+		appendCollisionBoxes(pos, entityBox, boxes, field_12685);
+		appendCollisionBoxes(pos, entityBox, boxes, field_12689);
+		appendCollisionBoxes(pos, entityBox, boxes, field_12688);
+		appendCollisionBoxes(pos, entityBox, boxes, field_12686);
+		appendCollisionBoxes(pos, entityBox, boxes, field_12687);
 	}
 
 	@Override
@@ -87,19 +88,35 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
+	public boolean method_11568(BlockState state) {
+		return true;
+	}
+
+	@Override
 	public void onCreation(World world, BlockPos pos, BlockState state) {
 		this.updateEnabled(world, pos, state);
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof HopperBlockEntity) {
-				player.openInventory((HopperBlockEntity)blockEntity);
-				player.incrementStat(Stats.INTERACTIONS_WITH_HOPPER);
+				playerEntity.openInventory((HopperBlockEntity)blockEntity);
+				playerEntity.incrementStat(Stats.INTERACTIONS_WITH_HOPPER);
 			}
 
 			return true;
@@ -107,8 +124,8 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		this.updateEnabled(world, pos, state);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		this.updateEnabled(world, blockPos, blockState);
 	}
 
 	private void updateEnabled(World world, BlockPos pos, BlockState state) {
@@ -130,22 +147,22 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
 		return true;
 	}
 
@@ -158,12 +175,12 @@ public class HopperBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
 		return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
 	}
 
@@ -186,6 +203,16 @@ public class HopperBlock extends BlockWithEntity {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

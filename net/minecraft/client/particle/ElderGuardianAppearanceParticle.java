@@ -28,10 +28,10 @@ public class ElderGuardianAppearanceParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		super.tick();
+	public void method_12241() {
+		super.method_12241();
 		if (this.entity == null) {
-			GuardianEntity guardianEntity = new GuardianEntity(this.world);
+			GuardianEntity guardianEntity = new GuardianEntity(this.field_13424);
 			guardianEntity.method_11201();
 			this.entity = guardianEntity;
 		}
@@ -47,7 +47,7 @@ public class ElderGuardianAppearanceParticle extends Particle {
 			GlStateManager.depthMask(true);
 			GlStateManager.enableBlend();
 			GlStateManager.enableDepthTest();
-			GlStateManager.blendFunc(770, 771);
+			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 			float m = 240.0F;
 			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, m, m);
 			GlStateManager.pushMatrix();
@@ -60,7 +60,7 @@ public class ElderGuardianAppearanceParticle extends Particle {
 			GlStateManager.scale(f, f, f);
 			this.entity.yaw = this.entity.prevYaw = 0.0F;
 			this.entity.headYaw = this.entity.prevHeadYaw = 0.0F;
-			entityRenderDispatcher.render(this.entity, 0.0, 0.0, 0.0, 0.0F, tickDelta);
+			entityRenderDispatcher.method_12446(this.entity, 0.0, 0.0, 0.0, 0.0F, tickDelta, false);
 			GlStateManager.popMatrix();
 			GlStateManager.enableDepthTest();
 		}

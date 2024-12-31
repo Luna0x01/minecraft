@@ -85,7 +85,7 @@ public class TextFieldWidget extends DrawableHelper {
 		int j = this.selectionStart < this.selectionEnd ? this.selectionEnd : this.selectionStart;
 		int k = this.maxLength - this.text.length() - (i - j);
 		int l = 0;
-		if (this.text.length() > 0) {
+		if (!this.text.isEmpty()) {
 			string = string + this.text.substring(0, i);
 		}
 
@@ -97,7 +97,7 @@ public class TextFieldWidget extends DrawableHelper {
 			l = string2.length();
 		}
 
-		if (this.text.length() > 0 && j < this.text.length()) {
+		if (!this.text.isEmpty() && j < this.text.length()) {
 			string = string + this.text.substring(j);
 		}
 
@@ -111,7 +111,7 @@ public class TextFieldWidget extends DrawableHelper {
 	}
 
 	public void eraseWords(int wordOffset) {
-		if (this.text.length() != 0) {
+		if (!this.text.isEmpty()) {
 			if (this.selectionEnd != this.selectionStart) {
 				this.write("");
 			} else {
@@ -121,7 +121,7 @@ public class TextFieldWidget extends DrawableHelper {
 	}
 
 	public void eraseCharacters(int characterOffset) {
-		if (this.text.length() != 0) {
+		if (!this.text.isEmpty()) {
 			if (this.selectionEnd != this.selectionStart) {
 				this.write("");
 			} else {
@@ -352,7 +352,7 @@ public class TextFieldWidget extends DrawableHelper {
 				k = string.length();
 			}
 
-			if (string.length() > 0) {
+			if (!string.isEmpty()) {
 				String string2 = bl ? string.substring(0, j) : string;
 				n = this.textRenderer.drawWithShadow(string2, (float)l, (float)m, i);
 			}
@@ -366,7 +366,7 @@ public class TextFieldWidget extends DrawableHelper {
 				n--;
 			}
 
-			if (string.length() > 0 && bl && j < string.length()) {
+			if (!string.isEmpty() && bl && j < string.length()) {
 				n = this.textRenderer.drawWithShadow(string.substring(j), (float)n, (float)m, i);
 			}
 
@@ -411,7 +411,7 @@ public class TextFieldWidget extends DrawableHelper {
 		GlStateManager.color(0.0F, 0.0F, 255.0F, 255.0F);
 		GlStateManager.disableTexture();
 		GlStateManager.enableColorLogic();
-		GlStateManager.logicOp(5387);
+		GlStateManager.method_9807(GlStateManager.class_2868.OR_REVERSE);
 		bufferBuilder.begin(7, VertexFormats.POSITION);
 		bufferBuilder.vertex((double)x1, (double)y2, 0.0).next();
 		bufferBuilder.vertex((double)x2, (double)y2, 0.0).next();

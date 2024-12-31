@@ -57,13 +57,13 @@ public class OceanMonumentPieces {
 
 		public AbstractPiece(Direction direction, BlockBox blockBox) {
 			super(1);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
 		protected AbstractPiece(int i, Direction direction, OceanMonumentPieces.PieceSetting pieceSetting, int j, int k, int l) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.setting = pieceSetting;
 			int m = pieceSetting.roomIndex;
 			int n = m % 5;
@@ -102,7 +102,7 @@ public class OceanMonumentPieces {
 			for (int i = y; i <= height; i++) {
 				for (int j = x; j <= width; j++) {
 					for (int k = z; k <= depth; k++) {
-						if (!bl || this.getBlockAt(world, j, i, k, box).getBlock().getMaterial() != Material.AIR) {
+						if (!bl || this.getBlockAt(world, j, i, k, box).getMaterial() != Material.AIR) {
 							if (this.applyYTransform(i) >= world.getSeaLevel()) {
 								this.setBlockState(world, Blocks.AIR.getDefaultState(), j, i, k, box);
 							} else {
@@ -872,20 +872,18 @@ public class OceanMonumentPieces {
 
 		public MainBuilding(Random random, int i, int j, Direction direction) {
 			super(0);
-			this.facing = direction;
-			switch (this.facing) {
-				case NORTH:
-				case SOUTH:
-					this.boundingBox = new BlockBox(i, 39, j, i + 58 - 1, 61, j + 58 - 1);
-					break;
-				default:
-					this.boundingBox = new BlockBox(i, 39, j, i + 58 - 1, 61, j + 58 - 1);
+			this.method_11853(direction);
+			Direction direction2 = this.method_11854();
+			if (direction2.getAxis() == Direction.Axis.Z) {
+				this.boundingBox = new BlockBox(i, 39, j, i + 58 - 1, 61, j + 58 - 1);
+			} else {
+				this.boundingBox = new BlockBox(i, 39, j, i + 58 - 1, 61, j + 58 - 1);
 			}
 
 			List<OceanMonumentPieces.PieceSetting> list = this.method_9243(random);
 			this.field_10195.used = true;
-			this.field_10197.add(new OceanMonumentPieces.Entrance(this.facing, this.field_10195));
-			this.field_10197.add(new OceanMonumentPieces.CoreRoom(this.facing, this.field_10196, random));
+			this.field_10197.add(new OceanMonumentPieces.Entrance(direction2, this.field_10195));
+			this.field_10197.add(new OceanMonumentPieces.CoreRoom(direction2, this.field_10196, random));
 			List<OceanMonumentPieces.Factory> list2 = Lists.newArrayList();
 			list2.add(new OceanMonumentPieces.DoubleXYRoomFactory());
 			list2.add(new OceanMonumentPieces.DoubleYZRoomFactory());
@@ -899,7 +897,7 @@ public class OceanMonumentPieces {
 				if (!pieceSetting.used && !pieceSetting.isAboveLevelThree()) {
 					for (OceanMonumentPieces.Factory factory : list2) {
 						if (factory.canGenerate(pieceSetting)) {
-							this.field_10197.add(factory.generate(this.facing, pieceSetting, random));
+							this.field_10197.add(factory.generate(direction2, pieceSetting, random));
 							break;
 						}
 					}
@@ -939,9 +937,9 @@ public class OceanMonumentPieces {
 				this.applyZTransform(35, 35)
 			);
 			int n = random.nextInt();
-			this.field_10197.add(new OceanMonumentPieces.WingRoom(this.facing, blockBox, n++));
-			this.field_10197.add(new OceanMonumentPieces.WingRoom(this.facing, blockBox2, n++));
-			this.field_10197.add(new OceanMonumentPieces.Penthouse(this.facing, blockBox3));
+			this.field_10197.add(new OceanMonumentPieces.WingRoom(direction2, blockBox, n++));
+			this.field_10197.add(new OceanMonumentPieces.WingRoom(direction2, blockBox2, n++));
+			this.field_10197.add(new OceanMonumentPieces.Penthouse(direction2, blockBox3));
 		}
 
 		private List<OceanMonumentPieces.PieceSetting> method_9243(Random random) {

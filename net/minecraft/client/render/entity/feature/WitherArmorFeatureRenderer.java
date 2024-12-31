@@ -31,7 +31,7 @@ public class WitherArmorFeatureRenderer implements FeatureRenderer<WitherEntity>
 			float p = 0.5F;
 			GlStateManager.color(p, p, p, 1.0F);
 			GlStateManager.disableLighting();
-			GlStateManager.blendFunc(1, 1);
+			GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 			this.model.animateModel(witherEntity, f, g, h);
 			this.model.copy(this.witherEntityRenderer.getModel());
 			this.model.render(witherEntity, f, g, i, j, k, l);

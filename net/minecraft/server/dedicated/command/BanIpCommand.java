@@ -1,8 +1,10 @@
 package net.minecraft.server.dedicated.command;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -30,8 +32,8 @@ public class BanIpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public boolean isAccessible(CommandSource source) {
-		return MinecraftServer.getServer().getPlayerManager().getIpBanList().isEnabled() && super.isAccessible(source);
+	public boolean method_3278(MinecraftServer server, CommandSource source) {
+		return server.getPlayerManager().getIpBanList().isEnabled() && super.method_3278(server, source);
 	}
 
 	@Override
@@ -40,19 +42,19 @@ public class BanIpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length >= 1 && args[0].length() > 1) {
-			Text text = args.length >= 2 ? method_4635(source, args, 1) : null;
+			Text text = args.length >= 2 ? method_4635(commandSource, args, 1) : null;
 			Matcher matcher = field_2725.matcher(args[0]);
 			if (matcher.matches()) {
-				this.method_2054(source, args[0], text == null ? null : text.asUnformattedString());
+				this.method_2054(minecraftServer, commandSource, args[0], text == null ? null : text.asUnformattedString());
 			} else {
-				ServerPlayerEntity serverPlayerEntity = MinecraftServer.getServer().getPlayerManager().getPlayer(args[0]);
+				ServerPlayerEntity serverPlayerEntity = minecraftServer.getPlayerManager().getPlayer(args[0]);
 				if (serverPlayerEntity == null) {
 					throw new PlayerNotFoundException("commands.banip.invalid");
 				}
 
-				this.method_2054(source, serverPlayerEntity.getIp(), text == null ? null : text.asUnformattedString());
+				this.method_2054(minecraftServer, commandSource, serverPlayerEntity.getIp(), text == null ? null : text.asUnformattedString());
 			}
 		} else {
 			throw new IncorrectUsageException("commands.banip.usage");
@@ -60,14 +62,14 @@ public class BanIpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, MinecraftServer.getServer().getPlayerNames()) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
 	}
 
-	protected void method_2054(CommandSource commandSource, String string, String string2) {
+	protected void method_2054(MinecraftServer minecraftServer, CommandSource commandSource, String string, @Nullable String string2) {
 		BannedIpEntry bannedIpEntry = new BannedIpEntry(string, null, commandSource.getTranslationKey(), null, string2);
-		MinecraftServer.getServer().getPlayerManager().getIpBanList().add(bannedIpEntry);
-		List<ServerPlayerEntity> list = MinecraftServer.getServer().getPlayerManager().getPlayersByIp(string);
+		minecraftServer.getPlayerManager().getIpBanList().add(bannedIpEntry);
+		List<ServerPlayerEntity> list = minecraftServer.getPlayerManager().getPlayersByIp(string);
 		String[] strings = new String[list.size()];
 		int i = 0;
 

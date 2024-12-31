@@ -1,31 +1,40 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.material.MaterialColor;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class DoorBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
 	public static final BooleanProperty OPEN = BooleanProperty.of("open");
 	public static final EnumProperty<DoorBlock.DoorType> HINGE = EnumProperty.of("hinge", DoorBlock.DoorType.class);
 	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
 	public static final EnumProperty<DoorBlock.HalfType> HALF = EnumProperty.of("half", DoorBlock.HalfType.class);
+	protected static final Box field_12647 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.1875);
+	protected static final Box field_12648 = new Box(0.0, 0.0, 0.8125, 1.0, 1.0, 1.0);
+	protected static final Box field_12645 = new Box(0.8125, 0.0, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12646 = new Box(0.0, 0.0, 0.0, 0.1875, 1.0, 1.0);
 
 	protected DoorBlock(Material material) {
 		super(material);
@@ -41,12 +50,31 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		state = state.getBlockState(view, pos);
+		Direction direction = state.get(FACING);
+		boolean bl = !(Boolean)state.get(OPEN);
+		boolean bl2 = state.get(HINGE) == DoorBlock.DoorType.RIGHT;
+		switch (direction) {
+			case EAST:
+			default:
+				return bl ? field_12646 : (bl2 ? field_12648 : field_12647);
+			case SOUTH:
+				return bl ? field_12647 : (bl2 ? field_12646 : field_12645);
+			case WEST:
+				return bl ? field_12645 : (bl2 ? field_12647 : field_12648);
+			case NORTH:
+				return bl ? field_12648 : (bl2 ? field_12645 : field_12646);
+		}
+	}
+
+	@Override
 	public String getTranslatedName() {
 		return CommonI18n.translate((this.getTranslationKey() + ".name").replaceAll("tile", "item"));
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
@@ -56,84 +84,62 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
-	@Override
-	public Box getSelectionBox(World world, BlockPos pos) {
-		this.setBoundingBox(world, pos);
-		return super.getSelectionBox(world, pos);
+	private int method_11604() {
+		return this.material == Material.IRON ? 1011 : 1012;
+	}
+
+	private int method_11605() {
+		return this.material == Material.IRON ? 1005 : 1006;
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		this.setBoundingBox(world, pos);
-		return super.getCollisionBox(world, pos, state);
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.setBoundingBoxWithData(getTotalData(view, pos));
-	}
-
-	private void setBoundingBoxWithData(int totalData) {
-		float f = 0.1875F;
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 2.0F, 1.0F);
-		Direction direction = getDirection(totalData);
-		boolean bl = isOpen(totalData);
-		boolean bl2 = isHingeOnLeft(totalData);
-		if (bl) {
-			if (direction == Direction.EAST) {
-				if (!bl2) {
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, f);
-				} else {
-					this.setBoundingBox(0.0F, 0.0F, 1.0F - f, 1.0F, 1.0F, 1.0F);
-				}
-			} else if (direction == Direction.SOUTH) {
-				if (!bl2) {
-					this.setBoundingBox(1.0F - f, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-				} else {
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, f, 1.0F, 1.0F);
-				}
-			} else if (direction == Direction.WEST) {
-				if (!bl2) {
-					this.setBoundingBox(0.0F, 0.0F, 1.0F - f, 1.0F, 1.0F, 1.0F);
-				} else {
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, f);
-				}
-			} else if (direction == Direction.NORTH) {
-				if (!bl2) {
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, f, 1.0F, 1.0F);
-				} else {
-					this.setBoundingBox(1.0F - f, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-				}
-			}
-		} else if (direction == Direction.EAST) {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, f, 1.0F, 1.0F);
-		} else if (direction == Direction.SOUTH) {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, f);
-		} else if (direction == Direction.WEST) {
-			this.setBoundingBox(1.0F - f, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-		} else if (direction == Direction.NORTH) {
-			this.setBoundingBox(0.0F, 0.0F, 1.0F - f, 1.0F, 1.0F, 1.0F);
+	public MaterialColor getMaterialColor(BlockState state) {
+		if (state.getBlock() == Blocks.IRON_DOOR) {
+			return MaterialColor.IRON;
+		} else if (state.getBlock() == Blocks.OAK_DOOR) {
+			return PlanksBlock.WoodType.OAK.getMaterialColor();
+		} else if (state.getBlock() == Blocks.SPRUCE_DOOR) {
+			return PlanksBlock.WoodType.SPRUCE.getMaterialColor();
+		} else if (state.getBlock() == Blocks.BIRCH_DOOR) {
+			return PlanksBlock.WoodType.BIRCH.getMaterialColor();
+		} else if (state.getBlock() == Blocks.JUNGLE_DOOR) {
+			return PlanksBlock.WoodType.JUNGLE.getMaterialColor();
+		} else if (state.getBlock() == Blocks.ACACIA_DOOR) {
+			return PlanksBlock.WoodType.ACACIA.getMaterialColor();
+		} else {
+			return state.getBlock() == Blocks.DARK_OAK_DOOR ? PlanksBlock.WoodType.DARK_OAK.getMaterialColor() : super.getMaterialColor(state);
 		}
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (this.material == Material.IRON) {
 			return true;
 		} else {
-			BlockPos blockPos = state.get(HALF) == DoorBlock.HalfType.LOWER ? pos : pos.down();
-			BlockState blockState = pos.equals(blockPos) ? state : world.getBlockState(blockPos);
-			if (blockState.getBlock() != this) {
+			BlockPos blockPos2 = blockState.get(HALF) == DoorBlock.HalfType.LOWER ? blockPos : blockPos.down();
+			BlockState blockState2 = blockPos.equals(blockPos2) ? blockState : world.getBlockState(blockPos2);
+			if (blockState2.getBlock() != this) {
 				return false;
 			} else {
-				state = blockState.withDefaultValue(OPEN);
-				world.setBlockState(blockPos, state, 2);
-				world.onRenderRegionUpdate(blockPos, pos);
-				world.syncWorldEvent(player, state.get(OPEN) ? 1003 : 1006, pos, 0);
+				blockState = blockState2.withDefaultValue(OPEN);
+				world.setBlockState(blockPos2, blockState, 10);
+				world.onRenderRegionUpdate(blockPos2, blockPos);
+				world.syncWorldEvent(playerEntity, blockState.get(OPEN) ? this.method_11605() : this.method_11604(), blockPos, 0);
 				return true;
 			}
 		}
@@ -145,77 +151,74 @@ public class DoorBlock extends Block {
 			BlockPos blockPos = blockState.get(HALF) == DoorBlock.HalfType.LOWER ? pos : pos.down();
 			BlockState blockState2 = pos == blockPos ? blockState : world.getBlockState(blockPos);
 			if (blockState2.getBlock() == this && (Boolean)blockState2.get(OPEN) != isOpen) {
-				world.setBlockState(blockPos, blockState2.with(OPEN, isOpen), 2);
+				world.setBlockState(blockPos, blockState2.with(OPEN, isOpen), 10);
 				world.onRenderRegionUpdate(blockPos, pos);
-				world.syncWorldEvent(null, isOpen ? 1003 : 1006, pos, 0);
+				world.syncWorldEvent(null, isOpen ? this.method_11605() : this.method_11604(), pos, 0);
 			}
 		}
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (state.get(HALF) == DoorBlock.HalfType.UPPER) {
-			BlockPos blockPos = pos.down();
-			BlockState blockState = world.getBlockState(blockPos);
-			if (blockState.getBlock() != this) {
-				world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (blockState.get(HALF) == DoorBlock.HalfType.UPPER) {
+			BlockPos blockPos2 = blockPos.down();
+			BlockState blockState2 = world.getBlockState(blockPos2);
+			if (blockState2.getBlock() != this) {
+				world.setAir(blockPos);
 			} else if (block != this) {
-				this.neighborUpdate(world, blockPos, blockState, block);
+				blockState2.method_11707(world, blockPos2, block);
 			}
 		} else {
 			boolean bl = false;
-			BlockPos blockPos2 = pos.up();
-			BlockState blockState2 = world.getBlockState(blockPos2);
-			if (blockState2.getBlock() != this) {
-				world.setAir(pos);
+			BlockPos blockPos3 = blockPos.up();
+			BlockState blockState3 = world.getBlockState(blockPos3);
+			if (blockState3.getBlock() != this) {
+				world.setAir(blockPos);
 				bl = true;
 			}
 
-			if (!World.isOpaque(world, pos.down())) {
-				world.setAir(pos);
+			if (!world.getBlockState(blockPos.down()).method_11739()) {
+				world.setAir(blockPos);
 				bl = true;
-				if (blockState2.getBlock() == this) {
-					world.setAir(blockPos2);
+				if (blockState3.getBlock() == this) {
+					world.setAir(blockPos3);
 				}
 			}
 
 			if (bl) {
 				if (!world.isClient) {
-					this.dropAsItem(world, pos, state, 0);
+					this.dropAsItem(world, blockPos, blockState, 0);
 				}
 			} else {
-				boolean bl2 = world.isReceivingRedstonePower(pos) || world.isReceivingRedstonePower(blockPos2);
-				if ((bl2 || block.emitsRedstonePower()) && block != this && bl2 != (Boolean)blockState2.get(POWERED)) {
-					world.setBlockState(blockPos2, blockState2.with(POWERED, bl2), 2);
-					if (bl2 != (Boolean)state.get(OPEN)) {
-						world.setBlockState(pos, state.with(OPEN, bl2), 2);
-						world.onRenderRegionUpdate(pos, pos);
-						world.syncWorldEvent(null, bl2 ? 1003 : 1006, pos, 0);
+				boolean bl2 = world.isReceivingRedstonePower(blockPos) || world.isReceivingRedstonePower(blockPos3);
+				if (block != this && (bl2 || block.getDefaultState().emitsRedstonePower()) && bl2 != (Boolean)blockState3.get(POWERED)) {
+					world.setBlockState(blockPos3, blockState3.with(POWERED, bl2), 2);
+					if (bl2 != (Boolean)blockState.get(OPEN)) {
+						world.setBlockState(blockPos, blockState.with(OPEN, bl2), 2);
+						world.onRenderRegionUpdate(blockPos, blockPos);
+						world.syncWorldEvent(null, bl2 ? this.method_11605() : this.method_11604(), blockPos, 0);
 					}
 				}
 			}
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return state.get(HALF) == DoorBlock.HalfType.UPPER ? null : this.getItem();
 	}
 
 	@Override
-	public BlockHitResult rayTrace(World world, BlockPos pos, Vec3d start, Vec3d end) {
-		this.setBoundingBox(world, pos);
-		return super.rayTrace(world, pos, start, end);
-	}
-
-	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return pos.getY() >= 255 ? false : World.isOpaque(world, pos.down()) && super.canBePlacedAtPos(world, pos) && super.canBePlacedAtPos(world, pos.up());
+		return pos.getY() >= 255
+			? false
+			: world.getBlockState(pos.down()).method_11739() && super.canBePlacedAtPos(world, pos) && super.canBePlacedAtPos(world, pos.up());
 	}
 
 	@Override
-	public int getPistonInteractionType() {
-		return 1;
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.DESTROY;
 	}
 
 	public static int getTotalData(BlockView view, BlockPos pos) {
@@ -234,8 +237,8 @@ public class DoorBlock extends Block {
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return this.getItem();
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this.getItem());
 	}
 
 	private Item getItem() {
@@ -257,8 +260,17 @@ public class DoorBlock extends Block {
 	@Override
 	public void onBreakByPlayer(World world, BlockPos pos, BlockState state, PlayerEntity player) {
 		BlockPos blockPos = pos.down();
+		BlockPos blockPos2 = pos.up();
 		if (player.abilities.creativeMode && state.get(HALF) == DoorBlock.HalfType.UPPER && world.getBlockState(blockPos).getBlock() == this) {
 			world.setAir(blockPos);
+		}
+
+		if (state.get(HALF) == DoorBlock.HalfType.LOWER && world.getBlockState(blockPos2).getBlock() == this) {
+			if (player.abilities.creativeMode) {
+				world.setAir(pos);
+			}
+
+			world.setAir(blockPos2);
 		}
 	}
 
@@ -282,6 +294,16 @@ public class DoorBlock extends Block {
 		}
 
 		return state;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.get(HALF) != DoorBlock.HalfType.LOWER ? state : state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override
@@ -341,10 +363,6 @@ public class DoorBlock extends Block {
 
 	protected static boolean isTopHalf(int data) {
 		return (data & 8) != 0;
-	}
-
-	protected static boolean isHingeOnLeft(int totalData) {
-		return (totalData & 16) != 0;
 	}
 
 	@Override

@@ -13,28 +13,22 @@ public class LavaEmberParticle extends Particle {
 		this.velocityX *= 0.8F;
 		this.velocityY *= 0.8F;
 		this.velocityZ *= 0.8F;
-		this.velocityY = (double)(this.random.nextFloat() * 0.4F + 0.05F);
+		this.velocityY = (double)(this.field_13438.nextFloat() * 0.4F + 0.05F);
 		this.red = this.green = this.blue = 1.0F;
-		this.scale = this.scale * (this.random.nextFloat() * 2.0F + 0.2F);
+		this.scale = this.scale * (this.field_13438.nextFloat() * 2.0F + 0.2F);
 		this.prevScale = this.scale;
 		this.maxAge = (int)(16.0 / (Math.random() * 0.8 + 0.2));
-		this.noClip = false;
 		this.setMiscTexture(49);
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
+	public int method_12243(float f) {
 		float g = ((float)this.age + f) / (float)this.maxAge;
 		g = MathHelper.clamp(g, 0.0F, 1.0F);
-		int i = super.getLightmapCoordinates(f);
+		int i = super.method_12243(f);
 		int j = 240;
 		int k = i >> 16 & 0xFF;
 		return j | k << 16;
-	}
-
-	@Override
-	public float getBrightnessAtEyes(float f) {
-		return 1.0F;
 	}
 
 	@Override
@@ -45,25 +39,25 @@ public class LavaEmberParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		if (this.age++ >= this.maxAge) {
-			this.remove();
+			this.method_12251();
 		}
 
 		float f = (float)this.age / (float)this.maxAge;
-		if (this.random.nextFloat() > f) {
-			this.world.addParticle(ParticleType.SMOKE, this.x, this.y, this.z, this.velocityX, this.velocityY, this.velocityZ);
+		if (this.field_13438.nextFloat() > f) {
+			this.field_13424.addParticle(ParticleType.SMOKE, this.field_13428, this.field_13429, this.field_13430, this.velocityX, this.velocityY, this.velocityZ);
 		}
 
 		this.velocityY -= 0.03;
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX *= 0.999F;
 		this.velocityY *= 0.999F;
 		this.velocityZ *= 0.999F;
-		if (this.onGround) {
+		if (this.field_13434) {
 			this.velocityX *= 0.7F;
 			this.velocityZ *= 0.7F;
 		}

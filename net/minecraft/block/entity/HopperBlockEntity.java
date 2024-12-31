@@ -1,6 +1,8 @@
 package net.minecraft.block.entity;
 
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.class_2960;
 import net.minecraft.block.Block;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.HopperBlock;
@@ -24,7 +26,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
-public class HopperBlockEntity extends LockableContainerBlockEntity implements HopperProvider, Tickable {
+public class HopperBlockEntity extends class_2737 implements HopperProvider, Tickable {
 	private ItemStack[] items = new ItemStack[5];
 	private String customName;
 	private int transferCooldown = -1;
@@ -32,47 +34,49 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 	@Override
 	public void fromNbt(NbtCompound nbt) {
 		super.fromNbt(nbt);
-		NbtList nbtList = nbt.getList("Items", 10);
 		this.items = new ItemStack[this.getInvSize()];
 		if (nbt.contains("CustomName", 8)) {
 			this.customName = nbt.getString("CustomName");
 		}
 
 		this.transferCooldown = nbt.getInt("TransferCooldown");
+		if (!this.method_11661(nbt)) {
+			NbtList nbtList = nbt.getList("Items", 10);
 
-		for (int i = 0; i < nbtList.size(); i++) {
-			NbtCompound nbtCompound = nbtList.getCompound(i);
-			int j = nbtCompound.getByte("Slot");
-			if (j >= 0 && j < this.items.length) {
-				this.items[j] = ItemStack.fromNbt(nbtCompound);
+			for (int i = 0; i < nbtList.size(); i++) {
+				NbtCompound nbtCompound = nbtList.getCompound(i);
+				int j = nbtCompound.getByte("Slot");
+				if (j >= 0 && j < this.items.length) {
+					this.items[j] = ItemStack.fromNbt(nbtCompound);
+				}
 			}
 		}
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
-		NbtList nbtList = new NbtList();
+		if (!this.method_11663(nbt)) {
+			NbtList nbtList = new NbtList();
 
-		for (int i = 0; i < this.items.length; i++) {
-			if (this.items[i] != null) {
-				NbtCompound nbtCompound = new NbtCompound();
-				nbtCompound.putByte("Slot", (byte)i);
-				this.items[i].toNbt(nbtCompound);
-				nbtList.add(nbtCompound);
+			for (int i = 0; i < this.items.length; i++) {
+				if (this.items[i] != null) {
+					NbtCompound nbtCompound = new NbtCompound();
+					nbtCompound.putByte("Slot", (byte)i);
+					this.items[i].toNbt(nbtCompound);
+					nbtList.add(nbtCompound);
+				}
 			}
+
+			nbt.put("Items", nbtList);
 		}
 
-		nbt.put("Items", nbtList);
 		nbt.putInt("TransferCooldown", this.transferCooldown);
 		if (this.hasCustomName()) {
 			nbt.putString("CustomName", this.customName);
 		}
-	}
 
-	@Override
-	public void markDirty() {
-		super.markDirty();
+		return nbt;
 	}
 
 	@Override
@@ -80,44 +84,30 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 		return this.items.length;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
+		this.method_11662(null);
 		return this.items[slot];
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
-		if (this.items[slot] != null) {
-			if (this.items[slot].count <= amount) {
-				ItemStack itemStack = this.items[slot];
-				this.items[slot] = null;
-				return itemStack;
-			} else {
-				ItemStack itemStack2 = this.items[slot].split(amount);
-				if (this.items[slot].count == 0) {
-					this.items[slot] = null;
-				}
-
-				return itemStack2;
-			}
-		} else {
-			return null;
-		}
+		this.method_11662(null);
+		return class_2960.method_12933(this.items, slot, amount);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
-		if (this.items[slot] != null) {
-			ItemStack itemStack = this.items[slot];
-			this.items[slot] = null;
-			return itemStack;
-		} else {
-			return null;
-		}
+		this.method_11662(null);
+		return class_2960.method_12932(this.items, slot);
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
+		this.method_11662(null);
 		this.items[slot] = stack;
 		if (stack != null && stack.count > this.getInvMaxStackAmount()) {
 			stack.count = this.getInvMaxStackAmount();
@@ -131,7 +121,7 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 
 	@Override
 	public boolean hasCustomName() {
-		return this.customName != null && this.customName.length() > 0;
+		return this.customName != null && !this.customName.isEmpty();
 	}
 
 	public void setCustomName(String customName) {
@@ -321,7 +311,7 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 				}
 			}
 		} else {
-			for (ItemEntity itemEntity : getInputItemEntities(provider.getEntityWorld(), provider.getX(), provider.getY() + 1.0, provider.getZ())) {
+			for (ItemEntity itemEntity : getInputItemEntities(provider.getEntityWorld(), provider.getX(), provider.getY(), provider.getZ())) {
 				if (extract(provider, itemEntity)) {
 					return true;
 				}
@@ -365,7 +355,7 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 		}
 	}
 
-	public static ItemStack transfer(Inventory inventory, ItemStack stack, Direction dir) {
+	public static ItemStack transfer(Inventory inventory, ItemStack stack, @Nullable Direction dir) {
 		if (inventory instanceof SidedInventory && dir != null) {
 			SidedInventory sidedInventory = (SidedInventory)inventory;
 			int[] is = sidedInventory.getAvailableSlots(dir);
@@ -435,9 +425,9 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 		Direction direction = HopperBlock.getDirection(this.getDataValue());
 		return getInventoryAt(
 			this.getEntityWorld(),
-			(double)(this.pos.getX() + direction.getOffsetX()),
-			(double)(this.pos.getY() + direction.getOffsetY()),
-			(double)(this.pos.getZ() + direction.getOffsetZ())
+			this.getX() + (double)direction.getOffsetX(),
+			this.getY() + (double)direction.getOffsetY(),
+			this.getZ() + (double)direction.getOffsetZ()
 		);
 	}
 
@@ -446,7 +436,7 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 	}
 
 	public static List<ItemEntity> getInputItemEntities(World world, double posX, double posY, double posZ) {
-		return world.getEntitiesInBox(ItemEntity.class, new Box(posX - 0.5, posY - 0.5, posZ - 0.5, posX + 0.5, posY + 0.5, posZ + 0.5), EntityPredicate.VALID_ENTITY);
+		return world.getEntitiesInBox(ItemEntity.class, new Box(posX - 0.5, posY, posZ - 0.5, posX + 0.5, posY + 1.5, posZ + 0.5), EntityPredicate.VALID_ENTITY);
 	}
 
 	public static Inventory getInventoryAt(World world, double x, double y, double z) {
@@ -461,14 +451,14 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 			if (blockEntity instanceof Inventory) {
 				inventory = (Inventory)blockEntity;
 				if (inventory instanceof ChestBlockEntity && block instanceof ChestBlock) {
-					inventory = ((ChestBlock)block).createScreenHandlerFactory(world, blockPos);
+					inventory = ((ChestBlock)block).method_8702(world, blockPos, true);
 				}
 			}
 		}
 
 		if (inventory == null) {
 			List<Entity> list = world.getEntitiesIn(null, new Box(x - 0.5, y - 0.5, z - 0.5, x + 0.5, y + 0.5, z + 0.5), EntityPredicate.VALID_INVENTORY);
-			if (list.size() > 0) {
+			if (!list.isEmpty()) {
 				inventory = (Inventory)list.get(world.random.nextInt(list.size()));
 			}
 		}
@@ -520,6 +510,7 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 
 	@Override
 	public ScreenHandler createScreenHandler(PlayerInventory inventory, PlayerEntity player) {
+		this.method_11662(player);
 		return new HopperScreenHandler(inventory, this, player);
 	}
 
@@ -539,6 +530,8 @@ public class HopperBlockEntity extends LockableContainerBlockEntity implements H
 
 	@Override
 	public void clear() {
+		this.method_11662(null);
+
 		for (int i = 0; i < this.items.length; i++) {
 			this.items[i] = null;
 		}

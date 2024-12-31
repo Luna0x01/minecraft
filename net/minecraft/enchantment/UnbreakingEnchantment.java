@@ -1,13 +1,13 @@
 package net.minecraft.enchantment;
 
 import java.util.Random;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 
 public class UnbreakingEnchantment extends Enchantment {
-	protected UnbreakingEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.BREAKABLE);
+	protected UnbreakingEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.BREAKABLE, equipmentSlots);
 		this.setName("durability");
 	}
 

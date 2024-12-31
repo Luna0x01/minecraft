@@ -27,7 +27,6 @@ import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.level.LevelGeneratorType;
 import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.GL11;
 
 public class DebugHud extends DrawableHelper {
 	private final MinecraftClient client;
@@ -57,6 +56,14 @@ public class DebugHud extends DrawableHelper {
 
 	protected void renderLeftText() {
 		List<String> list = this.getLeftText();
+		list.add("");
+		list.add(
+			"Debug: Pie [shift]: "
+				+ (this.client.options.debugProfilerEnabled ? "visible" : "hidden")
+				+ " FPS [alt]: "
+				+ (this.client.options.debugFpsEnabled ? "visible" : "hidden")
+		);
+		list.add("For help: press F3 + Q");
 
 		for (int i = 0; i < list.size(); i++) {
 			String string = (String)list.get(i);
@@ -92,7 +99,7 @@ public class DebugHud extends DrawableHelper {
 		if (this.hasReducedDebugInfo()) {
 			return Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.8.9 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
+					"Minecraft 1.9.4 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
 					this.client.fpsDebugString,
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
@@ -122,7 +129,12 @@ public class DebugHud extends DrawableHelper {
 
 			List<String> list = Lists.newArrayList(
 				new String[]{
-					"Minecraft 1.8.9 (" + this.client.getGameVersion() + "/" + ClientBrandRetriever.getClientModName() + ")",
+					"Minecraft 1.9.4 ("
+						+ this.client.getGameVersion()
+						+ "/"
+						+ ClientBrandRetriever.getClientModName()
+						+ ("release".equalsIgnoreCase(this.client.getVersionType()) ? "" : "/" + this.client.getVersionType())
+						+ ")",
 					this.client.fpsDebugString,
 					this.client.worldRenderer.getChunksDebugString(),
 					this.client.worldRenderer.getEntitiesDebugString(),
@@ -145,27 +157,40 @@ public class DebugHud extends DrawableHelper {
 					String.format("Facing: %s (%s) (%.1f / %.1f)", direction, string, MathHelper.wrapDegrees(entity.yaw), MathHelper.wrapDegrees(entity.pitch))
 				}
 			);
-			if (this.client.world != null && this.client.world.blockExists(blockPos)) {
+			if (this.client.world != null) {
 				Chunk chunk = this.client.world.getChunk(blockPos);
-				list.add("Biome: " + chunk.getBiomeAt(blockPos, this.client.world.getBiomeSource()).name);
-				list.add(
-					"Light: "
-						+ chunk.getLightLevel(blockPos, 0)
-						+ " ("
-						+ chunk.getLightAtPos(LightType.SKY, blockPos)
-						+ " sky, "
-						+ chunk.getLightAtPos(LightType.BLOCK, blockPos)
-						+ " block)"
-				);
-				LocalDifficulty localDifficulty = this.client.world.getLocalDifficulty(blockPos);
-				if (this.client.isIntegratedServerRunning() && this.client.getServer() != null) {
-					ServerPlayerEntity serverPlayerEntity = this.client.getServer().getPlayerManager().getPlayer(this.client.player.getUuid());
-					if (serverPlayerEntity != null) {
-						localDifficulty = serverPlayerEntity.world.getLocalDifficulty(new BlockPos(serverPlayerEntity));
+				if (!this.client.world.blockExists(blockPos) || blockPos.getY() < 0 || blockPos.getY() >= 256) {
+					list.add("Outside of world...");
+				} else if (!chunk.isEmpty()) {
+					list.add("Biome: " + chunk.method_11771(blockPos, this.client.world.method_3726()).getName());
+					list.add(
+						"Light: "
+							+ chunk.getLightLevel(blockPos, 0)
+							+ " ("
+							+ chunk.getLightAtPos(LightType.SKY, blockPos)
+							+ " sky, "
+							+ chunk.getLightAtPos(LightType.BLOCK, blockPos)
+							+ " block)"
+					);
+					LocalDifficulty localDifficulty = this.client.world.getLocalDifficulty(blockPos);
+					if (this.client.isIntegratedServerRunning() && this.client.getServer() != null) {
+						ServerPlayerEntity serverPlayerEntity = this.client.getServer().getPlayerManager().getPlayer(this.client.player.getUuid());
+						if (serverPlayerEntity != null) {
+							localDifficulty = serverPlayerEntity.world.getLocalDifficulty(new BlockPos(serverPlayerEntity));
+						}
 					}
-				}
 
-				list.add(String.format("Local Difficulty: %.2f (Day %d)", localDifficulty.getLocalDifficulty(), this.client.world.getTimeOfDay() / 24000L));
+					list.add(
+						String.format(
+							"Local Difficulty: %.2f // %.2f (Day %d)",
+							localDifficulty.getLocalDifficulty(),
+							localDifficulty.getClampedLocalDifficulty(),
+							this.client.world.getTimeOfDay() / 24000L
+						)
+					);
+				} else {
+					list.add("Waiting for chunk...");
+				}
 			}
 
 			if (this.client.gameRenderer != null && this.client.gameRenderer.areShadersSupported()) {
@@ -181,7 +206,7 @@ public class DebugHud extends DrawableHelper {
 		}
 	}
 
-	protected List<String> getRightText() {
+	protected <T extends Comparable<T>> List<String> getRightText() {
 		long l = Runtime.getRuntime().maxMemory();
 		long m = Runtime.getRuntime().totalMemory();
 		long n = Runtime.getRuntime().freeMemory();
@@ -194,9 +219,9 @@ public class DebugHud extends DrawableHelper {
 				"",
 				String.format("CPU: %s", GLX.getProcessor()),
 				"",
-				String.format("Display: %dx%d (%s)", Display.getWidth(), Display.getHeight(), GL11.glGetString(7936)),
-				GL11.glGetString(7937),
-				GL11.glGetString(7938)
+				String.format("Display: %dx%d (%s)", Display.getWidth(), Display.getHeight(), GlStateManager.method_12320(7936)),
+				GlStateManager.method_12320(7937),
+				GlStateManager.method_12320(7938)
 			}
 		);
 		if (this.hasReducedDebugInfo()) {
@@ -206,21 +231,23 @@ public class DebugHud extends DrawableHelper {
 				BlockPos blockPos = this.client.result.getBlockPos();
 				BlockState blockState = this.client.world.getBlockState(blockPos);
 				if (this.client.world.getGeneratorType() != LevelGeneratorType.DEBUG) {
-					blockState = blockState.getBlock().getBlockState(blockState, this.client.world, blockPos);
+					blockState = blockState.getBlockState(this.client.world, blockPos);
 				}
 
 				list.add("");
 				list.add(String.valueOf(Block.REGISTRY.getIdentifier(blockState.getBlock())));
 
-				for (Entry<Property, Comparable> entry : blockState.getPropertyMap().entrySet()) {
-					String string = ((Comparable)entry.getValue()).toString();
-					if (entry.getValue() == Boolean.TRUE) {
+				for (Entry<Property<?>, Comparable<?>> entry : blockState.getPropertyMap().entrySet()) {
+					Property<T> property = (Property<T>)entry.getKey();
+					T comparable = (T)entry.getValue();
+					String string = property.name(comparable);
+					if (Boolean.TRUE.equals(comparable)) {
 						string = Formatting.GREEN + string;
-					} else if (entry.getValue() == Boolean.FALSE) {
+					} else if (Boolean.FALSE.equals(comparable)) {
 						string = Formatting.RED + string;
 					}
 
-					list.add(((Property)entry.getKey()).getName() + ": " + string);
+					list.add(property.getName() + ": " + string);
 				}
 			}
 

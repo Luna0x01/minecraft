@@ -1,6 +1,6 @@
 package net.minecraft.client.texture;
 
-import org.lwjgl.opengl.GL11;
+import com.mojang.blaze3d.platform.GlStateManager;
 
 public abstract class AbstractTexture implements Texture {
 	protected int glId = -1;
@@ -23,8 +23,8 @@ public abstract class AbstractTexture implements Texture {
 			var6 = 9728;
 		}
 
-		GL11.glTexParameteri(3553, 10241, i);
-		GL11.glTexParameteri(3553, 10240, var6);
+		GlStateManager.method_12294(3553, 10241, i);
+		GlStateManager.method_12294(3553, 10240, var6);
 	}
 
 	@Override

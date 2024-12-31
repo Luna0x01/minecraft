@@ -2,6 +2,7 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.collection.IntArrayCache;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class class_82 extends Layer {
 	public class_82(long l, Layer layer) {
@@ -19,8 +20,8 @@ public class class_82 extends Layer {
 				this.method_145((long)(n + i), (long)(m + j));
 				int o = is[n + 1 + (m + 1) * (k + 2)];
 				if (this.nextInt(57) == 0) {
-					if (o == Biome.PLAINS.id) {
-						js[n + m * k] = Biome.PLAINS.id + 128;
+					if (o == Biome.getBiomeIndex(Biomes.PLAINS)) {
+						js[n + m * k] = Biome.getBiomeIndex(Biomes.PLAINS_M);
 					} else {
 						js[n + m * k] = o;
 					}

@@ -5,7 +5,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
 import java.util.List;
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DirtBlock;
@@ -14,6 +14,7 @@ import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.map.MapState;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -45,7 +46,7 @@ public class FilledMapItem extends NetworkSyncedItem {
 			mapState = new MapState(string);
 			mapState.scale = 3;
 			mapState.method_9308((double)world.getLevelProperties().getSpawnX(), (double)world.getLevelProperties().getSpawnZ(), mapState.scale);
-			mapState.dimensionId = (byte)world.dimension.getType();
+			mapState.dimensionId = (byte)world.dimension.getDimensionType().getId();
 			mapState.markDirty();
 			world.replaceState(string, mapState);
 		}
@@ -54,7 +55,7 @@ public class FilledMapItem extends NetworkSyncedItem {
 	}
 
 	public void updateColors(World world, Entity entity, MapState state) {
-		if (world.dimension.getType() == state.dimensionId && entity instanceof PlayerEntity) {
+		if (world.dimension.getDimensionType().getId() == state.dimensionId && entity instanceof PlayerEntity) {
 			int i = 1 << state.scale;
 			int j = state.xCenter;
 			int k = state.zCenter;
@@ -92,9 +93,9 @@ public class FilledMapItem extends NetworkSyncedItem {
 									int x = s + t * 231871;
 									x = x * x * 31287121 + x * 11;
 									if ((x >> 20 & 1) == 0) {
-										multiset.add(Blocks.DIRT.getMaterialColor(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT)), 10);
+										multiset.add(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT).getMaterialColor(), 10);
 									} else {
-										multiset.add(Blocks.STONE.getMaterialColor(Blocks.STONE.getDefaultState().with(StoneBlock.VARIANT, StoneBlock.StoneType.STONE)), 100);
+										multiset.add(Blocks.STONE.getDefaultState().with(StoneBlock.VARIANT, StoneBlock.StoneType.STONE).getMaterialColor(), 100);
 									}
 
 									e = 100.0;
@@ -107,22 +108,22 @@ public class FilledMapItem extends NetworkSyncedItem {
 											BlockState blockState = Blocks.AIR.getDefaultState();
 											if (aa > 1) {
 												do {
-													blockState = chunk.method_9154(mutable.setPosition(y + u, --aa, z + v));
-												} while (blockState.getBlock().getMaterialColor(blockState) == MaterialColor.AIR && aa > 0);
+													blockState = chunk.getBlockState(mutable.setPosition(y + u, --aa, z + v));
+												} while (blockState.getMaterialColor() == MaterialColor.AIR && aa > 0);
 
-												if (aa > 0 && blockState.getBlock().getMaterial().isFluid()) {
+												if (aa > 0 && blockState.getMaterial().isFluid()) {
 													int ab = aa - 1;
 
-													Block block;
+													BlockState blockState2;
 													do {
-														block = chunk.method_9131(y + u, ab--, z + v);
+														blockState2 = chunk.getBlockState(y + u, ab--, z + v);
 														w++;
-													} while (ab > 0 && block.getMaterial().isFluid());
+													} while (ab > 0 && blockState2.getMaterial().isFluid());
 												}
 											}
 
 											e += (double)aa / (double)(i * i);
-											multiset.add(blockState.getBlock().getMaterialColor(blockState));
+											multiset.add(blockState.getMaterialColor());
 										}
 									}
 								}
@@ -178,33 +179,55 @@ public class FilledMapItem extends NetworkSyncedItem {
 				mapState.update(playerEntity, stack);
 			}
 
-			if (selected) {
+			if (selected || entity instanceof PlayerEntity && ((PlayerEntity)entity).getOffHandStack() == stack) {
 				this.updateColors(world, entity, mapState);
 			}
 		}
 	}
 
+	@Nullable
 	@Override
-	public Packet createSyncPacket(ItemStack stack, World world, PlayerEntity player) {
+	public Packet<?> createSyncPacket(ItemStack stack, World world, PlayerEntity player) {
 		return this.getMapState(stack, world).createMapSyncPacket(stack, world, player);
 	}
 
 	@Override
 	public void onCraft(ItemStack stack, World world, PlayerEntity player) {
-		if (stack.hasNbt() && stack.getNbt().getBoolean("map_is_scaling")) {
-			MapState mapState = Items.FILLED_MAP.getMapState(stack, world);
-			stack.setDamage(world.getIntState("map"));
-			MapState mapState2 = new MapState("map_" + stack.getData());
-			mapState2.scale = (byte)(mapState.scale + 1);
-			if (mapState2.scale > 4) {
-				mapState2.scale = 4;
+		NbtCompound nbtCompound = stack.getNbt();
+		if (nbtCompound != null) {
+			if (nbtCompound.contains("map_scale_direction", 99)) {
+				method_11399(stack, world, nbtCompound.getInt("map_scale_direction"));
+				nbtCompound.remove("map_scale_direction");
+			} else if (nbtCompound.getBoolean("map_tracking_position")) {
+				method_11400(stack, world);
+				nbtCompound.remove("map_tracking_position");
 			}
-
-			mapState2.method_9308((double)mapState.xCenter, (double)mapState.zCenter, mapState2.scale);
-			mapState2.dimensionId = mapState.dimensionId;
-			mapState2.markDirty();
-			world.replaceState("map_" + stack.getData(), mapState2);
 		}
+	}
+
+	protected static void method_11399(ItemStack itemStack, World world, int i) {
+		MapState mapState = Items.FILLED_MAP.getMapState(itemStack, world);
+		itemStack.setDamage(world.getIntState("map"));
+		MapState mapState2 = new MapState("map_" + itemStack.getData());
+		mapState2.scale = (byte)MathHelper.clamp(mapState.scale + i, 0, 4);
+		mapState2.trackingPosition = mapState.trackingPosition;
+		mapState2.method_9308((double)mapState.xCenter, (double)mapState.zCenter, mapState2.scale);
+		mapState2.dimensionId = mapState.dimensionId;
+		mapState2.markDirty();
+		world.replaceState("map_" + itemStack.getData(), mapState2);
+	}
+
+	protected static void method_11400(ItemStack itemStack, World world) {
+		MapState mapState = Items.FILLED_MAP.getMapState(itemStack, world);
+		itemStack.setDamage(world.getIntState("map"));
+		MapState mapState2 = new MapState("map_" + itemStack.getData());
+		mapState2.trackingPosition = true;
+		mapState2.xCenter = mapState.xCenter;
+		mapState2.zCenter = mapState.zCenter;
+		mapState2.scale = mapState.scale;
+		mapState2.dimensionId = mapState.dimensionId;
+		mapState2.markDirty();
+		world.replaceState("map_" + itemStack.getData(), mapState2);
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Comparator;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
@@ -49,7 +50,7 @@ public class PlayerListHud extends DrawableHelper {
 		this.visible = visible;
 	}
 
-	public void render(int width, Scoreboard scoreboard, ScoreboardObjective playerListScoreboardObjective) {
+	public void render(int width, Scoreboard scoreboard, @Nullable ScoreboardObjective playerListScoreboardObjective) {
 		ClientPlayNetworkHandler clientPlayNetworkHandler = this.client.player.networkHandler;
 		List<PlayerListEntry> list = ENTRY_ORDERING.sortedCopy(clientPlayNetworkHandler.getPlayerList());
 		int i = 0;
@@ -132,7 +133,9 @@ public class PlayerListHud extends DrawableHelper {
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			GlStateManager.enableAlphaTest();
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			if (w < list.size()) {
 				PlayerListEntry playerListEntry2 = (PlayerListEntry)list.get(w);
 				String string4 = this.getPlayerName(playerListEntry2);
@@ -281,11 +284,11 @@ public class PlayerListHud extends DrawableHelper {
 		}
 	}
 
-	public void setFooter(Text footer) {
+	public void setFooter(@Nullable Text footer) {
 		this.footer = footer;
 	}
 
-	public void setHeader(Text header) {
+	public void setHeader(@Nullable Text header) {
 		this.header = header;
 	}
 

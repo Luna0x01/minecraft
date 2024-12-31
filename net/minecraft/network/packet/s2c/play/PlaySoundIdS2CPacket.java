@@ -1,16 +1,19 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.sound.Sound;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
 
 public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
-	private String name;
+	private Sound sound;
+	private SoundCategory category;
 	private int fixedX;
-	private int fixedY = Integer.MAX_VALUE;
+	private int fixedY;
 	private int fixedZ;
 	private float volume;
 	private int pitch;
@@ -18,9 +21,10 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 	public PlaySoundIdS2CPacket() {
 	}
 
-	public PlaySoundIdS2CPacket(String string, double d, double e, double f, float g, float h) {
-		Validate.notNull(string, "name", new Object[0]);
-		this.name = string;
+	public PlaySoundIdS2CPacket(Sound sound, SoundCategory soundCategory, double d, double e, double f, float g, float h) {
+		Validate.notNull(sound, "sound", new Object[0]);
+		this.sound = sound;
+		this.category = soundCategory;
 		this.fixedX = (int)(d * 8.0);
 		this.fixedY = (int)(e * 8.0);
 		this.fixedZ = (int)(f * 8.0);
@@ -31,7 +35,8 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
-		this.name = buf.readString(256);
+		this.sound = Sound.REGISTRY.getByRawId(buf.readVarInt());
+		this.category = buf.readEnumConstant(SoundCategory.class);
 		this.fixedX = buf.readInt();
 		this.fixedY = buf.readInt();
 		this.fixedZ = buf.readInt();
@@ -41,7 +46,8 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeString(this.name);
+		buf.writeVarInt(Sound.REGISTRY.getRawId(this.sound));
+		buf.writeEnumConstant(this.category);
 		buf.writeInt(this.fixedX);
 		buf.writeInt(this.fixedY);
 		buf.writeInt(this.fixedZ);
@@ -49,8 +55,12 @@ public class PlaySoundIdS2CPacket implements Packet<ClientPlayPacketListener> {
 		buf.writeByte(this.pitch);
 	}
 
-	public String getSound() {
-		return this.name;
+	public Sound getSound() {
+		return this.sound;
+	}
+
+	public SoundCategory getCategory() {
+		return this.category;
 	}
 
 	public double getX() {

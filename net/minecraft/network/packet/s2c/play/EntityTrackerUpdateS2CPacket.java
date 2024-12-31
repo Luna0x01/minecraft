@@ -9,7 +9,7 @@ import net.minecraft.util.PacketByteBuf;
 
 public class EntityTrackerUpdateS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
-	private List<DataTracker.DataEntry> trackedValues;
+	private List<DataTracker.DataEntry<?>> trackedValues;
 
 	public EntityTrackerUpdateS2CPacket() {
 	}
@@ -26,20 +26,20 @@ public class EntityTrackerUpdateS2CPacket implements Packet<ClientPlayPacketList
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.id = buf.readVarInt();
-		this.trackedValues = DataTracker.deserializePacket(buf);
+		this.trackedValues = DataTracker.method_12753(buf);
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.id);
-		DataTracker.writeData(this.trackedValues, buf);
+		DataTracker.method_12749(this.trackedValues, buf);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onEntityTrackerUpdate(this);
 	}
 
-	public List<DataTracker.DataEntry> getTrackedValues() {
+	public List<DataTracker.DataEntry<?>> getTrackedValues() {
 		return this.trackedValues;
 	}
 

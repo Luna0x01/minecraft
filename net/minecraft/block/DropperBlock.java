@@ -1,5 +1,6 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.entity.BlockEntity;
@@ -17,7 +18,7 @@ public class DropperBlock extends DispenserBlock {
 	private final DispenserBehavior BEHAVIOR = new ItemDispenserBehavior();
 
 	@Override
-	protected DispenserBehavior getBehaviorForItem(ItemStack stack) {
+	protected DispenserBehavior getBehaviorForItem(@Nullable ItemStack stack) {
 		return this.BEHAVIOR;
 	}
 

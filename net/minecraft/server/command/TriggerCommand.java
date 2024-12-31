@@ -1,7 +1,9 @@
 package net.minecraft.server.command;
 
 import com.google.common.collect.Lists;
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -32,15 +34,15 @@ public class TriggerCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 3) {
 			throw new IncorrectUsageException("commands.trigger.usage");
 		} else {
 			ServerPlayerEntity serverPlayerEntity;
-			if (source instanceof ServerPlayerEntity) {
-				serverPlayerEntity = (ServerPlayerEntity)source;
+			if (commandSource instanceof ServerPlayerEntity) {
+				serverPlayerEntity = (ServerPlayerEntity)commandSource;
 			} else {
-				Entity entity = source.getEntity();
+				Entity entity = commandSource.getEntity();
 				if (!(entity instanceof ServerPlayerEntity)) {
 					throw new CommandException("commands.trigger.invalidPlayer");
 				}
@@ -48,7 +50,7 @@ public class TriggerCommand extends AbstractCommand {
 				serverPlayerEntity = (ServerPlayerEntity)entity;
 			}
 
-			Scoreboard scoreboard = MinecraftServer.getServer().getWorld(0).getScoreboard();
+			Scoreboard scoreboard = minecraftServer.getWorld(0).getScoreboard();
 			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(args[0]);
 			if (scoreboardObjective != null && scoreboardObjective.getCriterion() == ScoreboardCriterion.TRIGGER) {
 				int i = parseInt(args[2]);
@@ -71,7 +73,7 @@ public class TriggerCommand extends AbstractCommand {
 
 						scoreboardPlayerScore.setLocked(true);
 						if (serverPlayerEntity.interactionManager.isCreative()) {
-							run(source, this, "commands.trigger.success", new Object[]{args[0], args[1], args[2]});
+							run(commandSource, this, "commands.trigger.success", new Object[]{args[0], args[1], args[2]});
 						}
 					}
 				}
@@ -82,9 +84,9 @@ public class TriggerCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			Scoreboard scoreboard = MinecraftServer.getServer().getWorld(0).getScoreboard();
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			Scoreboard scoreboard = server.getWorld(0).getScoreboard();
 			List<String> list = Lists.newArrayList();
 
 			for (ScoreboardObjective scoreboardObjective : scoreboard.getObjectives()) {
@@ -93,9 +95,9 @@ public class TriggerCommand extends AbstractCommand {
 				}
 			}
 
-			return method_2894(args, (String[])list.toArray(new String[list.size()]));
+			return method_2894(strings, (String[])list.toArray(new String[list.size()]));
 		} else {
-			return args.length == 2 ? method_2894(args, new String[]{"add", "set"}) : null;
+			return strings.length == 2 ? method_2894(strings, new String[]{"add", "set"}) : Collections.emptyList();
 		}
 	}
 }

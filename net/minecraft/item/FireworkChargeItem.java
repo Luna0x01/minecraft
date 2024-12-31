@@ -4,44 +4,10 @@ import java.util.List;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtIntArray;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.DyeColor;
 
 public class FireworkChargeItem extends Item {
-	@Override
-	public int getDisplayColor(ItemStack stack, int color) {
-		if (color != 1) {
-			return super.getDisplayColor(stack, color);
-		} else {
-			NbtElement nbtElement = getExplosionNbt(stack, "Colors");
-			if (!(nbtElement instanceof NbtIntArray)) {
-				return 9079434;
-			} else {
-				NbtIntArray nbtIntArray = (NbtIntArray)nbtElement;
-				int[] is = nbtIntArray.getIntArray();
-				if (is.length == 1) {
-					return is[0];
-				} else {
-					int i = 0;
-					int j = 0;
-					int k = 0;
-
-					for (int n : is) {
-						i += (n & 0xFF0000) >> 16;
-						j += (n & 0xFF00) >> 8;
-						k += (n & 0xFF) >> 0;
-					}
-
-					i /= is.length;
-					j /= is.length;
-					k /= is.length;
-					return i << 16 | j << 8 | k;
-				}
-			}
-		}
-	}
-
 	public static NbtElement getExplosionNbt(ItemStack stack, String name) {
 		if (stack.hasNbt()) {
 			NbtCompound nbtCompound = stack.getNbt().getCompound("Explosion");

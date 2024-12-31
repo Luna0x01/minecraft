@@ -20,23 +20,21 @@ public class DefaultGameModeCommand extends GameModeCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length <= 0) {
 			throw new IncorrectUsageException("commands.defaultgamemode.usage");
 		} else {
-			LevelInfo.GameMode gameMode = this.method_3540(source, args[0]);
-			this.method_3461(gameMode);
-			run(source, this, "commands.defaultgamemode.success", new Object[]{new TranslatableText("gameMode." + gameMode.getName())});
+			LevelInfo.GameMode gameMode = this.method_3540(commandSource, args[0]);
+			this.method_13244(gameMode, minecraftServer);
+			run(commandSource, this, "commands.defaultgamemode.success", new Object[]{new TranslatableText("gameMode." + gameMode.getName())});
 		}
 	}
 
-	protected void method_3461(LevelInfo.GameMode gameMode) {
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
+	protected void method_13244(LevelInfo.GameMode gameMode, MinecraftServer minecraftServer) {
 		minecraftServer.setDefaultGameMode(gameMode);
 		if (minecraftServer.shouldForceGameMode()) {
-			for (ServerPlayerEntity serverPlayerEntity : MinecraftServer.getServer().getPlayerManager().getPlayers()) {
+			for (ServerPlayerEntity serverPlayerEntity : minecraftServer.getPlayerManager().getPlayers()) {
 				serverPlayerEntity.setGameMode(gameMode);
-				serverPlayerEntity.fallDistance = 0.0F;
 			}
 		}
 	}

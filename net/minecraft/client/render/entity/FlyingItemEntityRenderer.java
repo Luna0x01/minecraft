@@ -24,18 +24,28 @@ public class FlyingItemEntityRenderer<T extends Entity> extends EntityRenderer<T
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)x, (float)y, (float)z);
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.scale(0.5F, 0.5F, 0.5F);
 		GlStateManager.rotate(-this.dispatcher.yaw, 0.0F, 1.0F, 0.0F);
-		GlStateManager.rotate(this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
+		GlStateManager.rotate((float)(this.dispatcher.options.perspective == 2 ? -1 : 1) * this.dispatcher.pitch, 1.0F, 0.0F, 0.0F);
+		GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
 		this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-		this.itemRenderer.renderItem(this.createStack(entity), ModelTransformation.Mode.GROUND);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(entity));
+		}
+
+		this.itemRenderer.method_12458(this.createStack(entity), ModelTransformation.Mode.GROUND);
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();
 		super.render(entity, x, y, z, yaw, tickDelta);
 	}
 
 	public ItemStack createStack(T entity) {
-		return new ItemStack(this.item, 1, 0);
+		return new ItemStack(this.item);
 	}
 
 	@Override

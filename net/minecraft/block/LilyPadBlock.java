@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.BoatEntity;
@@ -11,57 +12,43 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class LilyPadBlock extends PlantBlock {
+	protected static final Box SHAPE = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.09375, 0.9375);
+
 	protected LilyPadBlock() {
-		float f = 0.5F;
-		float g = 0.015625F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, g, 0.5F + f);
 		this.setItemGroup(ItemGroup.DECORATIONS);
 	}
 
 	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		if (entity == null || !(entity instanceof BoatEntity)) {
-			super.appendCollisionBoxes(world, pos, state, box, list, entity);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+		if (!(entity instanceof BoatEntity)) {
+			appendCollisionBoxes(pos, entityBox, boxes, SHAPE);
 		}
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return new Box(
-			(double)pos.getX() + this.boundingBoxMinX,
-			(double)pos.getY() + this.boundingBoxMinY,
-			(double)pos.getZ() + this.boundingBoxMinZ,
-			(double)pos.getX() + this.boundingBoxMaxX,
-			(double)pos.getY() + this.boundingBoxMaxY,
-			(double)pos.getZ() + this.boundingBoxMaxZ
-		);
+	public void onEntityCollision(World world, BlockPos pos, BlockState state, Entity entity) {
+		super.onEntityCollision(world, pos, state, entity);
+		if (entity instanceof BoatEntity) {
+			world.removeBlock(new BlockPos(pos), true);
+		}
 	}
 
 	@Override
-	public int getColor() {
-		return 7455580;
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return SHAPE;
 	}
 
 	@Override
-	public int getColor(BlockState state) {
-		return 7455580;
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		return 2129968;
-	}
-
-	@Override
-	protected boolean canPlantOnTop(Block block) {
-		return block == Blocks.WATER;
+	protected boolean method_11579(BlockState blockState) {
+		return blockState.getBlock() == Blocks.WATER || blockState.getMaterial() == Material.ICE;
 	}
 
 	@Override
 	public boolean canPlantAt(World world, BlockPos pos, BlockState state) {
 		if (pos.getY() >= 0 && pos.getY() < 256) {
 			BlockState blockState = world.getBlockState(pos.down());
-			return blockState.getBlock().getMaterial() == Material.WATER && (Integer)blockState.get(AbstractFluidBlock.LEVEL) == 0;
+			Material material = blockState.getMaterial();
+			return material == Material.WATER && (Integer)blockState.get(AbstractFluidBlock.LEVEL) == 0 || material == Material.ICE;
 		} else {
 			return false;
 		}

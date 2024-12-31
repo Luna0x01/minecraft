@@ -2,11 +2,10 @@ package net.minecraft.entity.effect;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AbstractEntityAttributeContainer;
-import net.minecraft.util.Identifier;
 
 public class HealthBoostStatusEffect extends StatusEffect {
-	public HealthBoostStatusEffect(int i, Identifier identifier, boolean bl, int j) {
-		super(i, identifier, bl, j);
+	public HealthBoostStatusEffect(boolean bl, int i) {
+		super(bl, i);
 	}
 
 	@Override

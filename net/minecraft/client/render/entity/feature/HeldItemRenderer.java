@@ -1,20 +1,16 @@
 package net.minecraft.client.render.entity.feature;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.BiPedModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 
 public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
-	private final LivingEntityRenderer<?> entityRenderer;
+	protected final LivingEntityRenderer<?> entityRenderer;
 
 	public HeldItemRenderer(LivingEntityRenderer<?> livingEntityRenderer) {
 		this.entityRenderer = livingEntityRenderer;
@@ -22,8 +18,10 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 
 	@Override
 	public void render(LivingEntity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale) {
-		ItemStack itemStack = entity.getStackInHand();
-		if (itemStack != null) {
+		boolean bl = entity.getDurability() == HandOption.RIGHT;
+		ItemStack itemStack = bl ? entity.getOffHandStack() : entity.getMainHandStack();
+		ItemStack itemStack2 = bl ? entity.getMainHandStack() : entity.getOffHandStack();
+		if (itemStack != null || itemStack2 != null) {
 			GlStateManager.pushMatrix();
 			if (this.entityRenderer.getModel().child) {
 				float f = 0.5F;
@@ -32,27 +30,25 @@ public class HeldItemRenderer implements FeatureRenderer<LivingEntity> {
 				GlStateManager.scale(f, f, f);
 			}
 
-			((BiPedModel)this.entityRenderer.getModel()).setArmAngle(0.0625F);
-			GlStateManager.translate(-0.0625F, 0.4375F, 0.0625F);
-			if (entity instanceof PlayerEntity && ((PlayerEntity)entity).fishHook != null) {
-				itemStack = new ItemStack(Items.FISHING_ROD, 0);
+			this.method_12484(entity, itemStack2, ModelTransformation.Mode.THIRD_PERSON_RIGHT_HAND, HandOption.RIGHT);
+			this.method_12484(entity, itemStack, ModelTransformation.Mode.THIRD_PERSON_LEFT_HAND, HandOption.LEFT);
+			GlStateManager.popMatrix();
+		}
+	}
+
+	private void method_12484(LivingEntity livingEntity, ItemStack itemStack, ModelTransformation.Mode mode, HandOption handOption) {
+		if (itemStack != null) {
+			GlStateManager.pushMatrix();
+			((BiPedModel)this.entityRenderer.getModel()).method_12221(0.0625F, handOption);
+			if (livingEntity.isSneaking()) {
+				GlStateManager.translate(0.0F, 0.2F, 0.0F);
 			}
 
-			Item item = itemStack.getItem();
-			MinecraftClient minecraftClient = MinecraftClient.getInstance();
-			if (item instanceof BlockItem && Block.getBlockFromItem(item).getBlockType() == 2) {
-				GlStateManager.translate(0.0F, 0.1875F, -0.3125F);
-				GlStateManager.rotate(20.0F, 1.0F, 0.0F, 0.0F);
-				GlStateManager.rotate(45.0F, 0.0F, 1.0F, 0.0F);
-				float g = 0.375F;
-				GlStateManager.scale(-g, -g, g);
-			}
-
-			if (entity.isSneaking()) {
-				GlStateManager.translate(0.0F, 0.203125F, 0.0F);
-			}
-
-			minecraftClient.getHeldItemRenderer().renderItem(entity, itemStack, ModelTransformation.Mode.THIRD_PERSON);
+			GlStateManager.rotate(-90.0F, 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+			boolean bl = handOption == HandOption.LEFT;
+			GlStateManager.translate(bl ? -0.0625F : 0.0625F, 0.125F, -0.625F);
+			MinecraftClient.getInstance().getHeldItemRenderer().method_12333(livingEntity, itemStack, mode, bl);
 			GlStateManager.popMatrix();
 		}
 	}

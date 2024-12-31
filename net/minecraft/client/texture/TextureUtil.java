@@ -8,19 +8,24 @@ import java.nio.IntBuffer;
 import javax.imageio.ImageIO;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.GlAllocationUtils;
+import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 
 public class TextureUtil {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final IntBuffer BUFFER = GlAllocationUtils.allocateIntBuffer(4194304);
 	public static final NativeImageBackedTexture MISSING_TEXTURE = new NativeImageBackedTexture(16, 16);
 	public static final int[] field_6583 = MISSING_TEXTURE.getPixels();
+	private static final float[] field_13653;
 	private static final int[] field_8104;
+
+	private static float method_12494(int i) {
+		return field_13653[i & 0xFF];
+	}
 
 	public static int getTexLevelParameter() {
 		return GlStateManager.getTexLevelParameter();
@@ -96,10 +101,10 @@ public class TextureUtil {
 
 			for (int r = 0; r < 4; r++) {
 				if (field_8104[r] >> 24 != 0) {
-					f += (float)Math.pow((double)((float)(field_8104[r] >> 24 & 0xFF) / 255.0F), 2.2);
-					g += (float)Math.pow((double)((float)(field_8104[r] >> 16 & 0xFF) / 255.0F), 2.2);
-					h += (float)Math.pow((double)((float)(field_8104[r] >> 8 & 0xFF) / 255.0F), 2.2);
-					q += (float)Math.pow((double)((float)(field_8104[r] >> 0 & 0xFF) / 255.0F), 2.2);
+					f += method_12494(field_8104[r] >> 24);
+					g += method_12494(field_8104[r] >> 16);
+					h += method_12494(field_8104[r] >> 8);
+					q += method_12494(field_8104[r] >> 0);
 				}
 			}
 
@@ -120,11 +125,11 @@ public class TextureUtil {
 	}
 
 	private static int method_7019(int i, int j, int k, int l, int m) {
-		float f = (float)Math.pow((double)((float)(i >> m & 0xFF) / 255.0F), 2.2);
-		float g = (float)Math.pow((double)((float)(j >> m & 0xFF) / 255.0F), 2.2);
-		float h = (float)Math.pow((double)((float)(k >> m & 0xFF) / 255.0F), 2.2);
-		float n = (float)Math.pow((double)((float)(l >> m & 0xFF) / 255.0F), 2.2);
-		float o = (float)Math.pow((double)(f + g + h + n) * 0.25, 0.45454545454545453);
+		float f = method_12494(i >> m);
+		float g = method_12494(j >> m);
+		float h = method_12494(k >> m);
+		float n = method_12494(l >> m);
+		float o = (float)((double)((float)Math.pow((double)(f + g + h + n) * 0.25, 0.45454545454545453)));
 		return (int)((double)o * 255.0);
 	}
 
@@ -146,7 +151,7 @@ public class TextureUtil {
 			int q = Math.min(n, k - p);
 			int r = j * q;
 			method_5867(is, o, r);
-			GL11.glTexSubImage2D(3553, i, l, m + p, j, q, 32993, 33639, BUFFER);
+			GlStateManager.method_12295(3553, i, l, m + p, j, q, 32993, 33639, BUFFER);
 			o += j * q;
 		}
 	}
@@ -164,14 +169,14 @@ public class TextureUtil {
 		deleteTexture(id);
 		bindTexture(id);
 		if (maxLevel >= 0) {
-			GL11.glTexParameteri(3553, 33085, maxLevel);
-			GL11.glTexParameterf(3553, 33082, 0.0F);
-			GL11.glTexParameterf(3553, 33083, (float)maxLevel);
-			GL11.glTexParameterf(3553, 34049, 0.0F);
+			GlStateManager.method_12294(3553, 33085, maxLevel);
+			GlStateManager.method_12294(3553, 33082, 0);
+			GlStateManager.method_12294(3553, 33083, maxLevel);
+			GlStateManager.method_12293(3553, 34049, 0.0F);
 		}
 
 		for (int i = 0; i <= maxLevel; i++) {
-			GL11.glTexImage2D(3553, i, 6408, width >> i, height >> i, 0, 32993, 33639, (IntBuffer)null);
+			GlStateManager.method_12276(3553, i, 6408, width >> i, height >> i, 0, 32993, 33639, null);
 		}
 	}
 
@@ -195,17 +200,17 @@ public class TextureUtil {
 			int o = i * n;
 			image.getRGB(0, m, i, n, is, 0, i);
 			method_5866(is, o);
-			GL11.glTexSubImage2D(3553, 0, offsetX, offsetY + m, i, n, 32993, 33639, BUFFER);
+			GlStateManager.method_12295(3553, 0, offsetX, offsetY + m, i, n, 32993, 33639, BUFFER);
 		}
 	}
 
 	private static void setTextureWrapping(boolean clamp) {
 		if (clamp) {
-			GL11.glTexParameteri(3553, 10242, 10496);
-			GL11.glTexParameteri(3553, 10243, 10496);
+			GlStateManager.method_12294(3553, 10242, 10496);
+			GlStateManager.method_12294(3553, 10243, 10496);
 		} else {
-			GL11.glTexParameteri(3553, 10242, 10497);
-			GL11.glTexParameteri(3553, 10243, 10497);
+			GlStateManager.method_12294(3553, 10242, 10497);
+			GlStateManager.method_12294(3553, 10243, 10497);
 		}
 	}
 
@@ -215,11 +220,11 @@ public class TextureUtil {
 
 	private static void setTextureScaling(boolean linear, boolean mipmap) {
 		if (linear) {
-			GL11.glTexParameteri(3553, 10241, mipmap ? 9987 : 9729);
-			GL11.glTexParameteri(3553, 10240, 9729);
+			GlStateManager.method_12294(3553, 10241, mipmap ? 9987 : 9729);
+			GlStateManager.method_12294(3553, 10240, 9729);
 		} else {
-			GL11.glTexParameteri(3553, 10241, mipmap ? 9986 : 9728);
-			GL11.glTexParameteri(3553, 10240, 9728);
+			GlStateManager.method_12294(3553, 10241, mipmap ? 9986 : 9728);
+			GlStateManager.method_12294(3553, 10240, 9728);
 		}
 	}
 
@@ -243,12 +248,22 @@ public class TextureUtil {
 	}
 
 	public static int[] toPixels(ResourceManager resourceManager, Identifier identifier) throws IOException {
-		BufferedImage bufferedImage = create(resourceManager.getResource(identifier).getInputStream());
-		int i = bufferedImage.getWidth();
-		int j = bufferedImage.getHeight();
-		int[] is = new int[i * j];
-		bufferedImage.getRGB(0, 0, i, j, is, 0, i);
-		return is;
+		Resource resource = null;
+
+		int[] var7;
+		try {
+			resource = resourceManager.getResource(identifier);
+			BufferedImage bufferedImage = create(resource.getInputStream());
+			int i = bufferedImage.getWidth();
+			int j = bufferedImage.getHeight();
+			int[] is = new int[i * j];
+			bufferedImage.getRGB(0, 0, i, j, is, 0, i);
+			var7 = is;
+		} finally {
+			IOUtils.closeQuietly(resource);
+		}
+
+		return var7;
 	}
 
 	public static BufferedImage create(InputStream input) throws IOException {
@@ -307,6 +322,12 @@ public class TextureUtil {
 		}
 
 		MISSING_TEXTURE.upload();
+		field_13653 = new float[256];
+
+		for (int m = 0; m < field_13653.length; m++) {
+			field_13653[m] = (float)Math.pow((double)((float)m / 255.0F), 2.2);
+		}
+
 		field_8104 = new int[4];
 	}
 }

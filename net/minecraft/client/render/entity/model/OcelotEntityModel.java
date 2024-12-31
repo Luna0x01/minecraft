@@ -8,15 +8,15 @@ import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class OcelotEntityModel extends EntityModel {
-	ModelPart field_1496;
-	ModelPart field_1497;
-	ModelPart field_1498;
-	ModelPart field_1499;
-	ModelPart field_1500;
-	ModelPart field_1501;
-	ModelPart field_1502;
-	ModelPart field_1503;
-	int field_1504 = 1;
+	private ModelPart field_1496;
+	private ModelPart field_1497;
+	private ModelPart field_1498;
+	private ModelPart field_1499;
+	private ModelPart field_1500;
+	private ModelPart field_1501;
+	private ModelPart field_1502;
+	private ModelPart field_1503;
+	private int field_1504 = 1;
 
 	public OcelotEntityModel() {
 		this.putTexture("head.main", 0, 0);
@@ -88,21 +88,21 @@ public class OcelotEntityModel extends EntityModel {
 
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.field_1502.posX = headPitch / (180.0F / (float)Math.PI);
-		this.field_1502.posY = age / (180.0F / (float)Math.PI);
+		this.field_1502.posX = headPitch * (float) (Math.PI / 180.0);
+		this.field_1502.posY = age * (float) (Math.PI / 180.0);
 		if (this.field_1504 != 3) {
 			this.field_1503.posX = (float) (Math.PI / 2);
 			if (this.field_1504 == 2) {
-				this.field_1496.posX = MathHelper.cos(handSwing * 0.6662F) * 1.0F * handSwingAmount;
-				this.field_1497.posX = MathHelper.cos(handSwing * 0.6662F + 0.3F) * 1.0F * handSwingAmount;
-				this.field_1498.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI + 0.3F) * 1.0F * handSwingAmount;
-				this.field_1499.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.0F * handSwingAmount;
+				this.field_1496.posX = MathHelper.cos(handSwing * 0.6662F) * handSwingAmount;
+				this.field_1497.posX = MathHelper.cos(handSwing * 0.6662F + 0.3F) * handSwingAmount;
+				this.field_1498.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI + 0.3F) * handSwingAmount;
+				this.field_1499.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * handSwingAmount;
 				this.field_1501.posX = 1.7278761F + (float) (Math.PI / 10) * MathHelper.cos(handSwing) * handSwingAmount;
 			} else {
-				this.field_1496.posX = MathHelper.cos(handSwing * 0.6662F) * 1.0F * handSwingAmount;
-				this.field_1497.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.0F * handSwingAmount;
-				this.field_1498.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.0F * handSwingAmount;
-				this.field_1499.posX = MathHelper.cos(handSwing * 0.6662F) * 1.0F * handSwingAmount;
+				this.field_1496.posX = MathHelper.cos(handSwing * 0.6662F) * handSwingAmount;
+				this.field_1497.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * handSwingAmount;
+				this.field_1498.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * handSwingAmount;
+				this.field_1499.posX = MathHelper.cos(handSwing * 0.6662F) * handSwingAmount;
 				if (this.field_1504 == 1) {
 					this.field_1501.posX = 1.7278761F + (float) (Math.PI / 4) * MathHelper.cos(handSwing) * handSwingAmount;
 				} else {

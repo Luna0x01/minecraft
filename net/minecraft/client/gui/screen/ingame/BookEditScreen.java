@@ -12,7 +12,6 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Texts;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.item.WrittenBookItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -115,7 +114,7 @@ public class BookEditScreen extends Screen {
 			this.signButton.visible = !this.signing;
 			this.cancelButton.visible = this.signing;
 			this.finalizeButton.visible = this.signing;
-			this.finalizeButton.active = this.title.trim().length() > 0;
+			this.finalizeButton.active = !this.title.trim().isEmpty();
 		}
 	}
 
@@ -124,7 +123,7 @@ public class BookEditScreen extends Screen {
 			if (this.pages != null) {
 				while (this.pages.size() > 1) {
 					String string = this.pages.getString(this.pages.size() - 1);
-					if (string.length() != 0) {
+					if (!string.isEmpty()) {
 						break;
 					}
 
@@ -143,15 +142,6 @@ public class BookEditScreen extends Screen {
 					string2 = "MC|BSign";
 					this.item.putSubNbt("author", new NbtString(this.reader.getTranslationKey()));
 					this.item.putSubNbt("title", new NbtString(this.title.trim()));
-
-					for (int i = 0; i < this.pages.size(); i++) {
-						String string3 = this.pages.getString(i);
-						Text text = new LiteralText(string3);
-						string3 = Text.Serializer.serialize(text);
-						this.pages.set(i, new NbtString(string3));
-					}
-
-					this.item.setItem(Items.WRITTEN_BOOK);
 				}
 
 				PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
@@ -220,7 +210,7 @@ public class BookEditScreen extends Screen {
 			switch (code) {
 				case 14:
 					String string = this.getCurrentPageContent();
-					if (string.length() > 0) {
+					if (!string.isEmpty()) {
 						this.setPageContent(string.substring(0, string.length() - 1));
 					}
 
@@ -328,7 +318,7 @@ public class BookEditScreen extends Screen {
 			} else if (this.lastClickIndex != this.currentPage) {
 				if (WrittenBookItem.isValid(this.item.getNbt())) {
 					try {
-						Text text = Text.Serializer.deserialize(string6);
+						Text text = Text.Serializer.deserializeText(string6);
 						this.bookText = text != null ? Texts.wrapLines(text, 116, this.textRenderer, true, true) : null;
 					} catch (JsonParseException var13) {
 						this.bookText = null;

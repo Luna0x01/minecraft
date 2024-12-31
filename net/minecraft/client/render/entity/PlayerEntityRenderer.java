@@ -1,13 +1,16 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.feature.ArmorRenderer;
 import net.minecraft.client.render.entity.feature.CapeFeatureRenderer;
 import net.minecraft.client.render.entity.feature.Deadmau5FeatureRenderer;
+import net.minecraft.client.render.entity.feature.ElytraFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.client.render.entity.feature.HeldItemRenderer;
 import net.minecraft.client.render.entity.feature.StuckArrowsFeatureRenderer;
+import net.minecraft.client.render.entity.model.BiPedModel;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -16,6 +19,8 @@ import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.UseAction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPlayerEntity> {
 	private boolean slim;
@@ -33,6 +38,7 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		this.addFeature(new Deadmau5FeatureRenderer(this));
 		this.addFeature(new CapeFeatureRenderer(this));
 		this.addFeature(new HeadFeatureRenderer(this.getModel().head));
+		this.addFeature(new ElytraFeatureRenderer(this));
 	}
 
 	public PlayerEntityModel getModel() {
@@ -47,7 +53,9 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			}
 
 			this.setModelPose(abstractClientPlayerEntity);
+			GlStateManager.method_12286(GlStateManager.class_2869.PLAYER_SKIN);
 			super.render(abstractClientPlayerEntity, d, i, f, g, h);
+			GlStateManager.method_12299(GlStateManager.class_2869.PLAYER_SKIN);
 		}
 	}
 
@@ -58,7 +66,8 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			playerEntityModel.head.visible = true;
 			playerEntityModel.hat.visible = true;
 		} else {
-			ItemStack itemStack = player.inventory.getMainHandStack();
+			ItemStack itemStack = player.getMainHandStack();
+			ItemStack itemStack2 = player.getOffHandStack();
 			playerEntityModel.setVisible(true);
 			playerEntityModel.hat.visible = player.isPartVisible(PlayerModelPart.HAT);
 			playerEntityModel.jacket.visible = player.isPartVisible(PlayerModelPart.JACKET);
@@ -66,21 +75,37 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			playerEntityModel.rightPants.visible = player.isPartVisible(PlayerModelPart.RIGHT_PANTS_LEG);
 			playerEntityModel.leftSleeve.visible = player.isPartVisible(PlayerModelPart.LEFT_SLEEVE);
 			playerEntityModel.rightSleeve.visible = player.isPartVisible(PlayerModelPart.RIGHT_SLEEVE);
-			playerEntityModel.leftArmPose = 0;
-			playerEntityModel.aiming = false;
 			playerEntityModel.sneaking = player.isSneaking();
-			if (itemStack == null) {
-				playerEntityModel.rightArmPose = 0;
-			} else {
-				playerEntityModel.rightArmPose = 1;
-				if (player.getItemUseTicks() > 0) {
+			BiPedModel.class_2850 lv = BiPedModel.class_2850.EMPTY;
+			BiPedModel.class_2850 lv2 = BiPedModel.class_2850.EMPTY;
+			if (itemStack != null) {
+				lv = BiPedModel.class_2850.ITEM;
+				if (player.method_13065() > 0) {
 					UseAction useAction = itemStack.getUseAction();
 					if (useAction == UseAction.BLOCK) {
-						playerEntityModel.rightArmPose = 3;
+						lv = BiPedModel.class_2850.BLOCK;
 					} else if (useAction == UseAction.BOW) {
-						playerEntityModel.aiming = true;
+						lv = BiPedModel.class_2850.BOW_AND_ARROW;
 					}
 				}
+			}
+
+			if (itemStack2 != null) {
+				lv2 = BiPedModel.class_2850.ITEM;
+				if (player.method_13065() > 0) {
+					UseAction useAction2 = itemStack2.getUseAction();
+					if (useAction2 == UseAction.BLOCK) {
+						lv2 = BiPedModel.class_2850.BLOCK;
+					}
+				}
+			}
+
+			if (player.getDurability() == HandOption.RIGHT) {
+				playerEntityModel.field_13385 = lv;
+				playerEntityModel.field_13384 = lv2;
+			} else {
+				playerEntityModel.field_13385 = lv2;
+				playerEntityModel.field_13384 = lv;
 			}
 		}
 	}
@@ -99,40 +124,52 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 		GlStateManager.scale(g, g, g);
 	}
 
-	protected void method_10209(AbstractClientPlayerEntity abstractClientPlayerEntity, double d, double e, double f, String string, float g, double h) {
-		if (h < 100.0) {
+	protected void method_10209(AbstractClientPlayerEntity abstractClientPlayerEntity, double d, double e, double f, String string, double g) {
+		if (g < 100.0) {
 			Scoreboard scoreboard = abstractClientPlayerEntity.getScoreboard();
 			ScoreboardObjective scoreboardObjective = scoreboard.getObjectiveForSlot(2);
 			if (scoreboardObjective != null) {
 				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(abstractClientPlayerEntity.getTranslationKey(), scoreboardObjective);
 				this.renderLabelIfPresent(abstractClientPlayerEntity, scoreboardPlayerScore.getScore() + " " + scoreboardObjective.getDisplayName(), d, e, f, 64);
-				e += (double)((float)this.getFontRenderer().fontHeight * 1.15F * g);
+				e += (double)((float)this.getFontRenderer().fontHeight * 1.15F * 0.025F);
 			}
 		}
 
-		super.method_10209(abstractClientPlayerEntity, d, e, f, string, g, h);
+		super.method_10209(abstractClientPlayerEntity, d, e, f, string, g);
 	}
 
 	public void renderRightArm(AbstractClientPlayerEntity player) {
 		float f = 1.0F;
 		GlStateManager.color(f, f, f);
+		float g = 0.0625F;
 		PlayerEntityModel playerEntityModel = this.getModel();
 		this.setModelPose(player);
+		GlStateManager.enableBlend();
 		playerEntityModel.handSwingProgress = 0.0F;
 		playerEntityModel.sneaking = false;
 		playerEntityModel.setAngles(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F, player);
-		playerEntityModel.renderRightArm();
+		playerEntityModel.rightArm.posX = 0.0F;
+		playerEntityModel.rightArm.render(0.0625F);
+		playerEntityModel.rightSleeve.posX = 0.0F;
+		playerEntityModel.rightSleeve.render(0.0625F);
+		GlStateManager.disableBlend();
 	}
 
 	public void renderLeftArm(AbstractClientPlayerEntity player) {
 		float f = 1.0F;
 		GlStateManager.color(f, f, f);
+		float g = 0.0625F;
 		PlayerEntityModel playerEntityModel = this.getModel();
 		this.setModelPose(player);
+		GlStateManager.enableBlend();
 		playerEntityModel.sneaking = false;
 		playerEntityModel.handSwingProgress = 0.0F;
 		playerEntityModel.setAngles(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F, player);
-		playerEntityModel.renderLeftArm();
+		playerEntityModel.leftArm.posX = 0.0F;
+		playerEntityModel.leftArm.render(0.0625F);
+		playerEntityModel.leftSleeve.posX = 0.0F;
+		playerEntityModel.leftSleeve.render(0.0625F);
+		GlStateManager.disableBlend();
 	}
 
 	protected void method_5772(AbstractClientPlayerEntity abstractClientPlayerEntity, double d, double e, double f) {
@@ -153,6 +190,20 @@ public class PlayerEntityRenderer extends LivingEntityRenderer<AbstractClientPla
 			GlStateManager.rotate(abstractClientPlayerEntity.method_3183(), 0.0F, 1.0F, 0.0F);
 			GlStateManager.rotate(this.method_5771(abstractClientPlayerEntity), 0.0F, 0.0F, 1.0F);
 			GlStateManager.rotate(270.0F, 0.0F, 1.0F, 0.0F);
+		} else if (abstractClientPlayerEntity.method_13055()) {
+			super.method_5777(abstractClientPlayerEntity, f, g, h);
+			float i = (float)abstractClientPlayerEntity.method_13056() + h;
+			float j = MathHelper.clamp(i * i / 100.0F, 0.0F, 1.0F);
+			GlStateManager.rotate(j * (-90.0F - abstractClientPlayerEntity.pitch), 1.0F, 0.0F, 0.0F);
+			Vec3d vec3d = abstractClientPlayerEntity.getRotationVector(h);
+			double d = abstractClientPlayerEntity.velocityX * abstractClientPlayerEntity.velocityX
+				+ abstractClientPlayerEntity.velocityZ * abstractClientPlayerEntity.velocityZ;
+			double e = vec3d.x * vec3d.x + vec3d.z * vec3d.z;
+			if (d > 0.0 && e > 0.0) {
+				double k = (abstractClientPlayerEntity.velocityX * vec3d.x + abstractClientPlayerEntity.velocityZ * vec3d.z) / (Math.sqrt(d) * Math.sqrt(e));
+				double l = abstractClientPlayerEntity.velocityX * vec3d.z - abstractClientPlayerEntity.velocityZ * vec3d.x;
+				GlStateManager.rotate((float)(Math.signum(l) * Math.acos(k)) * 180.0F / (float) Math.PI, 0.0F, 1.0F, 0.0F);
+			}
 		} else {
 			super.method_5777(abstractClientPlayerEntity, f, g, h);
 		}

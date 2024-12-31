@@ -34,9 +34,9 @@ public class SnowmanEntityModel extends EntityModel {
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_1532.posY = age / (180.0F / (float)Math.PI);
-		this.field_1532.posX = headPitch / (180.0F / (float)Math.PI);
-		this.field_1530.posY = age / (180.0F / (float)Math.PI) * 0.25F;
+		this.field_1532.posY = age * (float) (Math.PI / 180.0);
+		this.field_1532.posX = headPitch * (float) (Math.PI / 180.0);
+		this.field_1530.posY = age * (float) (Math.PI / 180.0) * 0.25F;
 		float f = MathHelper.sin(this.field_1530.posY);
 		float g = MathHelper.cos(this.field_1530.posY);
 		this.field_1533.posZ = 1.0F;

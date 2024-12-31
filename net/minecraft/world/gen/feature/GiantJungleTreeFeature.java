@@ -23,7 +23,7 @@ public class GiantJungleTreeFeature extends AbstractGiantTreeFeature {
 			this.generateJungleLeaves(world, blockPos.up(i), 2);
 
 			for (int j = blockPos.getY() + i - 2 - random.nextInt(4); j > blockPos.getY() + i / 2; j -= 2 + random.nextInt(4)) {
-				float f = random.nextFloat() * (float) Math.PI * 2.0F;
+				float f = random.nextFloat() * (float) (Math.PI * 2);
 				int k = blockPos.getX() + (int)(0.5F + MathHelper.cos(f) * 4.0F);
 				int l = blockPos.getZ() + (int)(0.5F + MathHelper.sin(f) * 4.0F);
 

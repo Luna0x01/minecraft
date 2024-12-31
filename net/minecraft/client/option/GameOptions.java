@@ -17,11 +17,11 @@ import java.util.Map;
 import java.util.Set;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.entity.PlayerModelPart;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.client.texture.SpriteAtlasTexture;
-import net.minecraft.client.twitch.TwitchAuth;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientSettingsC2SPacket;
 import net.minecraft.util.math.MathHelper;
@@ -52,17 +52,8 @@ public class GameOptions {
 	private static final String[] GUI_SCALE = new String[]{"options.guiScale.auto", "options.guiScale.small", "options.guiScale.normal", "options.guiScale.large"};
 	private static final String[] PARTICLES = new String[]{"options.particles.all", "options.particles.decreased", "options.particles.minimal"};
 	private static final String[] AMBIENT_OCCLUSION = new String[]{"options.ao.off", "options.ao.min", "options.ao.max"};
-	private static final String[] CHAT_VISIBILITY = new String[]{
-		"options.stream.compression.low", "options.stream.compression.medium", "options.stream.compression.high"
-	};
-	private static final String[] STREAM_CHAT_ENABLED = new String[]{
-		"options.stream.chat.enabled.streaming", "options.stream.chat.enabled.always", "options.stream.chat.enabled.never"
-	};
-	private static final String[] STREAM_CHAT_USERFILTER = new String[]{
-		"options.stream.chat.userFilter.all", "options.stream.chat.userFilter.subs", "options.stream.chat.userFilter.mods"
-	};
-	private static final String[] STREAM_MIC_TOGGLE = new String[]{"options.stream.mic_toggle.mute", "options.stream.mic_toggle.talk"};
 	private static final String[] GRAPHICS_LEVEL = new String[]{"options.off", "options.graphics.fast", "options.graphics.fancy"};
+	private static final String[] field_13293 = new String[]{"options.off", "options.attack.crosshair", "options.attack.hotbar"};
 	public float sensitivity = 0.5F;
 	public boolean invertYMouse;
 	public int viewDistance = -1;
@@ -84,13 +75,13 @@ public class GameOptions {
 	public boolean fullscreen;
 	public boolean vsync = true;
 	public boolean vbo = false;
-	public boolean alternativeBlocks = true;
 	public boolean reducedDebugInfo = false;
 	public boolean hideServerAddress;
 	public boolean advancedItemTooltips;
 	public boolean pauseOnLostFocus = true;
 	private final Set<PlayerModelPart> playerModelParts = Sets.newHashSet(PlayerModelPart.values());
 	public boolean touchscreen;
+	public HandOption field_13289 = HandOption.RIGHT;
 	public int overrideWidth;
 	public int overrideHeight;
 	public boolean heldItemTooltips = true;
@@ -101,19 +92,11 @@ public class GameOptions {
 	public boolean showInventoryAchievementHint = true;
 	public int mipmapLevels = 4;
 	private Map<SoundCategory, Float> soundVolumeLevels = Maps.newEnumMap(SoundCategory.class);
-	public float streamBytesPerPixel = 0.5F;
-	public float streamMicVolume = 1.0F;
-	public float streamSystemVolume = 1.0F;
-	public float streamKbps = 0.5412844F;
-	public float streamFps = 0.31690142F;
-	public int streamCompression = 1;
-	public boolean streamSendMetadata = true;
-	public String currentTexturePackName = "";
-	public int streamChatEnabled = 0;
-	public int streamChatUserFilter = 0;
-	public int streamMicToggleBehavior = 0;
 	public boolean useNativeTransport = true;
 	public boolean entityShadows = true;
+	public int field_13290 = 1;
+	public boolean field_13291 = false;
+	public boolean field_13292 = false;
 	public boolean realmsNotifications = true;
 	public KeyBinding forwardKey = new KeyBinding("key.forward", 17, "key.categories.movement");
 	public KeyBinding leftKey = new KeyBinding("key.left", 30, "key.categories.movement");
@@ -123,8 +106,9 @@ public class GameOptions {
 	public KeyBinding sneakKey = new KeyBinding("key.sneak", 42, "key.categories.movement");
 	public KeyBinding sprintKey = new KeyBinding("key.sprint", 29, "key.categories.movement");
 	public KeyBinding inventoryKey = new KeyBinding("key.inventory", 18, "key.categories.inventory");
+	public KeyBinding streamCommercialKey = new KeyBinding("key.swapHands", 33, "key.categories.inventory");
+	public KeyBinding dropKey = new KeyBinding("key.drop", 16, "key.categories.inventory");
 	public KeyBinding useKey = new KeyBinding("key.use", -99, "key.categories.gameplay");
-	public KeyBinding dropKey = new KeyBinding("key.drop", 16, "key.categories.gameplay");
 	public KeyBinding attackKey = new KeyBinding("key.attack", -100, "key.categories.gameplay");
 	public KeyBinding pickItemKey = new KeyBinding("key.pickItem", -98, "key.categories.gameplay");
 	public KeyBinding chatKey = new KeyBinding("key.chat", 20, "key.categories.multiplayer");
@@ -135,10 +119,6 @@ public class GameOptions {
 	public KeyBinding smoothCameraKey = new KeyBinding("key.smoothCamera", 0, "key.categories.misc");
 	public KeyBinding fullscreenKey = new KeyBinding("key.fullscreen", 87, "key.categories.misc");
 	public KeyBinding spectatorOutlines = new KeyBinding("key.spectatorOutlines", 0, "key.categories.misc");
-	public KeyBinding streamStartStopKey = new KeyBinding("key.streamStartStop", 64, "key.categories.stream");
-	public KeyBinding streamPauseUnpauseKey = new KeyBinding("key.streamPauseUnpause", 65, "key.categories.stream");
-	public KeyBinding streamCommercialKey = new KeyBinding("key.streamCommercial", 0, "key.categories.stream");
-	public KeyBinding streamToggleMicKey = new KeyBinding("key.streamToggleMic", 0, "key.categories.stream");
 	public KeyBinding[] hotbarKeys = new KeyBinding[]{
 		new KeyBinding("key.hotbar.1", 2, "key.categories.inventory"),
 		new KeyBinding("key.hotbar.2", 3, "key.categories.inventory"),
@@ -170,12 +150,9 @@ public class GameOptions {
 			this.screenshotKey,
 			this.togglePerspectiveKey,
 			this.smoothCameraKey,
-			this.streamStartStopKey,
-			this.streamPauseUnpauseKey,
-			this.streamCommercialKey,
-			this.streamToggleMicKey,
 			this.fullscreenKey,
-			this.spectatorOutlines
+			this.spectatorOutlines,
+			this.streamCommercialKey
 		},
 		this.hotbarKeys
 	);
@@ -288,40 +265,21 @@ public class GameOptions {
 			}
 		}
 
-		if (option == GameOptions.Option.BLOCK_ALTERNATIVES) {
-			this.alternativeBlocks = !this.alternativeBlocks;
-			this.client.worldRenderer.reload();
-		}
-
 		if (option == GameOptions.Option.RENDER_DISTANCE) {
 			this.viewDistance = (int)var;
 			this.client.worldRenderer.scheduleTerrainUpdate();
 		}
-
-		if (option == GameOptions.Option.STREAM_BYTES_PER_PIXEL) {
-			this.streamBytesPerPixel = var;
-		}
-
-		if (option == GameOptions.Option.STREAM_VOLUME_MIC) {
-			this.streamMicVolume = var;
-			this.client.getTwitchStreamProvider().setStreamVolume();
-		}
-
-		if (option == GameOptions.Option.STREAM_VOLUME_SYSTEM) {
-			this.streamSystemVolume = var;
-			this.client.getTwitchStreamProvider().setStreamVolume();
-		}
-
-		if (option == GameOptions.Option.STREAM_KBPS) {
-			this.streamKbps = var;
-		}
-
-		if (option == GameOptions.Option.STREAM_FPS) {
-			this.streamFps = var;
-		}
 	}
 
 	public void getBooleanValue(GameOptions.Option option, int integer) {
+		if (option == GameOptions.Option.RENDER_DISTANCE) {
+			this.setValue(option, MathHelper.clamp((float)(this.viewDistance + integer), option.getMinValue(), option.getMaxValue()));
+		}
+
+		if (option == GameOptions.Option.MAIN_HAND) {
+			this.field_13289 = this.field_13289.method_13037();
+		}
+
 		if (option == GameOptions.Option.INVERT_MOUSE) {
 			this.invertYMouse = !this.invertYMouse;
 		}
@@ -370,26 +328,6 @@ public class GameOptions {
 			this.chatVisibilityType = PlayerEntity.ChatVisibilityType.getById((this.chatVisibilityType.getId() + integer) % 3);
 		}
 
-		if (option == GameOptions.Option.STREAM_COMPRESSION) {
-			this.streamCompression = (this.streamCompression + integer) % 3;
-		}
-
-		if (option == GameOptions.Option.STREAM_SEND_METADATA) {
-			this.streamSendMetadata = !this.streamSendMetadata;
-		}
-
-		if (option == GameOptions.Option.STREAM_CHAT_ENABLED) {
-			this.streamChatEnabled = (this.streamChatEnabled + integer) % 3;
-		}
-
-		if (option == GameOptions.Option.STREAM_CHAT_USER_FILTER) {
-			this.streamChatUserFilter = (this.streamChatUserFilter + integer) % 3;
-		}
-
-		if (option == GameOptions.Option.STREAM_MIC_TOGGLE_BEHAVIOR) {
-			this.streamMicToggleBehavior = (this.streamMicToggleBehavior + integer) % 2;
-		}
-
 		if (option == GameOptions.Option.CHAT_COLOR) {
 			this.chatColor = !this.chatColor;
 		}
@@ -427,17 +365,20 @@ public class GameOptions {
 			this.client.worldRenderer.reload();
 		}
 
-		if (option == GameOptions.Option.BLOCK_ALTERNATIVES) {
-			this.alternativeBlocks = !this.alternativeBlocks;
-			this.client.worldRenderer.reload();
-		}
-
 		if (option == GameOptions.Option.REDUCED_DEBUG_INFO) {
 			this.reducedDebugInfo = !this.reducedDebugInfo;
 		}
 
 		if (option == GameOptions.Option.ENTITY_SHADOWS) {
 			this.entityShadows = !this.entityShadows;
+		}
+
+		if (option == GameOptions.Option.ATTACK_INDICATOR) {
+			this.field_13290 = (this.field_13290 + integer) % 3;
+		}
+
+		if (option == GameOptions.Option.SHOW_SUBTITLES) {
+			this.field_13292 = !this.field_13292;
 		}
 
 		if (option == GameOptions.Option.REALMS_NOTIFICATIONS) {
@@ -470,18 +411,8 @@ public class GameOptions {
 			return (float)this.maxFramerate;
 		} else if (option == GameOptions.Option.MIPMAP_LEVELS) {
 			return (float)this.mipmapLevels;
-		} else if (option == GameOptions.Option.RENDER_DISTANCE) {
-			return (float)this.viewDistance;
-		} else if (option == GameOptions.Option.STREAM_BYTES_PER_PIXEL) {
-			return this.streamBytesPerPixel;
-		} else if (option == GameOptions.Option.STREAM_VOLUME_MIC) {
-			return this.streamMicVolume;
-		} else if (option == GameOptions.Option.STREAM_VOLUME_SYSTEM) {
-			return this.streamSystemVolume;
-		} else if (option == GameOptions.Option.STREAM_KBPS) {
-			return this.streamKbps;
 		} else {
-			return option == GameOptions.Option.STREAM_FPS ? this.streamFps : 0.0F;
+			return option == GameOptions.Option.RENDER_DISTANCE ? (float)this.viewDistance : 0.0F;
 		}
 	}
 
@@ -511,18 +442,18 @@ public class GameOptions {
 				return this.vbo;
 			case TOUCHSCREEN:
 				return this.touchscreen;
-			case STREAM_SEND_METADATA:
-				return this.streamSendMetadata;
 			case FORCE_UNICODE:
 				return this.forcesUnicodeFont;
-			case BLOCK_ALTERNATIVES:
-				return this.alternativeBlocks;
 			case REDUCED_DEBUG_INFO:
 				return this.reducedDebugInfo;
 			case ENTITY_SHADOWS:
 				return this.entityShadows;
+			case SHOW_SUBTITLES:
+				return this.field_13292;
 			case REALMS_NOTIFICATIONS:
 				return this.realmsNotifications;
+			case ENABLE_WEAK_ATTACKS:
+				return this.field_13291;
 			default:
 				return false;
 		}
@@ -577,18 +508,14 @@ public class GameOptions {
 				return string + (int)f + " chunks";
 			} else if (option == GameOptions.Option.MIPMAP_LEVELS) {
 				return f == 0.0F ? string + I18n.translate("options.off") : string + (int)f;
-			} else if (option == GameOptions.Option.STREAM_FPS) {
-				return string + TwitchAuth.setStreamFps(g) + " fps";
-			} else if (option == GameOptions.Option.STREAM_KBPS) {
-				return string + TwitchAuth.setStreamBitrate(g) + " Kbps";
-			} else if (option == GameOptions.Option.STREAM_BYTES_PER_PIXEL) {
-				return string + String.format("%.3f bpp", TwitchAuth.setStreamBytesPerPixel(g));
 			} else {
 				return g == 0.0F ? string + I18n.translate("options.off") : string + (int)(g * 100.0F) + "%";
 			}
 		} else if (option.isBooleanToggle()) {
 			boolean bl = this.getIntVideoOptions(option);
 			return bl ? string + I18n.translate("options.on") : string + I18n.translate("options.off");
+		} else if (option == GameOptions.Option.MAIN_HAND) {
+			return string + this.field_13289;
 		} else if (option == GameOptions.Option.GUI_SCALE) {
 			return string + translateArrayElement(GUI_SCALE, this.guiScale);
 		} else if (option == GameOptions.Option.CHAT_VISIBILITY) {
@@ -597,14 +524,6 @@ public class GameOptions {
 			return string + translateArrayElement(PARTICLES, this.particle);
 		} else if (option == GameOptions.Option.AMBIENT_OCCLUSION) {
 			return string + translateArrayElement(AMBIENT_OCCLUSION, this.ao);
-		} else if (option == GameOptions.Option.STREAM_COMPRESSION) {
-			return string + translateArrayElement(CHAT_VISIBILITY, this.streamCompression);
-		} else if (option == GameOptions.Option.STREAM_CHAT_ENABLED) {
-			return string + translateArrayElement(STREAM_CHAT_ENABLED, this.streamChatEnabled);
-		} else if (option == GameOptions.Option.STREAM_CHAT_USER_FILTER) {
-			return string + translateArrayElement(STREAM_CHAT_USERFILTER, this.streamChatUserFilter);
-		} else if (option == GameOptions.Option.STREAM_MIC_TOGGLE_BEHAVIOR) {
-			return string + translateArrayElement(STREAM_MIC_TOGGLE, this.streamMicToggleBehavior);
 		} else if (option == GameOptions.Option.SHOW_CLOUDS) {
 			return string + translateArrayElement(GRAPHICS_LEVEL, this.cloudMode);
 		} else if (option == GameOptions.Option.GRAPHICS) {
@@ -615,7 +534,7 @@ public class GameOptions {
 				return string + I18n.translate("options.graphics.fast");
 			}
 		} else {
-			return string;
+			return option == GameOptions.Option.ATTACK_INDICATOR ? string + translateArrayElement(field_13293, this.field_13290) : string;
 		}
 	}
 
@@ -705,6 +624,16 @@ public class GameOptions {
 							this.cloudMode = 0;
 						} else if (strings[1].equals("fast")) {
 							this.cloudMode = 1;
+						}
+					}
+
+					if (strings[0].equals("attackIndicator")) {
+						if (strings[1].equals("0")) {
+							this.field_13290 = 0;
+						} else if (strings[1].equals("1")) {
+							this.field_13290 = 1;
+						} else if (strings[1].equals("2")) {
+							this.field_13290 = 2;
 						}
 					}
 
@@ -818,56 +747,8 @@ public class GameOptions {
 						this.mipmapLevels = Integer.parseInt(strings[1]);
 					}
 
-					if (strings[0].equals("streamBytesPerPixel")) {
-						this.streamBytesPerPixel = this.parseFloat(strings[1]);
-					}
-
-					if (strings[0].equals("streamMicVolume")) {
-						this.streamMicVolume = this.parseFloat(strings[1]);
-					}
-
-					if (strings[0].equals("streamSystemVolume")) {
-						this.streamSystemVolume = this.parseFloat(strings[1]);
-					}
-
-					if (strings[0].equals("streamKbps")) {
-						this.streamKbps = this.parseFloat(strings[1]);
-					}
-
-					if (strings[0].equals("streamFps")) {
-						this.streamFps = this.parseFloat(strings[1]);
-					}
-
-					if (strings[0].equals("streamCompression")) {
-						this.streamCompression = Integer.parseInt(strings[1]);
-					}
-
-					if (strings[0].equals("streamSendMetadata")) {
-						this.streamSendMetadata = strings[1].equals("true");
-					}
-
-					if (strings[0].equals("streamPreferredServer") && strings.length >= 2) {
-						this.currentTexturePackName = string.substring(string.indexOf(58) + 1);
-					}
-
-					if (strings[0].equals("streamChatEnabled")) {
-						this.streamChatEnabled = Integer.parseInt(strings[1]);
-					}
-
-					if (strings[0].equals("streamChatUserFilter")) {
-						this.streamChatUserFilter = Integer.parseInt(strings[1]);
-					}
-
-					if (strings[0].equals("streamMicToggleBehavior")) {
-						this.streamMicToggleBehavior = Integer.parseInt(strings[1]);
-					}
-
 					if (strings[0].equals("forceUnicodeFont")) {
 						this.forcesUnicodeFont = strings[1].equals("true");
-					}
-
-					if (strings[0].equals("allowBlockAlternatives")) {
-						this.alternativeBlocks = strings[1].equals("true");
 					}
 
 					if (strings[0].equals("reducedDebugInfo")) {
@@ -882,8 +763,20 @@ public class GameOptions {
 						this.entityShadows = strings[1].equals("true");
 					}
 
+					if (strings[0].equals("mainHand")) {
+						this.field_13289 = strings[1].equals("left") ? HandOption.LEFT : HandOption.RIGHT;
+					}
+
+					if (strings[0].equals("showSubtitles")) {
+						this.field_13292 = strings[1].equals("true");
+					}
+
 					if (strings[0].equals("realmsNotifications")) {
 						this.realmsNotifications = strings[1].equals("true");
+					}
+
+					if (strings[0].equals("enableWeakAttacks")) {
+						this.field_13291 = strings[1].equals("true");
 					}
 
 					for (KeyBinding keyBinding : this.allKeys) {
@@ -978,23 +871,15 @@ public class GameOptions {
 			printWriter.println("chatWidth:" + this.chatWidth);
 			printWriter.println("showInventoryAchievementHint:" + this.showInventoryAchievementHint);
 			printWriter.println("mipmapLevels:" + this.mipmapLevels);
-			printWriter.println("streamBytesPerPixel:" + this.streamBytesPerPixel);
-			printWriter.println("streamMicVolume:" + this.streamMicVolume);
-			printWriter.println("streamSystemVolume:" + this.streamSystemVolume);
-			printWriter.println("streamKbps:" + this.streamKbps);
-			printWriter.println("streamFps:" + this.streamFps);
-			printWriter.println("streamCompression:" + this.streamCompression);
-			printWriter.println("streamSendMetadata:" + this.streamSendMetadata);
-			printWriter.println("streamPreferredServer:" + this.currentTexturePackName);
-			printWriter.println("streamChatEnabled:" + this.streamChatEnabled);
-			printWriter.println("streamChatUserFilter:" + this.streamChatUserFilter);
-			printWriter.println("streamMicToggleBehavior:" + this.streamMicToggleBehavior);
 			printWriter.println("forceUnicodeFont:" + this.forcesUnicodeFont);
-			printWriter.println("allowBlockAlternatives:" + this.alternativeBlocks);
 			printWriter.println("reducedDebugInfo:" + this.reducedDebugInfo);
 			printWriter.println("useNativeTransport:" + this.useNativeTransport);
 			printWriter.println("entityShadows:" + this.entityShadows);
+			printWriter.println("mainHand:" + (this.field_13289 == HandOption.LEFT ? "left" : "right"));
+			printWriter.println("attackIndicator:" + this.field_13290);
+			printWriter.println("showSubtitles:" + this.field_13292);
 			printWriter.println("realmsNotifications:" + this.realmsNotifications);
+			printWriter.println("enableWeakAttacks:" + this.field_13291);
 
 			for (KeyBinding keyBinding : this.allKeys) {
 				printWriter.println("key_" + keyBinding.getTranslationKey() + ":" + keyBinding.getCode());
@@ -1033,7 +918,10 @@ public class GameOptions {
 				i |= playerModelPart.getBitFlag();
 			}
 
-			this.client.player.networkHandler.sendPacket(new ClientSettingsC2SPacket(this.language, this.viewDistance, this.chatVisibilityType, this.chatColor, i));
+			this.client
+				.player
+				.networkHandler
+				.sendPacket(new ClientSettingsC2SPacket(this.language, this.viewDistance, this.chatVisibilityType, this.chatColor, i, this.field_13289));
 		}
 	}
 
@@ -1101,19 +989,12 @@ public class GameOptions {
 		CHAT_HEIGHT_UNFOCUSED("options.chat.height.unfocused", true, false),
 		MIPMAP_LEVELS("options.mipmapLevels", true, false, 0.0F, 4.0F, 1.0F),
 		FORCE_UNICODE("options.forceUnicodeFont", false, true),
-		STREAM_BYTES_PER_PIXEL("options.stream.bytesPerPixel", true, false),
-		STREAM_VOLUME_MIC("options.stream.micVolumne", true, false),
-		STREAM_VOLUME_SYSTEM("options.stream.systemVolume", true, false),
-		STREAM_KBPS("options.stream.kbps", true, false),
-		STREAM_FPS("options.stream.fps", true, false),
-		STREAM_COMPRESSION("options.stream.compression", false, false),
-		STREAM_SEND_METADATA("options.stream.sendMetadata", false, true),
-		STREAM_CHAT_ENABLED("options.stream.chat.enabled", false, false),
-		STREAM_CHAT_USER_FILTER("options.stream.chat.userFilter", false, false),
-		STREAM_MIC_TOGGLE_BEHAVIOR("options.stream.micToggleBehavior", false, false),
-		BLOCK_ALTERNATIVES("options.blockAlternatives", false, true),
 		REDUCED_DEBUG_INFO("options.reducedDebugInfo", false, true),
 		ENTITY_SHADOWS("options.entityShadows", false, true),
+		MAIN_HAND("options.mainHand", false, false),
+		ATTACK_INDICATOR("options.attackIndicator", false, false),
+		ENABLE_WEAK_ATTACKS("options.enableWeakAttacks", false, true),
+		SHOW_SUBTITLES("options.showSubtitles", false, true),
 		REALMS_NOTIFICATIONS("options.realmsNotifications", false, true);
 
 		private final boolean numeric;
@@ -1160,6 +1041,10 @@ public class GameOptions {
 
 		public String getName() {
 			return this.name;
+		}
+
+		public float getMinValue() {
+			return this.min;
 		}
 
 		public float getMaxValue() {

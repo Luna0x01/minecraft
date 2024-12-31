@@ -3,6 +3,8 @@ package net.minecraft.item;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -18,17 +20,18 @@ public class SeedItem extends Item {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		if (direction != Direction.UP) {
-			return false;
-		} else if (!player.canModify(pos.offset(direction), direction, itemStack)) {
-			return false;
-		} else if (world.getBlockState(pos).getBlock() == this.soil && world.isAir(pos.up())) {
-			world.setBlockState(pos.up(), this.crop.getDefaultState());
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
+		if (direction == Direction.UP
+			&& playerEntity.canModify(blockPos.offset(direction), direction, itemStack)
+			&& world.getBlockState(blockPos).getBlock() == this.soil
+			&& world.isAir(blockPos.up())) {
+			world.setBlockState(blockPos.up(), this.crop.getDefaultState());
 			itemStack.count--;
-			return true;
+			return ActionResult.SUCCESS;
 		} else {
-			return false;
+			return ActionResult.FAIL;
 		}
 	}
 }

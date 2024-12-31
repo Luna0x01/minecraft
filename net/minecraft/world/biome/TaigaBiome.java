@@ -5,6 +5,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.DirtBlock;
 import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.block.TallPlantBlock;
+import net.minecraft.entity.passive.RabbitEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -23,14 +24,15 @@ public class TaigaBiome extends Biome {
 	private static final GiantSpruceTreeFeature field_7256 = new GiantSpruceTreeFeature(false, false);
 	private static final GiantSpruceTreeFeature field_7257 = new GiantSpruceTreeFeature(false, true);
 	private static final BlockFeature field_7258 = new BlockFeature(Blocks.MOSSY_COBBLESTONE, 0);
-	private int field_7259;
+	private TaigaBiome.Type field_12548;
 
-	public TaigaBiome(int i, int j) {
-		super(i);
-		this.field_7259 = j;
+	public TaigaBiome(TaigaBiome.Type type, Biome.Settings settings) {
+		super(settings);
+		this.field_12548 = type;
 		this.passiveEntries.add(new Biome.SpawnEntry(WolfEntity.class, 8, 4, 4));
+		this.passiveEntries.add(new Biome.SpawnEntry(RabbitEntity.class, 4, 2, 3));
 		this.biomeDecorator.treesPerChunk = 10;
-		if (j != 1 && j != 2) {
+		if (type != TaigaBiome.Type.MEGA && type != TaigaBiome.Type.MEGA_SPRUCE) {
 			this.biomeDecorator.grassPerChunk = 1;
 			this.biomeDecorator.mushroomsPerChunk = 1;
 		} else {
@@ -42,8 +44,8 @@ public class TaigaBiome extends Biome {
 
 	@Override
 	public FoliageFeature method_3822(Random random) {
-		if ((this.field_7259 == 1 || this.field_7259 == 2) && random.nextInt(3) == 0) {
-			return this.field_7259 != 2 && random.nextInt(13) != 0 ? field_7256 : field_7257;
+		if ((this.field_12548 == TaigaBiome.Type.MEGA || this.field_12548 == TaigaBiome.Type.MEGA_SPRUCE) && random.nextInt(3) == 0) {
+			return this.field_12548 != TaigaBiome.Type.MEGA_SPRUCE && random.nextInt(13) != 0 ? field_7256 : field_7257;
 		} else {
 			return (FoliageFeature)(random.nextInt(3) == 0 ? field_7254 : field_7255);
 		}
@@ -56,7 +58,7 @@ public class TaigaBiome extends Biome {
 
 	@Override
 	public void decorate(World world, Random random, BlockPos pos) {
-		if (this.field_7259 == 1 || this.field_7259 == 2) {
+		if (this.field_12548 == TaigaBiome.Type.MEGA || this.field_12548 == TaigaBiome.Type.MEGA_SPRUCE) {
 			int i = random.nextInt(3);
 
 			for (int j = 0; j < i; j++) {
@@ -81,7 +83,7 @@ public class TaigaBiome extends Biome {
 
 	@Override
 	public void method_6420(World world, Random random, ChunkBlockStateStorage chunkStorage, int i, int j, double d) {
-		if (this.field_7259 == 1 || this.field_7259 == 2) {
+		if (this.field_12548 == TaigaBiome.Type.MEGA || this.field_12548 == TaigaBiome.Type.MEGA_SPRUCE) {
 			this.topBlock = Blocks.GRASS.getDefaultState();
 			this.baseBlock = Blocks.DIRT.getDefaultState();
 			if (d > 1.75) {
@@ -94,15 +96,9 @@ public class TaigaBiome extends Biome {
 		this.method_8590(world, random, chunkStorage, i, j, d);
 	}
 
-	@Override
-	protected Biome getMutatedVariant(int id) {
-		return this.id == Biome.MEGA_TAIGA.id
-			? new TaigaBiome(id, 2)
-				.seedModifier(5858897, true)
-				.setName("Mega Spruce Taiga")
-				.method_3820(5159473)
-				.setTemperatureAndDownfall(0.25F, 0.8F)
-				.setHeight(new Biome.Height(this.depth, this.variationModifier))
-			: super.getMutatedVariant(id);
+	public static enum Type {
+		NORMAL,
+		MEGA,
+		MEGA_SPRUCE;
 	}
 }

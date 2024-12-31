@@ -1,17 +1,20 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import java.util.UUID;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int id;
-	private int x;
-	private int y;
-	private int z;
+	private UUID uuid;
+	private double x;
+	private double y;
+	private double z;
 	private int velocityX;
 	private int velocityY;
 	private int velocityZ;
@@ -29,80 +32,57 @@ public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public EntitySpawnS2CPacket(Entity entity, int i, int j) {
 		this.id = entity.getEntityId();
-		this.x = MathHelper.floor(entity.x * 32.0);
-		this.y = MathHelper.floor(entity.y * 32.0);
-		this.z = MathHelper.floor(entity.z * 32.0);
+		this.uuid = entity.getUuid();
+		this.x = entity.x;
+		this.y = entity.y;
+		this.z = entity.z;
 		this.pitch = MathHelper.floor(entity.pitch * 256.0F / 360.0F);
 		this.yaw = MathHelper.floor(entity.yaw * 256.0F / 360.0F);
 		this.type = i;
 		this.dataId = j;
-		if (j > 0) {
-			double d = entity.velocityX;
-			double e = entity.velocityY;
-			double f = entity.velocityZ;
-			double g = 3.9;
-			if (d < -g) {
-				d = -g;
-			}
+		double d = 3.9;
+		this.velocityX = (int)(MathHelper.clamp(entity.velocityX, -3.9, 3.9) * 8000.0);
+		this.velocityY = (int)(MathHelper.clamp(entity.velocityY, -3.9, 3.9) * 8000.0);
+		this.velocityZ = (int)(MathHelper.clamp(entity.velocityZ, -3.9, 3.9) * 8000.0);
+	}
 
-			if (e < -g) {
-				e = -g;
-			}
-
-			if (f < -g) {
-				f = -g;
-			}
-
-			if (d > g) {
-				d = g;
-			}
-
-			if (e > g) {
-				e = g;
-			}
-
-			if (f > g) {
-				f = g;
-			}
-
-			this.velocityX = (int)(d * 8000.0);
-			this.velocityY = (int)(e * 8000.0);
-			this.velocityZ = (int)(f * 8000.0);
-		}
+	public EntitySpawnS2CPacket(Entity entity, int i, int j, BlockPos blockPos) {
+		this(entity, i, j);
+		this.x = (double)blockPos.getX();
+		this.y = (double)blockPos.getY();
+		this.z = (double)blockPos.getZ();
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.id = buf.readVarInt();
+		this.uuid = buf.readUuid();
 		this.type = buf.readByte();
-		this.x = buf.readInt();
-		this.y = buf.readInt();
-		this.z = buf.readInt();
+		this.x = buf.readDouble();
+		this.y = buf.readDouble();
+		this.z = buf.readDouble();
 		this.pitch = buf.readByte();
 		this.yaw = buf.readByte();
 		this.dataId = buf.readInt();
-		if (this.dataId > 0) {
-			this.velocityX = buf.readShort();
-			this.velocityY = buf.readShort();
-			this.velocityZ = buf.readShort();
-		}
+		this.velocityX = buf.readShort();
+		this.velocityY = buf.readShort();
+		this.velocityZ = buf.readShort();
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.id);
+		buf.writeUuid(this.uuid);
 		buf.writeByte(this.type);
-		buf.writeInt(this.x);
-		buf.writeInt(this.y);
-		buf.writeInt(this.z);
+		buf.writeDouble(this.x);
+		buf.writeDouble(this.y);
+		buf.writeDouble(this.z);
 		buf.writeByte(this.pitch);
 		buf.writeByte(this.yaw);
 		buf.writeInt(this.dataId);
-		if (this.dataId > 0) {
-			buf.writeShort(this.velocityX);
-			buf.writeShort(this.velocityY);
-			buf.writeShort(this.velocityZ);
-		}
+		buf.writeShort(this.velocityX);
+		buf.writeShort(this.velocityY);
+		buf.writeShort(this.velocityZ);
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
@@ -113,15 +93,19 @@ public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 		return this.id;
 	}
 
-	public int getX() {
+	public UUID getUuid() {
+		return this.uuid;
+	}
+
+	public double getX() {
 		return this.x;
 	}
 
-	public int getY() {
+	public double getY() {
 		return this.y;
 	}
 
-	public int getZ() {
+	public double getZ() {
 		return this.z;
 	}
 
@@ -151,18 +135,6 @@ public class EntitySpawnS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public int getDataId() {
 		return this.dataId;
-	}
-
-	public void setX(int x) {
-		this.x = x;
-	}
-
-	public void setY(int y) {
-		this.y = y;
-	}
-
-	public void setZ(int z) {
-		this.z = z;
 	}
 
 	public void setVelocityX(int velocityX) {

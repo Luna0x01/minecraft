@@ -68,7 +68,7 @@ public class WorldBorderS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeEnum(this.type);
+		buf.writeEnumConstant(this.type);
 		switch (this.type) {
 			case SET_SIZE:
 				buf.writeDouble(this.size);
@@ -76,7 +76,7 @@ public class WorldBorderS2CPacket implements Packet<ClientPlayPacketListener> {
 			case LERP_SIZE:
 				buf.writeDouble(this.oldSize);
 				buf.writeDouble(this.size);
-				buf.writeVarLong(this.interpolationDuration);
+				buf.method_10608(this.interpolationDuration);
 				break;
 			case SET_CENTER:
 				buf.writeDouble(this.centerX);
@@ -93,7 +93,7 @@ public class WorldBorderS2CPacket implements Packet<ClientPlayPacketListener> {
 				buf.writeDouble(this.centerZ);
 				buf.writeDouble(this.oldSize);
 				buf.writeDouble(this.size);
-				buf.writeVarLong(this.interpolationDuration);
+				buf.method_10608(this.interpolationDuration);
 				buf.writeVarInt(this.portalTeleportPosLimit);
 				buf.writeVarInt(this.warningBlocks);
 				buf.writeVarInt(this.warningTime);

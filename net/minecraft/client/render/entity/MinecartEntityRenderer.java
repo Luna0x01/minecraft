@@ -1,6 +1,7 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.model.EntityModel;
@@ -71,8 +72,13 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 		}
 
 		int t = abstractMinecartEntity.getBlockOffset();
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(abstractMinecartEntity));
+		}
+
 		BlockState blockState = abstractMinecartEntity.getContainedBlock();
-		if (blockState.getBlock().getBlockType() != -1) {
+		if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
 			GlStateManager.pushMatrix();
 			this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			float u = 0.75F;
@@ -87,6 +93,11 @@ public class MinecartEntityRenderer<T extends AbstractMinecartEntity> extends En
 		GlStateManager.scale(-1.0F, -1.0F, 1.0F);
 		this.field_2129.render(abstractMinecartEntity, 0.0F, 0.0F, -0.1F, 0.0F, 0.0F, 0.0625F);
 		GlStateManager.popMatrix();
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		super.render(abstractMinecartEntity, d, e, f, g, h);
 	}
 

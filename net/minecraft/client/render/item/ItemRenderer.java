@@ -2,7 +2,7 @@ package net.minecraft.client.render.item;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.List;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DirtBlock;
@@ -22,7 +22,9 @@ import net.minecraft.block.StoneBrickBlock;
 import net.minecraft.block.StoneSlabBlock;
 import net.minecraft.block.TallPlantBlock;
 import net.minecraft.block.WallBlock;
+import net.minecraft.block.entity.StructureBlockEntity;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.class_2838;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.GameRenderer;
@@ -40,22 +42,24 @@ import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.client.util.ModelIdentifier;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.item.FishItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.PotionItem;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.World;
 
 public class ItemRenderer implements ResourceReloadListener {
 	private static final Identifier ITEM_GLINT_TEXTURE = new Identifier("textures/misc/enchanted_item_glint.png");
@@ -63,11 +67,13 @@ public class ItemRenderer implements ResourceReloadListener {
 	public float zOffset;
 	private final ItemModels models;
 	private final TextureManager textureManager;
+	private final class_2838 field_13632;
 
-	public ItemRenderer(TextureManager textureManager, BakedModelManager bakedModelManager) {
+	public ItemRenderer(TextureManager textureManager, BakedModelManager bakedModelManager, class_2838 arg) {
 		this.textureManager = textureManager;
 		this.models = new ItemModels(bakedModelManager);
 		this.initModels();
+		this.field_13632 = arg;
 	}
 
 	public void setRenderingAchievement(boolean renderingAchievement) {
@@ -102,31 +108,28 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.renderBakedItemModel(model, color, null);
 	}
 
-	private void renderBakedItemModel(BakedModel model, int color, ItemStack stack) {
+	private void renderBakedItemModel(BakedModel model, int color, @Nullable ItemStack stack) {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		bufferBuilder.begin(7, VertexFormats.BLOCK_NORMALS);
 
 		for (Direction direction : Direction.values()) {
-			this.renderBakedItemQuads(bufferBuilder, model.getByDirection(direction), color, stack);
+			this.renderBakedItemQuads(bufferBuilder, model.method_12502(null, direction, 0L), color, stack);
 		}
 
-		this.renderBakedItemQuads(bufferBuilder, model.getQuads(), color, stack);
+		this.renderBakedItemQuads(bufferBuilder, model.method_12502(null, null, 0L), color, stack);
 		tessellator.draw();
 	}
 
 	public void renderItem(ItemStack stack, BakedModel model) {
 		if (stack != null) {
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(0.5F, 0.5F, 0.5F);
+			GlStateManager.translate(-0.5F, -0.5F, -0.5F);
 			if (model.isBuiltin()) {
-				GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-				GlStateManager.translate(-0.5F, -0.5F, -0.5F);
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				GlStateManager.enableRescaleNormal();
 				BlockEntityItemStackRenderHelper.INSTANCE.renderItem(stack);
 			} else {
-				GlStateManager.translate(-0.5F, -0.5F, -0.5F);
 				this.renderBakedItemModel(model, stack);
 				if (stack.hasEnchantmentGlint()) {
 					this.renderGlint(model);
@@ -141,7 +144,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		GlStateManager.depthMask(false);
 		GlStateManager.depthFunc(514);
 		GlStateManager.disableLighting();
-		GlStateManager.blendFunc(768, 1);
+		GlStateManager.method_12287(GlStateManager.class_2870.SRC_COLOR, GlStateManager.class_2866.ONE);
 		this.textureManager.bindTexture(ITEM_GLINT_TEXTURE);
 		GlStateManager.matrixMode(5890);
 		GlStateManager.pushMatrix();
@@ -159,7 +162,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.renderBakedItemModel(model, -8372020);
 		GlStateManager.popMatrix();
 		GlStateManager.matrixMode(5888);
-		GlStateManager.blendFunc(770, 771);
+		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 		GlStateManager.enableLighting();
 		GlStateManager.depthFunc(515);
 		GlStateManager.depthMask(true);
@@ -177,7 +180,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.renderQuad(bufferBuilder, quad);
 	}
 
-	private void renderBakedItemQuads(BufferBuilder bufferBuilder, List<BakedQuad> quads, int color, ItemStack stack) {
+	private void renderBakedItemQuads(BufferBuilder bufferBuilder, List<BakedQuad> quads, int color, @Nullable ItemStack stack) {
 		boolean bl = color == -1 && stack != null;
 		int i = 0;
 
@@ -185,7 +188,7 @@ public class ItemRenderer implements ResourceReloadListener {
 			BakedQuad bakedQuad = (BakedQuad)quads.get(i);
 			int k = color;
 			if (bl && bakedQuad.hasColor()) {
-				k = stack.getItem().getDisplayColor(stack, bakedQuad.getColorIndex());
+				k = this.field_13632.method_12160(stack, bakedQuad.getColorIndex());
 				if (GameRenderer.anaglyphEnabled) {
 					k = TextureUtil.getAnaglyphColor(k);
 				}
@@ -202,85 +205,68 @@ public class ItemRenderer implements ResourceReloadListener {
 		return bakedModel == null ? false : bakedModel.hasDepth();
 	}
 
-	private void preRenderGuiItemModel(ItemStack stack) {
-		BakedModel bakedModel = this.models.getModel(stack);
-		Item item = stack.getItem();
-		if (item != null) {
-			boolean bl = bakedModel.hasDepth();
-			if (!bl) {
-				GlStateManager.scale(2.0F, 2.0F, 2.0F);
-			}
+	public void method_12458(ItemStack itemStack, ModelTransformation.Mode mode) {
+		if (itemStack != null) {
+			BakedModel bakedModel = this.method_12457(itemStack, null, null);
+			this.method_12459(itemStack, bakedModel, mode, false);
+		}
+	}
 
+	public BakedModel method_12457(ItemStack itemStack, @Nullable World world, @Nullable LivingEntity livingEntity) {
+		BakedModel bakedModel = this.models.getModel(itemStack);
+		Item item = itemStack.getItem();
+		if (item != null && item.hasProperties()) {
+			Identifier identifier = bakedModel.method_12503().method_12372(itemStack, world, livingEntity);
+			return identifier == null ? bakedModel : this.models.getModelManager().getByIdentifier(new ModelIdentifier(identifier, "inventory"));
+		} else {
+			return bakedModel;
+		}
+	}
+
+	public void method_12460(ItemStack itemStack, LivingEntity livingEntity, ModelTransformation.Mode mode, boolean bl) {
+		if (itemStack != null && livingEntity != null && itemStack.getItem() != null) {
+			BakedModel bakedModel = this.method_12457(itemStack, livingEntity.world, livingEntity);
+			this.method_12459(itemStack, bakedModel, mode, bl);
+		}
+	}
+
+	protected void method_12459(ItemStack itemStack, BakedModel bakedModel, ModelTransformation.Mode mode, boolean bl) {
+		if (itemStack.getItem() != null) {
+			this.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
+			this.textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pushFilter(false, false);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		}
-	}
-
-	public void renderItem(ItemStack stack, ModelTransformation.Mode mode) {
-		if (stack != null) {
-			BakedModel bakedModel = this.models.getModel(stack);
-			this.renderItem(stack, bakedModel, mode);
-		}
-	}
-
-	public void renderItem(ItemStack stack, LivingEntity entity, ModelTransformation.Mode mode) {
-		if (stack != null && entity != null) {
-			BakedModel bakedModel = this.models.getModel(stack);
-			if (entity instanceof PlayerEntity) {
-				PlayerEntity playerEntity = (PlayerEntity)entity;
-				Item item = stack.getItem();
-				ModelIdentifier modelIdentifier = null;
-				if (item == Items.FISHING_ROD && playerEntity.fishHook != null) {
-					modelIdentifier = new ModelIdentifier("fishing_rod_cast", "inventory");
-				} else if (item == Items.BOW && playerEntity.getUsedItem() != null) {
-					int i = stack.getMaxUseTime() - playerEntity.getItemUseTicks();
-					if (i >= 18) {
-						modelIdentifier = new ModelIdentifier("bow_pulling_2", "inventory");
-					} else if (i > 13) {
-						modelIdentifier = new ModelIdentifier("bow_pulling_1", "inventory");
-					} else if (i > 0) {
-						modelIdentifier = new ModelIdentifier("bow_pulling_0", "inventory");
-					}
-				}
-
-				if (modelIdentifier != null) {
-					bakedModel = this.models.getModelManager().getByIdentifier(modelIdentifier);
-				}
+			GlStateManager.enableRescaleNormal();
+			GlStateManager.alphaFunc(516, 0.1F);
+			GlStateManager.enableBlend();
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
+			GlStateManager.pushMatrix();
+			ModelTransformation modelTransformation = bakedModel.getTransformation();
+			ModelTransformation.method_12374(modelTransformation.getTransformation(mode), bl);
+			if (this.isNegativeScale(modelTransformation.getTransformation(mode))) {
+				GlStateManager.method_12284(GlStateManager.class_2865.FRONT);
 			}
 
-			this.renderItem(stack, bakedModel, mode);
+			this.renderItem(itemStack, bakedModel);
+			GlStateManager.method_12284(GlStateManager.class_2865.BACK);
+			GlStateManager.popMatrix();
+			GlStateManager.disableRescaleNormal();
+			GlStateManager.disableBlend();
+			this.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
+			this.textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pop();
 		}
-	}
-
-	protected void renderItem(ItemStack stack, BakedModel model, ModelTransformation.Mode transformation) {
-		this.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-		this.textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pushFilter(false, false);
-		this.preRenderGuiItemModel(stack);
-		GlStateManager.enableRescaleNormal();
-		GlStateManager.alphaFunc(516, 0.1F);
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
-		GlStateManager.pushMatrix();
-		ModelTransformation modelTransformation = model.getTransformation();
-		modelTransformation.apply(transformation);
-		if (this.isNegativeScale(modelTransformation.getTransformation(transformation))) {
-			GlStateManager.cullFace(1028);
-		}
-
-		this.renderItem(stack, model);
-		GlStateManager.cullFace(1029);
-		GlStateManager.popMatrix();
-		GlStateManager.disableRescaleNormal();
-		GlStateManager.disableBlend();
-		this.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
-		this.textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pop();
 	}
 
 	private boolean isNegativeScale(Transformation transformation) {
 		return transformation.scale.x < 0.0F ^ transformation.scale.y < 0.0F ^ transformation.scale.z < 0.0F;
 	}
 
-	public void renderGuiItemModel(ItemStack stack, int x, int y) {
-		BakedModel bakedModel = this.models.getModel(stack);
+	public void method_12455(ItemStack itemStack, int i, int j) {
+		this.method_12456(itemStack, i, j, this.method_12457(itemStack, null, null));
+	}
+
+	protected void method_12456(ItemStack itemStack, int i, int j, BakedModel bakedModel) {
 		GlStateManager.pushMatrix();
 		this.textureManager.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 		this.textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pushFilter(false, false);
@@ -288,11 +274,11 @@ public class ItemRenderer implements ResourceReloadListener {
 		GlStateManager.enableAlphaTest();
 		GlStateManager.alphaFunc(516, 0.1F);
 		GlStateManager.enableBlend();
-		GlStateManager.blendFunc(770, 771);
+		GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		this.renderGuiItemModelTransformations(x, y, bakedModel.hasDepth());
+		this.renderGuiItemModelTransformations(i, j, bakedModel.hasDepth());
 		bakedModel.getTransformation().apply(ModelTransformation.Mode.GUI);
-		this.renderItem(stack, bakedModel);
+		this.renderItem(itemStack, bakedModel);
 		GlStateManager.disableAlphaTest();
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.disableLighting();
@@ -304,47 +290,46 @@ public class ItemRenderer implements ResourceReloadListener {
 	private void renderGuiItemModelTransformations(int x, int y, boolean depth) {
 		GlStateManager.translate((float)x, (float)y, 100.0F + this.zOffset);
 		GlStateManager.translate(8.0F, 8.0F, 0.0F);
-		GlStateManager.scale(1.0F, 1.0F, -1.0F);
-		GlStateManager.scale(0.5F, 0.5F, 0.5F);
+		GlStateManager.scale(1.0F, -1.0F, 1.0F);
+		GlStateManager.scale(16.0F, 16.0F, 16.0F);
 		if (depth) {
-			GlStateManager.scale(40.0F, 40.0F, 40.0F);
-			GlStateManager.rotate(210.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotate(-135.0F, 0.0F, 1.0F, 0.0F);
 			GlStateManager.enableLighting();
 		} else {
-			GlStateManager.scale(64.0F, 64.0F, 64.0F);
-			GlStateManager.rotate(180.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.disableLighting();
 		}
 	}
 
-	public void renderInGuiWithOverrides(ItemStack stack, int x, int y) {
-		if (stack != null && stack.getItem() != null) {
+	public void method_12461(ItemStack itemStack, int i, int j) {
+		this.method_10249(MinecraftClient.getInstance().player, itemStack, i, j);
+	}
+
+	public void method_10249(@Nullable LivingEntity livingEntity, ItemStack itemStack, int i, int j) {
+		if (itemStack != null && itemStack.getItem() != null) {
 			this.zOffset += 50.0F;
 
 			try {
-				this.renderGuiItemModel(stack, x, y);
-			} catch (Throwable var7) {
-				CrashReport crashReport = CrashReport.create(var7, "Rendering item");
+				this.method_12456(itemStack, i, j, this.method_12457(itemStack, null, livingEntity));
+			} catch (Throwable var8) {
+				CrashReport crashReport = CrashReport.create(var8, "Rendering item");
 				CrashReportSection crashReportSection = crashReport.addElement("Item being rendered");
-				crashReportSection.add("Item Type", new Callable<String>() {
+				crashReportSection.add("Item Type", new CrashCallable<String>() {
 					public String call() throws Exception {
-						return String.valueOf(stack.getItem());
+						return String.valueOf(itemStack.getItem());
 					}
 				});
-				crashReportSection.add("Item Aux", new Callable<String>() {
+				crashReportSection.add("Item Aux", new CrashCallable<String>() {
 					public String call() throws Exception {
-						return String.valueOf(stack.getData());
+						return String.valueOf(itemStack.getData());
 					}
 				});
-				crashReportSection.add("Item NBT", new Callable<String>() {
+				crashReportSection.add("Item NBT", new CrashCallable<String>() {
 					public String call() throws Exception {
-						return String.valueOf(stack.getNbt());
+						return String.valueOf(itemStack.getNbt());
 					}
 				});
-				crashReportSection.add("Item Foil", new Callable<String>() {
+				crashReportSection.add("Item Foil", new CrashCallable<String>() {
 					public String call() throws Exception {
-						return String.valueOf(stack.hasEnchantmentGlint());
+						return String.valueOf(itemStack.hasEnchantmentGlint());
 					}
 				});
 				throw new CrashException(crashReport);
@@ -358,7 +343,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.renderGuiItemOverlay(renderer, stack, x, y, null);
 	}
 
-	public void renderGuiItemOverlay(TextRenderer renderer, ItemStack stack, int x, int y, String countLabel) {
+	public void renderGuiItemOverlay(TextRenderer renderer, ItemStack stack, int x, int y, @Nullable String countLabel) {
 		if (stack != null) {
 			if (stack.count != 1 || countLabel != null) {
 				String string = countLabel == null ? String.valueOf(stack.count) : countLabel;
@@ -389,6 +374,22 @@ public class ItemRenderer implements ResourceReloadListener {
 				this.renderGuiQuad(bufferBuilder, x + 2, y + 13, i, 1, 255 - j, j, 0, 255);
 				GlStateManager.enableBlend();
 				GlStateManager.enableAlphaTest();
+				GlStateManager.enableTexture();
+				GlStateManager.enableLighting();
+				GlStateManager.enableDepthTest();
+			}
+
+			ClientPlayerEntity clientPlayerEntity = MinecraftClient.getInstance().player;
+			float f = clientPlayerEntity == null
+				? 0.0F
+				: clientPlayerEntity.getItemCooldownManager().getCooldownProgress(stack.getItem(), MinecraftClient.getInstance().method_12143());
+			if (f > 0.0F) {
+				GlStateManager.disableLighting();
+				GlStateManager.disableDepthTest();
+				GlStateManager.disableTexture();
+				Tessellator tessellator2 = Tessellator.getInstance();
+				BufferBuilder bufferBuilder2 = tessellator2.getBuffer();
+				this.renderGuiQuad(bufferBuilder2, x, y + MathHelper.floor(16.0F * (1.0F - f)), 16, MathHelper.ceil(16.0F * f), 255, 255, 255, 127);
 				GlStateManager.enableTexture();
 				GlStateManager.enableLighting();
 				GlStateManager.enableDepthTest();
@@ -584,6 +585,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Blocks.WOOL, DyeColor.SILVER.getId(), "silver_wool");
 		this.addModel(Blocks.WOOL, DyeColor.WHITE.getId(), "white_wool");
 		this.addModel(Blocks.WOOL, DyeColor.YELLOW.getId(), "yellow_wool");
+		this.addModel(Blocks.FARMLAND, "farmland");
 		this.addModel(Blocks.ACACIA_STAIRS, "acacia_stairs");
 		this.addModel(Blocks.ACTIVATOR_RAIL, "activator_rail");
 		this.addModel(Blocks.BEACON, "beacon");
@@ -633,6 +635,7 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Blocks.GOLD_BLOCK, "gold_block");
 		this.addModel(Blocks.GOLD_ORE, "gold_ore");
 		this.addModel(Blocks.GRASS, "grass");
+		this.addModel(Blocks.GRASS_PATH, "grass_path");
 		this.addModel(Blocks.GRAVEL, "gravel");
 		this.addModel(Blocks.TERRACOTTA, "hardened_clay");
 		this.addModel(Blocks.HAY_BALE, "hay_block");
@@ -695,6 +698,15 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Blocks.WOODEN_BUTTON, "wooden_button");
 		this.addModel(Blocks.WOODEN_PRESSURE_PLATE, "wooden_pressure_plate");
 		this.addModel(Blocks.YELLOW_FLOWER, FlowerBlock.FlowerType.DANDELION.getDataIndex(), "dandelion");
+		this.addModel(Blocks.END_ROD, "end_rod");
+		this.addModel(Blocks.CHORUS_PLANT, "chorus_plant");
+		this.addModel(Blocks.CHORUS_FLOWER, "chorus_flower");
+		this.addModel(Blocks.PURPUR_BLOCK, "purpur_block");
+		this.addModel(Blocks.PURPUR_PILLAR, "purpur_pillar");
+		this.addModel(Blocks.PURPUR_STAIRS, "purpur_stairs");
+		this.addModel(Blocks.PURPUR_SLAB, "purpur_slab");
+		this.addModel(Blocks.DOUBLE_PURPUR_SLAB, "purpur_double_slab");
+		this.addModel(Blocks.END_BRICKS, "end_bricks");
 		this.addModel(Blocks.CHEST, "chest");
 		this.addModel(Blocks.TRAPPED_CHEST, "trapped_chest");
 		this.addModel(Blocks.ENDERCHEST, "ender_chest");
@@ -703,11 +715,10 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.IRON_AXE, "iron_axe");
 		this.addModel(Items.FLINT_AND_STEEL, "flint_and_steel");
 		this.addModel(Items.APPLE, "apple");
-		this.addModel(Items.BOW, 0, "bow");
-		this.addModel(Items.BOW, 1, "bow_pulling_0");
-		this.addModel(Items.BOW, 2, "bow_pulling_1");
-		this.addModel(Items.BOW, 3, "bow_pulling_2");
+		this.addModel(Items.BOW, "bow");
 		this.addModel(Items.ARROW, "arrow");
+		this.addModel(Items.SPECTRAL_ARROW, "spectral_arrow");
+		this.addModel(Items.TIPPED_ARROW, "tipped_arrow");
 		this.addModel(Items.COAL, 0, "coal");
 		this.addModel(Items.COAL, 1, "charcoal");
 		this.addModel(Items.DIAMOND, "diamond");
@@ -785,7 +796,12 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.IRON_DOOR, "iron_door");
 		this.addModel(Items.REDSTONE, "redstone");
 		this.addModel(Items.SNOWBALL, "snowball");
-		this.addModel(Items.BOAT, "boat");
+		this.addModel(Items.BOAT, "oak_boat");
+		this.addModel(Items.SPRUCE_BOAT, "spruce_boat");
+		this.addModel(Items.BIRCH_BOAT, "birch_boat");
+		this.addModel(Items.JUNGLE_BOAT, "jungle_boat");
+		this.addModel(Items.ACACIA_BOAT, "acacia_boat");
+		this.addModel(Items.DARK_OAK_BOAT, "dark_oak_boat");
 		this.addModel(Items.LEATHER, "leather");
 		this.addModel(Items.MILK_BUCKET, "milk_bucket");
 		this.addModel(Items.BRICK, "brick");
@@ -799,7 +815,6 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.EGG, "egg");
 		this.addModel(Items.COMPASS, "compass");
 		this.addModel(Items.FISHING_ROD, "fishing_rod");
-		this.addModel(Items.FISHING_ROD, 1, "fishing_rod_cast");
 		this.addModel(Items.CLOCK, "clock");
 		this.addModel(Items.GLOWSTONE_DUST, "glowstone_dust");
 		this.addModel(Items.RAW_FISH, FishItem.FishType.COD.getId(), "cod");
@@ -851,13 +866,14 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.GHAST_TEAR, "ghast_tear");
 		this.addModel(Items.GOLD_NUGGET, "gold_nugget");
 		this.addModel(Items.NETHER_WART, "nether_wart");
-		this.models.putMesh(Items.POTION, new MeshDefinition() {
-			@Override
-			public ModelIdentifier getIdentifier(ItemStack stack) {
-				return PotionItem.isThrowable(stack.getData()) ? new ModelIdentifier("bottle_splash", "inventory") : new ModelIdentifier("bottle_drinkable", "inventory");
-			}
-		});
+		this.addModel(Items.BEETROOT, "beetroot");
+		this.addModel(Items.BEETROOT_SEED, "beetroot_seeds");
+		this.addModel(Items.BEETROOT_SOUP, "beetroot_soup");
+		this.addModel(Items.POTION, "bottle_drinkable");
+		this.addModel(Items.SPLASH_POTION, "bottle_splash");
+		this.addModel(Items.LINGERING_POTION, "bottle_lingering");
 		this.addModel(Items.GLASS_BOTTLE, "glass_bottle");
+		this.addModel(Items.DRAGON_BREATH, "dragon_breath");
 		this.addModel(Items.SPIDER_EYE, "spider_eye");
 		this.addModel(Items.FERMENTED_SPIDER_EYE, "fermented_spider_eye");
 		this.addModel(Items.BLAZE_POWDER, "blaze_powder");
@@ -889,8 +905,10 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Items.SKULL, 2, "skull_zombie");
 		this.addModel(Items.SKULL, 3, "skull_char");
 		this.addModel(Items.SKULL, 4, "skull_creeper");
+		this.addModel(Items.SKULL, 5, "skull_dragon");
 		this.addModel(Items.CARROT_ON_A_STICK, "carrot_on_a_stick");
 		this.addModel(Items.NETHER_STAR, "nether_star");
+		this.addModel(Items.END_CRYSTAL, "end_crystal");
 		this.addModel(Items.PUMPKIN_PIE, "pumpkin_pie");
 		this.addModel(Items.FIREWORK_CHARGE, "firework_charge");
 		this.addModel(Items.COMPARATOR, "comparator");
@@ -910,6 +928,15 @@ public class ItemRenderer implements ResourceReloadListener {
 				return new ModelIdentifier("banner", "inventory");
 			}
 		});
+		this.models.putMesh(Items.SHIELD, new MeshDefinition() {
+			@Override
+			public ModelIdentifier getIdentifier(ItemStack stack) {
+				return new ModelIdentifier("shield", "inventory");
+			}
+		});
+		this.addModel(Items.ELYTRA, "elytra");
+		this.addModel(Items.CHORUS_FRUIT, "chorus_fruit");
+		this.addModel(Items.CHORUS_FRUIT_POPPED, "chorus_fruit_popped");
 		this.addModel(Items.RECORD_13, "record_13");
 		this.addModel(Items.RECORD_CAT, "record_cat");
 		this.addModel(Items.RECORD_BLOCKS, "record_blocks");
@@ -945,6 +972,12 @@ public class ItemRenderer implements ResourceReloadListener {
 		this.addModel(Blocks.BROWN_MUSHROOM_BLOCK, MushroomBlock.MushroomType.ALL_INSIDE.getId(), "brown_mushroom_block");
 		this.addModel(Blocks.RED_MUSHROOM_BLOCK, MushroomBlock.MushroomType.ALL_INSIDE.getId(), "red_mushroom_block");
 		this.addModel(Blocks.DRAGON_EGG, "dragon_egg");
+		this.addModel(Blocks.REPEATING_COMMAND_BLOCK, "repeating_command_block");
+		this.addModel(Blocks.CHAIN_COMMAND_BLOCK, "chain_command_block");
+		this.addModel(Blocks.STRUCTURE_BLOCK, StructureBlockEntity.class_2739.SAVE.method_11684(), "structure_block");
+		this.addModel(Blocks.STRUCTURE_BLOCK, StructureBlockEntity.class_2739.LOAD.method_11684(), "structure_block");
+		this.addModel(Blocks.STRUCTURE_BLOCK, StructureBlockEntity.class_2739.CORNER.method_11684(), "structure_block");
+		this.addModel(Blocks.STRUCTURE_BLOCK, StructureBlockEntity.class_2739.DATA.method_11684(), "structure_block");
 	}
 
 	@Override

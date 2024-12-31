@@ -1,6 +1,7 @@
 package net.minecraft.client.particle;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.world.World;
 
@@ -16,9 +17,9 @@ public class BlockParticle extends BlockDustParticle {
 		@Override
 		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
 			BlockState blockState = Block.getStateFromRawId(arr[0]);
-			return blockState.getBlock().getBlockType() == -1
+			return blockState.getRenderType() == BlockRenderType.INVISIBLE
 				? null
-				: new BlockParticle(world, x, y, z, velocityX, velocityY, velocityZ, blockState).setBlockPosFromPosition();
+				: new BlockParticle(world, x, y, z, velocityX, velocityY, velocityZ, blockState).method_12262();
 		}
 	}
 }

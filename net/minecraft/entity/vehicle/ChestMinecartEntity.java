@@ -56,6 +56,7 @@ public class ChestMinecartEntity extends StorageMinecartEntity {
 
 	@Override
 	public ScreenHandler createScreenHandler(PlayerInventory inventory, PlayerEntity player) {
+		this.generateLoot(player);
 		return new ChestScreenHandler(inventory, this, player);
 	}
 }

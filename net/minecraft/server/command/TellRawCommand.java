@@ -1,18 +1,18 @@
 package net.minecraft.server.command;
 
 import com.google.gson.JsonParseException;
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.IncorrectUsageException;
-import net.minecraft.command.SyntaxException;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.util.ChatSerializer;
 import net.minecraft.util.math.BlockPos;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class TellRawCommand extends AbstractCommand {
 	@Override
@@ -31,26 +31,25 @@ public class TellRawCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 2) {
 			throw new IncorrectUsageException("commands.tellraw.usage");
 		} else {
-			PlayerEntity playerEntity = getPlayer(source, args[0]);
+			PlayerEntity playerEntity = method_4639(minecraftServer, commandSource, args[0]);
 			String string = method_10706(args, 1);
 
 			try {
-				Text text = Text.Serializer.deserialize(string);
-				playerEntity.sendMessage(ChatSerializer.process(source, text, playerEntity));
+				Text text = Text.Serializer.deserializeText(string);
+				playerEntity.sendMessage(ChatSerializer.process(commandSource, text, playerEntity));
 			} catch (JsonParseException var7) {
-				Throwable throwable = ExceptionUtils.getRootCause(var7);
-				throw new SyntaxException("commands.tellraw.jsonException", throwable == null ? "" : throwable.getMessage());
+				throw method_12701(var7);
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, MinecraftServer.getServer().getPlayerNames()) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
 	}
 
 	@Override

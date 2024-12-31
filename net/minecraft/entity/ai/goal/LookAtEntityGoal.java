@@ -70,7 +70,9 @@ public class LookAtEntityGoal extends Goal {
 	public void tick() {
 		this.mob
 			.getLookControl()
-			.lookAt(this.target.x, this.target.y + (double)this.target.getEyeHeight(), this.target.z, 10.0F, (float)this.mob.getLookPitchSpeed());
+			.lookAt(
+				this.target.x, this.target.y + (double)this.target.getEyeHeight(), this.target.z, (float)this.mob.method_13081(), (float)this.mob.getLookPitchSpeed()
+			);
 		this.lookTime--;
 	}
 }

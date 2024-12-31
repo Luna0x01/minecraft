@@ -1,7 +1,12 @@
 package net.minecraft.entity;
 
-public interface Tameable {
-	String getOwnerId();
+import java.util.UUID;
+import javax.annotation.Nullable;
 
+public interface Tameable {
+	@Nullable
+	UUID method_2719();
+
+	@Nullable
 	Entity getOwner();
 }

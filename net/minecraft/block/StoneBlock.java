@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -31,6 +32,7 @@ public class StoneBlock extends Block {
 		return ((StoneBlock.StoneType)state.get(VARIANT)).getColor();
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return state.get(VARIANT) == StoneBlock.StoneType.STONE ? Item.fromBlock(Blocks.COBBLESTONE) : Item.fromBlock(Blocks.STONE);

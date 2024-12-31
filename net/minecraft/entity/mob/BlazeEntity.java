@@ -1,5 +1,6 @@
 package net.minecraft.entity.mob;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -9,12 +10,18 @@ import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
+import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -22,11 +29,20 @@ import net.minecraft.world.World;
 public class BlazeEntity extends HostileEntity {
 	private float eyeOffset = 0.5F;
 	private int eyeOffsetCooldown;
+	private static final TrackedData<Byte> field_14744 = DataTracker.registerData(BlazeEntity.class, TrackedDataHandlerRegistry.BYTE);
 
 	public BlazeEntity(World world) {
 		super(world);
+		this.method_13076(LandType.WATER, -1.0F);
+		this.method_13076(LandType.LAVA, 8.0F);
+		this.method_13076(LandType.DANGER_FIRE, 0.0F);
+		this.method_13076(LandType.DAMAGE_FIRE, 0.0F);
 		this.isFireImmune = true;
 		this.experiencePoints = 10;
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(4, new BlazeEntity.ShootFireballGoal(this));
 		this.goals.add(5, new GoToWalkTargetGoal(this, 1.0));
 		this.goals.add(7, new WanderAroundGoal(this, 1.0));
@@ -47,22 +63,22 @@ public class BlazeEntity extends HostileEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(16, new Byte((byte)0));
+		this.dataTracker.startTracking(field_14744, (byte)0);
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.blaze.breathe";
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_BLAZE_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.blaze.hit";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_BLAZE_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.blaze.death";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_BLAZE_DEATH;
 	}
 
 	@Override
@@ -83,7 +99,17 @@ public class BlazeEntity extends HostileEntity {
 
 		if (this.world.isClient) {
 			if (this.random.nextInt(24) == 0 && !this.isSilent()) {
-				this.world.playSound(this.x + 0.5, this.y + 0.5, this.z + 0.5, "fire.fire", 1.0F + this.random.nextFloat(), this.random.nextFloat() * 0.7F + 0.3F, false);
+				this.world
+					.playSound(
+						this.x + 0.5,
+						this.y + 0.5,
+						this.z + 0.5,
+						Sounds.ENTITY_BLAZE_BURN,
+						this.getSoundCategory(),
+						1.0F + this.random.nextFloat(),
+						this.random.nextFloat() * 0.7F + 0.3F,
+						false
+					);
 			}
 
 			for (int i = 0; i < 2; i++) {
@@ -129,39 +155,29 @@ public class BlazeEntity extends HostileEntity {
 	}
 
 	@Override
-	protected Item getDefaultDrop() {
-		return Items.BLAZE_ROD;
-	}
-
-	@Override
 	public boolean isOnFire() {
 		return this.isFireActive();
 	}
 
+	@Nullable
 	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		if (allowDrops) {
-			int i = this.random.nextInt(2 + lootingMultiplier);
-
-			for (int j = 0; j < i; j++) {
-				this.dropItem(Items.BLAZE_ROD, 1);
-			}
-		}
+	protected Identifier getLootTableId() {
+		return LootTables.BLAZE_ENTITIE;
 	}
 
 	public boolean isFireActive() {
-		return (this.dataTracker.getByte(16) & 1) != 0;
+		return (this.dataTracker.get(field_14744) & 1) != 0;
 	}
 
 	public void setFireActive(boolean value) {
-		byte b = this.dataTracker.getByte(16);
+		byte b = this.dataTracker.get(field_14744);
 		if (value) {
 			b = (byte)(b | 1);
 		} else {
 			b = (byte)(b & -2);
 		}
 
-		this.dataTracker.setProperty(16, b);
+		this.dataTracker.set(field_14744, b);
 	}
 
 	@Override
@@ -226,7 +242,7 @@ public class BlazeEntity extends HostileEntity {
 
 					if (this.fireballsFired > 1) {
 						float h = MathHelper.sqrt(MathHelper.sqrt(d)) * 0.5F;
-						this.blaze.world.syncWorldEvent(null, 1009, new BlockPos((int)this.blaze.x, (int)this.blaze.y, (int)this.blaze.z), 0);
+						this.blaze.world.syncWorldEvent(null, 1018, new BlockPos((int)this.blaze.x, (int)this.blaze.y, (int)this.blaze.z), 0);
 
 						for (int i = 0; i < 1; i++) {
 							SmallFireballEntity smallFireballEntity = new SmallFireballEntity(

@@ -1,5 +1,8 @@
 package net.minecraft.entity.ai.goal;
 
+import com.google.common.collect.Sets;
+import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.player.PlayerEntity;
@@ -17,14 +20,17 @@ public class TemptGoal extends Goal {
 	private PlayerEntity closestPlayer;
 	private int cooldown;
 	private boolean active;
-	private Item food;
+	private Set<Item> field_14593;
 	private boolean canBeScared;
-	private boolean field_3620;
 
 	public TemptGoal(PathAwareEntity pathAwareEntity, double d, Item item, boolean bl) {
+		this(pathAwareEntity, d, bl, Sets.newHashSet(new Item[]{item}));
+	}
+
+	public TemptGoal(PathAwareEntity pathAwareEntity, double d, boolean bl, Set<Item> set) {
 		this.mob = pathAwareEntity;
 		this.speed = d;
-		this.food = item;
+		this.field_14593 = set;
 		this.canBeScared = bl;
 		this.setCategoryBits(3);
 		if (!(pathAwareEntity.getNavigation() instanceof MobNavigation)) {
@@ -39,13 +45,14 @@ public class TemptGoal extends Goal {
 			return false;
 		} else {
 			this.closestPlayer = this.mob.world.getClosestPlayer(this.mob, 10.0);
-			if (this.closestPlayer == null) {
-				return false;
-			} else {
-				ItemStack itemStack = this.closestPlayer.getMainHandStack();
-				return itemStack == null ? false : itemStack.getItem() == this.food;
-			}
+			return this.closestPlayer == null
+				? false
+				: this.method_13103(this.closestPlayer.getMainHandStack()) || this.method_13103(this.closestPlayer.getOffHandStack());
 		}
+	}
+
+	protected boolean method_13103(@Nullable ItemStack itemStack) {
+		return itemStack == null ? false : this.field_14593.contains(itemStack.getItem());
 	}
 
 	@Override
@@ -78,8 +85,6 @@ public class TemptGoal extends Goal {
 		this.lastPlayerY = this.closestPlayer.y;
 		this.lastPlayerZ = this.closestPlayer.z;
 		this.active = true;
-		this.field_3620 = ((MobNavigation)this.mob.getNavigation()).method_11032();
-		((MobNavigation)this.mob.getNavigation()).method_11027(false);
 	}
 
 	@Override
@@ -88,12 +93,11 @@ public class TemptGoal extends Goal {
 		this.mob.getNavigation().stop();
 		this.cooldown = 100;
 		this.active = false;
-		((MobNavigation)this.mob.getNavigation()).method_11027(this.field_3620);
 	}
 
 	@Override
 	public void tick() {
-		this.mob.getLookControl().lookAt(this.closestPlayer, 30.0F, (float)this.mob.getLookPitchSpeed());
+		this.mob.getLookControl().lookAt(this.closestPlayer, (float)(this.mob.method_13081() + 20), (float)this.mob.getLookPitchSpeed());
 		if (this.mob.squaredDistanceTo(this.closestPlayer) < 6.25) {
 			this.mob.getNavigation().stop();
 		} else {

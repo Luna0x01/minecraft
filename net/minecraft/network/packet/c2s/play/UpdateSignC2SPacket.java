@@ -9,25 +9,23 @@ import net.minecraft.util.math.BlockPos;
 
 public class UpdateSignC2SPacket implements Packet<ServerPlayPacketListener> {
 	private BlockPos signPos;
-	private Text[] text;
+	private String[] text;
 
 	public UpdateSignC2SPacket() {
 	}
 
 	public UpdateSignC2SPacket(BlockPos blockPos, Text[] texts) {
 		this.signPos = blockPos;
-		this.text = new Text[]{texts[0], texts[1], texts[2], texts[3]};
+		this.text = new String[]{texts[0].asUnformattedString(), texts[1].asUnformattedString(), texts[2].asUnformattedString(), texts[3].asUnformattedString()};
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.signPos = buf.readBlockPos();
-		this.text = new Text[4];
+		this.text = new String[4];
 
 		for (int i = 0; i < 4; i++) {
-			String string = buf.readString(384);
-			Text text = Text.Serializer.deserialize(string);
-			this.text[i] = text;
+			this.text[i] = buf.readString(384);
 		}
 	}
 
@@ -36,9 +34,7 @@ public class UpdateSignC2SPacket implements Packet<ServerPlayPacketListener> {
 		buf.writeBlockPos(this.signPos);
 
 		for (int i = 0; i < 4; i++) {
-			Text text = this.text[i];
-			String string = Text.Serializer.serialize(text);
-			buf.writeString(string);
+			buf.writeString(this.text[i]);
 		}
 	}
 
@@ -50,7 +46,7 @@ public class UpdateSignC2SPacket implements Packet<ServerPlayPacketListener> {
 		return this.signPos;
 	}
 
-	public Text[] getText() {
+	public String[] method_10729() {
 		return this.text;
 	}
 }

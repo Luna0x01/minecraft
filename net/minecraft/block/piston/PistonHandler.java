@@ -3,6 +3,7 @@ package net.minecraft.block.piston;
 import com.google.common.collect.Lists;
 import java.util.List;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PistonBlock;
 import net.minecraft.block.material.Material;
@@ -33,9 +34,9 @@ public class PistonHandler {
 	public boolean calculatePush() {
 		this.movedBlocks.clear();
 		this.brokenBlocks.clear();
-		Block block = this.world.getBlockState(this.posTo).getBlock();
-		if (!PistonBlock.isMovable(block, this.world, this.posTo, this.direction, false)) {
-			if (block.getPistonInteractionType() != 1) {
+		BlockState blockState = this.world.getBlockState(this.posTo);
+		if (!PistonBlock.method_9001(blockState, this.world, this.posTo, this.direction, false)) {
+			if (blockState.getPistonBehavior() != PistonBehavior.DESTROY) {
 				return false;
 			} else {
 				this.brokenBlocks.add(this.posTo);
@@ -56,10 +57,11 @@ public class PistonHandler {
 	}
 
 	private boolean tryMove(BlockPos pos) {
-		Block block = this.world.getBlockState(pos).getBlock();
-		if (block.getMaterial() == Material.AIR) {
+		BlockState blockState = this.world.getBlockState(pos);
+		Block block = blockState.getBlock();
+		if (blockState.getMaterial() == Material.AIR) {
 			return true;
-		} else if (!PistonBlock.isMovable(block, this.world, pos, this.direction, false)) {
+		} else if (!PistonBlock.method_9001(blockState, this.world, pos, this.direction, false)) {
 			return true;
 		} else if (pos.equals(this.posFrom)) {
 			return true;
@@ -72,8 +74,11 @@ public class PistonHandler {
 			} else {
 				while (block == Blocks.SLIME_BLOCK) {
 					BlockPos blockPos = pos.offset(this.direction.getOpposite(), i);
-					block = this.world.getBlockState(blockPos).getBlock();
-					if (block.getMaterial() == Material.AIR || !PistonBlock.isMovable(block, this.world, blockPos, this.direction, false) || blockPos.equals(this.posFrom)) {
+					blockState = this.world.getBlockState(blockPos);
+					block = blockState.getBlock();
+					if (blockState.getMaterial() == Material.AIR
+						|| !PistonBlock.method_9001(blockState, this.world, blockPos, this.direction, false)
+						|| blockPos.equals(this.posFrom)) {
 						break;
 					}
 
@@ -107,16 +112,16 @@ public class PistonHandler {
 						return true;
 					}
 
-					block = this.world.getBlockState(blockPos2).getBlock();
-					if (block.getMaterial() == Material.AIR) {
+					blockState = this.world.getBlockState(blockPos2);
+					if (blockState.getMaterial() == Material.AIR) {
 						return true;
 					}
 
-					if (!PistonBlock.isMovable(block, this.world, blockPos2, this.direction, true) || blockPos2.equals(this.posFrom)) {
+					if (!PistonBlock.method_9001(blockState, this.world, blockPos2, this.direction, true) || blockPos2.equals(this.posFrom)) {
 						return false;
 					}
 
-					if (block.getPistonInteractionType() == 1) {
+					if (blockState.getPistonBehavior() == PistonBehavior.DESTROY) {
 						this.brokenBlocks.add(blockPos2);
 						return true;
 					}

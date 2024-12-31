@@ -1,15 +1,13 @@
 package net.minecraft.entity.passive;
 
 import com.google.common.base.Predicate;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.FlowerBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.GoToEntityTargetGoal;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
@@ -21,22 +19,27 @@ import net.minecraft.entity.ai.goal.MoveThroughVillageGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.TrackIronGolemTargetGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
-import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
 
 public class IronGolemEntity extends GolemEntity {
+	protected static final TrackedData<Byte> field_14623 = DataTracker.registerData(IronGolemEntity.class, TrackedDataHandlerRegistry.BYTE);
 	private int field_3724;
 	Village village;
 	private int attackTicksLeft;
@@ -44,8 +47,11 @@ public class IronGolemEntity extends GolemEntity {
 
 	public IronGolemEntity(World world) {
 		super(world);
-		this.setBounds(1.4F, 2.9F);
-		((MobNavigation)this.getNavigation()).method_11027(true);
+		this.setBounds(1.4F, 2.7F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(1, new MeleeAttackGoal(this, 1.0, true));
 		this.goals.add(2, new GoToEntityTargetGoal(this, 0.9, 32.0F));
 		this.goals.add(3, new MoveThroughVillageGoal(this, 0.6, true));
@@ -56,13 +62,17 @@ public class IronGolemEntity extends GolemEntity {
 		this.goals.add(8, new LookAroundGoal(this));
 		this.attackGoals.add(1, new TrackIronGolemTargetGoal(this));
 		this.attackGoals.add(2, new RevengeGoal(this, false));
-		this.attackGoals.add(3, new IronGolemEntity.IronGolemFollowTargetGoal(this, MobEntity.class, 10, false, true, Monster.VISIBLE_MONSTER_PREDICATE));
+		this.attackGoals.add(3, new FollowTargetGoal(this, MobEntity.class, 10, false, true, new Predicate<MobEntity>() {
+			public boolean apply(@Nullable MobEntity mobEntity) {
+				return mobEntity != null && Monster.VISIBLE_MONSTER_PREDICATE.apply(mobEntity) && !(mobEntity instanceof CreeperEntity);
+			}
+		}));
 	}
 
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(16, (byte)0);
+		this.dataTracker.startTracking(field_14623, (byte)0);
 	}
 
 	@Override
@@ -86,6 +96,7 @@ public class IronGolemEntity extends GolemEntity {
 		super.initializeAttributes();
 		this.initializeAttribute(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(100.0);
 		this.initializeAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.25);
+		this.initializeAttribute(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(1.0);
 	}
 
 	@Override
@@ -118,8 +129,7 @@ public class IronGolemEntity extends GolemEntity {
 			int j = MathHelper.floor(this.y - 0.2F);
 			int k = MathHelper.floor(this.z);
 			BlockState blockState = this.world.getBlockState(new BlockPos(i, j, k));
-			Block block = blockState.getBlock();
-			if (block.getMaterial() != Material.AIR) {
+			if (blockState.getMaterial() != Material.AIR) {
 				this.world
 					.addParticle(
 						ParticleType.BLOCK_CRACK,
@@ -166,7 +176,7 @@ public class IronGolemEntity extends GolemEntity {
 			this.dealDamage(this, target);
 		}
 
-		this.playSound("mob.irongolem.throw", 1.0F, 1.0F);
+		this.playSound(Sounds.ENTITY_IRONGOLEM_ATTACK, 1.0F, 1.0F);
 		return bl;
 	}
 
@@ -174,7 +184,7 @@ public class IronGolemEntity extends GolemEntity {
 	public void handleStatus(byte status) {
 		if (status == 4) {
 			this.attackTicksLeft = 10;
-			this.playSound("mob.irongolem.throw", 1.0F, 1.0F);
+			this.playSound(Sounds.ENTITY_IRONGOLEM_ATTACK, 1.0F, 1.0F);
 		} else if (status == 11) {
 			this.lookingAtVillagerTicksLeft = 400;
 		} else {
@@ -196,33 +206,24 @@ public class IronGolemEntity extends GolemEntity {
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.irongolem.hit";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_IRONGOLEM_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.irongolem.death";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_IRONGOLEM_DEATH;
 	}
 
 	@Override
 	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound("mob.irongolem.walk", 1.0F, 1.0F);
+		this.playSound(Sounds.ENTITY_IRONGOLEM_STEP, 1.0F, 1.0F);
 	}
 
+	@Nullable
 	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		int i = this.random.nextInt(3);
-
-		for (int j = 0; j < i; j++) {
-			this.dropItem(Item.fromBlock(Blocks.RED_FLOWER), 1, (float)FlowerBlock.FlowerType.POPPY.getDataIndex());
-		}
-
-		int k = 3 + this.random.nextInt(3);
-
-		for (int l = 0; l < k; l++) {
-			this.dropItem(Items.IRON_INGOT, 1);
-		}
+	protected Identifier getLootTableId() {
+		return LootTables.IRON_GOLEM_ENTITIE;
 	}
 
 	public int getLookingAtVillagerTicks() {
@@ -230,15 +231,15 @@ public class IronGolemEntity extends GolemEntity {
 	}
 
 	public boolean isPlayerCreated() {
-		return (this.dataTracker.getByte(16) & 1) != 0;
+		return (this.dataTracker.get(field_14623) & 1) != 0;
 	}
 
 	public void setPlayerCreated(boolean playerCreated) {
-		byte b = this.dataTracker.getByte(16);
+		byte b = this.dataTracker.get(field_14623);
 		if (playerCreated) {
-			this.dataTracker.setProperty(16, (byte)(b | 1));
+			this.dataTracker.set(field_14623, (byte)(b | 1));
 		} else {
-			this.dataTracker.setProperty(16, (byte)(b & -2));
+			this.dataTracker.set(field_14623, (byte)(b & -2));
 		}
 	}
 
@@ -249,42 +250,5 @@ public class IronGolemEntity extends GolemEntity {
 		}
 
 		super.onKilled(source);
-	}
-
-	static class IronGolemFollowTargetGoal<T extends LivingEntity> extends FollowTargetGoal<T> {
-		public IronGolemFollowTargetGoal(PathAwareEntity pathAwareEntity, Class<T> class_, int i, boolean bl, boolean bl2, Predicate<? super T> predicate) {
-			super(pathAwareEntity, class_, i, bl, bl2, predicate);
-			this.targetPredicate = new Predicate<T>() {
-				public boolean apply(T livingEntity) {
-					if (predicate != null && !predicate.apply(livingEntity)) {
-						return false;
-					} else if (livingEntity instanceof CreeperEntity) {
-						return false;
-					} else {
-						if (livingEntity instanceof PlayerEntity) {
-							double d = IronGolemFollowTargetGoal.this.getFollowRange();
-							if (livingEntity.isSneaking()) {
-								d *= 0.8F;
-							}
-
-							if (livingEntity.isInvisible()) {
-								float f = ((PlayerEntity)livingEntity).method_4575();
-								if (f < 0.1F) {
-									f = 0.1F;
-								}
-
-								d *= (double)(0.7F * f);
-							}
-
-							if ((double)livingEntity.distanceTo(pathAwareEntity) > d) {
-								return false;
-							}
-						}
-
-						return IronGolemFollowTargetGoal.this.canTrack(livingEntity, false);
-					}
-				}
-			};
-		}
 	}
 }

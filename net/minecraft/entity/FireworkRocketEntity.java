@@ -1,12 +1,20 @@
 package net.minecraft.entity;
 
+import com.google.common.base.Optional;
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FireworkRocketEntity extends Entity {
+	private static final TrackedData<Optional<ItemStack>> ITEM = DataTracker.registerData(FireworkRocketEntity.class, TrackedDataHandlerRegistry.ITEM_STACK);
 	private int life;
 	private int lifeTime;
 
@@ -17,7 +25,7 @@ public class FireworkRocketEntity extends Entity {
 
 	@Override
 	protected void initDataTracker() {
-		this.dataTracker.addEntry(8, 5);
+		this.dataTracker.startTracking(ITEM, Optional.absent());
 	}
 
 	@Override
@@ -25,19 +33,17 @@ public class FireworkRocketEntity extends Entity {
 		return distance < 4096.0;
 	}
 
-	public FireworkRocketEntity(World world, double d, double e, double f, ItemStack itemStack) {
+	public FireworkRocketEntity(World world, double d, double e, double f, @Nullable ItemStack itemStack) {
 		super(world);
 		this.life = 0;
 		this.setBounds(0.25F, 0.25F);
 		this.updatePosition(d, e, f);
 		int i = 1;
 		if (itemStack != null && itemStack.hasNbt()) {
-			this.dataTracker.setProperty(8, itemStack);
+			this.dataTracker.set(ITEM, Optional.of(itemStack));
 			NbtCompound nbtCompound = itemStack.getNbt();
 			NbtCompound nbtCompound2 = nbtCompound.getCompound("Fireworks");
-			if (nbtCompound2 != null) {
-				i += nbtCompound2.getByte("Flight");
-			}
+			i += nbtCompound2.getByte("Flight");
 		}
 
 		this.velocityX = this.random.nextGaussian() * 0.001;
@@ -53,8 +59,8 @@ public class FireworkRocketEntity extends Entity {
 		this.velocityZ = z;
 		if (this.prevPitch == 0.0F && this.prevYaw == 0.0F) {
 			float f = MathHelper.sqrt(x * x + z * z);
-			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0 / (float) Math.PI);
-			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0 / (float) Math.PI);
+			this.prevYaw = this.yaw = (float)(MathHelper.atan2(x, z) * 180.0F / (float)Math.PI);
+			this.prevPitch = this.pitch = (float)(MathHelper.atan2(y, (double)f) * 180.0F / (float)Math.PI);
 		}
 	}
 
@@ -69,8 +75,8 @@ public class FireworkRocketEntity extends Entity {
 		this.velocityY += 0.04;
 		this.move(this.velocityX, this.velocityY, this.velocityZ);
 		float f = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-		this.yaw = (float)(MathHelper.atan2(this.velocityX, this.velocityZ) * 180.0 / (float) Math.PI);
-		this.pitch = (float)(MathHelper.atan2(this.velocityY, (double)f) * 180.0 / (float) Math.PI);
+		this.yaw = (float)(MathHelper.atan2(this.velocityX, this.velocityZ) * 180.0F / (float)Math.PI);
+		this.pitch = (float)(MathHelper.atan2(this.velocityY, (double)f) * 180.0F / (float)Math.PI);
 
 		while (this.pitch - this.prevPitch < -180.0F) {
 			this.prevPitch -= 360.0F;
@@ -91,7 +97,7 @@ public class FireworkRocketEntity extends Entity {
 		this.pitch = this.prevPitch + (this.pitch - this.prevPitch) * 0.2F;
 		this.yaw = this.prevYaw + (this.yaw - this.prevYaw) * 0.2F;
 		if (this.life == 0 && !this.isSilent()) {
-			this.world.playSound(this, "fireworks.launch", 3.0F, 1.0F);
+			this.world.playSound(null, this.x, this.y, this.z, Sounds.ENTITY_FIREWORK_LAUNCH, SoundCategory.AMBIENT, 3.0F, 1.0F);
 		}
 
 		this.life++;
@@ -111,7 +117,7 @@ public class FireworkRocketEntity extends Entity {
 	@Override
 	public void handleStatus(byte status) {
 		if (status == 17 && this.world.isClient) {
-			ItemStack itemStack = this.dataTracker.getStack(8);
+			ItemStack itemStack = (ItemStack)this.dataTracker.get(ITEM).orNull();
 			NbtCompound nbtCompound = null;
 			if (itemStack != null && itemStack.hasNbt()) {
 				nbtCompound = itemStack.getNbt().getCompound("Fireworks");
@@ -127,10 +133,9 @@ public class FireworkRocketEntity extends Entity {
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putInt("Life", this.life);
 		nbt.putInt("LifeTime", this.lifeTime);
-		ItemStack itemStack = this.dataTracker.getStack(8);
+		ItemStack itemStack = (ItemStack)this.dataTracker.get(ITEM).orNull();
 		if (itemStack != null) {
-			NbtCompound nbtCompound = new NbtCompound();
-			itemStack.toNbt(nbtCompound);
+			NbtCompound nbtCompound = itemStack.toNbt(new NbtCompound());
 			nbt.put("FireworksItem", nbtCompound);
 		}
 	}
@@ -143,7 +148,7 @@ public class FireworkRocketEntity extends Entity {
 		if (nbtCompound != null) {
 			ItemStack itemStack = ItemStack.fromNbt(nbtCompound);
 			if (itemStack != null) {
-				this.dataTracker.setProperty(8, itemStack);
+				this.dataTracker.set(ITEM, Optional.of(itemStack));
 			}
 		}
 	}

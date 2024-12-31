@@ -2,6 +2,7 @@ package net.minecraft.world.gen.feature;
 
 import java.util.Random;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.util.math.BlockPos;
@@ -35,14 +36,16 @@ public class IceSpikeFeature extends Feature {
 					for (int n = -l; n <= l; n++) {
 						float h = (float)MathHelper.abs(n) - 0.25F;
 						if ((m == 0 && n == 0 || !(g * g + h * h > f * f)) && (m != -l && m != l && n != -l && n != l || !(random.nextFloat() > 0.75F))) {
-							Block block = world.getBlockState(blockPos.add(m, k, n)).getBlock();
-							if (block.getMaterial() == Material.AIR || block == Blocks.DIRT || block == Blocks.SNOW || block == Blocks.ICE) {
+							BlockState blockState = world.getBlockState(blockPos.add(m, k, n));
+							Block block = blockState.getBlock();
+							if (blockState.getMaterial() == Material.AIR || block == Blocks.DIRT || block == Blocks.SNOW || block == Blocks.ICE) {
 								this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.add(m, k, n), Blocks.PACKED_ICE.getDefaultState());
 							}
 
 							if (k != 0 && l > 1) {
-								block = world.getBlockState(blockPos.add(m, -k, n)).getBlock();
-								if (block.getMaterial() == Material.AIR || block == Blocks.DIRT || block == Blocks.SNOW || block == Blocks.ICE) {
+								blockState = world.getBlockState(blockPos.add(m, -k, n));
+								block = blockState.getBlock();
+								if (blockState.getMaterial() == Material.AIR || block == Blocks.DIRT || block == Blocks.SNOW || block == Blocks.ICE) {
 									this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.add(m, -k, n), Blocks.PACKED_ICE.getDefaultState());
 								}
 							}
@@ -67,8 +70,9 @@ public class IceSpikeFeature extends Feature {
 					}
 
 					while (blockPos2.getY() > 50) {
-						Block block2 = world.getBlockState(blockPos2).getBlock();
-						if (block2.getMaterial() != Material.AIR && block2 != Blocks.DIRT && block2 != Blocks.SNOW && block2 != Blocks.ICE && block2 != Blocks.PACKED_ICE) {
+						BlockState blockState2 = world.getBlockState(blockPos2);
+						Block block2 = blockState2.getBlock();
+						if (blockState2.getMaterial() != Material.AIR && block2 != Blocks.DIRT && block2 != Blocks.SNOW && block2 != Blocks.ICE && block2 != Blocks.PACKED_ICE) {
 							break;
 						}
 

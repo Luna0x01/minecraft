@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -28,13 +30,13 @@ public class DifficultyCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length <= 0) {
 			throw new IncorrectUsageException("commands.difficulty.usage");
 		} else {
 			Difficulty difficulty = this.method_6540(args[0]);
-			MinecraftServer.getServer().setDifficulty(difficulty);
-			run(source, this, "commands.difficulty.success", new Object[]{new TranslatableText(difficulty.getName())});
+			minecraftServer.setDifficulty(difficulty);
+			run(commandSource, this, "commands.difficulty.success", new Object[]{new TranslatableText(difficulty.getName())});
 		}
 	}
 
@@ -51,7 +53,7 @@ public class DifficultyCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, new String[]{"peaceful", "easy", "normal", "hard"}) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, new String[]{"peaceful", "easy", "normal", "hard"}) : Collections.emptyList();
 	}
 }

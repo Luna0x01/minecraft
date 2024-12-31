@@ -31,10 +31,12 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
+import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -50,6 +52,7 @@ import net.minecraft.util.ThreadExecutor;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.UserCache;
 import net.minecraft.util.Util;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.math.BlockPos;
@@ -76,9 +79,8 @@ import org.apache.logging.log4j.Logger;
 public abstract class MinecraftServer implements Runnable, CommandSource, ThreadExecutor, Snoopable {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final File USER_CACHE_FILE = new File("usercache.json");
-	private static MinecraftServer instance;
 	private final LevelStorageAccess saveStorage;
-	private final Snooper snooper = new Snooper("server", this, getTimeMillis());
+	private final Snooper field_13903 = new Snooper("server", this, getTimeMillis());
 	private final File gameDir;
 	private final List<Tickable> tickables = Lists.newArrayList();
 	protected final CommandRegistryProvider provider;
@@ -86,6 +88,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	private final ServerNetworkIo networkIo;
 	private final ServerMetadata serverMetadata = new ServerMetadata();
 	private final Random random = new Random();
+	private final DataFixerUpper dataFixer;
 	private int serverPort = -1;
 	public ServerWorld[] worlds;
 	private PlayerManager playerManager;
@@ -111,7 +114,6 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	private String displayName;
 	private boolean demo;
 	private boolean forceWorldUpgrade;
-	private boolean shouldResetWorld;
 	private String resourcePackUrl = "";
 	private String resourcePackHash = "";
 	private boolean loading;
@@ -121,41 +123,37 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	private boolean forceGameMode;
 	private final YggdrasilAuthenticationService authService;
 	private final MinecraftSessionService sessionService;
-	private long lastPlayerSampleUpdate = 0L;
 	private final GameProfileRepository gameProfileRepo;
 	private final UserCache userCache;
+	private long lastPlayerSampleUpdate = 0L;
 	protected final Queue<FutureTask<?>> queue = Queues.newArrayDeque();
 	private Thread serverThread;
 	private long timeReference = getTimeMillis();
+	private boolean field_13902;
 
-	public MinecraftServer(Proxy proxy, File file) {
+	public MinecraftServer(
+		File file,
+		Proxy proxy,
+		DataFixerUpper dataFixerUpper,
+		YggdrasilAuthenticationService yggdrasilAuthenticationService,
+		MinecraftSessionService minecraftSessionService,
+		GameProfileRepository gameProfileRepository,
+		UserCache userCache
+	) {
 		this.proxy = proxy;
-		instance = this;
-		this.gameDir = null;
-		this.networkIo = null;
-		this.userCache = new UserCache(this, file);
-		this.provider = null;
-		this.saveStorage = null;
-		this.authService = new YggdrasilAuthenticationService(proxy, UUID.randomUUID().toString());
-		this.sessionService = this.authService.createMinecraftSessionService();
-		this.gameProfileRepo = this.authService.createProfileRepository();
-	}
-
-	public MinecraftServer(File file, Proxy proxy, File file2) {
-		this.proxy = proxy;
-		instance = this;
+		this.authService = yggdrasilAuthenticationService;
+		this.sessionService = minecraftSessionService;
+		this.gameProfileRepo = gameProfileRepository;
+		this.userCache = userCache;
 		this.gameDir = file;
 		this.networkIo = new ServerNetworkIo(this);
-		this.userCache = new UserCache(this, file2);
 		this.provider = this.createCommandManager();
-		this.saveStorage = new AnvilLevelStorage(file);
-		this.authService = new YggdrasilAuthenticationService(proxy, UUID.randomUUID().toString());
-		this.sessionService = this.authService.createMinecraftSessionService();
-		this.gameProfileRepo = this.authService.createProfileRepository();
+		this.saveStorage = new AnvilLevelStorage(file, dataFixerUpper);
+		this.dataFixer = dataFixerUpper;
 	}
 
 	protected CommandManager createCommandManager() {
-		return new CommandManager();
+		return new CommandManager(this);
 	}
 
 	protected abstract boolean setupServer() throws IOException;
@@ -283,7 +281,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				}
 
 				m++;
-				serverWorld.chunkCache.getOrGenerateChunk(blockPos.getX() + p >> 4, blockPos.getZ() + q >> 4);
+				serverWorld.getChunkProvider().getOrGenerateChunks(blockPos.getX() + p >> 4, blockPos.getZ() + q >> 4);
 			}
 		}
 
@@ -293,7 +291,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	protected void loadResourcePack(String levelName, SaveHandler saveHandler) {
 		File file = new File(saveHandler.getWorldFolder(), "resources.zip");
 		if (file.isFile()) {
-			this.setResourcePack("level://" + levelName + "/" + file.getName(), "");
+			this.setResourcePack("level://" + levelName + "/" + "resources.zip", "");
 		}
 	}
 
@@ -322,50 +320,54 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.progress = 0;
 	}
 
-	protected void saveWorlds(boolean silent) {
-		if (!this.shouldResetWorld) {
-			for (ServerWorld serverWorld : this.worlds) {
-				if (serverWorld != null) {
-					if (!silent) {
-						LOGGER.info("Saving chunks for level '" + serverWorld.getLevelProperties().getLevelName() + "'/" + serverWorld.dimension.getName());
-					}
+	public void saveWorlds(boolean silent) {
+		for (ServerWorld serverWorld : this.worlds) {
+			if (serverWorld != null) {
+				if (!silent) {
+					LOGGER.info("Saving chunks for level '" + serverWorld.getLevelProperties().getLevelName() + "'/" + serverWorld.dimension.getDimensionType().getName());
+				}
 
-					try {
-						serverWorld.save(true, null);
-					} catch (WorldSaveException var7) {
-						LOGGER.warn(var7.getMessage());
-					}
+				try {
+					serverWorld.save(true, null);
+				} catch (WorldSaveException var7) {
+					LOGGER.warn(var7.getMessage());
 				}
 			}
 		}
 	}
 
 	public void stopServer() {
-		if (!this.shouldResetWorld) {
-			LOGGER.info("Stopping server");
-			if (this.getNetworkIo() != null) {
-				this.getNetworkIo().stop();
-			}
+		LOGGER.info("Stopping server");
+		if (this.getNetworkIo() != null) {
+			this.getNetworkIo().stop();
+		}
 
-			if (this.playerManager != null) {
-				LOGGER.info("Saving players");
-				this.playerManager.saveAllPlayerData();
-				this.playerManager.disconnectAllPlayers();
-			}
+		if (this.playerManager != null) {
+			LOGGER.info("Saving players");
+			this.playerManager.saveAllPlayerData();
+			this.playerManager.disconnectAllPlayers();
+		}
 
-			if (this.worlds != null) {
-				LOGGER.info("Saving worlds");
-				this.saveWorlds(false);
+		if (this.worlds != null) {
+			LOGGER.info("Saving worlds");
 
-				for (int i = 0; i < this.worlds.length; i++) {
-					ServerWorld serverWorld = this.worlds[i];
-					serverWorld.close();
+			for (int i = 0; i < this.worlds.length; i++) {
+				if (this.worlds[i] != null) {
+					this.worlds[i].savingDisabled = false;
 				}
 			}
 
-			if (this.snooper.isActive()) {
-				this.snooper.cancel();
+			this.saveWorlds(false);
+
+			for (int j = 0; j < this.worlds.length; j++) {
+				if (this.worlds[j] != null) {
+					this.worlds[j].close();
+				}
 			}
+		}
+
+		if (this.field_13903.isActive()) {
+			this.field_13903.cancel();
 		}
 	}
 
@@ -377,17 +379,13 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.running = false;
 	}
 
-	protected void setInstance() {
-		instance = this;
-	}
-
 	public void run() {
 		try {
 			if (this.setupServer()) {
 				this.timeReference = getTimeMillis();
 				long l = 0L;
 				this.serverMetadata.setDescription(new LiteralText(this.motd));
-				this.serverMetadata.setVersion(new ServerMetadata.Version("1.8.9", 47));
+				this.serverMetadata.setVersion(new ServerMetadata.Version("1.9.4", 110));
 				this.setServerMeta(this.serverMetadata);
 
 				while (this.running) {
@@ -453,8 +451,12 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		}
 	}
 
-	private void setServerMeta(ServerMetadata metadata) {
+	public void setServerMeta(ServerMetadata metadata) {
 		File file = this.getFile("server-icon.png");
+		if (!file.exists()) {
+			file = this.getSaveStorage().method_11957(this.getLevelName(), "icon.png");
+		}
+
 		if (file.isFile()) {
 			ByteBuf byteBuf = Unpooled.buffer();
 
@@ -471,6 +473,15 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				byteBuf.release();
 			}
 		}
+	}
+
+	public boolean method_12837() {
+		this.field_13902 = this.field_13902 || this.method_12838().isFile();
+		return this.field_13902;
+	}
+
+	public File method_12838() {
+		return this.getSaveStorage().method_11957(this.getLevelName(), "icon.png");
 	}
 
 	public File getRunDirectory() {
@@ -519,12 +530,12 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.lastTickLengths[this.ticks % 100] = System.nanoTime() - l;
 		this.profiler.pop();
 		this.profiler.push("snooper");
-		if (!this.snooper.isActive() && this.ticks > 100) {
-			this.snooper.setActive();
+		if (!this.field_13903.isActive() && this.ticks > 100) {
+			this.field_13903.setActive();
 		}
 
 		if (this.ticks % 6000 == 0) {
-			this.snooper.addCpuInfo();
+			this.field_13903.addCpuInfo();
 		}
 
 		this.profiler.pop();
@@ -551,7 +562,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 					this.playerManager
 						.sendToDimension(
 							new WorldTimeUpdateS2CPacket(serverWorld.getLastUpdateTime(), serverWorld.getTimeOfDay(), serverWorld.getGameRules().getBoolean("doDaylightCycle")),
-							serverWorld.dimension.getType()
+							serverWorld.dimension.getDimensionType().getId()
 						);
 					this.profiler.pop();
 				}
@@ -623,7 +634,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	public String getVersion() {
-		return "1.8.9";
+		return "1.9.4";
 	}
 
 	public int getCurrentPlayerCount() {
@@ -647,7 +658,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	public CrashReport populateCrashReport(CrashReport report) {
-		report.getSystemDetailsSection().add("Profiler Position", new Callable<String>() {
+		report.getSystemDetailsSection().add("Profiler Position", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return MinecraftServer.this.profiler.enabled ? MinecraftServer.this.profiler.getCurrentLocation() : "N/A (disabled)";
 			}
@@ -656,7 +667,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 			report.getSystemDetailsSection()
 				.add(
 					"Player Count",
-					new Callable<String>() {
+					new CrashCallable<String>() {
 						public String call() {
 							return MinecraftServer.this.playerManager.getCurrentPlayerCount()
 								+ " / "
@@ -671,39 +682,39 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		return report;
 	}
 
-	public List<String> getCompletions(CommandSource source, String partialCommand, BlockPos lookingAt) {
+	public List<String> method_12835(CommandSource commandSource, String string, @Nullable BlockPos blockPos, boolean bl) {
 		List<String> list = Lists.newArrayList();
-		if (partialCommand.startsWith("/")) {
-			partialCommand = partialCommand.substring(1);
-			boolean bl = !partialCommand.contains(" ");
-			List<String> list2 = this.provider.getCompletions(source, partialCommand, lookingAt);
-			if (list2 != null) {
-				for (String string : list2) {
-					if (bl) {
-						list.add("/" + string);
-					} else {
-						list.add(string);
-					}
+		boolean bl2 = string.startsWith("/");
+		if (bl2) {
+			string = string.substring(1);
+		}
+
+		if (!bl2 && !bl) {
+			String[] strings = string.split(" ", -1);
+			String string3 = strings[strings.length - 1];
+
+			for (String string4 : this.playerManager.getPlayerNames()) {
+				if (AbstractCommand.method_2883(string3, string4)) {
+					list.add(string4);
 				}
 			}
 
 			return list;
 		} else {
-			String[] strings = partialCommand.split(" ", -1);
-			String string2 = strings[strings.length - 1];
-
-			for (String string3 : this.playerManager.getPlayerNames()) {
-				if (AbstractCommand.method_2883(string2, string3)) {
-					list.add(string3);
+			boolean bl3 = !string.contains(" ");
+			List<String> list2 = this.provider.getCompletions(commandSource, string, blockPos);
+			if (!list2.isEmpty()) {
+				for (String string2 : list2) {
+					if (bl3) {
+						list.add("/" + string2);
+					} else {
+						list.add(string2);
+					}
 				}
 			}
 
 			return list;
 		}
-	}
-
-	public static MinecraftServer getServer() {
-		return instance;
 	}
 
 	public boolean hasGameDir() {
@@ -803,21 +814,6 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		return this.saveStorage;
 	}
 
-	public void method_2980() {
-		this.shouldResetWorld = true;
-		this.getSaveStorage().clearAll();
-
-		for (int i = 0; i < this.worlds.length; i++) {
-			ServerWorld serverWorld = this.worlds[i];
-			if (serverWorld != null) {
-				serverWorld.close();
-			}
-		}
-
-		this.getSaveStorage().deleteLevel(this.worlds[0].getSaveHandler().getWorldName());
-		this.stopRunning();
-	}
-
 	public String getResourcePackUrl() {
 		return this.resourcePackUrl;
 	}
@@ -851,14 +847,14 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 				if (this.worlds[j] != null) {
 					ServerWorld serverWorld = this.worlds[j];
 					LevelProperties levelProperties = serverWorld.getLevelProperties();
-					snooper.addGameInfo("world[" + i + "][dimension]", serverWorld.dimension.getType());
+					snooper.addGameInfo("world[" + i + "][dimension]", serverWorld.dimension.getDimensionType().getId());
 					snooper.addGameInfo("world[" + i + "][mode]", levelProperties.getGameMode());
 					snooper.addGameInfo("world[" + i + "][difficulty]", serverWorld.getGlobalDifficulty());
 					snooper.addGameInfo("world[" + i + "][hardcore]", levelProperties.isHardcore());
 					snooper.addGameInfo("world[" + i + "][generator_name]", levelProperties.getGeneratorType().getName());
 					snooper.addGameInfo("world[" + i + "][generator_version]", levelProperties.getGeneratorType().getVersion());
 					snooper.addGameInfo("world[" + i + "][height]", this.worldHeight);
-					snooper.addGameInfo("world[" + i + "][chunks_loaded]", serverWorld.getChunkProvider().getLoadedChunksCount());
+					snooper.addGameInfo("world[" + i + "][chunks_loaded]", serverWorld.getChunkProvider().method_3874());
 					i++;
 				}
 			}
@@ -956,7 +952,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 	public void setDefaultGameMode(LevelInfo.GameMode gamemode) {
 		for (int i = 0; i < this.worlds.length; i++) {
-			getServer().worlds[i].getLevelProperties().setGamemode(gamemode);
+			this.worlds[i].getLevelProperties().setGamemode(gamemode);
 		}
 	}
 
@@ -983,7 +979,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	}
 
 	public Snooper getSnooper() {
-		return this.snooper;
+		return this.field_13903;
 	}
 
 	@Override
@@ -993,7 +989,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 	@Override
 	public Vec3d getPos() {
-		return new Vec3d(0.0, 0.0, 0.0);
+		return Vec3d.ZERO;
 	}
 
 	@Override
@@ -1004,10 +1000,6 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 	@Override
 	public Entity getEntity() {
 		return null;
-	}
-
-	public int getSpawnProtectionRadius() {
-		return 16;
 	}
 
 	public boolean isSpawnProtected(World world, BlockPos pos, PlayerEntity player) {
@@ -1063,6 +1055,7 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 		this.lastPlayerSampleUpdate = 0L;
 	}
 
+	@Nullable
 	public Entity getEntity(UUID uUID) {
 		for (ServerWorld serverWorld : this.worlds) {
 			if (serverWorld != null) {
@@ -1078,11 +1071,16 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 	@Override
 	public boolean sendCommandFeedback() {
-		return getServer().worlds[0].getGameRules().getBoolean("sendCommandFeedback");
+		return this.worlds[0].getGameRules().getBoolean("sendCommandFeedback");
 	}
 
 	@Override
 	public void setStat(CommandStats.Type statsType, int value) {
+	}
+
+	@Override
+	public MinecraftServer getMinecraftServer() {
+		return this;
 	}
 
 	public int getMaxWorldBorderRadius() {
@@ -1119,5 +1117,13 @@ public abstract class MinecraftServer implements Runnable, CommandSource, Thread
 
 	public int getNetworkCompressionThreshold() {
 		return 256;
+	}
+
+	public DataFixerUpper method_12836() {
+		return this.dataFixer;
+	}
+
+	public int method_12834(@Nullable ServerWorld serverWorld) {
+		return serverWorld != null ? serverWorld.getGameRules().getInt("spawnRadius") : 10;
 	}
 }

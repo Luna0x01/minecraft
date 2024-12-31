@@ -6,7 +6,6 @@ import com.ibm.icu.text.Bidi;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -18,11 +17,11 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.texture.TextureUtil;
+import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
-import org.lwjgl.opengl.GL11;
 
 public class TextRenderer implements ResourceReloadListener {
 	private static final Identifier[] PAGES = new Identifier[256];
@@ -90,11 +89,16 @@ public class TextRenderer implements ResourceReloadListener {
 	}
 
 	private void init() {
+		Resource resource = null;
+
 		BufferedImage bufferedImage;
 		try {
-			bufferedImage = TextureUtil.create(MinecraftClient.getInstance().getResourceManager().getResource(this.fontTexture).getInputStream());
-		} catch (IOException var17) {
-			throw new RuntimeException(var17);
+			resource = MinecraftClient.getInstance().getResourceManager().getResource(this.fontTexture);
+			bufferedImage = TextureUtil.create(resource.getInputStream());
+		} catch (IOException var20) {
+			throw new RuntimeException(var20);
+		} finally {
+			IOUtils.closeQuietly(resource);
 		}
 
 		int i = bufferedImage.getWidth();
@@ -103,7 +107,7 @@ public class TextRenderer implements ResourceReloadListener {
 		bufferedImage.getRGB(0, 0, i, j, is, 0, i);
 		int k = j / 16;
 		int l = i / 16;
-		int m = 1;
+		byte m = 1;
 		float f = 8.0F / (float)l;
 
 		for (int n = 0; n < 256; n++) {
@@ -135,15 +139,15 @@ public class TextRenderer implements ResourceReloadListener {
 	}
 
 	private void readGlyphSizes() {
-		InputStream inputStream = null;
+		Resource resource = null;
 
 		try {
-			inputStream = MinecraftClient.getInstance().getResourceManager().getResource(new Identifier("font/glyph_sizes.bin")).getInputStream();
-			inputStream.read(this.glyphWidths);
+			resource = MinecraftClient.getInstance().getResourceManager().getResource(new Identifier("font/glyph_sizes.bin"));
+			resource.getInputStream().read(this.glyphWidths);
 		} catch (IOException var6) {
 			throw new RuntimeException(var6);
 		} finally {
-			IOUtils.closeQuietly(inputStream);
+			IOUtils.closeQuietly(resource);
 		}
 	}
 
@@ -164,16 +168,16 @@ public class TextRenderer implements ResourceReloadListener {
 		this.textureManager.bindTexture(this.fontTexture);
 		int l = this.characterWidths[characterIndex];
 		float f = (float)l - 0.01F;
-		GL11.glBegin(5);
-		GL11.glTexCoord2f((float)i / 128.0F, (float)j / 128.0F);
-		GL11.glVertex3f(this.x + (float)k, this.y, 0.0F);
-		GL11.glTexCoord2f((float)i / 128.0F, ((float)j + 7.99F) / 128.0F);
-		GL11.glVertex3f(this.x - (float)k, this.y + 7.99F, 0.0F);
-		GL11.glTexCoord2f(((float)i + f - 1.0F) / 128.0F, (float)j / 128.0F);
-		GL11.glVertex3f(this.x + f - 1.0F + (float)k, this.y, 0.0F);
-		GL11.glTexCoord2f(((float)i + f - 1.0F) / 128.0F, ((float)j + 7.99F) / 128.0F);
-		GL11.glVertex3f(this.x + f - 1.0F - (float)k, this.y + 7.99F, 0.0F);
-		GL11.glEnd();
+		GlStateManager.method_12318(5);
+		GlStateManager.method_12292((float)i / 128.0F, (float)j / 128.0F);
+		GlStateManager.method_12308(this.x + (float)k, this.y, 0.0F);
+		GlStateManager.method_12292((float)i / 128.0F, ((float)j + 7.99F) / 128.0F);
+		GlStateManager.method_12308(this.x - (float)k, this.y + 7.99F, 0.0F);
+		GlStateManager.method_12292(((float)i + f - 1.0F) / 128.0F, (float)j / 128.0F);
+		GlStateManager.method_12308(this.x + f - 1.0F + (float)k, this.y, 0.0F);
+		GlStateManager.method_12292(((float)i + f - 1.0F) / 128.0F, ((float)j + 7.99F) / 128.0F);
+		GlStateManager.method_12308(this.x + f - 1.0F - (float)k, this.y + 7.99F, 0.0F);
+		GlStateManager.method_12269();
 		return (float)l;
 	}
 
@@ -190,29 +194,30 @@ public class TextRenderer implements ResourceReloadListener {
 	}
 
 	private float drawLayerUnicode(char character, boolean italic) {
-		if (this.glyphWidths[character] == 0) {
+		int i = this.glyphWidths[character] & 255;
+		if (i == 0) {
 			return 0.0F;
 		} else {
-			int i = character / 256;
-			this.bindPageTexture(i);
-			int j = this.glyphWidths[character] >>> 4;
-			int k = this.glyphWidths[character] & 15;
-			float f = (float)j;
-			float g = (float)(k + 1);
+			int j = character / 256;
+			this.bindPageTexture(j);
+			int k = i >>> 4;
+			int l = i & 15;
+			float f = (float)k;
+			float g = (float)(l + 1);
 			float h = (float)(character % 16 * 16) + f;
-			float l = (float)((character & 255) / 16 * 16);
-			float m = g - f - 0.02F;
-			float n = italic ? 1.0F : 0.0F;
-			GL11.glBegin(5);
-			GL11.glTexCoord2f(h / 256.0F, l / 256.0F);
-			GL11.glVertex3f(this.x + n, this.y, 0.0F);
-			GL11.glTexCoord2f(h / 256.0F, (l + 15.98F) / 256.0F);
-			GL11.glVertex3f(this.x - n, this.y + 7.99F, 0.0F);
-			GL11.glTexCoord2f((h + m) / 256.0F, l / 256.0F);
-			GL11.glVertex3f(this.x + m / 2.0F + n, this.y, 0.0F);
-			GL11.glTexCoord2f((h + m) / 256.0F, (l + 15.98F) / 256.0F);
-			GL11.glVertex3f(this.x + m / 2.0F - n, this.y + 7.99F, 0.0F);
-			GL11.glEnd();
+			float m = (float)((character & 255) / 16 * 16);
+			float n = g - f - 0.02F;
+			float o = italic ? 1.0F : 0.0F;
+			GlStateManager.method_12318(5);
+			GlStateManager.method_12292(h / 256.0F, m / 256.0F);
+			GlStateManager.method_12308(this.x + o, this.y, 0.0F);
+			GlStateManager.method_12292(h / 256.0F, (m + 15.98F) / 256.0F);
+			GlStateManager.method_12308(this.x - o, this.y + 7.99F, 0.0F);
+			GlStateManager.method_12292((h + n) / 256.0F, m / 256.0F);
+			GlStateManager.method_12308(this.x + n / 2.0F + o, this.y, 0.0F);
+			GlStateManager.method_12292((h + n) / 256.0F, (m + 15.98F) / 256.0F);
+			GlStateManager.method_12308(this.x + n / 2.0F - o, this.y + 7.99F, 0.0F);
+			GlStateManager.method_12269();
 			return (g - f) / 2.0F + 1.0F;
 		}
 	}
@@ -460,15 +465,11 @@ public class TextRenderer implements ResourceReloadListener {
 			if (character > 0 && i != -1 && !this.unicode) {
 				return this.characterWidths[i];
 			} else if (this.glyphWidths[character] != 0) {
-				int j = this.glyphWidths[character] >>> 4;
-				int k = this.glyphWidths[character] & 15;
-				if (k > 7) {
-					k = 15;
-					j = 0;
-				}
-
-				k++;
-				return (k - j) / 2 + 1;
+				int j = this.glyphWidths[character] & 255;
+				int k = j >>> 4;
+				int l = j & 15;
+				l++;
+				return (l - k) / 2 + 1;
 			} else {
 				return 0;
 			}
@@ -651,6 +652,7 @@ public class TextRenderer implements ResourceReloadListener {
 	}
 
 	public int getColor(char colorChar) {
-		return this.colorCodes["0123456789abcdef".indexOf(colorChar)];
+		int i = "0123456789abcdef".indexOf(colorChar);
+		return i >= 0 && i < this.colorCodes.length ? this.colorCodes[i] : -1;
 	}
 }

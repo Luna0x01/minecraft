@@ -29,7 +29,7 @@ public class CreeperLightningFeatureRenderer implements FeatureRenderer<CreeperE
 			float n = 0.5F;
 			GlStateManager.color(n, n, n, 1.0F);
 			GlStateManager.disableLighting();
-			GlStateManager.blendFunc(1, 1);
+			GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 			this.model.copy(this.renderer.getModel());
 			this.model.render(creeperEntity, f, g, i, j, k, l);
 			GlStateManager.matrixMode(5890);

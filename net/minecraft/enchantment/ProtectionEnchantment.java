@@ -1,33 +1,29 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class ProtectionEnchantment extends Enchantment {
-	private static final String[] TYPES = new String[]{"all", "fire", "fall", "explosion", "projectile"};
-	private static final int[] MINIMUM_ENCHANTABILITY = new int[]{1, 10, 5, 5, 3};
-	private static final int[] field_4500 = new int[]{11, 8, 6, 8, 6};
-	private static final int[] MAXIMUM_ENCHANTABILITY = new int[]{20, 12, 10, 12, 15};
-	public final int protectionTypeId;
+	public final ProtectionEnchantment.ProtectionType protectionType;
 
-	public ProtectionEnchantment(int i, Identifier identifier, int j, int k) {
-		super(i, identifier, j, EnchantmentTarget.ALL_ARMOR);
-		this.protectionTypeId = k;
-		if (k == 2) {
+	public ProtectionEnchantment(Enchantment.Rarity rarity, ProtectionEnchantment.ProtectionType protectionType, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.ALL_ARMOR, equipmentSlots);
+		this.protectionType = protectionType;
+		if (protectionType == ProtectionEnchantment.ProtectionType.FALL) {
 			this.target = EnchantmentTarget.FEET;
 		}
 	}
 
 	@Override
 	public int getMinimumPower(int level) {
-		return MINIMUM_ENCHANTABILITY[this.protectionTypeId] + (level - 1) * field_4500[this.protectionTypeId];
+		return this.protectionType.method_11468() + (level - 1) * this.protectionType.method_11469();
 	}
 
 	@Override
 	public int getMaximumPower(int level) {
-		return this.getMinimumPower(level) + MAXIMUM_ENCHANTABILITY[this.protectionTypeId];
+		return this.getMinimumPower(level) + this.protectionType.method_11469();
 	}
 
 	@Override
@@ -39,39 +35,38 @@ public class ProtectionEnchantment extends Enchantment {
 	public int getProtectionAmount(int level, DamageSource source) {
 		if (source.isOutOfWorld()) {
 			return 0;
+		} else if (this.protectionType == ProtectionEnchantment.ProtectionType.ALL) {
+			return level;
+		} else if (this.protectionType == ProtectionEnchantment.ProtectionType.FIRE && source.isFire()) {
+			return level * 2;
+		} else if (this.protectionType == ProtectionEnchantment.ProtectionType.FALL && source == DamageSource.FALL) {
+			return level * 3;
+		} else if (this.protectionType == ProtectionEnchantment.ProtectionType.EXPLOSION && source.isExplosive()) {
+			return level * 2;
 		} else {
-			float f = (float)(6 + level * level) / 3.0F;
-			if (this.protectionTypeId == 0) {
-				return MathHelper.floor(f * 0.75F);
-			} else if (this.protectionTypeId == 1 && source.isFire()) {
-				return MathHelper.floor(f * 1.25F);
-			} else if (this.protectionTypeId == 2 && source == DamageSource.FALL) {
-				return MathHelper.floor(f * 2.5F);
-			} else if (this.protectionTypeId == 3 && source.isExplosive()) {
-				return MathHelper.floor(f * 1.5F);
-			} else {
-				return this.protectionTypeId == 4 && source.isProjectile() ? MathHelper.floor(f * 1.5F) : 0;
-			}
+			return this.protectionType == ProtectionEnchantment.ProtectionType.PROJECTILE && source.isProjectile() ? level * 2 : 0;
 		}
 	}
 
 	@Override
 	public String getTranslationKey() {
-		return "enchantment.protect." + TYPES[this.protectionTypeId];
+		return "enchantment.protect." + this.protectionType.method_11467();
 	}
 
 	@Override
 	public boolean differs(Enchantment other) {
 		if (other instanceof ProtectionEnchantment) {
 			ProtectionEnchantment protectionEnchantment = (ProtectionEnchantment)other;
-			return protectionEnchantment.protectionTypeId == this.protectionTypeId ? false : this.protectionTypeId == 2 || protectionEnchantment.protectionTypeId == 2;
+			return this.protectionType == protectionEnchantment.protectionType
+				? false
+				: this.protectionType == ProtectionEnchantment.ProtectionType.FALL || protectionEnchantment.protectionType == ProtectionEnchantment.ProtectionType.FALL;
 		} else {
 			return super.differs(other);
 		}
 	}
 
-	public static int method_4659(Entity entity, int i) {
-		int j = EnchantmentHelper.getLevel(Enchantment.FIRE_PROTECTION.id, entity.getArmorStacks());
+	public static int method_11466(LivingEntity livingEntity, int i) {
+		int j = EnchantmentHelper.getEquipmentLevel(Enchantments.FIRE_PROTECTION, livingEntity);
 		if (j > 0) {
 			i -= MathHelper.floor((float)i * (float)j * 0.15F);
 		}
@@ -79,12 +74,44 @@ public class ProtectionEnchantment extends Enchantment {
 		return i;
 	}
 
-	public static double method_4658(Entity entity, double d) {
-		int i = EnchantmentHelper.getLevel(Enchantment.BLAST_PROTECTION.id, entity.getArmorStacks());
+	public static double method_11465(LivingEntity livingEntity, double d) {
+		int i = EnchantmentHelper.getEquipmentLevel(Enchantments.BLAST_PROTECTION, livingEntity);
 		if (i > 0) {
 			d -= (double)MathHelper.floor(d * (double)((float)i * 0.15F));
 		}
 
 		return d;
+	}
+
+	public static enum ProtectionType {
+		ALL("all", 1, 11, 20),
+		FIRE("fire", 10, 8, 12),
+		FALL("fall", 5, 6, 10),
+		EXPLOSION("explosion", 5, 8, 12),
+		PROJECTILE("projectile", 3, 6, 15);
+
+		private final String field_12429;
+		private final int field_12430;
+		private final int field_12431;
+		private final int field_12432;
+
+		private ProtectionType(String string2, int j, int k, int l) {
+			this.field_12429 = string2;
+			this.field_12430 = j;
+			this.field_12431 = k;
+			this.field_12432 = l;
+		}
+
+		public String method_11467() {
+			return this.field_12429;
+		}
+
+		public int method_11468() {
+			return this.field_12430;
+		}
+
+		public int method_11469() {
+			return this.field_12431;
+		}
 	}
 }

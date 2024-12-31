@@ -1,11 +1,11 @@
 package net.minecraft.client.gui.screen;
 
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.GLX;
 import java.io.File;
-import java.io.IOException;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import net.minecraft.client.class_2846;
 import net.minecraft.client.gui.screen.resourcepack.AvailableResourcePackListWidget;
 import net.minecraft.client.gui.screen.resourcepack.DefaultResourcePackEntryWidget;
 import net.minecraft.client.gui.screen.resourcepack.ResourcePackEntryWidget;
@@ -15,13 +15,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.OptionButtonWidget;
 import net.minecraft.client.resource.ResourcePackLoader;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.util.Util;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.lwjgl.Sys;
 
 public class ResourcePackScreen extends Screen {
-	private static final Logger LOGGER = LogManager.getLogger();
 	private final Screen parent;
 	private List<ResourcePackWidget> availablePackList;
 	private List<ResourcePackWidget> selectedPackList;
@@ -49,8 +44,13 @@ public class ResourcePackScreen extends Screen {
 				this.availablePackList.add(new ResourcePackEntryWidget(this, entry));
 			}
 
-			for (ResourcePackLoader.Entry entry2 : Lists.reverse(resourcePackLoader.getSelectedResourcePacks())) {
-				this.selectedPackList.add(new ResourcePackEntryWidget(this, entry2));
+			ResourcePackLoader.Entry entry2 = resourcePackLoader.method_12499();
+			if (entry2 != null) {
+				this.selectedPackList.add(new class_2846(this, resourcePackLoader.getServerContainer()));
+			}
+
+			for (ResourcePackLoader.Entry entry3 : Lists.reverse(resourcePackLoader.getSelectedResourcePacks())) {
+				this.selectedPackList.add(new ResourcePackEntryWidget(this, entry3));
 			}
 
 			this.selectedPackList.add(new DefaultResourcePackEntryWidget(this));
@@ -92,41 +92,7 @@ public class ResourcePackScreen extends Screen {
 		if (button.active) {
 			if (button.id == 2) {
 				File file = this.client.getResourcePackLoader().getResourcePackDir();
-				String string = file.getAbsolutePath();
-				if (Util.getOperatingSystem() == Util.OperatingSystem.MACOS) {
-					try {
-						LOGGER.info(string);
-						Runtime.getRuntime().exec(new String[]{"/usr/bin/open", string});
-						return;
-					} catch (IOException var9) {
-						LOGGER.error("Couldn't open file", var9);
-					}
-				} else if (Util.getOperatingSystem() == Util.OperatingSystem.WINDOWS) {
-					String string2 = String.format("cmd.exe /C start \"Open file\" \"%s\"", string);
-
-					try {
-						Runtime.getRuntime().exec(string2);
-						return;
-					} catch (IOException var8) {
-						LOGGER.error("Couldn't open file", var8);
-					}
-				}
-
-				boolean bl = false;
-
-				try {
-					Class<?> class_ = Class.forName("java.awt.Desktop");
-					Object object = class_.getMethod("getDesktop").invoke(null);
-					class_.getMethod("browse", URI.class).invoke(object, file.toURI());
-				} catch (Throwable var7) {
-					LOGGER.error("Couldn't open link", var7);
-					bl = true;
-				}
-
-				if (bl) {
-					LOGGER.info("Opening via system class!");
-					Sys.openURL("file://" + string);
-				}
+				GLX.method_12553(file);
 			} else if (button.id == 1) {
 				if (this.dirty) {
 					List<ResourcePackLoader.Entry> list = Lists.newArrayList();
@@ -144,7 +110,7 @@ public class ResourcePackScreen extends Screen {
 
 					for (ResourcePackLoader.Entry entry : list) {
 						this.client.options.resourcePacks.add(entry.getName());
-						if (entry.getFormat() != 1) {
+						if (entry.getFormat() != 2) {
 							this.client.options.incompatibleResourcePacks.add(entry.getName());
 						}
 					}

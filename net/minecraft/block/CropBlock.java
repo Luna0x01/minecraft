@@ -1,55 +1,97 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class CropBlock extends PlantBlock implements Growable {
 	public static final IntProperty AGE = IntProperty.of("age", 0, 7);
+	private static final Box[] field_12638 = new Box[]{
+		new Box(0.0, 0.0, 0.0, 1.0, 0.125, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.25, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.375, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.625, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.75, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 0.875, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+	};
 
 	protected CropBlock() {
-		this.setDefaultState(this.stateManager.getDefaultState().with(AGE, 0));
+		this.setDefaultState(this.stateManager.getDefaultState().with(this.getAge(), 0));
 		this.setTickRandomly(true);
-		float f = 0.5F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 0.25F, 0.5F + f);
 		this.setItemGroup(null);
 		this.setStrength(0.0F);
-		this.setSound(GRASS);
+		this.setBlockSoundGroup(BlockSoundGroup.field_12761);
 		this.disableStats();
 	}
 
 	@Override
-	protected boolean canPlantOnTop(Block block) {
-		return block == Blocks.FARMLAND;
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12638[state.get(this.getAge())];
+	}
+
+	@Override
+	protected boolean method_11579(BlockState blockState) {
+		return blockState.getBlock() == Blocks.FARMLAND;
+	}
+
+	protected IntProperty getAge() {
+		return AGE;
+	}
+
+	public int getMaxAge() {
+		return 7;
+	}
+
+	protected int getAge(BlockState state) {
+		return (Integer)state.get(this.getAge());
+	}
+
+	public BlockState withAge(int age) {
+		return this.getDefaultState().with(this.getAge(), age);
+	}
+
+	public boolean isMature(BlockState state) {
+		return (Integer)state.get(this.getAge()) >= this.getMaxAge();
 	}
 
 	@Override
 	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
 		super.onScheduledTick(world, pos, state, rand);
 		if (world.getLightLevelWithNeighbours(pos.up()) >= 9) {
-			int i = (Integer)state.get(AGE);
-			if (i < 7) {
+			int i = this.getAge(state);
+			if (i < this.getMaxAge()) {
 				float f = getAvailableMoisture(this, world, pos);
 				if (rand.nextInt((int)(25.0F / f) + 1) == 0) {
-					world.setBlockState(pos, state.with(AGE, i + 1), 2);
+					world.setBlockState(pos, this.withAge(i + 1), 2);
 				}
 			}
 		}
 	}
 
 	public void applyGrowth(World world, BlockPos pos, BlockState state) {
-		int i = (Integer)state.get(AGE) + MathHelper.nextInt(world.random, 2, 5);
-		if (i > 7) {
-			i = 7;
+		int i = this.getAge(state) + this.getGrowthAmount(world);
+		int j = this.getMaxAge();
+		if (i > j) {
+			i = j;
 		}
 
-		world.setBlockState(pos, state.with(AGE, i), 2);
+		world.setBlockState(pos, this.withAge(i), 2);
+	}
+
+	protected int getGrowthAmount(World world) {
+		return MathHelper.nextInt(world.random, 2, 5);
 	}
 
 	protected static float getAvailableMoisture(Block block, World world, BlockPos pos) {
@@ -98,7 +140,7 @@ public class CropBlock extends PlantBlock implements Growable {
 
 	@Override
 	public boolean canPlantAt(World world, BlockPos pos, BlockState state) {
-		return (world.getLightLevel(pos) >= 8 || world.hasDirectSunlight(pos)) && this.canPlantOnTop(world.getBlockState(pos.down()).getBlock());
+		return (world.getLightLevel(pos) >= 8 || world.hasDirectSunlight(pos)) && this.method_11579(world.getBlockState(pos.down()));
 	}
 
 	protected Item getSeedItem() {
@@ -113,32 +155,33 @@ public class CropBlock extends PlantBlock implements Growable {
 	public void randomDropAsItem(World world, BlockPos pos, BlockState state, float chance, int id) {
 		super.randomDropAsItem(world, pos, state, chance, 0);
 		if (!world.isClient) {
-			int i = (Integer)state.get(AGE);
-			if (i >= 7) {
+			int i = this.getAge(state);
+			if (i >= this.getMaxAge()) {
 				int j = 3 + id;
 
 				for (int k = 0; k < j; k++) {
-					if (world.random.nextInt(15) <= i) {
-						onBlockBreak(world, pos, new ItemStack(this.getSeedItem(), 1, 0));
+					if (world.random.nextInt(2 * this.getMaxAge()) <= i) {
+						onBlockBreak(world, pos, new ItemStack(this.getSeedItem()));
 					}
 				}
 			}
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
-		return state.get(AGE) == 7 ? this.getHarvestItem() : this.getSeedItem();
+		return this.isMature(state) ? this.getHarvestItem() : this.getSeedItem();
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return this.getSeedItem();
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this.getSeedItem());
 	}
 
 	@Override
 	public boolean canGrow(World world, BlockPos pos, BlockState state, boolean bl) {
-		return (Integer)state.get(AGE) < 7;
+		return !this.isMature(state);
 	}
 
 	@Override
@@ -153,12 +196,12 @@ public class CropBlock extends PlantBlock implements Growable {
 
 	@Override
 	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(AGE, data);
+		return this.withAge(data);
 	}
 
 	@Override
 	public int getData(BlockState state) {
-		return (Integer)state.get(AGE);
+		return this.getAge(state);
 	}
 
 	@Override

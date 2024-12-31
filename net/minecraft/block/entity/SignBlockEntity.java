@@ -1,14 +1,13 @@
 package net.minecraft.block.entity;
 
-import com.google.gson.JsonParseException;
+import javax.annotation.Nullable;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.Packet;
-import net.minecraft.network.packet.s2c.play.UpdateSignS2CPacket;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
@@ -27,7 +26,7 @@ public class SignBlockEntity extends BlockEntity {
 	private final CommandStats commandStats = new CommandStats();
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 
 		for (int i = 0; i < 4; i++) {
@@ -36,6 +35,7 @@ public class SignBlockEntity extends BlockEntity {
 		}
 
 		this.commandStats.toNbt(nbt);
+		return nbt;
 	}
 
 	@Override
@@ -92,32 +92,36 @@ public class SignBlockEntity extends BlockEntity {
 			@Override
 			public void setStat(CommandStats.Type statsType, int value) {
 			}
+
+			@Override
+			public MinecraftServer getMinecraftServer() {
+				return SignBlockEntity.this.world.getServer();
+			}
 		};
 
 		for (int i = 0; i < 4; i++) {
 			String string = nbt.getString("Text" + (i + 1));
+			Text text = Text.Serializer.deserializeText(string);
 
 			try {
-				Text text = Text.Serializer.deserialize(string);
-
-				try {
-					this.text[i] = ChatSerializer.process(commandSource, text, null);
-				} catch (CommandException var7) {
-					this.text[i] = text;
-				}
-			} catch (JsonParseException var8) {
-				this.text[i] = new LiteralText(string);
+				this.text[i] = ChatSerializer.process(commandSource, text, null);
+			} catch (CommandException var7) {
+				this.text[i] = text;
 			}
 		}
 
 		this.commandStats.fromNbt(nbt);
 	}
 
+	@Nullable
 	@Override
-	public Packet getPacket() {
-		Text[] texts = new Text[4];
-		System.arraycopy(this.text, 0, texts, 0, 4);
-		return new UpdateSignS2CPacket(this.world, this.pos, texts);
+	public BlockEntityUpdateS2CPacket getUpdatePacket() {
+		return new BlockEntityUpdateS2CPacket(this.pos, 9, this.getUpdatePacketContent());
+	}
+
+	@Override
+	public NbtCompound getUpdatePacketContent() {
+		return this.toNbt(new NbtCompound());
 	}
 
 	@Override
@@ -194,7 +198,14 @@ public class SignBlockEntity extends BlockEntity {
 
 			@Override
 			public void setStat(CommandStats.Type statsType, int value) {
-				SignBlockEntity.this.commandStats.execute(this, statsType, value);
+				if (SignBlockEntity.this.world != null && !SignBlockEntity.this.world.isClient) {
+					SignBlockEntity.this.commandStats.method_10792(SignBlockEntity.this.world.getServer(), this, statsType, value);
+				}
+			}
+
+			@Override
+			public MinecraftServer getMinecraftServer() {
+				return player.getMinecraftServer();
 			}
 		};
 
@@ -203,7 +214,7 @@ public class SignBlockEntity extends BlockEntity {
 			if (style != null && style.getClickEvent() != null) {
 				ClickEvent clickEvent = style.getClickEvent();
 				if (clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
-					MinecraftServer.getServer().getCommandManager().execute(commandSource, clickEvent.getValue());
+					player.getMinecraftServer().getCommandManager().execute(commandSource, clickEvent.getValue());
 				}
 			}
 		}

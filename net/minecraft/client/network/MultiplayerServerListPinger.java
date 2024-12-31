@@ -155,7 +155,7 @@ public class MultiplayerServerListPinger {
 		);
 
 		try {
-			clientConnection.send(new HandshakeC2SPacket(47, serverAddress.getAddress(), serverAddress.getPort(), NetworkState.STATUS));
+			clientConnection.send(new HandshakeC2SPacket(110, serverAddress.getAddress(), serverAddress.getPort(), NetworkState.STATUS));
 			clientConnection.send(new QueryRequestC2SPacket());
 		} catch (Throwable var5) {
 			LOGGER.error(var5);

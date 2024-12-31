@@ -1,15 +1,15 @@
 package net.minecraft.client.world;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.FloatBuffer;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
@@ -23,17 +23,18 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.util.GlAllocationUtils;
+import net.minecraft.entity.player.ClientPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkCache;
 
 public class BuiltChunk {
 	private World world;
 	private final WorldRenderer renderer;
 	public static int chunkUpdates;
-	private BlockPos pos;
 	public ChunkAssemblyHelper field_11070 = ChunkAssemblyHelper.UNSUPPORTED;
 	private final ReentrantLock field_11075 = new ReentrantLock();
 	private final ReentrantLock field_11076 = new ReentrantLock();
@@ -42,22 +43,26 @@ public class BuiltChunk {
 	private final int field_11079;
 	private final FloatBuffer field_11080 = GlAllocationUtils.allocateFloatBuffer(16);
 	private final VertexBuffer[] field_11081 = new VertexBuffer[RenderLayer.values().length];
-	public Box field_11071;
+	public Box field_13615;
 	private int field_11082 = -1;
 	private boolean field_11083 = true;
-	private EnumMap<Direction, BlockPos> field_11084 = Maps.newEnumMap(Direction.class);
+	private BlockPos.Mutable position = new BlockPos.Mutable(-1, -1, -1);
+	private BlockPos.Mutable[] field_13617 = new BlockPos.Mutable[6];
+	private boolean field_13618;
+	private BlockView field_13619;
 
-	public BuiltChunk(World world, WorldRenderer worldRenderer, BlockPos blockPos, int i) {
+	public BuiltChunk(World world, WorldRenderer worldRenderer, int i) {
+		for (int j = 0; j < this.field_13617.length; j++) {
+			this.field_13617[j] = new BlockPos.Mutable();
+		}
+
+		this.field_13618 = false;
 		this.world = world;
 		this.renderer = worldRenderer;
 		this.field_11079 = i;
-		if (!blockPos.equals(this.getPos())) {
-			this.method_10160(blockPos);
-		}
-
 		if (GLX.supportsVbo()) {
-			for (int j = 0; j < RenderLayer.values().length; j++) {
-				this.field_11081[j] = new VertexBuffer(VertexFormats.BLOCK);
+			for (int k = 0; k < RenderLayer.values().length; k++) {
+				this.field_11081[k] = new VertexBuffer(VertexFormats.BLOCK);
 			}
 		}
 	}
@@ -75,22 +80,24 @@ public class BuiltChunk {
 		return this.field_11081[i];
 	}
 
-	public void method_10160(BlockPos blockPos) {
-		this.method_10171();
-		this.pos = blockPos;
-		this.field_11071 = new Box(blockPos, blockPos.add(16, 16, 16));
+	public void method_12427(int i, int j, int k) {
+		if (i != this.position.getX() || j != this.position.getY() || k != this.position.getZ()) {
+			this.method_10171();
+			this.position.setPosition(i, j, k);
+			this.field_13615 = new Box((double)i, (double)j, (double)k, (double)(i + 16), (double)(j + 16), (double)(k + 16));
 
-		for (Direction direction : Direction.values()) {
-			this.field_11084.put(direction, blockPos.offset(direction, 16));
+			for (Direction direction : Direction.values()) {
+				this.field_13617[direction.ordinal()].set(this.position).move(direction, 16);
+			}
+
+			this.method_10174();
 		}
-
-		this.method_10174();
 	}
 
 	public void method_10155(float f, float g, float h, ChunkBuilder chunkBuilder) {
 		ChunkAssemblyHelper chunkAssemblyHelper = chunkBuilder.getChunkAssemblyHelper();
 		if (chunkAssemblyHelper.getDrawArrayParameters() != null && !chunkAssemblyHelper.method_10149(RenderLayer.TRANSLUCENT)) {
-			this.method_10158(chunkBuilder.getRenderLaterBuffers().get(RenderLayer.TRANSLUCENT), this.pos);
+			this.method_10158(chunkBuilder.getRenderLaterBuffers().get(RenderLayer.TRANSLUCENT), this.position);
 			chunkBuilder.getRenderLaterBuffers().get(RenderLayer.TRANSLUCENT).restoreState(chunkAssemblyHelper.getDrawArrayParameters());
 			this.method_10157(RenderLayer.TRANSLUCENT, f, g, h, chunkBuilder.getRenderLaterBuffers().get(RenderLayer.TRANSLUCENT), chunkAssemblyHelper);
 		}
@@ -99,17 +106,15 @@ public class BuiltChunk {
 	public void method_10164(float f, float g, float h, ChunkBuilder chunkBuilder) {
 		ChunkAssemblyHelper chunkAssemblyHelper = new ChunkAssemblyHelper();
 		int i = 1;
-		BlockPos blockPos = this.pos;
+		BlockPos blockPos = this.position;
 		BlockPos blockPos2 = blockPos.add(15, 15, 15);
 		chunkBuilder.getLock().lock();
 
-		BlockView blockView;
 		try {
 			if (chunkBuilder.getRenderStatus() != ChunkBuilder.RenderStatus.COMPILING) {
 				return;
 			}
 
-			blockView = new ChunkRenderCache(this.world, blockPos.add(-1, -1, -1), blockPos2.add(1, 1, 1), 1);
 			chunkBuilder.setChunkAssemblyHelper(chunkAssemblyHelper);
 		} finally {
 			chunkBuilder.getLock().unlock();
@@ -117,39 +122,41 @@ public class BuiltChunk {
 
 		ChunkOcclusionDataBuilder chunkOcclusionDataBuilder = new ChunkOcclusionDataBuilder();
 		HashSet set = Sets.newHashSet();
-		if (!blockView.isEmpty()) {
+		if (!this.field_13619.isEmpty()) {
 			chunkUpdates++;
 			boolean[] bls = new boolean[RenderLayer.values().length];
 			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 
 			for (BlockPos.Mutable mutable : BlockPos.mutableIterate(blockPos, blockPos2)) {
-				BlockState blockState = blockView.getBlockState(mutable);
+				BlockState blockState = this.field_13619.getBlockState(mutable);
 				Block block = blockState.getBlock();
-				if (block.hasTransparency()) {
+				if (blockState.isFullBoundsCubeForCulling()) {
 					chunkOcclusionDataBuilder.markClosed(mutable);
 				}
 
 				if (block.hasBlockEntity()) {
-					BlockEntity blockEntity = blockView.getBlockEntity(new BlockPos(mutable));
-					BlockEntityRenderer<BlockEntity> blockEntityRenderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
-					if (blockEntity != null && blockEntityRenderer != null) {
-						chunkAssemblyHelper.addBlockEntity(blockEntity);
-						if (blockEntityRenderer.rendersOutsideBoundingBox()) {
-							set.add(blockEntity);
+					BlockEntity blockEntity = this.field_13619.getBlockEntity(new BlockPos(mutable));
+					if (blockEntity != null) {
+						BlockEntityRenderer<BlockEntity> blockEntityRenderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
+						if (blockEntityRenderer != null) {
+							chunkAssemblyHelper.addBlockEntity(blockEntity);
+							if (blockEntityRenderer.method_12410(blockEntity)) {
+								set.add(blockEntity);
+							}
 						}
 					}
 				}
 
 				RenderLayer renderLayer = block.getRenderLayerType();
 				int j = renderLayer.ordinal();
-				if (block.getBlockType() != -1) {
+				if (block.getDefaultState().getRenderType() != BlockRenderType.INVISIBLE) {
 					BufferBuilder bufferBuilder = chunkBuilder.getRenderLaterBuffers().get(j);
 					if (!chunkAssemblyHelper.isUnused(renderLayer)) {
 						chunkAssemblyHelper.setUnused(renderLayer);
 						this.method_10158(bufferBuilder, blockPos);
 					}
 
-					bls[j] |= blockRenderManager.renderBlock(blockState, mutable, blockView, bufferBuilder);
+					bls[j] |= blockRenderManager.renderBlock(blockState, mutable, this.field_13619, bufferBuilder);
 				}
 			}
 
@@ -203,7 +210,8 @@ public class BuiltChunk {
 		ChunkBuilder var1;
 		try {
 			this.method_10163();
-			this.field_11077 = new ChunkBuilder(this, ChunkBuilder.FunctionType.REBUILD_CHUNK);
+			this.field_11077 = new ChunkBuilder(this, ChunkBuilder.FunctionType.REBUILD_CHUNK, this.method_12429());
+			this.method_12433();
 			var1 = this.field_11077;
 		} finally {
 			this.field_11075.unlock();
@@ -212,6 +220,12 @@ public class BuiltChunk {
 		return var1;
 	}
 
+	private void method_12433() {
+		int i = 1;
+		this.field_13619 = new ChunkCache(this.world, this.position.add(-1, -1, -1), this.position.add(16, 16, 16), 1);
+	}
+
+	@Nullable
 	public ChunkBuilder method_10168() {
 		this.field_11075.lock();
 
@@ -223,7 +237,7 @@ public class BuiltChunk {
 					this.field_11077 = null;
 				}
 
-				this.field_11077 = new ChunkBuilder(this, ChunkBuilder.FunctionType.RESORT_TRANSPARENCY);
+				this.field_11077 = new ChunkBuilder(this, ChunkBuilder.FunctionType.RESORT_TRANSPARENCY, this.method_12429());
 				this.field_11077.setChunkAssemblyHelper(this.field_11070);
 				return this.field_11077;
 			}
@@ -234,6 +248,14 @@ public class BuiltChunk {
 		}
 
 		return (ChunkBuilder)var1;
+	}
+
+	protected double method_12429() {
+		ClientPlayerEntity clientPlayerEntity = MinecraftClient.getInstance().player;
+		double d = this.field_13615.minX + 8.0 - clientPlayerEntity.x;
+		double e = this.field_13615.minY + 8.0 - clientPlayerEntity.y;
+		double f = this.field_13615.minZ + 8.0 - clientPlayerEntity.z;
+		return d * d + e * e + f * f;
 	}
 
 	private void method_10158(BufferBuilder bufferBuilder, BlockPos blockPos) {
@@ -296,18 +318,36 @@ public class BuiltChunk {
 	}
 
 	public BlockPos getPos() {
-		return this.pos;
+		return this.position;
 	}
 
 	public void method_10162(boolean bl) {
-		this.field_11083 = bl;
+		if (this.field_11083) {
+			bl |= this.field_13618;
+		}
+
+		this.field_11083 = true;
+		this.field_13618 = bl;
+	}
+
+	public void method_12430() {
+		this.field_11083 = false;
+		this.field_13618 = false;
 	}
 
 	public boolean method_10173() {
 		return this.field_11083;
 	}
 
-	public BlockPos method_10161(Direction direction) {
-		return (BlockPos)this.field_11084.get(direction);
+	public boolean method_12431() {
+		return this.field_11083 && this.field_13618;
+	}
+
+	public BlockPos method_12428(Direction direction) {
+		return this.field_13617[direction.ordinal()];
+	}
+
+	public World getWorld() {
+		return this.world;
 	}
 }

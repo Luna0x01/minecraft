@@ -2,12 +2,12 @@ package net.minecraft.world.dimension;
 
 public class OverworldDimension extends Dimension {
 	@Override
-	public String getName() {
-		return "Overworld";
+	public DimensionType getDimensionType() {
+		return DimensionType.OVERWORLD;
 	}
 
 	@Override
-	public String getPersistentStateSuffix() {
-		return "";
+	public boolean canChunkBeUnloaded(int x, int z) {
+		return !this.world.isChunkInsideSpawnChunks(x, z);
 	}
 }

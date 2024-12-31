@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.List;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.nbt.NbtCompound;
@@ -192,8 +193,9 @@ public class VillageState extends PersistentState {
 	}
 
 	private boolean method_11068(BlockPos blockPos) {
-		Block block = this.world.getBlockState(blockPos).getBlock();
-		return block instanceof DoorBlock ? block.getMaterial() == Material.WOOD : false;
+		BlockState blockState = this.world.getBlockState(blockPos);
+		Block block = blockState.getBlock();
+		return block instanceof DoorBlock ? blockState.getMaterial() == Material.WOOD : false;
 	}
 
 	@Override
@@ -210,7 +212,7 @@ public class VillageState extends PersistentState {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		nbt.putInt("Tick", this.tick);
 		NbtList nbtList = new NbtList();
 
@@ -221,9 +223,10 @@ public class VillageState extends PersistentState {
 		}
 
 		nbt.put("Villages", nbtList);
+		return nbt;
 	}
 
 	public static String getId(Dimension dimension) {
-		return "villages" + dimension.getPersistentStateSuffix();
+		return "villages" + dimension.getDimensionType().getSuffix();
 	}
 }

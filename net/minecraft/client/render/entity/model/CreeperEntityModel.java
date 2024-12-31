@@ -55,8 +55,8 @@ public class CreeperEntityModel extends EntityModel {
 
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.head.posY = age / (180.0F / (float)Math.PI);
-		this.head.posX = headPitch / (180.0F / (float)Math.PI);
+		this.head.posY = age * (float) (Math.PI / 180.0);
+		this.head.posX = headPitch * (float) (Math.PI / 180.0);
 		this.rightBackLeg.posX = MathHelper.cos(handSwing * 0.6662F) * 1.4F * handSwingAmount;
 		this.leftBackLeg.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.4F * handSwingAmount;
 		this.rightFrontLeg.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.4F * handSwingAmount;

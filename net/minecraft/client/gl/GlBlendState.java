@@ -3,7 +3,6 @@ package net.minecraft.client.gl;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.util.JsonHelper;
-import org.lwjgl.opengl.GL14;
 
 public class GlBlendState {
 	private static GlBlendState activeBlendState = null;
@@ -49,7 +48,7 @@ public class GlBlendState {
 				GlStateManager.enableBlend();
 			}
 
-			GL14.glBlendEquation(this.func);
+			GlStateManager.method_12305(this.func);
 			if (this.separateBlend) {
 				GlStateManager.blendFuncSeparate(this.srcRgb, this.dstRgb, this.srcAlpha, this.dstAlpha);
 			} else {

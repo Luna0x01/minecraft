@@ -1,12 +1,12 @@
 package net.minecraft.enchantment;
 
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.util.Identifier;
 
 public class EfficiencyEnchantment extends Enchantment {
-	protected EfficiencyEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.DIGGER);
+	protected EfficiencyEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.DIGGER, equipmentSlots);
 		this.setName("digging");
 	}
 

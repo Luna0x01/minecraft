@@ -1,12 +1,19 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -17,6 +24,12 @@ import net.minecraft.world.World;
 public class LeverBlock extends Block {
 	public static final EnumProperty<LeverBlock.LeverType> FACING = EnumProperty.of("facing", LeverBlock.LeverType.class);
 	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
+	protected static final Box field_12698 = new Box(0.3125, 0.2F, 0.625, 0.6875, 0.8F, 1.0);
+	protected static final Box field_12699 = new Box(0.3125, 0.2F, 0.0, 0.6875, 0.8F, 0.375);
+	protected static final Box field_12700 = new Box(0.625, 0.2F, 0.3125, 1.0, 0.8F, 0.6875);
+	protected static final Box field_12701 = new Box(0.0, 0.2F, 0.3125, 0.375, 0.8F, 0.6875);
+	protected static final Box field_12702 = new Box(0.25, 0.0, 0.25, 0.75, 0.6F, 0.75);
+	protected static final Box field_12697 = new Box(0.25, 0.4F, 0.25, 0.75, 1.0, 0.75);
 
 	protected LeverBlock() {
 		super(Material.DECORATION);
@@ -24,18 +37,19 @@ public class LeverBlock extends Block {
 		this.setItemGroup(ItemGroup.REDSTONE);
 	}
 
+	@Nullable
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -71,36 +85,18 @@ public class LeverBlock extends Block {
 				}
 			}
 
-			return World.isOpaque(world, pos.down())
+			return world.getBlockState(pos.down()).method_11739()
 				? blockState.with(FACING, LeverBlock.LeverType.getByDirection(Direction.UP, entity.getHorizontalDirection()))
 				: blockState;
 		}
 	}
 
-	public static int getDataFromDirection(Direction dir) {
-		switch (dir) {
-			case DOWN:
-				return 0;
-			case UP:
-				return 5;
-			case NORTH:
-				return 4;
-			case SOUTH:
-				return 3;
-			case WEST:
-				return 2;
-			case EAST:
-				return 1;
-			default:
-				return -1;
-		}
-	}
-
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (this.placeLever(world, pos, state) && !canHoldLever(world, pos, ((LeverBlock.LeverType)state.get(FACING)).getDirection().getOpposite())) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (this.placeLever(world, blockPos, blockState)
+			&& !canHoldLever(world, blockPos, ((LeverBlock.LeverType)blockState.get(FACING)).getDirection().getOpposite())) {
+			this.dropAsItem(world, blockPos, blockState, 0);
+			world.setAir(blockPos);
 		}
 	}
 
@@ -115,44 +111,49 @@ public class LeverBlock extends Block {
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		float f = 0.1875F;
-		switch ((LeverBlock.LeverType)view.getBlockState(pos).get(FACING)) {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((LeverBlock.LeverType)state.get(FACING)) {
 			case EAST:
-				this.setBoundingBox(0.0F, 0.2F, 0.5F - f, f * 2.0F, 0.8F, 0.5F + f);
-				break;
+			default:
+				return field_12701;
 			case WEST:
-				this.setBoundingBox(1.0F - f * 2.0F, 0.2F, 0.5F - f, 1.0F, 0.8F, 0.5F + f);
-				break;
+				return field_12700;
 			case SOUTH:
-				this.setBoundingBox(0.5F - f, 0.2F, 0.0F, 0.5F + f, 0.8F, f * 2.0F);
-				break;
+				return field_12699;
 			case NORTH:
-				this.setBoundingBox(0.5F - f, 0.2F, 1.0F - f * 2.0F, 0.5F + f, 0.8F, 1.0F);
-				break;
+				return field_12698;
 			case UP_Z:
 			case UP_X:
-				f = 0.25F;
-				this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 0.6F, 0.5F + f);
-				break;
+				return field_12702;
 			case DOWN_X:
 			case DOWN_Z:
-				f = 0.25F;
-				this.setBoundingBox(0.5F - f, 0.4F, 0.5F - f, 0.5F + f, 1.0F, 0.5F + f);
+				return field_12697;
 		}
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			state = state.withDefaultValue(POWERED);
-			world.setBlockState(pos, state, 3);
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.5, (double)pos.getZ() + 0.5, "random.click", 0.3F, state.get(POWERED) ? 0.6F : 0.5F);
-			world.updateNeighborsAlways(pos, this);
-			Direction direction2 = ((LeverBlock.LeverType)state.get(FACING)).getDirection();
-			world.updateNeighborsAlways(pos.offset(direction2.getOpposite()), this);
+			blockState = blockState.withDefaultValue(POWERED);
+			world.setBlockState(blockPos, blockState, 3);
+			float i = blockState.get(POWERED) ? 0.6F : 0.5F;
+			world.method_11486(null, blockPos, Sounds.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.3F, i);
+			world.updateNeighborsAlways(blockPos, this);
+			Direction direction2 = ((LeverBlock.LeverType)blockState.get(FACING)).getDirection();
+			world.updateNeighborsAlways(blockPos.offset(direction2.getOpposite()), this);
 			return true;
 		}
 	}
@@ -169,21 +170,21 @@ public class LeverBlock extends Block {
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		return state.get(POWERED) ? 15 : 0;
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		if (!(Boolean)state.get(POWERED)) {
 			return 0;
 		} else {
-			return ((LeverBlock.LeverType)state.get(FACING)).getDirection() == facing ? 15 : 0;
+			return ((LeverBlock.LeverType)state.get(FACING)).getDirection() == direction ? 15 : 0;
 		}
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
@@ -201,6 +202,70 @@ public class LeverBlock extends Block {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				switch ((LeverBlock.LeverType)state.get(FACING)) {
+					case EAST:
+						return state.with(FACING, LeverBlock.LeverType.WEST);
+					case WEST:
+						return state.with(FACING, LeverBlock.LeverType.EAST);
+					case SOUTH:
+						return state.with(FACING, LeverBlock.LeverType.NORTH);
+					case NORTH:
+						return state.with(FACING, LeverBlock.LeverType.SOUTH);
+					default:
+						return state;
+				}
+			case COUNTERCLOCKWISE_90:
+				switch ((LeverBlock.LeverType)state.get(FACING)) {
+					case EAST:
+						return state.with(FACING, LeverBlock.LeverType.NORTH);
+					case WEST:
+						return state.with(FACING, LeverBlock.LeverType.SOUTH);
+					case SOUTH:
+						return state.with(FACING, LeverBlock.LeverType.EAST);
+					case NORTH:
+						return state.with(FACING, LeverBlock.LeverType.WEST);
+					case UP_Z:
+						return state.with(FACING, LeverBlock.LeverType.UP_X);
+					case UP_X:
+						return state.with(FACING, LeverBlock.LeverType.UP_Z);
+					case DOWN_X:
+						return state.with(FACING, LeverBlock.LeverType.DOWN_Z);
+					case DOWN_Z:
+						return state.with(FACING, LeverBlock.LeverType.DOWN_X);
+				}
+			case CLOCKWISE_90:
+				switch ((LeverBlock.LeverType)state.get(FACING)) {
+					case EAST:
+						return state.with(FACING, LeverBlock.LeverType.SOUTH);
+					case WEST:
+						return state.with(FACING, LeverBlock.LeverType.NORTH);
+					case SOUTH:
+						return state.with(FACING, LeverBlock.LeverType.WEST);
+					case NORTH:
+						return state.with(FACING, LeverBlock.LeverType.EAST);
+					case UP_Z:
+						return state.with(FACING, LeverBlock.LeverType.UP_X);
+					case UP_X:
+						return state.with(FACING, LeverBlock.LeverType.UP_Z);
+					case DOWN_X:
+						return state.with(FACING, LeverBlock.LeverType.DOWN_Z);
+					case DOWN_Z:
+						return state.with(FACING, LeverBlock.LeverType.DOWN_X);
+				}
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(((LeverBlock.LeverType)state.get(FACING)).getDirection()));
 	}
 
 	@Override

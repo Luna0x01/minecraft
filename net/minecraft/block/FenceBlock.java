@@ -1,14 +1,19 @@
 package net.minecraft.block;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.LeadItem;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -20,10 +25,29 @@ public class FenceBlock extends Block {
 	public static final BooleanProperty EAST = BooleanProperty.of("east");
 	public static final BooleanProperty SOUTH = BooleanProperty.of("south");
 	public static final BooleanProperty WEST = BooleanProperty.of("west");
-
-	public FenceBlock(Material material) {
-		this(material, material.getColor());
-	}
+	protected static final Box[] field_12667 = new Box[]{
+		new Box(0.375, 0.0, 0.375, 0.625, 1.0, 0.625),
+		new Box(0.375, 0.0, 0.375, 0.625, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.375, 0.625, 1.0, 0.625),
+		new Box(0.0, 0.0, 0.375, 0.625, 1.0, 1.0),
+		new Box(0.375, 0.0, 0.0, 0.625, 1.0, 0.625),
+		new Box(0.375, 0.0, 0.0, 0.625, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.0, 0.625, 1.0, 0.625),
+		new Box(0.0, 0.0, 0.0, 0.625, 1.0, 1.0),
+		new Box(0.375, 0.0, 0.375, 1.0, 1.0, 0.625),
+		new Box(0.375, 0.0, 0.375, 1.0, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.375, 1.0, 1.0, 0.625),
+		new Box(0.0, 0.0, 0.375, 1.0, 1.0, 1.0),
+		new Box(0.375, 0.0, 0.0, 1.0, 1.0, 0.625),
+		new Box(0.375, 0.0, 0.0, 1.0, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.625),
+		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+	};
+	public static final Box field_12668 = new Box(0.375, 0.0, 0.375, 0.625, 1.5, 0.625);
+	public static final Box field_12669 = new Box(0.375, 0.0, 0.625, 0.625, 1.5, 1.0);
+	public static final Box field_12664 = new Box(0.0, 0.0, 0.375, 0.375, 1.5, 0.625);
+	public static final Box field_12665 = new Box(0.375, 0.0, 0.0, 0.625, 1.5, 0.375);
+	public static final Box field_12666 = new Box(0.625, 0.0, 0.375, 1.0, 1.5, 0.625);
 
 	public FenceBlock(Material material, MaterialColor materialColor) {
 		super(material, materialColor);
@@ -32,90 +56,60 @@ public class FenceBlock extends Block {
 	}
 
 	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		boolean bl = this.canConnect(world, pos.north());
-		boolean bl2 = this.canConnect(world, pos.south());
-		boolean bl3 = this.canConnect(world, pos.west());
-		boolean bl4 = this.canConnect(world, pos.east());
-		float f = 0.375F;
-		float g = 0.625F;
-		float h = 0.375F;
-		float i = 0.625F;
-		if (bl) {
-			h = 0.0F;
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+		state = state.getBlockState(world, pos);
+		appendCollisionBoxes(pos, entityBox, boxes, field_12668);
+		if ((Boolean)state.get(NORTH)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12665);
 		}
 
-		if (bl2) {
-			i = 1.0F;
+		if ((Boolean)state.get(EAST)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12666);
 		}
 
-		if (bl || bl2) {
-			this.setBoundingBox(f, 0.0F, h, g, 1.5F, i);
-			super.appendCollisionBoxes(world, pos, state, box, list, entity);
+		if ((Boolean)state.get(SOUTH)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12669);
 		}
 
-		h = 0.375F;
-		i = 0.625F;
-		if (bl3) {
-			f = 0.0F;
+		if ((Boolean)state.get(WEST)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12664);
 		}
-
-		if (bl4) {
-			g = 1.0F;
-		}
-
-		if (bl3 || bl4 || !bl && !bl2) {
-			this.setBoundingBox(f, 0.0F, h, g, 1.5F, i);
-			super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		}
-
-		if (bl) {
-			h = 0.0F;
-		}
-
-		if (bl2) {
-			i = 1.0F;
-		}
-
-		this.setBoundingBox(f, 0.0F, h, g, 1.0F, i);
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		boolean bl = this.canConnect(view, pos.north());
-		boolean bl2 = this.canConnect(view, pos.south());
-		boolean bl3 = this.canConnect(view, pos.west());
-		boolean bl4 = this.canConnect(view, pos.east());
-		float f = 0.375F;
-		float g = 0.625F;
-		float h = 0.375F;
-		float i = 0.625F;
-		if (bl) {
-			h = 0.0F;
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		state = this.getBlockState(state, view, pos);
+		return field_12667[method_11612(state)];
+	}
+
+	private static int method_11612(BlockState blockState) {
+		int i = 0;
+		if ((Boolean)blockState.get(NORTH)) {
+			i |= 1 << Direction.NORTH.getHorizontal();
 		}
 
-		if (bl2) {
-			i = 1.0F;
+		if ((Boolean)blockState.get(EAST)) {
+			i |= 1 << Direction.EAST.getHorizontal();
 		}
 
-		if (bl3) {
-			f = 0.0F;
+		if ((Boolean)blockState.get(SOUTH)) {
+			i |= 1 << Direction.SOUTH.getHorizontal();
 		}
 
-		if (bl4) {
-			g = 1.0F;
+		if ((Boolean)blockState.get(WEST)) {
+			i |= 1 << Direction.WEST.getHorizontal();
 		}
 
-		this.setBoundingBox(f, 0.0F, h, g, 1.0F, i);
+		return i;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -125,24 +119,36 @@ public class FenceBlock extends Block {
 	}
 
 	public boolean canConnect(BlockView view, BlockPos pos) {
-		Block block = view.getBlockState(pos).getBlock();
+		BlockState blockState = view.getBlockState(pos);
+		Block block = blockState.getBlock();
 		if (block == Blocks.BARRIER) {
 			return false;
 		} else if ((!(block instanceof FenceBlock) || block.material != this.material) && !(block instanceof FenceGateBlock)) {
-			return block.material.isOpaque() && block.renderAsNormalBlock() ? block.material != Material.PUMPKIN : false;
+			return block.material.isOpaque() && blockState.method_11730() ? block.material != Material.PUMPKIN : false;
 		} else {
 			return true;
 		}
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
 		return true;
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		return world.isClient ? true : LeadItem.useLead(player, world, pos);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		return world.isClient ? true : LeadItem.useLead(playerEntity, world, blockPos);
 	}
 
 	@Override
@@ -156,6 +162,32 @@ public class FenceBlock extends Block {
 			.with(EAST, this.canConnect(view, pos.east()))
 			.with(SOUTH, this.canConnect(view, pos.south()))
 			.with(WEST, this.canConnect(view, pos.west()));
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				return state.with(NORTH, state.get(SOUTH)).with(EAST, state.get(WEST)).with(SOUTH, state.get(NORTH)).with(WEST, state.get(EAST));
+			case COUNTERCLOCKWISE_90:
+				return state.with(NORTH, state.get(EAST)).with(EAST, state.get(SOUTH)).with(SOUTH, state.get(WEST)).with(WEST, state.get(NORTH));
+			case CLOCKWISE_90:
+				return state.with(NORTH, state.get(WEST)).with(EAST, state.get(NORTH)).with(SOUTH, state.get(EAST)).with(WEST, state.get(SOUTH));
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		switch (mirror) {
+			case LEFT_RIGHT:
+				return state.with(NORTH, state.get(SOUTH)).with(SOUTH, state.get(NORTH));
+			case FRONT_BACK:
+				return state.with(EAST, state.get(WEST)).with(WEST, state.get(EAST));
+			default:
+				return super.withMirror(state, mirror);
+		}
 	}
 
 	@Override

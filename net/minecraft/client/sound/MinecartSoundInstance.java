@@ -2,7 +2,7 @@ package net.minecraft.client.sound;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.MathHelper;
 
 public class MinecartSoundInstance extends MovingSoundInstance {
@@ -10,7 +10,7 @@ public class MinecartSoundInstance extends MovingSoundInstance {
 	private final AbstractMinecartEntity minecart;
 
 	public MinecartSoundInstance(PlayerEntity playerEntity, AbstractMinecartEntity abstractMinecartEntity) {
-		super(new Identifier("minecraft:minecart.inside"));
+		super(Sounds.ENTITY_MINECART_INSIDE, SoundCategory.NEUTRAL);
 		this.player = playerEntity;
 		this.minecart = abstractMinecartEntity;
 		this.attenuationType = SoundInstance.AttenuationType.NONE;
@@ -20,7 +20,7 @@ public class MinecartSoundInstance extends MovingSoundInstance {
 
 	@Override
 	public void tick() {
-		if (!this.minecart.removed && this.player.hasVehicle() && this.player.vehicle == this.minecart) {
+		if (!this.minecart.removed && this.player.hasMount() && this.player.getVehicle() == this.minecart) {
 			float f = MathHelper.sqrt(this.minecart.velocityX * this.minecart.velocityX + this.minecart.velocityZ * this.minecart.velocityZ);
 			if ((double)f >= 0.01) {
 				this.volume = 0.0F + MathHelper.clamp(f, 0.0F, 1.0F) * 0.75F;

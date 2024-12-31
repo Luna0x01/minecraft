@@ -5,8 +5,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkBlockStateStorage;
 
 public class OceanBiome extends Biome {
-	public OceanBiome(int i) {
-		super(i);
+	public OceanBiome(Biome.Settings settings) {
+		super(settings);
 		this.passiveEntries.clear();
 	}
 

@@ -22,7 +22,17 @@ public class LeashKnotEntityRenderer extends EntityRenderer<LeashKnotEntity> {
 		GlStateManager.scale(-1.0F, -1.0F, 1.0F);
 		GlStateManager.enableAlphaTest();
 		this.bindTexture(leashKnotEntity);
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(leashKnotEntity));
+		}
+
 		this.field_6501.render(leashKnotEntity, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, i);
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.popMatrix();
 		super.render(leashKnotEntity, d, e, f, g, h);
 	}

@@ -3,6 +3,7 @@ package net.minecraft.scoreboard;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.util.Formatting;
 
 public class Team extends AbstractTeam {
@@ -17,6 +18,7 @@ public class Team extends AbstractTeam {
 	private AbstractTeam.VisibilityRule nameTagVisibilityRule = AbstractTeam.VisibilityRule.ALWAYS;
 	private AbstractTeam.VisibilityRule deathMessageVisibilityRule = AbstractTeam.VisibilityRule.ALWAYS;
 	private Formatting currentFormatting = Formatting.RESET;
+	private AbstractTeam.CollisionRule field_13263 = AbstractTeam.CollisionRule.ALWAYS;
 
 	public Team(Scoreboard scoreboard, String string) {
 		this.scoreboardInstance = scoreboard;
@@ -74,7 +76,7 @@ public class Team extends AbstractTeam {
 		return this.getPrefix() + name + this.getSuffix();
 	}
 
-	public static String decorateName(AbstractTeam team, String name) {
+	public static String decorateName(@Nullable AbstractTeam team, String name) {
 		return team == null ? name : team.decorateName(name);
 	}
 
@@ -108,13 +110,23 @@ public class Team extends AbstractTeam {
 		return this.deathMessageVisibilityRule;
 	}
 
-	public void setNameTagVisibilityRule(AbstractTeam.VisibilityRule rule) {
-		this.nameTagVisibilityRule = rule;
+	public void method_12128(AbstractTeam.VisibilityRule visibilityRule) {
+		this.nameTagVisibilityRule = visibilityRule;
 		this.scoreboardInstance.updateScoreboardTeam(this);
 	}
 
 	public void setDeathMessageVisibilityRule(AbstractTeam.VisibilityRule rule) {
 		this.deathMessageVisibilityRule = rule;
+		this.scoreboardInstance.updateScoreboardTeam(this);
+	}
+
+	@Override
+	public AbstractTeam.CollisionRule method_12129() {
+		return this.field_13263;
+	}
+
+	public void method_9353(AbstractTeam.CollisionRule collisionRule) {
+		this.field_13263 = collisionRule;
 		this.scoreboardInstance.updateScoreboardTeam(this);
 	}
 
@@ -140,7 +152,8 @@ public class Team extends AbstractTeam {
 		this.currentFormatting = formatting;
 	}
 
-	public Formatting getFormatting() {
+	@Override
+	public Formatting method_12130() {
 		return this.currentFormatting;
 	}
 }

@@ -13,10 +13,10 @@ public class SugarcaneFeature extends Feature {
 			BlockPos blockPos2 = blockPos.add(random.nextInt(4) - random.nextInt(4), 0, random.nextInt(4) - random.nextInt(4));
 			if (world.isAir(blockPos2)) {
 				BlockPos blockPos3 = blockPos2.down();
-				if (world.getBlockState(blockPos3.west()).getBlock().getMaterial() == Material.WATER
-					|| world.getBlockState(blockPos3.east()).getBlock().getMaterial() == Material.WATER
-					|| world.getBlockState(blockPos3.north()).getBlock().getMaterial() == Material.WATER
-					|| world.getBlockState(blockPos3.south()).getBlock().getMaterial() == Material.WATER) {
+				if (world.getBlockState(blockPos3.west()).getMaterial() == Material.WATER
+					|| world.getBlockState(blockPos3.east()).getMaterial() == Material.WATER
+					|| world.getBlockState(blockPos3.north()).getMaterial() == Material.WATER
+					|| world.getBlockState(blockPos3.south()).getMaterial() == Material.WATER) {
 					int j = 2 + random.nextInt(random.nextInt(3) + 1);
 
 					for (int k = 0; k < j; k++) {

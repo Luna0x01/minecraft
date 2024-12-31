@@ -1,8 +1,10 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -31,39 +33,39 @@ public class TeleportCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.tp.usage");
 		} else {
 			int i = 0;
 			Entity entity2;
 			if (args.length != 2 && args.length != 4 && args.length != 6) {
-				entity2 = getAsPlayer(source);
+				entity2 = getAsPlayer(commandSource);
 			} else {
-				entity2 = getEntity(source, args[0]);
+				entity2 = method_10711(minecraftServer, commandSource, args[0]);
 				i = 1;
 			}
 
 			if (args.length == 1 || args.length == 2) {
-				Entity entity3 = getEntity(source, args[args.length - 1]);
+				Entity entity3 = method_10711(minecraftServer, commandSource, args[args.length - 1]);
 				if (entity3.world != entity2.world) {
 					throw new CommandException("commands.tp.notSameDimension");
 				} else {
-					entity2.startRiding(null);
+					entity2.stopRiding();
 					if (entity2 instanceof ServerPlayerEntity) {
 						((ServerPlayerEntity)entity2).networkHandler.requestTeleport(entity3.x, entity3.y, entity3.z, entity3.yaw, entity3.pitch);
 					} else {
 						entity2.refreshPositionAndAngles(entity3.x, entity3.y, entity3.z, entity3.yaw, entity3.pitch);
 					}
 
-					run(source, this, "commands.tp.success", new Object[]{entity2.getTranslationKey(), entity3.getTranslationKey()});
+					run(commandSource, this, "commands.tp.success", new Object[]{entity2.getTranslationKey(), entity3.getTranslationKey()});
 				}
 			} else if (args.length < i + 3) {
 				throw new IncorrectUsageException("commands.tp.usage");
 			} else if (entity2.world != null) {
 				int j = i + 1;
 				AbstractCommand.Coordinate coordinate = getCoordinate(entity2.x, args[i], true);
-				AbstractCommand.Coordinate coordinate2 = getCoordinate(entity2.y, args[j++], 0, 0, false);
+				AbstractCommand.Coordinate coordinate2 = getCoordinate(entity2.y, args[j++], -512, 512, false);
 				AbstractCommand.Coordinate coordinate3 = getCoordinate(entity2.z, args[j++], true);
 				AbstractCommand.Coordinate coordinate4 = getCoordinate((double)entity2.yaw, args.length > j ? args[j++] : "~", false);
 				AbstractCommand.Coordinate coordinate5 = getCoordinate((double)entity2.pitch, args.length > j ? args[j] : "~", false);
@@ -99,28 +101,19 @@ public class TeleportCommand extends AbstractCommand {
 						g = MathHelper.wrapDegrees(g);
 					}
 
-					if (g > 90.0F || g < -90.0F) {
-						g = MathHelper.wrapDegrees(180.0F - g);
-						f = MathHelper.wrapDegrees(f + 180.0F);
-					}
-
-					entity2.startRiding(null);
+					entity2.stopRiding();
 					((ServerPlayerEntity)entity2).networkHandler.teleportRequest(coordinate.getAmount(), coordinate2.getAmount(), coordinate3.getAmount(), f, g, set);
 					entity2.setHeadYaw(f);
 				} else {
 					float h = (float)MathHelper.wrapDegrees(coordinate4.getResult());
 					float k = (float)MathHelper.wrapDegrees(coordinate5.getResult());
-					if (k > 90.0F || k < -90.0F) {
-						k = MathHelper.wrapDegrees(180.0F - k);
-						h = MathHelper.wrapDegrees(h + 180.0F);
-					}
-
+					k = MathHelper.clamp(k, -90.0F, 90.0F);
 					entity2.refreshPositionAndAngles(coordinate.getResult(), coordinate2.getResult(), coordinate3.getResult(), h, k);
 					entity2.setHeadYaw(h);
 				}
 
 				run(
-					source,
+					commandSource,
 					this,
 					"commands.tp.success.coordinates",
 					new Object[]{entity2.getTranslationKey(), coordinate.getResult(), coordinate2.getResult(), coordinate3.getResult()}
@@ -130,8 +123,8 @@ public class TeleportCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length != 1 && args.length != 2 ? null : method_2894(args, MinecraftServer.getServer().getPlayerNames());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length != 1 && strings.length != 2 ? Collections.emptyList() : method_2894(strings, server.getPlayerNames());
 	}
 
 	@Override

@@ -18,7 +18,7 @@ public abstract class BlockWithEntity extends Block implements BlockEntityProvid
 	}
 
 	protected boolean isAdjacentToCactus(World world, BlockPos pos, Direction dir) {
-		return world.getBlockState(pos.offset(dir)).getBlock().getMaterial() == Material.CACTUS;
+		return world.getBlockState(pos.offset(dir)).getMaterial() == Material.CACTUS;
 	}
 
 	protected boolean isAdjacentToCactus(World world, BlockPos pos) {
@@ -29,8 +29,8 @@ public abstract class BlockWithEntity extends Block implements BlockEntityProvid
 	}
 
 	@Override
-	public int getBlockType() {
-		return -1;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.INVISIBLE;
 	}
 
 	@Override
@@ -40,9 +40,9 @@ public abstract class BlockWithEntity extends Block implements BlockEntityProvid
 	}
 
 	@Override
-	public boolean onEvent(World world, BlockPos pos, BlockState state, int id, int data) {
-		super.onEvent(world, pos, state, id, data);
+	public boolean onSyncedBlockEvent(BlockState state, World world, BlockPos pos, int type, int data) {
+		super.onSyncedBlockEvent(state, world, pos, type, data);
 		BlockEntity blockEntity = world.getBlockEntity(pos);
-		return blockEntity == null ? false : blockEntity.onBlockAction(id, data);
+		return blockEntity == null ? false : blockEntity.onBlockAction(type, data);
 	}
 }

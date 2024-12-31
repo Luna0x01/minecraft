@@ -3,7 +3,6 @@ package net.minecraft.client.render.world;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.world.BuiltChunk;
-import org.lwjgl.opengl.GL11;
 
 public class ListedChunkRenderManager extends AbstractChunkRenderManager {
 	@Override
@@ -13,7 +12,7 @@ public class ListedChunkRenderManager extends AbstractChunkRenderManager {
 				ChunkRenderHelperImpl chunkRenderHelperImpl = (ChunkRenderHelperImpl)builtChunk;
 				GlStateManager.pushMatrix();
 				this.method_9770(builtChunk);
-				GL11.glCallList(chunkRenderHelperImpl.method_10153(layer, chunkRenderHelperImpl.method_10170()));
+				GlStateManager.callList(chunkRenderHelperImpl.method_10153(layer, chunkRenderHelperImpl.method_10170()));
 				GlStateManager.popMatrix();
 			}
 

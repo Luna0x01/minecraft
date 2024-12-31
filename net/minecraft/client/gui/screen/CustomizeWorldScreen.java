@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.primitives.Floats;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -17,6 +18,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.CustomizedWorldProperties;
 
 public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSupplier, PagedEntryListWidget.Listener {
@@ -38,9 +40,9 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 	private int buttonLastPushed = 0;
 	private boolean cancelled = false;
 	private Predicate<String> floatVerifier = new Predicate<String>() {
-		public boolean apply(String string) {
+		public boolean apply(@Nullable String string) {
 			Float float_ = Floats.tryParse(string);
-			return string.length() == 0 || float_ != null && Floats.isFinite(float_) && float_ >= 0.0F;
+			return string.isEmpty() || float_ != null && Floats.isFinite(float_) && float_ >= 0.0F;
 		}
 	};
 	private CustomizedWorldProperties.Builder defaultProps = new CustomizedWorldProperties.Builder();
@@ -367,7 +369,7 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 	}
 
 	public void loadProps(String generatorOptions) {
-		if (generatorOptions != null && generatorOptions.length() != 0) {
+		if (generatorOptions != null && !generatorOptions.isEmpty()) {
 			this.props = CustomizedWorldProperties.Builder.fromJson(generatorOptions);
 		} else {
 			this.props = new CustomizedWorldProperties.Builder();
@@ -525,12 +527,12 @@ public class CustomizeWorldScreen extends Screen implements SliderWidget.LabelSu
 			case 162:
 				if (sliderValue < 0.0F) {
 					return I18n.translate("gui.all");
-				} else if ((int)sliderValue >= Biome.HELL.id) {
-					Biome biome = Biome.getBiomes()[(int)sliderValue + 2];
-					return biome != null ? biome.name : "?";
+				} else if ((int)sliderValue >= Biome.getBiomeIndex(Biomes.NETHER)) {
+					Biome biome = Biome.getBiomeFromIndex((int)sliderValue + 2);
+					return biome != null ? biome.getName() : "?";
 				} else {
-					Biome biome2 = Biome.getBiomes()[(int)sliderValue];
-					return biome2 != null ? biome2.name : "?";
+					Biome biome2 = Biome.getBiomeFromIndex((int)sliderValue);
+					return biome2 != null ? biome2.getName() : "?";
 				}
 		}
 	}

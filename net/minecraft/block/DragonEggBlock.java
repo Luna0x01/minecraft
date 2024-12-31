@@ -1,21 +1,30 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class DragonEggBlock extends Block {
+	protected static final Box field_12650 = new Box(0.0625, 0.0, 0.0625, 0.9375, 1.0, 0.9375);
+
 	public DragonEggBlock() {
 		super(Material.EGG, MaterialColor.BLACK);
-		this.setBoundingBox(0.0625F, 0.0F, 0.0625F, 0.9375F, 1.0F, 0.9375F);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12650;
 	}
 
 	@Override
@@ -24,8 +33,8 @@ public class DragonEggBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
 	}
 
 	@Override
@@ -34,7 +43,7 @@ public class DragonEggBlock extends Block {
 	}
 
 	private void scheduledTick(World world, BlockPos pos) {
-		if (FallingBlock.canFallThrough(world, pos.down()) && pos.getY() >= 0) {
+		if (FallingBlock.canFallThough(world.getBlockState(pos.down())) && pos.getY() >= 0) {
 			int i = 32;
 			if (!FallingBlock.instantFall && world.isRegionLoaded(pos.add(-i, -i, -i), pos.add(i, i, i))) {
 				world.spawnEntity(
@@ -44,7 +53,7 @@ public class DragonEggBlock extends Block {
 				world.setAir(pos);
 				BlockPos blockPos = pos;
 
-				while (FallingBlock.canFallThrough(world, blockPos) && blockPos.getY() > 0) {
+				while (FallingBlock.canFallThough(world.getBlockState(blockPos)) && blockPos.getY() > 0) {
 					blockPos = blockPos.down();
 				}
 
@@ -56,8 +65,19 @@ public class DragonEggBlock extends Block {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		this.teleport(world, pos);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		this.teleport(world, blockPos);
 		return true;
 	}
 
@@ -82,9 +102,9 @@ public class DragonEggBlock extends Block {
 							float f = (world.random.nextFloat() - 0.5F) * 0.2F;
 							float g = (world.random.nextFloat() - 0.5F) * 0.2F;
 							float h = (world.random.nextFloat() - 0.5F) * 0.2F;
-							double e = (double)blockPos.getX() + (double)(pos.getX() - blockPos.getX()) * d + (world.random.nextDouble() - 0.5) * 1.0 + 0.5;
-							double k = (double)blockPos.getY() + (double)(pos.getY() - blockPos.getY()) * d + world.random.nextDouble() * 1.0 - 0.5;
-							double l = (double)blockPos.getZ() + (double)(pos.getZ() - blockPos.getZ()) * d + (world.random.nextDouble() - 0.5) * 1.0 + 0.5;
+							double e = (double)blockPos.getX() + (double)(pos.getX() - blockPos.getX()) * d + (world.random.nextDouble() - 0.5) + 0.5;
+							double k = (double)blockPos.getY() + (double)(pos.getY() - blockPos.getY()) * d + world.random.nextDouble() - 0.5;
+							double l = (double)blockPos.getZ() + (double)(pos.getZ() - blockPos.getZ()) * d + (world.random.nextDouble() - 0.5) + 0.5;
 							world.addParticle(ParticleType.NETHER_PORTAL, e, k, l, (double)f, (double)g, (double)h);
 						}
 					} else {
@@ -104,22 +124,17 @@ public class DragonEggBlock extends Block {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
 		return true;
-	}
-
-	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return null;
 	}
 }

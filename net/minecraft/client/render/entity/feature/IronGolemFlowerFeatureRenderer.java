@@ -30,7 +30,7 @@ public class IronGolemFlowerFeatureRenderer implements FeatureRenderer<IronGolem
 			int n = ironGolemEntity.getLightmapCoordinates(h);
 			int o = n % 65536;
 			int p = n / 65536;
-			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)o / 1.0F, (float)p / 1.0F);
+			GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)o, (float)p);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			this.ironGolemRenderer.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			blockRenderManager.renderBlockEntity(Blocks.RED_FLOWER.getDefaultState(), 1.0F);

@@ -12,14 +12,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class SkullItem extends Item {
-	private static final String[] SKULL_TYPES = new String[]{"skeleton", "wither", "zombie", "char", "creeper"};
+	private static final String[] SKULL_TYPES = new String[]{"skeleton", "wither", "zombie", "char", "creeper", "dragon"};
 
 	public SkullItem() {
 		this.setItemGroup(ItemGroup.DECORATIONS);
@@ -28,60 +30,59 @@ public class SkullItem extends Item {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
 		if (direction == Direction.DOWN) {
-			return false;
+			return ActionResult.FAIL;
 		} else {
-			BlockState blockState = world.getBlockState(pos);
+			BlockState blockState = world.getBlockState(blockPos);
 			Block block = blockState.getBlock();
-			boolean bl = block.isReplaceable(world, pos);
+			boolean bl = block.method_8638(world, blockPos);
 			if (!bl) {
-				if (!world.getBlockState(pos).getBlock().getMaterial().isSolid()) {
-					return false;
+				if (!world.getBlockState(blockPos).getMaterial().isSolid()) {
+					return ActionResult.FAIL;
 				}
 
-				pos = pos.offset(direction);
+				blockPos = blockPos.offset(direction);
 			}
 
-			if (!player.canModify(pos, direction, itemStack)) {
-				return false;
-			} else if (!Blocks.SKULL.canBePlacedAtPos(world, pos)) {
-				return false;
+			if (!playerEntity.canModify(blockPos, direction, itemStack) || !Blocks.SKULL.canBePlacedAtPos(world, blockPos)) {
+				return ActionResult.FAIL;
+			} else if (world.isClient) {
+				return ActionResult.SUCCESS;
 			} else {
-				if (!world.isClient) {
-					world.setBlockState(pos, Blocks.SKULL.getDefaultState().with(SkullBlock.FACING, direction), 3);
-					int i = 0;
-					if (direction == Direction.UP) {
-						i = MathHelper.floor((double)(player.yaw * 16.0F / 360.0F) + 0.5) & 15;
-					}
-
-					BlockEntity blockEntity = world.getBlockEntity(pos);
-					if (blockEntity instanceof SkullBlockEntity) {
-						SkullBlockEntity skullBlockEntity = (SkullBlockEntity)blockEntity;
-						if (itemStack.getData() == 3) {
-							GameProfile gameProfile = null;
-							if (itemStack.hasNbt()) {
-								NbtCompound nbtCompound = itemStack.getNbt();
-								if (nbtCompound.contains("SkullOwner", 10)) {
-									gameProfile = NbtHelper.toGameProfile(nbtCompound.getCompound("SkullOwner"));
-								} else if (nbtCompound.contains("SkullOwner", 8) && nbtCompound.getString("SkullOwner").length() > 0) {
-									gameProfile = new GameProfile(null, nbtCompound.getString("SkullOwner"));
-								}
-							}
-
-							skullBlockEntity.setOwnerAndType(gameProfile);
-						} else {
-							skullBlockEntity.setSkullType(itemStack.getData());
-						}
-
-						skullBlockEntity.setRotation(i);
-						Blocks.SKULL.trySpawnEntity(world, pos, skullBlockEntity);
-					}
-
-					itemStack.count--;
+				world.setBlockState(blockPos, Blocks.SKULL.getDefaultState().with(SkullBlock.FACING, direction), 11);
+				int i = 0;
+				if (direction == Direction.UP) {
+					i = MathHelper.floor((double)(playerEntity.yaw * 16.0F / 360.0F) + 0.5) & 15;
 				}
 
-				return true;
+				BlockEntity blockEntity = world.getBlockEntity(blockPos);
+				if (blockEntity instanceof SkullBlockEntity) {
+					SkullBlockEntity skullBlockEntity = (SkullBlockEntity)blockEntity;
+					if (itemStack.getData() == 3) {
+						GameProfile gameProfile = null;
+						if (itemStack.hasNbt()) {
+							NbtCompound nbtCompound = itemStack.getNbt();
+							if (nbtCompound.contains("SkullOwner", 10)) {
+								gameProfile = NbtHelper.toGameProfile(nbtCompound.getCompound("SkullOwner"));
+							} else if (nbtCompound.contains("SkullOwner", 8) && !nbtCompound.getString("SkullOwner").isEmpty()) {
+								gameProfile = new GameProfile(null, nbtCompound.getString("SkullOwner"));
+							}
+						}
+
+						skullBlockEntity.setOwnerAndType(gameProfile);
+					} else {
+						skullBlockEntity.setSkullType(itemStack.getData());
+					}
+
+					skullBlockEntity.setRotation(i);
+					Blocks.SKULL.trySpawnEntity(world, blockPos, skullBlockEntity);
+				}
+
+				itemStack.count--;
+				return ActionResult.SUCCESS;
 			}
 		}
 	}
@@ -129,7 +130,7 @@ public class SkullItem extends Item {
 	@Override
 	public boolean postProcessNbt(NbtCompound nbt) {
 		super.postProcessNbt(nbt);
-		if (nbt.contains("SkullOwner", 8) && nbt.getString("SkullOwner").length() > 0) {
+		if (nbt.contains("SkullOwner", 8) && !nbt.getString("SkullOwner").isEmpty()) {
 			GameProfile gameProfile = new GameProfile(null, nbt.getString("SkullOwner"));
 			gameProfile = SkullBlockEntity.loadProperties(gameProfile);
 			nbt.put("SkullOwner", NbtHelper.fromGameProfile(new NbtCompound(), gameProfile));

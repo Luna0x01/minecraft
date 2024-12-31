@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandSource;
 import net.minecraft.entity.Entity;
@@ -26,12 +27,12 @@ import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.level.LevelInfo;
 
@@ -41,15 +42,18 @@ public class PlayerSelector {
 	private static final Pattern field_4948 = Pattern.compile("\\G(\\w+)=([-!]?[\\w-]*)(?:$|,)");
 	private static final Set<String> positionsPattern = Sets.newHashSet(new String[]{"x", "y", "z", "dx", "dy", "dz", "rm", "r"});
 
+	@Nullable
 	public static ServerPlayerEntity selectPlayer(CommandSource sender, String string) {
 		return selectEntity(sender, string, ServerPlayerEntity.class);
 	}
 
+	@Nullable
 	public static <T extends Entity> T selectEntity(CommandSource source, String string, Class<? extends T> entityClass) {
 		List<T> list = method_10866(source, string, entityClass);
 		return (T)(list.size() == 1 ? list.get(0) : null);
 	}
 
+	@Nullable
 	public static Text method_6362(CommandSource source, String string) {
 		List<Entity> list = method_10866(source, string, Entity.class);
 		if (list.isEmpty()) {
@@ -74,6 +78,7 @@ public class PlayerSelector {
 			} else {
 				String string2 = matcher.group(1);
 				BlockPos blockPos = method_10864(map, source.getBlockPos());
+				Vec3d vec3d = method_12890(map, source.getPos());
 				List<World> list = method_10862(source, map);
 				List<T> list2 = Lists.newArrayList();
 
@@ -84,15 +89,16 @@ public class PlayerSelector {
 						list3.addAll(method_10863(map));
 						list3.addAll(method_10868(map));
 						list3.addAll(method_10869(map));
-						list3.addAll(method_10870(map));
+						list3.addAll(method_12891(source, map));
 						list3.addAll(method_10871(map));
-						list3.addAll(method_10857(map, blockPos));
+						list3.addAll(method_12892(map));
+						list3.addAll(method_12888(map, vec3d));
 						list3.addAll(method_10872(map));
 						list2.addAll(method_10858(map, class_, list3, string2, world, blockPos));
 					}
 				}
 
-				return method_10856(list2, map, source, class_, string2, blockPos);
+				return method_10856(list2, map, source, class_, string2, vec3d);
 			}
 		} else {
 			return Collections.emptyList();
@@ -104,7 +110,7 @@ public class PlayerSelector {
 		if (method_10873(map)) {
 			list.add(commandSource.getWorld());
 		} else {
-			Collections.addAll(list, MinecraftServer.getServer().worlds);
+			Collections.addAll(list, commandSource.getMinecraftServer().worlds);
 		}
 
 		return list;
@@ -136,14 +142,14 @@ public class PlayerSelector {
 		if ((string2 == null || !string.equals("e")) && !bl3) {
 			if (bl2) {
 				list.add(new Predicate<Entity>() {
-					public boolean apply(Entity entity) {
+					public boolean apply(@Nullable Entity entity) {
 						return entity instanceof PlayerEntity;
 					}
 				});
 			}
 		} else {
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
+				public boolean apply(@Nullable Entity entity) {
 					return EntityType.equals(entity, string2) != bl;
 				}
 			});
@@ -158,7 +164,7 @@ public class PlayerSelector {
 		final int j = method_10860(map, "l", -1);
 		if (i > -1 || j > -1) {
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
+				public boolean apply(@Nullable Entity entity) {
 					if (!(entity instanceof ServerPlayerEntity)) {
 						return false;
 					} else {
@@ -174,21 +180,37 @@ public class PlayerSelector {
 
 	private static List<Predicate<Entity>> method_10868(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		final int i = method_10860(map, "m", LevelInfo.GameMode.NOT_SET.getId());
-		if (i != LevelInfo.GameMode.NOT_SET.getId()) {
+		String string = method_10865(map, "m");
+		if (string == null) {
+			return list;
+		} else {
+			final boolean bl = string.startsWith("!");
+			if (bl) {
+				string = string.substring(1);
+			}
+
+			LevelInfo.GameMode gameMode;
+			try {
+				int i = Integer.parseInt(string);
+				gameMode = LevelInfo.GameMode.method_11494(i, LevelInfo.GameMode.NOT_SET);
+			} catch (Throwable var6) {
+				gameMode = LevelInfo.GameMode.method_11495(string, LevelInfo.GameMode.NOT_SET);
+			}
+
+			final LevelInfo.GameMode gameMode2 = gameMode;
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
+				public boolean apply(@Nullable Entity entity) {
 					if (!(entity instanceof ServerPlayerEntity)) {
 						return false;
 					} else {
 						ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)entity;
-						return serverPlayerEntity.interactionManager.getGameMode().getId() == i;
+						LevelInfo.GameMode gameMode = serverPlayerEntity.interactionManager.getGameMode();
+						return bl ? gameMode != gameMode2 : gameMode == gameMode2;
 					}
 				}
 			});
+			return list;
 		}
-
-		return list;
 	}
 
 	private static List<Predicate<Entity>> method_10869(Map<String, String> map) {
@@ -201,7 +223,7 @@ public class PlayerSelector {
 
 		if (string != null) {
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
+				public boolean apply(@Nullable Entity entity) {
 					if (!(entity instanceof LivingEntity)) {
 						return false;
 					} else {
@@ -217,13 +239,14 @@ public class PlayerSelector {
 		return list;
 	}
 
-	private static List<Predicate<Entity>> method_10870(Map<String, String> map) {
-		List<Predicate<Entity>> list = Lists.newArrayList();
+	private static List<Predicate<Entity>> method_12891(CommandSource commandSource, Map<String, String> map) {
 		final Map<String, Integer> map2 = method_4728(map);
-		if (map2 != null && map2.size() > 0) {
-			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
-					Scoreboard scoreboard = MinecraftServer.getServer().getWorld(0).getScoreboard();
+		return (List<Predicate<Entity>>)(map2.isEmpty() ? Collections.emptyList() : Lists.newArrayList(new Predicate[]{new Predicate<Entity>() {
+			public boolean apply(@Nullable Entity entity) {
+				if (entity == null) {
+					return false;
+				} else {
+					Scoreboard scoreboard = commandSource.getMinecraftServer().getWorld(0).getScoreboard();
 
 					for (Entry<String, Integer> entry : map2.entrySet()) {
 						String string = (String)entry.getKey();
@@ -238,7 +261,7 @@ public class PlayerSelector {
 							return false;
 						}
 
-						String string2 = entity instanceof ServerPlayerEntity ? entity.getTranslationKey() : entity.getUuid().toString();
+						String string2 = entity instanceof ServerPlayerEntity ? entity.getTranslationKey() : entity.getEntityName();
 						if (!scoreboard.playerHasObjective(string2, scoreboardObjective)) {
 							return false;
 						}
@@ -256,10 +279,8 @@ public class PlayerSelector {
 
 					return true;
 				}
-			});
-		}
-
-		return list;
+			}
+		}}));
 	}
 
 	private static List<Predicate<Entity>> method_10871(Map<String, String> map) {
@@ -272,8 +293,8 @@ public class PlayerSelector {
 
 		if (string != null) {
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
-					return entity.getTranslationKey().equals(string) != bl;
+				public boolean apply(@Nullable Entity entity) {
+					return entity != null && entity.getTranslationKey().equals(string) != bl;
 				}
 			});
 		}
@@ -281,44 +302,83 @@ public class PlayerSelector {
 		return list;
 	}
 
-	private static List<Predicate<Entity>> method_10857(Map<String, String> map, BlockPos blockPos) {
+	private static List<Predicate<Entity>> method_12892(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
-		final int i = method_10860(map, "rm", -1);
-		final int j = method_10860(map, "r", -1);
-		if (blockPos != null && (i >= 0 || j >= 0)) {
-			final int k = i * i;
-			final int l = j * j;
+		String string = method_10865(map, "tag");
+		final boolean bl = string != null && string.startsWith("!");
+		if (bl) {
+			string = string.substring(1);
+		}
+
+		if (string != null) {
+			final String string2 = string;
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
-					int i = (int)entity.squaredDistanceToCenter(blockPos);
-					return (i < 0 || i >= k) && (j < 0 || i <= l);
+				public boolean apply(@Nullable Entity entity) {
+					if (entity == null) {
+						return false;
+					} else {
+						return "".equals(string2) ? entity.getScoreboardTags().isEmpty() != bl : entity.getScoreboardTags().contains(string2) != bl;
+					}
 				}
 			});
 		}
 
 		return list;
+	}
+
+	private static List<Predicate<Entity>> method_12888(Map<String, String> map, Vec3d vec3d) {
+		double d = (double)method_10860(map, "rm", -1);
+		double e = (double)method_10860(map, "r", -1);
+		final boolean bl = d < -0.5;
+		final boolean bl2 = e < -0.5;
+		if (bl && bl2) {
+			return Collections.emptyList();
+		} else {
+			double f = Math.max(d, 1.0E-4);
+			final double g = f * f;
+			double h = Math.max(e, 1.0E-4);
+			final double i = h * h;
+			return Lists.newArrayList(new Predicate[]{new Predicate<Entity>() {
+				public boolean apply(@Nullable Entity entity) {
+					if (entity == null) {
+						return false;
+					} else {
+						double d = vec3d.method_12126(entity.x, entity.y, entity.z);
+						return (bl || d >= g) && (bl2 || d <= i);
+					}
+				}
+			}});
+		}
 	}
 
 	private static List<Predicate<Entity>> method_10872(Map<String, String> map) {
 		List<Predicate<Entity>> list = Lists.newArrayList();
 		if (map.containsKey("rym") || map.containsKey("ry")) {
-			final int i = method_10854(method_10860(map, "rym", 0));
-			final int j = method_10854(method_10860(map, "ry", 359));
+			final int i = MathHelper.wrapDegrees(method_10860(map, "rym", 0));
+			final int j = MathHelper.wrapDegrees(method_10860(map, "ry", 359));
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
-					int i = PlayerSelector.method_10854((int)Math.floor((double)entity.yaw));
-					return i > j ? i >= i || i <= j : i >= i && i <= j;
+				public boolean apply(@Nullable Entity entity) {
+					if (entity == null) {
+						return false;
+					} else {
+						int i = MathHelper.wrapDegrees(MathHelper.floor(entity.yaw));
+						return i > j ? i >= i || i <= j : i >= i && i <= j;
+					}
 				}
 			});
 		}
 
 		if (map.containsKey("rxm") || map.containsKey("rx")) {
-			final int k = method_10854(method_10860(map, "rxm", 0));
-			final int l = method_10854(method_10860(map, "rx", 359));
+			final int k = MathHelper.wrapDegrees(method_10860(map, "rxm", 0));
+			final int l = MathHelper.wrapDegrees(method_10860(map, "rx", 359));
 			list.add(new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
-					int i = PlayerSelector.method_10854((int)Math.floor((double)entity.pitch));
-					return k > l ? i >= k || i <= l : i >= k && i <= l;
+				public boolean apply(@Nullable Entity entity) {
+					if (entity == null) {
+						return false;
+					} else {
+						int i = MathHelper.wrapDegrees(MathHelper.floor(entity.pitch));
+						return k > l ? i >= k || i <= l : i >= k && i <= l;
+					}
 				}
 			});
 		}
@@ -340,44 +400,34 @@ public class PlayerSelector {
 		int l = method_10860(map, "r", -1);
 		Predicate<Entity> predicate = Predicates.and(list);
 		Predicate<Entity> predicate2 = Predicates.and(EntityPredicate.VALID_ENTITY, predicate);
-		if (blockPos != null) {
-			int m = world.playerEntities.size();
-			int n = world.loadedEntities.size();
-			boolean bl3 = m < n / 16;
-			if (map.containsKey("dx") || map.containsKey("dy") || map.containsKey("dz")) {
-				final Box box = method_10855(blockPos, i, j, k);
-				if (bl && bl3 && !bl2) {
-					Predicate<Entity> predicate3 = new Predicate<Entity>() {
-						public boolean apply(Entity entity) {
-							return entity.x < box.minX || entity.y < box.minY || entity.z < box.minZ
-								? false
-								: !(entity.x >= box.maxX) && !(entity.y >= box.maxY) && !(entity.z >= box.maxZ);
-						}
-					};
-					list2.addAll(world.method_8536(class_, Predicates.and(predicate2, predicate3)));
-				} else {
-					list2.addAll(world.getEntitiesInBox(class_, box, predicate2));
-				}
-			} else if (l >= 0) {
-				Box box2 = new Box(
-					(double)(blockPos.getX() - l),
-					(double)(blockPos.getY() - l),
-					(double)(blockPos.getZ() - l),
-					(double)(blockPos.getX() + l + 1),
-					(double)(blockPos.getY() + l + 1),
-					(double)(blockPos.getZ() + l + 1)
-				);
-				if (bl && bl3 && !bl2) {
-					list2.addAll(world.method_8536(class_, predicate2));
-				} else {
-					list2.addAll(world.getEntitiesInBox(class_, box2, predicate2));
-				}
-			} else if (string.equals("a")) {
-				list2.addAll(world.method_8536(class_, predicate));
-			} else if (!string.equals("p") && (!string.equals("r") || bl2)) {
-				list2.addAll(world.method_8514(class_, predicate2));
+		int m = world.playerEntities.size();
+		int n = world.loadedEntities.size();
+		boolean bl3 = m < n / 16;
+		if (map.containsKey("dx") || map.containsKey("dy") || map.containsKey("dz")) {
+			final Box box = method_10855(blockPos, i, j, k);
+			if (bl && bl3 && !bl2) {
+				Predicate<Entity> predicate3 = new Predicate<Entity>() {
+					public boolean apply(@Nullable Entity entity) {
+						return entity != null && box.intersects(entity.getBoundingBox());
+					}
+				};
+				list2.addAll(world.method_8536(class_, Predicates.and(predicate2, predicate3)));
 			} else {
+				list2.addAll(world.getEntitiesInBox(class_, box, predicate2));
+			}
+		} else if (l >= 0) {
+			Box box2 = new Box(
+				(double)(blockPos.getX() - l),
+				(double)(blockPos.getY() - l),
+				(double)(blockPos.getZ() - l),
+				(double)(blockPos.getX() + l + 1),
+				(double)(blockPos.getY() + l + 1),
+				(double)(blockPos.getZ() + l + 1)
+			);
+			if (bl && bl3 && !bl2) {
 				list2.addAll(world.method_8536(class_, predicate2));
+			} else {
+				list2.addAll(world.getEntitiesInBox(class_, box2, predicate2));
 			}
 		} else if (string.equals("a")) {
 			list2.addAll(world.method_8536(class_, predicate));
@@ -391,19 +441,17 @@ public class PlayerSelector {
 	}
 
 	private static <T extends Entity> List<T> method_10856(
-		List<T> list, Map<String, String> map, CommandSource commandSource, Class<? extends T> class_, String string, BlockPos blockPos
+		List<T> list, Map<String, String> map, CommandSource commandSource, Class<? extends T> class_, String string, Vec3d vec3d
 	) {
 		int i = method_10860(map, "c", !string.equals("a") && !string.equals("e") ? 1 : 0);
-		if (!string.equals("p") && !string.equals("a") && !string.equals("e")) {
-			if (string.equals("r")) {
-				Collections.shuffle(list);
-			}
-		} else if (blockPos != null) {
+		if (string.equals("p") || string.equals("a") || string.equals("e")) {
 			Collections.sort(list, new Comparator<Entity>() {
 				public int compare(Entity entity, Entity entity2) {
-					return ComparisonChain.start().compare(entity.squaredDistanceTo(blockPos), entity2.squaredDistanceTo(blockPos)).result();
+					return ComparisonChain.start().compare(entity.squaredDistanceTo(vec3d.x, vec3d.y, vec3d.z), entity2.squaredDistanceTo(vec3d.x, vec3d.y, vec3d.z)).result();
 				}
 			});
+		} else if (string.equals("r")) {
+			Collections.shuffle(list);
 		}
 
 		Entity entity = commandSource.getEntity();
@@ -435,21 +483,16 @@ public class PlayerSelector {
 		return new Box((double)l, (double)m, (double)n, (double)o, (double)p, (double)q);
 	}
 
-	public static int method_10854(int i) {
-		i %= 360;
-		if (i >= 160) {
-			i -= 360;
-		}
-
-		if (i < 0) {
-			i += 360;
-		}
-
-		return i;
-	}
-
 	private static BlockPos method_10864(Map<String, String> map, BlockPos blockPos) {
 		return new BlockPos(method_10860(map, "x", blockPos.getX()), method_10860(map, "y", blockPos.getY()), method_10860(map, "z", blockPos.getZ()));
+	}
+
+	private static Vec3d method_12890(Map<String, String> map, Vec3d vec3d) {
+		return new Vec3d(method_12889(map, "x", vec3d.x, true), method_12889(map, "y", vec3d.y, false), method_12889(map, "z", vec3d.z, true));
+	}
+
+	private static double method_12889(Map<String, String> map, String string, double d, boolean bl) {
+		return map.containsKey(string) ? (double)MathHelper.parseInt((String)map.get(string), MathHelper.floor(d)) + (bl ? 0.5 : 0.0) : d;
 	}
 
 	private static boolean method_10873(Map<String, String> map) {
@@ -466,6 +509,7 @@ public class PlayerSelector {
 		return map.containsKey(string) ? MathHelper.parseInt((String)map.get(string), i) : i;
 	}
 
+	@Nullable
 	private static String method_10865(Map<String, String> map, String string) {
 		return (String)map.get(string);
 	}
@@ -498,7 +542,7 @@ public class PlayerSelector {
 		return field_4946.matcher(args).matches();
 	}
 
-	private static Map<String, String> method_4098(String string) {
+	private static Map<String, String> method_4098(@Nullable String string) {
 		Map<String, String> map = Maps.newHashMap();
 		if (string == null) {
 			return map;
@@ -522,7 +566,7 @@ public class PlayerSelector {
 						string2 = "r";
 				}
 
-				if (string2 != null && matcher.group(1).length() > 0) {
+				if (string2 != null && !matcher.group(1).isEmpty()) {
 					map.put(string2, matcher.group(1));
 				}
 			}

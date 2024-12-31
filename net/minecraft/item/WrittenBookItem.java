@@ -11,10 +11,13 @@ import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.ChatSerializer;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class WrittenBookItem extends Item {
@@ -29,7 +32,7 @@ public class WrittenBookItem extends Item {
 			return false;
 		} else {
 			String string = nbt.getString("title");
-			return string == null || string.length() > 32 ? false : nbt.contains("author", 8);
+			return string != null && string.length() <= 32 ? nbt.contains("author", 8) : false;
 		}
 	}
 
@@ -64,14 +67,14 @@ public class WrittenBookItem extends Item {
 	}
 
 	@Override
-	public ItemStack onStartUse(ItemStack stack, World world, PlayerEntity player) {
+	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
 		if (!world.isClient) {
-			this.resolveContents(stack, player);
+			this.resolveContents(itemStack, playerEntity);
 		}
 
-		player.openBookEditScreen(stack);
-		player.incrementStat(Stats.USED[Item.getRawId(this)]);
-		return stack;
+		playerEntity.method_3201(itemStack, hand);
+		playerEntity.incrementStat(Stats.used(this));
+		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 
 	private void resolveContents(ItemStack stack, PlayerEntity player) {
@@ -85,15 +88,15 @@ public class WrittenBookItem extends Item {
 					for (int i = 0; i < nbtList.size(); i++) {
 						String string = nbtList.getString(i);
 
-						Text text2;
+						Text text;
 						try {
-							text2 = Text.Serializer.deserialize(string);
-							text2 = ChatSerializer.process(player, text2, player);
+							text = Text.Serializer.lenientDeserializeText(string);
+							text = ChatSerializer.process(player, text, player);
 						} catch (Exception var9) {
-							text2 = new LiteralText(string);
+							text = new LiteralText(string);
 						}
 
-						nbtList.set(i, new NbtString(Text.Serializer.serialize(text2)));
+						nbtList.set(i, new NbtString(Text.Serializer.serialize(text)));
 					}
 
 					nbtCompound.put("pages", nbtList);

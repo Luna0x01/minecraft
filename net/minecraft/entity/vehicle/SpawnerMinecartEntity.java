@@ -52,7 +52,7 @@ public class SpawnerMinecartEntity extends AbstractMinecartEntity {
 	@Override
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		this.spawner.serialize(nbt);
+		this.spawner.toTag(nbt);
 	}
 
 	@Override
@@ -64,9 +64,5 @@ public class SpawnerMinecartEntity extends AbstractMinecartEntity {
 	public void tick() {
 		super.tick();
 		this.spawner.tick();
-	}
-
-	public SpawnerBlockEntityBehavior getSpawnerBehavior() {
-		return this.spawner;
 	}
 }

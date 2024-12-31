@@ -26,8 +26,6 @@ public class SurvivalInventoryScreen extends InventoryScreen {
 		if (this.client.interactionManager.hasCreativeInventory()) {
 			this.client.setScreen(new CreativeInventoryScreen(this.client.player));
 		}
-
-		this.applyStatusEffectOffset();
 	}
 
 	@Override
@@ -42,7 +40,7 @@ public class SurvivalInventoryScreen extends InventoryScreen {
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY) {
-		this.textRenderer.draw(I18n.translate("container.crafting"), 86, 16, 4210752);
+		this.textRenderer.draw(I18n.translate("container.crafting"), 97, 8, 4210752);
 	}
 
 	@Override
@@ -86,7 +84,7 @@ public class SurvivalInventoryScreen extends InventoryScreen {
 		EntityRenderDispatcher entityRenderDispatcher = MinecraftClient.getInstance().getEntityRenderManager();
 		entityRenderDispatcher.setYaw(180.0F);
 		entityRenderDispatcher.setRenderShadows(false);
-		entityRenderDispatcher.render(entity, 0.0, 0.0, 0.0, 0.0F, 1.0F);
+		entityRenderDispatcher.method_12446(entity, 0.0, 0.0, 0.0, 0.0F, 1.0F, false);
 		entityRenderDispatcher.setRenderShadows(true);
 		entity.bodyYaw = f;
 		entity.yaw = g;

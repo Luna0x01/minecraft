@@ -15,18 +15,30 @@ public class KeyboardInput extends Input {
 		this.movementForward = 0.0F;
 		if (this.options.forwardKey.isPressed()) {
 			this.movementForward++;
+			this.pressingForward = true;
+		} else {
+			this.pressingForward = false;
 		}
 
 		if (this.options.backKey.isPressed()) {
 			this.movementForward--;
+			this.pressingBack = true;
+		} else {
+			this.pressingBack = false;
 		}
 
 		if (this.options.leftKey.isPressed()) {
 			this.movementSideways++;
+			this.pressingLeft = true;
+		} else {
+			this.pressingLeft = false;
 		}
 
 		if (this.options.rightKey.isPressed()) {
 			this.movementSideways--;
+			this.pressingRight = true;
+		} else {
+			this.pressingRight = false;
 		}
 
 		this.jumping = this.options.jumpKey.isPressed();

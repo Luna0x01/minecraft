@@ -1,6 +1,9 @@
 package net.minecraft.util.math;
 
+import javax.annotation.Nullable;
+
 public class Vec3d {
+	public static final Vec3d ZERO = new Vec3d(0.0, 0.0, 0.0);
 	public final double x;
 	public final double y;
 	public final double z;
@@ -33,7 +36,7 @@ public class Vec3d {
 
 	public Vec3d normalize() {
 		double d = (double)MathHelper.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-		return d < 1.0E-4 ? new Vec3d(0.0, 0.0, 0.0) : new Vec3d(this.x / d, this.y / d, this.z / d);
+		return d < 1.0E-4 ? ZERO : new Vec3d(this.x / d, this.y / d, this.z / d);
 	}
 
 	public double dotProduct(Vec3d vec) {
@@ -74,44 +77,82 @@ public class Vec3d {
 		return d * d + e * e + f * f;
 	}
 
+	public double method_12126(double d, double e, double f) {
+		double g = d - this.x;
+		double h = e - this.y;
+		double i = f - this.z;
+		return g * g + h * h + i * i;
+	}
+
+	public Vec3d multiply(double value) {
+		return new Vec3d(this.x * value, this.y * value, this.z * value);
+	}
+
 	public double length() {
 		return (double)MathHelper.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
 	}
 
-	public Vec3d lerpForX(Vec3d other, double x) {
-		double d = other.x - this.x;
-		double e = other.y - this.y;
-		double f = other.z - this.z;
-		if (d * d < 1.0E-7F) {
-			return null;
-		} else {
-			double g = (x - this.x) / d;
-			return !(g < 0.0) && !(g > 1.0) ? new Vec3d(this.x + d * g, this.y + e * g, this.z + f * g) : null;
-		}
-	}
-
-	public Vec3d lerpForY(Vec3d other, double y) {
-		double d = other.x - this.x;
-		double e = other.y - this.y;
-		double f = other.z - this.z;
+	@Nullable
+	public Vec3d method_12124(Vec3d vec3d, double d) {
+		double e = vec3d.x - this.x;
+		double f = vec3d.y - this.y;
+		double g = vec3d.z - this.z;
 		if (e * e < 1.0E-7F) {
 			return null;
 		} else {
-			double g = (y - this.y) / e;
-			return !(g < 0.0) && !(g > 1.0) ? new Vec3d(this.x + d * g, this.y + e * g, this.z + f * g) : null;
+			double h = (d - this.x) / e;
+			return !(h < 0.0) && !(h > 1.0) ? new Vec3d(this.x + e * h, this.y + f * h, this.z + g * h) : null;
 		}
 	}
 
-	public Vec3d lerpForZ(Vec3d other, double z) {
-		double d = other.x - this.x;
-		double e = other.y - this.y;
-		double f = other.z - this.z;
+	@Nullable
+	public Vec3d method_12125(Vec3d vec3d, double d) {
+		double e = vec3d.x - this.x;
+		double f = vec3d.y - this.y;
+		double g = vec3d.z - this.z;
 		if (f * f < 1.0E-7F) {
 			return null;
 		} else {
-			double g = (z - this.z) / f;
-			return !(g < 0.0) && !(g > 1.0) ? new Vec3d(this.x + d * g, this.y + e * g, this.z + f * g) : null;
+			double h = (d - this.y) / f;
+			return !(h < 0.0) && !(h > 1.0) ? new Vec3d(this.x + e * h, this.y + f * h, this.z + g * h) : null;
 		}
+	}
+
+	@Nullable
+	public Vec3d method_12127(Vec3d vec3d, double d) {
+		double e = vec3d.x - this.x;
+		double f = vec3d.y - this.y;
+		double g = vec3d.z - this.z;
+		if (g * g < 1.0E-7F) {
+			return null;
+		} else {
+			double h = (d - this.z) / g;
+			return !(h < 0.0) && !(h > 1.0) ? new Vec3d(this.x + e * h, this.y + f * h, this.z + g * h) : null;
+		}
+	}
+
+	public boolean equals(Object object) {
+		if (this == object) {
+			return true;
+		} else if (!(object instanceof Vec3d)) {
+			return false;
+		} else {
+			Vec3d vec3d = (Vec3d)object;
+			if (Double.compare(vec3d.x, this.x) != 0) {
+				return false;
+			} else {
+				return Double.compare(vec3d.y, this.y) != 0 ? false : Double.compare(vec3d.z, this.z) == 0;
+			}
+		}
+	}
+
+	public int hashCode() {
+		long l = Double.doubleToLongBits(this.x);
+		int i = (int)(l ^ l >>> 32);
+		l = Double.doubleToLongBits(this.y);
+		i = 31 * i + (int)(l ^ l >>> 32);
+		l = Double.doubleToLongBits(this.z);
+		return 31 * i + (int)(l ^ l >>> 32);
 	}
 
 	public String toString() {

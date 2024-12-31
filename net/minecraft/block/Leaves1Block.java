@@ -2,8 +2,8 @@ package net.minecraft.block;
 
 import com.google.common.base.Predicate;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.color.world.FoliageColors;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -13,13 +13,12 @@ import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class Leaves1Block extends LeavesBlock {
 	public static final EnumProperty<PlanksBlock.WoodType> VARIANT = EnumProperty.of(
 		"variant", PlanksBlock.WoodType.class, new Predicate<PlanksBlock.WoodType>() {
-			public boolean apply(PlanksBlock.WoodType woodType) {
+			public boolean apply(@Nullable PlanksBlock.WoodType woodType) {
 				return woodType.getId() < 4;
 			}
 		}
@@ -30,40 +29,9 @@ public class Leaves1Block extends LeavesBlock {
 	}
 
 	@Override
-	public int getColor(BlockState state) {
-		if (state.getBlock() != this) {
-			return super.getColor(state);
-		} else {
-			PlanksBlock.WoodType woodType = state.get(VARIANT);
-			if (woodType == PlanksBlock.WoodType.SPRUCE) {
-				return FoliageColors.getSpruceColor();
-			} else {
-				return woodType == PlanksBlock.WoodType.BIRCH ? FoliageColors.getBirchColor() : super.getColor(state);
-			}
-		}
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		BlockState blockState = view.getBlockState(pos);
-		if (blockState.getBlock() == this) {
-			PlanksBlock.WoodType woodType = blockState.get(VARIANT);
-			if (woodType == PlanksBlock.WoodType.SPRUCE) {
-				return FoliageColors.getSpruceColor();
-			}
-
-			if (woodType == PlanksBlock.WoodType.BIRCH) {
-				return FoliageColors.getBirchColor();
-			}
-		}
-
-		return super.getBlockColor(view, pos, id);
-	}
-
-	@Override
 	protected void dropApple(World world, BlockPos pos, BlockState state, int dropChance) {
 		if (state.get(VARIANT) == PlanksBlock.WoodType.OAK && world.random.nextInt(dropChance) == 0) {
-			onBlockBreak(world, pos, new ItemStack(Items.APPLE, 1, 0));
+			onBlockBreak(world, pos, new ItemStack(Items.APPLE));
 		}
 	}
 
@@ -121,12 +89,12 @@ public class Leaves1Block extends LeavesBlock {
 	}
 
 	@Override
-	public void harvest(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be) {
-		if (!world.isClient && player.getMainHandStack() != null && player.getMainHandStack().getItem() == Items.SHEARS) {
-			player.incrementStat(Stats.BLOCK_STATS[Block.getIdByBlock(this)]);
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
+		if (!world.isClient && stack != null && stack.getItem() == Items.SHEARS) {
+			player.incrementStat(Stats.mined(this));
 			onBlockBreak(world, pos, new ItemStack(Item.fromBlock(this), 1, ((PlanksBlock.WoodType)state.get(VARIANT)).getId()));
 		} else {
-			super.harvest(world, player, pos, state, be);
+			super.method_8651(world, player, pos, state, blockEntity, stack);
 		}
 	}
 }

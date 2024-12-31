@@ -198,8 +198,9 @@ public class CreateWorldScreen extends Screen {
 					}
 				}
 
-				LevelInfo.GameMode gameMode = LevelInfo.GameMode.byName(this.gamemodeName);
-				LevelInfo levelInfo = new LevelInfo(l, gameMode, this.structures, this.hardcore, LevelGeneratorType.TYPES[this.generatorType]);
+				LevelInfo levelInfo = new LevelInfo(
+					l, LevelInfo.GameMode.byName(this.gamemodeName), this.structures, this.hardcore, LevelGeneratorType.TYPES[this.generatorType]
+				);
 				levelInfo.setGeneratorOptions(this.generatorOptions);
 				if (this.bonusChest && !this.hardcore) {
 					levelInfo.setBonusChest();
@@ -352,7 +353,7 @@ public class CreateWorldScreen extends Screen {
 			this.buttonClicked((ButtonWidget)this.buttons.get(0));
 		}
 
-		((ButtonWidget)this.buttons.get(0)).active = this.levelNameField.getText().length() > 0;
+		((ButtonWidget)this.buttons.get(0)).active = !this.levelNameField.getText().isEmpty();
 		this.updateSaveFolderName();
 	}
 

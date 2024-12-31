@@ -1,9 +1,8 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.color.world.BiomeColors;
-import net.minecraft.client.color.world.GrassColors;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -30,35 +29,24 @@ public class GrassBlock extends Block implements Growable {
 	}
 
 	@Override
-	public int getColor() {
-		return GrassColors.getColor(0.5, 1.0);
-	}
-
-	@Override
-	public int getColor(BlockState state) {
-		return this.getColor();
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		return BiomeColors.getGrassColor(view, pos);
-	}
-
-	@Override
 	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
 		if (!world.isClient) {
-			if (world.getLightLevelWithNeighbours(pos.up()) < 4 && world.getBlockState(pos.up()).getBlock().getOpacity() > 2) {
+			if (world.getLightLevelWithNeighbours(pos.up()) < 4 && world.getBlockState(pos.up()).getOpacity() > 2) {
 				world.setBlockState(pos, Blocks.DIRT.getDefaultState());
 			} else {
 				if (world.getLightLevelWithNeighbours(pos.up()) >= 9) {
 					for (int i = 0; i < 4; i++) {
 						BlockPos blockPos = pos.add(rand.nextInt(3) - 1, rand.nextInt(5) - 3, rand.nextInt(3) - 1);
-						Block block = world.getBlockState(blockPos.up()).getBlock();
-						BlockState blockState = world.getBlockState(blockPos);
-						if (blockState.getBlock() == Blocks.DIRT
-							&& blockState.get(DirtBlock.VARIANT) == DirtBlock.DirtType.DIRT
+						if (blockPos.getY() >= 0 && blockPos.getY() < 256 && !world.blockExists(blockPos)) {
+							return;
+						}
+
+						BlockState blockState = world.getBlockState(blockPos.up());
+						BlockState blockState2 = world.getBlockState(blockPos);
+						if (blockState2.getBlock() == Blocks.DIRT
+							&& blockState2.get(DirtBlock.VARIANT) == DirtBlock.DirtType.DIRT
 							&& world.getLightLevelWithNeighbours(blockPos.up()) >= 4
-							&& block.getOpacity() <= 2) {
+							&& blockState.getOpacity() <= 2) {
 							world.setBlockState(blockPos, Blocks.GRASS.getDefaultState());
 						}
 					}
@@ -67,6 +55,7 @@ public class GrassBlock extends Block implements Growable {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Blocks.DIRT.getDropItem(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT), random, id);
@@ -92,7 +81,7 @@ public class GrassBlock extends Block implements Growable {
 
 			for (int j = 0; j < i / 16; j++) {
 				blockPos2 = blockPos2.add(random.nextInt(3) - 1, (random.nextInt(3) - 1) * random.nextInt(3) / 2, random.nextInt(3) - 1);
-				if (world.getBlockState(blockPos2.down()).getBlock() != Blocks.GRASS || world.getBlockState(blockPos2).getBlock().isFullCube()) {
+				if (world.getBlockState(blockPos2.down()).getBlock() != Blocks.GRASS || world.getBlockState(blockPos2).method_11734()) {
 					continue label38;
 				}
 			}

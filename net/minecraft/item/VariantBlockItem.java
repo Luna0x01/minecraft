@@ -1,6 +1,7 @@
 package net.minecraft.item;
 
 import com.google.common.base.Function;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 
 public class VariantBlockItem extends BlockItem {
@@ -17,7 +18,8 @@ public class VariantBlockItem extends BlockItem {
 
 	public VariantBlockItem(Block block, Block block2, String[] strings) {
 		this(block, block2, new Function<ItemStack, String>() {
-			public String apply(ItemStack itemStack) {
+			@Nullable
+			public String apply(@Nullable ItemStack itemStack) {
 				int i = itemStack.getData();
 				if (i < 0 || i >= strings.length) {
 					i = 0;

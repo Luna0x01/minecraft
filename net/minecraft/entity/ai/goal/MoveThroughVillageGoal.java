@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.pathing.MobNavigation;
-import net.minecraft.entity.ai.pathing.Path;
+import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -15,7 +15,7 @@ import net.minecraft.village.VillageDoor;
 public class MoveThroughVillageGoal extends Goal {
 	private PathAwareEntity mob;
 	private double speed;
-	private Path path;
+	private PathMinHeap field_14583;
 	private VillageDoor target;
 	private boolean requiresNighttime;
 	private List<VillageDoor> visitedTargets = Lists.newArrayList();
@@ -47,9 +47,9 @@ public class MoveThroughVillageGoal extends Goal {
 					MobNavigation mobNavigation = (MobNavigation)this.mob.getNavigation();
 					boolean bl = mobNavigation.canEnterOpenDoors();
 					mobNavigation.setCanPathThroughDoors(false);
-					this.path = mobNavigation.findPathTo(this.target.getPos1());
+					this.field_14583 = mobNavigation.method_13108(this.target.getPos1());
 					mobNavigation.setCanPathThroughDoors(bl);
-					if (this.path != null) {
+					if (this.field_14583 != null) {
 						return true;
 					} else {
 						Vec3d vec3d = RandomVectorGenerator.method_2800(
@@ -59,9 +59,9 @@ public class MoveThroughVillageGoal extends Goal {
 							return false;
 						} else {
 							mobNavigation.setCanPathThroughDoors(false);
-							this.path = this.mob.getNavigation().findPathTo(vec3d.x, vec3d.y, vec3d.z);
+							this.field_14583 = this.mob.getNavigation().method_2772(vec3d.x, vec3d.y, vec3d.z);
 							mobNavigation.setCanPathThroughDoors(bl);
-							return this.path != null;
+							return this.field_14583 != null;
 						}
 					}
 				}
@@ -81,7 +81,7 @@ public class MoveThroughVillageGoal extends Goal {
 
 	@Override
 	public void start() {
-		this.mob.getNavigation().startMovingAlong(this.path, this.speed);
+		this.mob.getNavigation().method_13107(this.field_14583, this.speed);
 	}
 
 	@Override

@@ -44,7 +44,7 @@ public class BreakDoorGoal extends DoorInteractGoal {
 	public void tick() {
 		super.tick();
 		if (this.mob.getRandom().nextInt(20) == 0) {
-			this.mob.world.syncGlobalEvent(1010, this.pos, 0);
+			this.mob.world.syncGlobalEvent(1019, this.pos, 0);
 		}
 
 		this.breakProgress++;
@@ -56,7 +56,7 @@ public class BreakDoorGoal extends DoorInteractGoal {
 
 		if (this.breakProgress == 240 && this.mob.world.getGlobalDifficulty() == Difficulty.HARD) {
 			this.mob.world.setAir(this.pos);
-			this.mob.world.syncGlobalEvent(1012, this.pos, 0);
+			this.mob.world.syncGlobalEvent(1021, this.pos, 0);
 			this.mob.world.syncGlobalEvent(2001, this.pos, Block.getIdByBlock(this.doorBlock));
 		}
 	}

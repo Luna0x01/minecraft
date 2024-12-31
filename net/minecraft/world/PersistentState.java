@@ -12,7 +12,7 @@ public abstract class PersistentState {
 
 	public abstract void fromNbt(NbtCompound nbt);
 
-	public abstract void toNbt(NbtCompound nbt);
+	public abstract NbtCompound toNbt(NbtCompound nbt);
 
 	public void markDirty() {
 		this.setDirty(true);

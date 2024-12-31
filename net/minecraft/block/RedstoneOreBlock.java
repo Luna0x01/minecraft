@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
@@ -8,6 +9,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -42,9 +44,20 @@ public class RedstoneOreBlock extends Block {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		this.activateGlowing(world, pos);
-		return super.onUse(world, pos, state, player, direction, posX, posY, posZ);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		this.activateGlowing(world, blockPos);
+		return super.method_421(world, blockPos, blockState, playerEntity, hand, itemStack, direction, f, g, h);
 	}
 
 	private void activateGlowing(World world, BlockPos pos) {
@@ -61,6 +74,7 @@ public class RedstoneOreBlock extends Block {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.REDSTONE;
@@ -86,7 +100,7 @@ public class RedstoneOreBlock extends Block {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (this.lit) {
 			this.emitParticles(world, pos);
 		}
@@ -100,27 +114,27 @@ public class RedstoneOreBlock extends Block {
 			double e = (double)((float)pos.getX() + random.nextFloat());
 			double f = (double)((float)pos.getY() + random.nextFloat());
 			double g = (double)((float)pos.getZ() + random.nextFloat());
-			if (i == 0 && !world.getBlockState(pos.up()).getBlock().hasTransparency()) {
+			if (i == 0 && !world.getBlockState(pos.up()).isFullBoundsCubeForCulling()) {
 				f = (double)pos.getY() + d + 1.0;
 			}
 
-			if (i == 1 && !world.getBlockState(pos.down()).getBlock().hasTransparency()) {
+			if (i == 1 && !world.getBlockState(pos.down()).isFullBoundsCubeForCulling()) {
 				f = (double)pos.getY() - d;
 			}
 
-			if (i == 2 && !world.getBlockState(pos.south()).getBlock().hasTransparency()) {
+			if (i == 2 && !world.getBlockState(pos.south()).isFullBoundsCubeForCulling()) {
 				g = (double)pos.getZ() + d + 1.0;
 			}
 
-			if (i == 3 && !world.getBlockState(pos.north()).getBlock().hasTransparency()) {
+			if (i == 3 && !world.getBlockState(pos.north()).isFullBoundsCubeForCulling()) {
 				g = (double)pos.getZ() - d;
 			}
 
-			if (i == 4 && !world.getBlockState(pos.east()).getBlock().hasTransparency()) {
+			if (i == 4 && !world.getBlockState(pos.east()).isFullBoundsCubeForCulling()) {
 				e = (double)pos.getX() + d + 1.0;
 			}
 
-			if (i == 5 && !world.getBlockState(pos.west()).getBlock().hasTransparency()) {
+			if (i == 5 && !world.getBlockState(pos.west()).isFullBoundsCubeForCulling()) {
 				e = (double)pos.getX() - d;
 			}
 
@@ -138,5 +152,11 @@ public class RedstoneOreBlock extends Block {
 	@Override
 	protected ItemStack createStackFromBlock(BlockState state) {
 		return new ItemStack(Blocks.REDSTONE_ORE);
+	}
+
+	@Nullable
+	@Override
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Item.fromBlock(Blocks.REDSTONE_ORE), 1, this.getMeta(blockState));
 	}
 }

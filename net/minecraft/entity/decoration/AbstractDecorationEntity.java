@@ -1,11 +1,18 @@
 package net.minecraft.entity.decoration;
 
+import com.google.common.base.Predicate;
+import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRedstoneGateBlock;
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -13,8 +20,14 @@ import net.minecraft.world.World;
 import org.apache.commons.lang3.Validate;
 
 public abstract class AbstractDecorationEntity extends Entity {
+	private static final Predicate<Entity> IS_DECORATION = new Predicate<Entity>() {
+		public boolean apply(@Nullable Entity entity) {
+			return entity instanceof AbstractDecorationEntity;
+		}
+	};
 	private int obstructionCheckCounter;
 	protected BlockPos pos;
+	@Nullable
 	public Direction direction;
 
 	public AbstractDecorationEntity(World world) {
@@ -39,7 +52,7 @@ public abstract class AbstractDecorationEntity extends Entity {
 		this.updateAttachmentPosition();
 	}
 
-	private void updateAttachmentPosition() {
+	protected void updateAttachmentPosition() {
 		if (this.direction != null) {
 			double d = (double)this.pos.getX() + 0.5;
 			double e = (double)this.pos.getY() + 0.5;
@@ -101,21 +114,17 @@ public abstract class AbstractDecorationEntity extends Entity {
 
 			for (int k = 0; k < i; k++) {
 				for (int l = 0; l < j; l++) {
-					BlockPos blockPos2 = blockPos.offset(direction, k).up(l);
-					Block block = this.world.getBlockState(blockPos2).getBlock();
-					if (!block.getMaterial().isSolid() && !AbstractRedstoneGateBlock.isRedstoneGate(block)) {
+					int m = i > 2 ? -1 : 0;
+					int n = j > 2 ? -1 : 0;
+					BlockPos blockPos2 = blockPos.offset(direction, k + m).up(l + n);
+					BlockState blockState = this.world.getBlockState(blockPos2);
+					if (!blockState.getMaterial().isSolid() && !AbstractRedstoneGateBlock.isRedstoneGateBlock(blockState)) {
 						return false;
 					}
 				}
 			}
 
-			for (Entity entity : this.world.getEntitiesIn(this, this.getBoundingBox())) {
-				if (entity instanceof AbstractDecorationEntity) {
-					return false;
-				}
-			}
-
-			return true;
+			return this.world.getEntitiesIn(this, this.getBoundingBox(), IS_DECORATION).isEmpty();
 		}
 	}
 
@@ -168,32 +177,39 @@ public abstract class AbstractDecorationEntity extends Entity {
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putByte("Facing", (byte)this.direction.getHorizontal());
-		nbt.putInt("TileX", this.getTilePos().getX());
-		nbt.putInt("TileY", this.getTilePos().getY());
-		nbt.putInt("TileZ", this.getTilePos().getZ());
+		BlockPos blockPos = this.getTilePos();
+		nbt.putInt("TileX", blockPos.getX());
+		nbt.putInt("TileY", blockPos.getY());
+		nbt.putInt("TileZ", blockPos.getZ());
 	}
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		this.pos = new BlockPos(nbt.getInt("TileX"), nbt.getInt("TileY"), nbt.getInt("TileZ"));
-		Direction direction;
-		if (nbt.contains("Direction", 99)) {
-			direction = Direction.fromHorizontal(nbt.getByte("Direction"));
-			this.pos = this.pos.offset(direction);
-		} else if (nbt.contains("Facing", 99)) {
-			direction = Direction.fromHorizontal(nbt.getByte("Facing"));
-		} else {
-			direction = Direction.fromHorizontal(nbt.getByte("Dir"));
-		}
-
-		this.setDirection(direction);
+		this.setDirection(Direction.fromHorizontal(nbt.getByte("Facing")));
 	}
 
 	public abstract int getWidth();
 
 	public abstract int getHeight();
 
-	public abstract void onBreak(Entity entity);
+	public abstract void onBreak(@Nullable Entity entity);
+
+	public abstract void onPlace();
+
+	@Override
+	public ItemEntity dropItem(ItemStack stack, float yOffset) {
+		ItemEntity itemEntity = new ItemEntity(
+			this.world,
+			this.x + (double)((float)this.direction.getOffsetX() * 0.15F),
+			this.y + (double)yOffset,
+			this.z + (double)((float)this.direction.getOffsetZ() * 0.15F),
+			stack
+		);
+		itemEntity.setToDefaultPickupDelay();
+		this.world.spawnEntity(itemEntity);
+		return itemEntity;
+	}
 
 	@Override
 	protected boolean shouldSetPositionOnLoad() {
@@ -202,18 +218,39 @@ public abstract class AbstractDecorationEntity extends Entity {
 
 	@Override
 	public void updatePosition(double x, double y, double z) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		BlockPos blockPos = this.pos;
 		this.pos = new BlockPos(x, y, z);
-		if (!this.pos.equals(blockPos)) {
-			this.updateAttachmentPosition();
-			this.velocityDirty = true;
-		}
+		this.updateAttachmentPosition();
+		this.velocityDirty = true;
 	}
 
 	public BlockPos getTilePos() {
 		return this.pos;
+	}
+
+	@Override
+	public float applyRotation(BlockRotation rotation) {
+		if (this.direction != null && this.direction.getAxis() != Direction.Axis.Y) {
+			switch (rotation) {
+				case CLOCKWISE_180:
+					this.direction = this.direction.getOpposite();
+					break;
+				case COUNTERCLOCKWISE_90:
+					this.direction = this.direction.rotateYCounterclockwise();
+					break;
+				case CLOCKWISE_90:
+					this.direction = this.direction.rotateYClockwise();
+			}
+		}
+
+		return super.applyRotation(rotation);
+	}
+
+	@Override
+	public float applyMirror(BlockMirror mirror) {
+		return this.applyRotation(mirror.getRotation(this.direction));
+	}
+
+	@Override
+	public void onLightningStrike(LightningBoltEntity lightning) {
 	}
 }

@@ -2,6 +2,7 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -15,6 +16,7 @@ public class ShapelessRecipeType implements RecipeType {
 		this.stacks = list;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return this.result;
@@ -62,6 +64,7 @@ public class ShapelessRecipeType implements RecipeType {
 		return list.isEmpty();
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		return this.result.copy();

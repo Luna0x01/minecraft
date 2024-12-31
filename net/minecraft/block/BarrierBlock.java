@@ -14,17 +14,17 @@ public class BarrierBlock extends Block {
 	}
 
 	@Override
-	public int getBlockType() {
-		return -1;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.INVISIBLE;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public float getAmbientOcclusionLightLevel() {
+	public float getAmbientOcclusionLightLevel(BlockState state) {
 		return 1.0F;
 	}
 

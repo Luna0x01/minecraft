@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -29,13 +31,13 @@ public class GameRuleCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		GameRuleManager gameRuleManager = this.method_4124();
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
+		GameRuleManager gameRuleManager = this.method_11544(minecraftServer);
 		String string = args.length > 0 ? args[0] : "";
 		String string2 = args.length > 1 ? method_10706(args, 1) : "";
 		switch (args.length) {
 			case 0:
-				source.sendMessage(new LiteralText(concat(gameRuleManager.method_4670())));
+				commandSource.sendMessage(new LiteralText(concat(gameRuleManager.method_4670())));
 				break;
 			case 1:
 				if (!gameRuleManager.contains(string)) {
@@ -43,8 +45,8 @@ public class GameRuleCommand extends AbstractCommand {
 				}
 
 				String string3 = gameRuleManager.getString(string);
-				source.sendMessage(new LiteralText(string).append(" = ").append(string3));
-				source.setStat(CommandStats.Type.QUERY_RESULT, gameRuleManager.getInt(string));
+				commandSource.sendMessage(new LiteralText(string).append(" = ").append(string3));
+				commandSource.setStat(CommandStats.Type.QUERY_RESULT, gameRuleManager.getInt(string));
 				break;
 			default:
 				if (gameRuleManager.method_8474(string, GameRuleManager.VariableType.BOOLEAN) && !"true".equals(string2) && !"false".equals(string2)) {
@@ -52,38 +54,38 @@ public class GameRuleCommand extends AbstractCommand {
 				}
 
 				gameRuleManager.setGameRule(string, string2);
-				method_8831(gameRuleManager, string);
-				run(source, this, "commands.gamerule.success", new Object[0]);
+				method_8831(gameRuleManager, string, minecraftServer);
+				run(commandSource, this, "commands.gamerule.success", new Object[]{string, string2});
 		}
 	}
 
-	public static void method_8831(GameRuleManager gameRuleManager, String string) {
+	public static void method_8831(GameRuleManager gameRuleManager, String string, MinecraftServer minecraftServer) {
 		if ("reducedDebugInfo".equals(string)) {
 			byte b = (byte)(gameRuleManager.getBoolean(string) ? 22 : 23);
 
-			for (ServerPlayerEntity serverPlayerEntity : MinecraftServer.getServer().getPlayerManager().getPlayers()) {
+			for (ServerPlayerEntity serverPlayerEntity : minecraftServer.getPlayerManager().getPlayers()) {
 				serverPlayerEntity.networkHandler.sendPacket(new EntityStatusS2CPacket(serverPlayerEntity, b));
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, this.method_4124().method_4670());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, this.method_11544(server).method_4670());
 		} else {
-			if (args.length == 2) {
-				GameRuleManager gameRuleManager = this.method_4124();
-				if (gameRuleManager.method_8474(args[0], GameRuleManager.VariableType.BOOLEAN)) {
-					return method_2894(args, new String[]{"true", "false"});
+			if (strings.length == 2) {
+				GameRuleManager gameRuleManager = this.method_11544(server);
+				if (gameRuleManager.method_8474(strings[0], GameRuleManager.VariableType.BOOLEAN)) {
+					return method_2894(strings, new String[]{"true", "false"});
 				}
 			}
 
-			return null;
+			return Collections.emptyList();
 		}
 	}
 
-	private GameRuleManager method_4124() {
-		return MinecraftServer.getServer().getWorld(0).getGameRules();
+	private GameRuleManager method_11544(MinecraftServer minecraftServer) {
+		return minecraftServer.getWorld(0).getGameRules();
 	}
 }

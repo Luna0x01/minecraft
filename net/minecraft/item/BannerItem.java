@@ -1,6 +1,7 @@
 package net.minecraft.item;
 
 import java.util.List;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StandingSignBlock;
 import net.minecraft.block.WallSignBlock;
@@ -10,8 +11,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -27,49 +30,49 @@ public class BannerItem extends BlockItem {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		if (direction == Direction.DOWN) {
-			return false;
-		} else if (!world.getBlockState(pos).getBlock().getMaterial().isSolid()) {
-			return false;
-		} else {
-			pos = pos.offset(direction);
-			if (!player.canModify(pos, direction, itemStack)) {
-				return false;
-			} else if (!Blocks.STANDING_BANNER.canBePlacedAtPos(world, pos)) {
-				return false;
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
+		BlockState blockState = world.getBlockState(blockPos);
+		boolean bl = blockState.getBlock().method_8638(world, blockPos);
+		if (direction != Direction.DOWN && (blockState.getMaterial().isSolid() || bl) && (!bl || direction == Direction.UP)) {
+			blockPos = blockPos.offset(direction);
+			if (!playerEntity.canModify(blockPos, direction, itemStack) || !Blocks.STANDING_BANNER.canBePlacedAtPos(world, blockPos)) {
+				return ActionResult.FAIL;
 			} else if (world.isClient) {
-				return true;
+				return ActionResult.SUCCESS;
 			} else {
+				blockPos = bl ? blockPos.down() : blockPos;
 				if (direction == Direction.UP) {
-					int i = MathHelper.floor((double)((player.yaw + 180.0F) * 16.0F / 360.0F) + 0.5) & 15;
-					world.setBlockState(pos, Blocks.STANDING_BANNER.getDefaultState().with(StandingSignBlock.ROTATION, i), 3);
+					int i = MathHelper.floor((double)((playerEntity.yaw + 180.0F) * 16.0F / 360.0F) + 0.5) & 15;
+					world.setBlockState(blockPos, Blocks.STANDING_BANNER.getDefaultState().with(StandingSignBlock.ROTATION, i), 3);
 				} else {
-					world.setBlockState(pos, Blocks.WALL_BANNER.getDefaultState().with(WallSignBlock.FACING, direction), 3);
+					world.setBlockState(blockPos, Blocks.WALL_BANNER.getDefaultState().with(WallSignBlock.FACING, direction), 3);
 				}
 
 				itemStack.count--;
-				BlockEntity blockEntity = world.getBlockEntity(pos);
+				BlockEntity blockEntity = world.getBlockEntity(blockPos);
 				if (blockEntity instanceof BannerBlockEntity) {
 					((BannerBlockEntity)blockEntity).fromItemStack(itemStack);
 				}
 
-				return true;
+				return ActionResult.SUCCESS;
 			}
+		} else {
+			return ActionResult.FAIL;
 		}
 	}
 
 	@Override
 	public String getDisplayName(ItemStack stack) {
 		String string = "item.banner.";
-		DyeColor dyeColor = this.getDyeColor(stack);
+		DyeColor dyeColor = getDyeColor(stack);
 		string = string + dyeColor.getTranslationKey() + ".name";
 		return CommonI18n.translate(string);
 	}
 
-	@Override
-	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
-		NbtCompound nbtCompound = stack.getSubNbt("BlockEntityTag", false);
+	public static void method_11359(ItemStack itemStack, List<String> list) {
+		NbtCompound nbtCompound = itemStack.getSubNbt("BlockEntityTag", false);
 		if (nbtCompound != null && nbtCompound.contains("Patterns")) {
 			NbtList nbtList = nbtCompound.getList("Patterns", 10);
 
@@ -78,20 +81,15 @@ public class BannerItem extends BlockItem {
 				DyeColor dyeColor = DyeColor.getById(nbtCompound2.getInt("Color"));
 				BannerBlockEntity.BannerPattern bannerPattern = BannerBlockEntity.BannerPattern.getById(nbtCompound2.getString("Pattern"));
 				if (bannerPattern != null) {
-					lines.add(CommonI18n.translate("item.banner." + bannerPattern.getName() + "." + dyeColor.getTranslationKey()));
+					list.add(CommonI18n.translate("item.banner." + bannerPattern.getName() + "." + dyeColor.getTranslationKey()));
 				}
 			}
 		}
 	}
 
 	@Override
-	public int getDisplayColor(ItemStack stack, int color) {
-		if (color == 0) {
-			return 16777215;
-		} else {
-			DyeColor dyeColor = this.getDyeColor(stack);
-			return dyeColor.getMaterialColor().color;
-		}
+	public void appendTooltip(ItemStack stack, PlayerEntity player, List<String> lines, boolean advanced) {
+		method_11359(stack, lines);
 	}
 
 	@Override
@@ -112,13 +110,13 @@ public class BannerItem extends BlockItem {
 		return ItemGroup.DECORATIONS;
 	}
 
-	private DyeColor getDyeColor(ItemStack stack) {
-		NbtCompound nbtCompound = stack.getSubNbt("BlockEntityTag", false);
+	public static DyeColor getDyeColor(ItemStack itemStack) {
+		NbtCompound nbtCompound = itemStack.getSubNbt("BlockEntityTag", false);
 		DyeColor dyeColor = null;
 		if (nbtCompound != null && nbtCompound.contains("Base")) {
 			dyeColor = DyeColor.getById(nbtCompound.getInt("Base"));
 		} else {
-			dyeColor = DyeColor.getById(stack.getData());
+			dyeColor = DyeColor.getById(itemStack.getData());
 		}
 
 		return dyeColor;

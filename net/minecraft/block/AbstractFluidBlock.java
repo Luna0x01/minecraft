@@ -1,12 +1,14 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.Item;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
@@ -23,18 +25,23 @@ public abstract class AbstractFluidBlock extends Block {
 	protected AbstractFluidBlock(Material material) {
 		super(material);
 		this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, 0));
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
 		this.setTickRandomly(true);
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return collisionBox;
+	}
+
+	@Nullable
+	@Override
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
 	public boolean blocksMovement(BlockView view, BlockPos pos) {
 		return this.material != Material.LAVA;
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		return this.material == Material.WATER ? BiomeColors.getWaterColor(view, pos) : 16777215;
 	}
 
 	public static float getHeightPercent(int height) {
@@ -45,22 +52,22 @@ public abstract class AbstractFluidBlock extends Block {
 		return (float)(height + 1) / 9.0F;
 	}
 
-	protected int getFluidLevel(BlockView world, BlockPos pos) {
-		return world.getBlockState(pos).getBlock().getMaterial() == this.material ? (Integer)world.getBlockState(pos).get(LEVEL) : -1;
+	protected int method_11620(BlockState blockState) {
+		return blockState.getMaterial() == this.material ? (Integer)blockState.get(LEVEL) : -1;
 	}
 
-	protected int getFlowReduction(BlockView world, BlockPos pos) {
-		int i = this.getFluidLevel(world, pos);
+	protected int method_11621(BlockState blockState) {
+		int i = this.method_11620(blockState);
 		return i >= 8 ? 0 : i;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
@@ -71,7 +78,7 @@ public abstract class AbstractFluidBlock extends Block {
 
 	@Override
 	public boolean hasCollision(BlockView blockView, BlockPos pos, Direction direction) {
-		Material material = blockView.getBlockState(pos).getBlock().getMaterial();
+		Material material = blockView.getBlockState(pos).getMaterial();
 		if (material == this.material) {
 			return false;
 		} else if (direction == Direction.UP) {
@@ -82,11 +89,11 @@ public abstract class AbstractFluidBlock extends Block {
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
-		if (view.getBlockState(pos).getBlock().getMaterial() == this.material) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		if (view.getBlockState(pos.offset(direction)).getMaterial() == this.material) {
 			return false;
 		} else {
-			return facing == Direction.UP ? true : super.isSideInvisible(view, pos, facing);
+			return direction == Direction.UP ? true : super.method_8654(state, view, pos, direction);
 		}
 	}
 
@@ -94,9 +101,7 @@ public abstract class AbstractFluidBlock extends Block {
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
 				BlockState blockState = world.getBlockState(pos.add(i, 0, j));
-				Block block = blockState.getBlock();
-				Material material = block.getMaterial();
-				if (material != this.material && !block.isFullBlock()) {
+				if (blockState.getMaterial() != this.material && !blockState.isFullBlock()) {
 					return true;
 				}
 			}
@@ -106,15 +111,11 @@ public abstract class AbstractFluidBlock extends Block {
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.LIQUID;
 	}
 
-	@Override
-	public int getBlockType() {
-		return 1;
-	}
-
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return null;
@@ -125,45 +126,52 @@ public abstract class AbstractFluidBlock extends Block {
 		return 0;
 	}
 
-	protected Vec3d getFluidVec(BlockView world, BlockPos pos) {
-		Vec3d vec3d = new Vec3d(0.0, 0.0, 0.0);
-		int i = this.getFlowReduction(world, pos);
+	protected Vec3d method_8823(BlockView blockView, BlockPos blockPos, BlockState blockState) {
+		double d = 0.0;
+		double e = 0.0;
+		double f = 0.0;
+		int i = this.method_11621(blockState);
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			BlockPos blockPos = pos.offset(direction);
-			int j = this.getFlowReduction(world, blockPos);
+			pooled.set(blockPos).move(direction);
+			int j = this.method_11621(blockView.getBlockState(pooled));
 			if (j < 0) {
-				if (!world.getBlockState(blockPos).getBlock().getMaterial().blocksMovement()) {
-					j = this.getFlowReduction(world, blockPos.down());
+				if (!blockView.getBlockState(pooled).getMaterial().blocksMovement()) {
+					j = this.method_11621(blockView.getBlockState(pooled.down()));
 					if (j >= 0) {
 						int k = j - (i - 8);
-						vec3d = vec3d.add(
-							(double)((blockPos.getX() - pos.getX()) * k), (double)((blockPos.getY() - pos.getY()) * k), (double)((blockPos.getZ() - pos.getZ()) * k)
-						);
+						d += (double)(direction.getOffsetX() * k);
+						e += (double)(direction.getOffsetY() * k);
+						f += (double)(direction.getOffsetZ() * k);
 					}
 				}
 			} else if (j >= 0) {
 				int l = j - i;
-				vec3d = vec3d.add((double)((blockPos.getX() - pos.getX()) * l), (double)((blockPos.getY() - pos.getY()) * l), (double)((blockPos.getZ() - pos.getZ()) * l));
+				d += (double)(direction.getOffsetX() * l);
+				e += (double)(direction.getOffsetY() * l);
+				f += (double)(direction.getOffsetZ() * l);
 			}
 		}
 
-		if ((Integer)world.getBlockState(pos).get(LEVEL) >= 8) {
+		Vec3d vec3d = new Vec3d(d, e, f);
+		if ((Integer)blockState.get(LEVEL) >= 8) {
 			for (Direction direction2 : Direction.DirectionType.HORIZONTAL) {
-				BlockPos blockPos2 = pos.offset(direction2);
-				if (this.hasCollision(world, blockPos2, direction2) || this.hasCollision(world, blockPos2.up(), direction2)) {
+				pooled.set(blockPos).move(direction2);
+				if (this.hasCollision(blockView, pooled, direction2) || this.hasCollision(blockView, pooled.up(), direction2)) {
 					vec3d = vec3d.normalize().add(0.0, -6.0, 0.0);
 					break;
 				}
 			}
 		}
 
+		pooled.method_12576();
 		return vec3d.normalize();
 	}
 
 	@Override
 	public Vec3d onEntityCollision(World world, BlockPos pos, Entity entity, Vec3d velocity) {
-		return velocity.add(this.getFluidVec(world, pos));
+		return velocity.add(this.method_8823(world, pos, world.getBlockState(pos)));
 	}
 
 	@Override
@@ -178,9 +186,9 @@ public abstract class AbstractFluidBlock extends Block {
 	}
 
 	@Override
-	public int getBrightness(BlockView blockView, BlockPos pos) {
-		int i = blockView.getLight(pos, 0);
-		int j = blockView.getLight(pos.up(), 0);
+	public int method_11564(BlockState state, BlockView view, BlockPos pos) {
+		int i = view.getLight(pos, 0);
+		int j = view.getLight(pos.up(), 0);
 		int k = i & 0xFF;
 		int l = j & 0xFF;
 		int m = i >> 16 & 0xFF;
@@ -194,43 +202,45 @@ public abstract class AbstractFluidBlock extends Block {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		double d = (double)pos.getX();
 		double e = (double)pos.getY();
 		double f = (double)pos.getZ();
 		if (this.material == Material.WATER) {
 			int i = (Integer)state.get(LEVEL);
 			if (i > 0 && i < 8) {
-				if (rand.nextInt(64) == 0) {
-					world.playSound(d + 0.5, e + 0.5, f + 0.5, "liquid.water", rand.nextFloat() * 0.25F + 0.75F, rand.nextFloat() * 1.0F + 0.5F, false);
+				if (random.nextInt(64) == 0) {
+					world.playSound(
+						d + 0.5, e + 0.5, f + 0.5, Sounds.BLOCK_WATER_AMBIENT, SoundCategory.BLOCKS, random.nextFloat() * 0.25F + 0.75F, random.nextFloat() + 0.5F, false
+					);
 				}
-			} else if (rand.nextInt(10) == 0) {
-				world.addParticle(ParticleType.SUSPENDED, d + (double)rand.nextFloat(), e + (double)rand.nextFloat(), f + (double)rand.nextFloat(), 0.0, 0.0, 0.0);
+			} else if (random.nextInt(10) == 0) {
+				world.addParticle(ParticleType.SUSPENDED, d + (double)random.nextFloat(), e + (double)random.nextFloat(), f + (double)random.nextFloat(), 0.0, 0.0, 0.0);
 			}
 		}
 
 		if (this.material == Material.LAVA
-			&& world.getBlockState(pos.up()).getBlock().getMaterial() == Material.AIR
-			&& !world.getBlockState(pos.up()).getBlock().hasTransparency()) {
-			if (rand.nextInt(100) == 0) {
-				double g = d + (double)rand.nextFloat();
-				double h = e + this.boundingBoxMaxY;
-				double j = f + (double)rand.nextFloat();
+			&& world.getBlockState(pos.up()).getMaterial() == Material.AIR
+			&& !world.getBlockState(pos.up()).isFullBoundsCubeForCulling()) {
+			if (random.nextInt(100) == 0) {
+				double g = d + (double)random.nextFloat();
+				double h = e + state.getCollisionBox((BlockView)world, pos).maxY;
+				double j = f + (double)random.nextFloat();
 				world.addParticle(ParticleType.LAVA, g, h, j, 0.0, 0.0, 0.0);
-				world.playSound(g, h, j, "liquid.lavapop", 0.2F + rand.nextFloat() * 0.2F, 0.9F + rand.nextFloat() * 0.15F, false);
+				world.playSound(g, h, j, Sounds.BLOCK_LAVA_POP, SoundCategory.BLOCKS, 0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
 			}
 
-			if (rand.nextInt(200) == 0) {
-				world.playSound(d, e, f, "liquid.lava", 0.2F + rand.nextFloat() * 0.2F, 0.9F + rand.nextFloat() * 0.15F, false);
+			if (random.nextInt(200) == 0) {
+				world.playSound(d, e, f, Sounds.BLOCK_LAVA_AMBIENT, SoundCategory.BLOCKS, 0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
 			}
 		}
 
-		if (rand.nextInt(10) == 0 && World.isOpaque(world, pos.down())) {
-			Material material = world.getBlockState(pos.down(2)).getBlock().getMaterial();
+		if (random.nextInt(10) == 0 && world.getBlockState(pos.down()).method_11739()) {
+			Material material = world.getBlockState(pos.down(2)).getMaterial();
 			if (!material.blocksMovement() && !material.isFluid()) {
-				double k = d + (double)rand.nextFloat();
+				double k = d + (double)random.nextFloat();
 				double l = e - 1.05;
-				double m = f + (double)rand.nextFloat();
+				double m = f + (double)random.nextFloat();
 				if (this.material == Material.WATER) {
 					world.addParticle(ParticleType.WATER_DRIP, k, l, m, 0.0, 0.0, 0.0);
 				} else {
@@ -240,9 +250,9 @@ public abstract class AbstractFluidBlock extends Block {
 		}
 	}
 
-	public static double getDirection(BlockView world, BlockPos pos, Material material) {
-		Vec3d vec3d = getFlowingFluidByMaterial(material).getFluidVec(world, pos);
-		return vec3d.x == 0.0 && vec3d.z == 0.0 ? -1000.0 : MathHelper.atan2(vec3d.z, vec3d.x) - (Math.PI / 2);
+	public static float method_11618(BlockView blockView, BlockPos blockPos, Material material, BlockState blockState) {
+		Vec3d vec3d = getFlowingFluidByMaterial(material).method_8823(blockView, blockPos, blockState);
+		return vec3d.x == 0.0 && vec3d.z == 0.0 ? -1000.0F : (float)MathHelper.atan2(vec3d.z, vec3d.x) - (float) (Math.PI / 2);
 	}
 
 	@Override
@@ -251,8 +261,8 @@ public abstract class AbstractFluidBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		this.canChangeFromLava(world, pos, state);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		this.canChangeFromLava(world, blockPos, blockState);
 	}
 
 	public boolean canChangeFromLava(World world, BlockPos pos, BlockState state) {
@@ -260,7 +270,7 @@ public abstract class AbstractFluidBlock extends Block {
 			boolean bl = false;
 
 			for (Direction direction : Direction.values()) {
-				if (direction != Direction.DOWN && world.getBlockState(pos.offset(direction)).getBlock().getMaterial() == Material.WATER) {
+				if (direction != Direction.DOWN && world.getBlockState(pos.offset(direction)).getMaterial() == Material.WATER) {
 					bl = true;
 					break;
 				}
@@ -270,13 +280,13 @@ public abstract class AbstractFluidBlock extends Block {
 				Integer integer = state.get(LEVEL);
 				if (integer == 0) {
 					world.setBlockState(pos, Blocks.OBSIDIAN.getDefaultState());
-					this.playExtinguishEffects(world, pos);
+					this.method_11619(world, pos);
 					return true;
 				}
 
 				if (integer <= 4) {
 					world.setBlockState(pos, Blocks.COBBLESTONE.getDefaultState());
-					this.playExtinguishEffects(world, pos);
+					this.method_11619(world, pos);
 					return true;
 				}
 			}
@@ -285,11 +295,13 @@ public abstract class AbstractFluidBlock extends Block {
 		return false;
 	}
 
-	protected void playExtinguishEffects(World world, BlockPos pos) {
-		double d = (double)pos.getX();
-		double e = (double)pos.getY();
-		double f = (double)pos.getZ();
-		world.playSound(d + 0.5, e + 0.5, f + 0.5, "random.fizz", 0.5F, 2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F);
+	protected void method_11619(World world, BlockPos blockPos) {
+		double d = (double)blockPos.getX();
+		double e = (double)blockPos.getY();
+		double f = (double)blockPos.getZ();
+		world.method_11486(
+			null, blockPos, Sounds.BLOCK_LAVA_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F
+		);
 
 		for (int i = 0; i < 8; i++) {
 			world.addParticle(ParticleType.SMOKE_LARGE, d + Math.random(), e + 1.2, f + Math.random(), 0.0, 0.0, 0.0);

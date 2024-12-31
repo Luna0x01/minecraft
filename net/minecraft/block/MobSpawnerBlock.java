@@ -1,11 +1,13 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -19,6 +21,7 @@ public class MobSpawnerBlock extends BlockWithEntity {
 		return new MobSpawnerBlockEntity();
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return null;
@@ -37,13 +40,13 @@ public class MobSpawnerBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
@@ -51,8 +54,9 @@ public class MobSpawnerBlock extends BlockWithEntity {
 		return RenderLayer.CUTOUT;
 	}
 
+	@Nullable
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
 		return null;
 	}
 }

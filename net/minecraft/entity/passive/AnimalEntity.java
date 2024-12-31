@@ -1,5 +1,6 @@
 package net.minecraft.entity.passive;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.particle.ParticleType;
@@ -9,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -80,6 +82,11 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 	}
 
 	@Override
+	public double getHeightOffset() {
+		return 0.29;
+	}
+
+	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
 		this.loveTicks = nbt.getInt("InLove");
@@ -109,13 +116,12 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 		return 1 + this.world.random.nextInt(3);
 	}
 
-	public boolean isBreedingItem(ItemStack stack) {
+	public boolean isBreedingItem(@Nullable ItemStack stack) {
 		return stack == null ? false : stack.getItem() == Items.WHEAT;
 	}
 
 	@Override
-	public boolean method_2537(PlayerEntity playerEntity) {
-		ItemStack itemStack = playerEntity.inventory.getMainHandStack();
+	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
 		if (itemStack != null) {
 			if (this.isBreedingItem(itemStack) && this.age() == 0 && this.loveTicks <= 0) {
 				this.eat(playerEntity, itemStack);
@@ -130,15 +136,12 @@ public abstract class AnimalEntity extends PassiveEntity implements EntityCatego
 			}
 		}
 
-		return super.method_2537(playerEntity);
+		return super.method_13079(playerEntity, hand, itemStack);
 	}
 
 	protected void eat(PlayerEntity player, ItemStack stack) {
 		if (!player.abilities.creativeMode) {
 			stack.count--;
-			if (stack.count <= 0) {
-				player.inventory.setInvStack(player.inventory.selectedSlot, null);
-			}
 		}
 	}
 

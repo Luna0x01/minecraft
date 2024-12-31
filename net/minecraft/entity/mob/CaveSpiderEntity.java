@@ -1,11 +1,14 @@
 package net.minecraft.entity.mob;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.loot.LootTables;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
@@ -34,7 +37,7 @@ public class CaveSpiderEntity extends SpiderEntity {
 				}
 
 				if (i > 0) {
-					((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffect.POISON.id, i * 20, 0));
+					((LivingEntity)target).addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, i * 20, 0));
 				}
 			}
 
@@ -44,13 +47,20 @@ public class CaveSpiderEntity extends SpiderEntity {
 		}
 	}
 
+	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, EntityData data) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
 		return data;
 	}
 
 	@Override
 	public float getEyeHeight() {
 		return 0.45F;
+	}
+
+	@Nullable
+	@Override
+	protected Identifier getLootTableId() {
+		return LootTables.CAVE_SPIDER_ENTITIE;
 	}
 }

@@ -1,7 +1,9 @@
 package net.minecraft.server.dedicated.command;
 
 import com.mojang.authlib.GameProfile;
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -26,15 +28,14 @@ public class DeOpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length == 1 && args[0].length() > 0) {
-			MinecraftServer minecraftServer = MinecraftServer.getServer();
 			GameProfile gameProfile = minecraftServer.getPlayerManager().getOpList().getOperatorPlayer(args[0]);
 			if (gameProfile == null) {
 				throw new CommandException("commands.deop.failed", args[0]);
 			} else {
 				minecraftServer.getPlayerManager().deop(gameProfile);
-				run(source, this, "commands.deop.success", new Object[]{args[0]});
+				run(commandSource, this, "commands.deop.success", new Object[]{args[0]});
 			}
 		} else {
 			throw new IncorrectUsageException("commands.deop.usage");
@@ -42,7 +43,7 @@ public class DeOpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, MinecraftServer.getServer().getPlayerManager().getOpNames()) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, server.getPlayerManager().getOpNames()) : Collections.emptyList();
 	}
 }

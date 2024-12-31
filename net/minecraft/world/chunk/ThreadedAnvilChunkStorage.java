@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.NbtCompound;
@@ -23,6 +25,7 @@ import net.minecraft.util.ScheduledTick;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
+import net.minecraft.world.level.storage.LevelDataType;
 import net.minecraft.world.level.storage.WorldSaveException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,12 +35,15 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 	private Map<ChunkPos, NbtCompound> chunksToSave = new ConcurrentHashMap();
 	private Set<ChunkPos> chunksBeingSaved = Collections.newSetFromMap(new ConcurrentHashMap());
 	private final File saveLocation;
+	private final DataFixerUpper field_12919;
 	private boolean isSaving = false;
 
-	public ThreadedAnvilChunkStorage(File file) {
+	public ThreadedAnvilChunkStorage(File file, DataFixerUpper dataFixerUpper) {
 		this.saveLocation = file;
+		this.field_12919 = dataFixerUpper;
 	}
 
+	@Nullable
 	@Override
 	public Chunk loadChunk(World world, int x, int z) throws IOException {
 		ChunkPos chunkPos = new ChunkPos(x, z);
@@ -48,7 +54,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 				return null;
 			}
 
-			nbtCompound = NbtIo.read(dataInputStream);
+			nbtCompound = this.field_12919.update(LevelDataType.CHUNK, NbtIo.read(dataInputStream));
 		}
 
 		return this.validateChunk(world, x, z, nbtCompound);
@@ -99,6 +105,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 			NbtCompound nbtCompound = new NbtCompound();
 			NbtCompound nbtCompound2 = new NbtCompound();
 			nbtCompound.put("Level", nbtCompound2);
+			nbtCompound.putInt("DataVersion", 184);
 			this.putChunk(chunk, world, nbtCompound2);
 			this.registerChunkChecker(chunk.getChunkPos(), nbtCompound);
 		} catch (Exception var5) {
@@ -173,7 +180,6 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 	}
 
 	private void putChunk(Chunk chunk, World world, NbtCompound nbt) {
-		nbt.putByte("V", (byte)1);
 		nbt.putInt("xPos", chunk.chunkX);
 		nbt.putInt("zPos", chunk.chunkZ);
 		nbt.putLong("LastUpdate", world.getLastUpdateTime());
@@ -186,30 +192,12 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		boolean bl = !world.dimension.hasNoSkylight();
 
 		for (ChunkSection chunkSection : chunkSections) {
-			if (chunkSection != null) {
+			if (chunkSection != Chunk.EMPTY) {
 				NbtCompound nbtCompound = new NbtCompound();
 				nbtCompound.putByte("Y", (byte)(chunkSection.getYOffset() >> 4 & 0xFF));
-				byte[] bs = new byte[chunkSection.getBlockStates().length];
+				byte[] bs = new byte[4096];
 				ChunkNibbleArray chunkNibbleArray = new ChunkNibbleArray();
-				ChunkNibbleArray chunkNibbleArray2 = null;
-
-				for (int k = 0; k < chunkSection.getBlockStates().length; k++) {
-					char c = chunkSection.getBlockStates()[k];
-					int l = k & 15;
-					int m = k >> 8 & 15;
-					int n = k >> 4 & 15;
-					if (c >> '\f' != 0) {
-						if (chunkNibbleArray2 == null) {
-							chunkNibbleArray2 = new ChunkNibbleArray();
-						}
-
-						chunkNibbleArray2.set(l, m, n, c >> '\f');
-					}
-
-					bs[k] = (byte)(c >> 4 & 0xFF);
-					chunkNibbleArray.set(l, m, n, c & 15);
-				}
-
+				ChunkNibbleArray chunkNibbleArray2 = chunkSection.getBlockData().store(bs, chunkNibbleArray);
 				nbtCompound.putByteArray("Blocks", bs);
 				nbtCompound.putByteArray("Data", chunkNibbleArray.getValue());
 				if (chunkNibbleArray2 != null) {
@@ -232,8 +220,8 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		chunk.setHasEntities(false);
 		NbtList nbtList2 = new NbtList();
 
-		for (int o = 0; o < chunk.getEntities().length; o++) {
-			for (Entity entity : chunk.getEntities()[o]) {
+		for (int k = 0; k < chunk.getEntities().length; k++) {
+			for (Entity entity : chunk.getEntities()[k]) {
 				NbtCompound nbtCompound2 = new NbtCompound();
 				if (entity.saveToNbt(nbtCompound2)) {
 					chunk.setHasEntities(true);
@@ -246,15 +234,14 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		NbtList nbtList3 = new NbtList();
 
 		for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-			NbtCompound nbtCompound3 = new NbtCompound();
-			blockEntity.toNbt(nbtCompound3);
+			NbtCompound nbtCompound3 = blockEntity.toNbt(new NbtCompound());
 			nbtList3.add(nbtCompound3);
 		}
 
 		nbt.put("TileEntities", nbtList3);
 		List<ScheduledTick> list = world.getScheduledTicks(chunk, false);
 		if (list != null) {
-			long p = world.getLastUpdateTime();
+			long l = world.getLastUpdateTime();
 			NbtList nbtList4 = new NbtList();
 
 			for (ScheduledTick scheduledTick : list) {
@@ -264,7 +251,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 				nbtCompound4.putInt("x", scheduledTick.pos.getX());
 				nbtCompound4.putInt("y", scheduledTick.pos.getY());
 				nbtCompound4.putInt("z", scheduledTick.pos.getZ());
-				nbtCompound4.putInt("t", (int)(scheduledTick.time - p));
+				nbtCompound4.putInt("t", (int)(scheduledTick.time - l));
 				nbtCompound4.putInt("p", scheduledTick.priority);
 				nbtList4.add(nbtCompound4);
 			}
@@ -293,17 +280,7 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 			byte[] bs = nbtCompound.getByteArray("Blocks");
 			ChunkNibbleArray chunkNibbleArray = new ChunkNibbleArray(nbtCompound.getByteArray("Data"));
 			ChunkNibbleArray chunkNibbleArray2 = nbtCompound.contains("Add", 7) ? new ChunkNibbleArray(nbtCompound.getByteArray("Add")) : null;
-			char[] cs = new char[bs.length];
-
-			for (int n = 0; n < cs.length; n++) {
-				int o = n & 15;
-				int p = n >> 8 & 15;
-				int q = n >> 4 & 15;
-				int r = chunkNibbleArray2 != null ? chunkNibbleArray2.get(o, p, q) : 0;
-				cs[n] = (char)(r << 12 | (bs[n] & 255) << 4 | chunkNibbleArray.get(o, p, q));
-			}
-
-			chunkSection.setBlockStates(cs);
+			chunkSection.getBlockData().load(bs, chunkNibbleArray, chunkNibbleArray2);
 			chunkSection.setBlockLight(new ChunkNibbleArray(nbtCompound.getByteArray("BlockLight")));
 			if (bl) {
 				chunkSection.setSkyLight(new ChunkNibbleArray(nbtCompound.getByteArray("SkyLight")));
@@ -320,32 +297,18 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 
 		NbtList nbtList2 = nbt.getList("Entities", 10);
 		if (nbtList2 != null) {
-			for (int s = 0; s < nbtList2.size(); s++) {
-				NbtCompound nbtCompound2 = nbtList2.getCompound(s);
-				Entity entity = EntityType.createInstanceFromNbt(nbtCompound2, world);
+			for (int n = 0; n < nbtList2.size(); n++) {
+				NbtCompound nbtCompound2 = nbtList2.getCompound(n);
+				method_11783(nbtCompound2, world, chunk);
 				chunk.setHasEntities(true);
-				if (entity != null) {
-					chunk.addEntity(entity);
-					Entity entity2 = entity;
-
-					for (NbtCompound nbtCompound3 = nbtCompound2; nbtCompound3.contains("Riding", 10); nbtCompound3 = nbtCompound3.getCompound("Riding")) {
-						Entity entity3 = EntityType.createInstanceFromNbt(nbtCompound3.getCompound("Riding"), world);
-						if (entity3 != null) {
-							chunk.addEntity(entity3);
-							entity2.startRiding(entity3);
-						}
-
-						entity2 = entity3;
-					}
-				}
 			}
 		}
 
 		NbtList nbtList3 = nbt.getList("TileEntities", 10);
 		if (nbtList3 != null) {
-			for (int t = 0; t < nbtList3.size(); t++) {
-				NbtCompound nbtCompound4 = nbtList3.getCompound(t);
-				BlockEntity blockEntity = BlockEntity.createFromNbt(nbtCompound4);
+			for (int o = 0; o < nbtList3.size(); o++) {
+				NbtCompound nbtCompound3 = nbtList3.getCompound(o);
+				BlockEntity blockEntity = BlockEntity.createFromNbt(nbtCompound3);
 				if (blockEntity != null) {
 					chunk.addBlockEntity(blockEntity);
 				}
@@ -355,22 +318,110 @@ public class ThreadedAnvilChunkStorage implements ChunkStorage, FileIoCallback {
 		if (nbt.contains("TileTicks", 9)) {
 			NbtList nbtList4 = nbt.getList("TileTicks", 10);
 			if (nbtList4 != null) {
-				for (int u = 0; u < nbtList4.size(); u++) {
-					NbtCompound nbtCompound5 = nbtList4.getCompound(u);
+				for (int p = 0; p < nbtList4.size(); p++) {
+					NbtCompound nbtCompound4 = nbtList4.getCompound(p);
 					Block block;
-					if (nbtCompound5.contains("i", 8)) {
-						block = Block.get(nbtCompound5.getString("i"));
+					if (nbtCompound4.contains("i", 8)) {
+						block = Block.get(nbtCompound4.getString("i"));
 					} else {
-						block = Block.getById(nbtCompound5.getInt("i"));
+						block = Block.getById(nbtCompound4.getInt("i"));
 					}
 
 					world.scheduleTick(
-						new BlockPos(nbtCompound5.getInt("x"), nbtCompound5.getInt("y"), nbtCompound5.getInt("z")), block, nbtCompound5.getInt("t"), nbtCompound5.getInt("p")
+						new BlockPos(nbtCompound4.getInt("x"), nbtCompound4.getInt("y"), nbtCompound4.getInt("z")), block, nbtCompound4.getInt("t"), nbtCompound4.getInt("p")
 					);
 				}
 			}
 		}
 
 		return chunk;
+	}
+
+	@Nullable
+	public static Entity method_11783(NbtCompound tag, World world, Chunk chunk) {
+		Entity entity = method_11781(tag, world);
+		if (entity == null) {
+			return null;
+		} else {
+			chunk.addEntity(entity);
+			if (tag.contains("Passengers", 9)) {
+				NbtList nbtList = tag.getList("Passengers", 10);
+
+				for (int i = 0; i < nbtList.size(); i++) {
+					Entity entity2 = method_11783(nbtList.getCompound(i), world, chunk);
+					if (entity2 != null) {
+						entity2.startRiding(entity, true);
+					}
+				}
+			}
+
+			return entity;
+		}
+	}
+
+	@Nullable
+	public static Entity method_11782(NbtCompound tag, World world, double x, double y, double z, boolean bl) {
+		Entity entity = method_11781(tag, world);
+		if (entity == null) {
+			return null;
+		} else {
+			entity.refreshPositionAndAngles(x, y, z, entity.yaw, entity.pitch);
+			if (bl && !world.spawnEntity(entity)) {
+				return null;
+			} else {
+				if (tag.contains("Passengers", 9)) {
+					NbtList nbtList = tag.getList("Passengers", 10);
+
+					for (int i = 0; i < nbtList.size(); i++) {
+						Entity entity2 = method_11782(nbtList.getCompound(i), world, x, y, z, bl);
+						if (entity2 != null) {
+							entity2.startRiding(entity, true);
+						}
+					}
+				}
+
+				return entity;
+			}
+		}
+	}
+
+	@Nullable
+	protected static Entity method_11781(NbtCompound tag, World world) {
+		try {
+			return EntityType.createInstanceFromNbt(tag, world);
+		} catch (RuntimeException var3) {
+			return null;
+		}
+	}
+
+	public static void method_11785(Entity entity, World world) {
+		if (world.spawnEntity(entity) && entity.hasPassengers()) {
+			for (Entity entity2 : entity.getPassengerList()) {
+				method_11785(entity2, world);
+			}
+		}
+	}
+
+	@Nullable
+	public static Entity method_11784(NbtCompound tag, World world, boolean bl) {
+		Entity entity = method_11781(tag, world);
+		if (entity == null) {
+			return null;
+		} else if (bl && !world.spawnEntity(entity)) {
+			return null;
+		} else {
+			if (tag.contains("Passengers", 9)) {
+				NbtList nbtList = tag.getList("Passengers", 10);
+
+				for (int i = 0; i < nbtList.size(); i++) {
+					Entity entity2 = method_11784(nbtList.getCompound(i), world, bl);
+					if (entity2 != null) {
+						entity2.startRiding(entity, true);
+					}
+				}
+			}
+
+			return entity;
+		}
 	}
 }

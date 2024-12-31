@@ -69,7 +69,7 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 			BlockPos blockPos = this.targetPos.up();
 			BlockState blockState = world.getBlockState(blockPos);
 			Block block = blockState.getBlock();
-			if (this.field_11936 == 0 && block instanceof CropBlock && (Integer)blockState.get(CropBlock.AGE) == 7) {
+			if (this.field_11936 == 0 && block instanceof CropBlock && ((CropBlock)block).isMature(blockState)) {
 				world.removeBlock(blockPos, true);
 			} else if (this.field_11936 == 1 && block == Blocks.AIR) {
 				SimpleInventory simpleInventory = this.entity.method_11220();
@@ -86,6 +86,9 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 							bl = true;
 						} else if (itemStack.getItem() == Items.CARROT) {
 							world.setBlockState(blockPos, Blocks.CARROTS.getDefaultState(), 3);
+							bl = true;
+						} else if (itemStack.getItem() == Items.BEETROOT_SEED) {
+							world.setBlockState(blockPos, Blocks.BEETROOTS.getDefaultState(), 3);
 							bl = true;
 						}
 					}
@@ -112,7 +115,7 @@ public class HarvestCropsGoal extends MoveToTargetPosGoal {
 			pos = pos.up();
 			BlockState blockState = world.getBlockState(pos);
 			block = blockState.getBlock();
-			if (block instanceof CropBlock && (Integer)blockState.get(CropBlock.AGE) == 7 && this.field_11935 && (this.field_11936 == 0 || this.field_11936 < 0)) {
+			if (block instanceof CropBlock && ((CropBlock)block).isMature(blockState) && this.field_11935 && (this.field_11936 == 0 || this.field_11936 < 0)) {
 				this.field_11936 = 0;
 				return true;
 			}

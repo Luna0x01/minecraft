@@ -25,7 +25,7 @@ public abstract class MobEntityRenderer<T extends MobEntity> extends LivingEntit
 			return true;
 		} else if (mobEntity.isLeashed() && mobEntity.getLeashOwner() != null) {
 			Entity entity = mobEntity.getLeashOwner();
-			return cameraView.isBoxInFrustum(entity.getBoundingBox());
+			return cameraView.isBoxInFrustum(entity.getVisibilityBoundingBox());
 		} else {
 			return false;
 		}
@@ -33,14 +33,16 @@ public abstract class MobEntityRenderer<T extends MobEntity> extends LivingEntit
 
 	public void render(T mobEntity, double d, double e, double f, float g, float h) {
 		super.render(mobEntity, d, e, f, g, h);
-		this.method_5792(mobEntity, d, e, f, g, h);
+		if (!this.field_13631) {
+			this.method_5792(mobEntity, d, e, f, g, h);
+		}
 	}
 
 	public void method_10261(T mobEntity, float f) {
 		int i = mobEntity.getLightmapCoordinates(f);
 		int j = i % 65536;
 		int k = i / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)j / 1.0F, (float)k / 1.0F);
+		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)j, (float)k);
 	}
 
 	private double method_5790(double d, double e, double f) {

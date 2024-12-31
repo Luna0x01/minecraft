@@ -1,5 +1,6 @@
 package net.minecraft.inventory.slot;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -39,10 +40,11 @@ public class Slot {
 		this.markDirty();
 	}
 
-	public boolean canInsert(ItemStack stack) {
+	public boolean canInsert(@Nullable ItemStack stack) {
 		return true;
 	}
 
+	@Nullable
 	public ItemStack getStack() {
 		return this.inventory.getInvStack(this.invSlot);
 	}
@@ -51,7 +53,7 @@ public class Slot {
 		return this.getStack() != null;
 	}
 
-	public void setStack(ItemStack stack) {
+	public void setStack(@Nullable ItemStack stack) {
 		this.inventory.setInvStack(this.invSlot, stack);
 		this.markDirty();
 	}
@@ -68,6 +70,7 @@ public class Slot {
 		return this.getMaxStackAmount();
 	}
 
+	@Nullable
 	public String getBackgroundSprite() {
 		return null;
 	}

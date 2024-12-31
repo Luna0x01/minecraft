@@ -1,12 +1,12 @@
 package net.minecraft.client.sound;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.Sound;
 
 public abstract class MovingSoundInstance extends AbstractSoundInstance implements TickableSoundInstance {
-	protected boolean done = false;
+	protected boolean done;
 
-	protected MovingSoundInstance(Identifier identifier) {
-		super(identifier);
+	protected MovingSoundInstance(Sound sound, SoundCategory soundCategory) {
+		super(sound, soundCategory);
 	}
 
 	@Override

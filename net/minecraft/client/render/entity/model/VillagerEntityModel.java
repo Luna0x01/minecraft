@@ -54,8 +54,8 @@ public class VillagerEntityModel extends EntityModel {
 
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.field_1557.posY = age / (180.0F / (float)Math.PI);
-		this.field_1557.posX = headPitch / (180.0F / (float)Math.PI);
+		this.field_1557.posY = age * (float) (Math.PI / 180.0);
+		this.field_1557.posX = headPitch * (float) (Math.PI / 180.0);
 		this.field_1559.pivotY = 3.0F;
 		this.field_1559.pivotZ = -1.0F;
 		this.field_1559.posX = -0.75F;

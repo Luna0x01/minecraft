@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.FlowerPotBlockEntity;
 import net.minecraft.block.material.Material;
@@ -15,8 +16,10 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -24,11 +27,11 @@ import net.minecraft.world.World;
 public class FlowerPotBlock extends BlockWithEntity {
 	public static final IntProperty LEGACY_DATA = IntProperty.of("legacy_data", 0, 15);
 	public static final EnumProperty<FlowerPotBlock.PottablePlantType> CONTENTS = EnumProperty.of("contents", FlowerPotBlock.PottablePlantType.class);
+	protected static final Box field_12679 = new Box(0.3125, 0.0, 0.3125, 0.6875, 0.375, 0.6875);
 
 	public FlowerPotBlock() {
 		super(Material.DECORATION);
 		this.setDefaultState(this.stateManager.getDefaultState().with(CONTENTS, FlowerPotBlock.PottablePlantType.EMPTY).with(LEGACY_DATA, 0));
-		this.setBlockItemBounds();
 	}
 
 	@Override
@@ -37,45 +40,40 @@ public class FlowerPotBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void setBlockItemBounds() {
-		float f = 0.375F;
-		float g = f / 2.0F;
-		this.setBoundingBox(0.5F - g, 0.0F, 0.5F - g, 0.5F + g, f, 0.5F + g);
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12679;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		BlockEntity blockEntity = view.getBlockEntity(pos);
-		if (blockEntity instanceof FlowerPotBlockEntity) {
-			Item item = ((FlowerPotBlockEntity)blockEntity).getItem();
-			if (item instanceof BlockItem) {
-				return Block.getBlockFromItem(item).getBlockColor(view, pos, id);
-			}
-		}
-
-		return 16777215;
-	}
-
-	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		ItemStack itemStack = player.inventory.getMainHandStack();
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (itemStack != null && itemStack.getItem() instanceof BlockItem) {
-			FlowerPotBlockEntity flowerPotBlockEntity = this.getPotEntity(world, pos);
+			FlowerPotBlockEntity flowerPotBlockEntity = this.getPotEntity(world, blockPos);
 			if (flowerPotBlockEntity == null) {
 				return false;
 			} else if (flowerPotBlockEntity.getItem() != null) {
@@ -87,10 +85,10 @@ public class FlowerPotBlock extends BlockWithEntity {
 				} else {
 					flowerPotBlockEntity.setFlower(itemStack.getItem(), itemStack.getData());
 					flowerPotBlockEntity.markDirty();
-					world.onBlockUpdate(pos);
-					player.incrementStat(Stats.FLOWER_POTTED);
-					if (!player.abilities.creativeMode && --itemStack.count <= 0) {
-						player.inventory.setInvStack(player.inventory.selectedSlot, null);
+					world.method_11481(blockPos, blockState, blockState, 3);
+					playerEntity.incrementStat(Stats.FLOWER_POTTED);
+					if (!playerEntity.abilities.creativeMode) {
+						itemStack.count--;
 					}
 
 					return true;
@@ -101,7 +99,7 @@ public class FlowerPotBlock extends BlockWithEntity {
 		}
 	}
 
-	private boolean isPottable(Block block, int grassType) {
+	private boolean isPottable(@Nullable Block block, int grassType) {
 		return block == Blocks.YELLOW_FLOWER
 				|| block == Blocks.RED_FLOWER
 				|| block == Blocks.CACTUS
@@ -114,32 +112,28 @@ public class FlowerPotBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		FlowerPotBlockEntity flowerPotBlockEntity = this.getPotEntity(world, pos);
-		return flowerPotBlockEntity != null && flowerPotBlockEntity.getItem() != null ? flowerPotBlockEntity.getItem() : Items.FLOWER_POT;
-	}
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		FlowerPotBlockEntity flowerPotBlockEntity = this.getPotEntity(world, blockPos);
+		if (flowerPotBlockEntity != null) {
+			ItemStack itemStack = flowerPotBlockEntity.method_11659();
+			if (itemStack != null) {
+				return itemStack;
+			}
+		}
 
-	@Override
-	public int getMeta(World world, BlockPos pos) {
-		FlowerPotBlockEntity flowerPotBlockEntity = this.getPotEntity(world, pos);
-		return flowerPotBlockEntity != null && flowerPotBlockEntity.getItem() != null ? flowerPotBlockEntity.getData() : 0;
-	}
-
-	@Override
-	public boolean isFlowerPot() {
-		return true;
+		return new ItemStack(Items.FLOWER_POT);
 	}
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		return super.canBePlacedAtPos(world, pos) && World.isOpaque(world, pos.down());
+		return super.canBePlacedAtPos(world, pos) && world.getBlockState(pos.down()).method_11739();
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (!World.isOpaque(world, pos.down())) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (!world.getBlockState(blockPos.down()).method_11739()) {
+			this.dropAsItem(world, blockPos, blockState, 0);
+			world.setAir(blockPos);
 		}
 	}
 
@@ -164,11 +158,13 @@ public class FlowerPotBlock extends BlockWithEntity {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.FLOWER_POT;
 	}
 
+	@Nullable
 	private FlowerPotBlockEntity getPotEntity(World world, BlockPos pos) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		return blockEntity instanceof FlowerPotBlockEntity ? (FlowerPotBlockEntity)blockEntity : null;

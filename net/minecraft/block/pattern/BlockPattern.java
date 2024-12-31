@@ -5,6 +5,7 @@ import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import javax.annotation.Nullable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
@@ -32,6 +33,10 @@ public class BlockPattern {
 		}
 	}
 
+	public int method_11746() {
+		return this.depth;
+	}
+
 	public int getHeight() {
 		return this.height;
 	}
@@ -40,6 +45,7 @@ public class BlockPattern {
 		return this.width;
 	}
 
+	@Nullable
 	private BlockPattern.Result testTransform(BlockPos pos, Direction forwards, Direction up, LoadingCache<BlockPos, CachedBlockPosition> cache) {
 		for (int i = 0; i < this.width; i++) {
 			for (int j = 0; j < this.height; j++) {
@@ -54,6 +60,7 @@ public class BlockPattern {
 		return new BlockPattern.Result(pos, forwards, up, cache, this.width, this.height, this.depth);
 	}
 
+	@Nullable
 	public BlockPattern.Result searchAround(World world, BlockPos pos) {
 		LoadingCache<BlockPos, CachedBlockPosition> loadingCache = createLoadingCache(world, false);
 		int i = Math.max(Math.max(this.width, this.height), this.depth);

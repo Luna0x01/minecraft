@@ -87,8 +87,8 @@ public class JungleTreeFeature extends FoliageFeature {
 								int v = u - blockPos.getZ();
 								if (Math.abs(t) != r || Math.abs(v) != r || random.nextInt(2) != 0 && q != 0) {
 									BlockPos blockPos2 = new BlockPos(s, p, u);
-									Block block2 = world.getBlockState(blockPos2).getBlock();
-									if (block2.getMaterial() == Material.AIR || block2.getMaterial() == Material.FOLIAGE || block2.getMaterial() == Material.REPLACEABLE_PLANT) {
+									Material material = world.getBlockState(blockPos2).getMaterial();
+									if (material == Material.AIR || material == Material.FOLIAGE || material == Material.REPLACEABLE_PLANT) {
 										this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, this.treeLeafState);
 									}
 								}
@@ -97,8 +97,8 @@ public class JungleTreeFeature extends FoliageFeature {
 					}
 
 					for (int w = 0; w < i; w++) {
-						Block block3 = world.getBlockState(blockPos.up(w)).getBlock();
-						if (block3.getMaterial() == Material.AIR || block3.getMaterial() == Material.FOLIAGE || block3.getMaterial() == Material.REPLACEABLE_PLANT) {
+						Material material2 = world.getBlockState(blockPos.up(w)).getMaterial();
+						if (material2 == Material.AIR || material2 == Material.FOLIAGE || material2 == Material.REPLACEABLE_PLANT) {
 							this.setBlockStateWithoutUpdatingNeighbors(world, blockPos.up(w), this.treeLogState);
 							if (this.generateFeatures && w > 0) {
 								if (random.nextInt(3) > 0 && world.isAir(blockPos.add(-1, w, 0))) {
@@ -129,24 +129,24 @@ public class JungleTreeFeature extends FoliageFeature {
 							for (int aa = blockPos.getX() - z; aa <= blockPos.getX() + z; aa++) {
 								for (int ab = blockPos.getZ() - z; ab <= blockPos.getZ() + z; ab++) {
 									mutable2.setPosition(aa, x, ab);
-									if (world.getBlockState(mutable2).getBlock().getMaterial() == Material.FOLIAGE) {
+									if (world.getBlockState(mutable2).getMaterial() == Material.FOLIAGE) {
 										BlockPos blockPos3 = mutable2.west();
 										BlockPos blockPos4 = mutable2.east();
 										BlockPos blockPos5 = mutable2.north();
 										BlockPos blockPos6 = mutable2.south();
-										if (random.nextInt(4) == 0 && world.getBlockState(blockPos3).getBlock().getMaterial() == Material.AIR) {
+										if (random.nextInt(4) == 0 && world.getBlockState(blockPos3).getMaterial() == Material.AIR) {
 											this.generateVines(world, blockPos3, VineBlock.EAST);
 										}
 
-										if (random.nextInt(4) == 0 && world.getBlockState(blockPos4).getBlock().getMaterial() == Material.AIR) {
+										if (random.nextInt(4) == 0 && world.getBlockState(blockPos4).getMaterial() == Material.AIR) {
 											this.generateVines(world, blockPos4, VineBlock.WEST);
 										}
 
-										if (random.nextInt(4) == 0 && world.getBlockState(blockPos5).getBlock().getMaterial() == Material.AIR) {
+										if (random.nextInt(4) == 0 && world.getBlockState(blockPos5).getMaterial() == Material.AIR) {
 											this.generateVines(world, blockPos5, VineBlock.SOUTH);
 										}
 
-										if (random.nextInt(4) == 0 && world.getBlockState(blockPos6).getBlock().getMaterial() == Material.AIR) {
+										if (random.nextInt(4) == 0 && world.getBlockState(blockPos6).getMaterial() == Material.AIR) {
 											this.generateVines(world, blockPos6, VineBlock.NORTH);
 										}
 									}
@@ -177,7 +177,7 @@ public class JungleTreeFeature extends FoliageFeature {
 	}
 
 	private void setCocoaBeans(World world, int age, BlockPos blockPos, Direction direction) {
-		this.setBlockStateWithoutUpdatingNeighbors(world, blockPos, Blocks.COCOA.getDefaultState().with(CocoaBlock.AGE, age).with(CocoaBlock.FACING, direction));
+		this.setBlockStateWithoutUpdatingNeighbors(world, blockPos, Blocks.COCOA.getDefaultState().with(CocoaBlock.AGE, age).with(CocoaBlock.DIRECTION, direction));
 	}
 
 	private void setVines(World world, BlockPos blockPos, BooleanProperty booleanProperty) {
@@ -188,7 +188,7 @@ public class JungleTreeFeature extends FoliageFeature {
 		this.setVines(world, blockPos, booleanProperty);
 		int i = 4;
 
-		for (BlockPos var5 = blockPos.down(); world.getBlockState(var5).getBlock().getMaterial() == Material.AIR && i > 0; i--) {
+		for (BlockPos var5 = blockPos.down(); world.getBlockState(var5).getMaterial() == Material.AIR && i > 0; i--) {
 			this.setVines(world, var5, booleanProperty);
 			var5 = var5.down();
 		}

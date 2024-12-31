@@ -1,18 +1,18 @@
 package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.block.BlockRenderManager;
-import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class FallingBlockEntityRenderer extends EntityRenderer<FallingBlockEntity> {
@@ -23,28 +23,40 @@ public class FallingBlockEntityRenderer extends EntityRenderer<FallingBlockEntit
 
 	public void render(FallingBlockEntity fallingBlockEntity, double d, double e, double f, float g, float h) {
 		if (fallingBlockEntity.getBlockState() != null) {
-			this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			BlockState blockState = fallingBlockEntity.getBlockState();
-			Block block = blockState.getBlock();
-			BlockPos blockPos = new BlockPos(fallingBlockEntity);
-			World world = fallingBlockEntity.method_3056();
-			if (blockState != world.getBlockState(blockPos) && block.getBlockType() != -1) {
-				if (block.getBlockType() == 3) {
+			if (blockState.getRenderType() == BlockRenderType.MODEL) {
+				World world = fallingBlockEntity.method_3056();
+				if (blockState != world.getBlockState(new BlockPos(fallingBlockEntity)) && blockState.getRenderType() != BlockRenderType.INVISIBLE) {
+					this.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 					GlStateManager.pushMatrix();
-					GlStateManager.translate((float)d, (float)e, (float)f);
 					GlStateManager.disableLighting();
 					Tessellator tessellator = Tessellator.getInstance();
 					BufferBuilder bufferBuilder = tessellator.getBuffer();
+					if (this.field_13631) {
+						GlStateManager.enableColorMaterial();
+						GlStateManager.method_12309(this.method_12454(fallingBlockEntity));
+					}
+
 					bufferBuilder.begin(7, VertexFormats.BLOCK);
-					int i = blockPos.getX();
-					int j = blockPos.getY();
-					int k = blockPos.getZ();
-					bufferBuilder.offset((double)((float)(-i) - 0.5F), (double)(-j), (double)((float)(-k) - 0.5F));
+					BlockPos blockPos = new BlockPos(fallingBlockEntity.x, fallingBlockEntity.getBoundingBox().maxY, fallingBlockEntity.z);
+					GlStateManager.translate((float)(d - (double)blockPos.getX() - 0.5), (float)(e - (double)blockPos.getY()), (float)(f - (double)blockPos.getZ() - 0.5));
 					BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
-					BakedModel bakedModel = blockRenderManager.getModel(blockState, world, null);
-					blockRenderManager.getModelRenderer().render(world, bakedModel, blockState, blockPos, bufferBuilder, false);
-					bufferBuilder.offset(0.0, 0.0, 0.0);
+					blockRenderManager.getModelRenderer()
+						.method_9963(
+							world,
+							blockRenderManager.method_12346(blockState),
+							blockState,
+							blockPos,
+							bufferBuilder,
+							false,
+							MathHelper.hashCode(fallingBlockEntity.getFallingBlockPos())
+						);
 					tessellator.draw();
+					if (this.field_13631) {
+						GlStateManager.method_12315();
+						GlStateManager.disableColorMaterial();
+					}
+
 					GlStateManager.enableLighting();
 					GlStateManager.popMatrix();
 					super.render(fallingBlockEntity, d, e, f, g, h);

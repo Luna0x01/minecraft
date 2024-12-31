@@ -2,10 +2,12 @@ package net.minecraft.client.gui.screen;
 
 import com.google.common.base.Predicate;
 import java.net.IDN;
+import javax.annotation.Nullable;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.util.ChatUtil;
 import org.lwjgl.input.Keyboard;
 
 public class AddServerScreen extends Screen {
@@ -15,8 +17,8 @@ public class AddServerScreen extends Screen {
 	private TextFieldWidget serverNameField;
 	private ButtonWidget resourcePackOptionButton;
 	private Predicate<String> addressTextFilter = new Predicate<String>() {
-		public boolean apply(String string) {
-			if (string.length() == 0) {
+		public boolean apply(@Nullable String string) {
+			if (ChatUtil.isEmpty(string)) {
 				return true;
 			} else {
 				String[] strings = string.split(":");
@@ -67,9 +69,9 @@ public class AddServerScreen extends Screen {
 		this.addressField.setMaxLength(128);
 		this.addressField.setText(this.server.address);
 		this.addressField.setTextPredicate(this.addressTextFilter);
-		((ButtonWidget)this.buttons.get(0)).active = this.addressField.getText().length() > 0
+		((ButtonWidget)this.buttons.get(0)).active = !this.addressField.getText().isEmpty()
 			&& this.addressField.getText().split(":").length > 0
-			&& this.serverNameField.getText().length() > 0;
+			&& !this.serverNameField.getText().isEmpty();
 	}
 
 	@Override
@@ -107,9 +109,9 @@ public class AddServerScreen extends Screen {
 			this.buttonClicked((ButtonWidget)this.buttons.get(0));
 		}
 
-		((ButtonWidget)this.buttons.get(0)).active = this.addressField.getText().length() > 0
+		((ButtonWidget)this.buttons.get(0)).active = !this.addressField.getText().isEmpty()
 			&& this.addressField.getText().split(":").length > 0
-			&& this.serverNameField.getText().length() > 0;
+			&& !this.serverNameField.getText().isEmpty();
 	}
 
 	@Override

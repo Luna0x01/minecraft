@@ -1,5 +1,6 @@
 package net.minecraft.state.property;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
@@ -33,8 +34,32 @@ public class EnumProperty<T extends Enum<T> & StringIdentifiable> extends Abstra
 		return this.values;
 	}
 
+	@Override
+	public Optional<T> method_11749(String string) {
+		return Optional.fromNullable(this.byName.get(string));
+	}
+
 	public String name(T enum_) {
 		return enum_.asString();
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if (this == object) {
+			return true;
+		} else if (object instanceof EnumProperty && super.equals(object)) {
+			EnumProperty<?> enumProperty = (EnumProperty<?>)object;
+			return this.values.equals(enumProperty.values) && this.byName.equals(enumProperty.byName);
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		int i = super.hashCode();
+		i = 31 * i + this.values.hashCode();
+		return 31 * i + this.byName.hashCode();
 	}
 
 	public static <T extends Enum<T> & StringIdentifiable> EnumProperty<T> of(String name, Class<T> type) {

@@ -5,6 +5,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.EntityNotFoundException;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.ScoreText;
 import net.minecraft.text.SelectorText;
@@ -24,13 +25,18 @@ public class ChatSerializer {
 					throw new EntityNotFoundException();
 				}
 
-				string = ((Entity)list.get(0)).getTranslationKey();
+				Entity entity2 = (Entity)list.get(0);
+				if (entity2 instanceof PlayerEntity) {
+					string = entity2.getTranslationKey();
+				} else {
+					string = entity2.getEntityName();
+				}
 			}
 
 			text = entity != null && string.equals("*")
 				? new ScoreText(entity.getTranslationKey(), scoreText.getObjective())
 				: new ScoreText(string, scoreText.getObjective());
-			((ScoreText)text).setScore(scoreText.computeValue());
+			((ScoreText)text).method_12607(source);
 		} else if (test instanceof SelectorText) {
 			String string2 = ((SelectorText)test).getPattern();
 			text = PlayerSelector.method_6362(source, string2);

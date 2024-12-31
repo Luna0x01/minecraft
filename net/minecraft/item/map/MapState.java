@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -20,6 +21,7 @@ public class MapState extends PersistentState {
 	public int xCenter;
 	public int zCenter;
 	public byte dimensionId;
+	public boolean trackingPosition;
 	public byte scale;
 	public byte[] colors = new byte[16384];
 	public List<MapState.PlayerUpdateTracker> updateTrackers = Lists.newArrayList();
@@ -45,6 +47,12 @@ public class MapState extends PersistentState {
 		this.zCenter = nbt.getInt("zCenter");
 		this.scale = nbt.getByte("scale");
 		this.scale = (byte)MathHelper.clamp(this.scale, 0, 4);
+		if (nbt.contains("trackingPosition", 1)) {
+			this.trackingPosition = nbt.getBoolean("trackingPosition");
+		} else {
+			this.trackingPosition = true;
+		}
+
 		int i = nbt.getShort("width");
 		int j = nbt.getShort("height");
 		if (i == 128 && j == 128) {
@@ -70,7 +78,7 @@ public class MapState extends PersistentState {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		nbt.putByte("dimension", this.dimensionId);
 		nbt.putInt("xCenter", this.xCenter);
 		nbt.putInt("zCenter", this.zCenter);
@@ -78,6 +86,8 @@ public class MapState extends PersistentState {
 		nbt.putShort("width", (short)128);
 		nbt.putShort("height", (short)128);
 		nbt.putByteArray("colors", this.colors);
+		nbt.putBoolean("trackingPosition", this.trackingPosition);
+		return nbt;
 	}
 
 	public void update(PlayerEntity player, ItemStack stack) {
@@ -94,7 +104,7 @@ public class MapState extends PersistentState {
 		for (int i = 0; i < this.updateTrackers.size(); i++) {
 			MapState.PlayerUpdateTracker playerUpdateTracker2 = (MapState.PlayerUpdateTracker)this.updateTrackers.get(i);
 			if (!playerUpdateTracker2.player.removed && (playerUpdateTracker2.player.inventory.contains(stack) || stack.isInItemFrame())) {
-				if (!stack.isInItemFrame() && playerUpdateTracker2.player.dimension == this.dimensionId) {
+				if (!stack.isInItemFrame() && playerUpdateTracker2.player.dimension == this.dimensionId && this.trackingPosition) {
 					this.method_4126(
 						0,
 						playerUpdateTracker2.player.world,
@@ -110,7 +120,7 @@ public class MapState extends PersistentState {
 			}
 		}
 
-		if (stack.isInItemFrame()) {
+		if (stack.isInItemFrame() && this.trackingPosition) {
 			ItemFrameEntity itemFrameEntity = stack.getItemFrame();
 			BlockPos blockPos = itemFrameEntity.getTilePos();
 			this.method_4126(
@@ -185,7 +195,8 @@ public class MapState extends PersistentState {
 		this.icons.put(string, new MapIcon((byte)i, b, c, l));
 	}
 
-	public Packet createMapSyncPacket(ItemStack itemStack, World world, PlayerEntity player) {
+	@Nullable
+	public Packet<?> createMapSyncPacket(ItemStack itemStack, World world, PlayerEntity player) {
 		MapState.PlayerUpdateTracker playerUpdateTracker = (MapState.PlayerUpdateTracker)this.updateTrackersByPlayer.get(player);
 		return playerUpdateTracker == null ? null : playerUpdateTracker.getPacket(itemStack);
 	}
@@ -223,12 +234,13 @@ public class MapState extends PersistentState {
 			this.player = playerEntity;
 		}
 
-		public Packet getPacket(ItemStack stack) {
+		public Packet<?> getPacket(ItemStack stack) {
 			if (this.dirty) {
 				this.dirty = false;
 				return new MapUpdateS2CPacket(
 					stack.getData(),
 					MapState.this.scale,
+					MapState.this.trackingPosition,
 					MapState.this.icons.values(),
 					MapState.this.colors,
 					this.startX,
@@ -238,7 +250,9 @@ public class MapState extends PersistentState {
 				);
 			} else {
 				return this.emptyPacketsRequested++ % 5 == 0
-					? new MapUpdateS2CPacket(stack.getData(), MapState.this.scale, MapState.this.icons.values(), MapState.this.colors, 0, 0, 0, 0)
+					? new MapUpdateS2CPacket(
+						stack.getData(), MapState.this.scale, MapState.this.trackingPosition, MapState.this.icons.values(), MapState.this.colors, 0, 0, 0, 0
+					)
 					: null;
 			}
 		}

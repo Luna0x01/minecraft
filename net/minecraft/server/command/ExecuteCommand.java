@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.command.AbstractCommand;
@@ -32,11 +34,11 @@ public class ExecuteCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 5) {
 			throw new IncorrectUsageException("commands.execute.usage");
 		} else {
-			final Entity entity = getEntity(source, args[0], Entity.class);
+			final Entity entity = method_12702(minecraftServer, commandSource, args[0], Entity.class);
 			final double d = parseDouble(entity.x, args[1], false);
 			final double e = parseDouble(entity.y, args[2], false);
 			final double f = parseDouble(entity.z, args[3], false);
@@ -47,7 +49,7 @@ public class ExecuteCommand extends AbstractCommand {
 				double g = parseDouble(d, args[5], false);
 				double h = parseDouble(e, args[6], false);
 				double j = parseDouble(f, args[7], false);
-				Block block = getBlock(source, args[8]);
+				Block block = getBlock(commandSource, args[8]);
 				int k = parseClampedInt(args[9], -1, 15);
 				BlockPos blockPos2 = new BlockPos(g, h, j);
 				BlockState blockState = world.getBlockState(blockPos2);
@@ -59,8 +61,8 @@ public class ExecuteCommand extends AbstractCommand {
 			}
 
 			String string = method_10706(args, i);
-			final CommandSource commandSource = source;
-			CommandSource commandSource2 = new CommandSource() {
+			final CommandSource commandSource2 = commandSource;
+			CommandSource commandSource3 = new CommandSource() {
 				@Override
 				public String getTranslationKey() {
 					return entity.getTranslationKey();
@@ -73,12 +75,12 @@ public class ExecuteCommand extends AbstractCommand {
 
 				@Override
 				public void sendMessage(Text text) {
-					commandSource.sendMessage(text);
+					commandSource2.sendMessage(text);
 				}
 
 				@Override
 				public boolean canUseCommand(int permissionLevel, String commandLiteral) {
-					return commandSource.canUseCommand(permissionLevel, commandLiteral);
+					return commandSource2.canUseCommand(permissionLevel, commandLiteral);
 				}
 
 				@Override
@@ -103,7 +105,6 @@ public class ExecuteCommand extends AbstractCommand {
 
 				@Override
 				public boolean sendCommandFeedback() {
-					MinecraftServer minecraftServer = MinecraftServer.getServer();
 					return minecraftServer == null || minecraftServer.worlds[0].getGameRules().getBoolean("commandBlockOutput");
 				}
 
@@ -111,30 +112,35 @@ public class ExecuteCommand extends AbstractCommand {
 				public void setStat(CommandStats.Type statsType, int value) {
 					entity.setStat(statsType, value);
 				}
+
+				@Override
+				public MinecraftServer getMinecraftServer() {
+					return entity.getMinecraftServer();
+				}
 			};
-			CommandRegistryProvider commandRegistryProvider = MinecraftServer.getServer().getCommandManager();
+			CommandRegistryProvider commandRegistryProvider = minecraftServer.getCommandManager();
 
 			try {
-				int l = commandRegistryProvider.execute(commandSource2, string);
+				int l = commandRegistryProvider.execute(commandSource3, string);
 				if (l < 1) {
 					throw new CommandException("commands.execute.allInvocationsFailed", string);
 				}
-			} catch (Throwable var23) {
+			} catch (Throwable var24) {
 				throw new CommandException("commands.execute.failed", string, entity.getTranslationKey());
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, MinecraftServer.getServer().getPlayerNames());
-		} else if (args.length > 1 && args.length <= 4) {
-			return method_10707(args, 1, pos);
-		} else if (args.length > 5 && args.length <= 8 && "detect".equals(args[4])) {
-			return method_10707(args, 5, pos);
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, server.getPlayerNames());
+		} else if (strings.length > 1 && strings.length <= 4) {
+			return method_10707(strings, 1, pos);
+		} else if (strings.length > 5 && strings.length <= 8 && "detect".equals(strings[4])) {
+			return method_10707(strings, 5, pos);
 		} else {
-			return args.length == 9 && "detect".equals(args[4]) ? method_10708(args, Block.REGISTRY.keySet()) : null;
+			return strings.length == 9 && "detect".equals(strings[4]) ? method_10708(strings, Block.REGISTRY.getKeySet()) : Collections.emptyList();
 		}
 	}
 

@@ -4,6 +4,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -35,6 +36,9 @@ public class SlimeBlock extends TransparentBlock {
 			super.setEntityVelocity(world, entity);
 		} else if (entity.velocityY < 0.0) {
 			entity.velocityY = -entity.velocityY;
+			if (!(entity instanceof LivingEntity)) {
+				entity.velocityY *= 0.8;
+			}
 		}
 	}
 

@@ -1,6 +1,8 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -10,6 +12,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
 import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -31,21 +34,21 @@ public class TestForBlocksCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 9) {
 			throw new IncorrectUsageException("commands.compare.usage");
 		} else {
-			source.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
-			BlockPos blockPos = getBlockPos(source, args, 0, false);
-			BlockPos blockPos2 = getBlockPos(source, args, 3, false);
-			BlockPos blockPos3 = getBlockPos(source, args, 6, false);
+			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
+			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
+			BlockPos blockPos2 = getBlockPos(commandSource, args, 3, false);
+			BlockPos blockPos3 = getBlockPos(commandSource, args, 6, false);
 			BlockBox blockBox = new BlockBox(blockPos, blockPos2);
 			BlockBox blockBox2 = new BlockBox(blockPos3, blockPos3.add(blockBox.getDimensions()));
 			int i = blockBox.getBlockCountX() * blockBox.getBlockCountY() * blockBox.getBlockCountZ();
 			if (i > 524288) {
 				throw new CommandException("commands.compare.tooManyBlocks", i, 524288);
 			} else if (blockBox.minY >= 0 && blockBox.maxY < 256 && blockBox2.minY >= 0 && blockBox2.maxY < 256) {
-				World world = source.getWorld();
+				World world = commandSource.getWorld();
 				if (world.isRegionLoaded(blockBox) && world.isRegionLoaded(blockBox2)) {
 					boolean bl = false;
 					if (args.length > 9 && args[9].equals("masked")) {
@@ -69,13 +72,11 @@ public class TestForBlocksCommand extends AbstractCommand {
 										BlockEntity blockEntity = world.getBlockEntity(mutable);
 										BlockEntity blockEntity2 = world.getBlockEntity(mutable2);
 										if (blockEntity != null && blockEntity2 != null) {
-											NbtCompound nbtCompound = new NbtCompound();
-											blockEntity.toNbt(nbtCompound);
+											NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
 											nbtCompound.remove("x");
 											nbtCompound.remove("y");
 											nbtCompound.remove("z");
-											NbtCompound nbtCompound2 = new NbtCompound();
-											blockEntity2.toNbt(nbtCompound2);
+											NbtCompound nbtCompound2 = blockEntity2.toNbt(new NbtCompound());
 											nbtCompound2.remove("x");
 											nbtCompound2.remove("y");
 											nbtCompound2.remove("z");
@@ -98,8 +99,8 @@ public class TestForBlocksCommand extends AbstractCommand {
 						}
 					}
 
-					source.setStat(CommandStats.Type.AFFECTED_BLOCKS, i);
-					run(source, this, "commands.compare.success", new Object[]{i});
+					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, i);
+					run(commandSource, this, "commands.compare.success", new Object[]{i});
 				} else {
 					throw new CommandException("commands.compare.outOfWorld");
 				}
@@ -110,15 +111,15 @@ public class TestForBlocksCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length > 0 && args.length <= 3) {
-			return method_10707(args, 0, pos);
-		} else if (args.length > 3 && args.length <= 6) {
-			return method_10707(args, 3, pos);
-		} else if (args.length > 6 && args.length <= 9) {
-			return method_10707(args, 6, pos);
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length > 0 && strings.length <= 3) {
+			return method_10707(strings, 0, pos);
+		} else if (strings.length > 3 && strings.length <= 6) {
+			return method_10707(strings, 3, pos);
+		} else if (strings.length > 6 && strings.length <= 9) {
+			return method_10707(strings, 6, pos);
 		} else {
-			return args.length == 10 ? method_2894(args, new String[]{"masked", "all"}) : null;
+			return strings.length == 10 ? method_2894(strings, new String[]{"masked", "all"}) : Collections.emptyList();
 		}
 	}
 }

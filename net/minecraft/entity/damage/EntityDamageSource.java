@@ -1,5 +1,6 @@
 package net.minecraft.entity.damage;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -7,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.math.Vec3d;
 
 public class EntityDamageSource extends DamageSource {
 	protected Entity source;
@@ -26,6 +28,7 @@ public class EntityDamageSource extends DamageSource {
 		return this.thorns;
 	}
 
+	@Nullable
 	@Override
 	public Entity getAttacker() {
 		return this.source;
@@ -33,7 +36,7 @@ public class EntityDamageSource extends DamageSource {
 
 	@Override
 	public Text getDeathMessage(LivingEntity entity) {
-		ItemStack itemStack = this.source instanceof LivingEntity ? ((LivingEntity)this.source).getStackInHand() : null;
+		ItemStack itemStack = this.source instanceof LivingEntity ? ((LivingEntity)this.source).getMainHandStack() : null;
 		String string = "death.attack." + this.name;
 		String string2 = string + ".item";
 		return itemStack != null && itemStack.hasCustomName() && CommonI18n.hasTranslation(string2)
@@ -44,5 +47,11 @@ public class EntityDamageSource extends DamageSource {
 	@Override
 	public boolean isScaledWithDifficulty() {
 		return this.source != null && this.source instanceof LivingEntity && !(this.source instanceof PlayerEntity);
+	}
+
+	@Nullable
+	@Override
+	public Vec3d getPosition() {
+		return new Vec3d(this.source.x, this.source.y, this.source.z);
 	}
 }

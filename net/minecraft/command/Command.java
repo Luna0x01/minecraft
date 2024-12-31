@@ -1,6 +1,8 @@
 package net.minecraft.command;
 
 import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 
 public interface Command extends Comparable<Command> {
@@ -10,11 +12,11 @@ public interface Command extends Comparable<Command> {
 
 	List<String> getAliases();
 
-	void execute(CommandSource source, String[] args) throws CommandException;
+	void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException;
 
-	boolean isAccessible(CommandSource source);
+	boolean method_3278(MinecraftServer server, CommandSource source);
 
-	List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos);
+	List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos);
 
 	boolean isUsernameAtIndex(String[] args, int index);
 }

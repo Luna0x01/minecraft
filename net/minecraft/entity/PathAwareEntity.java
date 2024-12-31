@@ -3,6 +3,7 @@ package net.minecraft.entity;
 import java.util.UUID;
 import net.minecraft.entity.ai.goal.GoToWalkTargetGoal;
 import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.mob.MobEntity;
@@ -16,11 +17,13 @@ public abstract class PathAwareEntity extends MobEntity {
 		.setSerialized(false);
 	private BlockPos positionTarget = BlockPos.ORIGIN;
 	private float positionTargetRange = -1.0F;
-	private Goal goal = new GoToWalkTargetGoal(this, 1.0);
+	private Goal goal;
 	private boolean field_6809;
+	private float field_14565 = LandType.WATER.getWeight();
 
 	public PathAwareEntity(World world) {
 		super(world);
+		this.goal = new GoToWalkTargetGoal(this, 1.0);
 	}
 
 	public float getPathfindingFavor(BlockPos pos) {
@@ -83,7 +86,8 @@ public abstract class PathAwareEntity extends MobEntity {
 			if (!this.field_6809) {
 				this.goals.add(2, this.goal);
 				if (this.getNavigation() instanceof MobNavigation) {
-					((MobNavigation)this.getNavigation()).method_11027(false);
+					this.field_14565 = this.method_13075(LandType.WATER);
+					this.method_13076(LandType.WATER, 0.0F);
 				}
 
 				this.field_6809 = true;
@@ -110,7 +114,7 @@ public abstract class PathAwareEntity extends MobEntity {
 			this.field_6809 = false;
 			this.goals.method_4497(this.goal);
 			if (this.getNavigation() instanceof MobNavigation) {
-				((MobNavigation)this.getNavigation()).method_11027(true);
+				this.method_13076(LandType.WATER, this.field_14565);
 			}
 
 			this.method_6173();

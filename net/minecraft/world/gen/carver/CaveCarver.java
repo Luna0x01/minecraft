@@ -12,6 +12,11 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkBlockStateStorage;
 
 public class CaveCarver extends Carver {
+	protected static final BlockState field_12958 = Blocks.LAVA.getDefaultState();
+	protected static final BlockState field_12959 = Blocks.AIR.getDefaultState();
+	protected static final BlockState field_12960 = Blocks.SANDSTONE.getDefaultState();
+	protected static final BlockState field_12961 = Blocks.RED_SANDSTONE.getDefaultState();
+
 	protected void carveCave(long seed, int mainChunkX, int mainChunkZ, ChunkBlockStateStorage chunkStorage, double x, double y, double z) {
 		this.carveCave(seed, mainChunkX, mainChunkZ, chunkStorage, x, y, z, 1.0F + this.random.nextFloat() * 6.0F, 0.0F, 0.0F, -1, -1, 0.5);
 	}
@@ -50,7 +55,7 @@ public class CaveCarver extends Carver {
 		int j = random.nextInt(branchCount / 2) + branchCount / 4;
 
 		for (boolean bl2 = random.nextInt(6) == 0; branch < branchCount; branch++) {
-			double h = 1.5 + (double)(MathHelper.sin((float)branch * (float) Math.PI / (float)branchCount) * baseWidth * 1.0F);
+			double h = 1.5 + (double)(MathHelper.sin((float)branch * (float) Math.PI / (float)branchCount) * baseWidth);
 			double k = h * heightWidthRatio;
 			float l = MathHelper.cos(yAngle);
 			float m = MathHelper.sin(yAngle);
@@ -176,23 +181,18 @@ public class CaveCarver extends Carver {
 										double ai = ((double)(ah - 1) + 0.5 - y) / k;
 										if (ai > -0.7 && ae * ae + ai * ai + ag * ag < 1.0) {
 											BlockState blockState2 = chunkStorage.get(ad, ah, af);
-											BlockState blockState3 = (BlockState)Objects.firstNonNull(chunkStorage.get(ad, ah + 1, af), Blocks.AIR.getDefaultState());
+											BlockState blockState3 = (BlockState)Objects.firstNonNull(chunkStorage.get(ad, ah + 1, af), field_12959);
 											if (blockState2.getBlock() == Blocks.GRASS || blockState2.getBlock() == Blocks.MYCELIUM) {
 												bl4 = true;
 											}
 
 											if (this.canCarveBlock(blockState2, blockState3)) {
 												if (ah - 1 < 10) {
-													chunkStorage.set(ad, ah, af, Blocks.LAVA.getDefaultState());
+													chunkStorage.set(ad, ah, af, field_12958);
 												} else {
-													chunkStorage.set(ad, ah, af, Blocks.AIR.getDefaultState());
+													chunkStorage.set(ad, ah, af, field_12959);
 													if (blockState3.getBlock() == Blocks.SAND) {
-														chunkStorage.set(
-															ad,
-															ah + 1,
-															af,
-															blockState3.get(SandBlock.sandType) == SandBlock.SandType.RED_SAND ? Blocks.RED_SANDSTONE.getDefaultState() : Blocks.SANDSTONE.getDefaultState()
-														);
+														chunkStorage.set(ad, ah + 1, af, blockState3.get(SandBlock.sandType) == SandBlock.SandType.RED_SAND ? field_12961 : field_12960);
 													}
 
 													if (bl4 && chunkStorage.get(ad, ah - 1, af).getBlock() == Blocks.DIRT) {
@@ -236,7 +236,7 @@ public class CaveCarver extends Carver {
 		} else {
 			return block.getBlock() == Blocks.SNOW_LAYER
 				? true
-				: (block.getBlock() == Blocks.SAND || block.getBlock() == Blocks.GRAVEL) && blockBelow.getBlock().getMaterial() != Material.WATER;
+				: (block.getBlock() == Blocks.SAND || block.getBlock() == Blocks.GRAVEL) && blockBelow.getMaterial() != Material.WATER;
 		}
 	}
 
@@ -258,7 +258,7 @@ public class CaveCarver extends Carver {
 			}
 
 			for (int l = 0; l < k; l++) {
-				float g = this.random.nextFloat() * (float) Math.PI * 2.0F;
+				float g = this.random.nextFloat() * (float) (Math.PI * 2);
 				float h = (this.random.nextFloat() - 0.5F) * 2.0F / 8.0F;
 				float m = this.random.nextFloat() * 2.0F + this.random.nextFloat();
 				if (this.random.nextInt(10) == 0) {

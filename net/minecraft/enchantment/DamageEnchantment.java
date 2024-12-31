@@ -2,12 +2,12 @@ package net.minecraft.enchantment;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 
 public class DamageEnchantment extends Enchantment {
 	private static final String[] TYPE_NAMES = new String[]{"all", "undead", "arthropods"};
@@ -16,9 +16,9 @@ public class DamageEnchantment extends Enchantment {
 	private static final int[] field_4451 = new int[]{20, 20, 20};
 	public final int typeIndex;
 
-	public DamageEnchantment(int i, Identifier identifier, int j, int k) {
-		super(i, identifier, j, EnchantmentTarget.WEAPON);
-		this.typeIndex = k;
+	public DamageEnchantment(Enchantment.Rarity rarity, int i, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.WEAPON, equipmentSlots);
+		this.typeIndex = i;
 	}
 
 	@Override
@@ -39,7 +39,7 @@ public class DamageEnchantment extends Enchantment {
 	@Override
 	public float getDamageModifier(int index, EntityGroup target) {
 		if (this.typeIndex == 0) {
-			return (float)index * 1.25F;
+			return 1.0F + (float)Math.max(0, index - 1) * 0.5F;
 		} else if (this.typeIndex == 1 && target == EntityGroup.UNDEAD) {
 			return (float)index * 2.5F;
 		} else {
@@ -68,7 +68,7 @@ public class DamageEnchantment extends Enchantment {
 			LivingEntity livingEntity2 = (LivingEntity)entity;
 			if (this.typeIndex == 2 && livingEntity2.getGroup() == EntityGroup.ARTHROPOD) {
 				int i = 20 + livingEntity.getRandom().nextInt(10 * power);
-				livingEntity2.addStatusEffect(new StatusEffectInstance(StatusEffect.SLOWNESS.id, i, 3));
+				livingEntity2.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, i, 3));
 			}
 		}
 	}

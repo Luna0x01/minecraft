@@ -1,17 +1,17 @@
 package net.minecraft.network.packet.c2s.play;
 
 import java.io.IOException;
-import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ServerPlayPacketListener;
+import net.minecraft.util.Hand;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 public class PlayerInteractBlockC2SPacket implements Packet<ServerPlayPacketListener> {
-	private static final BlockPos UNKNOWN_POS = new BlockPos(-1, -1, -1);
 	private BlockPos pos;
-	private int directionId;
-	private ItemStack stack;
+	private Direction field_13813;
+	private Hand field_13814;
 	private float distanceX;
 	private float distanceY;
 	private float distanceZ;
@@ -19,14 +19,10 @@ public class PlayerInteractBlockC2SPacket implements Packet<ServerPlayPacketList
 	public PlayerInteractBlockC2SPacket() {
 	}
 
-	public PlayerInteractBlockC2SPacket(ItemStack itemStack) {
-		this(UNKNOWN_POS, 255, itemStack, 0.0F, 0.0F, 0.0F);
-	}
-
-	public PlayerInteractBlockC2SPacket(BlockPos blockPos, int i, ItemStack itemStack, float f, float g, float h) {
+	public PlayerInteractBlockC2SPacket(BlockPos blockPos, Direction direction, Hand hand, float f, float g, float h) {
 		this.pos = blockPos;
-		this.directionId = i;
-		this.stack = itemStack != null ? itemStack.copy() : null;
+		this.field_13813 = direction;
+		this.field_13814 = hand;
 		this.distanceX = f;
 		this.distanceY = g;
 		this.distanceZ = h;
@@ -35,8 +31,8 @@ public class PlayerInteractBlockC2SPacket implements Packet<ServerPlayPacketList
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.pos = buf.readBlockPos();
-		this.directionId = buf.readUnsignedByte();
-		this.stack = buf.readItemStack();
+		this.field_13813 = buf.readEnumConstant(Direction.class);
+		this.field_13814 = buf.readEnumConstant(Hand.class);
 		this.distanceX = (float)buf.readUnsignedByte() / 16.0F;
 		this.distanceY = (float)buf.readUnsignedByte() / 16.0F;
 		this.distanceZ = (float)buf.readUnsignedByte() / 16.0F;
@@ -45,8 +41,8 @@ public class PlayerInteractBlockC2SPacket implements Packet<ServerPlayPacketList
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeBlockPos(this.pos);
-		buf.writeByte(this.directionId);
-		buf.writeItemStack(this.stack);
+		buf.writeEnumConstant(this.field_13813);
+		buf.writeEnumConstant(this.field_13814);
 		buf.writeByte((int)(this.distanceX * 16.0F));
 		buf.writeByte((int)(this.distanceY * 16.0F));
 		buf.writeByte((int)(this.distanceZ * 16.0F));
@@ -60,12 +56,12 @@ public class PlayerInteractBlockC2SPacket implements Packet<ServerPlayPacketList
 		return this.pos;
 	}
 
-	public int getDirectionId() {
-		return this.directionId;
+	public Direction method_12708() {
+		return this.field_13813;
 	}
 
-	public ItemStack getStack() {
-		return this.stack;
+	public Hand method_12709() {
+		return this.field_13814;
 	}
 
 	public float getDistanceX() {

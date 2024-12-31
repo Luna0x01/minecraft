@@ -30,7 +30,7 @@ public class TntMinecartEntityRenderer extends MinecartEntityRenderer<TntMinecar
 			GlStateManager.disableTexture();
 			GlStateManager.disableLighting();
 			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(770, 772);
+			GlStateManager.method_12287(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.DST_ALPHA);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, (1.0F - ((float)i - f + 1.0F) / 100.0F) * 0.8F);
 			GlStateManager.pushMatrix();
 			blockRenderManager.renderBlockEntity(Blocks.TNT.getDefaultState(), 1.0F);

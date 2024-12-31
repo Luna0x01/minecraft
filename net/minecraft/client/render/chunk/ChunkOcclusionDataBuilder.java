@@ -1,6 +1,6 @@
 package net.minecraft.client.render.chunk;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.Queue;
@@ -53,7 +53,7 @@ public class ChunkOcclusionDataBuilder {
 
 	private Set<Direction> getOpenFaces(int pos) {
 		Set<Direction> set = EnumSet.noneOf(Direction.class);
-		Queue<Integer> queue = Lists.newLinkedList();
+		Queue<Integer> queue = Queues.newArrayDeque();
 		queue.add(IntegerStorage.get(pos));
 		this.closed.set(pos, true);
 

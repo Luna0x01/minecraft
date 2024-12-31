@@ -5,8 +5,8 @@ import net.minecraft.entity.mob.MagmaCubeEntity;
 import net.minecraft.entity.mob.ZombiePigmanEntity;
 
 public class NetherBiome extends Biome {
-	public NetherBiome(int i) {
-		super(i);
+	public NetherBiome(Biome.Settings settings) {
+		super(settings);
 		this.monsterEntries.clear();
 		this.passiveEntries.clear();
 		this.waterEntries.clear();

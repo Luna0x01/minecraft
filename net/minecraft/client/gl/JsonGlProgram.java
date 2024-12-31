@@ -10,10 +10,10 @@ import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.texture.Texture;
+import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
@@ -47,11 +47,11 @@ public class JsonGlProgram {
 		JsonParser jsonParser = new JsonParser();
 		Identifier identifier = new Identifier("shaders/program/" + string + ".json");
 		this.name = string;
-		InputStream inputStream = null;
+		Resource resource = null;
 
 		try {
-			inputStream = resourceManager.getResource(identifier).getInputStream();
-			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(inputStream, Charsets.UTF_8)).getAsJsonObject();
+			resource = resourceManager.getResource(identifier);
+			JsonObject jsonObject = jsonParser.parse(IOUtils.toString(resource.getInputStream(), Charsets.UTF_8)).getAsJsonObject();
 			String string2 = JsonHelper.getString(jsonObject, "vertex");
 			String string3 = JsonHelper.getString(jsonObject, "fragment");
 			JsonArray jsonArray = JsonHelper.getArray(jsonObject, "samplers", null);
@@ -128,7 +128,7 @@ public class JsonGlProgram {
 			shaderParseException4.addFaultyFile(identifier.getPath());
 			throw shaderParseException4;
 		} finally {
-			IOUtils.closeQuietly(inputStream);
+			IOUtils.closeQuietly(resource);
 		}
 
 		this.markUniformsDirty();

@@ -30,7 +30,7 @@ public class PlayerActionC2SPacket implements Packet<ServerPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeEnum(this.action);
+		buf.writeEnumConstant(this.action);
 		buf.writeBlockPos(this.pos);
 		buf.writeByte(this.direction.getId());
 	}
@@ -57,6 +57,7 @@ public class PlayerActionC2SPacket implements Packet<ServerPlayPacketListener> {
 		STOP_DESTROY_BLOCK,
 		DROP_ALL_ITEMS,
 		DROP_ITEM,
-		RELEASE_USE_ITEM;
+		RELEASE_USE_ITEM,
+		SWAP_HELD_ITEMS;
 	}
 }

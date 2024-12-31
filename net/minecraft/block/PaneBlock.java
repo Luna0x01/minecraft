@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
@@ -9,6 +10,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -20,6 +23,24 @@ public class PaneBlock extends Block {
 	public static final BooleanProperty EAST = BooleanProperty.of("east");
 	public static final BooleanProperty SOUTH = BooleanProperty.of("south");
 	public static final BooleanProperty WEST = BooleanProperty.of("west");
+	protected static final Box[] field_12801 = new Box[]{
+		new Box(0.4375, 0.0, 0.4375, 0.5625, 1.0, 0.5625),
+		new Box(0.4375, 0.0, 0.4375, 0.5625, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.4375, 0.5625, 1.0, 0.5625),
+		new Box(0.0, 0.0, 0.4375, 0.5625, 1.0, 1.0),
+		new Box(0.4375, 0.0, 0.0, 0.5625, 1.0, 0.5625),
+		new Box(0.4375, 0.0, 0.0, 0.5625, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.0, 0.5625, 1.0, 0.5625),
+		new Box(0.0, 0.0, 0.0, 0.5625, 1.0, 1.0),
+		new Box(0.4375, 0.0, 0.4375, 1.0, 1.0, 0.5625),
+		new Box(0.4375, 0.0, 0.4375, 1.0, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.4375, 1.0, 1.0, 0.5625),
+		new Box(0.0, 0.0, 0.4375, 1.0, 1.0, 1.0),
+		new Box(0.4375, 0.0, 0.0, 1.0, 1.0, 0.5625),
+		new Box(0.4375, 0.0, 0.0, 1.0, 1.0, 1.0),
+		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.5625),
+		new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+	};
 	private final boolean canDrop;
 
 	protected PaneBlock(Material material, boolean bl) {
@@ -30,6 +51,58 @@ public class PaneBlock extends Block {
 	}
 
 	@Override
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+		state = this.getBlockState(state, world, pos);
+		appendCollisionBoxes(pos, entityBox, boxes, field_12801[0]);
+		if ((Boolean)state.get(NORTH)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.NORTH)]);
+		}
+
+		if ((Boolean)state.get(SOUTH)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.SOUTH)]);
+		}
+
+		if ((Boolean)state.get(EAST)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.EAST)]);
+		}
+
+		if ((Boolean)state.get(WEST)) {
+			appendCollisionBoxes(pos, entityBox, boxes, field_12801[method_11637(Direction.WEST)]);
+		}
+	}
+
+	private static int method_11637(Direction direction) {
+		return 1 << direction.getHorizontal();
+	}
+
+	@Override
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		state = this.getBlockState(state, view, pos);
+		return field_12801[method_11638(state)];
+	}
+
+	private static int method_11638(BlockState blockState) {
+		int i = 0;
+		if ((Boolean)blockState.get(NORTH)) {
+			i |= method_11637(Direction.NORTH);
+		}
+
+		if ((Boolean)blockState.get(EAST)) {
+			i |= method_11637(Direction.EAST);
+		}
+
+		if ((Boolean)blockState.get(SOUTH)) {
+			i |= method_11637(Direction.SOUTH);
+		}
+
+		if ((Boolean)blockState.get(WEST)) {
+			i |= method_11637(Direction.WEST);
+		}
+
+		return i;
+	}
+
+	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
 		return state.with(NORTH, this.canConnectToGlass(view.getBlockState(pos.north()).getBlock()))
 			.with(SOUTH, this.canConnectToGlass(view.getBlockState(pos.south()).getBlock()))
@@ -37,101 +110,29 @@ public class PaneBlock extends Block {
 			.with(EAST, this.canConnectToGlass(view.getBlockState(pos.east()).getBlock()));
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return !this.canDrop ? null : super.getDropItem(state, random, id);
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
-		return view.getBlockState(pos).getBlock() == this ? false : super.isSideInvisible(view, pos, facing);
-	}
-
-	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		boolean bl = this.canConnectToGlass(world.getBlockState(pos.north()).getBlock());
-		boolean bl2 = this.canConnectToGlass(world.getBlockState(pos.south()).getBlock());
-		boolean bl3 = this.canConnectToGlass(world.getBlockState(pos.west()).getBlock());
-		boolean bl4 = this.canConnectToGlass(world.getBlockState(pos.east()).getBlock());
-		if ((!bl3 || !bl4) && (bl3 || bl4 || bl || bl2)) {
-			if (bl3) {
-				this.setBoundingBox(0.0F, 0.0F, 0.4375F, 0.5F, 1.0F, 0.5625F);
-				super.appendCollisionBoxes(world, pos, state, box, list, entity);
-			} else if (bl4) {
-				this.setBoundingBox(0.5F, 0.0F, 0.4375F, 1.0F, 1.0F, 0.5625F);
-				super.appendCollisionBoxes(world, pos, state, box, list, entity);
-			}
-		} else {
-			this.setBoundingBox(0.0F, 0.0F, 0.4375F, 1.0F, 1.0F, 0.5625F);
-			super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		}
-
-		if ((!bl || !bl2) && (bl3 || bl4 || bl || bl2)) {
-			if (bl) {
-				this.setBoundingBox(0.4375F, 0.0F, 0.0F, 0.5625F, 1.0F, 0.5F);
-				super.appendCollisionBoxes(world, pos, state, box, list, entity);
-			} else if (bl2) {
-				this.setBoundingBox(0.4375F, 0.0F, 0.5F, 0.5625F, 1.0F, 1.0F);
-				super.appendCollisionBoxes(world, pos, state, box, list, entity);
-			}
-		} else {
-			this.setBoundingBox(0.4375F, 0.0F, 0.0F, 0.5625F, 1.0F, 1.0F);
-			super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		}
-	}
-
-	@Override
-	public void setBlockItemBounds() {
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		float f = 0.4375F;
-		float g = 0.5625F;
-		float h = 0.4375F;
-		float i = 0.5625F;
-		boolean bl = this.canConnectToGlass(view.getBlockState(pos.north()).getBlock());
-		boolean bl2 = this.canConnectToGlass(view.getBlockState(pos.south()).getBlock());
-		boolean bl3 = this.canConnectToGlass(view.getBlockState(pos.west()).getBlock());
-		boolean bl4 = this.canConnectToGlass(view.getBlockState(pos.east()).getBlock());
-		if ((!bl3 || !bl4) && (bl3 || bl4 || bl || bl2)) {
-			if (bl3) {
-				f = 0.0F;
-			} else if (bl4) {
-				g = 1.0F;
-			}
-		} else {
-			f = 0.0F;
-			g = 1.0F;
-		}
-
-		if ((!bl || !bl2) && (bl3 || bl4 || bl || bl2)) {
-			if (bl) {
-				h = 0.0F;
-			} else if (bl2) {
-				i = 1.0F;
-			}
-		} else {
-			h = 0.0F;
-			i = 1.0F;
-		}
-
-		this.setBoundingBox(f, 0.0F, h, g, 1.0F, i);
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		return view.getBlockState(pos.offset(direction)).getBlock() == this ? false : super.method_8654(state, view, pos, direction);
 	}
 
 	public final boolean canConnectToGlass(Block block) {
-		return block.isFullBlock()
+		return block.getDefaultState().method_11730()
 			|| block == this
 			|| block == Blocks.GLASS
 			|| block == Blocks.STAINED_GLASS
@@ -152,6 +153,32 @@ public class PaneBlock extends Block {
 	@Override
 	public int getData(BlockState state) {
 		return 0;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case CLOCKWISE_180:
+				return state.with(NORTH, state.get(SOUTH)).with(EAST, state.get(WEST)).with(SOUTH, state.get(NORTH)).with(WEST, state.get(EAST));
+			case COUNTERCLOCKWISE_90:
+				return state.with(NORTH, state.get(EAST)).with(EAST, state.get(SOUTH)).with(SOUTH, state.get(WEST)).with(WEST, state.get(NORTH));
+			case CLOCKWISE_90:
+				return state.with(NORTH, state.get(WEST)).with(EAST, state.get(NORTH)).with(SOUTH, state.get(EAST)).with(WEST, state.get(SOUTH));
+			default:
+				return state;
+		}
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		switch (mirror) {
+			case LEFT_RIGHT:
+				return state.with(NORTH, state.get(SOUTH)).with(SOUTH, state.get(NORTH));
+			case FRONT_BACK:
+				return state.with(EAST, state.get(WEST)).with(WEST, state.get(EAST));
+			default:
+				return super.withMirror(state, mirror);
+		}
 	}
 
 	@Override

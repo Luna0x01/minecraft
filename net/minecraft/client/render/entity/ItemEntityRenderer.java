@@ -2,6 +2,7 @@ package net.minecraft.client.render.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Random;
+import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformation;
@@ -40,13 +41,6 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 				GlStateManager.rotate(l, 0.0F, 1.0F, 0.0F);
 			}
 
-			if (!bl) {
-				float m = -0.0F * (float)(i - 1) * 0.5F;
-				float n = -0.0F * (float)(i - 1) * 0.5F;
-				float o = -0.046875F * (float)(i - 1) * 0.5F;
-				GlStateManager.translate(m, n, o);
-			}
-
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			return i;
 		}
@@ -69,7 +63,14 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 
 	public void render(ItemEntity itemEntity, double d, double e, double f, float g, float h) {
 		ItemStack itemStack = itemEntity.getItemStack();
-		this.random.setSeed(187L);
+		int i;
+		if (itemStack != null && itemStack.getItem() != null) {
+			i = Item.getRawId(itemStack.getItem()) + itemStack.getData();
+		} else {
+			i = 187;
+		}
+
+		this.random.setSeed((long)i);
 		boolean bl = false;
 		if (this.bindTexture(itemEntity)) {
 			this.dispatcher.textureManager.getTexture(this.getTexture(itemEntity)).pushFilter(false, false);
@@ -79,35 +80,60 @@ public class ItemEntityRenderer extends EntityRenderer<ItemEntity> {
 		GlStateManager.enableRescaleNormal();
 		GlStateManager.alphaFunc(516, 0.1F);
 		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+		DiffuseLighting.enableNormally();
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		GlStateManager.pushMatrix();
-		BakedModel bakedModel = this.itemRenderer.getModels().getModel(itemStack);
-		int i = this.method_10221(itemEntity, d, e, f, h, bakedModel);
+		BakedModel bakedModel = this.itemRenderer.method_12457(itemStack, itemEntity.world, null);
+		int k = this.method_10221(itemEntity, d, e, f, h, bakedModel);
+		float l = bakedModel.getTransformation().ground.scale.x;
+		float m = bakedModel.getTransformation().ground.scale.y;
+		float n = bakedModel.getTransformation().ground.scale.z;
+		boolean bl2 = bakedModel.hasDepth();
+		if (!bl2) {
+			float o = -0.0F * (float)(k - 1) * 0.5F * l;
+			float p = -0.0F * (float)(k - 1) * 0.5F * m;
+			float q = -0.09375F * (float)(k - 1) * 0.5F * n;
+			GlStateManager.translate(o, p, q);
+		}
 
-		for (int j = 0; j < i; j++) {
-			if (bakedModel.hasDepth()) {
+		if (this.field_13631) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.method_12309(this.method_12454(itemEntity));
+		}
+
+		for (int r = 0; r < k; r++) {
+			if (bl2) {
 				GlStateManager.pushMatrix();
-				if (j > 0) {
-					float k = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					float l = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					float m = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
-					GlStateManager.translate(k, l, m);
+				if (r > 0) {
+					float s = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
+					float t = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
+					float u = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F;
+					GlStateManager.translate(s, t, u);
 				}
 
-				GlStateManager.scale(0.5F, 0.5F, 0.5F);
 				bakedModel.getTransformation().apply(ModelTransformation.Mode.GROUND);
 				this.itemRenderer.renderItem(itemStack, bakedModel);
 				GlStateManager.popMatrix();
 			} else {
 				GlStateManager.pushMatrix();
+				if (r > 0) {
+					float v = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
+					float w = (this.random.nextFloat() * 2.0F - 1.0F) * 0.15F * 0.5F;
+					GlStateManager.translate(v, w, 0.0F);
+				}
+
 				bakedModel.getTransformation().apply(ModelTransformation.Mode.GROUND);
 				this.itemRenderer.renderItem(itemStack, bakedModel);
 				GlStateManager.popMatrix();
-				float n = bakedModel.getTransformation().ground.scale.x;
-				float o = bakedModel.getTransformation().ground.scale.y;
-				float p = bakedModel.getTransformation().ground.scale.z;
-				GlStateManager.translate(0.0F * n, 0.0F * o, 0.046875F * p);
+				GlStateManager.translate(0.0F * l, 0.0F * m, 0.09375F * n);
 			}
+		}
+
+		if (this.field_13631) {
+			GlStateManager.method_12315();
+			GlStateManager.disableColorMaterial();
 		}
 
 		GlStateManager.popMatrix();

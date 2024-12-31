@@ -3,8 +3,10 @@ package net.minecraft.server.command;
 import java.io.File;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -36,7 +38,7 @@ public class DebugCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.debug.usage");
 		} else {
@@ -45,10 +47,10 @@ public class DebugCommand extends AbstractCommand {
 					throw new IncorrectUsageException("commands.debug.usage");
 				}
 
-				run(source, this, "commands.debug.start", new Object[0]);
-				MinecraftServer.getServer().enableProfiler();
+				run(commandSource, this, "commands.debug.start", new Object[0]);
+				minecraftServer.enableProfiler();
 				this.field_2727 = MinecraftServer.getTimeMillis();
-				this.field_2728 = MinecraftServer.getServer().getTicks();
+				this.field_2728 = minecraftServer.getTicks();
 			} else {
 				if (!args[0].equals("stop")) {
 					throw new IncorrectUsageException("commands.debug.usage");
@@ -58,37 +60,35 @@ public class DebugCommand extends AbstractCommand {
 					throw new IncorrectUsageException("commands.debug.usage");
 				}
 
-				if (!MinecraftServer.getServer().profiler.enabled) {
+				if (!minecraftServer.profiler.enabled) {
 					throw new CommandException("commands.debug.notStarted");
 				}
 
 				long l = MinecraftServer.getTimeMillis();
-				int i = MinecraftServer.getServer().getTicks();
+				int i = minecraftServer.getTicks();
 				long m = l - this.field_2727;
 				int j = i - this.field_2728;
-				this.method_2057(m, j);
-				MinecraftServer.getServer().profiler.enabled = false;
-				run(source, this, "commands.debug.stop", new Object[]{(float)m / 1000.0F, j});
+				this.method_2057(m, j, minecraftServer);
+				minecraftServer.profiler.enabled = false;
+				run(commandSource, this, "commands.debug.stop", new Object[]{(float)m / 1000.0F, j});
 			}
 		}
 	}
 
-	private void method_2057(long l, int i) {
-		File file = new File(
-			MinecraftServer.getServer().getFile("debug"), "profile-results-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt"
-		);
+	private void method_2057(long l, int i, MinecraftServer minecraftServer) {
+		File file = new File(minecraftServer.getFile("debug"), "profile-results-" + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".txt");
 		file.getParentFile().mkdirs();
 
 		try {
 			FileWriter fileWriter = new FileWriter(file);
-			fileWriter.write(this.method_2058(l, i));
+			fileWriter.write(this.method_2058(l, i, minecraftServer));
 			fileWriter.close();
-		} catch (Throwable var6) {
-			field_7445.error("Could not save profiler results to " + file, var6);
+		} catch (Throwable var7) {
+			field_7445.error("Could not save profiler results to " + file, var7);
 		}
 	}
 
-	private String method_2058(long l, int i) {
+	private String method_2058(long l, int i, MinecraftServer minecraftServer) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("---- Minecraft Profiler Results ----\n");
 		stringBuilder.append("// ");
@@ -102,20 +102,20 @@ public class DebugCommand extends AbstractCommand {
 			.append(20)
 			.append(" ticks per second\n\n");
 		stringBuilder.append("--- BEGIN PROFILE DUMP ---\n\n");
-		this.method_2056(0, "root", stringBuilder);
+		this.method_2056(0, "root", stringBuilder, minecraftServer);
 		stringBuilder.append("--- END PROFILE DUMP ---\n\n");
 		return stringBuilder.toString();
 	}
 
-	private void method_2056(int i, String string, StringBuilder stringBuilder) {
-		List<Profiler.Section> list = MinecraftServer.getServer().profiler.getData(string);
+	private void method_2056(int i, String string, StringBuilder stringBuilder, MinecraftServer minecraftServer) {
+		List<Profiler.Section> list = minecraftServer.profiler.getData(string);
 		if (list != null && list.size() >= 3) {
 			for (int j = 1; j < list.size(); j++) {
 				Profiler.Section section = (Profiler.Section)list.get(j);
 				stringBuilder.append(String.format("[%02d] ", i));
 
 				for (int k = 0; k < i; k++) {
-					stringBuilder.append(" ");
+					stringBuilder.append("|   ");
 				}
 
 				stringBuilder.append(section.name)
@@ -126,9 +126,9 @@ public class DebugCommand extends AbstractCommand {
 					.append("%\n");
 				if (!section.name.equals("unspecified")) {
 					try {
-						this.method_2056(i + 1, string + "." + section.name, stringBuilder);
-					} catch (Exception var8) {
-						stringBuilder.append("[[ EXCEPTION ").append(var8).append(" ]]");
+						this.method_2056(i + 1, string + "." + section.name, stringBuilder, minecraftServer);
+					} catch (Exception var9) {
+						stringBuilder.append("[[ EXCEPTION ").append(var9).append(" ]]");
 					}
 				}
 			}
@@ -161,7 +161,7 @@ public class DebugCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, new String[]{"start", "stop"}) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, new String[]{"start", "stop"}) : Collections.emptyList();
 	}
 }

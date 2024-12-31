@@ -101,4 +101,8 @@ public class TranslationStorage {
 			return "Format error: " + string;
 		}
 	}
+
+	public boolean method_12501(String string) {
+		return this.translations.containsKey(string);
+	}
 }

@@ -1,6 +1,8 @@
 package net.minecraft.entity.passive;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
@@ -13,32 +15,43 @@ import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.goal.FollowTargetIfTamedGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.PounceAtTargetGoal;
+import net.minecraft.entity.ai.goal.SitGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
-import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
 
 public class OcelotEntity extends TameableEntity {
+	private static final TrackedData<Integer> field_14612 = DataTracker.registerData(OcelotEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private FleeEntityGoal<PlayerEntity> field_11976;
 	private TemptGoal field_3705;
 
 	public OcelotEntity(World world) {
 		super(world);
 		this.setBounds(0.6F, 0.7F);
-		((MobNavigation)this.getNavigation()).method_11027(true);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(1, new SwimGoal(this));
-		this.goals.add(2, this.sitGoal);
+		this.goals.add(2, this.sitGoal = new SitGoal(this));
 		this.goals.add(3, this.field_3705 = new TemptGoal(this, 0.6, Items.RAW_FISH, true));
 		this.goals.add(5, new FollowOwnerGoal(this, 1.0, 10.0F, 5.0F));
 		this.goals.add(6, new CatSitOnBlockGoal(this, 0.8));
@@ -53,7 +66,7 @@ public class OcelotEntity extends TameableEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(18, (byte)0);
+		this.dataTracker.startTracking(field_14612, 0);
 	}
 
 	@Override
@@ -104,37 +117,33 @@ public class OcelotEntity extends TameableEntity {
 		this.setCatVariant(nbt.getInt("CatType"));
 	}
 
+	@Nullable
 	@Override
-	protected String getAmbientSound() {
+	protected Sound ambientSound() {
 		if (this.isTamed()) {
 			if (this.isInLove()) {
-				return "mob.cat.purr";
+				return Sounds.ENTITY_CAT_PURR;
 			} else {
-				return this.random.nextInt(4) == 0 ? "mob.cat.purreow" : "mob.cat.meow";
+				return this.random.nextInt(4) == 0 ? Sounds.ENTITY_CAT_PURREOW : Sounds.ENTITY_CAT_AMBIENT;
 			}
 		} else {
-			return "";
+			return null;
 		}
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.cat.hitt";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_CAT_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.cat.hitt";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_CAT_DEATH;
 	}
 
 	@Override
 	protected float getSoundVolume() {
 		return 0.4F;
-	}
-
-	@Override
-	protected Item getDefaultDrop() {
-		return Items.LEATHER;
 	}
 
 	@Override
@@ -147,36 +156,39 @@ public class OcelotEntity extends TameableEntity {
 		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
-			this.sitGoal.setEnabledWithOwner(false);
+			if (this.sitGoal != null) {
+				this.sitGoal.setEnabledWithOwner(false);
+			}
+
 			return super.damage(source, amount);
 		}
 	}
 
+	@Nullable
 	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
+	protected Identifier getLootTableId() {
+		return LootTables.OCELOT_ENTITIE;
 	}
 
 	@Override
-	public boolean method_2537(PlayerEntity playerEntity) {
-		ItemStack itemStack = playerEntity.inventory.getMainHandStack();
+	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
 		if (this.isTamed()) {
 			if (this.isOwner(playerEntity) && !this.world.isClient && !this.isBreedingItem(itemStack)) {
 				this.sitGoal.setEnabledWithOwner(!this.isSitting());
 			}
-		} else if (this.field_3705.isActive() && itemStack != null && itemStack.getItem() == Items.RAW_FISH && playerEntity.squaredDistanceTo(this) < 9.0) {
+		} else if ((this.field_3705 == null || this.field_3705.isActive())
+			&& itemStack != null
+			&& itemStack.getItem() == Items.RAW_FISH
+			&& playerEntity.squaredDistanceTo(this) < 9.0) {
 			if (!playerEntity.abilities.creativeMode) {
 				itemStack.count--;
-			}
-
-			if (itemStack.count <= 0) {
-				playerEntity.inventory.setInvStack(playerEntity.inventory.selectedSlot, null);
 			}
 
 			if (!this.world.isClient) {
 				if (this.random.nextInt(3) == 0) {
 					this.setTamed(true);
 					this.setCatVariant(1 + this.world.random.nextInt(3));
-					this.method_2713(playerEntity.getUuid().toString());
+					this.method_13092(playerEntity.getUuid());
 					this.showEmoteParticle(true);
 					this.sitGoal.setEnabledWithOwner(true);
 					this.world.sendEntityStatus(this, (byte)7);
@@ -189,13 +201,13 @@ public class OcelotEntity extends TameableEntity {
 			return true;
 		}
 
-		return super.method_2537(playerEntity);
+		return super.method_13079(playerEntity, hand, itemStack);
 	}
 
 	public OcelotEntity breed(PassiveEntity passiveEntity) {
 		OcelotEntity ocelotEntity = new OcelotEntity(this.world);
 		if (this.isTamed()) {
-			ocelotEntity.method_2713(this.getOwnerId());
+			ocelotEntity.method_13092(this.method_2719());
 			ocelotEntity.setTamed(true);
 			ocelotEntity.setCatVariant(this.getCatVariant());
 		}
@@ -204,7 +216,7 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	@Override
-	public boolean isBreedingItem(ItemStack stack) {
+	public boolean isBreedingItem(@Nullable ItemStack stack) {
 		return stack != null && stack.getItem() == Items.RAW_FISH;
 	}
 
@@ -223,11 +235,11 @@ public class OcelotEntity extends TameableEntity {
 	}
 
 	public int getCatVariant() {
-		return this.dataTracker.getByte(18);
+		return this.dataTracker.get(field_14612);
 	}
 
 	public void setCatVariant(int variant) {
-		this.dataTracker.setProperty(18, (byte)variant);
+		this.dataTracker.set(field_14612, variant);
 	}
 
 	@Override
@@ -245,8 +257,9 @@ public class OcelotEntity extends TameableEntity {
 				return false;
 			}
 
-			Block block = this.world.getBlockState(blockPos.down()).getBlock();
-			if (block == Blocks.GRASS || block.getMaterial() == Material.FOLIAGE) {
+			BlockState blockState = this.world.getBlockState(blockPos.down());
+			Block block = blockState.getBlock();
+			if (block == Blocks.GRASS || blockState.getMaterial() == Material.FOLIAGE) {
 				return true;
 			}
 		}
@@ -280,8 +293,9 @@ public class OcelotEntity extends TameableEntity {
 		}
 	}
 
+	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, EntityData data) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
 		data = super.initialize(difficulty, data);
 		if (this.world.random.nextInt(7) == 0) {
 			for (int i = 0; i < 2; i++) {

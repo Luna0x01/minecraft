@@ -4,14 +4,12 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
-	private boolean field_1769;
 	private int field_1770;
 	private double field_1771;
 	private double field_1772;
@@ -24,7 +22,17 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 		this.stepHeight = 0.0F;
 		this.noClip = true;
 		this.field_4009 = 0.25F;
-		this.renderDistanceMultiplier = 10.0;
+	}
+
+	@Override
+	public boolean shouldRender(double distance) {
+		double d = this.getBoundingBox().getAverage() * 10.0;
+		if (Double.isNaN(d)) {
+			d = 1.0;
+		}
+
+		d *= 64.0 * getRenderDistanceMultiplier();
+		return distance < d * d;
 	}
 
 	@Override
@@ -56,14 +64,6 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 
 		this.field_6749 = this.field_6749 + (f - this.field_6749) * 0.4F;
 		this.field_6750 = this.field_6750 + this.field_6749;
-		if (!this.field_1769 && this.isSwimming() && this.inventory.main[this.inventory.selectedSlot] != null) {
-			ItemStack itemStack = this.inventory.main[this.inventory.selectedSlot];
-			this.setUseItem(this.inventory.main[this.inventory.selectedSlot], itemStack.getItem().getMaxUseTime(itemStack));
-			this.field_1769 = true;
-		} else if (this.field_1769 && !this.isSwimming()) {
-			this.resetUseItem();
-			this.field_1769 = false;
-		}
 	}
 
 	@Override
@@ -107,15 +107,9 @@ public class OtherClientPlayerEntity extends AbstractClientPlayerEntity {
 
 		this.strideDistance = this.strideDistance + (h - this.strideDistance) * 0.4F;
 		this.field_6753 = this.field_6753 + (i - this.field_6753) * 0.8F;
-	}
-
-	@Override
-	public void setArmorSlot(int armorSlot, ItemStack item) {
-		if (armorSlot == 0) {
-			this.inventory.main[this.inventory.selectedSlot] = item;
-		} else {
-			this.inventory.armor[armorSlot - 1] = item;
-		}
+		this.world.profiler.push("push");
+		this.tickCramming();
+		this.world.profiler.pop();
 	}
 
 	@Override

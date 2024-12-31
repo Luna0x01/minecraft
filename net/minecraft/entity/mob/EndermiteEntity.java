@@ -1,5 +1,6 @@
 package net.minecraft.entity.mob;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.EntityGroup;
@@ -12,8 +13,11 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -25,8 +29,12 @@ public class EndermiteEntity extends HostileEntity {
 		super(world);
 		this.experiencePoints = 3;
 		this.setBounds(0.4F, 0.3F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(1, new SwimGoal(this));
-		this.goals.add(2, new MeleeAttackGoal(this, PlayerEntity.class, 1.0, false));
+		this.goals.add(2, new MeleeAttackGoal(this, 1.0, false));
 		this.goals.add(3, new WanderAroundGoal(this, 1.0));
 		this.goals.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goals.add(8, new LookAroundGoal(this));
@@ -53,28 +61,29 @@ public class EndermiteEntity extends HostileEntity {
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.silverfish.say";
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_ENDERMITE_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.silverfish.hit";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_ENDERMITE_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.silverfish.kill";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_ENDERMITE_DEATH;
 	}
 
 	@Override
 	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound("mob.silverfish.step", 0.15F, 1.0F);
+		this.playSound(Sounds.ENTITY_ENDERMITE_STEP, 0.15F, 1.0F);
 	}
 
+	@Nullable
 	@Override
-	protected Item getDefaultDrop() {
-		return null;
+	protected Identifier getLootTableId() {
+		return LootTables.ENDERMITE_ENTITIE;
 	}
 
 	@Override
@@ -95,6 +104,11 @@ public class EndermiteEntity extends HostileEntity {
 	public void tick() {
 		this.bodyYaw = this.yaw;
 		super.tick();
+	}
+
+	@Override
+	public double getHeightOffset() {
+		return 0.3;
 	}
 
 	public boolean isPlayerSpawned() {

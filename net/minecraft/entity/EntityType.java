@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -44,9 +45,11 @@ import net.minecraft.entity.passive.SquidEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.AbstractArrowEntity;
+import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.DragonFireballEntity;
 import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
+import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.entity.thrown.EggEntity;
 import net.minecraft.entity.thrown.EnderPearlEntity;
@@ -77,7 +80,7 @@ public class EntityType {
 	private static final Map<Integer, Class<? extends Entity>> ID_CLASS_MAP = Maps.newHashMap();
 	private static final Map<Class<? extends Entity>, Integer> CLASS_ID_MAP = Maps.newHashMap();
 	private static final Map<String, Integer> NAME_ID_MAP = Maps.newHashMap();
-	public static final Map<Integer, EntityType.SpawnEggData> SPAWN_EGGS = Maps.newLinkedHashMap();
+	public static final Map<String, EntityType.SpawnEggData> SPAWN_EGGS = Maps.newLinkedHashMap();
 
 	private static void registerEntity(Class<? extends Entity> clazz, String name, int id) {
 		if (NAME_CLASS_MAP.containsKey(name)) {
@@ -99,9 +102,10 @@ public class EntityType {
 
 	private static void registerEntity(Class<? extends Entity> clazz, String name, int id, int foregroundColor, int backgroundColor) {
 		registerEntity(clazz, name, id);
-		SPAWN_EGGS.put(id, new EntityType.SpawnEggData(id, foregroundColor, backgroundColor));
+		SPAWN_EGGS.put(name, new EntityType.SpawnEggData(name, foregroundColor, backgroundColor));
 	}
 
+	@Nullable
 	public static Entity createInstanceFromName(String name, World world) {
 		Entity entity = null;
 
@@ -117,12 +121,9 @@ public class EntityType {
 		return entity;
 	}
 
+	@Nullable
 	public static Entity createInstanceFromNbt(NbtCompound nbt, World world) {
 		Entity entity = null;
-		if ("Minecart".equals(nbt.getString("id"))) {
-			nbt.putString("id", AbstractMinecartEntity.Type.getById(nbt.getInt("Type")).getName());
-			nbt.remove("Type");
-		}
 
 		try {
 			Class<? extends Entity> class_ = (Class<? extends Entity>)NAME_CLASS_MAP.get(nbt.getString("id"));
@@ -142,6 +143,7 @@ public class EntityType {
 		return entity;
 	}
 
+	@Nullable
 	public static Entity createInstanceFromRawId(int id, World world) {
 		Entity entity = null;
 
@@ -161,26 +163,32 @@ public class EntityType {
 		return entity;
 	}
 
+	@Nullable
+	public static Entity method_13023(String string, World world) {
+		return createInstanceFromRawId(getIdByName(string), world);
+	}
+
 	public static int getIdByEntity(Entity entity) {
 		Integer integer = (Integer)CLASS_ID_MAP.get(entity.getClass());
 		return integer == null ? 0 : integer;
 	}
 
+	@Nullable
 	public static Class<? extends Entity> getEntityById(int id) {
 		return (Class<? extends Entity>)ID_CLASS_MAP.get(id);
 	}
 
 	public static String getEntityName(Entity entity) {
-		return (String)CLASS_NAME_MAP.get(entity.getClass());
+		return method_13022(entity.getClass());
+	}
+
+	public static String method_13022(Class<? extends Entity> class_) {
+		return (String)CLASS_NAME_MAP.get(class_);
 	}
 
 	public static int getIdByName(String name) {
 		Integer integer = (Integer)NAME_ID_MAP.get(name);
 		return integer == null ? 90 : integer;
-	}
-
-	public static String getEntityName(int id) {
-		return (String)CLASS_NAME_MAP.get(getEntityById(id));
 	}
 
 	public static void load() {
@@ -219,10 +227,11 @@ public class EntityType {
 	static {
 		registerEntity(ItemEntity.class, "Item", 1);
 		registerEntity(ExperienceOrbEntity.class, "XPOrb", 2);
+		registerEntity(AreaEffectCloudEntity.class, "AreaEffectCloud", 3);
 		registerEntity(EggEntity.class, "ThrownEgg", 7);
 		registerEntity(LeashKnotEntity.class, "LeashKnot", 8);
 		registerEntity(PaintingEntity.class, "Painting", 9);
-		registerEntity(AbstractArrowEntity.class, "Arrow", 10);
+		registerEntity(ArrowEntity.class, "Arrow", 10);
 		registerEntity(SnowballEntity.class, "Snowball", 11);
 		registerEntity(FireballEntity.class, "Fireball", 12);
 		registerEntity(SmallFireballEntity.class, "SmallFireball", 13);
@@ -235,6 +244,9 @@ public class EntityType {
 		registerEntity(TntEntity.class, "PrimedTnt", 20);
 		registerEntity(FallingBlockEntity.class, "FallingSand", 21);
 		registerEntity(FireworkRocketEntity.class, "FireworksRocketEntity", 22);
+		registerEntity(SpectralArrowEntity.class, "SpectralArrow", 24);
+		registerEntity(ShulkerBulletEntity.class, "ShulkerBullet", 25);
+		registerEntity(DragonFireballEntity.class, "DragonFireball", 26);
 		registerEntity(ArmorStandEntity.class, "ArmorStand", 30);
 		registerEntity(BoatEntity.class, "Boat", 41);
 		registerEntity(MinecartEntity.class, AbstractMinecartEntity.Type.RIDEABLE.getName(), 42);
@@ -265,6 +277,7 @@ public class EntityType {
 		registerEntity(WitchEntity.class, "Witch", 66, 3407872, 5349438);
 		registerEntity(EndermiteEntity.class, "Endermite", 67, 1447446, 7237230);
 		registerEntity(GuardianEntity.class, "Guardian", 68, 5931634, 15826224);
+		registerEntity(ShulkerEntity.class, "Shulker", 69, 9725844, 5060690);
 		registerEntity(PigEntity.class, "Pig", 90, 15771042, 14377823);
 		registerEntity(SheepEntity.class, "Sheep", 91, 15198183, 16758197);
 		registerEntity(CowEntity.class, "Cow", 92, 4470310, 10592673);
@@ -282,16 +295,16 @@ public class EntityType {
 	}
 
 	public static class SpawnEggData {
-		public final int id;
-		public final int foregroundColor;
-		public final int backgroundColor;
+		public final String name;
+		public final int foreGroundColor;
+		public final int backGroundColor;
 		public final Stat killEntityStat;
 		public final Stat killedByEntityStat;
 
-		public SpawnEggData(int i, int j, int k) {
-			this.id = i;
-			this.foregroundColor = j;
-			this.backgroundColor = k;
+		public SpawnEggData(String string, int i, int j) {
+			this.name = string;
+			this.foreGroundColor = i;
+			this.backGroundColor = j;
 			this.killEntityStat = Stats.createKillEntityStat(this);
 			this.killedByEntityStat = Stats.createKilledByEntityStat(this);
 		}

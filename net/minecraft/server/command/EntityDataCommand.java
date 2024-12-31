@@ -1,5 +1,6 @@
 package net.minecraft.server.command;
 
+import java.util.UUID;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -9,6 +10,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.server.MinecraftServer;
 
 public class EntityDataCommand extends AbstractCommand {
 	@Override
@@ -27,33 +29,32 @@ public class EntityDataCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 2) {
 			throw new IncorrectUsageException("commands.entitydata.usage");
 		} else {
-			Entity entity = getEntity(source, args[0]);
+			Entity entity = method_10711(minecraftServer, commandSource, args[0]);
 			if (entity instanceof PlayerEntity) {
 				throw new CommandException("commands.entitydata.noPlayers", entity.getName());
 			} else {
-				NbtCompound nbtCompound = new NbtCompound();
-				entity.writePlayerData(nbtCompound);
+				NbtCompound nbtCompound = getEntityNbt(entity);
 				NbtCompound nbtCompound2 = (NbtCompound)nbtCompound.copy();
 
 				NbtCompound nbtCompound3;
 				try {
-					nbtCompound3 = StringNbtReader.parse(method_4635(source, args, 1).asUnformattedString());
-				} catch (NbtException var8) {
-					throw new CommandException("commands.entitydata.tagError", var8.getMessage());
+					nbtCompound3 = StringNbtReader.parse(method_4635(commandSource, args, 1).asUnformattedString());
+				} catch (NbtException var9) {
+					throw new CommandException("commands.entitydata.tagError", var9.getMessage());
 				}
 
-				nbtCompound3.remove("UUIDMost");
-				nbtCompound3.remove("UUIDLeast");
+				UUID uUID = entity.getUuid();
 				nbtCompound.copyFrom(nbtCompound3);
+				entity.setUuid(uUID);
 				if (nbtCompound.equals(nbtCompound2)) {
 					throw new CommandException("commands.entitydata.failed", nbtCompound.toString());
 				} else {
 					entity.fromNbt(nbtCompound);
-					run(source, this, "commands.entitydata.success", new Object[]{nbtCompound.toString()});
+					run(commandSource, this, "commands.entitydata.success", new Object[]{nbtCompound.toString()});
 				}
 			}
 		}

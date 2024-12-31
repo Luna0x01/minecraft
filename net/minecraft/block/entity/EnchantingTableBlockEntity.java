@@ -28,11 +28,13 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 	private String customName;
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		if (this.hasCustomName()) {
 			nbt.putString("CustomName", this.customName);
 		}
+
+		return nbt;
 	}
 
 	@Override
@@ -48,7 +50,7 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 		this.pageTurningSpeed = this.nextPageTurningSpeed;
 		this.openBookAnglePrev = this.openBookAngle;
 		PlayerEntity playerEntity = this.world
-			.getClosestPlayer((double)((float)this.pos.getX() + 0.5F), (double)((float)this.pos.getY() + 0.5F), (double)((float)this.pos.getZ() + 0.5F), 3.0);
+			.method_11478((double)((float)this.pos.getX() + 0.5F), (double)((float)this.pos.getY() + 0.5F), (double)((float)this.pos.getZ() + 0.5F), 3.0, false);
 		if (playerEntity != null) {
 			double d = playerEntity.x - (double)((float)this.pos.getX() + 0.5F);
 			double e = playerEntity.z - (double)((float)this.pos.getZ() + 0.5F);
@@ -110,7 +112,7 @@ public class EnchantingTableBlockEntity extends BlockEntity implements Tickable,
 
 	@Override
 	public boolean hasCustomName() {
-		return this.customName != null && this.customName.length() > 0;
+		return this.customName != null && !this.customName.isEmpty();
 	}
 
 	public void setCustomName(String customName) {

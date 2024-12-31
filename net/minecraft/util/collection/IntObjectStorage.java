@@ -1,5 +1,7 @@
 package net.minecraft.util.collection;
 
+import javax.annotation.Nullable;
+
 public class IntObjectStorage<V> {
 	private transient IntObjectStorage.Entry<V>[] buckets;
 	private transient int size;
@@ -20,6 +22,7 @@ public class IntObjectStorage<V> {
 		return hash & bucketLength - 1;
 	}
 
+	@Nullable
 	public V get(int key) {
 		int i = hash(key);
 
@@ -36,6 +39,7 @@ public class IntObjectStorage<V> {
 		return this.getEntry(key) != null;
 	}
 
+	@Nullable
 	final IntObjectStorage.Entry<V> getEntry(int key) {
 		int i = hash(key);
 
@@ -98,11 +102,13 @@ public class IntObjectStorage<V> {
 		}
 	}
 
+	@Nullable
 	public V remove(int key) {
 		IntObjectStorage.Entry<V> entry = this.removeEntry(key);
 		return entry == null ? null : entry.value;
 	}
 
+	@Nullable
 	final IntObjectStorage.Entry<V> removeEntry(int key) {
 		int i = hash(key);
 		int j = getIndex(i, this.buckets.length);
@@ -173,12 +179,10 @@ public class IntObjectStorage<V> {
 				return false;
 			} else {
 				IntObjectStorage.Entry<V> entry = (IntObjectStorage.Entry<V>)object;
-				Object object2 = this.getKey();
-				Object object3 = entry.getKey();
-				if (object2 == object3 || object2 != null && object2.equals(object3)) {
-					Object object4 = this.getValue();
-					Object object5 = entry.getValue();
-					if (object4 == object5 || object4 != null && object4.equals(object5)) {
+				if (this.key == entry.key) {
+					Object object2 = this.getValue();
+					Object object3 = entry.getValue();
+					if (object2 == object3 || object2 != null && object2.equals(object3)) {
 						return true;
 					}
 				}

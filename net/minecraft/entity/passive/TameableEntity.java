@@ -1,11 +1,18 @@
 package net.minecraft.entity.passive;
 
+import com.google.common.base.Optional;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Tameable;
 import net.minecraft.entity.ai.goal.SitGoal;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.scoreboard.AbstractTeam;
@@ -13,7 +20,9 @@ import net.minecraft.server.ServerConfigHandler;
 import net.minecraft.world.World;
 
 public abstract class TameableEntity extends AnimalEntity implements Tameable {
-	protected SitGoal sitGoal = new SitGoal(this);
+	protected static final TrackedData<Byte> field_14566 = DataTracker.registerData(TameableEntity.class, TrackedDataHandlerRegistry.BYTE);
+	protected static final TrackedData<Optional<UUID>> field_14567 = DataTracker.registerData(TameableEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+	protected SitGoal sitGoal;
 
 	public TameableEntity(World world) {
 		super(world);
@@ -23,17 +32,17 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(16, (byte)0);
-		this.dataTracker.track(17, "");
+		this.dataTracker.startTracking(field_14566, (byte)0);
+		this.dataTracker.startTracking(field_14567, Optional.absent());
 	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		if (this.getOwnerId() == null) {
+		if (this.method_2719() == null) {
 			nbt.putString("OwnerUUID", "");
 		} else {
-			nbt.putString("OwnerUUID", this.getOwnerId());
+			nbt.putString("OwnerUUID", this.method_2719().toString());
 		}
 
 		nbt.putBoolean("Sitting", this.isSitting());
@@ -47,16 +56,28 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 			string = nbt.getString("OwnerUUID");
 		} else {
 			String string2 = nbt.getString("Owner");
-			string = ServerConfigHandler.getPlayerUuidByName(string2);
+			string = ServerConfigHandler.method_8204(this.getMinecraftServer(), string2);
 		}
 
-		if (string.length() > 0) {
-			this.method_2713(string);
-			this.setTamed(true);
+		if (!string.isEmpty()) {
+			try {
+				this.method_13092(UUID.fromString(string));
+				this.setTamed(true);
+			} catch (Throwable var4) {
+				this.setTamed(false);
+			}
 		}
 
-		this.sitGoal.setEnabledWithOwner(nbt.getBoolean("Sitting"));
+		if (this.sitGoal != null) {
+			this.sitGoal.setEnabledWithOwner(nbt.getBoolean("Sitting"));
+		}
+
 		this.setSitting(nbt.getBoolean("Sitting"));
+	}
+
+	@Override
+	public boolean method_2537(PlayerEntity playerEntity) {
+		return this.isTamed() && this.isOwner(playerEntity);
 	}
 
 	protected void showEmoteParticle(boolean positive) {
@@ -94,15 +115,15 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	}
 
 	public boolean isTamed() {
-		return (this.dataTracker.getByte(16) & 4) != 0;
+		return (this.dataTracker.get(field_14566) & 4) != 0;
 	}
 
 	public void setTamed(boolean tamed) {
-		byte b = this.dataTracker.getByte(16);
+		byte b = this.dataTracker.get(field_14566);
 		if (tamed) {
-			this.dataTracker.setProperty(16, (byte)(b | 4));
+			this.dataTracker.set(field_14566, (byte)(b | 4));
 		} else {
-			this.dataTracker.setProperty(16, (byte)(b & -5));
+			this.dataTracker.set(field_14566, (byte)(b & -5));
 		}
 
 		this.onTamedChanged();
@@ -112,30 +133,32 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	}
 
 	public boolean isSitting() {
-		return (this.dataTracker.getByte(16) & 1) != 0;
+		return (this.dataTracker.get(field_14566) & 1) != 0;
 	}
 
 	public void setSitting(boolean sitting) {
-		byte b = this.dataTracker.getByte(16);
+		byte b = this.dataTracker.get(field_14566);
 		if (sitting) {
-			this.dataTracker.setProperty(16, (byte)(b | 1));
+			this.dataTracker.set(field_14566, (byte)(b | 1));
 		} else {
-			this.dataTracker.setProperty(16, (byte)(b & -2));
+			this.dataTracker.set(field_14566, (byte)(b & -2));
 		}
 	}
 
+	@Nullable
 	@Override
-	public String getOwnerId() {
-		return this.dataTracker.getString(17);
+	public UUID method_2719() {
+		return (UUID)this.dataTracker.get(field_14567).orNull();
 	}
 
-	public void method_2713(String string) {
-		this.dataTracker.setProperty(17, string);
+	public void method_13092(@Nullable UUID uUID) {
+		this.dataTracker.set(field_14567, Optional.fromNullable(uUID));
 	}
 
+	@Nullable
 	public LivingEntity getOwner() {
 		try {
-			UUID uUID = UUID.fromString(this.getOwnerId());
+			UUID uUID = this.method_2719();
 			return uUID == null ? null : this.world.getPlayerByUuid(uUID);
 		} catch (IllegalArgumentException var2) {
 			return null;
@@ -167,28 +190,25 @@ public abstract class TameableEntity extends AnimalEntity implements Tameable {
 	}
 
 	@Override
-	public boolean isInSameTeam(LivingEntity entity) {
+	public boolean isTeammate(Entity other) {
 		if (this.isTamed()) {
 			LivingEntity livingEntity = this.getOwner();
-			if (entity == livingEntity) {
+			if (other == livingEntity) {
 				return true;
 			}
 
 			if (livingEntity != null) {
-				return livingEntity.isInSameTeam(entity);
+				return livingEntity.isTeammate(other);
 			}
 		}
 
-		return super.isInSameTeam(entity);
+		return super.isTeammate(other);
 	}
 
 	@Override
 	public void onKilled(DamageSource source) {
-		if (!this.world.isClient
-			&& this.world.getGameRules().getBoolean("showDeathMessages")
-			&& this.hasCustomName()
-			&& this.getOwner() instanceof ServerPlayerEntity) {
-			((ServerPlayerEntity)this.getOwner()).sendMessage(this.getDamageTracker().getDeathMessage());
+		if (!this.world.isClient && this.world.getGameRules().getBoolean("showDeathMessages") && this.getOwner() instanceof ServerPlayerEntity) {
+			this.getOwner().sendMessage(this.getDamageTracker().getDeathMessage());
 		}
 
 		super.onKilled(source);

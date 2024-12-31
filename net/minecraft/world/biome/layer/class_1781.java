@@ -2,6 +2,7 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.collection.IntArrayCache;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class class_1781 extends Layer {
 	public class_1781(long l, Layer layer) {
@@ -43,7 +44,7 @@ public class class_1781 extends Layer {
 				}
 
 				if (w == 0 && x > 3) {
-					js[r + q * k] = Biome.DEEP_OCEAN.id;
+					js[r + q * k] = Biome.getBiomeIndex(Biomes.DEEP_OCEAN);
 				} else {
 					js[r + q * k] = w;
 				}

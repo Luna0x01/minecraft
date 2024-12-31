@@ -1,6 +1,5 @@
 package net.minecraft.entity.projectile;
 
-import java.util.List;
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.Entity;
@@ -11,7 +10,6 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -80,7 +78,10 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 	public void tick() {
 		if (this.world.isClient || (this.target == null || !this.target.removed) && this.world.blockExists(new BlockPos(this))) {
 			super.tick();
-			this.setOnFireFor(1);
+			if (this.isBurning()) {
+				this.setOnFireFor(1);
+			}
+
 			if (this.inGround) {
 				if (this.world.getBlockState(new BlockPos(this.blockX, this.blockY, this.blockZ)).getBlock() == this.inBlock) {
 					this.life++;
@@ -101,39 +102,7 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 				this.field_4041++;
 			}
 
-			Vec3d vec3d = new Vec3d(this.x, this.y, this.z);
-			Vec3d vec3d2 = new Vec3d(this.x + this.velocityX, this.y + this.velocityY, this.z + this.velocityZ);
-			BlockHitResult blockHitResult = this.world.rayTrace(vec3d, vec3d2);
-			vec3d = new Vec3d(this.x, this.y, this.z);
-			vec3d2 = new Vec3d(this.x + this.velocityX, this.y + this.velocityY, this.z + this.velocityZ);
-			if (blockHitResult != null) {
-				vec3d2 = new Vec3d(blockHitResult.pos.x, blockHitResult.pos.y, blockHitResult.pos.z);
-			}
-
-			Entity entity = null;
-			List<Entity> list = this.world.getEntitiesIn(this, this.getBoundingBox().stretch(this.velocityX, this.velocityY, this.velocityZ).expand(1.0, 1.0, 1.0));
-			double d = 0.0;
-
-			for (int i = 0; i < list.size(); i++) {
-				Entity entity2 = (Entity)list.get(i);
-				if (entity2.collides() && (!entity2.isPartOf(this.target) || this.field_4041 >= 25)) {
-					float f = 0.3F;
-					Box box = entity2.getBoundingBox().expand((double)f, (double)f, (double)f);
-					BlockHitResult blockHitResult2 = box.method_585(vec3d, vec3d2);
-					if (blockHitResult2 != null) {
-						double e = vec3d.squaredDistanceTo(blockHitResult2.pos);
-						if (e < d || d == 0.0) {
-							entity = entity2;
-							d = e;
-						}
-					}
-				}
-			}
-
-			if (entity != null) {
-				blockHitResult = new BlockHitResult(entity);
-			}
-
+			BlockHitResult blockHitResult = ProjectileUtil.method_13286(this, true, this.field_4041 >= 25, this.target);
 			if (blockHitResult != null) {
 				this.onEntityHit(blockHitResult);
 			}
@@ -141,58 +110,45 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 			this.x = this.x + this.velocityX;
 			this.y = this.y + this.velocityY;
 			this.z = this.z + this.velocityZ;
-			float g = MathHelper.sqrt(this.velocityX * this.velocityX + this.velocityZ * this.velocityZ);
-			this.yaw = (float)(MathHelper.atan2(this.velocityZ, this.velocityX) * 180.0 / (float) Math.PI) + 90.0F;
-			this.pitch = (float)(MathHelper.atan2((double)g, this.velocityY) * 180.0 / (float) Math.PI) - 90.0F;
-
-			while (this.pitch - this.prevPitch < -180.0F) {
-				this.prevPitch -= 360.0F;
-			}
-
-			while (this.pitch - this.prevPitch >= 180.0F) {
-				this.prevPitch += 360.0F;
-			}
-
-			while (this.yaw - this.prevYaw < -180.0F) {
-				this.prevYaw -= 360.0F;
-			}
-
-			while (this.yaw - this.prevYaw >= 180.0F) {
-				this.prevYaw += 360.0F;
-			}
-
-			this.pitch = this.prevPitch + (this.pitch - this.prevPitch) * 0.2F;
-			this.yaw = this.prevYaw + (this.yaw - this.prevYaw) * 0.2F;
-			float h = this.getDrag();
+			ProjectileUtil.setRotationFromVelocity(this, 0.2F);
+			float f = this.getDrag();
 			if (this.isTouchingWater()) {
-				for (int j = 0; j < 4; j++) {
-					float k = 0.25F;
+				for (int i = 0; i < 4; i++) {
+					float g = 0.25F;
 					this.world
 						.addParticle(
 							ParticleType.BUBBLE,
-							this.x - this.velocityX * (double)k,
-							this.y - this.velocityY * (double)k,
-							this.z - this.velocityZ * (double)k,
+							this.x - this.velocityX * (double)g,
+							this.y - this.velocityY * (double)g,
+							this.z - this.velocityZ * (double)g,
 							this.velocityX,
 							this.velocityY,
 							this.velocityZ
 						);
 				}
 
-				h = 0.8F;
+				f = 0.8F;
 			}
 
 			this.velocityX = this.velocityX + this.powerX;
 			this.velocityY = this.velocityY + this.powerY;
 			this.velocityZ = this.velocityZ + this.powerZ;
-			this.velocityX *= (double)h;
-			this.velocityY *= (double)h;
-			this.velocityZ *= (double)h;
-			this.world.addParticle(ParticleType.SMOKE, this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
+			this.velocityX *= (double)f;
+			this.velocityY *= (double)f;
+			this.velocityZ *= (double)f;
+			this.world.addParticle(this.getParticleType(), this.x, this.y + 0.5, this.z, 0.0, 0.0, 0.0);
 			this.updatePosition(this.x, this.y, this.z);
 		} else {
 			this.remove();
 		}
+	}
+
+	protected boolean isBurning() {
+		return true;
+	}
+
+	protected ParticleType getParticleType() {
+		return ParticleType.SMOKE;
 	}
 
 	protected float getDrag() {
@@ -203,20 +159,22 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putShort("xTile", (short)this.blockX);
-		nbt.putShort("yTile", (short)this.blockY);
-		nbt.putShort("zTile", (short)this.blockZ);
+		nbt.putInt("xTile", this.blockX);
+		nbt.putInt("yTile", this.blockY);
+		nbt.putInt("zTile", this.blockZ);
 		Identifier identifier = Block.REGISTRY.getIdentifier(this.inBlock);
 		nbt.putString("inTile", identifier == null ? "" : identifier.toString());
 		nbt.putByte("inGround", (byte)(this.inGround ? 1 : 0));
 		nbt.put("direction", this.toListNbt(new double[]{this.velocityX, this.velocityY, this.velocityZ}));
+		nbt.put("power", this.toListNbt(new double[]{this.powerX, this.powerY, this.powerZ}));
+		nbt.putInt("life", this.life);
 	}
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
-		this.blockX = nbt.getShort("xTile");
-		this.blockY = nbt.getShort("yTile");
-		this.blockZ = nbt.getShort("zTile");
+		this.blockX = nbt.getInt("xTile");
+		this.blockY = nbt.getInt("yTile");
+		this.blockZ = nbt.getInt("zTile");
 		if (nbt.contains("inTile", 8)) {
 			this.inBlock = Block.get(nbt.getString("inTile"));
 		} else {
@@ -224,11 +182,21 @@ public abstract class ExplosiveProjectileEntity extends Entity {
 		}
 
 		this.inGround = nbt.getByte("inGround") == 1;
-		if (nbt.contains("direction", 9)) {
-			NbtList nbtList = nbt.getList("direction", 6);
-			this.velocityX = nbtList.getDouble(0);
-			this.velocityY = nbtList.getDouble(1);
-			this.velocityZ = nbtList.getDouble(2);
+		if (nbt.contains("power", 9)) {
+			NbtList nbtList = nbt.getList("power", 6);
+			if (nbtList.size() == 3) {
+				this.powerX = nbtList.getDouble(0);
+				this.powerY = nbtList.getDouble(1);
+				this.powerZ = nbtList.getDouble(2);
+			}
+		}
+
+		this.life = nbt.getInt("life");
+		if (nbt.contains("direction", 9) && nbt.getList("direction", 6).size() == 3) {
+			NbtList nbtList2 = nbt.getList("direction", 6);
+			this.velocityX = nbtList2.getDouble(0);
+			this.velocityY = nbtList2.getDouble(1);
+			this.velocityZ = nbtList2.getDouble(2);
 		} else {
 			this.remove();
 		}

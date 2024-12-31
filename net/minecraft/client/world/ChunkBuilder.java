@@ -1,23 +1,26 @@
 package net.minecraft.client.world;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Doubles;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import net.minecraft.client.render.BlockBufferBuilderStorage;
 
-public class ChunkBuilder {
+public class ChunkBuilder implements Comparable<ChunkBuilder> {
 	private final BuiltChunk builtChunk;
 	private final ReentrantLock lock = new ReentrantLock();
 	private final List<Runnable> tasks = Lists.newArrayList();
 	private final ChunkBuilder.FunctionType functionType;
+	private final double field_13606;
 	private BlockBufferBuilderStorage renderLaterBuffers;
 	private ChunkAssemblyHelper chunkAssemblyHelper;
 	private ChunkBuilder.RenderStatus renderStatus = ChunkBuilder.RenderStatus.PENDING;
 	private boolean field_11026;
 
-	public ChunkBuilder(BuiltChunk builtChunk, ChunkBuilder.FunctionType functionType) {
+	public ChunkBuilder(BuiltChunk builtChunk, ChunkBuilder.FunctionType functionType, double d) {
 		this.builtChunk = builtChunk;
 		this.functionType = functionType;
+		this.field_13606 = d;
 	}
 
 	public ChunkBuilder.RenderStatus getRenderStatus() {
@@ -59,7 +62,7 @@ public class ChunkBuilder {
 
 		try {
 			if (this.functionType == ChunkBuilder.FunctionType.REBUILD_CHUNK && this.renderStatus != ChunkBuilder.RenderStatus.DONE) {
-				this.builtChunk.method_10162(true);
+				this.builtChunk.method_10162(false);
 			}
 
 			this.field_11026 = true;
@@ -96,6 +99,14 @@ public class ChunkBuilder {
 
 	public boolean method_10121() {
 		return this.field_11026;
+	}
+
+	public int compareTo(ChunkBuilder chunkBuilder) {
+		return Doubles.compare(this.field_13606, chunkBuilder.field_13606);
+	}
+
+	public double method_12418() {
+		return this.field_13606;
 	}
 
 	public static enum FunctionType {

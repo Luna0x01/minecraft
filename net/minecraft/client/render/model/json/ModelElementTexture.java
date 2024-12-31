@@ -7,13 +7,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
+import javax.annotation.Nullable;
 import net.minecraft.util.JsonHelper;
 
 public class ModelElementTexture {
 	public float[] uvs;
 	public final int rotation;
 
-	public ModelElementTexture(float[] fs, int i) {
+	public ModelElementTexture(@Nullable float[] fs, int i) {
 		this.uvs = fs;
 		this.rotation = i;
 	}
@@ -67,6 +68,7 @@ public class ModelElementTexture {
 			}
 		}
 
+		@Nullable
 		private float[] deserializeUVs(JsonObject object) {
 			if (!object.has("uv")) {
 				return null;

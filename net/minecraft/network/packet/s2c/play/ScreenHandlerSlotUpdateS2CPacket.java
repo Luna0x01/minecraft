@@ -1,6 +1,7 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import javax.annotation.Nullable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -14,7 +15,7 @@ public class ScreenHandlerSlotUpdateS2CPacket implements Packet<ClientPlayPacket
 	public ScreenHandlerSlotUpdateS2CPacket() {
 	}
 
-	public ScreenHandlerSlotUpdateS2CPacket(int i, int j, ItemStack itemStack) {
+	public ScreenHandlerSlotUpdateS2CPacket(int i, int j, @Nullable ItemStack itemStack) {
 		this.syncId = i;
 		this.slot = j;
 		this.stack = itemStack == null ? null : itemStack.copy();
@@ -46,6 +47,7 @@ public class ScreenHandlerSlotUpdateS2CPacket implements Packet<ClientPlayPacket
 		return this.slot;
 	}
 
+	@Nullable
 	public ItemStack getItemStack() {
 		return this.stack;
 	}

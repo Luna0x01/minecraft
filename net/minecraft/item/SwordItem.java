@@ -2,19 +2,19 @@ package net.minecraft.item;
 
 import com.google.common.collect.Multimap;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
-import net.minecraft.util.UseAction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class SwordItem extends Item {
-	private float attackMultiplier;
+	private final float attackMultiplier;
 	private final Item.ToolMaterialType material;
 
 	public SwordItem(Item.ToolMaterialType toolMaterialType) {
@@ -22,7 +22,7 @@ public class SwordItem extends Item {
 		this.maxCount = 1;
 		this.setMaxDamage(toolMaterialType.getMaxDurability());
 		this.setItemGroup(ItemGroup.COMBAT);
-		this.attackMultiplier = 4.0F + toolMaterialType.getAttackMultiplier();
+		this.attackMultiplier = 3.0F + toolMaterialType.getAttackMultiplier();
 	}
 
 	public float getAttackDamage() {
@@ -30,11 +30,12 @@ public class SwordItem extends Item {
 	}
 
 	@Override
-	public float getMiningSpeedMultiplier(ItemStack stack, Block block) {
+	public float getBlockBreakingSpeed(ItemStack stack, BlockState state) {
+		Block block = state.getBlock();
 		if (block == Blocks.COBWEB) {
 			return 15.0F;
 		} else {
-			Material material = block.getMaterial();
+			Material material = state.getMaterial();
 			return material != Material.PLANT
 					&& material != Material.REPLACEABLE_PLANT
 					&& material != Material.SWORD
@@ -52,9 +53,9 @@ public class SwordItem extends Item {
 	}
 
 	@Override
-	public boolean onBlockBroken(ItemStack stack, World world, Block block, BlockPos pos, LivingEntity entity) {
-		if ((double)block.getStrength(world, pos) != 0.0) {
-			stack.damage(2, entity);
+	public boolean method_3356(ItemStack itemStack, World world, BlockState blockState, BlockPos blockPos, LivingEntity livingEntity) {
+		if ((double)blockState.getHardness(world, blockPos) != 0.0) {
+			itemStack.damage(2, livingEntity);
 		}
 
 		return true;
@@ -66,24 +67,8 @@ public class SwordItem extends Item {
 	}
 
 	@Override
-	public UseAction getUseAction(ItemStack stack) {
-		return UseAction.BLOCK;
-	}
-
-	@Override
-	public int getMaxUseTime(ItemStack stack) {
-		return 72000;
-	}
-
-	@Override
-	public ItemStack onStartUse(ItemStack stack, World world, PlayerEntity player) {
-		player.setUseItem(stack, this.getMaxUseTime(stack));
-		return stack;
-	}
-
-	@Override
-	public boolean isEffectiveOn(Block block) {
-		return block == Blocks.COBWEB;
+	public boolean method_3346(BlockState blockState) {
+		return blockState.getBlock() == Blocks.COBWEB;
 	}
 
 	@Override
@@ -101,11 +86,15 @@ public class SwordItem extends Item {
 	}
 
 	@Override
-	public Multimap<String, AttributeModifier> getAttributeModifierMap() {
-		Multimap<String, AttributeModifier> multimap = super.getAttributeModifierMap();
-		multimap.put(
-			EntityAttributes.GENERIC_ATTACK_DAMAGE.getId(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER_UUID, "Weapon modifier", (double)this.attackMultiplier, 0)
-		);
+	public Multimap<String, AttributeModifier> method_6326(EquipmentSlot equipmentSlot) {
+		Multimap<String, AttributeModifier> multimap = super.method_6326(equipmentSlot);
+		if (equipmentSlot == EquipmentSlot.MAINHAND) {
+			multimap.put(
+				EntityAttributes.GENERIC_ATTACK_DAMAGE.getId(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER_UUID, "Weapon modifier", (double)this.attackMultiplier, 0)
+			);
+			multimap.put(EntityAttributes.GENERIC_ATTACK_SPEED.getId(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", -2.4F, 0));
+		}
+
 		return multimap;
 	}
 }

@@ -15,6 +15,8 @@ import net.minecraft.world.World;
 
 public class CactusBlock extends Block {
 	public static final IntProperty AGE = IntProperty.of("age", 0, 15);
+	protected static final Box field_12607 = new Box(0.0625, 0.0, 0.0625, 0.9375, 0.9375, 0.9375);
+	protected static final Box field_12608 = new Box(0.0625, 0.0, 0.0625, 0.9375, 1.0, 0.9375);
 
 	protected CactusBlock() {
 		super(Material.CACTUS);
@@ -39,7 +41,7 @@ public class CactusBlock extends Block {
 					world.setBlockState(blockPos, this.getDefaultState());
 					BlockState blockState = state.with(AGE, 0);
 					world.setBlockState(pos, blockState, 4);
-					this.neighborUpdate(world, blockPos, blockState, this);
+					blockState.method_11707(world, blockPos, this);
 				} else {
 					world.setBlockState(pos, state.with(AGE, j + 1), 4);
 				}
@@ -48,38 +50,22 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		float f = 0.0625F;
-		return new Box(
-			(double)((float)pos.getX() + f),
-			(double)pos.getY(),
-			(double)((float)pos.getZ() + f),
-			(double)((float)(pos.getX() + 1) - f),
-			(double)((float)(pos.getY() + 1) - f),
-			(double)((float)(pos.getZ() + 1) - f)
-		);
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return field_12607;
 	}
 
 	@Override
-	public Box getSelectionBox(World world, BlockPos pos) {
-		float f = 0.0625F;
-		return new Box(
-			(double)((float)pos.getX() + f),
-			(double)pos.getY(),
-			(double)((float)pos.getZ() + f),
-			(double)((float)(pos.getX() + 1) - f),
-			(double)(pos.getY() + 1),
-			(double)((float)(pos.getZ() + 1) - f)
-		);
+	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
+		return field_12608.offset(blockPos);
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
@@ -89,21 +75,22 @@ public class CactusBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (!this.canPlaceCactusAt(world, pos)) {
-			world.removeBlock(pos, true);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (!this.canPlaceCactusAt(world, blockPos)) {
+			world.removeBlock(blockPos, true);
 		}
 	}
 
 	public boolean canPlaceCactusAt(World world, BlockPos pos) {
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			if (world.getBlockState(pos.offset(direction)).getBlock().getMaterial().isSolid()) {
+			Material material = world.getBlockState(pos.offset(direction)).getMaterial();
+			if (material.isSolid() || material == Material.LAVA) {
 				return false;
 			}
 		}
 
 		Block block = world.getBlockState(pos.down()).getBlock();
-		return block == Blocks.CACTUS || block == Blocks.SAND;
+		return block == Blocks.CACTUS || block == Blocks.SAND && !world.getBlockState(pos.up()).getMaterial().isFluid();
 	}
 
 	@Override

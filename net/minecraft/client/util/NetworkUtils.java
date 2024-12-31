@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.minecraft.server.MinecraftServer;
+import javax.annotation.Nullable;
 import net.minecraft.util.ProgressListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -64,43 +64,42 @@ public class NetworkUtils {
 		return stringBuilder.toString();
 	}
 
-	public static String post(URL url, Map<String, Object> data, boolean silent) {
-		return post(url, urlEncode(data), silent);
+	public static String snoop(URL uRL, Map<String, Object> map, boolean bl, @Nullable Proxy proxy) {
+		return snoop(uRL, urlEncode(map), bl, proxy);
 	}
 
-	private static String post(URL url, String data, boolean silent) {
+	private static String snoop(URL uRL, String string, boolean bl, @Nullable Proxy proxy) {
 		try {
-			Proxy proxy = MinecraftServer.getServer() == null ? null : MinecraftServer.getServer().getProxy();
 			if (proxy == null) {
 				proxy = Proxy.NO_PROXY;
 			}
 
-			HttpURLConnection httpURLConnection = (HttpURLConnection)url.openConnection(proxy);
+			HttpURLConnection httpURLConnection = (HttpURLConnection)uRL.openConnection(proxy);
 			httpURLConnection.setRequestMethod("POST");
 			httpURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-			httpURLConnection.setRequestProperty("Content-Length", "" + data.getBytes().length);
+			httpURLConnection.setRequestProperty("Content-Length", "" + string.getBytes().length);
 			httpURLConnection.setRequestProperty("Content-Language", "en-US");
 			httpURLConnection.setUseCaches(false);
 			httpURLConnection.setDoInput(true);
 			httpURLConnection.setDoOutput(true);
 			DataOutputStream dataOutputStream = new DataOutputStream(httpURLConnection.getOutputStream());
-			dataOutputStream.writeBytes(data);
+			dataOutputStream.writeBytes(string);
 			dataOutputStream.flush();
 			dataOutputStream.close();
 			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
 			StringBuffer stringBuffer = new StringBuffer();
 
-			String string;
-			while ((string = bufferedReader.readLine()) != null) {
-				stringBuffer.append(string);
+			String string2;
+			while ((string2 = bufferedReader.readLine()) != null) {
+				stringBuffer.append(string2);
 				stringBuffer.append('\r');
 			}
 
 			bufferedReader.close();
 			return stringBuffer.toString();
 		} catch (Exception var9) {
-			if (!silent) {
-				LOGGER.error("Could not post to " + url, var9);
+			if (!bl) {
+				LOGGER.error("Could not post to " + uRL, var9);
 			}
 
 			return "";
@@ -108,7 +107,7 @@ public class NetworkUtils {
 	}
 
 	public static ListenableFuture<Object> downloadResourcePack(
-		File resourcePackFile, String url, Map<String, String> sessionInfo, int timeout, ProgressListener progressListener, Proxy clientProxy
+		File resourcePackFile, String url, Map<String, String> sessionInfo, int timeout, @Nullable ProgressListener progressListener, Proxy clientProxy
 	) {
 		return downloadExecutor.submit(new Runnable() {
 			public void run() {
@@ -242,21 +241,5 @@ public class NetworkUtils {
 		}
 
 		return i;
-	}
-
-	public static String get(URL url) throws IOException {
-		HttpURLConnection httpURLConnection = (HttpURLConnection)url.openConnection();
-		httpURLConnection.setRequestMethod("GET");
-		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
-		StringBuilder stringBuilder = new StringBuilder();
-
-		String string;
-		while ((string = bufferedReader.readLine()) != null) {
-			stringBuilder.append(string);
-			stringBuilder.append('\r');
-		}
-
-		bufferedReader.close();
-		return stringBuilder.toString();
 	}
 }

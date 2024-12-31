@@ -84,7 +84,7 @@ public abstract class AbstractGiantTreeFeature extends FoliageFeature {
 				int m = k - 1;
 				if (j * j + k * k <= i || l * l + m * m <= i || j * j + m * m <= i || l * l + k * k <= i) {
 					BlockPos blockPos2 = blockPos.add(j, 0, k);
-					Material material = world.getBlockState(blockPos2).getBlock().getMaterial();
+					Material material = world.getBlockState(blockPos2).getMaterial();
 					if (material == Material.AIR || material == Material.FOLIAGE) {
 						this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, this.treeLeafState);
 					}
@@ -100,7 +100,7 @@ public abstract class AbstractGiantTreeFeature extends FoliageFeature {
 			for (int k = -radius; k <= radius; k++) {
 				if (j * j + k * k <= i) {
 					BlockPos blockPos2 = blockPos.add(j, 0, k);
-					Material material = world.getBlockState(blockPos2).getBlock().getMaterial();
+					Material material = world.getBlockState(blockPos2).getMaterial();
 					if (material == Material.AIR || material == Material.FOLIAGE) {
 						this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, this.treeLeafState);
 					}

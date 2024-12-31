@@ -1,8 +1,6 @@
 package net.minecraft.scoreboard;
 
 import java.util.Comparator;
-import java.util.List;
-import net.minecraft.entity.player.PlayerEntity;
 
 public class ScoreboardPlayerScore {
 	public static final Comparator<ScoreboardPlayerScore> field_5683 = new Comparator<ScoreboardPlayerScore>() {
@@ -85,9 +83,5 @@ public class ScoreboardPlayerScore {
 
 	public void setLocked(boolean locked) {
 		this.locked = locked;
-	}
-
-	public void method_4867(List<PlayerEntity> list) {
-		this.setScore(this.field_5685.getCriterion().method_4918(list));
 	}
 }

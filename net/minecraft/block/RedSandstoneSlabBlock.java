@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
@@ -38,14 +39,15 @@ public abstract class RedSandstoneSlabBlock extends SlabBlock {
 		return CommonI18n.translate(this.getTranslationKey() + ".red_sandstone.name");
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.STONE_SLAB2);
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(Blocks.STONE_SLAB2);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Blocks.STONE_SLAB2, 1, ((RedSandstoneSlabBlock.SlabType)blockState.get(VARIANT)).getId());
 	}
 
 	@Override
@@ -59,8 +61,8 @@ public abstract class RedSandstoneSlabBlock extends SlabBlock {
 	}
 
 	@Override
-	public Object getSlabType(ItemStack stack) {
-		return RedSandstoneSlabBlock.SlabType.getById(stack.getData() & 7);
+	public Comparable<?> method_11615(ItemStack itemStack) {
+		return RedSandstoneSlabBlock.SlabType.getById(itemStack.getData() & 7);
 	}
 
 	@Override

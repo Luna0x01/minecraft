@@ -100,17 +100,18 @@ public class RabbitEntityModel extends EntityModel {
 	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
 		this.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
 		if (this.child) {
-			float f = 2.0F;
+			float f = 1.5F;
 			GlStateManager.pushMatrix();
-			GlStateManager.translate(0.0F, 5.0F * scale, 2.0F * scale);
+			GlStateManager.scale(0.85F / f, 0.85F / f, 0.85F / f);
+			GlStateManager.translate(0.0F, 22.0F * scale, 2.0F * scale);
 			this.field_10575.render(scale);
 			this.field_10577.render(scale);
 			this.field_10576.render(scale);
 			this.field_10579.render(scale);
 			GlStateManager.popMatrix();
 			GlStateManager.pushMatrix();
-			GlStateManager.scale(1.0F / f, 1.0F / f, 1.0F / f);
-			GlStateManager.translate(0.0F, 24.0F * scale, 0.0F);
+			GlStateManager.scale(0.6F / f, 0.6F / f, 0.6F / f);
+			GlStateManager.translate(0.0F, 36.0F * scale, 0.0F);
 			this.field_10568.render(scale);
 			this.field_10569.render(scale);
 			this.field_10570.render(scale);
@@ -121,6 +122,9 @@ public class RabbitEntityModel extends EntityModel {
 			this.field_10578.render(scale);
 			GlStateManager.popMatrix();
 		} else {
+			GlStateManager.pushMatrix();
+			GlStateManager.scale(0.6F, 0.6F, 0.6F);
+			GlStateManager.translate(0.0F, 16.0F * scale, 0.0F);
 			this.field_10568.render(scale);
 			this.field_10569.render(scale);
 			this.field_10570.render(scale);
@@ -133,6 +137,7 @@ public class RabbitEntityModel extends EntityModel {
 			this.field_10577.render(scale);
 			this.field_10578.render(scale);
 			this.field_10579.render(scale);
+			GlStateManager.popMatrix();
 		}
 	}
 
@@ -152,5 +157,7 @@ public class RabbitEntityModel extends EntityModel {
 
 	@Override
 	public void animateModel(LivingEntity entity, float limbAngle, float limbDistance, float tickDelta) {
+		super.animateModel(entity, limbAngle, limbDistance, tickDelta);
+		this.field_10580 = MathHelper.sin(((RabbitEntity)entity).getJumpProgress(tickDelta) * (float) Math.PI);
 	}
 }

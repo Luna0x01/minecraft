@@ -38,11 +38,20 @@ public class HungerManager {
 			}
 		}
 
-		if (player.world.getGameRules().getBoolean("naturalRegeneration") && this.foodLevel >= 18 && player.canFoodHeal()) {
+		boolean bl = player.world.getGameRules().getBoolean("naturalRegeneration");
+		if (bl && this.foodSaturationLevel > 0.0F && player.canFoodHeal() && this.foodLevel >= 20) {
+			this.foodStarvationTimer++;
+			if (this.foodStarvationTimer >= 10) {
+				float f = Math.min(this.foodSaturationLevel, 4.0F);
+				player.heal(f / 4.0F);
+				this.addExhaustion(f);
+				this.foodStarvationTimer = 0;
+			}
+		} else if (bl && this.foodLevel >= 18 && player.canFoodHeal()) {
 			this.foodStarvationTimer++;
 			if (this.foodStarvationTimer >= 80) {
 				player.heal(1.0F);
-				this.addExhaustion(3.0F);
+				this.addExhaustion(4.0F);
 				this.foodStarvationTimer = 0;
 			}
 		} else if (this.foodLevel <= 0) {

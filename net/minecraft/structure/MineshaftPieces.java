@@ -3,42 +3,26 @@ package net.minecraft.structure;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
+import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.RailBlock;
+import net.minecraft.block.TorchBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.WeightedRandomChestContent;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class MineshaftPieces {
-	private static final List<WeightedRandomChestContent> LOOT_TABLES = Lists.newArrayList(
-		new WeightedRandomChestContent[]{
-			new WeightedRandomChestContent(Items.IRON_INGOT, 0, 1, 5, 10),
-			new WeightedRandomChestContent(Items.GOLD_INGOT, 0, 1, 3, 5),
-			new WeightedRandomChestContent(Items.REDSTONE, 0, 4, 9, 5),
-			new WeightedRandomChestContent(Items.DYE, DyeColor.BLUE.getSwappedId(), 4, 9, 5),
-			new WeightedRandomChestContent(Items.DIAMOND, 0, 1, 2, 3),
-			new WeightedRandomChestContent(Items.COAL, 0, 3, 8, 10),
-			new WeightedRandomChestContent(Items.BREAD, 0, 1, 3, 15),
-			new WeightedRandomChestContent(Items.IRON_PICKAXE, 0, 1, 1, 1),
-			new WeightedRandomChestContent(Item.fromBlock(Blocks.RAIL), 0, 4, 8, 1),
-			new WeightedRandomChestContent(Items.MELON_SEEDS, 0, 2, 4, 10),
-			new WeightedRandomChestContent(Items.PUMPKIN_SEEDS, 0, 2, 4, 10),
-			new WeightedRandomChestContent(Items.SADDLE, 0, 1, 1, 3),
-			new WeightedRandomChestContent(Items.IRON_HORSE_ARMOR, 0, 1, 1, 1)
-		}
-	);
-
 	public static void registerPieces() {
 		StructurePieceManager.registerPiece(MineshaftPieces.MineshaftCorridor.class, "MSCorridor");
 		StructurePieceManager.registerPiece(MineshaftPieces.MineshaftCrossing.class, "MSCrossing");
@@ -46,7 +30,7 @@ public class MineshaftPieces {
 		StructurePieceManager.registerPiece(MineshaftPieces.MineshaftStairs.class, "MSStairs");
 	}
 
-	private static StructurePiece pickPiece(List<StructurePiece> pieces, Random random, int x, int y, int z, Direction orientation, int chainLength) {
+	private static StructurePiece pickPiece(List<StructurePiece> pieces, Random random, int x, int y, int z, @Nullable Direction orientation, int chainLength) {
 		int i = random.nextInt(100);
 		if (i >= 80) {
 			BlockBox blockBox = MineshaftPieces.MineshaftCrossing.getBoundingBox(pieces, random, x, y, z, orientation);
@@ -113,14 +97,14 @@ public class MineshaftPieces {
 
 		public MineshaftCorridor(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 			this.hasRails = random.nextInt(3) == 0;
 			this.hasCobwebs = !this.hasRails && random.nextInt(23) == 0;
-			if (this.facing != Direction.NORTH && this.facing != Direction.SOUTH) {
-				this.length = blockBox.getBlockCountX() / 5;
-			} else {
+			if (this.method_11854().getAxis() == Direction.Axis.Z) {
 				this.length = blockBox.getBlockCountZ() / 5;
+			} else {
+				this.length = blockBox.getBlockCountX() / 5;
 			}
 		}
 
@@ -160,12 +144,13 @@ public class MineshaftPieces {
 		public void fillOpenings(StructurePiece start, List<StructurePiece> pieces, Random random) {
 			int i = this.getChainLength();
 			int j = random.nextInt(4);
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						if (j <= 1) {
 							MineshaftPieces.pieceGenerator(
-								start, pieces, random, this.boundingBox.minX, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.minZ - 1, this.facing, i
+								start, pieces, random, this.boundingBox.minX, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.minZ - 1, direction, i
 							);
 						} else if (j == 2) {
 							MineshaftPieces.pieceGenerator(
@@ -180,7 +165,7 @@ public class MineshaftPieces {
 					case SOUTH:
 						if (j <= 1) {
 							MineshaftPieces.pieceGenerator(
-								start, pieces, random, this.boundingBox.minX, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.maxZ + 1, this.facing, i
+								start, pieces, random, this.boundingBox.minX, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.maxZ + 1, direction, i
 							);
 						} else if (j == 2) {
 							MineshaftPieces.pieceGenerator(
@@ -195,7 +180,7 @@ public class MineshaftPieces {
 					case WEST:
 						if (j <= 1) {
 							MineshaftPieces.pieceGenerator(
-								start, pieces, random, this.boundingBox.minX - 1, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.minZ, this.facing, i
+								start, pieces, random, this.boundingBox.minX - 1, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.minZ, direction, i
 							);
 						} else if (j == 2) {
 							MineshaftPieces.pieceGenerator(
@@ -210,7 +195,7 @@ public class MineshaftPieces {
 					case EAST:
 						if (j <= 1) {
 							MineshaftPieces.pieceGenerator(
-								start, pieces, random, this.boundingBox.maxX + 1, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.minZ, this.facing, i
+								start, pieces, random, this.boundingBox.maxX + 1, this.boundingBox.minY - 1 + random.nextInt(3), this.boundingBox.minZ, direction, i
 							);
 						} else if (j == 2) {
 							MineshaftPieces.pieceGenerator(
@@ -225,7 +210,7 @@ public class MineshaftPieces {
 			}
 
 			if (i < 8) {
-				if (this.facing != Direction.NORTH && this.facing != Direction.SOUTH) {
+				if (direction != Direction.NORTH && direction != Direction.SOUTH) {
 					for (int m = this.boundingBox.minX + 3; m + 3 <= this.boundingBox.maxX; m += 5) {
 						int n = random.nextInt(5);
 						if (n == 0) {
@@ -248,15 +233,17 @@ public class MineshaftPieces {
 		}
 
 		@Override
-		protected boolean placeChest(World world, BlockBox box, Random random, int x, int y, int z, List<WeightedRandomChestContent> chestContent, int i) {
-			BlockPos blockPos = new BlockPos(this.applyXTransform(x, z), this.applyYTransform(y), this.applyZTransform(x, z));
-			if (box.contains(blockPos) && world.getBlockState(blockPos).getBlock().getMaterial() == Material.AIR) {
-				int j = random.nextBoolean() ? 1 : 0;
-				world.setBlockState(blockPos, Blocks.RAIL.stateFromData(this.getData(Blocks.RAIL, j)), 2);
+		protected boolean method_11852(World world, BlockBox blockBox, Random random, int i, int j, int k, Identifier identifier) {
+			BlockPos blockPos = new BlockPos(this.applyXTransform(i, k), this.applyYTransform(j), this.applyZTransform(i, k));
+			if (blockBox.contains(blockPos) && world.getBlockState(blockPos).getMaterial() == Material.AIR) {
+				BlockState blockState = Blocks.RAIL
+					.getDefaultState()
+					.with(RailBlock.SHAPE, random.nextBoolean() ? AbstractRailBlock.RailShapeType.NORTH_SOUTH : AbstractRailBlock.RailShapeType.EAST_WEST);
+				this.setBlockState(world, blockState, i, j, k, blockBox);
 				ChestMinecartEntity chestMinecartEntity = new ChestMinecartEntity(
 					world, (double)((float)blockPos.getX() + 0.5F), (double)((float)blockPos.getY() + 0.5F), (double)((float)blockPos.getZ() + 0.5F)
 				);
-				WeightedRandomChestContent.fillInventory(random, chestContent, chestMinecartEntity, i);
+				chestMinecartEntity.setLootTable(identifier, random.nextLong());
 				world.spawnEntity(chestMinecartEntity);
 				return true;
 			} else {
@@ -299,32 +286,14 @@ public class MineshaftPieces {
 					this.addBlockWithRandomThreshold(world, boundingBox, random, 0.05F, 2, 2, o - 2, Blocks.COBWEB.getDefaultState());
 					this.addBlockWithRandomThreshold(world, boundingBox, random, 0.05F, 0, 2, o + 2, Blocks.COBWEB.getDefaultState());
 					this.addBlockWithRandomThreshold(world, boundingBox, random, 0.05F, 2, 2, o + 2, Blocks.COBWEB.getDefaultState());
-					this.addBlockWithRandomThreshold(world, boundingBox, random, 0.05F, 1, 2, o - 1, Blocks.TORCH.stateFromData(Direction.UP.getId()));
-					this.addBlockWithRandomThreshold(world, boundingBox, random, 0.05F, 1, 2, o + 1, Blocks.TORCH.stateFromData(Direction.UP.getId()));
+					this.addBlockWithRandomThreshold(world, boundingBox, random, 0.05F, 1, 2, o - 1, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.SOUTH));
+					this.addBlockWithRandomThreshold(world, boundingBox, random, 0.05F, 1, 2, o + 1, Blocks.TORCH.getDefaultState().with(TorchBlock.FACING, Direction.NORTH));
 					if (random.nextInt(100) == 0) {
-						this.placeChest(
-							world,
-							boundingBox,
-							random,
-							2,
-							0,
-							o - 1,
-							WeightedRandomChestContent.combineLootTables(MineshaftPieces.LOOT_TABLES, Items.ENCHANTED_BOOK.getLootTable(random)),
-							3 + random.nextInt(4)
-						);
+						this.method_11852(world, boundingBox, random, 2, 0, o - 1, LootTables.ABANDONED_MINESHAFT_CHEST);
 					}
 
 					if (random.nextInt(100) == 0) {
-						this.placeChest(
-							world,
-							boundingBox,
-							random,
-							0,
-							0,
-							o + 1,
-							WeightedRandomChestContent.combineLootTables(MineshaftPieces.LOOT_TABLES, Items.ENCHANTED_BOOK.getLootTable(random)),
-							3 + random.nextInt(4)
-						);
+						this.method_11852(world, boundingBox, random, 0, 0, o + 1, LootTables.ABANDONED_MINESHAFT_CHEST);
 					}
 
 					if (this.hasCobwebs && !this.hasSpawner) {
@@ -348,7 +317,7 @@ public class MineshaftPieces {
 					for (int t = 0; t <= m; t++) {
 						int u = -1;
 						BlockState blockState = this.getBlockAt(world, s, u, t, boundingBox);
-						if (blockState.getBlock().getMaterial() == Material.AIR) {
+						if (blockState.getMaterial() == Material.AIR) {
 							int v = -1;
 							this.setBlockState(world, Blocks.PLANKS.getDefaultState(), s, v, t, boundingBox);
 						}
@@ -356,10 +325,12 @@ public class MineshaftPieces {
 				}
 
 				if (this.hasRails) {
+					BlockState blockState2 = Blocks.RAIL.getDefaultState().with(RailBlock.SHAPE, AbstractRailBlock.RailShapeType.NORTH_SOUTH);
+
 					for (int w = 0; w <= m; w++) {
-						BlockState blockState2 = this.getBlockAt(world, 1, -1, w, boundingBox);
-						if (blockState2.getBlock().getMaterial() != Material.AIR && blockState2.getBlock().isFullBlock()) {
-							this.addBlockWithRandomThreshold(world, boundingBox, random, 0.7F, 1, 0, w, Blocks.RAIL.stateFromData(this.getData(Blocks.RAIL, 0)));
+						BlockState blockState3 = this.getBlockAt(world, 1, -1, w, boundingBox);
+						if (blockState3.getMaterial() != Material.AIR && blockState3.isFullBlock()) {
+							this.addBlockWithRandomThreshold(world, boundingBox, random, 0.7F, 1, 0, w, blockState2);
 						}
 					}
 				}
@@ -388,7 +359,7 @@ public class MineshaftPieces {
 			this.orientation = Direction.fromHorizontal(structureNbt.getInt("D"));
 		}
 
-		public MineshaftCrossing(int i, Random random, BlockBox blockBox, Direction direction) {
+		public MineshaftCrossing(int i, Random random, BlockBox blockBox, @Nullable Direction direction) {
 			super(i);
 			this.orientation = direction;
 			this.boundingBox = blockBox;
@@ -410,7 +381,7 @@ public class MineshaftPieces {
 				case SOUTH:
 					blockBox.minX = x - 1;
 					blockBox.maxX = x + 3;
-					blockBox.maxZ = z + 4;
+					blockBox.maxZ = z + 3 + 1;
 					break;
 				case WEST:
 					blockBox.minX = x - 4;
@@ -418,7 +389,7 @@ public class MineshaftPieces {
 					blockBox.maxZ = z + 3;
 					break;
 				case EAST:
-					blockBox.maxX = x + 4;
+					blockBox.maxX = x + 3 + 1;
 					blockBox.minZ = z - 1;
 					blockBox.maxZ = z + 3;
 			}
@@ -633,7 +604,7 @@ public class MineshaftPieces {
 
 				for (int i = this.boundingBox.minX; i <= this.boundingBox.maxX; i++) {
 					for (int j = this.boundingBox.minZ; j <= this.boundingBox.maxZ; j++) {
-						if (this.getBlockAt(world, i, this.boundingBox.minY - 1, j, boundingBox).getBlock().getMaterial() == Material.AIR) {
+						if (this.getBlockAt(world, i, this.boundingBox.minY - 1, j, boundingBox).getMaterial() == Material.AIR) {
 							this.setBlockState(world, Blocks.PLANKS.getDefaultState(), i, this.boundingBox.minY - 1, j, boundingBox);
 						}
 					}
@@ -840,7 +811,7 @@ public class MineshaftPieces {
 
 		public MineshaftStairs(int i, Random random, BlockBox blockBox, Direction direction) {
 			super(i);
-			this.facing = direction;
+			this.method_11853(direction);
 			this.boundingBox = blockBox;
 		}
 
@@ -878,8 +849,9 @@ public class MineshaftPieces {
 		@Override
 		public void fillOpenings(StructurePiece start, List<StructurePiece> pieces, Random random) {
 			int i = this.getChainLength();
-			if (this.facing != null) {
-				switch (this.facing) {
+			Direction direction = this.method_11854();
+			if (direction != null) {
+				switch (direction) {
 					case NORTH:
 						MineshaftPieces.pieceGenerator(start, pieces, random, this.boundingBox.minX, this.boundingBox.minY, this.boundingBox.minZ - 1, Direction.NORTH, i);
 						break;

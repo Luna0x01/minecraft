@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.particle.ParticleType;
@@ -31,18 +32,18 @@ public class MyceliumBlock extends Block {
 	@Override
 	public void onScheduledTick(World world, BlockPos pos, BlockState state, Random rand) {
 		if (!world.isClient) {
-			if (world.getLightLevelWithNeighbours(pos.up()) < 4 && world.getBlockState(pos.up()).getBlock().getOpacity() > 2) {
+			if (world.getLightLevelWithNeighbours(pos.up()) < 4 && world.getBlockState(pos.up()).getOpacity() > 2) {
 				world.setBlockState(pos, Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT));
 			} else {
 				if (world.getLightLevelWithNeighbours(pos.up()) >= 9) {
 					for (int i = 0; i < 4; i++) {
 						BlockPos blockPos = pos.add(rand.nextInt(3) - 1, rand.nextInt(5) - 3, rand.nextInt(3) - 1);
 						BlockState blockState = world.getBlockState(blockPos);
-						Block block = world.getBlockState(blockPos.up()).getBlock();
+						BlockState blockState2 = world.getBlockState(blockPos.up());
 						if (blockState.getBlock() == Blocks.DIRT
 							&& blockState.get(DirtBlock.VARIANT) == DirtBlock.DirtType.DIRT
 							&& world.getLightLevelWithNeighbours(blockPos.up()) >= 4
-							&& block.getOpacity() <= 2) {
+							&& blockState2.getOpacity() <= 2) {
 							world.setBlockState(blockPos, this.getDefaultState());
 						}
 					}
@@ -52,14 +53,14 @@ public class MyceliumBlock extends Block {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
-		super.randomDisplayTick(world, pos, state, rand);
-		if (rand.nextInt(10) == 0) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		super.randomDisplayTick(state, world, pos, random);
+		if (random.nextInt(10) == 0) {
 			world.addParticle(
 				ParticleType.TOWN_AURA,
-				(double)((float)pos.getX() + rand.nextFloat()),
+				(double)((float)pos.getX() + random.nextFloat()),
 				(double)((float)pos.getY() + 1.1F),
-				(double)((float)pos.getZ() + rand.nextFloat()),
+				(double)((float)pos.getZ() + random.nextFloat()),
 				0.0,
 				0.0,
 				0.0
@@ -67,6 +68,7 @@ public class MyceliumBlock extends Block {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Blocks.DIRT.getDropItem(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT), random, id);

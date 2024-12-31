@@ -1,10 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class LureEnchantment extends Enchantment {
-	protected LureEnchantment(int i, Identifier identifier, int j, EnchantmentTarget enchantmentTarget) {
-		super(i, identifier, j, enchantmentTarget);
+	protected LureEnchantment(Enchantment.Rarity rarity, EnchantmentTarget enchantmentTarget, EquipmentSlot... equipmentSlots) {
+		super(rarity, enchantmentTarget, equipmentSlots);
 		this.setName("fishingSpeed");
 	}
 

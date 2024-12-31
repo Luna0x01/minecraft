@@ -1,5 +1,6 @@
 package net.minecraft.enchantment;
 
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.FishingRodItem;
@@ -12,7 +13,7 @@ public enum EnchantmentTarget {
 	ALL_ARMOR,
 	FEET,
 	LEGS,
-	TORSO,
+	ARMOR_CHEST,
 	HEAD,
 	WEAPON,
 	DIGGER,
@@ -30,14 +31,14 @@ public enum EnchantmentTarget {
 				return true;
 			} else {
 				ArmorItem armorItem = (ArmorItem)item;
-				if (armorItem.slot == 0) {
+				if (armorItem.field_12275 == EquipmentSlot.HEAD) {
 					return this == HEAD;
-				} else if (armorItem.slot == 2) {
+				} else if (armorItem.field_12275 == EquipmentSlot.LEGS) {
 					return this == LEGS;
-				} else if (armorItem.slot == 1) {
-					return this == TORSO;
+				} else if (armorItem.field_12275 == EquipmentSlot.CHEST) {
+					return this == ARMOR_CHEST;
 				} else {
-					return armorItem.slot == 3 ? this == FEET : false;
+					return armorItem.field_12275 == EquipmentSlot.FEET ? this == FEET : false;
 				}
 			}
 		} else if (item instanceof SwordItem) {

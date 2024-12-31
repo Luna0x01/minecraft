@@ -1,7 +1,9 @@
 package net.minecraft.server.command;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -28,14 +30,14 @@ public class WeatherCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length >= 1 && args.length <= 2) {
 			int i = (300 + new Random().nextInt(600)) * 20;
 			if (args.length >= 2) {
 				i = parseClampedInt(args[1], 1, 1000000) * 20;
 			}
 
-			World world = MinecraftServer.getServer().worlds[0];
+			World world = minecraftServer.worlds[0];
 			LevelProperties levelProperties = world.getLevelProperties();
 			if ("clear".equalsIgnoreCase(args[0])) {
 				levelProperties.setClearWeatherTime(i);
@@ -43,14 +45,14 @@ public class WeatherCommand extends AbstractCommand {
 				levelProperties.setThunderTime(0);
 				levelProperties.setRaining(false);
 				levelProperties.setThundering(false);
-				run(source, this, "commands.weather.clear", new Object[0]);
+				run(commandSource, this, "commands.weather.clear", new Object[0]);
 			} else if ("rain".equalsIgnoreCase(args[0])) {
 				levelProperties.setClearWeatherTime(0);
 				levelProperties.setRainTime(i);
 				levelProperties.setThunderTime(i);
 				levelProperties.setRaining(true);
 				levelProperties.setThundering(false);
-				run(source, this, "commands.weather.rain", new Object[0]);
+				run(commandSource, this, "commands.weather.rain", new Object[0]);
 			} else {
 				if (!"thunder".equalsIgnoreCase(args[0])) {
 					throw new IncorrectUsageException("commands.weather.usage");
@@ -61,7 +63,7 @@ public class WeatherCommand extends AbstractCommand {
 				levelProperties.setThunderTime(i);
 				levelProperties.setRaining(true);
 				levelProperties.setThundering(true);
-				run(source, this, "commands.weather.thunder", new Object[0]);
+				run(commandSource, this, "commands.weather.thunder", new Object[0]);
 			}
 		} else {
 			throw new IncorrectUsageException("commands.weather.usage");
@@ -69,7 +71,7 @@ public class WeatherCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return args.length == 1 ? method_2894(args, new String[]{"clear", "rain", "thunder"}) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return strings.length == 1 ? method_2894(strings, new String[]{"clear", "rain", "thunder"}) : Collections.emptyList();
 	}
 }

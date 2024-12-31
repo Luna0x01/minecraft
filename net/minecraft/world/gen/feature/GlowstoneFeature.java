@@ -19,7 +19,7 @@ public class GlowstoneFeature extends Feature {
 
 			for (int i = 0; i < 1500; i++) {
 				BlockPos blockPos2 = blockPos.add(random.nextInt(8) - random.nextInt(8), -random.nextInt(12), random.nextInt(8) - random.nextInt(8));
-				if (world.getBlockState(blockPos2).getBlock().getMaterial() == Material.AIR) {
+				if (world.getBlockState(blockPos2).getMaterial() == Material.AIR) {
 					int j = 0;
 
 					for (Direction direction : Direction.values()) {

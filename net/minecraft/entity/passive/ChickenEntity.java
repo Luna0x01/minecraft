@@ -1,6 +1,10 @@
 package net.minecraft.entity.passive;
 
+import com.google.common.collect.Sets;
+import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.EscapeDangerGoal;
@@ -10,17 +14,23 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
+import net.minecraft.entity.ai.pathing.LandType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class ChickenEntity extends AnimalEntity {
+	private static final Set<Item> field_14611 = Sets.newHashSet(new Item[]{Items.WHEAT_SEEDS, Items.MELON_SEEDS, Items.PUMPKIN_SEEDS, Items.BEETROOT_SEED});
 	public float flapProgress;
 	public float maxWingDeviation;
 	public float prevMaxWingDeviation;
@@ -33,10 +43,15 @@ public class ChickenEntity extends AnimalEntity {
 		super(world);
 		this.setBounds(0.4F, 0.7F);
 		this.eggLayTime = this.random.nextInt(6000) + 6000;
+		this.method_13076(LandType.WATER, 0.0F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(0, new SwimGoal(this));
 		this.goals.add(1, new EscapeDangerGoal(this, 1.4));
 		this.goals.add(2, new BreedGoal(this, 1.0));
-		this.goals.add(3, new TemptGoal(this, 1.0, Items.WHEAT_SEEDS, false));
+		this.goals.add(3, new TemptGoal(this, 1.0, false, field_14611));
 		this.goals.add(4, new FollowParentGoal(this, 1.1));
 		this.goals.add(5, new WanderAroundGoal(this, 1.0));
 		this.goals.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0F));
@@ -73,7 +88,7 @@ public class ChickenEntity extends AnimalEntity {
 
 		this.flapProgress = this.flapProgress + this.flapSpeed * 2.0F;
 		if (!this.world.isClient && !this.isBaby() && !this.hasJockey() && --this.eggLayTime <= 0) {
-			this.playSound("mob.chicken.plop", 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
+			this.playSound(Sounds.ENTITY_CHICKEN_EGG, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
 			this.dropItem(Items.EGG, 1);
 			this.eggLayTime = this.random.nextInt(6000) + 6000;
 		}
@@ -84,43 +99,29 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.chicken.say";
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_CHICKEN_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.chicken.hurt";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_CHICKEN_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.chicken.hurt";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_CHICKEN_DEATH;
 	}
 
 	@Override
 	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound("mob.chicken.step", 0.15F, 1.0F);
+		this.playSound(Sounds.ENTITY_CHICKEN_STEP, 0.15F, 1.0F);
 	}
 
+	@Nullable
 	@Override
-	protected Item getDefaultDrop() {
-		return Items.FEATHER;
-	}
-
-	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		int i = this.random.nextInt(3) + this.random.nextInt(1 + lootingMultiplier);
-
-		for (int j = 0; j < i; j++) {
-			this.dropItem(Items.FEATHER, 1);
-		}
-
-		if (this.isOnFire()) {
-			this.dropItem(Items.COOKED_CHICKEN, 1);
-		} else {
-			this.dropItem(Items.CHICKEN, 1);
-		}
+	protected Identifier getLootTableId() {
+		return LootTables.CHICKEN_ENTITIE;
 	}
 
 	public ChickenEntity breed(PassiveEntity passiveEntity) {
@@ -128,8 +129,8 @@ public class ChickenEntity extends AnimalEntity {
 	}
 
 	@Override
-	public boolean isBreedingItem(ItemStack stack) {
-		return stack != null && stack.getItem() == Items.WHEAT_SEEDS;
+	public boolean isBreedingItem(@Nullable ItemStack stack) {
+		return stack != null && field_14611.contains(stack.getItem());
 	}
 
 	@Override
@@ -155,20 +156,19 @@ public class ChickenEntity extends AnimalEntity {
 
 	@Override
 	protected boolean canImmediatelyDespawn() {
-		return this.hasJockey() && this.rider == null;
+		return this.hasJockey() && !this.hasPassengers();
 	}
 
 	@Override
-	public void updatePassengerPosition() {
-		super.updatePassengerPosition();
-		float f = MathHelper.sin(this.bodyYaw * (float) Math.PI / 180.0F);
-		float g = MathHelper.cos(this.bodyYaw * (float) Math.PI / 180.0F);
+	public void updatePassengerPosition(Entity passenger) {
+		super.updatePassengerPosition(passenger);
+		float f = MathHelper.sin(this.bodyYaw * (float) (Math.PI / 180.0));
+		float g = MathHelper.cos(this.bodyYaw * (float) (Math.PI / 180.0));
 		float h = 0.1F;
 		float i = 0.0F;
-		this.rider
-			.updatePosition(this.x + (double)(h * f), this.y + (double)(this.height * 0.5F) + this.rider.getHeightOffset() + (double)i, this.z - (double)(h * g));
-		if (this.rider instanceof LivingEntity) {
-			((LivingEntity)this.rider).bodyYaw = this.bodyYaw;
+		passenger.updatePosition(this.x + (double)(h * f), this.y + (double)(this.height * 0.5F) + passenger.getHeightOffset() + (double)i, this.z - (double)(h * g));
+		if (passenger instanceof LivingEntity) {
+			((LivingEntity)passenger).bodyYaw = this.bodyYaw;
 		}
 	}
 

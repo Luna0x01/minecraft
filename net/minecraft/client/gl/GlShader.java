@@ -6,6 +6,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
@@ -45,37 +46,31 @@ public class GlShader {
 		GlShader glShader = (GlShader)type.getLoadedShaders().get(name);
 		if (glShader == null) {
 			Identifier identifier = new Identifier("shaders/program/" + name + type.getFileExtension());
-			BufferedInputStream bufferedInputStream = new BufferedInputStream(manager.getResource(identifier).getInputStream());
-			byte[] bs = readInputStream(bufferedInputStream);
-			ByteBuffer byteBuffer = BufferUtils.createByteBuffer(bs.length);
-			byteBuffer.put(bs);
-			byteBuffer.position(0);
-			int i = GLX.gl20CreateShader(type.getGlType());
-			GLX.gl20ShaderSource(i, byteBuffer);
-			GLX.gl20CompileShader(i);
-			if (GLX.gl20GetShaderi(i, GLX.compileStatus) == 0) {
-				String string = StringUtils.trim(GLX.gl20GetShaderInfoLog(i, 32768));
-				ShaderParseException shaderParseException = new ShaderParseException("Couldn't compile " + type.getName() + " program: " + string);
-				shaderParseException.addFaultyFile(identifier.getPath());
-				throw shaderParseException;
-			}
+			Resource resource = manager.getResource(identifier);
 
-			glShader = new GlShader(type, i, name);
-			type.getLoadedShaders().put(name, glShader);
+			try {
+				byte[] bs = IOUtils.toByteArray(new BufferedInputStream(resource.getInputStream()));
+				ByteBuffer byteBuffer = BufferUtils.createByteBuffer(bs.length);
+				byteBuffer.put(bs);
+				byteBuffer.position(0);
+				int i = GLX.gl20CreateShader(type.getGlType());
+				GLX.gl20ShaderSource(i, byteBuffer);
+				GLX.gl20CompileShader(i);
+				if (GLX.gl20GetShaderi(i, GLX.compileStatus) == 0) {
+					String string = StringUtils.trim(GLX.gl20GetShaderInfoLog(i, 32768));
+					ShaderParseException shaderParseException = new ShaderParseException("Couldn't compile " + type.getName() + " program: " + string);
+					shaderParseException.addFaultyFile(identifier.getPath());
+					throw shaderParseException;
+				}
+
+				glShader = new GlShader(type, i, name);
+				type.getLoadedShaders().put(name, glShader);
+			} finally {
+				IOUtils.closeQuietly(resource);
+			}
 		}
 
 		return glShader;
-	}
-
-	protected static byte[] readInputStream(BufferedInputStream stream) throws IOException {
-		byte[] var1;
-		try {
-			var1 = IOUtils.toByteArray(stream);
-		} finally {
-			stream.close();
-		}
-
-		return var1;
 	}
 
 	public static enum Type {

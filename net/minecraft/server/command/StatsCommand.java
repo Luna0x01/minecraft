@@ -2,7 +2,9 @@ package net.minecraft.server.command;
 
 import com.google.common.collect.Lists;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
@@ -34,7 +36,7 @@ public class StatsCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.stats.usage");
 		} else {
@@ -91,10 +93,10 @@ public class StatsCommand extends AbstractCommand {
 			if (type == null) {
 				throw new CommandException("commands.stats.failed");
 			} else {
-				World world = source.getWorld();
+				World world = commandSource.getWorld();
 				CommandStats commandStats;
 				if (bl) {
-					BlockPos blockPos = getBlockPos(source, args, 1, false);
+					BlockPos blockPos = getBlockPos(commandSource, args, 1, false);
 					BlockEntity blockEntity = world.getBlockEntity(blockPos);
 					if (blockEntity == null) {
 						throw new CommandException("commands.stats.noCompatibleBlock", blockPos.getX(), blockPos.getY(), blockPos.getZ());
@@ -110,26 +112,26 @@ public class StatsCommand extends AbstractCommand {
 						commandStats = ((SignBlockEntity)blockEntity).getCommandStats();
 					}
 				} else {
-					Entity entity = getEntity(source, args[1]);
+					Entity entity = method_10711(minecraftServer, commandSource, args[1]);
 					commandStats = entity.getCommandStats();
 				}
 
 				if ("set".equals(string)) {
 					String string2 = args[i++];
 					String string3 = args[i];
-					if (string2.length() == 0 || string3.length() == 0) {
+					if (string2.isEmpty() || string3.isEmpty()) {
 						throw new CommandException("commands.stats.failed");
 					}
 
 					CommandStats.method_10795(commandStats, type, string2, string3);
-					run(source, this, "commands.stats.success", new Object[]{type.getName(), string3, string2});
+					run(commandSource, this, "commands.stats.success", new Object[]{type.getName(), string3, string2});
 				} else if ("clear".equals(string)) {
 					CommandStats.method_10795(commandStats, type, null, null);
-					run(source, this, "commands.stats.cleared", new Object[]{type.getName()});
+					run(commandSource, this, "commands.stats.cleared", new Object[]{type.getName()});
 				}
 
 				if (bl) {
-					BlockPos blockPos2 = getBlockPos(source, args, 1, false);
+					BlockPos blockPos2 = getBlockPos(commandSource, args, 1, false);
 					BlockEntity blockEntity2 = world.getBlockEntity(blockPos2);
 					blockEntity2.markDirty();
 				}
@@ -138,30 +140,28 @@ public class StatsCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, new String[]{"entity", "block"});
-		} else if (args.length == 2 && args[0].equals("entity")) {
-			return method_2894(args, this.method_10268());
-		} else if (args.length >= 2 && args.length <= 4 && args[0].equals("block")) {
-			return method_10707(args, 1, pos);
-		} else if ((args.length != 3 || !args[0].equals("entity")) && (args.length != 5 || !args[0].equals("block"))) {
-			if ((args.length != 4 || !args[0].equals("entity")) && (args.length != 6 || !args[0].equals("block"))) {
-				return (args.length != 6 || !args[0].equals("entity")) && (args.length != 8 || !args[0].equals("block")) ? null : method_10708(args, this.method_10269());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, new String[]{"entity", "block"});
+		} else if (strings.length == 2 && strings[0].equals("entity")) {
+			return method_2894(strings, server.getPlayerNames());
+		} else if (strings.length >= 2 && strings.length <= 4 && strings[0].equals("block")) {
+			return method_10707(strings, 1, pos);
+		} else if ((strings.length != 3 || !strings[0].equals("entity")) && (strings.length != 5 || !strings[0].equals("block"))) {
+			if ((strings.length != 4 || !strings[0].equals("entity")) && (strings.length != 6 || !strings[0].equals("block"))) {
+				return (strings.length != 6 || !strings[0].equals("entity")) && (strings.length != 8 || !strings[0].equals("block"))
+					? Collections.emptyList()
+					: method_10708(strings, this.method_12227(server));
 			} else {
-				return method_2894(args, CommandStats.Type.getValues());
+				return method_2894(strings, CommandStats.Type.getValues());
 			}
 		} else {
-			return method_2894(args, new String[]{"set", "clear"});
+			return method_2894(strings, new String[]{"set", "clear"});
 		}
 	}
 
-	protected String[] method_10268() {
-		return MinecraftServer.getServer().getPlayerNames();
-	}
-
-	protected List<String> method_10269() {
-		Collection<ScoreboardObjective> collection = MinecraftServer.getServer().getWorld(0).getScoreboard().getObjectives();
+	protected List<String> method_12227(MinecraftServer minecraftServer) {
+		Collection<ScoreboardObjective> collection = minecraftServer.getWorld(0).getScoreboard().getObjectives();
 		List<String> list = Lists.newArrayList();
 
 		for (ScoreboardObjective scoreboardObjective : collection) {

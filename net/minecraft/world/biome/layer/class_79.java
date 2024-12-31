@@ -2,6 +2,7 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.collection.IntArrayCache;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class class_79 extends Layer {
 	private Layer field_176;
@@ -27,15 +28,15 @@ public class class_79 extends Layer {
 		int[] ks = IntArrayCache.get(k * l);
 
 		for (int m = 0; m < k * l; m++) {
-			if (is[m] == Biome.OCEAN.id || is[m] == Biome.DEEP_OCEAN.id) {
+			if (is[m] == Biome.getBiomeIndex(Biomes.OCEAN) || is[m] == Biome.getBiomeIndex(Biomes.DEEP_OCEAN)) {
 				ks[m] = is[m];
-			} else if (js[m] == Biome.RIVER.id) {
-				if (is[m] == Biome.ICE_PLAINS.id) {
-					ks[m] = Biome.FROZEN_RIVER.id;
-				} else if (is[m] != Biome.MUSHROOM_ISLAND.id && is[m] != Biome.MUSHROOM_ISLAND_SHORE.id) {
+			} else if (js[m] == Biome.getBiomeIndex(Biomes.RIVER)) {
+				if (is[m] == Biome.getBiomeIndex(Biomes.ICE_FLATS)) {
+					ks[m] = Biome.getBiomeIndex(Biomes.FROZEN_RIVER);
+				} else if (is[m] != Biome.getBiomeIndex(Biomes.MUSHROOM_ISLAND) && is[m] != Biome.getBiomeIndex(Biomes.MUSHROOM_ISLAND_SHORE)) {
 					ks[m] = js[m] & 0xFF;
 				} else {
-					ks[m] = Biome.MUSHROOM_ISLAND_SHORE.id;
+					ks[m] = Biome.getBiomeIndex(Biomes.MUSHROOM_ISLAND_SHORE);
 				}
 			} else {
 				ks[m] = is[m];

@@ -1,5 +1,6 @@
 package net.minecraft.inventory.slot;
 
+import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
@@ -25,7 +26,7 @@ public class CraftingResultSlot extends Slot {
 	}
 
 	@Override
-	public boolean canInsert(ItemStack stack) {
+	public boolean canInsert(@Nullable ItemStack stack) {
 		return false;
 	}
 
@@ -90,10 +91,6 @@ public class CraftingResultSlot extends Slot {
 		if (stack.getItem() == Item.fromBlock(Blocks.BOOKSHELF)) {
 			this.player.incrementStat(AchievementsAndCriterions.BOOKCASE);
 		}
-
-		if (stack.getItem() == Items.GOLDEN_APPLE && stack.getData() == 1) {
-			this.player.incrementStat(AchievementsAndCriterions.OVERPOWERED);
-		}
 	}
 
 	@Override
@@ -106,10 +103,14 @@ public class CraftingResultSlot extends Slot {
 			ItemStack itemStack2 = itemStacks[i];
 			if (itemStack != null) {
 				this.craftingInv.takeInvStack(i, 1);
+				itemStack = this.craftingInv.getInvStack(i);
 			}
 
 			if (itemStack2 != null) {
-				if (this.craftingInv.getInvStack(i) == null) {
+				if (itemStack == null) {
+					this.craftingInv.setInvStack(i, itemStack2);
+				} else if (ItemStack.equalsIgnoreNbt(itemStack, itemStack2) && ItemStack.equalsIgnoreDamage(itemStack, itemStack2)) {
+					itemStack2.count = itemStack2.count + itemStack.count;
 					this.craftingInv.setInvStack(i, itemStack2);
 				} else if (!this.player.inventory.insertStack(itemStack2)) {
 					this.player.dropItem(itemStack2, false);

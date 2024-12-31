@@ -1,9 +1,12 @@
 package net.minecraft.item;
 
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
 
 public class SaddleItem extends Item {
 	public SaddleItem() {
@@ -12,13 +15,13 @@ public class SaddleItem extends Item {
 	}
 
 	@Override
-	public boolean canUseOnEntity(ItemStack stack, PlayerEntity player, LivingEntity entity) {
-		if (entity instanceof PigEntity) {
-			PigEntity pigEntity = (PigEntity)entity;
+	public boolean method_3353(ItemStack itemStack, PlayerEntity playerEntity, LivingEntity livingEntity, Hand hand) {
+		if (livingEntity instanceof PigEntity) {
+			PigEntity pigEntity = (PigEntity)livingEntity;
 			if (!pigEntity.isSaddled() && !pigEntity.isBaby()) {
 				pigEntity.setSaddled(true);
-				pigEntity.world.playSound(pigEntity, "mob.horse.leather", 0.5F, 1.0F);
-				stack.count--;
+				pigEntity.world.playSound(playerEntity, pigEntity.x, pigEntity.y, pigEntity.z, Sounds.ENTITY_PIG_SADDLE, SoundCategory.NEUTRAL, 0.5F, 1.0F);
+				itemStack.count--;
 			}
 
 			return true;
@@ -29,7 +32,7 @@ public class SaddleItem extends Item {
 
 	@Override
 	public boolean onEntityHit(ItemStack stack, LivingEntity entity1, LivingEntity entity2) {
-		this.canUseOnEntity(stack, null, entity1);
+		this.method_3353(stack, null, entity1, Hand.MAIN_HAND);
 		return true;
 	}
 }

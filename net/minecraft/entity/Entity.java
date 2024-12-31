@@ -1,11 +1,18 @@
 package net.minecraft.entity;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 import net.minecraft.block.AbstractFluidBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FenceBlock;
@@ -13,27 +20,43 @@ import net.minecraft.block.FenceGateBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.pattern.BlockPattern;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.CommandStats;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.ProtectionEnchantment;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtDouble;
 import net.minecraft.nbt.NbtFloat;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
+import net.minecraft.scoreboard.AbstractTeam;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -45,15 +68,19 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class Entity implements CommandSource {
+	private static final Logger LOGGER_ = LogManager.getLogger();
 	private static final Box HITBOX = new Box(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	private static double renderDistanceMultiplier = 1.0;
 	private static int entityCount;
 	private int entityId;
-	public double renderDistanceMultiplier;
 	public boolean inanimate;
-	public Entity rider;
-	public Entity vehicle;
+	private final List<Entity> passengerList;
+	protected int ridingCooldown;
+	private Entity mount;
 	public boolean teleporting;
 	public World world;
 	public double prevX;
@@ -100,15 +127,18 @@ public abstract class Entity implements CommandSource {
 	protected boolean firstUpdate;
 	protected boolean isFireImmune;
 	protected DataTracker dataTracker;
-	private double vehiclePitch;
-	private double vehicleYaw;
+	private static final TrackedData<Byte> FLAGS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BYTE);
+	private static final TrackedData<Integer> AIR = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<String> CUSTOM_NAME = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.STRING);
+	private static final TrackedData<Boolean> NAME_VISIBLE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Boolean> SILENT = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	public boolean updateNeeded;
 	public int chunkX;
 	public int chunkY;
 	public int chunkZ;
-	public int trackedX;
-	public int trackedY;
-	public int trackedZ;
+	public long tracedX;
+	public long tracedY;
+	public long tracedZ;
 	public boolean ignoreCameraFrustum;
 	public boolean velocityDirty;
 	public int netherPortalCooldown;
@@ -120,7 +150,42 @@ public abstract class Entity implements CommandSource {
 	protected Direction teleportDirection;
 	private boolean invulnerable;
 	protected UUID playerUuid;
+	protected String uuidString;
 	private final CommandStats commandStats;
+	private final List<ItemStack> field_14496;
+	protected boolean isGlowing;
+	private final Set<String> scoreboardTags;
+	private boolean teleportRequested;
+
+	public Entity(World world) {
+		this.entityId = entityCount++;
+		this.passengerList = Lists.newArrayList();
+		this.boundingBox = HITBOX;
+		this.width = 0.6F;
+		this.height = 1.8F;
+		this.field_3233 = 1;
+		this.random = new Random();
+		this.fireResistance = 1;
+		this.firstUpdate = true;
+		this.playerUuid = MathHelper.randomUuid(this.random);
+		this.uuidString = this.playerUuid.toString();
+		this.commandStats = new CommandStats();
+		this.field_14496 = Lists.newArrayList();
+		this.scoreboardTags = Sets.newHashSet();
+		this.world = world;
+		this.updatePosition(0.0, 0.0, 0.0);
+		if (world != null) {
+			this.dimension = world.dimension.getDimensionType().getId();
+		}
+
+		this.dataTracker = new DataTracker(this);
+		this.dataTracker.startTracking(FLAGS, (byte)0);
+		this.dataTracker.startTracking(AIR, 300);
+		this.dataTracker.startTracking(NAME_VISIBLE, false);
+		this.dataTracker.startTracking(CUSTOM_NAME, "");
+		this.dataTracker.startTracking(SILENT, false);
+		this.initDataTracker();
+	}
 
 	public int getEntityId() {
 		return this.entityId;
@@ -130,35 +195,25 @@ public abstract class Entity implements CommandSource {
 		this.entityId = id;
 	}
 
-	public void kill() {
-		this.remove();
+	public Set<String> getScoreboardTags() {
+		return this.scoreboardTags;
 	}
 
-	public Entity(World world) {
-		this.entityId = entityCount++;
-		this.renderDistanceMultiplier = 1.0;
-		this.boundingBox = HITBOX;
-		this.width = 0.6F;
-		this.height = 1.8F;
-		this.field_3233 = 1;
-		this.random = new Random();
-		this.fireResistance = 1;
-		this.firstUpdate = true;
-		this.playerUuid = MathHelper.randomUuid(this.random);
-		this.commandStats = new CommandStats();
-		this.world = world;
-		this.updatePosition(0.0, 0.0, 0.0);
-		if (world != null) {
-			this.dimension = world.dimension.getType();
+	public boolean addScoreboardTag(String tag) {
+		if (this.scoreboardTags.size() >= 1024) {
+			return false;
+		} else {
+			this.scoreboardTags.add(tag);
+			return true;
 		}
+	}
 
-		this.dataTracker = new DataTracker(this);
-		this.dataTracker.track(0, (byte)0);
-		this.dataTracker.track(1, (short)300);
-		this.dataTracker.track(3, (byte)0);
-		this.dataTracker.track(2, "");
-		this.dataTracker.track(4, (byte)0);
-		this.initDataTracker();
+	public boolean removeScoreboardTag(String tag) {
+		return this.scoreboardTags.remove(tag);
+	}
+
+	public void kill() {
+		this.remove();
 	}
 
 	protected abstract void initDataTracker();
@@ -195,21 +250,16 @@ public abstract class Entity implements CommandSource {
 		this.removed = true;
 	}
 
+	public void method_12991(boolean bl) {
+	}
+
 	protected void setBounds(float width, float height) {
 		if (width != this.width || height != this.height) {
 			float f = this.width;
 			this.width = width;
 			this.height = height;
-			this.setBoundingBox(
-				new Box(
-					this.getBoundingBox().minX,
-					this.getBoundingBox().minY,
-					this.getBoundingBox().minZ,
-					this.getBoundingBox().minX + (double)this.width,
-					this.getBoundingBox().minY + (double)this.height,
-					this.getBoundingBox().minZ + (double)this.width
-				)
-			);
+			Box box = this.getBoundingBox();
+			this.setBoundingBox(new Box(box.minX, box.minY, box.minZ, box.minX + (double)this.width, box.minY + (double)this.height, box.minZ + (double)this.width));
 			if (this.width > f && !this.firstUpdate && !this.world.isClient) {
 				this.move((double)(f - this.width), 0.0, (double)(f - this.width));
 			}
@@ -238,16 +288,27 @@ public abstract class Entity implements CommandSource {
 		this.pitch = MathHelper.clamp(this.pitch, -90.0F, 90.0F);
 		this.prevPitch = this.prevPitch + (this.pitch - f);
 		this.prevYaw = this.prevYaw + (this.yaw - g);
+		if (this.mount != null) {
+			this.mount.onPassengerLookAround(this);
+		}
 	}
 
 	public void tick() {
+		if (!this.world.isClient) {
+			this.setFlag(6, this.isGlowing());
+		}
+
 		this.baseTick();
 	}
 
 	public void baseTick() {
 		this.world.profiler.push("entityBaseTick");
-		if (this.vehicle != null && this.vehicle.removed) {
-			this.vehicle = null;
+		if (this.hasMount() && this.getVehicle().removed) {
+			this.stopRiding();
+		}
+
+		if (this.ridingCooldown > 0) {
+			this.ridingCooldown--;
 		}
 
 		this.prevHorizontalSpeed = this.horizontalSpeed;
@@ -258,21 +319,23 @@ public abstract class Entity implements CommandSource {
 		this.prevYaw = this.yaw;
 		if (!this.world.isClient && this.world instanceof ServerWorld) {
 			this.world.profiler.push("portal");
-			MinecraftServer minecraftServer = ((ServerWorld)this.world).getServer();
-			int i = this.getMaxNetherPortalTime();
 			if (this.changingDimension) {
+				MinecraftServer minecraftServer = this.world.getServer();
 				if (minecraftServer.isNetherAllowed()) {
-					if (this.vehicle == null && this.netherPortalTime++ >= i) {
-						this.netherPortalTime = i;
-						this.netherPortalCooldown = this.getDefaultNetherPortalCooldown();
-						int j;
-						if (this.world.dimension.getType() == -1) {
-							j = 0;
-						} else {
-							j = -1;
-						}
+					if (!this.hasMount()) {
+						int i = this.getMaxNetherPortalTime();
+						if (this.netherPortalTime++ >= i) {
+							this.netherPortalTime = i;
+							this.netherPortalCooldown = this.getDefaultNetherPortalCooldown();
+							int j;
+							if (this.world.dimension.getDimensionType().getId() == -1) {
+								j = 0;
+							} else {
+								j = -1;
+							}
 
-						this.teleportToDimension(j);
+							this.changeDimension(j);
+						}
 					}
 
 					this.changingDimension = false;
@@ -287,10 +350,7 @@ public abstract class Entity implements CommandSource {
 				}
 			}
 
-			if (this.netherPortalCooldown > 0) {
-				this.netherPortalCooldown--;
-			}
-
+			this.tickNetherPortalCooldown();
 			this.world.profiler.pop();
 		}
 
@@ -330,8 +390,14 @@ public abstract class Entity implements CommandSource {
 		this.world.profiler.pop();
 	}
 
+	protected void tickNetherPortalCooldown() {
+		if (this.netherPortalCooldown > 0) {
+			this.netherPortalCooldown--;
+		}
+	}
+
 	public int getMaxNetherPortalTime() {
-		return 0;
+		return 1;
 	}
 
 	protected void setOnFireFromLava() {
@@ -343,7 +409,10 @@ public abstract class Entity implements CommandSource {
 
 	public void setOnFireFor(int seconds) {
 		int i = seconds * 20;
-		i = ProtectionEnchantment.method_4659(this, i);
+		if (this instanceof LivingEntity) {
+			i = ProtectionEnchantment.method_11466((LivingEntity)this, i);
+		}
+
 		if (this.fireTicks < i) {
 			this.fireTicks = i;
 		}
@@ -436,102 +505,113 @@ public abstract class Entity implements CommandSource {
 
 			List<Box> list = this.world.doesBoxCollide(this, this.getBoundingBox().stretch(velocityX, velocityY, velocityZ));
 			Box box = this.getBoundingBox();
+			int k = 0;
 
-			for (Box box2 : list) {
-				velocityY = box2.method_589(this.getBoundingBox(), velocityY);
+			for (int l = list.size(); k < l; k++) {
+				velocityY = ((Box)list.get(k)).method_589(this.getBoundingBox(), velocityY);
 			}
 
 			this.setBoundingBox(this.getBoundingBox().offset(0.0, velocityY, 0.0));
 			boolean bl2 = this.onGround || h != velocityY && h < 0.0;
+			int m = 0;
 
-			for (Box box3 : list) {
-				velocityX = box3.method_583(this.getBoundingBox(), velocityX);
+			for (int n = list.size(); m < n; m++) {
+				velocityX = ((Box)list.get(m)).method_583(this.getBoundingBox(), velocityX);
 			}
 
 			this.setBoundingBox(this.getBoundingBox().offset(velocityX, 0.0, 0.0));
+			m = 0;
 
-			for (Box box4 : list) {
-				velocityZ = box4.method_594(this.getBoundingBox(), velocityZ);
+			for (int p = list.size(); m < p; m++) {
+				velocityZ = ((Box)list.get(m)).method_594(this.getBoundingBox(), velocityZ);
 			}
 
 			this.setBoundingBox(this.getBoundingBox().offset(0.0, 0.0, velocityZ));
 			if (this.stepHeight > 0.0F && bl2 && (g != velocityX || i != velocityZ)) {
-				double k = velocityX;
-				double l = velocityY;
-				double m = velocityZ;
-				Box box5 = this.getBoundingBox();
+				double q = velocityX;
+				double r = velocityY;
+				double s = velocityZ;
+				Box box2 = this.getBoundingBox();
 				this.setBoundingBox(box);
 				velocityY = (double)this.stepHeight;
 				List<Box> list2 = this.world.doesBoxCollide(this, this.getBoundingBox().stretch(g, velocityY, i));
-				Box box6 = this.getBoundingBox();
-				Box box7 = box6.stretch(g, 0.0, i);
-				double n = velocityY;
+				Box box3 = this.getBoundingBox();
+				Box box4 = box3.stretch(g, 0.0, i);
+				double t = velocityY;
+				int u = 0;
 
-				for (Box box8 : list2) {
-					n = box8.method_589(box7, n);
+				for (int v = list2.size(); u < v; u++) {
+					t = ((Box)list2.get(u)).method_589(box4, t);
 				}
 
-				box6 = box6.offset(0.0, n, 0.0);
-				double o = g;
+				box3 = box3.offset(0.0, t, 0.0);
+				double w = g;
+				int x = 0;
 
-				for (Box box9 : list2) {
-					o = box9.method_583(box6, o);
+				for (int y = list2.size(); x < y; x++) {
+					w = ((Box)list2.get(x)).method_583(box3, w);
 				}
 
-				box6 = box6.offset(o, 0.0, 0.0);
-				double p = i;
+				box3 = box3.offset(w, 0.0, 0.0);
+				double z = i;
+				int aa = 0;
 
-				for (Box box10 : list2) {
-					p = box10.method_594(box6, p);
+				for (int ab = list2.size(); aa < ab; aa++) {
+					z = ((Box)list2.get(aa)).method_594(box3, z);
 				}
 
-				box6 = box6.offset(0.0, 0.0, p);
-				Box box11 = this.getBoundingBox();
-				double q = velocityY;
+				box3 = box3.offset(0.0, 0.0, z);
+				Box box5 = this.getBoundingBox();
+				double ac = velocityY;
+				int ad = 0;
 
-				for (Box box12 : list2) {
-					q = box12.method_589(box11, q);
+				for (int ae = list2.size(); ad < ae; ad++) {
+					ac = ((Box)list2.get(ad)).method_589(box5, ac);
 				}
 
-				box11 = box11.offset(0.0, q, 0.0);
-				double r = g;
+				Box var80 = box5.offset(0.0, ac, 0.0);
+				double af = g;
+				int ag = 0;
 
-				for (Box box13 : list2) {
-					r = box13.method_583(box11, r);
+				for (int ah = list2.size(); ag < ah; ag++) {
+					af = ((Box)list2.get(ag)).method_583(var80, af);
 				}
 
-				box11 = box11.offset(r, 0.0, 0.0);
-				double s = i;
+				Box var81 = var80.offset(af, 0.0, 0.0);
+				double ai = i;
+				int aj = 0;
 
-				for (Box box14 : list2) {
-					s = box14.method_594(box11, s);
+				for (int ak = list2.size(); aj < ak; aj++) {
+					ai = ((Box)list2.get(aj)).method_594(var81, ai);
 				}
 
-				box11 = box11.offset(0.0, 0.0, s);
-				double t = o * o + p * p;
-				double u = r * r + s * s;
-				if (t > u) {
-					velocityX = o;
-					velocityZ = p;
-					velocityY = -n;
-					this.setBoundingBox(box6);
+				Box var82 = var81.offset(0.0, 0.0, ai);
+				double al = w * w + z * z;
+				double am = af * af + ai * ai;
+				if (al > am) {
+					velocityX = w;
+					velocityZ = z;
+					velocityY = -t;
+					this.setBoundingBox(box3);
 				} else {
-					velocityX = r;
-					velocityZ = s;
-					velocityY = -q;
-					this.setBoundingBox(box11);
+					velocityX = af;
+					velocityZ = ai;
+					velocityY = -ac;
+					this.setBoundingBox(var82);
 				}
 
-				for (Box box15 : list2) {
-					velocityY = box15.method_589(this.getBoundingBox(), velocityY);
+				int an = 0;
+
+				for (int ao = list2.size(); an < ao; an++) {
+					velocityY = ((Box)list2.get(an)).method_589(this.getBoundingBox(), velocityY);
 				}
 
 				this.setBoundingBox(this.getBoundingBox().offset(0.0, velocityY, 0.0));
-				if (k * k + m * m >= velocityX * velocityX + velocityZ * velocityZ) {
-					velocityX = k;
-					velocityY = l;
-					velocityZ = m;
-					this.setBoundingBox(box5);
+				if (q * q + s * s >= velocityX * velocityX + velocityZ * velocityZ) {
+					velocityX = q;
+					velocityY = r;
+					velocityZ = s;
+					this.setBoundingBox(box2);
 				}
 			}
 
@@ -542,20 +622,22 @@ public abstract class Entity implements CommandSource {
 			this.verticalCollision = h != velocityY;
 			this.onGround = this.verticalCollision && h < 0.0;
 			this.colliding = this.horizontalCollision || this.verticalCollision;
-			int v = MathHelper.floor(this.x);
-			int w = MathHelper.floor(this.y - 0.2F);
-			int x = MathHelper.floor(this.z);
-			BlockPos blockPos = new BlockPos(v, w, x);
-			Block block = this.world.getBlockState(blockPos).getBlock();
-			if (block.getMaterial() == Material.AIR) {
-				Block block2 = this.world.getBlockState(blockPos.down()).getBlock();
-				if (block2 instanceof FenceBlock || block2 instanceof WallBlock || block2 instanceof FenceGateBlock) {
-					block = block2;
-					blockPos = blockPos.down();
+			m = MathHelper.floor(this.x);
+			int aq = MathHelper.floor(this.y - 0.2F);
+			int ar = MathHelper.floor(this.z);
+			BlockPos blockPos = new BlockPos(m, aq, ar);
+			BlockState blockState = this.world.getBlockState(blockPos);
+			if (blockState.getMaterial() == Material.AIR) {
+				BlockPos blockPos2 = blockPos.down();
+				BlockState blockState2 = this.world.getBlockState(blockPos2);
+				Block block = blockState2.getBlock();
+				if (block instanceof FenceBlock || block instanceof WallBlock || block instanceof FenceGateBlock) {
+					blockState = blockState2;
+					blockPos = blockPos2;
 				}
 			}
 
-			this.fall(velocityY, this.onGround, block, blockPos);
+			this.fall(velocityY, this.onGround, blockState, blockPos);
 			if (g != velocityX) {
 				this.velocityX = 0.0;
 			}
@@ -564,36 +646,37 @@ public abstract class Entity implements CommandSource {
 				this.velocityZ = 0.0;
 			}
 
+			Block block2 = blockState.getBlock();
 			if (h != velocityY) {
-				block.setEntityVelocity(this.world, this);
+				block2.setEntityVelocity(this.world, this);
 			}
 
-			if (this.canClimb() && !bl && this.vehicle == null) {
-				double y = this.x - d;
-				double z = this.y - e;
-				double aa = this.z - f;
-				if (block != Blocks.LADDER) {
-					z = 0.0;
+			if (this.canClimb() && !bl && !this.hasMount()) {
+				double as = this.x - d;
+				double at = this.y - e;
+				double au = this.z - f;
+				if (block2 != Blocks.LADDER) {
+					at = 0.0;
 				}
 
-				if (block != null && this.onGround) {
-					block.onSteppedOn(this.world, blockPos, this);
+				if (block2 != null && this.onGround) {
+					block2.onSteppedOn(this.world, blockPos, this);
 				}
 
-				this.horizontalSpeed = (float)((double)this.horizontalSpeed + (double)MathHelper.sqrt(y * y + aa * aa) * 0.6);
-				this.distanceTraveled = (float)((double)this.distanceTraveled + (double)MathHelper.sqrt(y * y + z * z + aa * aa) * 0.6);
-				if (this.distanceTraveled > (float)this.field_3233 && block.getMaterial() != Material.AIR) {
+				this.horizontalSpeed = (float)((double)this.horizontalSpeed + (double)MathHelper.sqrt(as * as + au * au) * 0.6);
+				this.distanceTraveled = (float)((double)this.distanceTraveled + (double)MathHelper.sqrt(as * as + at * at + au * au) * 0.6);
+				if (this.distanceTraveled > (float)this.field_3233 && blockState.getMaterial() != Material.AIR) {
 					this.field_3233 = (int)this.distanceTraveled + 1;
 					if (this.isTouchingWater()) {
-						float ab = MathHelper.sqrt(this.velocityX * this.velocityX * 0.2F + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ * 0.2F) * 0.35F;
-						if (ab > 1.0F) {
-							ab = 1.0F;
+						float av = MathHelper.sqrt(this.velocityX * this.velocityX * 0.2F + this.velocityY * this.velocityY + this.velocityZ * this.velocityZ * 0.2F) * 0.35F;
+						if (av > 1.0F) {
+							av = 1.0F;
 						}
 
-						this.playSound(this.getSwimSound(), ab, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+						this.playSound(this.method_12984(), av, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
 					}
 
-					this.playStepSound(blockPos, block);
+					this.playStepSound(blockPos, block2);
 				}
 			}
 
@@ -607,7 +690,7 @@ public abstract class Entity implements CommandSource {
 			}
 
 			boolean bl3 = this.tickFire();
-			if (this.world.containsFireSource(this.getBoundingBox().increment(0.001, 0.001, 0.001))) {
+			if (this.world.containsFireSource(this.getBoundingBox().contract(0.001))) {
 				this.burn(1);
 				if (!bl3) {
 					this.fireTicks++;
@@ -620,7 +703,7 @@ public abstract class Entity implements CommandSource {
 			}
 
 			if (bl3 && this.fireTicks > 0) {
-				this.playSound("random.fizz", 0.7F, 1.6F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+				this.playSound(Sounds.ENTITY_GENERIC_EXTINGUISH_FIRE, 0.7F, 1.6F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
 				this.fireTicks = -this.fireResistance;
 			}
 
@@ -628,84 +711,92 @@ public abstract class Entity implements CommandSource {
 		}
 	}
 
-	private void updateSubmergedInWaterState() {
-		this.x = (this.getBoundingBox().minX + this.getBoundingBox().maxX) / 2.0;
-		this.y = this.getBoundingBox().minY;
-		this.z = (this.getBoundingBox().minZ + this.getBoundingBox().maxZ) / 2.0;
+	public void updateSubmergedInWaterState() {
+		Box box = this.getBoundingBox();
+		this.x = (box.minX + box.maxX) / 2.0;
+		this.y = box.minY;
+		this.z = (box.minZ + box.maxZ) / 2.0;
 	}
 
-	protected String getSwimSound() {
-		return "game.neutral.swim";
+	protected Sound method_12984() {
+		return Sounds.ENTITY_GENERIC_SWIM;
+	}
+
+	protected Sound method_12985() {
+		return Sounds.ENTITY_GENERIC_SPLASH;
 	}
 
 	protected void checkBlockCollision() {
-		BlockPos blockPos = new BlockPos(this.getBoundingBox().minX + 0.001, this.getBoundingBox().minY + 0.001, this.getBoundingBox().minZ + 0.001);
-		BlockPos blockPos2 = new BlockPos(this.getBoundingBox().maxX - 0.001, this.getBoundingBox().maxY - 0.001, this.getBoundingBox().maxZ - 0.001);
-		if (this.world.isRegionLoaded(blockPos, blockPos2)) {
-			for (int i = blockPos.getX(); i <= blockPos2.getX(); i++) {
-				for (int j = blockPos.getY(); j <= blockPos2.getY(); j++) {
-					for (int k = blockPos.getZ(); k <= blockPos2.getZ(); k++) {
-						BlockPos blockPos3 = new BlockPos(i, j, k);
-						BlockState blockState = this.world.getBlockState(blockPos3);
+		Box box = this.getBoundingBox();
+		BlockPos.Pooled pooled = BlockPos.Pooled.method_12567(box.minX + 0.001, box.minY + 0.001, box.minZ + 0.001);
+		BlockPos.Pooled pooled2 = BlockPos.Pooled.method_12567(box.maxX - 0.001, box.maxY - 0.001, box.maxZ - 0.001);
+		BlockPos.Pooled pooled3 = BlockPos.Pooled.get();
+		if (this.world.isRegionLoaded(pooled, pooled2)) {
+			for (int i = pooled.getX(); i <= pooled2.getX(); i++) {
+				for (int j = pooled.getY(); j <= pooled2.getY(); j++) {
+					for (int k = pooled.getZ(); k <= pooled2.getZ(); k++) {
+						pooled3.setPosition(i, j, k);
+						BlockState blockState = this.world.getBlockState(pooled3);
 
 						try {
-							blockState.getBlock().onEntityCollision(this.world, blockPos3, blockState, this);
-						} catch (Throwable var11) {
-							CrashReport crashReport = CrashReport.create(var11, "Colliding entity with block");
+							blockState.getBlock().onEntityCollision(this.world, pooled3, blockState, this);
+						} catch (Throwable var12) {
+							CrashReport crashReport = CrashReport.create(var12, "Colliding entity with block");
 							CrashReportSection crashReportSection = crashReport.addElement("Block being collided with");
-							CrashReportSection.addBlockInfo(crashReportSection, blockPos3, blockState);
+							CrashReportSection.addBlockInfo(crashReportSection, pooled3, blockState);
 							throw new CrashException(crashReport);
 						}
 					}
 				}
 			}
 		}
+
+		pooled.method_12576();
+		pooled2.method_12576();
+		pooled3.method_12576();
 	}
 
 	protected void playStepSound(BlockPos pos, Block block) {
-		Block.Sound sound = block.sound;
+		BlockSoundGroup blockSoundGroup = block.getSoundGroup();
 		if (this.world.getBlockState(pos.up()).getBlock() == Blocks.SNOW_LAYER) {
-			sound = Blocks.SNOW_LAYER.sound;
-			this.playSound(sound.getStepSound(), sound.getVolume() * 0.15F, sound.getPitch());
-		} else if (!block.getMaterial().isFluid()) {
-			this.playSound(sound.getStepSound(), sound.getVolume() * 0.15F, sound.getPitch());
+			blockSoundGroup = Blocks.SNOW_LAYER.getSoundGroup();
+			this.playSound(blockSoundGroup.getStepSound(), blockSoundGroup.getVolume() * 0.15F, blockSoundGroup.getPitch());
+		} else if (!block.getDefaultState().getMaterial().isFluid()) {
+			this.playSound(blockSoundGroup.getStepSound(), blockSoundGroup.getVolume() * 0.15F, blockSoundGroup.getPitch());
 		}
 	}
 
-	public void playSound(String id, float volume, float pitch) {
+	public void playSound(Sound event, float volume, float pitch) {
 		if (!this.isSilent()) {
-			this.world.playSound(this, id, volume, pitch);
+			this.world.playSound(null, this.x, this.y, this.z, event, this.getSoundCategory(), volume, pitch);
 		}
 	}
 
 	public boolean isSilent() {
-		return this.dataTracker.getByte(4) == 1;
+		return this.dataTracker.get(SILENT);
 	}
 
 	public void setSilent(boolean silent) {
-		this.dataTracker.setProperty(4, Byte.valueOf((byte)(silent ? 1 : 0)));
+		this.dataTracker.set(SILENT, silent);
 	}
 
 	protected boolean canClimb() {
 		return true;
 	}
 
-	protected void fall(double heightDifference, boolean onGround, Block landedBlock, BlockPos landedPosition) {
+	protected void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPos) {
 		if (onGround) {
 			if (this.fallDistance > 0.0F) {
-				if (landedBlock != null) {
-					landedBlock.onLandedUpon(this.world, landedPosition, this, this.fallDistance);
-				} else {
-					this.handleFallDamage(this.fallDistance, 1.0F);
-				}
-
-				this.fallDistance = 0.0F;
+				landedState.getBlock().onLandedUpon(this.world, landedPos, this, this.fallDistance);
 			}
+
+			this.fallDistance = 0.0F;
 		} else if (heightDifference < 0.0) {
 			this.fallDistance = (float)((double)this.fallDistance - heightDifference);
 		}
 	}
 
+	@Nullable
 	public Box getBox() {
 		return null;
 	}
@@ -721,15 +812,26 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public void handleFallDamage(float fallDistance, float damageMultiplier) {
-		if (this.rider != null) {
-			this.rider.handleFallDamage(fallDistance, damageMultiplier);
+		if (this.hasPassengers()) {
+			for (Entity entity : this.getPassengerList()) {
+				entity.handleFallDamage(fallDistance, damageMultiplier);
+			}
 		}
 	}
 
 	public boolean tickFire() {
-		return this.touchingWater
-			|| this.world.hasRain(new BlockPos(this.x, this.y, this.z))
-			|| this.world.hasRain(new BlockPos(this.x, this.y + (double)this.height, this.z));
+		if (this.touchingWater) {
+			return true;
+		} else {
+			BlockPos.Pooled pooled = BlockPos.Pooled.method_12567(this.x, this.y, this.z);
+			if (!this.world.hasRain(pooled) && !this.world.hasRain(pooled.set(this.x, this.y + (double)this.height, this.z))) {
+				pooled.method_12576();
+				return false;
+			} else {
+				pooled.method_12576();
+				return true;
+			}
+		}
 	}
 
 	public boolean isTouchingWater() {
@@ -737,7 +839,9 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public boolean updateWaterState() {
-		if (this.world.method_3610(this.getBoundingBox().expand(0.0, -0.4F, 0.0).increment(0.001, 0.001, 0.001), Material.WATER, this)) {
+		if (this.getVehicle() instanceof BoatEntity) {
+			this.touchingWater = false;
+		} else if (this.world.method_3610(this.getBoundingBox().expand(0.0, -0.4F, 0.0).contract(0.001), Material.WATER, this)) {
 			if (!this.touchingWater && !this.firstUpdate) {
 				this.onSwimmingStart();
 			}
@@ -758,7 +862,7 @@ public abstract class Entity implements CommandSource {
 			f = 1.0F;
 		}
 
-		this.playSound(this.getSplashSound(), f, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+		this.playSound(this.method_12985(), f, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
 		float g = (float)MathHelper.floor(this.getBoundingBox().minY);
 
 		for (int i = 0; (float)i < 1.0F + this.width * 20.0F; i++) {
@@ -795,8 +899,7 @@ public abstract class Entity implements CommandSource {
 		int k = MathHelper.floor(this.z);
 		BlockPos blockPos = new BlockPos(i, j, k);
 		BlockState blockState = this.world.getBlockState(blockPos);
-		Block block = blockState.getBlock();
-		if (block.getBlockType() != -1) {
+		if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
 			this.world
 				.addParticle(
 					ParticleType.BLOCK_CRACK,
@@ -811,22 +914,21 @@ public abstract class Entity implements CommandSource {
 		}
 	}
 
-	protected String getSplashSound() {
-		return "game.neutral.swim.splash";
-	}
-
 	public boolean isSubmergedIn(Material material) {
-		double d = this.y + (double)this.getEyeHeight();
-		BlockPos blockPos = new BlockPos(this.x, d, this.z);
-		BlockState blockState = this.world.getBlockState(blockPos);
-		Block block = blockState.getBlock();
-		if (block.getMaterial() == material) {
-			float f = AbstractFluidBlock.getHeightPercent(blockState.getBlock().getData(blockState)) - 0.11111111F;
-			float g = (float)(blockPos.getY() + 1) - f;
-			boolean bl = d < (double)g;
-			return !bl && this instanceof PlayerEntity ? false : bl;
-		} else {
+		if (this.getVehicle() instanceof BoatEntity) {
 			return false;
+		} else {
+			double d = this.y + (double)this.getEyeHeight();
+			BlockPos blockPos = new BlockPos(this.x, d, this.z);
+			BlockState blockState = this.world.getBlockState(blockPos);
+			if (blockState.getMaterial() == material) {
+				float f = AbstractFluidBlock.getHeightPercent(blockState.getBlock().getData(blockState)) - 0.11111111F;
+				float g = (float)(blockPos.getY() + 1) - f;
+				boolean bl = d < (double)g;
+				return !bl && this instanceof PlayerEntity ? false : bl;
+			} else {
+				return false;
+			}
 		}
 	}
 
@@ -845,21 +947,31 @@ public abstract class Entity implements CommandSource {
 			i = h / i;
 			f *= i;
 			g *= i;
-			float j = MathHelper.sin(this.yaw * (float) Math.PI / 180.0F);
-			float k = MathHelper.cos(this.yaw * (float) Math.PI / 180.0F);
+			float j = MathHelper.sin(this.yaw * (float) (Math.PI / 180.0));
+			float k = MathHelper.cos(this.yaw * (float) (Math.PI / 180.0));
 			this.velocityX += (double)(f * k - g * j);
 			this.velocityZ += (double)(g * k + f * j);
 		}
 	}
 
 	public int getLightmapCoordinates(float f) {
-		BlockPos blockPos = new BlockPos(this.x, this.y + (double)this.getEyeHeight(), this.z);
-		return this.world.blockExists(blockPos) ? this.world.getLight(blockPos, 0) : 0;
+		BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(this.x), 0, MathHelper.floor(this.z));
+		if (this.world.blockExists(mutable)) {
+			mutable.setY(MathHelper.floor(this.y + (double)this.getEyeHeight()));
+			return this.world.getLight(mutable, 0);
+		} else {
+			return 0;
+		}
 	}
 
 	public float getBrightnessAtEyes(float f) {
-		BlockPos blockPos = new BlockPos(this.x, this.y + (double)this.getEyeHeight(), this.z);
-		return this.world.blockExists(blockPos) ? this.world.getBrightness(blockPos) : 0.0F;
+		BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(this.x), 0, MathHelper.floor(this.z));
+		if (this.world.blockExists(mutable)) {
+			mutable.setY(MathHelper.floor(this.y + (double)this.getEyeHeight()));
+			return this.world.getBrightness(mutable);
+		} else {
+			return 0.0F;
+		}
 	}
 
 	public void setWorld(World world) {
@@ -867,9 +979,10 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public void updatePositionAndAngles(double x, double y, double z, float yaw, float pitch) {
-		this.prevX = this.x = x;
+		this.prevX = this.x = MathHelper.clamp(x, -3.0E7, 3.0E7);
 		this.prevY = this.y = y;
-		this.prevZ = this.z = z;
+		this.prevZ = this.z = MathHelper.clamp(z, -3.0E7, 3.0E7);
+		pitch = MathHelper.clamp(pitch, -90.0F, 90.0F);
 		this.prevYaw = this.yaw = yaw;
 		this.prevPitch = this.pitch = pitch;
 		double d = (double)(this.prevYaw - yaw);
@@ -938,7 +1051,7 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public void pushAwayFrom(Entity entity) {
-		if (entity.rider != this && entity.vehicle != this) {
+		if (!this.isConnectedThroughVehicle(entity)) {
 			if (!entity.noClip && !this.noClip) {
 				double d = entity.x - this.x;
 				double e = entity.z - this.z;
@@ -958,11 +1071,11 @@ public abstract class Entity implements CommandSource {
 					e *= 0.05F;
 					d *= (double)(1.0F - this.pushSpeedReduction);
 					e *= (double)(1.0F - this.pushSpeedReduction);
-					if (this.rider == null) {
+					if (!this.hasPassengers()) {
 						this.addVelocity(-d, 0.0, -e);
 					}
 
-					if (entity.rider == null) {
+					if (!entity.hasPassengers()) {
 						entity.addVelocity(d, 0.0, e);
 					}
 				}
@@ -1019,6 +1132,7 @@ public abstract class Entity implements CommandSource {
 		}
 	}
 
+	@Nullable
 	public BlockHitResult rayTrace(double maxDistance, float tickDelta) {
 		Vec3d vec3d = this.getCameraPosVec(tickDelta);
 		Vec3d vec3d2 = this.getRotationVector(tickDelta);
@@ -1051,7 +1165,7 @@ public abstract class Entity implements CommandSource {
 			d = 1.0;
 		}
 
-		d *= 64.0 * this.renderDistanceMultiplier;
+		d *= 64.0 * renderDistanceMultiplier;
 		return distance < d * d;
 	}
 
@@ -1059,7 +1173,7 @@ public abstract class Entity implements CommandSource {
 		String string = this.getSavedEntityId();
 		if (!this.removed && string != null) {
 			nbt.putString("id", string);
-			this.writePlayerData(nbt);
+			this.toNbt(nbt);
 			return true;
 		} else {
 			return false;
@@ -1068,16 +1182,16 @@ public abstract class Entity implements CommandSource {
 
 	public boolean saveToNbt(NbtCompound nbt) {
 		String string = this.getSavedEntityId();
-		if (!this.removed && string != null && this.rider == null) {
+		if (!this.removed && string != null && !this.hasMount()) {
 			nbt.putString("id", string);
-			this.writePlayerData(nbt);
+			this.toNbt(nbt);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public void writePlayerData(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		try {
 			nbt.put("Pos", this.toListNbt(this.x, this.y, this.z));
 			nbt.put("Motion", this.toListNbt(this.velocityX, this.velocityY, this.velocityZ));
@@ -1089,10 +1203,12 @@ public abstract class Entity implements CommandSource {
 			nbt.putInt("Dimension", this.dimension);
 			nbt.putBoolean("Invulnerable", this.invulnerable);
 			nbt.putInt("PortalCooldown", this.netherPortalCooldown);
-			nbt.putLong("UUIDMost", this.getUuid().getMostSignificantBits());
-			nbt.putLong("UUIDLeast", this.getUuid().getLeastSignificantBits());
-			if (this.getCustomName() != null && this.getCustomName().length() > 0) {
+			nbt.putUuid("UUID", this.getUuid());
+			if (this.getCustomName() != null && !this.getCustomName().isEmpty()) {
 				nbt.putString("CustomName", this.getCustomName());
+			}
+
+			if (this.isCustomNameVisible()) {
 				nbt.putBoolean("CustomNameVisible", this.isCustomNameVisible());
 			}
 
@@ -1101,15 +1217,39 @@ public abstract class Entity implements CommandSource {
 				nbt.putBoolean("Silent", this.isSilent());
 			}
 
+			if (this.isGlowing) {
+				nbt.putBoolean("Glowing", this.isGlowing);
+			}
+
+			if (this.scoreboardTags.size() > 0) {
+				NbtList nbtList = new NbtList();
+
+				for (String string : this.scoreboardTags) {
+					nbtList.add(new NbtString(string));
+				}
+
+				nbt.put("Tags", nbtList);
+			}
+
 			this.writeCustomDataToNbt(nbt);
-			if (this.vehicle != null) {
-				NbtCompound nbtCompound = new NbtCompound();
-				if (this.vehicle.saveSelfToNbt(nbtCompound)) {
-					nbt.put("Riding", nbtCompound);
+			if (this.hasPassengers()) {
+				NbtList nbtList2 = new NbtList();
+
+				for (Entity entity : this.getPassengerList()) {
+					NbtCompound nbtCompound = new NbtCompound();
+					if (entity.saveSelfToNbt(nbtCompound)) {
+						nbtList2.add(nbtCompound);
+					}
+				}
+
+				if (!nbtList2.isEmpty()) {
+					nbt.put("Passengers", nbtList2);
 				}
 			}
-		} catch (Throwable var5) {
-			CrashReport crashReport = CrashReport.create(var5, "Saving entity NBT");
+
+			return nbt;
+		} catch (Throwable var6) {
+			CrashReport crashReport = CrashReport.create(var6, "Saving entity NBT");
 			CrashReportSection crashReportSection = crashReport.addElement("Entity being saved");
 			this.populateCrashReport(crashReportSection);
 			throw new CrashException(crashReport);
@@ -1147,30 +1287,43 @@ public abstract class Entity implements CommandSource {
 			this.fireTicks = nbt.getShort("Fire");
 			this.setAir(nbt.getShort("Air"));
 			this.onGround = nbt.getBoolean("OnGround");
-			this.dimension = nbt.getInt("Dimension");
+			if (nbt.contains("Dimension")) {
+				this.dimension = nbt.getInt("Dimension");
+			}
+
 			this.invulnerable = nbt.getBoolean("Invulnerable");
 			this.netherPortalCooldown = nbt.getInt("PortalCooldown");
-			if (nbt.contains("UUIDMost", 4) && nbt.contains("UUIDLeast", 4)) {
-				this.playerUuid = new UUID(nbt.getLong("UUIDMost"), nbt.getLong("UUIDLeast"));
-			} else if (nbt.contains("UUID", 8)) {
-				this.playerUuid = UUID.fromString(nbt.getString("UUID"));
+			if (nbt.containsUuid("UUID")) {
+				this.playerUuid = nbt.getUuid("UUID");
+				this.uuidString = this.playerUuid.toString();
 			}
 
 			this.updatePosition(this.x, this.y, this.z);
 			this.setRotation(this.yaw, this.pitch);
-			if (nbt.contains("CustomName", 8) && nbt.getString("CustomName").length() > 0) {
+			if (nbt.contains("CustomName", 8)) {
 				this.setCustomName(nbt.getString("CustomName"));
 			}
 
 			this.setCustomNameVisible(nbt.getBoolean("CustomNameVisible"));
 			this.commandStats.fromNbt(nbt);
 			this.setSilent(nbt.getBoolean("Silent"));
+			this.setGlowing(nbt.getBoolean("Glowing"));
+			if (nbt.contains("Tags", 9)) {
+				this.scoreboardTags.clear();
+				NbtList nbtList4 = nbt.getList("Tags", 8);
+				int i = Math.min(nbtList4.size(), 1024);
+
+				for (int j = 0; j < i; j++) {
+					this.scoreboardTags.add(nbtList4.getString(j));
+				}
+			}
+
 			this.readCustomDataFromNbt(nbt);
 			if (this.shouldSetPositionOnLoad()) {
 				this.updatePosition(this.x, this.y, this.z);
 			}
-		} catch (Throwable var5) {
-			CrashReport crashReport = CrashReport.create(var5, "Loading entity NBT");
+		} catch (Throwable var8) {
+			CrashReport crashReport = CrashReport.create(var8, "Loading entity NBT");
 			CrashReportSection crashReportSection = crashReport.addElement("Entity being loaded");
 			this.populateCrashReport(crashReportSection);
 			throw new CrashException(crashReport);
@@ -1239,90 +1392,57 @@ public abstract class Entity implements CommandSource {
 		if (this.noClip) {
 			return false;
 		} else {
-			BlockPos.Mutable mutable = new BlockPos.Mutable(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
+			BlockPos.Pooled pooled = BlockPos.Pooled.get();
 
 			for (int i = 0; i < 8; i++) {
 				int j = MathHelper.floor(this.y + (double)(((float)((i >> 0) % 2) - 0.5F) * 0.1F) + (double)this.getEyeHeight());
 				int k = MathHelper.floor(this.x + (double)(((float)((i >> 1) % 2) - 0.5F) * this.width * 0.8F));
 				int l = MathHelper.floor(this.z + (double)(((float)((i >> 2) % 2) - 0.5F) * this.width * 0.8F));
-				if (mutable.getX() != k || mutable.getY() != j || mutable.getZ() != l) {
-					mutable.setPosition(k, j, l);
-					if (this.world.getBlockState(mutable).getBlock().isLeafBlock()) {
+				if (pooled.getX() != k || pooled.getY() != j || pooled.getZ() != l) {
+					pooled.setPosition(k, j, l);
+					if (this.world.getBlockState(pooled).getBlock().isLeafBlock()) {
+						pooled.method_12576();
 						return true;
 					}
 				}
 			}
 
+			pooled.method_12576();
 			return false;
 		}
 	}
 
-	public boolean openInventory(PlayerEntity player) {
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
 		return false;
 	}
 
+	@Nullable
 	public Box getHardCollisionBox(Entity collidingEntity) {
 		return null;
 	}
 
 	public void tickRiding() {
-		if (this.vehicle.removed) {
-			this.vehicle = null;
+		Entity entity = this.getVehicle();
+		if (this.hasMount() && entity.removed) {
+			this.stopRiding();
 		} else {
 			this.velocityX = 0.0;
 			this.velocityY = 0.0;
 			this.velocityZ = 0.0;
 			this.tick();
-			if (this.vehicle != null) {
-				this.vehicle.updatePassengerPosition();
-				this.vehicleYaw = this.vehicleYaw + (double)(this.vehicle.yaw - this.vehicle.prevYaw);
-				this.vehiclePitch = this.vehiclePitch + (double)(this.vehicle.pitch - this.vehicle.prevPitch);
-
-				while (this.vehicleYaw >= 180.0) {
-					this.vehicleYaw -= 360.0;
-				}
-
-				while (this.vehicleYaw < -180.0) {
-					this.vehicleYaw += 360.0;
-				}
-
-				while (this.vehiclePitch >= 180.0) {
-					this.vehiclePitch -= 360.0;
-				}
-
-				while (this.vehiclePitch < -180.0) {
-					this.vehiclePitch += 360.0;
-				}
-
-				double d = this.vehicleYaw * 0.5;
-				double e = this.vehiclePitch * 0.5;
-				float f = 10.0F;
-				if (d > (double)f) {
-					d = (double)f;
-				}
-
-				if (d < (double)(-f)) {
-					d = (double)(-f);
-				}
-
-				if (e > (double)f) {
-					e = (double)f;
-				}
-
-				if (e < (double)(-f)) {
-					e = (double)(-f);
-				}
-
-				this.vehicleYaw -= d;
-				this.vehiclePitch -= e;
+			if (this.hasMount()) {
+				entity.updatePassengerPosition(this);
 			}
 		}
 	}
 
-	public void updatePassengerPosition() {
-		if (this.rider != null) {
-			this.rider.updatePosition(this.x, this.y + this.getMountedHeightOffset() + this.rider.getHeightOffset(), this.z);
+	public void updatePassengerPosition(Entity passenger) {
+		if (this.hasPassenger(passenger)) {
+			passenger.updatePosition(this.x, this.y + this.getMountedHeightOffset() + passenger.getHeightOffset(), this.z);
 		}
+	}
+
+	public void onPassengerLookAround(Entity passenger) {
 	}
 
 	public double getHeightOffset() {
@@ -1333,54 +1453,74 @@ public abstract class Entity implements CommandSource {
 		return (double)this.height * 0.75;
 	}
 
-	public void startRiding(Entity entity) {
-		this.vehiclePitch = 0.0;
-		this.vehicleYaw = 0.0;
-		if (entity == null) {
-			if (this.vehicle != null) {
-				this.refreshPositionAndAngles(this.vehicle.x, this.vehicle.getBoundingBox().minY + (double)this.vehicle.height, this.vehicle.z, this.yaw, this.pitch);
-				this.vehicle.rider = null;
+	public boolean ride(Entity entity) {
+		return this.startRiding(entity, false);
+	}
+
+	public boolean startRiding(Entity entity, boolean force) {
+		if (force || this.canStartRiding(entity) && entity.canAddPassenger(this)) {
+			if (this.hasMount()) {
+				this.stopRiding();
 			}
 
-			this.vehicle = null;
+			this.mount = entity;
+			this.mount.addPassenger(this);
+			return true;
 		} else {
-			if (this.vehicle != null) {
-				this.vehicle.rider = null;
-			}
-
-			if (entity != null) {
-				for (Entity entity2 = entity.vehicle; entity2 != null; entity2 = entity2.vehicle) {
-					if (entity2 == this) {
-						return;
-					}
-				}
-			}
-
-			this.vehicle = entity;
-			entity.rider = this;
+			return false;
 		}
+	}
+
+	protected boolean canStartRiding(Entity entity) {
+		return this.ridingCooldown <= 0;
+	}
+
+	public void removeAllPassengers() {
+		for (int i = this.passengerList.size() - 1; i >= 0; i--) {
+			((Entity)this.passengerList.get(i)).stopRiding();
+		}
+	}
+
+	public void stopRiding() {
+		if (this.mount != null) {
+			Entity entity = this.mount;
+			this.mount = null;
+			entity.removePassenger(this);
+		}
+	}
+
+	protected void addPassenger(Entity passenger) {
+		if (passenger.getVehicle() != this) {
+			throw new IllegalStateException("Use x.startRiding(y), not y.addPassenger(x)");
+		} else {
+			if (!this.world.isClient && passenger instanceof PlayerEntity && !(this.getPrimaryPassenger() instanceof PlayerEntity)) {
+				this.passengerList.add(0, passenger);
+			} else {
+				this.passengerList.add(passenger);
+			}
+		}
+	}
+
+	protected void removePassenger(Entity passenger) {
+		if (passenger.getVehicle() == this) {
+			throw new IllegalStateException("Use x.stopRiding(y), not y.removePassenger(x)");
+		} else {
+			this.passengerList.remove(passenger);
+			passenger.ridingCooldown = 60;
+		}
+	}
+
+	protected boolean canAddPassenger(Entity passenger) {
+		return this.getPassengerList().size() < 1;
 	}
 
 	public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps, boolean interpolate) {
 		this.updatePosition(x, y, z);
 		this.setRotation(yaw, pitch);
-		List<Box> list = this.world.doesBoxCollide(this, this.getBoundingBox().increment(0.03125, 0.0, 0.03125));
-		if (!list.isEmpty()) {
-			double d = 0.0;
-
-			for (Box box : list) {
-				if (box.maxY > d) {
-					d = box.maxY;
-				}
-			}
-
-			y += d - this.getBoundingBox().minY;
-			this.updatePosition(x, y, z);
-		}
 	}
 
 	public float getTargetingMargin() {
-		return 0.1F;
+		return 0.0F;
 	}
 
 	public Vec3d getRotation() {
@@ -1392,8 +1532,8 @@ public abstract class Entity implements CommandSource {
 			this.netherPortalCooldown = this.getDefaultNetherPortalCooldown();
 		} else {
 			if (!this.world.isClient && !pos.equals(this.lastPortalBlockPos)) {
-				this.lastPortalBlockPos = pos;
-				BlockPattern.Result result = Blocks.NETHER_PORTAL.findPortal(this.world, pos);
+				this.lastPortalBlockPos = new BlockPos(pos);
+				BlockPattern.Result result = Blocks.NETHER_PORTAL.findPortal(this.world, this.lastPortalBlockPos);
 				double d = result.getForwards().getAxis() == Direction.Axis.X ? (double)result.getFrontTopLeft().getZ() : (double)result.getFrontTopLeft().getX();
 				double e = result.getForwards().getAxis() == Direction.Axis.X ? this.z : this.x;
 				e = Math.abs(
@@ -1426,11 +1566,19 @@ public abstract class Entity implements CommandSource {
 	public void animateDamage() {
 	}
 
-	public ItemStack[] getArmorStacks() {
-		return null;
+	public Iterable<ItemStack> getItemsHand() {
+		return this.field_14496;
 	}
 
-	public void setArmorSlot(int armorSlot, ItemStack item) {
+	public Iterable<ItemStack> getArmorItems() {
+		return this.field_14496;
+	}
+
+	public Iterable<ItemStack> getItemsEquipped() {
+		return Iterables.concat(this.getItemsHand(), this.getArmorItems());
+	}
+
+	public void equipStack(EquipmentSlot slot, @Nullable ItemStack stack) {
 	}
 
 	public boolean isOnFire() {
@@ -1438,8 +1586,12 @@ public abstract class Entity implements CommandSource {
 		return !this.isFireImmune && (this.fireTicks > 0 || bl && this.getFlag(0));
 	}
 
-	public boolean hasVehicle() {
-		return this.vehicle != null;
+	public boolean hasMount() {
+		return this.getVehicle() != null;
+	}
+
+	public boolean hasPassengers() {
+		return !this.getPassengerList().isEmpty();
 	}
 
 	public boolean isSneaking() {
@@ -1458,45 +1610,68 @@ public abstract class Entity implements CommandSource {
 		this.setFlag(3, sprinting);
 	}
 
+	public boolean isGlowing() {
+		return this.isGlowing || this.world.isClient && this.getFlag(6);
+	}
+
+	public void setGlowing(boolean glowing) {
+		this.isGlowing = glowing;
+		if (!this.world.isClient) {
+			this.setFlag(6, this.isGlowing);
+		}
+	}
+
 	public boolean isInvisible() {
 		return this.getFlag(5);
 	}
 
 	public boolean isInvisibleTo(PlayerEntity player) {
-		return player.isSpectator() ? false : this.isInvisible();
+		if (player.isSpectator()) {
+			return false;
+		} else {
+			AbstractTeam abstractTeam = this.getScoreboardTeam();
+			return abstractTeam != null && player != null && player.getScoreboardTeam() == abstractTeam && abstractTeam.shouldShowFriendlyInvisibles()
+				? false
+				: this.isInvisible();
+		}
+	}
+
+	@Nullable
+	public AbstractTeam getScoreboardTeam() {
+		return this.world.getScoreboard().getPlayerTeam(this.getEntityName());
+	}
+
+	public boolean isTeammate(Entity other) {
+		return this.isTeamPlayer(other.getScoreboardTeam());
+	}
+
+	public boolean isTeamPlayer(AbstractTeam team) {
+		return this.getScoreboardTeam() != null ? this.getScoreboardTeam().isEqual(team) : false;
 	}
 
 	public void setInvisible(boolean invisible) {
 		this.setFlag(5, invisible);
 	}
 
-	public boolean isSwimming() {
-		return this.getFlag(4);
-	}
-
-	public void setSwimming(boolean swimming) {
-		this.setFlag(4, swimming);
-	}
-
 	protected boolean getFlag(int index) {
-		return (this.dataTracker.getByte(0) & 1 << index) != 0;
+		return (this.dataTracker.get(FLAGS) & 1 << index) != 0;
 	}
 
 	protected void setFlag(int index, boolean value) {
-		byte b = this.dataTracker.getByte(0);
+		byte b = this.dataTracker.get(FLAGS);
 		if (value) {
-			this.dataTracker.setProperty(0, (byte)(b | 1 << index));
+			this.dataTracker.set(FLAGS, (byte)(b | 1 << index));
 		} else {
-			this.dataTracker.setProperty(0, (byte)(b & ~(1 << index)));
+			this.dataTracker.set(FLAGS, (byte)(b & ~(1 << index)));
 		}
 	}
 
 	public int getAir() {
-		return this.dataTracker.getShort(1);
+		return this.dataTracker.get(AIR);
 	}
 
 	public void setAir(int air) {
-		this.dataTracker.setProperty(1, (short)air);
+		this.dataTracker.set(AIR, air);
 	}
 
 	public void onLightningStrike(LightningBoltEntity lightning) {
@@ -1516,55 +1691,44 @@ public abstract class Entity implements CommandSource {
 		double e = y - (double)blockPos.getY();
 		double f = z - (double)blockPos.getZ();
 		List<Box> list = this.world.method_3608(this.getBoundingBox());
-		if (list.isEmpty() && !this.world.method_8565(blockPos)) {
+		if (list.isEmpty()) {
 			return false;
 		} else {
-			int i = 3;
-			double g = 9999.0;
-			if (!this.world.method_8565(blockPos.west()) && d < g) {
+			Direction direction = Direction.UP;
+			double g = Double.MAX_VALUE;
+			if (!this.world.method_11492(blockPos.west()) && d < g) {
 				g = d;
-				i = 0;
+				direction = Direction.WEST;
 			}
 
-			if (!this.world.method_8565(blockPos.east()) && 1.0 - d < g) {
+			if (!this.world.method_11492(blockPos.east()) && 1.0 - d < g) {
 				g = 1.0 - d;
-				i = 1;
+				direction = Direction.EAST;
 			}
 
-			if (!this.world.method_8565(blockPos.up()) && 1.0 - e < g) {
-				g = 1.0 - e;
-				i = 3;
-			}
-
-			if (!this.world.method_8565(blockPos.north()) && f < g) {
+			if (!this.world.method_11492(blockPos.north()) && f < g) {
 				g = f;
-				i = 4;
+				direction = Direction.NORTH;
 			}
 
-			if (!this.world.method_8565(blockPos.south()) && 1.0 - f < g) {
+			if (!this.world.method_11492(blockPos.south()) && 1.0 - f < g) {
 				g = 1.0 - f;
-				i = 5;
+				direction = Direction.SOUTH;
+			}
+
+			if (!this.world.method_11492(blockPos.up()) && 1.0 - e < g) {
+				g = 1.0 - e;
+				direction = Direction.UP;
 			}
 
 			float h = this.random.nextFloat() * 0.2F + 0.1F;
-			if (i == 0) {
-				this.velocityX = (double)(-h);
-			}
-
-			if (i == 1) {
-				this.velocityX = (double)h;
-			}
-
-			if (i == 3) {
-				this.velocityY = (double)h;
-			}
-
-			if (i == 4) {
-				this.velocityZ = (double)(-h);
-			}
-
-			if (i == 5) {
-				this.velocityZ = (double)h;
+			float i = (float)direction.getAxisDirection().offset();
+			if (direction.getAxis() == Direction.Axis.X) {
+				this.velocityX += (double)(i * h);
+			} else if (direction.getAxis() == Direction.Axis.Y) {
+				this.velocityY += (double)(i * h);
+			} else if (direction.getAxis() == Direction.Axis.Z) {
+				this.velocityZ += (double)(i * h);
 			}
 
 			return true;
@@ -1633,13 +1797,17 @@ public abstract class Entity implements CommandSource {
 		return this.invulnerable && damageSource != DamageSource.OUT_OF_WORLD && !damageSource.isSourceCreativePlayer();
 	}
 
+	public void setInvulnerable(boolean invulnerable) {
+		this.invulnerable = invulnerable;
+	}
+
 	public void copyPosition(Entity original) {
 		this.refreshPositionAndAngles(original.x, original.y, original.z, original.yaw, original.pitch);
 	}
 
-	public void copyPortalInfo(Entity original) {
-		NbtCompound nbtCompound = new NbtCompound();
-		original.writePlayerData(nbtCompound);
+	private void copyPortalInfo(Entity original) {
+		NbtCompound nbtCompound = original.toNbt(new NbtCompound());
+		nbtCompound.remove("Dimension");
 		this.fromNbt(nbtCompound);
 		this.netherPortalCooldown = original.netherPortalCooldown;
 		this.lastPortalBlockPos = original.lastPortalBlockPos;
@@ -1647,15 +1815,16 @@ public abstract class Entity implements CommandSource {
 		this.teleportDirection = original.teleportDirection;
 	}
 
-	public void teleportToDimension(int dimensionId) {
+	@Nullable
+	public Entity changeDimension(int newDimension) {
 		if (!this.world.isClient && !this.removed) {
 			this.world.profiler.push("changeDimension");
-			MinecraftServer minecraftServer = MinecraftServer.getServer();
+			MinecraftServer minecraftServer = this.getMinecraftServer();
 			int i = this.dimension;
 			ServerWorld serverWorld = minecraftServer.getWorld(i);
-			ServerWorld serverWorld2 = minecraftServer.getWorld(dimensionId);
-			this.dimension = dimensionId;
-			if (i == 1 && dimensionId == 1) {
+			ServerWorld serverWorld2 = minecraftServer.getWorld(newDimension);
+			this.dimension = newDimension;
+			if (i == 1 && newDimension == 1) {
 				serverWorld2 = minecraftServer.getWorld(0);
 				this.dimension = 0;
 			}
@@ -1663,17 +1832,47 @@ public abstract class Entity implements CommandSource {
 			this.world.removeEntity(this);
 			this.removed = false;
 			this.world.profiler.push("reposition");
-			minecraftServer.getPlayerManager().method_4399(this, i, serverWorld, serverWorld2);
+			BlockPos blockPos;
+			if (newDimension == 1) {
+				blockPos = serverWorld2.getForcedSpawnPoint();
+			} else {
+				double d = this.x;
+				double e = this.z;
+				double f = 8.0;
+				if (newDimension == -1) {
+					d = MathHelper.clamp(d / f, serverWorld2.getWorldBorder().getBoundWest() + 16.0, serverWorld2.getWorldBorder().getBoundEast() - 16.0);
+					e = MathHelper.clamp(e / f, serverWorld2.getWorldBorder().getBoundNorth() + 16.0, serverWorld2.getWorldBorder().getBoundSouth() - 16.0);
+				} else if (newDimension == 0) {
+					d = MathHelper.clamp(d * f, serverWorld2.getWorldBorder().getBoundWest() + 16.0, serverWorld2.getWorldBorder().getBoundEast() - 16.0);
+					e = MathHelper.clamp(e * f, serverWorld2.getWorldBorder().getBoundNorth() + 16.0, serverWorld2.getWorldBorder().getBoundSouth() - 16.0);
+				}
+
+				d = (double)MathHelper.clamp((int)d, -29999872, 29999872);
+				e = (double)MathHelper.clamp((int)e, -29999872, 29999872);
+				float g = this.yaw;
+				this.refreshPositionAndAngles(d, this.y, e, 90.0F, 0.0F);
+				PortalTeleporter portalTeleporter = serverWorld2.getPortalTeleporter();
+				portalTeleporter.method_8584(this, g);
+				blockPos = new BlockPos(this);
+			}
+
+			serverWorld.checkChunk(this, false);
 			this.world.profiler.swap("reloading");
 			Entity entity = EntityType.createInstanceFromName(EntityType.getEntityName(this), serverWorld2);
 			if (entity != null) {
 				entity.copyPortalInfo(this);
-				if (i == 1 && dimensionId == 1) {
-					BlockPos blockPos = this.world.getTopPosition(serverWorld2.getSpawnPos());
+				if (i == 1 && newDimension == 1) {
+					BlockPos blockPos3 = serverWorld2.getTopPosition(serverWorld2.getSpawnPos());
+					entity.refreshPositionAndAngles(blockPos3, entity.yaw, entity.pitch);
+				} else {
 					entity.refreshPositionAndAngles(blockPos, entity.yaw, entity.pitch);
 				}
 
+				boolean bl = entity.teleporting;
+				entity.teleporting = true;
 				serverWorld2.spawnEntity(entity);
+				entity.teleporting = bl;
+				serverWorld2.checkChunk(entity, false);
 			}
 
 			this.removed = true;
@@ -1681,7 +1880,14 @@ public abstract class Entity implements CommandSource {
 			serverWorld.resetIdleTimeout();
 			serverWorld2.resetIdleTimeout();
 			this.world.profiler.pop();
+			return entity;
+		} else {
+			return null;
 		}
+	}
+
+	public boolean canUsePortals() {
+		return true;
 	}
 
 	public float getBlastResistance(Explosion explosion, World world, BlockPos pos, BlockState state) {
@@ -1709,31 +1915,28 @@ public abstract class Entity implements CommandSource {
 	}
 
 	public void populateCrashReport(CrashReportSection section) {
-		section.add("Entity Type", new Callable<String>() {
+		section.add("Entity Type", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return EntityType.getEntityName(Entity.this) + " (" + Entity.this.getClass().getCanonicalName() + ")";
 			}
 		});
 		section.add("Entity ID", this.entityId);
-		section.add("Entity Name", new Callable<String>() {
+		section.add("Entity Name", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return Entity.this.getTranslationKey();
 			}
 		});
 		section.add("Entity's Exact location", String.format("%.2f, %.2f, %.2f", this.x, this.y, this.z));
-		section.add(
-			"Entity's Block location",
-			CrashReportSection.createPositionString((double)MathHelper.floor(this.x), (double)MathHelper.floor(this.y), (double)MathHelper.floor(this.z))
-		);
+		section.add("Entity's Block location", CrashReportSection.createPositionString(MathHelper.floor(this.x), MathHelper.floor(this.y), MathHelper.floor(this.z)));
 		section.add("Entity's Momentum", String.format("%.2f, %.2f, %.2f", this.velocityX, this.velocityY, this.velocityZ));
-		section.add("Entity's Rider", new Callable<String>() {
+		section.add("Entity's Passengers", new CrashCallable<String>() {
 			public String call() throws Exception {
-				return Entity.this.rider.toString();
+				return Entity.this.getPassengerList().toString();
 			}
 		});
-		section.add("Entity's Vehicle", new Callable<String>() {
+		section.add("Entity's Vehicle", new CrashCallable<String>() {
 			public String call() throws Exception {
-				return Entity.this.vehicle.toString();
+				return Entity.this.getVehicle().toString();
 			}
 		});
 	}
@@ -1742,61 +1945,84 @@ public abstract class Entity implements CommandSource {
 		return this.isOnFire();
 	}
 
+	public void setUuid(UUID uuid) {
+		this.playerUuid = uuid;
+		this.uuidString = this.playerUuid.toString();
+	}
+
 	public UUID getUuid() {
 		return this.playerUuid;
+	}
+
+	public String getEntityName() {
+		return this.uuidString;
 	}
 
 	public boolean canFly() {
 		return true;
 	}
 
+	public static double getRenderDistanceMultiplier() {
+		return renderDistanceMultiplier;
+	}
+
+	public static void setRenderDistanceMultiplier(double value) {
+		renderDistanceMultiplier = value;
+	}
+
 	@Override
 	public Text getName() {
-		LiteralText literalText = new LiteralText(this.getTranslationKey());
+		LiteralText literalText = new LiteralText(Team.decorateName(this.getScoreboardTeam(), this.getTranslationKey()));
 		literalText.getStyle().setHoverEvent(this.getHoverEvent());
-		literalText.getStyle().setInsertion(this.getUuid().toString());
+		literalText.getStyle().setInsertion(this.getEntityName());
 		return literalText;
 	}
 
 	public void setCustomName(String name) {
-		this.dataTracker.setProperty(2, name);
+		this.dataTracker.set(CUSTOM_NAME, name);
 	}
 
 	public String getCustomName() {
-		return this.dataTracker.getString(2);
+		return this.dataTracker.get(CUSTOM_NAME);
 	}
 
 	public boolean hasCustomName() {
-		return this.dataTracker.getString(2).length() > 0;
+		return !this.dataTracker.get(CUSTOM_NAME).isEmpty();
 	}
 
 	public void setCustomNameVisible(boolean visible) {
-		this.dataTracker.setProperty(3, Byte.valueOf((byte)(visible ? 1 : 0)));
+		this.dataTracker.set(NAME_VISIBLE, visible);
 	}
 
 	public boolean isCustomNameVisible() {
-		return this.dataTracker.getByte(3) == 1;
+		return this.dataTracker.get(NAME_VISIBLE);
 	}
 
 	public void refreshPositionAfterTeleport(double x, double y, double z) {
+		this.teleportRequested = true;
 		this.refreshPositionAndAngles(x, y, z, this.yaw, this.pitch);
+		this.world.checkChunk(this, false);
 	}
 
 	public boolean shouldRenderName() {
 		return this.isCustomNameVisible();
 	}
 
-	public void method_8364(int i) {
+	public void onTrackedDataSet(TrackedData<?> data) {
 	}
 
 	public Direction getHorizontalDirection() {
 		return Direction.fromHorizontal(MathHelper.floor((double)(this.yaw * 4.0F / 360.0F) + 0.5) & 3);
 	}
 
+	public Direction getMovementDirection() {
+		return this.getHorizontalDirection();
+	}
+
 	protected HoverEvent getHoverEvent() {
 		NbtCompound nbtCompound = new NbtCompound();
 		String string = EntityType.getEntityName(this);
-		nbtCompound.putString("id", this.getUuid().toString());
+		nbtCompound.putString("id", this.getEntityName());
 		if (string != null) {
 			nbtCompound.putString("type", string);
 		}
@@ -1811,6 +2037,10 @@ public abstract class Entity implements CommandSource {
 
 	public Box getBoundingBox() {
 		return this.boundingBox;
+	}
+
+	public Box getVisibilityBoundingBox() {
+		return this.getBoundingBox();
 	}
 
 	public void setBoundingBox(Box boundingBox) {
@@ -1869,7 +2099,15 @@ public abstract class Entity implements CommandSource {
 
 	@Override
 	public void setStat(CommandStats.Type statsType, int value) {
-		this.commandStats.execute(this, statsType, value);
+		if (this.world != null && !this.world.isClient) {
+			this.commandStats.method_10792(this.world.getServer(), this, statsType, value);
+		}
+	}
+
+	@Nullable
+	@Override
+	public MinecraftServer getMinecraftServer() {
+		return this.world.getServer();
 	}
 
 	public CommandStats getCommandStats() {
@@ -1880,15 +2118,8 @@ public abstract class Entity implements CommandSource {
 		this.commandStats.setAllStats(entity.getCommandStats());
 	}
 
-	public NbtCompound method_10948() {
-		return null;
-	}
-
-	public void fromClientNbt(NbtCompound nbt) {
-	}
-
-	public boolean interactAt(PlayerEntity player, Vec3d hitPos) {
-		return false;
+	public ActionResult method_12976(PlayerEntity playerEntity, Vec3d vec3d, @Nullable ItemStack itemStack, Hand hand) {
+		return ActionResult.PASS;
 	}
 
 	public boolean isImmuneToExplosion() {
@@ -1901,5 +2132,134 @@ public abstract class Entity implements CommandSource {
 		}
 
 		EnchantmentHelper.onTargetDamaged(attacker, target);
+	}
+
+	public void onStartedTrackingBy(ServerPlayerEntity player) {
+	}
+
+	public void onStoppedTrackingBy(ServerPlayerEntity player) {
+	}
+
+	public float applyRotation(BlockRotation rotation) {
+		float f = MathHelper.wrapDegrees(this.yaw);
+		switch (rotation) {
+			case CLOCKWISE_180:
+				return f + 180.0F;
+			case COUNTERCLOCKWISE_90:
+				return f + 270.0F;
+			case CLOCKWISE_90:
+				return f + 90.0F;
+			default:
+				return f;
+		}
+	}
+
+	public float applyMirror(BlockMirror mirror) {
+		float f = MathHelper.wrapDegrees(this.yaw);
+		switch (mirror) {
+			case LEFT_RIGHT:
+				return -f;
+			case FRONT_BACK:
+				return 180.0F - f;
+			default:
+				return f;
+		}
+	}
+
+	public boolean entityDataRequiresOperator() {
+		return false;
+	}
+
+	public boolean teleportRequested() {
+		boolean bl = this.teleportRequested;
+		this.teleportRequested = false;
+		return bl;
+	}
+
+	@Nullable
+	public Entity getPrimaryPassenger() {
+		return null;
+	}
+
+	public List<Entity> getPassengerList() {
+		return (List<Entity>)(this.passengerList.isEmpty() ? Collections.emptyList() : Lists.newArrayList(this.passengerList));
+	}
+
+	public boolean hasPassenger(Entity passenger) {
+		for (Entity entity : this.getPassengerList()) {
+			if (entity.equals(passenger)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public Collection<Entity> getPassengersDeep() {
+		Set<Entity> set = Sets.newHashSet();
+		this.getPassengersDeep(Entity.class, set);
+		return set;
+	}
+
+	public <T extends Entity> Collection<T> getPassengersDeep(Class<T> type) {
+		Set<T> set = Sets.newHashSet();
+		this.getPassengersDeep(type, set);
+		return set;
+	}
+
+	private <T extends Entity> void getPassengersDeep(Class<T> type, Set<T> set) {
+		for (Entity entity : this.getPassengerList()) {
+			if (type.isAssignableFrom(entity.getClass())) {
+				set.add(entity);
+			}
+
+			entity.getPassengersDeep(type, set);
+		}
+	}
+
+	public Entity getRootVehicle() {
+		Entity entity = this;
+
+		while (entity.hasMount()) {
+			entity = entity.getVehicle();
+		}
+
+		return entity;
+	}
+
+	public boolean isConnectedThroughVehicle(Entity entity) {
+		return this.getRootVehicle() == entity.getRootVehicle();
+	}
+
+	public boolean hasPassengerDeep(Entity passenger) {
+		for (Entity entity : this.getPassengerList()) {
+			if (entity.equals(passenger)) {
+				return true;
+			}
+
+			if (entity.hasPassengerDeep(passenger)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public boolean method_13003() {
+		Entity entity = this.getPrimaryPassenger();
+		return entity instanceof PlayerEntity ? ((PlayerEntity)entity).isMainPlayer() : !this.world.isClient;
+	}
+
+	@Nullable
+	public Entity getVehicle() {
+		return this.mount;
+	}
+
+	public PistonBehavior getPistonBehavior() {
+		return PistonBehavior.NORMAL;
+	}
+
+	public SoundCategory getSoundCategory() {
+		return SoundCategory.NEUTRAL;
 	}
 }

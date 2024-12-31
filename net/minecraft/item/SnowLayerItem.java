@@ -3,7 +3,11 @@ package net.minecraft.item;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SnowLayerBlock;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -17,18 +21,16 @@ public class SnowLayerItem extends BlockItem {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		if (itemStack.count == 0) {
-			return false;
-		} else if (!player.canModify(pos, direction, itemStack)) {
-			return false;
-		} else {
-			BlockState blockState = world.getBlockState(pos);
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
+		if (itemStack.count != 0 && playerEntity.canModify(blockPos, direction, itemStack)) {
+			BlockState blockState = world.getBlockState(blockPos);
 			Block block = blockState.getBlock();
-			BlockPos blockPos = pos;
-			if ((direction != Direction.UP || block != this.block) && !block.isReplaceable(world, pos)) {
-				blockPos = pos.offset(direction);
-				blockState = world.getBlockState(blockPos);
+			BlockPos blockPos2 = blockPos;
+			if ((direction != Direction.UP || block != this.block) && !block.method_8638(world, blockPos)) {
+				blockPos2 = blockPos.offset(direction);
+				blockState = world.getBlockState(blockPos2);
 				block = blockState.getBlock();
 			}
 
@@ -36,23 +38,26 @@ public class SnowLayerItem extends BlockItem {
 				int i = (Integer)blockState.get(SnowLayerBlock.LAYERS);
 				if (i <= 7) {
 					BlockState blockState2 = blockState.with(SnowLayerBlock.LAYERS, i + 1);
-					Box box = this.block.getCollisionBox(world, blockPos, blockState2);
-					if (box != null && world.hasEntityIn(box) && world.setBlockState(blockPos, blockState2, 2)) {
-						world.playSound(
-							(double)((float)blockPos.getX() + 0.5F),
-							(double)((float)blockPos.getY() + 0.5F),
-							(double)((float)blockPos.getZ() + 0.5F),
-							this.block.sound.getSound(),
-							(this.block.sound.getVolume() + 1.0F) / 2.0F,
-							this.block.sound.getPitch() * 0.8F
+					Box box = blockState2.getCollisionBox(world, blockPos2);
+					if (box != Block.EMPTY_BOX && world.hasEntityIn(box.offset(blockPos2)) && world.setBlockState(blockPos2, blockState2, 10)) {
+						BlockSoundGroup blockSoundGroup = this.block.getSoundGroup();
+						world.method_11486(
+							playerEntity,
+							blockPos2,
+							blockSoundGroup.method_4194(),
+							SoundCategory.BLOCKS,
+							(blockSoundGroup.getVolume() + 1.0F) / 2.0F,
+							blockSoundGroup.getPitch() * 0.8F
 						);
 						itemStack.count--;
-						return true;
+						return ActionResult.SUCCESS;
 					}
 				}
 			}
 
-			return super.use(itemStack, player, world, blockPos, direction, facingX, facingY, facingZ);
+			return super.method_3355(itemStack, playerEntity, world, blockPos2, hand, direction, f, g, h);
+		} else {
+			return ActionResult.FAIL;
 		}
 	}
 

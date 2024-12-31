@@ -10,6 +10,7 @@ import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -22,7 +23,7 @@ public class ModelElement {
 	public final ModelRotation rotation;
 	public final boolean shade;
 
-	public ModelElement(Vector3f vector3f, Vector3f vector3f2, Map<Direction, ModelElementFace> map, ModelRotation modelRotation, boolean bl) {
+	public ModelElement(Vector3f vector3f, Vector3f vector3f2, Map<Direction, ModelElementFace> map, @Nullable ModelRotation modelRotation, boolean bl) {
 		this.from = vector3f;
 		this.to = vector3f2;
 		this.faces = map;
@@ -39,25 +40,21 @@ public class ModelElement {
 	}
 
 	private float[] getRotatedMatrix(Direction direction) {
-		float[] fs;
 		switch (direction) {
 			case DOWN:
+				return new float[]{this.from.x, 16.0F - this.to.z, this.to.x, 16.0F - this.from.z};
 			case UP:
-				fs = new float[]{this.from.x, this.from.z, this.to.x, this.to.z};
-				break;
+				return new float[]{this.from.x, this.from.z, this.to.x, this.to.z};
 			case NORTH:
-			case SOUTH:
-				fs = new float[]{this.from.x, 16.0F - this.to.y, this.to.x, 16.0F - this.from.y};
-				break;
-			case WEST:
-			case EAST:
-				fs = new float[]{this.from.z, 16.0F - this.to.y, this.to.z, 16.0F - this.from.y};
-				break;
 			default:
-				throw new NullPointerException();
+				return new float[]{16.0F - this.to.x, 16.0F - this.to.y, 16.0F - this.from.x, 16.0F - this.from.y};
+			case SOUTH:
+				return new float[]{this.from.x, 16.0F - this.to.y, this.to.x, 16.0F - this.from.y};
+			case WEST:
+				return new float[]{this.from.z, 16.0F - this.to.y, this.to.z, 16.0F - this.from.y};
+			case EAST:
+				return new float[]{16.0F - this.to.z, 16.0F - this.to.y, 16.0F - this.from.z, 16.0F - this.from.y};
 		}
-
-		return fs;
 	}
 
 	static class Deserializer implements JsonDeserializer<ModelElement> {
@@ -75,6 +72,7 @@ public class ModelElement {
 			}
 		}
 
+		@Nullable
 		private ModelRotation deserializeRotation(JsonObject object) {
 			ModelRotation modelRotation = null;
 			if (object.has("rotation")) {

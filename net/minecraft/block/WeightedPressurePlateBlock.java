@@ -2,7 +2,9 @@ package net.minecraft.block;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialColor;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
@@ -25,13 +27,23 @@ public class WeightedPressurePlateBlock extends AbstractPressurePlateBlock {
 
 	@Override
 	protected int getRedstoneOutput(World world, BlockPos pos) {
-		int i = Math.min(world.getEntitiesInBox(Entity.class, this.getPlateHitBox(pos)).size(), this.weight);
+		int i = Math.min(world.getEntitiesInBox(Entity.class, BOX.offset(pos)).size(), this.weight);
 		if (i > 0) {
 			float f = (float)Math.min(this.weight, i) / (float)this.weight;
 			return MathHelper.ceil(f * 15.0F);
 		} else {
 			return 0;
 		}
+	}
+
+	@Override
+	protected void method_11549(World world, BlockPos blockPos) {
+		world.method_11486(null, blockPos, Sounds.BLOCK_METAL_PRESSUREPLATE_CLICK_ON, SoundCategory.BLOCKS, 0.3F, 0.90000004F);
+	}
+
+	@Override
+	protected void method_11550(World world, BlockPos blockPos) {
+		world.method_11486(null, blockPos, Sounds.BLOCK_METAL_PRESSUREPLATE_CLICK_OFF, SoundCategory.BLOCKS, 0.3F, 0.75F);
 	}
 
 	@Override

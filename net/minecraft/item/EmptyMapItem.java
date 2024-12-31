@@ -4,6 +4,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.item.map.MapState;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class EmptyMapItem extends NetworkSyncedItem {
@@ -12,25 +15,26 @@ public class EmptyMapItem extends NetworkSyncedItem {
 	}
 
 	@Override
-	public ItemStack onStartUse(ItemStack stack, World world, PlayerEntity player) {
-		ItemStack itemStack = new ItemStack(Items.FILLED_MAP, 1, world.getIntState("map"));
-		String string = "map_" + itemStack.getData();
+	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+		ItemStack itemStack2 = new ItemStack(Items.FILLED_MAP, 1, world.getIntState("map"));
+		String string = "map_" + itemStack2.getData();
 		MapState mapState = new MapState(string);
 		world.replaceState(string, mapState);
 		mapState.scale = 0;
-		mapState.method_9308(player.x, player.z, mapState.scale);
-		mapState.dimensionId = (byte)world.dimension.getType();
+		mapState.method_9308(playerEntity.x, playerEntity.z, mapState.scale);
+		mapState.dimensionId = (byte)world.dimension.getDimensionType().getId();
+		mapState.trackingPosition = true;
 		mapState.markDirty();
-		stack.count--;
-		if (stack.count <= 0) {
-			return itemStack;
+		itemStack.count--;
+		if (itemStack.count <= 0) {
+			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack2);
 		} else {
-			if (!player.inventory.insertStack(itemStack.copy())) {
-				player.dropItem(itemStack, false);
+			if (!playerEntity.inventory.insertStack(itemStack2.copy())) {
+				playerEntity.dropItem(itemStack2, false);
 			}
 
-			player.incrementStat(Stats.USED[Item.getRawId(this)]);
-			return stack;
+			playerEntity.incrementStat(Stats.used(this));
+			return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 		}
 	}
 }

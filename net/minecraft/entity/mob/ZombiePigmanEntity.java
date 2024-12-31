@@ -1,8 +1,10 @@
 package net.minecraft.entity.mob;
 
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
@@ -14,7 +16,12 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.World;
@@ -32,7 +39,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	@Override
-	public void setAttacker(LivingEntity entity) {
+	public void setAttacker(@Nullable LivingEntity entity) {
 		super.setAttacker(entity);
 		if (entity != null) {
 			this.angerTarget = entity.getUuid();
@@ -72,7 +79,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 		}
 
 		if (this.angrySoundDelay > 0 && --this.angrySoundDelay == 0) {
-			this.playSound("mob.zombiepig.zpigangry", this.getSoundVolume() * 2.0F, ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F) * 1.8F);
+			this.playSound(Sounds.ENTITY_ZOMBIE_PIG_ANGRY, this.getSoundVolume() * 2.0F, ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F) * 1.8F);
 		}
 
 		if (this.anger > 0 && this.angerTarget != null && this.getAttacker() == null) {
@@ -113,7 +120,7 @@ public class ZombiePigmanEntity extends ZombieEntity {
 		super.readCustomDataFromNbt(nbt);
 		this.anger = nbt.getShort("Anger");
 		String string = nbt.getString("HurtBy");
-		if (string.length() > 0) {
+		if (!string.isEmpty()) {
 			this.angerTarget = UUID.fromString(string);
 			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.angerTarget);
 			this.setAttacker(playerEntity);
@@ -151,54 +158,41 @@ public class ZombiePigmanEntity extends ZombieEntity {
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.zombiepig.zpig";
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_ZOMBIE_PIG_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.zombiepig.zpighurt";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_ZOMBIE_PIG_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.zombiepig.zpigdeath";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_ZOMBIE_PIG_DEATH;
+	}
+
+	@Nullable
+	@Override
+	protected Identifier getLootTableId() {
+		return LootTables.ZOMBIE_PIGMAN_ENTITIE;
 	}
 
 	@Override
-	protected void dropLoot(boolean allowDrops, int lootingMultiplier) {
-		int i = this.random.nextInt(2 + lootingMultiplier);
-
-		for (int j = 0; j < i; j++) {
-			this.dropItem(Items.ROTTEN_FLESH, 1);
-		}
-
-		i = this.random.nextInt(2 + lootingMultiplier);
-
-		for (int k = 0; k < i; k++) {
-			this.dropItem(Items.GOLD_NUGGET, 1);
-		}
-	}
-
-	@Override
-	public boolean method_2537(PlayerEntity playerEntity) {
+	public boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
 		return false;
 	}
 
 	@Override
-	protected void method_4473() {
-		this.dropItem(Items.GOLD_INGOT, 1);
-	}
-
-	@Override
 	protected void initEquipment(LocalDifficulty difficulty) {
-		this.setArmorSlot(0, new ItemStack(Items.GOLDEN_SWORD));
+		this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.GOLDEN_SWORD));
 	}
 
+	@Nullable
 	@Override
-	public EntityData initialize(LocalDifficulty difficulty, EntityData data) {
+	public EntityData initialize(LocalDifficulty difficulty, @Nullable EntityData data) {
 		super.initialize(difficulty, data);
-		this.setVillager(false);
+		this.method_13249();
 		return data;
 	}
 

@@ -29,7 +29,7 @@ public class ItemScatterer {
 		}
 	}
 
-	private static void spawnItemStack(World world, double x, double y, double z, ItemStack itemStack) {
+	public static void spawnItemStack(World world, double x, double y, double z, ItemStack itemStack) {
 		float f = RANDOM.nextFloat() * 0.8F + 0.1F;
 		float g = RANDOM.nextFloat() * 0.8F + 0.1F;
 		float h = RANDOM.nextFloat() * 0.8F + 0.1F;

@@ -1,5 +1,6 @@
 package net.minecraft.client.render;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -19,7 +20,10 @@ public class DownloadedSkinParser implements BufferedImageSkinProvider {
 			BufferedImage bufferedImage = new BufferedImage(this.width, this.height, 2);
 			Graphics graphics = bufferedImage.getGraphics();
 			graphics.drawImage(image, 0, 0, null);
-			if (image.getHeight() == 32) {
+			boolean bl = image.getHeight() == 32;
+			if (bl) {
+				graphics.setColor(new Color(0, 0, 0, 0));
+				graphics.fillRect(0, 32, 64, 32);
 				graphics.drawImage(bufferedImage, 24, 48, 20, 52, 4, 16, 8, 20, null);
 				graphics.drawImage(bufferedImage, 28, 48, 24, 52, 8, 16, 12, 20, null);
 				graphics.drawImage(bufferedImage, 20, 52, 16, 64, 8, 20, 12, 32, null);
@@ -37,14 +41,12 @@ public class DownloadedSkinParser implements BufferedImageSkinProvider {
 			graphics.dispose();
 			this.data = ((DataBufferInt)bufferedImage.getRaster().getDataBuffer()).getData();
 			this.setOpaque(0, 0, 32, 16);
-			this.setTransparent(32, 0, 64, 32);
+			if (bl) {
+				this.method_12342(32, 0, 64, 32);
+			}
+
 			this.setOpaque(0, 16, 64, 32);
-			this.setTransparent(0, 32, 16, 48);
-			this.setTransparent(16, 32, 40, 48);
-			this.setTransparent(40, 32, 56, 48);
-			this.setTransparent(0, 48, 16, 64);
 			this.setOpaque(16, 48, 48, 64);
-			this.setTransparent(48, 48, 64, 64);
 			return bufferedImage;
 		}
 	}
@@ -53,12 +55,19 @@ public class DownloadedSkinParser implements BufferedImageSkinProvider {
 	public void setAvailable() {
 	}
 
-	private void setTransparent(int uMin, int vMin, int uMax, int vMax) {
-		if (!this.hasTransparency(uMin, vMin, uMax, vMax)) {
-			for (int i = uMin; i < uMax; i++) {
-				for (int j = vMin; j < vMax; j++) {
-					this.data[i + j * this.width] = this.data[i + j * this.width] & 16777215;
+	private void method_12342(int i, int j, int k, int l) {
+		for (int m = i; m < k; m++) {
+			for (int n = j; n < l; n++) {
+				int o = this.data[m + n * this.width];
+				if ((o >> 24 & 0xFF) < 128) {
+					return;
 				}
+			}
+		}
+
+		for (int p = i; p < k; p++) {
+			for (int q = j; q < l; q++) {
+				this.data[p + q * this.width] = this.data[p + q * this.width] & 16777215;
 			}
 		}
 	}
@@ -69,18 +78,5 @@ public class DownloadedSkinParser implements BufferedImageSkinProvider {
 				this.data[i + j * this.width] = this.data[i + j * this.width] | 0xFF000000;
 			}
 		}
-	}
-
-	private boolean hasTransparency(int uMin, int vMin, int uMax, int vMax) {
-		for (int i = uMin; i < uMax; i++) {
-			for (int j = vMin; j < vMax; j++) {
-				int k = this.data[i + j * this.width];
-				if ((k >> 24 & 0xFF) < 128) {
-					return true;
-				}
-			}
-		}
-
-		return false;
 	}
 }

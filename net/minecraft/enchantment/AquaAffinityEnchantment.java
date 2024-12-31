@@ -1,10 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class AquaAffinityEnchantment extends Enchantment {
-	public AquaAffinityEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.HEAD);
+	public AquaAffinityEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.HEAD, equipmentSlots);
 		this.setName("waterWorker");
 	}
 

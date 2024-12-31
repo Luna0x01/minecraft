@@ -4,29 +4,31 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityCategory;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.structure.MineshaftStructure;
 import net.minecraft.structure.OceanMonumentStructure;
 import net.minecraft.structure.StrongholdStructure;
 import net.minecraft.structure.StructureFeature;
 import net.minecraft.structure.TempleStructure;
 import net.minecraft.structure.VillageStructure;
-import net.minecraft.util.ProgressListener;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.FlatWorldHelper;
 import net.minecraft.world.gen.carver.Carver;
 import net.minecraft.world.gen.feature.DungeonFeature;
 import net.minecraft.world.gen.feature.LakesFeature;
 import net.minecraft.world.gen.layer.FlatWorldLayer;
 
-public class FlatChunkGenerator implements ChunkProvider {
-	private World world;
-	private Random random;
+public class FlatChunkGenerator implements ChunkGenerator {
+	private final World world;
+	private final Random random;
 	private final BlockState[] field_10123 = new BlockState[256];
 	private final FlatWorldHelper field_4940;
 	private final List<StructureFeature> field_4941 = Lists.newArrayList();
@@ -98,11 +100,11 @@ public class FlatChunkGenerator implements ChunkProvider {
 		}
 
 		world.setSeaLevel(i);
-		this.field_4942 = bl2 ? false : this.field_4940.getStructures().containsKey("decoration");
+		this.field_4942 = bl2 && this.field_4940.getBiomeId() != Biome.getBiomeIndex(Biomes.VOID) ? false : this.field_4940.getStructures().containsKey("decoration");
 	}
 
 	@Override
-	public Chunk getChunk(int x, int z) {
+	public Chunk generate(int x, int z) {
 		ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
 
 		for (int i = 0; i < this.field_10123.length; i++) {
@@ -117,15 +119,15 @@ public class FlatChunkGenerator implements ChunkProvider {
 		}
 
 		for (Carver carver : this.field_4941) {
-			carver.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
+			carver.method_4004(this.world, x, z, chunkBlockStateStorage);
 		}
 
 		Chunk chunk = new Chunk(this.world, chunkBlockStateStorage, x, z);
-		Biome[] biomes = this.world.getBiomeSource().method_3861(null, x * 16, z * 16, 16, 16);
+		Biome[] biomes = this.world.method_3726().method_11540(null, x * 16, z * 16, 16, 16);
 		byte[] bs = chunk.getBiomeArray();
 
 		for (int l = 0; l < bs.length; l++) {
-			bs[l] = (byte)biomes[l].id;
+			bs[l] = (byte)Biome.getBiomeIndex(biomes[l]);
 		}
 
 		chunk.calculateSkyLight();
@@ -133,12 +135,7 @@ public class FlatChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean chunkExists(int x, int z) {
-		return true;
-	}
-
-	@Override
-	public void decorateChunk(ChunkProvider provider, int x, int z) {
+	public void populate(int x, int z) {
 		int i = x * 16;
 		int j = z * 16;
 		BlockPos blockPos = new BlockPos(i, 0, j);
@@ -180,32 +177,8 @@ public class FlatChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean isChunkModified(ChunkProvider chunkProvider, Chunk chunk, int x, int z) {
+	public boolean method_11762(Chunk chunk, int x, int z) {
 		return false;
-	}
-
-	@Override
-	public boolean saveChunks(boolean saveEntities, ProgressListener progressListener) {
-		return true;
-	}
-
-	@Override
-	public void flushChunks() {
-	}
-
-	@Override
-	public boolean tickChunks() {
-		return false;
-	}
-
-	@Override
-	public boolean isSavingEnabled() {
-		return true;
-	}
-
-	@Override
-	public String getChunkProviderName() {
-		return "FlatLevelSource";
 	}
 
 	@Override
@@ -214,12 +187,13 @@ public class FlatChunkGenerator implements ChunkProvider {
 		return biome.getSpawnEntries(category);
 	}
 
+	@Nullable
 	@Override
-	public BlockPos getNearestStructurePos(World world, String structureName, BlockPos pos) {
-		if ("Stronghold".equals(structureName)) {
+	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
+		if ("Stronghold".equals(string)) {
 			for (StructureFeature structureFeature : this.field_4941) {
 				if (structureFeature instanceof StrongholdStructure) {
-					return structureFeature.method_9269(world, pos);
+					return structureFeature.method_9269(world, blockPos);
 				}
 			}
 		}
@@ -228,19 +202,9 @@ public class FlatChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public int getLoadedChunksCount() {
-		return 0;
-	}
-
-	@Override
-	public void handleInitialLoad(Chunk chunk, int x, int z) {
+	public void method_4702(Chunk chunk, int x, int z) {
 		for (StructureFeature structureFeature : this.field_4941) {
-			structureFeature.carveRegion(this, this.world, x, z, null);
+			structureFeature.method_4004(this.world, x, z, null);
 		}
-	}
-
-	@Override
-	public Chunk getChunk(BlockPos pos) {
-		return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
 	}
 }

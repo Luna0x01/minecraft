@@ -4,7 +4,7 @@ import com.google.common.base.Predicate;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.TameableEntity;
 
-public class FollowTargetIfTamedGoal<T extends LivingEntity> extends FollowTargetGoal {
+public class FollowTargetIfTamedGoal<T extends LivingEntity> extends FollowTargetGoal<T> {
 	private TameableEntity tameable;
 
 	public FollowTargetIfTamedGoal(TameableEntity tameableEntity, Class<T> class_, boolean bl, Predicate<? super T> predicate) {

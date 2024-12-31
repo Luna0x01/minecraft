@@ -5,6 +5,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import java.util.Collection;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
@@ -46,7 +47,7 @@ public abstract class FlowerBlock extends PlantBlock {
 	public Property<FlowerBlock.FlowerType> getFlowerProperties() {
 		if (this.flowerProperties == null) {
 			this.flowerProperties = EnumProperty.of("type", FlowerBlock.FlowerType.class, new Predicate<FlowerBlock.FlowerType>() {
-				public boolean apply(FlowerBlock.FlowerType flowerType) {
+				public boolean apply(@Nullable FlowerBlock.FlowerType flowerType) {
 					return flowerType.getColor() == FlowerBlock.this.getColor();
 				}
 			});
@@ -145,7 +146,7 @@ public abstract class FlowerBlock extends PlantBlock {
 		static {
 			for (final FlowerBlock.Color color : FlowerBlock.Color.values()) {
 				Collection<FlowerBlock.FlowerType> collection = Collections2.filter(Lists.newArrayList(values()), new Predicate<FlowerBlock.FlowerType>() {
-					public boolean apply(FlowerBlock.FlowerType flowerType) {
+					public boolean apply(@Nullable FlowerBlock.FlowerType flowerType) {
 						return flowerType.getColor() == color;
 					}
 				});

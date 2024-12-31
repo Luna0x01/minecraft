@@ -1,48 +1,33 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.color.world.BiomeColors;
-import net.minecraft.client.color.world.FoliageColors;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public abstract class LeavesBlock extends BaseLeavesBlock {
+public abstract class LeavesBlock extends Block {
 	public static final BooleanProperty DECAYABLE = BooleanProperty.of("decayable");
 	public static final BooleanProperty CHECK_DECAY = BooleanProperty.of("check_decay");
-	int[] neighborBlockDecayInfo;
-	protected int fancyIndex;
 	protected boolean fancyGraphicsStatus;
+	int[] neighborBlockDecayInfo;
 
 	public LeavesBlock() {
-		super(Material.FOLIAGE, false);
+		super(Material.FOLIAGE);
 		this.setTickRandomly(true);
 		this.setItemGroup(ItemGroup.DECORATIONS);
 		this.setStrength(0.2F);
 		this.setOpacity(1);
-		this.setSound(GRASS);
-	}
-
-	@Override
-	public int getColor() {
-		return FoliageColors.getColor(0.5, 1.0);
-	}
-
-	@Override
-	public int getColor(BlockState state) {
-		return FoliageColors.getDefaultColor();
-	}
-
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		return BiomeColors.getFoliageColor(view, pos);
+		this.setBlockSoundGroup(BlockSoundGroup.field_12761);
 	}
 
 	@Override
@@ -58,7 +43,7 @@ public abstract class LeavesBlock extends BaseLeavesBlock {
 					for (int p = -i; p <= i; p++) {
 						BlockPos blockPos = pos.add(n, o, p);
 						BlockState blockState = world.getBlockState(blockPos);
-						if (blockState.getBlock().getMaterial() == Material.FOLIAGE && !(Boolean)blockState.get(CHECK_DECAY)) {
+						if (blockState.getMaterial() == Material.FOLIAGE && !(Boolean)blockState.get(CHECK_DECAY)) {
 							world.setBlockState(blockPos, blockState.with(CHECK_DECAY, true), 4);
 						}
 					}
@@ -89,9 +74,10 @@ public abstract class LeavesBlock extends BaseLeavesBlock {
 					for (int q = -i; q <= i; q++) {
 						for (int r = -i; r <= i; r++) {
 							for (int s = -i; s <= i; s++) {
-								Block block = world.getBlockState(mutable.setPosition(k + q, l + r, m + s)).getBlock();
+								BlockState blockState = world.getBlockState(mutable.setPosition(k + q, l + r, m + s));
+								Block block = blockState.getBlock();
 								if (block != Blocks.LOG && block != Blocks.LOG2) {
-									if (block.getMaterial() == Material.FOLIAGE) {
+									if (blockState.getMaterial() == Material.FOLIAGE) {
 										this.neighborBlockDecayInfo[(q + p) * o + (r + p) * n + s + p] = -2;
 									} else {
 										this.neighborBlockDecayInfo[(q + p) * o + (r + p) * n + s + p] = -1;
@@ -149,11 +135,11 @@ public abstract class LeavesBlock extends BaseLeavesBlock {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
-		if (world.hasRain(pos.up()) && !World.isOpaque(world, pos.down()) && rand.nextInt(15) == 1) {
-			double d = (double)((float)pos.getX() + rand.nextFloat());
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (world.hasRain(pos.up()) && !world.getBlockState(pos.down()).method_11739() && random.nextInt(15) == 1) {
+			double d = (double)((float)pos.getX() + random.nextFloat());
 			double e = (double)pos.getY() - 0.05;
-			double f = (double)((float)pos.getZ() + rand.nextFloat());
+			double f = (double)((float)pos.getZ() + random.nextFloat());
 			world.addParticle(ParticleType.WATER_DRIP, d, e, f, 0.0, 0.0, 0.0);
 		}
 	}
@@ -168,6 +154,7 @@ public abstract class LeavesBlock extends BaseLeavesBlock {
 		return rand.nextInt(20) == 0 ? 1 : 0;
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.SAPLING);
@@ -209,14 +196,12 @@ public abstract class LeavesBlock extends BaseLeavesBlock {
 	}
 
 	@Override
-	public boolean hasTransparency() {
-		return !this.fancyGraphics;
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
+		return !this.fancyGraphicsStatus;
 	}
 
 	public void setGraphics(boolean fancyGraphics) {
 		this.fancyGraphicsStatus = fancyGraphics;
-		this.fancyGraphics = fancyGraphics;
-		this.fancyIndex = fancyGraphics ? 0 : 1;
 	}
 
 	@Override
@@ -230,4 +215,9 @@ public abstract class LeavesBlock extends BaseLeavesBlock {
 	}
 
 	public abstract PlanksBlock.WoodType getWoodType(int state);
+
+	@Override
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		return !this.fancyGraphicsStatus && view.getBlockState(pos.offset(direction)).getBlock() == this ? false : super.method_8654(state, view, pos, direction);
+	}
 }

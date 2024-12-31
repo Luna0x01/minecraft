@@ -8,13 +8,13 @@ import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.projectile.AbstractArrowEntity;
+import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class StuckArrowsFeatureRenderer implements FeatureRenderer<LivingEntity> {
-	private final LivingEntityRenderer entityRenderer;
+	private final LivingEntityRenderer<?> entityRenderer;
 
-	public StuckArrowsFeatureRenderer(LivingEntityRenderer livingEntityRenderer) {
+	public StuckArrowsFeatureRenderer(LivingEntityRenderer<?> livingEntityRenderer) {
 		this.entityRenderer = livingEntityRenderer;
 	}
 
@@ -22,7 +22,7 @@ public class StuckArrowsFeatureRenderer implements FeatureRenderer<LivingEntity>
 	public void render(LivingEntity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headYaw, float headPitch, float scale) {
 		int i = entity.getStuckArrows();
 		if (i > 0) {
-			Entity entity2 = new AbstractArrowEntity(entity.world, entity.x, entity.y, entity.z);
+			Entity entity2 = new ArrowEntity(entity.world, entity.x, entity.y, entity.z);
 			Random random = new Random((long)entity.getEntityId());
 			DiffuseLighting.disable();
 
@@ -45,12 +45,12 @@ public class StuckArrowsFeatureRenderer implements FeatureRenderer<LivingEntity>
 				g *= -1.0F;
 				h *= -1.0F;
 				float n = MathHelper.sqrt(f * f + h * h);
-				entity2.prevYaw = entity2.yaw = (float)(Math.atan2((double)f, (double)h) * 180.0 / (float) Math.PI);
-				entity2.prevPitch = entity2.pitch = (float)(Math.atan2((double)g, (double)n) * 180.0 / (float) Math.PI);
+				entity2.prevYaw = entity2.yaw = (float)(Math.atan2((double)f, (double)h) * 180.0F / (float)Math.PI);
+				entity2.prevPitch = entity2.pitch = (float)(Math.atan2((double)g, (double)n) * 180.0F / (float)Math.PI);
 				double d = 0.0;
 				double e = 0.0;
 				double o = 0.0;
-				this.entityRenderer.getRenderManager().render(entity2, d, e, o, 0.0F, tickDelta);
+				this.entityRenderer.getRenderManager().method_12446(entity2, d, e, o, 0.0F, tickDelta, false);
 				GlStateManager.popMatrix();
 			}
 

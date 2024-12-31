@@ -15,6 +15,7 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 	private String playerPrefix = "";
 	private String nameTagVisibilityRule = "";
 	private String visibilityRule = AbstractTeam.VisibilityRule.ALWAYS.name;
+	private String collisionRule = AbstractTeam.CollisionRule.ALWAYS.name;
 	private int teamFormatting = -1;
 	private Collection<String> playerList = Lists.newArrayList();
 	private int mode;
@@ -32,7 +33,8 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 			this.nameTagVisibilityRule = team.getSuffix();
 			this.flags = team.getFriendlyFlagsBitwise();
 			this.visibilityRule = team.getNameTagVisibilityRule().name;
-			this.teamFormatting = team.getFormatting().getColorIndex();
+			this.collisionRule = team.method_12129().name;
+			this.teamFormatting = team.method_12130().getColorIndex();
 		}
 
 		if (i == 0) {
@@ -62,6 +64,7 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 			this.nameTagVisibilityRule = buf.readString(16);
 			this.flags = buf.readByte();
 			this.visibilityRule = buf.readString(32);
+			this.collisionRule = buf.readString(32);
 			this.teamFormatting = buf.readByte();
 		}
 
@@ -84,6 +87,7 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 			buf.writeString(this.nameTagVisibilityRule);
 			buf.writeByte(this.flags);
 			buf.writeString(this.visibilityRule);
+			buf.writeString(this.collisionRule);
 			buf.writeByte(this.teamFormatting);
 		}
 
@@ -134,5 +138,9 @@ public class TeamS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	public String getVisibilityRule() {
 		return this.visibilityRule;
+	}
+
+	public String getCollisionRule() {
+		return this.collisionRule;
 	}
 }

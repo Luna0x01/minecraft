@@ -6,8 +6,10 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.Map.Entry;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -54,6 +56,10 @@ public class NbtCompound extends NbtElement {
 		return 10;
 	}
 
+	public int getSize() {
+		return this.data.size();
+	}
+
 	public void put(String key, NbtElement nbt) {
 		this.data.put(key, nbt);
 	}
@@ -72,6 +78,20 @@ public class NbtCompound extends NbtElement {
 
 	public void putLong(String key, long value) {
 		this.data.put(key, new NbtLong(value));
+	}
+
+	public void putUuid(String key, UUID value) {
+		this.putLong(key + "Most", value.getMostSignificantBits());
+		this.putLong(key + "Least", value.getLeastSignificantBits());
+	}
+
+	@Nullable
+	public UUID getUuid(String key) {
+		return new UUID(this.getLong(key + "Most"), this.getLong(key + "Least"));
+	}
+
+	public boolean containsUuid(String key) {
+		return this.contains(key + "Most", 99) && this.contains(key + "Least", 99);
 	}
 
 	public void putFloat(String key, float value) {
@@ -104,7 +124,7 @@ public class NbtCompound extends NbtElement {
 
 	public byte getType(String key) {
 		NbtElement nbtElement = (NbtElement)this.data.get(key);
-		return nbtElement != null ? nbtElement.getType() : 0;
+		return nbtElement == null ? 0 : nbtElement.getType();
 	}
 
 	public boolean contains(String key) {
@@ -115,107 +135,139 @@ public class NbtCompound extends NbtElement {
 		int i = this.getType(key);
 		if (i == type) {
 			return true;
-		} else if (type != 99) {
-			if (i > 0) {
-			}
-
-			return false;
 		} else {
-			return i == 1 || i == 2 || i == 3 || i == 4 || i == 5 || i == 6;
+			return type != 99 ? false : i == 1 || i == 2 || i == 3 || i == 4 || i == 5 || i == 6;
 		}
 	}
 
 	public byte getByte(String key) {
 		try {
-			return !this.contains(key, 99) ? 0 : ((NbtElement.AbstractNbtNumber)this.data.get(key)).byteValue();
+			if (this.contains(key, 99)) {
+				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).byteValue();
+			}
 		} catch (ClassCastException var3) {
-			return 0;
 		}
+
+		return 0;
 	}
 
 	public short getShort(String key) {
 		try {
-			return !this.contains(key, 99) ? 0 : ((NbtElement.AbstractNbtNumber)this.data.get(key)).shortValue();
+			if (this.contains(key, 99)) {
+				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).shortValue();
+			}
 		} catch (ClassCastException var3) {
-			return 0;
 		}
+
+		return 0;
 	}
 
 	public int getInt(String key) {
 		try {
-			return !this.contains(key, 99) ? 0 : ((NbtElement.AbstractNbtNumber)this.data.get(key)).intValue();
+			if (this.contains(key, 99)) {
+				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).intValue();
+			}
 		} catch (ClassCastException var3) {
-			return 0;
 		}
+
+		return 0;
 	}
 
 	public long getLong(String key) {
 		try {
-			return !this.contains(key, 99) ? 0L : ((NbtElement.AbstractNbtNumber)this.data.get(key)).longValue();
+			if (this.contains(key, 99)) {
+				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).longValue();
+			}
 		} catch (ClassCastException var3) {
-			return 0L;
 		}
+
+		return 0L;
 	}
 
 	public float getFloat(String key) {
 		try {
-			return !this.contains(key, 99) ? 0.0F : ((NbtElement.AbstractNbtNumber)this.data.get(key)).floatValue();
+			if (this.contains(key, 99)) {
+				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).floatValue();
+			}
 		} catch (ClassCastException var3) {
-			return 0.0F;
 		}
+
+		return 0.0F;
 	}
 
 	public double getDouble(String key) {
 		try {
-			return !this.contains(key, 99) ? 0.0 : ((NbtElement.AbstractNbtNumber)this.data.get(key)).doubleValue();
+			if (this.contains(key, 99)) {
+				return ((NbtElement.AbstractNbtNumber)this.data.get(key)).doubleValue();
+			}
 		} catch (ClassCastException var3) {
-			return 0.0;
 		}
+
+		return 0.0;
 	}
 
 	public String getString(String key) {
 		try {
-			return !this.contains(key, 8) ? "" : ((NbtElement)this.data.get(key)).asString();
+			if (this.contains(key, 8)) {
+				return ((NbtElement)this.data.get(key)).asString();
+			}
 		} catch (ClassCastException var3) {
-			return "";
 		}
+
+		return "";
 	}
 
 	public byte[] getByteArray(String key) {
 		try {
-			return !this.contains(key, 7) ? new byte[0] : ((NbtByteArray)this.data.get(key)).getArray();
+			if (this.contains(key, 7)) {
+				return ((NbtByteArray)this.data.get(key)).getArray();
+			}
 		} catch (ClassCastException var3) {
 			throw new CrashException(this.addDetailsToCrashReport(key, 7, var3));
 		}
+
+		return new byte[0];
 	}
 
 	public int[] getIntArray(String key) {
 		try {
-			return !this.contains(key, 11) ? new int[0] : ((NbtIntArray)this.data.get(key)).getIntArray();
+			if (this.contains(key, 11)) {
+				return ((NbtIntArray)this.data.get(key)).getIntArray();
+			}
 		} catch (ClassCastException var3) {
 			throw new CrashException(this.addDetailsToCrashReport(key, 11, var3));
 		}
+
+		return new int[0];
 	}
 
 	public NbtCompound getCompound(String key) {
 		try {
-			return !this.contains(key, 10) ? new NbtCompound() : (NbtCompound)this.data.get(key);
+			if (this.contains(key, 10)) {
+				return (NbtCompound)this.data.get(key);
+			}
 		} catch (ClassCastException var3) {
 			throw new CrashException(this.addDetailsToCrashReport(key, 10, var3));
 		}
+
+		return new NbtCompound();
 	}
 
 	public NbtList getList(String key, int type) {
 		try {
-			if (this.getType(key) != 9) {
-				return new NbtList();
-			} else {
+			if (this.getType(key) == 9) {
 				NbtList nbtList = (NbtList)this.data.get(key);
-				return nbtList.size() > 0 && nbtList.getElementType() != type ? new NbtList() : nbtList;
+				if (!nbtList.isEmpty() && nbtList.getElementType() != type) {
+					return new NbtList();
+				}
+
+				return nbtList;
 			}
 		} catch (ClassCastException var4) {
 			throw new CrashException(this.addDetailsToCrashReport(key, 9, var4));
 		}
+
+		return new NbtList();
 	}
 
 	public boolean getBoolean(String key) {
@@ -249,12 +301,12 @@ public class NbtCompound extends NbtElement {
 	private CrashReport addDetailsToCrashReport(String key, int id, ClassCastException ex) {
 		CrashReport crashReport = CrashReport.create(ex, "Reading NBT data");
 		CrashReportSection crashReportSection = crashReport.addElement("Corrupt NBT tag", 1);
-		crashReportSection.add("Tag type found", new Callable<String>() {
+		crashReportSection.add("Tag type found", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return NbtElement.TYPES[((NbtElement)NbtCompound.this.data.get(key)).getType()];
 			}
 		});
-		crashReportSection.add("Tag type expected", new Callable<String>() {
+		crashReportSection.add("Tag type expected", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return NbtElement.TYPES[id];
 			}

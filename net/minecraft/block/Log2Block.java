@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import com.google.common.base.Predicate;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -12,7 +13,7 @@ import net.minecraft.state.property.EnumProperty;
 public class Log2Block extends LogBlock {
 	public static final EnumProperty<PlanksBlock.WoodType> VARIANT = EnumProperty.of(
 		"variant", PlanksBlock.WoodType.class, new Predicate<PlanksBlock.WoodType>() {
-			public boolean apply(PlanksBlock.WoodType woodType) {
+			public boolean apply(@Nullable PlanksBlock.WoodType woodType) {
 				return woodType.getId() >= 4;
 			}
 		}

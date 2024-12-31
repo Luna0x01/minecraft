@@ -6,9 +6,10 @@ public class ComparatorBlockEntity extends BlockEntity {
 	private int outputSignal;
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		nbt.putInt("OutputSignal", this.outputSignal);
+		return nbt;
 	}
 
 	@Override

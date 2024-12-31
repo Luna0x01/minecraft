@@ -2,6 +2,7 @@ package net.minecraft.recipe;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.entity.passive.SheepEntity;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ArmorItem;
@@ -39,6 +40,7 @@ public class ArmorDyeRecipeType implements RecipeType {
 		return itemStack != null && !list.isEmpty();
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		ItemStack itemStack = null;
@@ -110,6 +112,7 @@ public class ArmorDyeRecipeType implements RecipeType {
 		return 10;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return null;

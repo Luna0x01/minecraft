@@ -27,7 +27,7 @@ public class LeashEntityModel extends EntityModel {
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
 		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
-		this.field_6395.posY = age / (180.0F / (float)Math.PI);
-		this.field_6395.posX = headPitch / (180.0F / (float)Math.PI);
+		this.field_6395.posY = age * (float) (Math.PI / 180.0);
+		this.field_6395.posX = headPitch * (float) (Math.PI / 180.0);
 	}
 }

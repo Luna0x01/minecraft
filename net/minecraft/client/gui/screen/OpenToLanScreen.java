@@ -29,7 +29,7 @@ public class OpenToLanScreen extends Screen {
 	}
 
 	private void updateButtonTexts() {
-		this.gameModeButton.message = I18n.translate("selectWorld.gameMode") + " " + I18n.translate("selectWorld.gameMode." + this.gameMode);
+		this.gameModeButton.message = I18n.translate("selectWorld.gameMode") + ": " + I18n.translate("selectWorld.gameMode." + this.gameMode);
 		this.allowCommandsButton.message = I18n.translate("selectWorld.allowCommands") + " ";
 		if (this.allowCommands) {
 			this.allowCommandsButton.message = this.allowCommandsButton.message + I18n.translate("options.on");

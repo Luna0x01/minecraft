@@ -3,7 +3,9 @@ package net.minecraft.block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -16,7 +18,7 @@ public abstract class LogBlock extends PillarBlock {
 		super(Material.WOOD);
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 		this.setStrength(2.0F);
-		this.setSound(WOOD);
+		this.setBlockSoundGroup(BlockSoundGroup.field_12759);
 	}
 
 	@Override
@@ -26,7 +28,7 @@ public abstract class LogBlock extends PillarBlock {
 		if (world.isRegionLoaded(pos.add(-j, -j, -j), pos.add(j, j, j))) {
 			for (BlockPos blockPos : BlockPos.iterate(pos.add(-i, -i, -i), pos.add(i, i, i))) {
 				BlockState blockState = world.getBlockState(blockPos);
-				if (blockState.getBlock().getMaterial() == Material.FOLIAGE && !(Boolean)blockState.get(LeavesBlock.CHECK_DECAY)) {
+				if (blockState.getMaterial() == Material.FOLIAGE && !(Boolean)blockState.get(LeavesBlock.CHECK_DECAY)) {
 					world.setBlockState(blockPos, blockState.with(LeavesBlock.CHECK_DECAY, true), 4);
 				}
 			}
@@ -35,7 +37,25 @@ public abstract class LogBlock extends PillarBlock {
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		return super.getStateFromData(world, pos, dir, x, y, z, id, entity).with(LOG_AXIS, LogBlock.Axis.getByDirectionAxis(dir.getAxis()));
+		return this.stateFromData(id).with(LOG_AXIS, LogBlock.Axis.getByDirectionAxis(dir.getAxis()));
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case COUNTERCLOCKWISE_90:
+			case CLOCKWISE_90:
+				switch ((LogBlock.Axis)state.get(LOG_AXIS)) {
+					case X:
+						return state.with(LOG_AXIS, LogBlock.Axis.Z);
+					case Z:
+						return state.with(LOG_AXIS, LogBlock.Axis.X);
+					default:
+						return state;
+				}
+			default:
+				return state;
+		}
 	}
 
 	public static enum Axis implements StringIdentifiable {

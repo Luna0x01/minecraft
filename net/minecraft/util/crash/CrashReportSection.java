@@ -2,7 +2,6 @@ package net.minecraft.util.crash;
 
 import com.google.common.collect.Lists;
 import java.util.List;
-import java.util.concurrent.Callable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
@@ -19,62 +18,63 @@ public class CrashReportSection {
 	}
 
 	public static String createPositionString(double x, double y, double z) {
-		return String.format("%.2f,%.2f,%.2f - %s", x, y, z, addBlockData(new BlockPos(x, y, z)));
+		return String.format("%.2f,%.2f,%.2f - %s", x, y, z, createPositionString(new BlockPos(x, y, z)));
 	}
 
-	public static String addBlockData(BlockPos pos) {
-		int i = pos.getX();
-		int j = pos.getY();
-		int k = pos.getZ();
+	public static String createPositionString(BlockPos pos) {
+		return createPositionString(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	public static String createPositionString(int x, int y, int z) {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		try {
-			stringBuilder.append(String.format("World: (%d,%d,%d)", i, j, k));
-		} catch (Throwable var17) {
+			stringBuilder.append(String.format("World: (%d,%d,%d)", x, y, z));
+		} catch (Throwable var16) {
 			stringBuilder.append("(Error finding world loc)");
 		}
 
 		stringBuilder.append(", ");
 
 		try {
-			int l = i >> 4;
-			int m = k >> 4;
-			int n = i & 15;
-			int o = j >> 4;
-			int p = k & 15;
-			int q = l << 4;
-			int r = m << 4;
-			int s = (l + 1 << 4) - 1;
-			int t = (m + 1 << 4) - 1;
-			stringBuilder.append(String.format("Chunk: (at %d,%d,%d in %d,%d; contains blocks %d,0,%d to %d,255,%d)", n, o, p, l, m, q, r, s, t));
-		} catch (Throwable var16) {
+			int i = x >> 4;
+			int j = z >> 4;
+			int k = x & 15;
+			int l = y >> 4;
+			int m = z & 15;
+			int n = i << 4;
+			int o = j << 4;
+			int p = (i + 1 << 4) - 1;
+			int q = (j + 1 << 4) - 1;
+			stringBuilder.append(String.format("Chunk: (at %d,%d,%d in %d,%d; contains blocks %d,0,%d to %d,255,%d)", k, l, m, i, j, n, o, p, q));
+		} catch (Throwable var15) {
 			stringBuilder.append("(Error finding chunk loc)");
 		}
 
 		stringBuilder.append(", ");
 
 		try {
-			int u = i >> 9;
-			int v = k >> 9;
-			int w = u << 5;
-			int x = v << 5;
-			int y = (u + 1 << 5) - 1;
-			int z = (v + 1 << 5) - 1;
-			int aa = u << 9;
-			int ab = v << 9;
-			int ac = (u + 1 << 9) - 1;
-			int ad = (v + 1 << 9) - 1;
-			stringBuilder.append(String.format("Region: (%d,%d; contains chunks %d,%d to %d,%d, blocks %d,0,%d to %d,255,%d)", u, v, w, x, y, z, aa, ab, ac, ad));
-		} catch (Throwable var15) {
+			int r = x >> 9;
+			int s = z >> 9;
+			int t = r << 5;
+			int u = s << 5;
+			int v = (r + 1 << 5) - 1;
+			int w = (s + 1 << 5) - 1;
+			int aa = r << 9;
+			int ab = s << 9;
+			int ac = (r + 1 << 9) - 1;
+			int ad = (s + 1 << 9) - 1;
+			stringBuilder.append(String.format("Region: (%d,%d; contains chunks %d,%d to %d,%d, blocks %d,0,%d to %d,255,%d)", r, s, t, u, v, w, aa, ab, ac, ad));
+		} catch (Throwable var14) {
 			stringBuilder.append("(Error finding world loc)");
 		}
 
 		return stringBuilder.toString();
 	}
 
-	public void add(String name, Callable<String> value) {
+	public void add(String name, CrashCallable<String> crashCallable) {
 		try {
-			this.add(name, value.call());
+			this.add(name, crashCallable.call());
 		} catch (Throwable var4) {
 			this.add(name, var4);
 		}
@@ -155,7 +155,7 @@ public class CrashReportSection {
 
 	public static void addBlockData(CrashReportSection section, BlockPos pos, Block block, int i) {
 		final int j = Block.getIdByBlock(block);
-		section.add("Block type", new Callable<String>() {
+		section.add("Block type", new CrashCallable<String>() {
 			public String call() throws Exception {
 				try {
 					return String.format("ID #%d (%s // %s)", j, block.getTranslationKey(), block.getClass().getCanonicalName());
@@ -164,7 +164,7 @@ public class CrashReportSection {
 				}
 			}
 		});
-		section.add("Block data value", new Callable<String>() {
+		section.add("Block data value", new CrashCallable<String>() {
 			public String call() throws Exception {
 				if (i < 0) {
 					return "Unknown? (Got " + i + ")";
@@ -174,22 +174,22 @@ public class CrashReportSection {
 				}
 			}
 		});
-		section.add("Block location", new Callable<String>() {
+		section.add("Block location", new CrashCallable<String>() {
 			public String call() throws Exception {
-				return CrashReportSection.addBlockData(pos);
+				return CrashReportSection.createPositionString(pos);
 			}
 		});
 	}
 
 	public static void addBlockInfo(CrashReportSection element, BlockPos pos, BlockState state) {
-		element.add("Block", new Callable<String>() {
+		element.add("Block", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return state.toString();
 			}
 		});
-		element.add("Block location", new Callable<String>() {
+		element.add("Block location", new CrashCallable<String>() {
 			public String call() throws Exception {
-				return CrashReportSection.addBlockData(pos);
+				return CrashReportSection.createPositionString(pos);
 			}
 		});
 	}

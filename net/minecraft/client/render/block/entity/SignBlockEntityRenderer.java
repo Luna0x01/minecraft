@@ -10,7 +10,6 @@ import net.minecraft.client.render.entity.model.SignBlockEntityModel;
 import net.minecraft.client.util.Texts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.lwjgl.opengl.GL11;
 
 public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity> {
 	private static final Identifier TEXTURE = new Identifier("textures/entity/sign.png");
@@ -66,7 +65,7 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 		float m = 0.015625F * h;
 		GlStateManager.translate(0.0F, 0.5F * h, 0.07F * h);
 		GlStateManager.scale(m, -m, m);
-		GL11.glNormal3f(0.0F, 0.0F, -1.0F * m);
+		GlStateManager.method_12272(0.0F, 0.0F, -1.0F * m);
 		GlStateManager.depthMask(false);
 		int n = 0;
 		if (i < 0) {
@@ -74,7 +73,7 @@ public class SignBlockEntityRenderer extends BlockEntityRenderer<SignBlockEntity
 				if (signBlockEntity.text[o] != null) {
 					Text text = signBlockEntity.text[o];
 					List<Text> list = Texts.wrapLines(text, 90, textRenderer, false, true);
-					String string = list != null && list.size() > 0 ? ((Text)list.get(0)).asFormattedString() : "";
+					String string = list != null && !list.isEmpty() ? ((Text)list.get(0)).asFormattedString() : "";
 					if (o == signBlockEntity.lineBeingEdited) {
 						string = "> " + string + " <";
 						textRenderer.draw(string, -textRenderer.getStringWidth(string) / 2, o * 10 - signBlockEntity.text.length * 5, n);

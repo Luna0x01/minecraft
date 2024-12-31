@@ -11,10 +11,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.GeneratorConfig;
 
 public class TempleStructure extends StructureFeature {
-	private static final List<Biome> BIOMES = Arrays.asList(Biome.DESERT, Biome.DESERT_HILLS, Biome.JUNGLE, Biome.JUNGLE_HILLS, Biome.SWAMPLAND);
+	private static final List<Biome> BIOMES = Arrays.asList(
+		Biomes.DESERT, Biomes.DESERT_HILLS, Biomes.JUNGLE, Biomes.JUNGLE_HILLS, Biomes.SWAMP, Biomes.ICE_FLATS, Biomes.TAIGA_COLD
+	);
 	private List<Biome.SpawnEntry> monsterSpawns = Lists.newArrayList();
 	private int distance = 32;
 	private int field_4960 = 8;
@@ -58,7 +61,7 @@ public class TempleStructure extends StructureFeature {
 		k += random.nextInt(this.distance - this.field_4960);
 		l += random.nextInt(this.distance - this.field_4960);
 		if (i == k && j == l) {
-			Biome biome = this.world.getBiomeSource().getBiomeAt(new BlockPos(i * 16 + 8, 0, j * 16 + 8));
+			Biome biome = this.world.method_3726().method_11535(new BlockPos(i * 16 + 8, 0, j * 16 + 8));
 			if (biome == null) {
 				return false;
 			}
@@ -80,8 +83,8 @@ public class TempleStructure extends StructureFeature {
 
 	public boolean isSwampHut(BlockPos pos) {
 		GeneratorConfig generatorConfig = this.getGeneratorConfigAtPos(pos);
-		if (generatorConfig != null && generatorConfig instanceof TempleStructure.TempleGeneratorConfig && !generatorConfig.children.isEmpty()) {
-			StructurePiece structurePiece = (StructurePiece)generatorConfig.children.getFirst();
+		if (generatorConfig != null && generatorConfig instanceof TempleStructure.TempleGeneratorConfig && !generatorConfig.field_13015.isEmpty()) {
+			StructurePiece structurePiece = (StructurePiece)generatorConfig.field_13015.get(0);
 			return structurePiece instanceof TemplePieces.SwampHut;
 		} else {
 			return false;
@@ -97,17 +100,23 @@ public class TempleStructure extends StructureFeature {
 		}
 
 		public TempleGeneratorConfig(World world, Random random, int i, int j) {
+			this(world, random, i, j, world.getBiome(new BlockPos(i * 16 + 8, 0, j * 16 + 8)));
+		}
+
+		public TempleGeneratorConfig(World world, Random random, int i, int j, Biome biome) {
 			super(i, j);
-			Biome biome = world.getBiome(new BlockPos(i * 16 + 8, 0, j * 16 + 8));
-			if (biome == Biome.JUNGLE || biome == Biome.JUNGLE_HILLS) {
+			if (biome == Biomes.JUNGLE || biome == Biomes.JUNGLE_HILLS) {
 				TemplePieces.JunglePyramid junglePyramid = new TemplePieces.JunglePyramid(random, i * 16, j * 16);
-				this.children.add(junglePyramid);
-			} else if (biome == Biome.SWAMPLAND) {
+				this.field_13015.add(junglePyramid);
+			} else if (biome == Biomes.SWAMP) {
 				TemplePieces.SwampHut swampHut = new TemplePieces.SwampHut(random, i * 16, j * 16);
-				this.children.add(swampHut);
-			} else if (biome == Biome.DESERT || biome == Biome.DESERT_HILLS) {
+				this.field_13015.add(swampHut);
+			} else if (biome == Biomes.DESERT || biome == Biomes.DESERT_HILLS) {
 				TemplePieces.DesertPyramid desertPyramid = new TemplePieces.DesertPyramid(random, i * 16, j * 16);
-				this.children.add(desertPyramid);
+				this.field_13015.add(desertPyramid);
+			} else if (biome == Biomes.ICE_FLATS || biome == Biomes.TAIGA_COLD) {
+				TemplePieces.class_2761 lv = new TemplePieces.class_2761(random, i * 16, j * 16);
+				this.field_13015.add(lv);
 			}
 
 			this.setBoundingBoxFromChildren();

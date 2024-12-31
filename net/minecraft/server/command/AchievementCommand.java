@@ -3,7 +3,9 @@ package net.minecraft.server.command;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.advancement.Achievement;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.command.AbstractCommand;
@@ -33,15 +35,13 @@ public class AchievementCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 2) {
 			throw new IncorrectUsageException("commands.achievement.usage");
 		} else {
 			final Stat stat = Stats.getAStat(args[1]);
-			if (stat == null && !args[1].equals("*")) {
-				throw new CommandException("commands.achievement.unknownAchievement", args[1]);
-			} else {
-				final ServerPlayerEntity serverPlayerEntity = args.length >= 3 ? getPlayer(source, args[2]) : getAsPlayer(source);
+			if ((stat != null || args[1].equals("*")) && (stat == null || stat.isAchievement())) {
+				final ServerPlayerEntity serverPlayerEntity = args.length >= 3 ? method_4639(minecraftServer, commandSource, args[2]) : getAsPlayer(commandSource);
 				boolean bl = args[0].equalsIgnoreCase("give");
 				boolean bl2 = args[0].equalsIgnoreCase("take");
 				if (bl || bl2) {
@@ -51,13 +51,13 @@ public class AchievementCommand extends AbstractCommand {
 								serverPlayerEntity.incrementStat(achievement);
 							}
 
-							run(source, this, "commands.achievement.give.success.all", new Object[]{serverPlayerEntity.getTranslationKey()});
+							run(commandSource, this, "commands.achievement.give.success.all", new Object[]{serverPlayerEntity.getTranslationKey()});
 						} else if (bl2) {
 							for (Achievement achievement2 : Lists.reverse(AchievementsAndCriterions.ACHIEVEMENTS)) {
 								serverPlayerEntity.method_11238(achievement2);
 							}
 
-							run(source, this, "commands.achievement.take.success.all", new Object[]{serverPlayerEntity.getTranslationKey()});
+							run(commandSource, this, "commands.achievement.take.success.all", new Object[]{serverPlayerEntity.getTranslationKey()});
 						}
 					} else {
 						if (stat instanceof Achievement) {
@@ -84,7 +84,7 @@ public class AchievementCommand extends AbstractCommand {
 								}
 
 								List<Achievement> list2 = Lists.newArrayList(Iterators.filter(AchievementsAndCriterions.ACHIEVEMENTS.iterator(), new Predicate<Achievement>() {
-									public boolean apply(Achievement achievement) {
+									public boolean apply(@Nullable Achievement achievement) {
 										return serverPlayerEntity.getStatHandler().hasAchievement(achievement) && achievement != stat;
 									}
 								}));
@@ -101,7 +101,7 @@ public class AchievementCommand extends AbstractCommand {
 									}
 
 									if (!bl3) {
-										for (Achievement var23 = achievement5; var23 != null; var23 = var23.parent) {
+										for (Achievement var24 = achievement5; var24 != null; var24 = var24.parent) {
 											list3.remove(achievement5);
 										}
 									}
@@ -115,31 +115,33 @@ public class AchievementCommand extends AbstractCommand {
 
 						if (bl) {
 							serverPlayerEntity.incrementStat(stat);
-							run(source, this, "commands.achievement.give.success.one", new Object[]{serverPlayerEntity.getTranslationKey(), stat.method_8281()});
+							run(commandSource, this, "commands.achievement.give.success.one", new Object[]{serverPlayerEntity.getTranslationKey(), stat.method_8281()});
 						} else if (bl2) {
 							serverPlayerEntity.method_11238(stat);
-							run(source, this, "commands.achievement.take.success.one", new Object[]{stat.method_8281(), serverPlayerEntity.getTranslationKey()});
+							run(commandSource, this, "commands.achievement.take.success.one", new Object[]{stat.method_8281(), serverPlayerEntity.getTranslationKey()});
 						}
 					}
 				}
+			} else {
+				throw new CommandException("commands.achievement.unknownAchievement", args[1]);
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, new String[]{"give", "take"});
-		} else if (args.length != 2) {
-			return args.length == 3 ? method_2894(args, MinecraftServer.getServer().getPlayerNames()) : null;
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, new String[]{"give", "take"});
+		} else if (strings.length != 2) {
+			return strings.length == 3 ? method_2894(strings, server.getPlayerNames()) : Collections.emptyList();
 		} else {
 			List<String> list = Lists.newArrayList();
 
-			for (Stat stat : Stats.ALL) {
+			for (Stat stat : AchievementsAndCriterions.ACHIEVEMENTS) {
 				list.add(stat.name);
 			}
 
-			return method_10708(args, list);
+			return method_10708(strings, list);
 		}
 	}
 

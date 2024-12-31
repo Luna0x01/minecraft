@@ -6,6 +6,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -102,13 +103,13 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeEnum(this.action);
+		buf.writeEnumConstant(this.action);
 		buf.writeVarInt(this.entries.size());
 
 		for (PlayerListS2CPacket.Entry entry : this.entries) {
 			switch (this.action) {
 				case ADD_PLAYER:
-					buf.writeUUID(entry.getProfile().getId());
+					buf.writeUuid(entry.getProfile().getId());
 					buf.writeString(entry.getProfile().getName());
 					buf.writeVarInt(entry.getProfile().getProperties().size());
 
@@ -133,15 +134,15 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 					}
 					break;
 				case UPDATE_GAME_MODE:
-					buf.writeUUID(entry.getProfile().getId());
+					buf.writeUuid(entry.getProfile().getId());
 					buf.writeVarInt(entry.getGameMode().getId());
 					break;
 				case UPDATE_LATENCY:
-					buf.writeUUID(entry.getProfile().getId());
+					buf.writeUuid(entry.getProfile().getId());
 					buf.writeVarInt(entry.getLatency());
 					break;
 				case UPDATE_DISPLAY_NAME:
-					buf.writeUUID(entry.getProfile().getId());
+					buf.writeUuid(entry.getProfile().getId());
 					if (entry.getDisplayName() == null) {
 						buf.writeBoolean(false);
 					} else {
@@ -150,7 +151,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 					}
 					break;
 				case REMOVE_PLAYER:
-					buf.writeUUID(entry.getProfile().getId());
+					buf.writeUuid(entry.getProfile().getId());
 			}
 		}
 	}
@@ -185,7 +186,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 		private final GameProfile profile;
 		private final Text displayName;
 
-		public Entry(GameProfile gameProfile, int i, LevelInfo.GameMode gameMode, Text text) {
+		public Entry(GameProfile gameProfile, int i, LevelInfo.GameMode gameMode, @Nullable Text text) {
 			this.profile = gameProfile;
 			this.latency = i;
 			this.gameMode = gameMode;
@@ -204,6 +205,7 @@ public class PlayerListS2CPacket implements Packet<ClientPlayPacketListener> {
 			return this.gameMode;
 		}
 
+		@Nullable
 		public Text getDisplayName() {
 			return this.displayName;
 		}

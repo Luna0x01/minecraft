@@ -1,11 +1,13 @@
 package net.minecraft.screen;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.HorseArmorType;
 
 public class HorseScreenHandler extends ScreenHandler {
 	private Inventory playerInv;
@@ -19,19 +21,19 @@ public class HorseScreenHandler extends ScreenHandler {
 		int j = (i - 4) * 18;
 		this.addSlot(new Slot(inventory2, 0, 8, 18) {
 			@Override
-			public boolean canInsert(ItemStack stack) {
+			public boolean canInsert(@Nullable ItemStack stack) {
 				return super.canInsert(stack) && stack.getItem() == Items.SADDLE && !this.hasStack();
 			}
 		});
 		this.addSlot(new Slot(inventory2, 1, 8, 36) {
 			@Override
-			public boolean canInsert(ItemStack stack) {
-				return super.canInsert(stack) && horseBaseEntity.drawHoverEffect() && HorseBaseEntity.isHorseArmor(stack.getItem());
+			public boolean canInsert(@Nullable ItemStack stack) {
+				return super.canInsert(stack) && horseBaseEntity.method_13129().method_13152() && HorseArmorType.method_13139(stack.getItem());
 			}
 
 			@Override
 			public boolean doDrawHoveringEffect() {
-				return horseBaseEntity.drawHoverEffect();
+				return horseBaseEntity.method_13129().method_13152();
 			}
 		});
 		if (horseBaseEntity.hasChest()) {
@@ -58,6 +60,7 @@ public class HorseScreenHandler extends ScreenHandler {
 		return this.playerInv.canPlayerUseInv(player) && this.entity.isAlive() && this.entity.distanceTo(player) < 8.0F;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
 		ItemStack itemStack = null;

@@ -20,13 +20,13 @@ public class JungleBushFeature extends JungleTreeFeature {
 
 	@Override
 	public boolean generate(World world, Random random, BlockPos blockPos) {
-		Block block;
-		while (((block = world.getBlockState(blockPos).getBlock()).getMaterial() == Material.AIR || block.getMaterial() == Material.FOLIAGE) && blockPos.getY() > 0) {
+		BlockState blockState;
+		while (((blockState = world.getBlockState(blockPos)).getMaterial() == Material.AIR || blockState.getMaterial() == Material.FOLIAGE) && blockPos.getY() > 0) {
 			blockPos = blockPos.down();
 		}
 
-		Block block2 = world.getBlockState(blockPos).getBlock();
-		if (block2 == Blocks.DIRT || block2 == Blocks.GRASS) {
+		Block block = world.getBlockState(blockPos).getBlock();
+		if (block == Blocks.DIRT || block == Blocks.GRASS) {
 			blockPos = blockPos.up();
 			this.setBlockStateWithoutUpdatingNeighbors(world, blockPos, this.bushLogState);
 
@@ -41,7 +41,8 @@ public class JungleBushFeature extends JungleTreeFeature {
 						int o = n - blockPos.getZ();
 						if (Math.abs(m) != k || Math.abs(o) != k || random.nextInt(2) != 0) {
 							BlockPos blockPos2 = new BlockPos(l, i, n);
-							if (!world.getBlockState(blockPos2).getBlock().isFullBlock()) {
+							Material material = world.getBlockState(blockPos2).getMaterial();
+							if (material == Material.AIR || material == Material.FOLIAGE) {
 								this.setBlockStateWithoutUpdatingNeighbors(world, blockPos2, this.bushLeafState);
 							}
 						}

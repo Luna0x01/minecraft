@@ -26,6 +26,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.realms.RealmsBridge;
+import net.minecraft.resource.Resource;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -33,9 +34,9 @@ import net.minecraft.world.DemoServerWorld;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.level.storage.LevelStorageAccess;
 import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.util.glu.Project;
 
@@ -79,13 +80,12 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		this.oldGl2 = MORE_INFO_MESSAGE;
 		this.realmsNotificationsInitialized = false;
 		this.splashText = "missingno";
-		BufferedReader bufferedReader = null;
+		Resource resource = null;
 
 		try {
 			List<String> list = Lists.newArrayList();
-			bufferedReader = new BufferedReader(
-				new InputStreamReader(MinecraftClient.getInstance().getResourceManager().getResource(SPLASHES).getInputStream(), Charsets.UTF_8)
-			);
+			resource = MinecraftClient.getInstance().getResourceManager().getResource(SPLASHES);
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resource.getInputStream(), Charsets.UTF_8));
 
 			String string;
 			while ((string = bufferedReader.readLine()) != null) {
@@ -100,14 +100,9 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 					this.splashText = (String)list.get(RANDOM.nextInt(list.size()));
 				} while (this.splashText.hashCode() == 125780783);
 			}
-		} catch (IOException var12) {
+		} catch (IOException var8) {
 		} finally {
-			if (bufferedReader != null) {
-				try {
-					bufferedReader.close();
-				} catch (IOException var11) {
-				}
-			}
+			IOUtils.closeQuietly(resource);
 		}
 
 		this.minecraftRandomNumber = RANDOM.nextFloat();
@@ -238,8 +233,17 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 			LevelStorageAccess levelStorageAccess = this.client.getCurrentSave();
 			LevelProperties levelProperties = levelStorageAccess.getLevelProperties("Demo_World");
 			if (levelProperties != null) {
-				ConfirmScreen confirmScreen = SelectWorldScreen.createDeleteWarningScreen(this, levelProperties.getLevelName(), 12);
-				this.client.setScreen(confirmScreen);
+				this.client
+					.setScreen(
+						new ConfirmScreen(
+							this,
+							I18n.translate("selectWorld.deleteQuestion"),
+							"'" + levelProperties.getLevelName() + "' " + I18n.translate("selectWorld.deleteWarning"),
+							I18n.translate("selectWorld.deleteButton"),
+							I18n.translate("gui.cancel"),
+							12
+						)
+					);
 			}
 		}
 	}
@@ -288,7 +292,9 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		GlStateManager.disableAlphaTest();
 		GlStateManager.disableCull();
 		GlStateManager.depthMask(false);
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		int i = 8;
 
 		for (int j = 0; j < i * i; j++) {
@@ -351,11 +357,13 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 
 	private void transformPanorama(float tickDelta) {
 		this.client.getTextureManager().bindTexture(this.backgroundTextureId);
-		GL11.glTexParameteri(3553, 10241, 9729);
-		GL11.glTexParameteri(3553, 10240, 9729);
-		GL11.glCopyTexSubImage2D(3553, 0, 0, 0, 0, 0, 256, 256);
+		GlStateManager.method_12294(3553, 10241, 9729);
+		GlStateManager.method_12294(3553, 10240, 9729);
+		GlStateManager.method_12275(3553, 0, 0, 0, 0, 0, 256, 256);
 		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		GlStateManager.colorMask(true, true, true, false);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
@@ -435,20 +443,22 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 		GlStateManager.pushMatrix();
 		GlStateManager.translate((float)(this.width / 2 + 90), 70.0F, 0.0F);
 		GlStateManager.rotate(-20.0F, 0.0F, 0.0F, 1.0F);
-		float f = 1.8F - MathHelper.abs(MathHelper.sin((float)(MinecraftClient.getTime() % 1000L) / 1000.0F * (float) Math.PI * 2.0F) * 0.1F);
+		float f = 1.8F - MathHelper.abs(MathHelper.sin((float)(MinecraftClient.getTime() % 1000L) / 1000.0F * (float) (Math.PI * 2)) * 0.1F);
 		f = f * 100.0F / (float)(this.textRenderer.getStringWidth(this.splashText) + 32);
 		GlStateManager.scale(f, f, f);
 		this.drawCenteredString(this.textRenderer, this.splashText, 0, -8, -256);
 		GlStateManager.popMatrix();
-		String string = "Minecraft 1.8.9";
+		String string = "Minecraft 1.9.4";
 		if (this.client.isDemo()) {
 			string = string + " Demo";
+		} else {
+			string = string + ("release".equalsIgnoreCase(this.client.getVersionType()) ? "" : "/" + this.client.getVersionType());
 		}
 
 		this.drawWithShadow(this.textRenderer, string, 2, this.height - 10, -1);
 		String string2 = "Copyright Mojang AB. Do not distribute!";
 		this.drawWithShadow(this.textRenderer, string2, this.width - this.textRenderer.getStringWidth(string2) - 2, this.height - 10, -1);
-		if (this.oldGl1 != null && this.oldGl1.length() > 0) {
+		if (this.oldGl1 != null && !this.oldGl1.isEmpty()) {
 			fill(this.oldGlLeft - 2, this.oldGlTop - 2, this.oldGlRight + 2, this.oldGlBottom - 1, 1428160512);
 			this.drawWithShadow(this.textRenderer, this.oldGl1, this.oldGlLeft, this.oldGlTop, -1);
 			this.drawWithShadow(this.textRenderer, this.oldGl2, (this.width - this.oldGl2Width) / 2, ((ButtonWidget)this.buttons.get(0)).y - 12, -1);
@@ -464,7 +474,7 @@ public class TitleScreen extends Screen implements IdentifiableBooleanConsumer {
 	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		super.mouseClicked(mouseX, mouseY, button);
 		synchronized (this.mutex) {
-			if (this.oldGl1.length() > 0 && mouseX >= this.oldGlLeft && mouseX <= this.oldGlRight && mouseY >= this.oldGlTop && mouseY <= this.oldGlBottom) {
+			if (!this.oldGl1.isEmpty() && mouseX >= this.oldGlLeft && mouseX <= this.oldGlRight && mouseY >= this.oldGlTop && mouseY <= this.oldGlBottom) {
 				ConfirmChatLinkScreen confirmChatLinkScreen = new ConfirmChatLinkScreen(this, this.oldGlLink, 13, true);
 				confirmChatLinkScreen.disableWarning();
 				this.client.setScreen(confirmChatLinkScreen);

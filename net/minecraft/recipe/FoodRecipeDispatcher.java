@@ -42,6 +42,7 @@ public class FoodRecipeDispatcher {
 			Items.BOWL
 		);
 		recipes.registerShapedRecipe(new ItemStack(Blocks.MELON_BLOCK), "MMM", "MMM", "MMM", 'M', Items.MELON);
+		recipes.registerShapedRecipe(new ItemStack(Items.BEETROOT_SOUP), "OOO", "OOO", " B ", 'O', Items.BEETROOT, 'B', Items.BOWL);
 		recipes.registerShapedRecipe(new ItemStack(Items.MELON_SEEDS), "M", 'M', Items.MELON);
 		recipes.registerShapedRecipe(new ItemStack(Items.PUMPKIN_SEEDS, 4), "M", 'M', Blocks.PUMPKIN);
 		recipes.registerShapelessRecipe(new ItemStack(Items.PUMPKIN_PIE), Blocks.PUMPKIN, Items.SUGAR, Items.EGG);

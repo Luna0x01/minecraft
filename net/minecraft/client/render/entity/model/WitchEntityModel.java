@@ -43,9 +43,9 @@ public class WitchEntityModel extends VillagerEntityModel {
 		super.setAngles(handSwing, handSwingAmount, tickDelta, age, headPitch, scale, entity);
 		this.field_5132.offsetX = this.field_5132.offsetY = this.field_5132.offsetZ = 0.0F;
 		float f = 0.01F * (float)(entity.getEntityId() % 10);
-		this.field_5132.posX = MathHelper.sin((float)entity.ticksAlive * f) * 4.5F * (float) Math.PI / 180.0F;
+		this.field_5132.posX = MathHelper.sin((float)entity.ticksAlive * f) * 4.5F * (float) (Math.PI / 180.0);
 		this.field_5132.posY = 0.0F;
-		this.field_5132.posZ = MathHelper.cos((float)entity.ticksAlive * f) * 2.5F * (float) Math.PI / 180.0F;
+		this.field_5132.posZ = MathHelper.cos((float)entity.ticksAlive * f) * 2.5F * (float) (Math.PI / 180.0);
 		if (this.field_5133) {
 			this.field_5132.posX = -0.9F;
 			this.field_5132.offsetZ = -0.09375F;

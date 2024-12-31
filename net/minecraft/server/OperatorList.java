@@ -26,6 +26,11 @@ public class OperatorList extends ServerConfigList<GameProfile, OperatorEntry> {
 		return strings;
 	}
 
+	public int method_12832(GameProfile gameProfile) {
+		OperatorEntry operatorEntry = this.get(gameProfile);
+		return operatorEntry != null ? operatorEntry.getPermissionLevel() : 0;
+	}
+
 	public boolean isOp(GameProfile profile) {
 		OperatorEntry operatorEntry = this.get(profile);
 		return operatorEntry != null ? operatorEntry.canBypassPlayerLimit() : false;

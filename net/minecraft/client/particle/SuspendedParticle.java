@@ -11,8 +11,8 @@ public class SuspendedParticle extends Particle {
 		this.green = 0.4F;
 		this.blue = 0.7F;
 		this.setMiscTexture(0);
-		this.setBounds(0.01F, 0.01F);
-		this.scale = this.scale * (this.random.nextFloat() * 0.6F + 0.2F);
+		this.method_12244(0.01F, 0.01F);
+		this.scale = this.scale * (this.field_13438.nextFloat() * 0.6F + 0.2F);
 		this.velocityX = g * 0.0;
 		this.velocityY = h * 0.0;
 		this.velocityZ = i * 0.0;
@@ -20,17 +20,17 @@ public class SuspendedParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
-		if (this.world.getBlockState(new BlockPos(this)).getBlock().getMaterial() != Material.WATER) {
-			this.remove();
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
+		if (this.field_13424.getBlockState(new BlockPos(this.field_13428, this.field_13429, this.field_13430)).getMaterial() != Material.WATER) {
+			this.method_12251();
 		}
 
 		if (this.maxAge-- <= 0) {
-			this.remove();
+			this.method_12251();
 		}
 	}
 

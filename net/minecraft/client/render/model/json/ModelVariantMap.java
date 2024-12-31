@@ -1,9 +1,11 @@
 package net.minecraft.client.render.model.json;
 
-import com.google.common.collect.Lists;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -11,211 +13,142 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.io.Reader;
 import java.lang.reflect.Type;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.util.Identifier;
+import java.util.Set;
+import java.util.Map.Entry;
+import javax.annotation.Nullable;
+import net.minecraft.client.Variant;
+import net.minecraft.client.class_2877;
+import net.minecraft.client.class_2882;
+import net.minecraft.client.class_2885;
 import net.minecraft.util.JsonHelper;
 
 public class ModelVariantMap {
+	@VisibleForTesting
 	static final Gson GSON = new GsonBuilder()
 		.registerTypeAdapter(ModelVariantMap.class, new ModelVariantMap.Deserializer())
-		.registerTypeAdapter(ModelVariantMap.Entry.class, new ModelVariantMap.Entry.Deserializer())
+		.registerTypeAdapter(Variant.class, new Variant.VariantDeserializer())
+		.registerTypeAdapter(class_2877.class, new class_2877.class_2878())
+		.registerTypeAdapter(class_2882.class, new class_2882.class_2883())
+		.registerTypeAdapter(class_2885.class, new class_2885.class_2886())
 		.create();
-	private final Map<String, ModelVariantMap.Variant> map = Maps.newHashMap();
+	private final Map<String, class_2877> map = Maps.newHashMap();
+	private class_2882 field_13554;
 
 	public static ModelVariantMap fromReader(Reader reader) {
 		return (ModelVariantMap)GSON.fromJson(reader, ModelVariantMap.class);
 	}
 
-	public ModelVariantMap(Collection<ModelVariantMap.Variant> collection) {
-		for (ModelVariantMap.Variant variant : collection) {
-			this.map.put(variant.name, variant);
-		}
+	public ModelVariantMap(Map<String, class_2877> map, class_2882 arg) {
+		this.field_13554 = arg;
+		this.map.putAll(map);
 	}
 
 	public ModelVariantMap(List<ModelVariantMap> list) {
-		for (ModelVariantMap modelVariantMap : list) {
-			this.map.putAll(modelVariantMap.map);
+		ModelVariantMap modelVariantMap = null;
+
+		for (ModelVariantMap modelVariantMap2 : list) {
+			if (modelVariantMap2.method_12357()) {
+				this.map.clear();
+				modelVariantMap = modelVariantMap2;
+			}
+
+			this.map.putAll(modelVariantMap2.map);
+		}
+
+		if (modelVariantMap != null) {
+			this.field_13554 = modelVariantMap.field_13554;
 		}
 	}
 
-	public ModelVariantMap.Variant getVariant(String name) {
-		ModelVariantMap.Variant variant = (ModelVariantMap.Variant)this.map.get(name);
-		if (variant == null) {
+	public boolean method_12358(String string) {
+		return this.map.get(string) != null;
+	}
+
+	public class_2877 method_10030(String string) {
+		class_2877 lv = (class_2877)this.map.get(string);
+		if (lv == null) {
 			throw new ModelVariantMap.ModelVariantException();
 		} else {
-			return variant;
+			return lv;
 		}
 	}
 
 	public boolean equals(Object obj) {
 		if (this == obj) {
 			return true;
-		} else if (obj instanceof ModelVariantMap) {
-			ModelVariantMap modelVariantMap = (ModelVariantMap)obj;
-			return this.map.equals(modelVariantMap.map);
 		} else {
+			if (obj instanceof ModelVariantMap) {
+				ModelVariantMap modelVariantMap = (ModelVariantMap)obj;
+				if (this.map.equals(modelVariantMap.map)) {
+					return this.method_12357() ? this.field_13554.equals(modelVariantMap.field_13554) : !modelVariantMap.method_12357();
+				}
+			}
+
 			return false;
 		}
 	}
 
 	public int hashCode() {
-		return this.map.hashCode();
+		return 31 * this.map.hashCode() + (this.method_12357() ? this.field_13554.hashCode() : 0);
+	}
+
+	public Set<class_2877> method_12356() {
+		Set<class_2877> set = Sets.newHashSet(this.map.values());
+		if (this.method_12357()) {
+			set.addAll(this.field_13554.method_12388());
+		}
+
+		return set;
+	}
+
+	public boolean method_12357() {
+		return this.field_13554 != null;
+	}
+
+	public class_2882 method_12359() {
+		return this.field_13554;
 	}
 
 	public static class Deserializer implements JsonDeserializer<ModelVariantMap> {
 		public ModelVariantMap deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
-			List<ModelVariantMap.Variant> list = this.deserializeVariants(jsonDeserializationContext, jsonObject);
-			return new ModelVariantMap(list);
-		}
-
-		protected List<ModelVariantMap.Variant> deserializeVariants(JsonDeserializationContext ctx, JsonObject json) {
-			JsonObject jsonObject = JsonHelper.getObject(json, "variants");
-			List<ModelVariantMap.Variant> list = Lists.newArrayList();
-
-			for (java.util.Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-				list.add(this.deserializeVariant(ctx, entry));
-			}
-
-			return list;
-		}
-
-		protected ModelVariantMap.Variant deserializeVariant(JsonDeserializationContext ctx, java.util.Map.Entry<String, JsonElement> entry) {
-			String string = (String)entry.getKey();
-			List<ModelVariantMap.Entry> list = Lists.newArrayList();
-			JsonElement jsonElement = (JsonElement)entry.getValue();
-			if (jsonElement.isJsonArray()) {
-				for (JsonElement jsonElement2 : jsonElement.getAsJsonArray()) {
-					list.add((ModelVariantMap.Entry)ctx.deserialize(jsonElement2, ModelVariantMap.Entry.class));
-				}
+			Map<String, class_2877> map = this.method_12360(jsonDeserializationContext, jsonObject);
+			class_2882 lv = this.method_12361(jsonDeserializationContext, jsonObject);
+			if (!map.isEmpty() || lv != null && !lv.method_12388().isEmpty()) {
+				return new ModelVariantMap(map, lv);
 			} else {
-				list.add((ModelVariantMap.Entry)ctx.deserialize(jsonElement, ModelVariantMap.Entry.class));
-			}
-
-			return new ModelVariantMap.Variant(string, list);
-		}
-	}
-
-	public static class Entry {
-		private final Identifier id;
-		private final net.minecraft.client.render.model.ModelRotation rotation;
-		private final boolean uvLock;
-		private final int weight;
-
-		public Entry(Identifier identifier, net.minecraft.client.render.model.ModelRotation modelRotation, boolean bl, int i) {
-			this.id = identifier;
-			this.rotation = modelRotation;
-			this.uvLock = bl;
-			this.weight = i;
-		}
-
-		public Identifier getId() {
-			return this.id;
-		}
-
-		public net.minecraft.client.render.model.ModelRotation getRotation() {
-			return this.rotation;
-		}
-
-		public boolean hasUvLock() {
-			return this.uvLock;
-		}
-
-		public int getWeight() {
-			return this.weight;
-		}
-
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			} else if (!(obj instanceof ModelVariantMap.Entry)) {
-				return false;
-			} else {
-				ModelVariantMap.Entry entry = (ModelVariantMap.Entry)obj;
-				return this.id.equals(entry.id) && this.rotation == entry.rotation && this.uvLock == entry.uvLock;
+				throw new JsonParseException("Neither 'variants' nor 'multipart' found");
 			}
 		}
 
-		public int hashCode() {
-			int i = this.id.hashCode();
-			i = 31 * i + (this.rotation != null ? this.rotation.hashCode() : 0);
-			return 31 * i + (this.uvLock ? 1 : 0);
-		}
+		protected Map<String, class_2877> method_12360(JsonDeserializationContext jsonDeserializationContext, JsonObject jsonObject) {
+			Map<String, class_2877> map = Maps.newHashMap();
+			if (jsonObject.has("variants")) {
+				JsonObject jsonObject2 = JsonHelper.getObject(jsonObject, "variants");
 
-		public static class Deserializer implements JsonDeserializer<ModelVariantMap.Entry> {
-			public ModelVariantMap.Entry deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-				JsonObject jsonObject = jsonElement.getAsJsonObject();
-				String string = this.getModel(jsonObject);
-				net.minecraft.client.render.model.ModelRotation modelRotation = this.getRotation(jsonObject);
-				boolean bl = this.getUvLock(jsonObject);
-				int i = this.getWeight(jsonObject);
-				return new ModelVariantMap.Entry(this.derelativizeId(string), modelRotation, bl, i);
-			}
-
-			private Identifier derelativizeId(String id) {
-				Identifier identifier = new Identifier(id);
-				return new Identifier(identifier.getNamespace(), "block/" + identifier.getPath());
-			}
-
-			private boolean getUvLock(JsonObject json) {
-				return JsonHelper.getBoolean(json, "uvlock", false);
-			}
-
-			protected net.minecraft.client.render.model.ModelRotation getRotation(JsonObject json) {
-				int i = JsonHelper.getInt(json, "x", 0);
-				int j = JsonHelper.getInt(json, "y", 0);
-				net.minecraft.client.render.model.ModelRotation modelRotation = net.minecraft.client.render.model.ModelRotation.get(i, j);
-				if (modelRotation == null) {
-					throw new JsonParseException("Invalid BlockModelRotation x: " + i + ", y: " + j);
-				} else {
-					return modelRotation;
+				for (Entry<String, JsonElement> entry : jsonObject2.entrySet()) {
+					map.put(entry.getKey(), (class_2877)jsonDeserializationContext.deserialize((JsonElement)entry.getValue(), class_2877.class));
 				}
 			}
 
-			protected String getModel(JsonObject json) {
-				return JsonHelper.getString(json, "model");
-			}
+			return map;
+		}
 
-			protected int getWeight(JsonObject json) {
-				return JsonHelper.getInt(json, "weight", 1);
+		@Nullable
+		protected class_2882 method_12361(JsonDeserializationContext jsonDeserializationContext, JsonObject jsonObject) {
+			if (!jsonObject.has("multipart")) {
+				return null;
+			} else {
+				JsonArray jsonArray = JsonHelper.getArray(jsonObject, "multipart");
+				return (class_2882)jsonDeserializationContext.deserialize(jsonArray, class_2882.class);
 			}
 		}
 	}
 
 	public class ModelVariantException extends RuntimeException {
 		protected ModelVariantException() {
-		}
-	}
-
-	public static class Variant {
-		private final String name;
-		private final List<ModelVariantMap.Entry> entries;
-
-		public Variant(String string, List<ModelVariantMap.Entry> list) {
-			this.name = string;
-			this.entries = list;
-		}
-
-		public List<ModelVariantMap.Entry> getEntries() {
-			return this.entries;
-		}
-
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			} else if (!(obj instanceof ModelVariantMap.Variant)) {
-				return false;
-			} else {
-				ModelVariantMap.Variant variant = (ModelVariantMap.Variant)obj;
-				return !this.name.equals(variant.name) ? false : this.entries.equals(variant.entries);
-			}
-		}
-
-		public int hashCode() {
-			int i = this.name.hashCode();
-			return 31 * i + this.entries.hashCode();
 		}
 	}
 }

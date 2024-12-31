@@ -1,8 +1,10 @@
 package net.minecraft.client.render.entity.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.gui.screen.options.HandOption;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class BiPedModel extends EntityModel {
@@ -13,10 +15,9 @@ public class BiPedModel extends EntityModel {
 	public ModelPart leftArm;
 	public ModelPart rightLeg;
 	public ModelPart leftLeg;
-	public int leftArmPose;
-	public int rightArmPose;
+	public BiPedModel.class_2850 field_13384 = BiPedModel.class_2850.EMPTY;
+	public BiPedModel.class_2850 field_13385 = BiPedModel.class_2850.EMPTY;
 	public boolean sneaking;
-	public boolean aiming;
 
 	public BiPedModel() {
 		this(0.0F);
@@ -92,48 +93,89 @@ public class BiPedModel extends EntityModel {
 
 	@Override
 	public void setAngles(float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale, Entity entity) {
-		this.head.posY = age / (180.0F / (float)Math.PI);
-		this.head.posX = headPitch / (180.0F / (float)Math.PI);
-		this.rightArm.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 2.0F * handSwingAmount * 0.5F;
-		this.leftArm.posX = MathHelper.cos(handSwing * 0.6662F) * 2.0F * handSwingAmount * 0.5F;
+		boolean bl = entity instanceof LivingEntity && ((LivingEntity)entity).method_13056() > 4;
+		this.head.posY = age * (float) (Math.PI / 180.0);
+		if (bl) {
+			this.head.posX = (float) (-Math.PI / 4);
+		} else {
+			this.head.posX = headPitch * (float) (Math.PI / 180.0);
+		}
+
+		this.body.posY = 0.0F;
+		this.rightArm.pivotZ = 0.0F;
+		this.rightArm.pivotX = -5.0F;
+		this.leftArm.pivotZ = 0.0F;
+		this.leftArm.pivotX = 5.0F;
+		float f = 1.0F;
+		if (bl) {
+			f = (float)(entity.velocityX * entity.velocityX + entity.velocityY * entity.velocityY + entity.velocityZ * entity.velocityZ);
+			f /= 0.2F;
+			f *= f * f;
+		}
+
+		if (f < 1.0F) {
+			f = 1.0F;
+		}
+
+		this.rightArm.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 2.0F * handSwingAmount * 0.5F / f;
+		this.leftArm.posX = MathHelper.cos(handSwing * 0.6662F) * 2.0F * handSwingAmount * 0.5F / f;
 		this.rightArm.posZ = 0.0F;
 		this.leftArm.posZ = 0.0F;
-		this.rightLeg.posX = MathHelper.cos(handSwing * 0.6662F) * 1.4F * handSwingAmount;
-		this.leftLeg.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.4F * handSwingAmount;
+		this.rightLeg.posX = MathHelper.cos(handSwing * 0.6662F) * 1.4F * handSwingAmount / f;
+		this.leftLeg.posX = MathHelper.cos(handSwing * 0.6662F + (float) Math.PI) * 1.4F * handSwingAmount / f;
 		this.rightLeg.posY = 0.0F;
 		this.leftLeg.posY = 0.0F;
+		this.rightLeg.posZ = 0.0F;
+		this.leftLeg.posZ = 0.0F;
 		if (this.riding) {
 			this.rightArm.posX += (float) (-Math.PI / 5);
 			this.leftArm.posX += (float) (-Math.PI / 5);
-			this.rightLeg.posX = (float) (-Math.PI * 2.0 / 5.0);
-			this.leftLeg.posX = (float) (-Math.PI * 2.0 / 5.0);
+			this.rightLeg.posX = -1.4137167F;
 			this.rightLeg.posY = (float) (Math.PI / 10);
+			this.rightLeg.posZ = 0.07853982F;
+			this.leftLeg.posX = -1.4137167F;
 			this.leftLeg.posY = (float) (-Math.PI / 10);
-		}
-
-		if (this.leftArmPose != 0) {
-			this.leftArm.posX = this.leftArm.posX * 0.5F - (float) (Math.PI / 10) * (float)this.leftArmPose;
+			this.leftLeg.posZ = -0.07853982F;
 		}
 
 		this.rightArm.posY = 0.0F;
 		this.rightArm.posZ = 0.0F;
-		switch (this.rightArmPose) {
-			case 0:
-			case 2:
-			default:
+		switch (this.field_13384) {
+			case EMPTY:
+				this.leftArm.posY = 0.0F;
 				break;
-			case 1:
-				this.rightArm.posX = this.rightArm.posX * 0.5F - (float) (Math.PI / 10) * (float)this.rightArmPose;
+			case BLOCK:
+				this.leftArm.posX = this.leftArm.posX * 0.5F - 0.9424779F;
+				this.leftArm.posY = (float) (Math.PI / 6);
 				break;
-			case 3:
-				this.rightArm.posX = this.rightArm.posX * 0.5F - (float) (Math.PI / 10) * (float)this.rightArmPose;
-				this.rightArm.posY = (float) (-Math.PI / 6);
+			case ITEM:
+				this.leftArm.posX = this.leftArm.posX * 0.5F - (float) (Math.PI / 10);
+				this.leftArm.posY = 0.0F;
 		}
 
-		this.leftArm.posY = 0.0F;
-		if (this.handSwingProgress > -9990.0F) {
-			float f = this.handSwingProgress;
-			this.body.posY = MathHelper.sin(MathHelper.sqrt(f) * (float) Math.PI * 2.0F) * 0.2F;
+		switch (this.field_13385) {
+			case EMPTY:
+				this.rightArm.posY = 0.0F;
+				break;
+			case BLOCK:
+				this.rightArm.posX = this.rightArm.posX * 0.5F - 0.9424779F;
+				this.rightArm.posY = (float) (-Math.PI / 6);
+				break;
+			case ITEM:
+				this.rightArm.posX = this.rightArm.posX * 0.5F - (float) (Math.PI / 10);
+				this.rightArm.posY = 0.0F;
+		}
+
+		if (this.handSwingProgress > 0.0F) {
+			HandOption handOption = this.method_12222(entity);
+			ModelPart modelPart = this.method_12223(handOption);
+			ModelPart modelPart2 = this.method_12223(handOption.method_13037());
+			float g = this.handSwingProgress;
+			this.body.posY = MathHelper.sin(MathHelper.sqrt(g) * (float) (Math.PI * 2)) * 0.2F;
+			if (handOption == HandOption.LEFT) {
+				this.body.posY *= -1.0F;
+			}
+
 			this.rightArm.pivotZ = MathHelper.sin(this.body.posY) * 5.0F;
 			this.rightArm.pivotX = -MathHelper.cos(this.body.posY) * 5.0F;
 			this.leftArm.pivotZ = -MathHelper.sin(this.body.posY) * 5.0F;
@@ -141,15 +183,15 @@ public class BiPedModel extends EntityModel {
 			this.rightArm.posY = this.rightArm.posY + this.body.posY;
 			this.leftArm.posY = this.leftArm.posY + this.body.posY;
 			this.leftArm.posX = this.leftArm.posX + this.body.posY;
-			f = 1.0F - this.handSwingProgress;
-			f *= f;
-			f *= f;
-			f = 1.0F - f;
-			float g = MathHelper.sin(f * (float) Math.PI);
-			float h = MathHelper.sin(this.handSwingProgress * (float) Math.PI) * -(this.head.posX - 0.7F) * 0.75F;
-			this.rightArm.posX = (float)((double)this.rightArm.posX - ((double)g * 1.2 + (double)h));
-			this.rightArm.posY = this.rightArm.posY + this.body.posY * 2.0F;
-			this.rightArm.posZ = this.rightArm.posZ + MathHelper.sin(this.handSwingProgress * (float) Math.PI) * -0.4F;
+			g = 1.0F - this.handSwingProgress;
+			g *= g;
+			g *= g;
+			g = 1.0F - g;
+			float h = MathHelper.sin(g * (float) Math.PI);
+			float i = MathHelper.sin(this.handSwingProgress * (float) Math.PI) * -(this.head.posX - 0.7F) * 0.75F;
+			modelPart.posX = (float)((double)modelPart.posX - ((double)h * 1.2 + (double)i));
+			modelPart.posY = modelPart.posY + this.body.posY * 2.0F;
+			modelPart.posZ = modelPart.posZ + MathHelper.sin(this.handSwingProgress * (float) Math.PI) * -0.4F;
 		}
 
 		if (this.sneaking) {
@@ -174,21 +216,16 @@ public class BiPedModel extends EntityModel {
 		this.leftArm.posZ = this.leftArm.posZ - (MathHelper.cos(tickDelta * 0.09F) * 0.05F + 0.05F);
 		this.rightArm.posX = this.rightArm.posX + MathHelper.sin(tickDelta * 0.067F) * 0.05F;
 		this.leftArm.posX = this.leftArm.posX - MathHelper.sin(tickDelta * 0.067F) * 0.05F;
-		if (this.aiming) {
-			float i = 0.0F;
-			float j = 0.0F;
-			this.rightArm.posZ = 0.0F;
-			this.leftArm.posZ = 0.0F;
-			this.rightArm.posY = -(0.1F - i * 0.6F) + this.head.posY;
-			this.leftArm.posY = 0.1F - i * 0.6F + this.head.posY + 0.4F;
+		if (this.field_13385 == BiPedModel.class_2850.BOW_AND_ARROW) {
+			this.rightArm.posY = -0.1F + this.head.posY;
+			this.leftArm.posY = 0.1F + this.head.posY + 0.4F;
 			this.rightArm.posX = (float) (-Math.PI / 2) + this.head.posX;
 			this.leftArm.posX = (float) (-Math.PI / 2) + this.head.posX;
-			this.rightArm.posX -= i * 1.2F - j * 0.4F;
-			this.leftArm.posX -= i * 1.2F - j * 0.4F;
-			this.rightArm.posZ = this.rightArm.posZ + MathHelper.cos(tickDelta * 0.09F) * 0.05F + 0.05F;
-			this.leftArm.posZ = this.leftArm.posZ - (MathHelper.cos(tickDelta * 0.09F) * 0.05F + 0.05F);
-			this.rightArm.posX = this.rightArm.posX + MathHelper.sin(tickDelta * 0.067F) * 0.05F;
-			this.leftArm.posX = this.leftArm.posX - MathHelper.sin(tickDelta * 0.067F) * 0.05F;
+		} else if (this.field_13384 == BiPedModel.class_2850.BOW_AND_ARROW) {
+			this.rightArm.posY = -0.1F + this.head.posY - 0.4F;
+			this.leftArm.posY = 0.1F + this.head.posY;
+			this.rightArm.posX = (float) (-Math.PI / 2) + this.head.posX;
+			this.leftArm.posX = (float) (-Math.PI / 2) + this.head.posX;
 		}
 
 		copyModelPart(this.head, this.hat);
@@ -199,10 +236,9 @@ public class BiPedModel extends EntityModel {
 		super.copy(model);
 		if (model instanceof BiPedModel) {
 			BiPedModel biPedModel = (BiPedModel)model;
-			this.leftArmPose = biPedModel.leftArmPose;
-			this.rightArmPose = biPedModel.rightArmPose;
+			this.field_13384 = biPedModel.field_13384;
+			this.field_13385 = biPedModel.field_13385;
 			this.sneaking = biPedModel.sneaking;
-			this.aiming = biPedModel.aiming;
 		}
 	}
 
@@ -216,7 +252,22 @@ public class BiPedModel extends EntityModel {
 		this.leftLeg.visible = visible;
 	}
 
-	public void setArmAngle(float angle) {
-		this.rightArm.preRender(angle);
+	public void method_12221(float f, HandOption handOption) {
+		this.method_12223(handOption).preRender(f);
+	}
+
+	protected ModelPart method_12223(HandOption handOption) {
+		return handOption == HandOption.LEFT ? this.leftArm : this.rightArm;
+	}
+
+	protected HandOption method_12222(Entity entity) {
+		return entity instanceof LivingEntity ? ((LivingEntity)entity).getDurability() : HandOption.RIGHT;
+	}
+
+	public static enum class_2850 {
+		EMPTY,
+		ITEM,
+		BLOCK,
+		BOW_AND_ARROW;
 	}
 }

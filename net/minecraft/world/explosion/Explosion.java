@@ -12,12 +12,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.enchantment.ProtectionEnchantment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.TntEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
@@ -80,7 +82,7 @@ public class Explosion {
 						for (float p = 0.3F; h > 0.0F; h -= 0.22500001F) {
 							BlockPos blockPos = new BlockPos(m, n, o);
 							BlockState blockState = this.world.getBlockState(blockPos);
-							if (blockState.getBlock().getMaterial() != Material.AIR) {
+							if (blockState.getMaterial() != Material.AIR) {
 								float q = this.causingEntity != null
 									? this.causingEntity.getBlastResistance(this, this.world, blockPos, blockState)
 									: blockState.getBlock().getBlastResistance(null);
@@ -126,13 +128,20 @@ public class Explosion {
 						ac /= ad;
 						double ae = (double)this.world.method_3612(vec3d, entity.getBoundingBox());
 						double af = (1.0 - z) * ae;
-						entity.damage(DamageSource.explosion(this), (float)((int)((af * af + af) / 2.0 * 8.0 * (double)r + 1.0)));
-						double ag = ProtectionEnchantment.method_4658(entity, af);
+						entity.damage(DamageSource.explosion(this), (float)((int)((af * af + af) / 2.0 * 7.0 * (double)r + 1.0)));
+						double ag = 1.0;
+						if (entity instanceof LivingEntity) {
+							ag = ProtectionEnchantment.method_11465((LivingEntity)entity, af);
+						}
+
 						entity.velocityX += aa * ag;
 						entity.velocityY += ab * ag;
 						entity.velocityZ += ac * ag;
-						if (entity instanceof PlayerEntity && !((PlayerEntity)entity).abilities.invulnerable) {
-							this.affectedPlayers.put((PlayerEntity)entity, new Vec3d(aa * af, ab * af, ac * af));
+						if (entity instanceof PlayerEntity) {
+							PlayerEntity playerEntity = (PlayerEntity)entity;
+							if (!playerEntity.isSpectator() && (!playerEntity.isCreative() || !playerEntity.abilities.flying)) {
+								this.affectedPlayers.put(playerEntity, new Vec3d(aa * af, ab * af, ac * af));
+							}
 						}
 					}
 				}
@@ -141,7 +150,17 @@ public class Explosion {
 	}
 
 	public void affectWorld(boolean showSmallParticles) {
-		this.world.playSound(this.x, this.y, this.z, "random.explode", 4.0F, (1.0F + (this.world.random.nextFloat() - this.world.random.nextFloat()) * 0.2F) * 0.7F);
+		this.world
+			.playSound(
+				null,
+				this.x,
+				this.y,
+				this.z,
+				Sounds.ENTITY_GENERIC_EXPLODE,
+				SoundCategory.BLOCKS,
+				4.0F,
+				(1.0F + (this.world.random.nextFloat() - this.world.random.nextFloat()) * 0.2F) * 0.7F
+			);
 		if (!(this.power < 2.0F) && this.destructive) {
 			this.world.addParticle(ParticleType.HUGE_EXPLOSION, this.x, this.y, this.z, 1.0, 0.0, 0.0);
 		} else {
@@ -150,7 +169,8 @@ public class Explosion {
 
 		if (this.destructive) {
 			for (BlockPos blockPos : this.affectedBlocks) {
-				Block block = this.world.getBlockState(blockPos).getBlock();
+				BlockState blockState = this.world.getBlockState(blockPos);
+				Block block = blockState.getBlock();
 				if (showSmallParticles) {
 					double d = (double)((float)blockPos.getX() + this.world.random.nextFloat());
 					double e = (double)((float)blockPos.getY() + this.world.random.nextFloat());
@@ -167,11 +187,11 @@ public class Explosion {
 					g *= k;
 					h *= k;
 					i *= k;
-					this.world.addParticle(ParticleType.EXPLOSION, (d + this.x * 1.0) / 2.0, (e + this.y * 1.0) / 2.0, (f + this.z * 1.0) / 2.0, g, h, i);
+					this.world.addParticle(ParticleType.EXPLOSION, (d + this.x) / 2.0, (e + this.y) / 2.0, (f + this.z) / 2.0, g, h, i);
 					this.world.addParticle(ParticleType.SMOKE, d, e, f, g, h, i);
 				}
 
-				if (block.getMaterial() != Material.AIR) {
+				if (blockState.getMaterial() != Material.AIR) {
 					if (block.shouldDropItemsOnExplosion(this)) {
 						block.randomDropAsItem(this.world, blockPos, this.world.getBlockState(blockPos), 1.0F / this.power, 0);
 					}
@@ -184,8 +204,8 @@ public class Explosion {
 
 		if (this.createFire) {
 			for (BlockPos blockPos2 : this.affectedBlocks) {
-				if (this.world.getBlockState(blockPos2).getBlock().getMaterial() == Material.AIR
-					&& this.world.getBlockState(blockPos2.down()).getBlock().isFullBlock()
+				if (this.world.getBlockState(blockPos2).getMaterial() == Material.AIR
+					&& this.world.getBlockState(blockPos2.down()).isFullBlock()
 					&& this.random.nextInt(3) == 0) {
 					this.world.setBlockState(blockPos2, Blocks.FIRE.getDefaultState());
 				}

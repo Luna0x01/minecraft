@@ -1,5 +1,6 @@
 package net.minecraft.world.chunk;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -49,6 +50,7 @@ public class ChunkCache implements BlockView {
 		return this.empty;
 	}
 
+	@Nullable
 	@Override
 	public BlockEntity getBlockEntity(BlockPos pos) {
 		int i = (pos.getX() >> 4) - this.minX;
@@ -75,7 +77,7 @@ public class ChunkCache implements BlockView {
 			if (i >= 0 && i < this.chunks.length && j >= 0 && j < this.chunks[i].length) {
 				Chunk chunk = this.chunks[i][j];
 				if (chunk != null) {
-					return chunk.method_9154(pos);
+					return chunk.getBlockState(pos);
 				}
 			}
 		}
@@ -85,14 +87,16 @@ public class ChunkCache implements BlockView {
 
 	@Override
 	public Biome getBiome(BlockPos pos) {
-		return this.world.getBiome(pos);
+		int i = (pos.getX() >> 4) - this.minX;
+		int j = (pos.getZ() >> 4) - this.minZ;
+		return this.chunks[i][j].method_11771(pos, this.world.method_3726());
 	}
 
 	private int getLightAtPos(LightType type, BlockPos pos) {
 		if (type == LightType.SKY && this.world.dimension.hasNoSkylight()) {
 			return 0;
 		} else if (pos.getY() >= 0 && pos.getY() < 256) {
-			if (this.getBlockState(pos).getBlock().usesNeighbourLight()) {
+			if (this.getBlockState(pos).useNeighbourLight()) {
 				int i = 0;
 
 				for (Direction direction : Direction.values()) {
@@ -119,7 +123,7 @@ public class ChunkCache implements BlockView {
 
 	@Override
 	public boolean isAir(BlockPos pos) {
-		return this.getBlockState(pos).getBlock().getMaterial() == Material.AIR;
+		return this.getBlockState(pos).getMaterial() == Material.AIR;
 	}
 
 	public int method_8586(LightType type, BlockPos pos) {
@@ -134,8 +138,7 @@ public class ChunkCache implements BlockView {
 
 	@Override
 	public int getStrongRedstonePower(BlockPos pos, Direction direction) {
-		BlockState blockState = this.getBlockState(pos);
-		return blockState.getBlock().getStrongRedstonePower(this, pos, blockState, direction);
+		return this.getBlockState(pos).getStrongRedstonePower(this, pos, direction);
 	}
 
 	@Override

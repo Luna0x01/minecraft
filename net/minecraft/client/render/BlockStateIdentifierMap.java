@@ -11,19 +11,18 @@ import net.minecraft.state.property.Property;
 public abstract class BlockStateIdentifierMap implements BlockStateIdentifierMapAccess {
 	protected Map<BlockState, ModelIdentifier> map = Maps.newLinkedHashMap();
 
-	public String getPropertyStateString(Map<Property, Comparable> map) {
+	public String getPropertyStateString(Map<Property<?>, Comparable<?>> map) {
 		StringBuilder stringBuilder = new StringBuilder();
 
-		for (Entry<Property, Comparable> entry : map.entrySet()) {
+		for (Entry<Property<?>, Comparable<?>> entry : map.entrySet()) {
 			if (stringBuilder.length() != 0) {
 				stringBuilder.append(",");
 			}
 
-			Property property = (Property)entry.getKey();
-			Comparable comparable = (Comparable)entry.getValue();
+			Property<?> property = (Property<?>)entry.getKey();
 			stringBuilder.append(property.getName());
 			stringBuilder.append("=");
-			stringBuilder.append(property.name(comparable));
+			stringBuilder.append(this.method_12402(property, (Comparable<?>)entry.getValue()));
 		}
 
 		if (stringBuilder.length() == 0) {
@@ -31,6 +30,10 @@ public abstract class BlockStateIdentifierMap implements BlockStateIdentifierMap
 		}
 
 		return stringBuilder.toString();
+	}
+
+	private <T extends Comparable<T>> String method_12402(Property<T> property, Comparable<?> comparable) {
+		return property.name((T)comparable);
 	}
 
 	@Override

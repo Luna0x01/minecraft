@@ -36,6 +36,12 @@ public class LookAroundGoal extends Goal {
 		this.lookTime--;
 		this.mob
 			.getLookControl()
-			.lookAt(this.mob.x + this.deltaX, this.mob.y + (double)this.mob.getEyeHeight(), this.mob.z + this.deltaZ, 10.0F, (float)this.mob.getLookPitchSpeed());
+			.lookAt(
+				this.mob.x + this.deltaX,
+				this.mob.y + (double)this.mob.getEyeHeight(),
+				this.mob.z + this.deltaZ,
+				(float)this.mob.method_13081(),
+				(float)this.mob.getLookPitchSpeed()
+			);
 	}
 }

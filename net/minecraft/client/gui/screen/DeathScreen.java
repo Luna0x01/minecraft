@@ -1,24 +1,34 @@
 package net.minecraft.client.gui.screen;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import javax.annotation.Nullable;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.IdentifiableBooleanConsumer;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.Texts;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class DeathScreen extends Screen implements IdentifiableBooleanConsumer {
 	private int ticksSinceDeath;
-	private boolean isHardcore = false;
+	private final Text message;
+
+	public DeathScreen(@Nullable Text text) {
+		this.message = text;
+	}
 
 	@Override
 	public void init() {
 		this.buttons.clear();
+		this.ticksSinceDeath = 0;
 		if (this.client.world.getLevelProperties().isHardcore()) {
-			if (this.client.isIntegratedServerRunning()) {
-				this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 96, I18n.translate("deathScreen.deleteWorld")));
-			} else {
-				this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 96, I18n.translate("deathScreen.leaveServer")));
-			}
+			this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 72, I18n.translate("deathScreen.spectate")));
+			this.buttons
+				.add(
+					new ButtonWidget(
+						1, this.width / 2 - 100, this.height / 4 + 96, I18n.translate("deathScreen." + (this.client.isIntegratedServerRunning() ? "deleteWorld" : "leaveServer"))
+					)
+				);
 		} else {
 			this.buttons.add(new ButtonWidget(0, this.width / 2 - 100, this.height / 4 + 72, I18n.translate("deathScreen.respawn")));
 			this.buttons.add(new ButtonWidget(1, this.width / 2 - 100, this.height / 4 + 96, I18n.translate("deathScreen.titleScreen")));
@@ -59,7 +69,10 @@ public class DeathScreen extends Screen implements IdentifiableBooleanConsumer {
 	@Override
 	public void confirmResult(boolean confirmed, int id) {
 		if (confirmed) {
-			this.client.world.disconnect();
+			if (this.client.world != null) {
+				this.client.world.disconnect();
+			}
+
 			this.client.connect(null);
 			this.client.setScreen(new TitleScreen());
 		} else {
@@ -70,21 +83,53 @@ public class DeathScreen extends Screen implements IdentifiableBooleanConsumer {
 
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
+		boolean bl = this.client.world.getLevelProperties().isHardcore();
 		this.fillGradient(0, 0, this.width, this.height, 1615855616, -1602211792);
 		GlStateManager.pushMatrix();
 		GlStateManager.scale(2.0F, 2.0F, 2.0F);
-		boolean bl = this.client.world.getLevelProperties().isHardcore();
-		String string = bl ? I18n.translate("deathScreen.title.hardcore") : I18n.translate("deathScreen.title");
-		this.drawCenteredString(this.textRenderer, string, this.width / 2 / 2, 30, 16777215);
+		this.drawCenteredString(
+			this.textRenderer, bl ? I18n.translate("deathScreen.title.hardcore") : I18n.translate("deathScreen.title"), this.width / 2 / 2, 30, 16777215
+		);
 		GlStateManager.popMatrix();
-		if (bl) {
-			this.drawCenteredString(this.textRenderer, I18n.translate("deathScreen.hardcoreInfo"), this.width / 2, 144, 16777215);
+		if (this.message != null) {
+			this.drawCenteredString(this.textRenderer, this.message.asFormattedString(), this.width / 2, 85, 16777215);
 		}
 
 		this.drawCenteredString(
 			this.textRenderer, I18n.translate("deathScreen.score") + ": " + Formatting.YELLOW + this.client.player.getScore(), this.width / 2, 100, 16777215
 		);
+		if (this.message != null && mouseY > 85 && mouseY < 85 + this.textRenderer.fontHeight) {
+			Text text = this.method_12181(mouseX);
+			if (text != null && text.getStyle().getHoverEvent() != null) {
+				this.renderTextHoverEffect(text, mouseX, mouseY);
+			}
+		}
+
 		super.render(mouseX, mouseY, tickDelta);
+	}
+
+	@Nullable
+	public Text method_12181(int i) {
+		if (this.message == null) {
+			return null;
+		} else {
+			int j = this.client.textRenderer.getStringWidth(this.message.asFormattedString());
+			int k = this.width / 2 - j / 2;
+			int l = this.width / 2 + j / 2;
+			int m = k;
+			if (i >= k && i <= l) {
+				for (Text text : this.message) {
+					m += this.client.textRenderer.getStringWidth(Texts.getRenderChatMessage(text.computeValue(), false));
+					if (m > i) {
+						return text;
+					}
+				}
+
+				return null;
+			} else {
+				return null;
+			}
+		}
 	}
 
 	@Override

@@ -18,13 +18,13 @@ public class EndermanEyesFeatureRenderer implements FeatureRenderer<EndermanEnti
 		this.endermanRenderer.bindTexture(TEXTURE);
 		GlStateManager.enableBlend();
 		GlStateManager.disableAlphaTest();
-		GlStateManager.blendFunc(1, 1);
+		GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 		GlStateManager.disableLighting();
 		GlStateManager.depthMask(!endermanEntity.isInvisible());
 		int m = 61680;
 		int n = m % 65536;
 		int o = m / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n / 1.0F, (float)o / 1.0F);
+		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
 		GlStateManager.enableLighting();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		this.endermanRenderer.getModel().render(endermanEntity, f, g, i, j, k, l);

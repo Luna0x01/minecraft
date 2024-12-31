@@ -1,5 +1,6 @@
 package net.minecraft.inventory.slot;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.data.Trader;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -21,7 +22,7 @@ public class TradeOutputSlot extends Slot {
 	}
 
 	@Override
-	public boolean canInsert(ItemStack stack) {
+	public boolean canInsert(@Nullable ItemStack stack) {
 		return false;
 	}
 
@@ -73,8 +74,8 @@ public class TradeOutputSlot extends Slot {
 	private boolean depleteBuyItems(TradeOffer offer, ItemStack first, ItemStack second) {
 		ItemStack itemStack = offer.getFirstStack();
 		ItemStack itemStack2 = offer.getSecondStack();
-		if (first != null && first.getItem() == itemStack.getItem()) {
-			if (itemStack2 != null && second != null && itemStack2.getItem() == second.getItem()) {
+		if (first != null && first.getItem() == itemStack.getItem() && first.count >= itemStack.count) {
+			if (itemStack2 != null && second != null && itemStack2.getItem() == second.getItem() && second.count >= itemStack2.count) {
 				first.count = first.count - itemStack.count;
 				second.count = second.count - itemStack2.count;
 				return true;

@@ -18,13 +18,13 @@ public class DragonEyesFeatureRenderer implements FeatureRenderer<EnderDragonEnt
 		this.dragonRenderer.bindTexture(TEXTURE);
 		GlStateManager.enableBlend();
 		GlStateManager.disableAlphaTest();
-		GlStateManager.blendFunc(1, 1);
+		GlStateManager.method_12287(GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE);
 		GlStateManager.disableLighting();
 		GlStateManager.depthFunc(514);
 		int m = 61680;
 		int n = m % 65536;
 		int o = m / 65536;
-		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n / 1.0F, (float)o / 1.0F);
+		GLX.gl13MultiTexCoord2f(GLX.lightmapTextureUnit, (float)n, (float)o);
 		GlStateManager.enableLighting();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		this.dragonRenderer.getModel().render(enderDragonEntity, f, g, i, j, k, l);

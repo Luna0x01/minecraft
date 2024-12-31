@@ -34,7 +34,7 @@ public class ClientCommandC2SPacket implements Packet<ServerPlayPacketListener> 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.entityId);
-		buf.writeEnum(this.mode);
+		buf.writeEnumConstant(this.mode);
 		buf.writeVarInt(this.mountJumpHeight);
 	}
 
@@ -56,7 +56,9 @@ public class ClientCommandC2SPacket implements Packet<ServerPlayPacketListener> 
 		STOP_SLEEPING,
 		START_SPRINTING,
 		STOP_SPRINTING,
-		RIDING_JUMP,
-		OPEN_INVENTORY;
+		START_RIDING_JUMP,
+		STOP_RIDING_JUMP,
+		OPEN_INVENTORY,
+		START_FALL_FLYING;
 	}
 }

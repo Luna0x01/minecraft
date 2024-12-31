@@ -1,8 +1,10 @@
 package net.minecraft.server.command;
 
 import com.google.common.collect.Lists;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -14,6 +16,7 @@ import net.minecraft.command.CommandStats;
 import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ScheduledTick;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
@@ -36,14 +39,14 @@ public class CloneCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 9) {
 			throw new IncorrectUsageException("commands.clone.usage");
 		} else {
-			source.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
-			BlockPos blockPos = getBlockPos(source, args, 0, false);
-			BlockPos blockPos2 = getBlockPos(source, args, 3, false);
-			BlockPos blockPos3 = getBlockPos(source, args, 6, false);
+			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
+			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
+			BlockPos blockPos2 = getBlockPos(commandSource, args, 3, false);
+			BlockPos blockPos3 = getBlockPos(commandSource, args, 6, false);
 			BlockBox blockBox = new BlockBox(blockPos, blockPos2);
 			BlockBox blockBox2 = new BlockBox(blockPos3, blockPos3.add(blockBox.getDimensions()));
 			int i = blockBox.getBlockCountX() * blockBox.getBlockCountY() * blockBox.getBlockCountZ();
@@ -61,7 +64,7 @@ public class CloneCommand extends AbstractCommand {
 					}
 
 					if (blockBox.minY >= 0 && blockBox.maxY < 256 && blockBox2.minY >= 0 && blockBox2.maxY < 256) {
-						World world = source.getWorld();
+						World world = commandSource.getWorld();
 						if (world.isRegionLoaded(blockBox) && world.isRegionLoaded(blockBox2)) {
 							boolean bl2 = false;
 							if (args.length >= 10) {
@@ -72,7 +75,7 @@ public class CloneCommand extends AbstractCommand {
 										throw new IncorrectUsageException("commands.clone.usage");
 									}
 
-									block = getBlock(source, args[11]);
+									block = getBlock(commandSource, args[11]);
 									if (args.length >= 13) {
 										j = parseClampedInt(args[12], 0, 15);
 									}
@@ -95,11 +98,10 @@ public class CloneCommand extends AbstractCommand {
 											&& (block == null || blockState.getBlock() == block && (j < 0 || blockState.getBlock().getData(blockState) == j))) {
 											BlockEntity blockEntity = world.getBlockEntity(blockPos5);
 											if (blockEntity != null) {
-												NbtCompound nbtCompound = new NbtCompound();
-												blockEntity.toNbt(nbtCompound);
+												NbtCompound nbtCompound = blockEntity.toNbt(new NbtCompound());
 												list2.add(new CloneCommand.BlockInfo(blockPos6, blockState, nbtCompound));
 												linkedList.addLast(blockPos5);
-											} else if (!blockState.getBlock().isFullBlock() && !blockState.getBlock().renderAsNormalBlock()) {
+											} else if (!blockState.isFullBlock() && !blockState.method_11730()) {
 												list3.add(new CloneCommand.BlockInfo(blockPos6, blockState, null));
 												linkedList.addFirst(blockPos5);
 											} else {
@@ -179,8 +181,8 @@ public class CloneCommand extends AbstractCommand {
 							if (i <= 0) {
 								throw new CommandException("commands.clone.failed");
 							} else {
-								source.setStat(CommandStats.Type.AFFECTED_BLOCKS, i);
-								run(source, this, "commands.clone.success", new Object[]{i});
+								commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, i);
+								run(commandSource, this, "commands.clone.success", new Object[]{i});
 							}
 						} else {
 							throw new CommandException("commands.clone.outOfWorld");
@@ -194,19 +196,19 @@ public class CloneCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length > 0 && args.length <= 3) {
-			return method_10707(args, 0, pos);
-		} else if (args.length > 3 && args.length <= 6) {
-			return method_10707(args, 3, pos);
-		} else if (args.length > 6 && args.length <= 9) {
-			return method_10707(args, 6, pos);
-		} else if (args.length == 10) {
-			return method_2894(args, new String[]{"replace", "masked", "filtered"});
-		} else if (args.length == 11) {
-			return method_2894(args, new String[]{"normal", "force", "move"});
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length > 0 && strings.length <= 3) {
+			return method_10707(strings, 0, pos);
+		} else if (strings.length > 3 && strings.length <= 6) {
+			return method_10707(strings, 3, pos);
+		} else if (strings.length > 6 && strings.length <= 9) {
+			return method_10707(strings, 6, pos);
+		} else if (strings.length == 10) {
+			return method_2894(strings, new String[]{"replace", "masked", "filtered"});
+		} else if (strings.length == 11) {
+			return method_2894(strings, new String[]{"normal", "force", "move"});
 		} else {
-			return args.length == 12 && "filtered".equals(args[9]) ? method_10708(args, Block.REGISTRY.keySet()) : null;
+			return strings.length == 12 && "filtered".equals(strings[9]) ? method_10708(strings, Block.REGISTRY.getKeySet()) : Collections.emptyList();
 		}
 	}
 

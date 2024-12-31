@@ -1,5 +1,7 @@
 package net.minecraft.block.material;
 
+import net.minecraft.block.piston.PistonBehavior;
+
 public class Material {
 	public static final Material AIR = new AirMaterial(MaterialColor.AIR);
 	public static final Material GRASS = new Material(MaterialColor.GRASS);
@@ -46,7 +48,7 @@ public class Material {
 	private boolean requiresSilkTouch;
 	private final MaterialColor color;
 	private boolean blocksMovement = true;
-	private int pistonInteractionType;
+	private PistonBehavior pistonBehavior = PistonBehavior.NORMAL;
 	private boolean canBeBrokenInAdventureMode;
 
 	public Material(MaterialColor materialColor) {
@@ -105,17 +107,17 @@ public class Material {
 		return this.blocksMovement;
 	}
 
-	public int getPistonInteractionType() {
-		return this.pistonInteractionType;
+	public PistonBehavior getPistonBehavior() {
+		return this.pistonBehavior;
 	}
 
 	protected Material setNoPushing() {
-		this.pistonInteractionType = 1;
+		this.pistonBehavior = PistonBehavior.DESTROY;
 		return this;
 	}
 
 	protected Material setImmovable() {
-		this.pistonInteractionType = 2;
+		this.pistonBehavior = PistonBehavior.BLOCK;
 		return this;
 	}
 

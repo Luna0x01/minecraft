@@ -5,6 +5,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.util.Formatting;
 
 public abstract class BaseText implements Text {
@@ -82,12 +83,12 @@ public abstract class BaseText implements Text {
 
 	public static Iterator<Text> method_7458(Iterable<Text> iterable) {
 		Iterator<Text> iterator = Iterators.concat(Iterators.transform(iterable.iterator(), new Function<Text, Iterator<Text>>() {
-			public Iterator<Text> apply(Text text) {
+			public Iterator<Text> apply(@Nullable Text text) {
 				return text.iterator();
 			}
 		}));
 		return Iterators.transform(iterator, new Function<Text, Text>() {
-			public Text apply(Text text) {
+			public Text apply(@Nullable Text text) {
 				Text text2 = text.copy();
 				text2.setStyle(text2.getStyle().copy());
 				return text2;

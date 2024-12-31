@@ -1,33 +1,49 @@
 package net.minecraft.server;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
-import net.minecraft.block.entity.BlockEntity;
+import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.Packet;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.collection.LongObjectStorage;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.Dimension;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class PlayerWorldManager {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Predicate<ServerPlayerEntity> NON_SPECTATOR_PLAYER = new Predicate<ServerPlayerEntity>() {
+		public boolean apply(@Nullable ServerPlayerEntity serverPlayerEntity) {
+			return serverPlayerEntity != null && !serverPlayerEntity.isSpectator();
+		}
+	};
+	private static final Predicate<ServerPlayerEntity> PLAYER_TO_GENERATE_CHUNKS = new Predicate<ServerPlayerEntity>() {
+		public boolean apply(@Nullable ServerPlayerEntity serverPlayerEntity) {
+			return serverPlayerEntity != null
+				&& (!serverPlayerEntity.isSpectator() || serverPlayerEntity.getServerWorld().getGameRules().getBoolean("spectatorsGenerateChunks"));
+		}
+	};
 	private final ServerWorld world;
 	private final List<ServerPlayerEntity> players = Lists.newArrayList();
-	private final LongObjectStorage<PlayerWorldManager.PlayerInstance> playerInstancesById = new LongObjectStorage<>();
-	private final List<PlayerWorldManager.PlayerInstance> field_2792 = Lists.newArrayList();
-	private final List<PlayerWorldManager.PlayerInstance> playerInstances = Lists.newArrayList();
+	private final Long2ObjectMap<ChunkPlayerManager> field_13868 = new Long2ObjectOpenHashMap(4096);
+	private final Set<ChunkPlayerManager> field_13869 = Sets.newHashSet();
+	private final List<ChunkPlayerManager> field_13870 = Lists.newLinkedList();
+	private final List<ChunkPlayerManager> field_13871 = Lists.newLinkedList();
+	private final List<ChunkPlayerManager> playerInstances = Lists.newArrayList();
 	private int viewDistance;
 	private long field_6726;
-	private final int[][] field_2794 = new int[][]{{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+	private boolean field_13872 = true;
+	private boolean field_13873 = true;
 
 	public PlayerWorldManager(ServerWorld serverWorld) {
 		this.world = serverWorld;
@@ -38,55 +54,152 @@ public class PlayerWorldManager {
 		return this.world;
 	}
 
+	public Iterator<Chunk> method_12810() {
+		final Iterator<ChunkPlayerManager> iterator = this.playerInstances.iterator();
+		return new AbstractIterator<Chunk>() {
+			protected Chunk computeNext() {
+				while (iterator.hasNext()) {
+					ChunkPlayerManager chunkPlayerManager = (ChunkPlayerManager)iterator.next();
+					Chunk chunk = chunkPlayerManager.getChunk();
+					if (chunk != null) {
+						if (!chunk.isLightPopulated() && chunk.isTerrainPopulated()) {
+							return chunk;
+						}
+
+						if (!chunk.hasPopulatedBlockEntities()) {
+							return chunk;
+						}
+
+						if (chunkPlayerManager.method_12797(128.0, PlayerWorldManager.NON_SPECTATOR_PLAYER)) {
+							return chunk;
+						}
+					}
+				}
+
+				return (Chunk)this.endOfData();
+			}
+		};
+	}
+
 	public void method_2111() {
 		long l = this.world.getLastUpdateTime();
 		if (l - this.field_6726 > 8000L) {
 			this.field_6726 = l;
 
 			for (int i = 0; i < this.playerInstances.size(); i++) {
-				PlayerWorldManager.PlayerInstance playerInstance = (PlayerWorldManager.PlayerInstance)this.playerInstances.get(i);
-				playerInstance.method_8125();
-				playerInstance.method_8118();
-			}
-		} else {
-			for (int j = 0; j < this.field_2792.size(); j++) {
-				PlayerWorldManager.PlayerInstance playerInstance2 = (PlayerWorldManager.PlayerInstance)this.field_2792.get(j);
-				playerInstance2.method_8125();
+				ChunkPlayerManager chunkPlayerManager = (ChunkPlayerManager)this.playerInstances.get(i);
+				chunkPlayerManager.method_8125();
+				chunkPlayerManager.method_12802();
 			}
 		}
 
-		this.field_2792.clear();
+		if (!this.field_13869.isEmpty()) {
+			for (ChunkPlayerManager chunkPlayerManager2 : this.field_13869) {
+				chunkPlayerManager2.method_8125();
+			}
+
+			this.field_13869.clear();
+		}
+
+		if (this.field_13872 && l % 4L == 0L) {
+			this.field_13872 = false;
+			Collections.sort(this.field_13871, new Comparator<ChunkPlayerManager>() {
+				public int compare(ChunkPlayerManager chunkPlayerManager, ChunkPlayerManager chunkPlayerManager2) {
+					return ComparisonChain.start().compare(chunkPlayerManager.method_12807(), chunkPlayerManager2.method_12807()).result();
+				}
+			});
+		}
+
+		if (this.field_13873 && l % 4L == 2L) {
+			this.field_13873 = false;
+			Collections.sort(this.field_13870, new Comparator<ChunkPlayerManager>() {
+				public int compare(ChunkPlayerManager chunkPlayerManager, ChunkPlayerManager chunkPlayerManager2) {
+					return ComparisonChain.start().compare(chunkPlayerManager.method_12807(), chunkPlayerManager2.method_12807()).result();
+				}
+			});
+		}
+
+		if (!this.field_13871.isEmpty()) {
+			long m = System.nanoTime() + 50000000L;
+			int j = 49;
+			Iterator<ChunkPlayerManager> iterator2 = this.field_13871.iterator();
+
+			while (iterator2.hasNext()) {
+				ChunkPlayerManager chunkPlayerManager3 = (ChunkPlayerManager)iterator2.next();
+				if (chunkPlayerManager3.getChunk() == null) {
+					boolean bl = chunkPlayerManager3.method_12798(PLAYER_TO_GENERATE_CHUNKS);
+					if (chunkPlayerManager3.method_12800(bl)) {
+						iterator2.remove();
+						if (chunkPlayerManager3.method_12801()) {
+							this.field_13870.remove(chunkPlayerManager3);
+						}
+
+						if (--j < 0 || System.nanoTime() > m) {
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if (!this.field_13870.isEmpty()) {
+			int k = 81;
+			Iterator<ChunkPlayerManager> iterator3 = this.field_13870.iterator();
+
+			while (iterator3.hasNext()) {
+				ChunkPlayerManager chunkPlayerManager4 = (ChunkPlayerManager)iterator3.next();
+				if (chunkPlayerManager4.method_12801()) {
+					iterator3.remove();
+					if (--k < 0) {
+						break;
+					}
+				}
+			}
+		}
+
 		if (this.players.isEmpty()) {
 			Dimension dimension = this.world.dimension;
 			if (!dimension.containsWorldSpawn()) {
-				this.world.chunkCache.unloadAll();
+				this.world.getChunkProvider().unloadAll();
 			}
 		}
 	}
 
-	public boolean method_8116(int i, int j) {
-		long l = (long)i + 2147483647L | (long)j + 2147483647L << 32;
-		return this.playerInstancesById.get(l) != null;
+	public boolean method_12808(int i, int j) {
+		long l = method_12815(i, j);
+		return this.field_13868.get(l) != null;
 	}
 
-	private PlayerWorldManager.PlayerInstance method_2107(int i, int j, boolean bl) {
-		long l = (long)i + 2147483647L | (long)j + 2147483647L << 32;
-		PlayerWorldManager.PlayerInstance playerInstance = this.playerInstancesById.get(l);
-		if (playerInstance == null && bl) {
-			playerInstance = new PlayerWorldManager.PlayerInstance(i, j);
-			this.playerInstancesById.set(l, playerInstance);
-			this.playerInstances.add(playerInstance);
+	@Nullable
+	public ChunkPlayerManager method_12811(int x, int z) {
+		return (ChunkPlayerManager)this.field_13868.get(method_12815(x, z));
+	}
+
+	private ChunkPlayerManager method_12813(int x, int z) {
+		long l = method_12815(x, z);
+		ChunkPlayerManager chunkPlayerManager = (ChunkPlayerManager)this.field_13868.get(l);
+		if (chunkPlayerManager == null) {
+			chunkPlayerManager = new ChunkPlayerManager(this, x, z);
+			this.field_13868.put(l, chunkPlayerManager);
+			this.playerInstances.add(chunkPlayerManager);
+			if (chunkPlayerManager.getChunk() == null) {
+				this.field_13871.add(chunkPlayerManager);
+			}
+
+			if (!chunkPlayerManager.method_12801()) {
+				this.field_13870.add(chunkPlayerManager);
+			}
 		}
 
-		return playerInstance;
+		return chunkPlayerManager;
 	}
 
 	public void method_10748(BlockPos pos) {
 		int i = pos.getX() >> 4;
 		int j = pos.getZ() >> 4;
-		PlayerWorldManager.PlayerInstance playerInstance = this.method_2107(i, j, false);
-		if (playerInstance != null) {
-			playerInstance.method_8119(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
+		ChunkPlayerManager chunkPlayerManager = this.method_12811(i, j);
+		if (chunkPlayerManager != null) {
+			chunkPlayerManager.method_8119(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
 		}
 	}
 
@@ -98,53 +211,12 @@ public class PlayerWorldManager {
 
 		for (int k = i - this.viewDistance; k <= i + this.viewDistance; k++) {
 			for (int l = j - this.viewDistance; l <= j + this.viewDistance; l++) {
-				this.method_2107(k, l, true).method_8124(player);
+				this.method_12813(k, l).addPlayer(player);
 			}
 		}
 
 		this.players.add(player);
-		this.method_2113(player);
-	}
-
-	public void method_2113(ServerPlayerEntity player) {
-		List<ChunkPos> list = Lists.newArrayList(player.loadedChunks);
-		int i = 0;
-		int j = this.viewDistance;
-		int k = (int)player.x >> 4;
-		int l = (int)player.z >> 4;
-		int m = 0;
-		int n = 0;
-		ChunkPos chunkPos = this.method_2107(k, l, true).field_8886;
-		player.loadedChunks.clear();
-		if (list.contains(chunkPos)) {
-			player.loadedChunks.add(chunkPos);
-		}
-
-		for (int o = 1; o <= j * 2; o++) {
-			for (int p = 0; p < 2; p++) {
-				int[] is = this.field_2794[i++ % 4];
-
-				for (int q = 0; q < o; q++) {
-					m += is[0];
-					n += is[1];
-					chunkPos = this.method_2107(k + m, l + n, true).field_8886;
-					if (list.contains(chunkPos)) {
-						player.loadedChunks.add(chunkPos);
-					}
-				}
-			}
-		}
-
-		i %= 4;
-
-		for (int r = 0; r < j * 2; r++) {
-			m += this.field_2794[i][0];
-			n += this.field_2794[i][1];
-			chunkPos = this.method_2107(k + m, l + n, true).field_8886;
-			if (list.contains(chunkPos)) {
-				player.loadedChunks.add(chunkPos);
-			}
-		}
+		this.method_12816();
 	}
 
 	public void method_2115(ServerPlayerEntity player) {
@@ -153,14 +225,15 @@ public class PlayerWorldManager {
 
 		for (int k = i - this.viewDistance; k <= i + this.viewDistance; k++) {
 			for (int l = j - this.viewDistance; l <= j + this.viewDistance; l++) {
-				PlayerWorldManager.PlayerInstance playerInstance = this.method_2107(k, l, false);
-				if (playerInstance != null) {
-					playerInstance.method_8127(player);
+				ChunkPlayerManager chunkPlayerManager = this.method_12811(k, l);
+				if (chunkPlayerManager != null) {
+					chunkPlayerManager.method_8127(player);
 				}
 			}
 		}
 
 		this.players.remove(player);
+		this.method_12816();
 	}
 
 	private boolean method_2106(int i, int j, int k, int l, int m) {
@@ -185,28 +258,28 @@ public class PlayerWorldManager {
 				for (int p = i - m; p <= i + m; p++) {
 					for (int q = j - m; q <= j + m; q++) {
 						if (!this.method_2106(p, q, k, l, m)) {
-							this.method_2107(p, q, true).method_8124(player);
+							this.method_12813(p, q).addPlayer(player);
 						}
 
 						if (!this.method_2106(p - n, q - o, i, j, m)) {
-							PlayerWorldManager.PlayerInstance playerInstance = this.method_2107(p - n, q - o, false);
-							if (playerInstance != null) {
-								playerInstance.method_8127(player);
+							ChunkPlayerManager chunkPlayerManager = this.method_12811(p - n, q - o);
+							if (chunkPlayerManager != null) {
+								chunkPlayerManager.method_8127(player);
 							}
 						}
 					}
 				}
 
-				this.method_2113(player);
 				player.serverPosX = player.x;
 				player.serverPosZ = player.z;
+				this.method_12816();
 			}
 		}
 	}
 
 	public boolean method_2110(ServerPlayerEntity player, int i, int j) {
-		PlayerWorldManager.PlayerInstance playerInstance = this.method_2107(i, j, false);
-		return playerInstance != null && playerInstance.field_8885.contains(player) && !player.loadedChunks.contains(playerInstance.field_8886);
+		ChunkPlayerManager chunkPlayerManager = this.method_12811(i, j);
+		return chunkPlayerManager != null && chunkPlayerManager.method_12804(player) && chunkPlayerManager.method_12805();
 	}
 
 	public void applyViewDistance(int viewDistance) {
@@ -220,9 +293,9 @@ public class PlayerWorldManager {
 				if (i > 0) {
 					for (int l = j - viewDistance; l <= j + viewDistance; l++) {
 						for (int m = k - viewDistance; m <= k + viewDistance; m++) {
-							PlayerWorldManager.PlayerInstance playerInstance = this.method_2107(l, m, true);
-							if (!playerInstance.field_8885.contains(serverPlayerEntity)) {
-								playerInstance.method_8124(serverPlayerEntity);
+							ChunkPlayerManager chunkPlayerManager = this.method_12813(l, m);
+							if (!chunkPlayerManager.method_12804(serverPlayerEntity)) {
+								chunkPlayerManager.addPlayer(serverPlayerEntity);
 							}
 						}
 					}
@@ -230,7 +303,7 @@ public class PlayerWorldManager {
 					for (int n = j - this.viewDistance; n <= j + this.viewDistance; n++) {
 						for (int o = k - this.viewDistance; o <= k + this.viewDistance; o++) {
 							if (!this.method_2106(n, o, j, k, viewDistance)) {
-								this.method_2107(n, o, true).method_8127(serverPlayerEntity);
+								this.method_12813(n, o).method_8127(serverPlayerEntity);
 							}
 						}
 					}
@@ -238,154 +311,39 @@ public class PlayerWorldManager {
 			}
 
 			this.viewDistance = viewDistance;
+			this.method_12816();
 		}
+	}
+
+	private void method_12816() {
+		this.field_13872 = true;
+		this.field_13873 = true;
 	}
 
 	public static int method_2104(int i) {
 		return i * 16 - 16;
 	}
 
-	class PlayerInstance {
-		private final List<ServerPlayerEntity> field_8885 = Lists.newArrayList();
-		private final ChunkPos field_8886;
-		private short[] field_8887 = new short[64];
-		private int field_8888;
-		private int field_8889;
-		private long field_8890;
+	private static long method_12815(int x, int z) {
+		return (long)x + 2147483647L | (long)z + 2147483647L << 32;
+	}
 
-		public PlayerInstance(int i, int j) {
-			this.field_8886 = new ChunkPos(i, j);
-			PlayerWorldManager.this.getWorld().chunkCache.getOrGenerateChunk(i, j);
-		}
+	public void method_12809(ChunkPlayerManager chunkPlayerManager) {
+		this.field_13869.add(chunkPlayerManager);
+	}
 
-		public void method_8124(ServerPlayerEntity serverPlayerEntity) {
-			if (this.field_8885.contains(serverPlayerEntity)) {
-				PlayerWorldManager.LOGGER
-					.debug("Failed to add player. {} already is in chunk {}, {}", new Object[]{serverPlayerEntity, this.field_8886.x, this.field_8886.z});
-			} else {
-				if (this.field_8885.isEmpty()) {
-					this.field_8890 = PlayerWorldManager.this.world.getLastUpdateTime();
-				}
-
-				this.field_8885.add(serverPlayerEntity);
-				serverPlayerEntity.loadedChunks.add(this.field_8886);
-			}
-		}
-
-		public void method_8127(ServerPlayerEntity serverPlayerEntity) {
-			if (this.field_8885.contains(serverPlayerEntity)) {
-				Chunk chunk = PlayerWorldManager.this.world.getChunk(this.field_8886.x, this.field_8886.z);
-				if (chunk.isPopulated()) {
-					serverPlayerEntity.networkHandler.sendPacket(new ChunkDataS2CPacket(chunk, true, 0));
-				}
-
-				this.field_8885.remove(serverPlayerEntity);
-				serverPlayerEntity.loadedChunks.remove(this.field_8886);
-				if (this.field_8885.isEmpty()) {
-					long l = (long)this.field_8886.x + 2147483647L | (long)this.field_8886.z + 2147483647L << 32;
-					this.method_8121(chunk);
-					PlayerWorldManager.this.playerInstancesById.remove(l);
-					PlayerWorldManager.this.playerInstances.remove(this);
-					if (this.field_8888 > 0) {
-						PlayerWorldManager.this.field_2792.remove(this);
-					}
-
-					PlayerWorldManager.this.getWorld().chunkCache.scheduleUnload(this.field_8886.x, this.field_8886.z);
-				}
-			}
-		}
-
-		public void method_8118() {
-			this.method_8121(PlayerWorldManager.this.world.getChunk(this.field_8886.x, this.field_8886.z));
-		}
-
-		private void method_8121(Chunk chunk) {
-			chunk.setInhabitedTime(chunk.getInhabitedTime() + PlayerWorldManager.this.world.getLastUpdateTime() - this.field_8890);
-			this.field_8890 = PlayerWorldManager.this.world.getLastUpdateTime();
-		}
-
-		public void method_8119(int i, int j, int k) {
-			if (this.field_8888 == 0) {
-				PlayerWorldManager.this.field_2792.add(this);
-			}
-
-			this.field_8889 |= 1 << (j >> 4);
-			if (this.field_8888 < 64) {
-				short s = (short)(i << 12 | k << 8 | j);
-
-				for (int l = 0; l < this.field_8888; l++) {
-					if (this.field_8887[l] == s) {
-						return;
-					}
-				}
-
-				this.field_8887[this.field_8888++] = s;
-			}
-		}
-
-		public void method_8122(Packet packet) {
-			for (int i = 0; i < this.field_8885.size(); i++) {
-				ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)this.field_8885.get(i);
-				if (!serverPlayerEntity.loadedChunks.contains(this.field_8886)) {
-					serverPlayerEntity.networkHandler.sendPacket(packet);
-				}
-			}
-		}
-
-		public void method_8125() {
-			if (this.field_8888 != 0) {
-				if (this.field_8888 == 1) {
-					int i = (this.field_8887[0] >> 12 & 15) + this.field_8886.x * 16;
-					int j = this.field_8887[0] & 255;
-					int k = (this.field_8887[0] >> 8 & 15) + this.field_8886.z * 16;
-					BlockPos blockPos = new BlockPos(i, j, k);
-					this.method_8122(new BlockUpdateS2CPacket(PlayerWorldManager.this.world, blockPos));
-					if (PlayerWorldManager.this.world.getBlockState(blockPos).getBlock().hasBlockEntity()) {
-						this.method_8120(PlayerWorldManager.this.world.getBlockEntity(blockPos));
-					}
-				} else if (this.field_8888 == 64) {
-					int l = this.field_8886.x * 16;
-					int m = this.field_8886.z * 16;
-					this.method_8122(new ChunkDataS2CPacket(PlayerWorldManager.this.world.getChunk(this.field_8886.x, this.field_8886.z), false, this.field_8889));
-
-					for (int n = 0; n < 16; n++) {
-						if ((this.field_8889 & 1 << n) != 0) {
-							int o = n << 4;
-							List<BlockEntity> list = PlayerWorldManager.this.world.method_2134(l, o, m, l + 16, o + 16, m + 16);
-
-							for (int p = 0; p < list.size(); p++) {
-								this.method_8120((BlockEntity)list.get(p));
-							}
-						}
-					}
-				} else {
-					this.method_8122(
-						new ChunkDeltaUpdateS2CPacket(this.field_8888, this.field_8887, PlayerWorldManager.this.world.getChunk(this.field_8886.x, this.field_8886.z))
-					);
-
-					for (int q = 0; q < this.field_8888; q++) {
-						int r = (this.field_8887[q] >> 12 & 15) + this.field_8886.x * 16;
-						int s = this.field_8887[q] & 255;
-						int t = (this.field_8887[q] >> 8 & 15) + this.field_8886.z * 16;
-						BlockPos blockPos2 = new BlockPos(r, s, t);
-						if (PlayerWorldManager.this.world.getBlockState(blockPos2).getBlock().hasBlockEntity()) {
-							this.method_8120(PlayerWorldManager.this.world.getBlockEntity(blockPos2));
-						}
-					}
-				}
-
-				this.field_8888 = 0;
-				this.field_8889 = 0;
-			}
-		}
-
-		private void method_8120(BlockEntity blockEntity) {
-			if (blockEntity != null) {
-				Packet packet = blockEntity.getPacket();
-				if (packet != null) {
-					this.method_8122(packet);
-				}
-			}
+	public void method_12812(ChunkPlayerManager chunkPlayerManager) {
+		ChunkPos chunkPos = chunkPlayerManager.getChunkPos();
+		long l = method_12815(chunkPos.x, chunkPos.z);
+		chunkPlayerManager.method_12802();
+		this.field_13868.remove(l);
+		this.playerInstances.remove(chunkPlayerManager);
+		this.field_13869.remove(chunkPlayerManager);
+		this.field_13870.remove(chunkPlayerManager);
+		this.field_13871.remove(chunkPlayerManager);
+		Chunk chunk = chunkPlayerManager.getChunk();
+		if (chunk != null) {
+			this.getWorld().getChunkProvider().unload(chunk);
 		}
 	}
 }

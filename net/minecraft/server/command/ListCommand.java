@@ -25,10 +25,10 @@ public class ListCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		int i = MinecraftServer.getServer().getCurrentPlayerCount();
-		source.sendMessage(new TranslatableText("commands.players.list", i, MinecraftServer.getServer().getMaxPlayerCount()));
-		source.sendMessage(new LiteralText(MinecraftServer.getServer().getPlayerManager().method_8226(args.length > 0 && "uuids".equalsIgnoreCase(args[0]))));
-		source.setStat(CommandStats.Type.QUERY_RESULT, i);
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
+		int i = minecraftServer.getCurrentPlayerCount();
+		commandSource.sendMessage(new TranslatableText("commands.players.list", i, minecraftServer.getMaxPlayerCount()));
+		commandSource.sendMessage(new LiteralText(minecraftServer.getPlayerManager().method_8226(args.length > 0 && "uuids".equalsIgnoreCase(args[0]))));
+		commandSource.setStat(CommandStats.Type.QUERY_RESULT, i);
 	}
 }

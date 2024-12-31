@@ -17,7 +17,7 @@ public class ControlsListWidget extends EntryListWidget {
 	private int maxKeyNameLength = 0;
 
 	public ControlsListWidget(ControlsOptionsScreen controlsOptionsScreen, MinecraftClient minecraftClient) {
-		super(minecraftClient, controlsOptionsScreen.width, controlsOptionsScreen.height, 63, controlsOptionsScreen.height - 32, 20);
+		super(minecraftClient, controlsOptionsScreen.width + 45, controlsOptionsScreen.height, 63, controlsOptionsScreen.height - 32, 20);
 		this.parent = controlsOptionsScreen;
 		this.mc = minecraftClient;
 		KeyBinding[] keyBindings = (KeyBinding[])ArrayUtils.clone(minecraftClient.options.allKeys);

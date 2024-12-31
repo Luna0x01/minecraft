@@ -2,6 +2,7 @@ package net.minecraft.structure;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.GeneratorConfig;
@@ -34,6 +35,7 @@ public class StructurePieceManager {
 		return (String)pieceClassMap.get(piece.getClass());
 	}
 
+	@Nullable
 	public static GeneratorConfig getGeneratorConfigFromNbt(NbtCompound nbt, World world) {
 		GeneratorConfig generatorConfig = null;
 
@@ -85,11 +87,13 @@ public class StructurePieceManager {
 		register(StrongholdStructure.StrongholdGeneratorConfig.class, "Stronghold");
 		register(TempleStructure.TempleGeneratorConfig.class, "Temple");
 		register(OceanMonumentStructure.OceanMonumentGeneratorConfig.class, "Monument");
+		register(EndCityStructure.EndCityGeneratorConfig.class, "EndCity");
 		MineshaftPieces.registerPieces();
 		VillagePieces.registerPieces();
 		NetherFortressPieces.registerPieces();
 		StrongholdPieces.registerPieces();
 		TemplePieces.registerPieces();
 		OceanMonumentPieces.registerPieces();
+		class_2759.registerPieces();
 	}
 }

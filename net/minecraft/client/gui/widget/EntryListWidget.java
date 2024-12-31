@@ -22,7 +22,8 @@ public abstract class EntryListWidget extends ListWidget {
 
 	@Override
 	protected void renderEntry(int index, int x, int y, int rowHeight, int mouseX, int mouseY) {
-		this.getEntry(index).render(index, x, y, this.getRowWidth(), rowHeight, mouseX, mouseY, this.getEntryAt(mouseX, mouseY) == index);
+		this.getEntry(index)
+			.render(index, x, y, this.getRowWidth(), rowHeight, mouseX, mouseY, this.isMouseInList(mouseY) && this.getEntryAt(mouseX, mouseY) == index);
 	}
 
 	@Override

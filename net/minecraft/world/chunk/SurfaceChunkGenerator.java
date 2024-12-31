@@ -2,23 +2,25 @@ package net.minecraft.world.chunk;
 
 import java.util.List;
 import java.util.Random;
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.FallingBlock;
 import net.minecraft.entity.EntityCategory;
 import net.minecraft.entity.MobSpawnerHelper;
+import net.minecraft.server.world.ChunkGenerator;
 import net.minecraft.structure.MineshaftStructure;
 import net.minecraft.structure.OceanMonumentStructure;
 import net.minecraft.structure.StrongholdStructure;
 import net.minecraft.structure.TempleStructure;
 import net.minecraft.structure.VillageStructure;
-import net.minecraft.util.ProgressListener;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.noise.PerlinNoiseGenerator;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.CustomizedWorldProperties;
 import net.minecraft.world.gen.NoiseGenerator;
 import net.minecraft.world.gen.carver.Carver;
@@ -28,30 +30,31 @@ import net.minecraft.world.gen.feature.DungeonFeature;
 import net.minecraft.world.gen.feature.LakesFeature;
 import net.minecraft.world.level.LevelGeneratorType;
 
-public class SurfaceChunkGenerator implements ChunkProvider {
-	private Random random;
-	private NoiseGenerator field_4832;
-	private NoiseGenerator field_4833;
-	private NoiseGenerator field_4834;
-	private PerlinNoiseGenerator field_7514;
+public class SurfaceChunkGenerator implements ChunkGenerator {
+	protected static final BlockState field_12969 = Blocks.STONE.getDefaultState();
+	private final Random random;
+	private final NoiseGenerator field_4832;
+	private final NoiseGenerator field_4833;
+	private final NoiseGenerator field_4834;
+	private final PerlinNoiseGenerator field_7514;
 	public NoiseGenerator field_4821;
 	public NoiseGenerator field_4822;
 	public NoiseGenerator field_4823;
-	private World world;
+	private final World world;
 	private final boolean hasStructures;
-	private LevelGeneratorType type;
+	private final LevelGeneratorType type;
 	private final double[] field_7516;
 	private final float[] field_7517;
 	private CustomizedWorldProperties properties;
-	private Block underwaterBlock = Blocks.WATER;
+	private BlockState field_12970 = Blocks.WATER.getDefaultState();
 	private double[] field_4839 = new double[256];
-	private Carver caveCarver = new CaveCarver();
-	private StrongholdStructure strongholdGenerator = new StrongholdStructure();
-	private VillageStructure village = new VillageStructure();
-	private MineshaftStructure mineshaft = new MineshaftStructure();
-	private TempleStructure witchHut = new TempleStructure();
-	private Carver ravineCarver = new RavineCarver();
-	private OceanMonumentStructure oceanMonument = new OceanMonumentStructure();
+	private final Carver caveCarver = new CaveCarver();
+	private final StrongholdStructure strongholdGenerator = new StrongholdStructure();
+	private final VillageStructure village = new VillageStructure();
+	private final MineshaftStructure mineshaft = new MineshaftStructure();
+	private final TempleStructure witchHut = new TempleStructure();
+	private final Carver ravineCarver = new RavineCarver();
+	private final OceanMonumentStructure oceanMonument = new OceanMonumentStructure();
 	private Biome[] biomes;
 	double[] field_7511;
 	double[] field_7512;
@@ -82,13 +85,13 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 
 		if (string != null) {
 			this.properties = CustomizedWorldProperties.Builder.fromJson(string).build();
-			this.underwaterBlock = this.properties.useLavaOceans ? Blocks.LAVA : Blocks.WATER;
+			this.field_12970 = this.properties.useLavaOceans ? Blocks.LAVA.getDefaultState() : Blocks.WATER.getDefaultState();
 			world.setSeaLevel(this.properties.seaLevel);
 		}
 	}
 
 	public void method_9194(int i, int j, ChunkBlockStateStorage chunkBlockStateStorage) {
-		this.biomes = this.world.getBiomeSource().method_3857(this.biomes, i * 4 - 2, j * 4 - 2, 10, 10);
+		this.biomes = this.world.method_3726().method_11537(this.biomes, i * 4 - 2, j * 4 - 2, 10, 10);
 		this.method_6544(i * 4, 0, j * 4);
 
 		for (int k = 0; k < 4; k++) {
@@ -126,9 +129,9 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 
 							for (int ah = 0; ah < 4; ah++) {
 								if ((af += ag) > 0.0) {
-									chunkBlockStateStorage.set(k * 4 + ad, s * 8 + x, n * 4 + ah, Blocks.STONE.getDefaultState());
+									chunkBlockStateStorage.set(k * 4 + ad, s * 8 + x, n * 4 + ah, field_12969);
 								} else if (s * 8 + x < this.properties.seaLevel) {
-									chunkBlockStateStorage.set(k * 4 + ad, s * 8 + x, n * 4 + ah, this.underwaterBlock.getDefaultState());
+									chunkBlockStateStorage.set(k * 4 + ad, s * 8 + x, n * 4 + ah, this.field_12970);
 								}
 							}
 
@@ -159,45 +162,47 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public Chunk getChunk(int x, int z) {
+	public Chunk generate(int x, int z) {
 		this.random.setSeed((long)x * 341873128712L + (long)z * 132897987541L);
 		ChunkBlockStateStorage chunkBlockStateStorage = new ChunkBlockStateStorage();
 		this.method_9194(x, z, chunkBlockStateStorage);
-		this.biomes = this.world.getBiomeSource().method_3861(this.biomes, x * 16, z * 16, 16, 16);
+		this.biomes = this.world.method_3726().method_11540(this.biomes, x * 16, z * 16, 16, 16);
 		this.method_6546(x, z, chunkBlockStateStorage, this.biomes);
 		if (this.properties.useCaves) {
-			this.caveCarver.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
+			this.caveCarver.method_4004(this.world, x, z, chunkBlockStateStorage);
 		}
 
 		if (this.properties.useRavines) {
-			this.ravineCarver.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
+			this.ravineCarver.method_4004(this.world, x, z, chunkBlockStateStorage);
 		}
 
-		if (this.properties.useMineshafts && this.hasStructures) {
-			this.mineshaft.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
-		}
+		if (this.hasStructures) {
+			if (this.properties.useMineshafts) {
+				this.mineshaft.method_4004(this.world, x, z, chunkBlockStateStorage);
+			}
 
-		if (this.properties.useVillages && this.hasStructures) {
-			this.village.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
-		}
+			if (this.properties.useVillages) {
+				this.village.method_4004(this.world, x, z, chunkBlockStateStorage);
+			}
 
-		if (this.properties.useStrongholds && this.hasStructures) {
-			this.strongholdGenerator.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
-		}
+			if (this.properties.useStrongholds) {
+				this.strongholdGenerator.method_4004(this.world, x, z, chunkBlockStateStorage);
+			}
 
-		if (this.properties.useTemples && this.hasStructures) {
-			this.witchHut.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
-		}
+			if (this.properties.useTemples) {
+				this.witchHut.method_4004(this.world, x, z, chunkBlockStateStorage);
+			}
 
-		if (this.properties.useMonuments && this.hasStructures) {
-			this.oceanMonument.carveRegion(this, this.world, x, z, chunkBlockStateStorage);
+			if (this.properties.useMonuments) {
+				this.oceanMonument.method_4004(this.world, x, z, chunkBlockStateStorage);
+			}
 		}
 
 		Chunk chunk = new Chunk(this.world, chunkBlockStateStorage, x, z);
 		byte[] bs = chunk.getBiomeArray();
 
 		for (int i = 0; i < bs.length; i++) {
-			bs[i] = (byte)this.biomes[i].id;
+			bs[i] = (byte)Biome.getBiomeIndex(this.biomes[i]);
 		}
 
 		chunk.calculateSkyLight();
@@ -249,15 +254,15 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 				for (int s = -r; s <= r; s++) {
 					for (int t = -r; t <= r; t++) {
 						Biome biome2 = this.biomes[n + s + 2 + (o + t + 2) * 10];
-						float u = this.properties.biomeDepthOffset + biome2.depth * this.properties.biomeDepthWeight;
-						float v = this.properties.biomeScaleOffset + biome2.variationModifier * this.properties.biomeScaleWeight;
+						float u = this.properties.biomeDepthOffset + biome2.getDepth() * this.properties.biomeDepthWeight;
+						float v = this.properties.biomeScaleOffset + biome2.getVariationModifier() * this.properties.biomeScaleWeight;
 						if (this.type == LevelGeneratorType.AMPLIFIED && u > 0.0F) {
 							u = 1.0F + u * 2.0F;
 							v = 1.0F + v * 4.0F;
 						}
 
 						float w = this.field_7517[s + 2 + (t + 2) * 5] / (u + 2.0F);
-						if (biome2.depth > biome.depth) {
+						if (biome2.getDepth() > biome.getDepth()) {
 							w /= 2.0F;
 						}
 
@@ -323,12 +328,7 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean chunkExists(int x, int z) {
-		return true;
-	}
-
-	@Override
-	public void decorateChunk(ChunkProvider provider, int x, int z) {
+	public void populate(int x, int z) {
 		FallingBlock.instantFall = true;
 		int i = x * 16;
 		int j = z * 16;
@@ -340,29 +340,33 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 		this.random.setSeed((long)x * l + (long)z * m ^ this.world.getSeed());
 		boolean bl = false;
 		ChunkPos chunkPos = new ChunkPos(x, z);
-		if (this.properties.useMineshafts && this.hasStructures) {
-			this.mineshaft.populate(this.world, this.random, chunkPos);
+		if (this.hasStructures) {
+			if (this.properties.useMineshafts) {
+				this.mineshaft.populate(this.world, this.random, chunkPos);
+			}
+
+			if (this.properties.useVillages) {
+				bl = this.village.populate(this.world, this.random, chunkPos);
+			}
+
+			if (this.properties.useStrongholds) {
+				this.strongholdGenerator.populate(this.world, this.random, chunkPos);
+			}
+
+			if (this.properties.useTemples) {
+				this.witchHut.populate(this.world, this.random, chunkPos);
+			}
+
+			if (this.properties.useMonuments) {
+				this.oceanMonument.populate(this.world, this.random, chunkPos);
+			}
 		}
 
-		if (this.properties.useVillages && this.hasStructures) {
-			bl = this.village.populate(this.world, this.random, chunkPos);
-		}
-
-		if (this.properties.useStrongholds && this.hasStructures) {
-			this.strongholdGenerator.populate(this.world, this.random, chunkPos);
-		}
-
-		if (this.properties.useTemples && this.hasStructures) {
-			this.witchHut.populate(this.world, this.random, chunkPos);
-		}
-
-		if (this.properties.useMonuments && this.hasStructures) {
-			this.oceanMonument.populate(this.world, this.random, chunkPos);
-		}
-
-		if (biome != Biome.DESERT && biome != Biome.DESERT_HILLS && this.properties.useWaterLakes && !bl && this.random.nextInt(this.properties.waterLakeChance) == 0
-			)
-		 {
+		if (biome != Biomes.DESERT
+			&& biome != Biomes.DESERT_HILLS
+			&& this.properties.useWaterLakes
+			&& !bl
+			&& this.random.nextInt(this.properties.waterLakeChance) == 0) {
 			int k = this.random.nextInt(16) + 8;
 			int n = this.random.nextInt(256);
 			int o = this.random.nextInt(16) + 8;
@@ -409,37 +413,13 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 	}
 
 	@Override
-	public boolean isChunkModified(ChunkProvider chunkProvider, Chunk chunk, int x, int z) {
+	public boolean method_11762(Chunk chunk, int x, int z) {
 		boolean bl = false;
 		if (this.properties.useMonuments && this.hasStructures && chunk.getInhabitedTime() < 3600L) {
 			bl |= this.oceanMonument.populate(this.world, this.random, new ChunkPos(x, z));
 		}
 
 		return bl;
-	}
-
-	@Override
-	public boolean saveChunks(boolean saveEntities, ProgressListener progressListener) {
-		return true;
-	}
-
-	@Override
-	public void flushChunks() {
-	}
-
-	@Override
-	public boolean tickChunks() {
-		return false;
-	}
-
-	@Override
-	public boolean isSavingEnabled() {
-		return true;
-	}
-
-	@Override
-	public String getChunkProviderName() {
-		return "RandomLevelSource";
 	}
 
 	@Override
@@ -458,41 +438,34 @@ public class SurfaceChunkGenerator implements ChunkProvider {
 		return biome.getSpawnEntries(category);
 	}
 
+	@Nullable
 	@Override
-	public BlockPos getNearestStructurePos(World world, String structureName, BlockPos pos) {
-		return "Stronghold".equals(structureName) && this.strongholdGenerator != null ? this.strongholdGenerator.method_9269(world, pos) : null;
+	public BlockPos method_3866(World world, String string, BlockPos blockPos) {
+		return "Stronghold".equals(string) && this.strongholdGenerator != null ? this.strongholdGenerator.method_9269(world, blockPos) : null;
 	}
 
 	@Override
-	public int getLoadedChunksCount() {
-		return 0;
-	}
+	public void method_4702(Chunk chunk, int x, int z) {
+		if (this.hasStructures) {
+			if (this.properties.useMineshafts) {
+				this.mineshaft.method_4004(this.world, x, z, null);
+			}
 
-	@Override
-	public void handleInitialLoad(Chunk chunk, int x, int z) {
-		if (this.properties.useMineshafts && this.hasStructures) {
-			this.mineshaft.carveRegion(this, this.world, x, z, null);
+			if (this.properties.useVillages) {
+				this.village.method_4004(this.world, x, z, null);
+			}
+
+			if (this.properties.useStrongholds) {
+				this.strongholdGenerator.method_4004(this.world, x, z, null);
+			}
+
+			if (this.properties.useTemples) {
+				this.witchHut.method_4004(this.world, x, z, null);
+			}
+
+			if (this.properties.useMonuments) {
+				this.oceanMonument.method_4004(this.world, x, z, null);
+			}
 		}
-
-		if (this.properties.useVillages && this.hasStructures) {
-			this.village.carveRegion(this, this.world, x, z, null);
-		}
-
-		if (this.properties.useStrongholds && this.hasStructures) {
-			this.strongholdGenerator.carveRegion(this, this.world, x, z, null);
-		}
-
-		if (this.properties.useTemples && this.hasStructures) {
-			this.witchHut.carveRegion(this, this.world, x, z, null);
-		}
-
-		if (this.properties.useMonuments && this.hasStructures) {
-			this.oceanMonument.carveRegion(this, this.world, x, z, null);
-		}
-	}
-
-	@Override
-	public Chunk getChunk(BlockPos pos) {
-		return this.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
 	}
 }

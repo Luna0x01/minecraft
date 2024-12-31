@@ -21,7 +21,7 @@ public class MooshroomMushroomFeatureRenderer implements FeatureRenderer<Mooshro
 			BlockRenderManager blockRenderManager = MinecraftClient.getInstance().getBlockRenderManager();
 			this.mooshroomRenderer.bindTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX);
 			GlStateManager.enableCull();
-			GlStateManager.cullFace(1028);
+			GlStateManager.method_12284(GlStateManager.class_2865.FRONT);
 			GlStateManager.pushMatrix();
 			GlStateManager.scale(1.0F, -1.0F, 1.0F);
 			GlStateManager.translate(0.2F, 0.35F, 0.5F);
@@ -45,7 +45,7 @@ public class MooshroomMushroomFeatureRenderer implements FeatureRenderer<Mooshro
 			GlStateManager.translate(-0.5F, -0.5F, 0.5F);
 			blockRenderManager.renderBlockEntity(Blocks.RED_MUSHROOM.getDefaultState(), 1.0F);
 			GlStateManager.popMatrix();
-			GlStateManager.cullFace(1029);
+			GlStateManager.method_12284(GlStateManager.class_2865.BACK);
 			GlStateManager.disableCull();
 		}
 	}

@@ -30,7 +30,6 @@ public class RedstoneParticle extends Particle {
 		this.prevScale = this.scale;
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.2));
 		this.maxAge = (int)((float)this.maxAge * g);
-		this.noClip = false;
 	}
 
 	@Override
@@ -42,17 +41,17 @@ public class RedstoneParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		if (this.age++ >= this.maxAge) {
-			this.remove();
+			this.method_12251();
 		}
 
 		this.setMiscTexture(7 - this.age * 8 / this.maxAge);
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
-		if (this.y == this.prevY) {
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
+		if (this.field_13429 == this.field_13426) {
 			this.velocityX *= 1.1;
 			this.velocityZ *= 1.1;
 		}
@@ -60,7 +59,7 @@ public class RedstoneParticle extends Particle {
 		this.velocityX *= 0.96F;
 		this.velocityY *= 0.96F;
 		this.velocityZ *= 0.96F;
-		if (this.onGround) {
+		if (this.field_13434) {
 			this.velocityX *= 0.7F;
 			this.velocityZ *= 0.7F;
 		}

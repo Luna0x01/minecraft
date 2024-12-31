@@ -3,19 +3,26 @@ package net.minecraft.block;
 import com.google.common.base.Predicate;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ComparatorBlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -30,7 +37,7 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	public ComparatorBlock(boolean bl) {
 		super(bl);
 		this.setDefaultState(
-			this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(POWERED, false).with(MODE, ComparatorBlock.ComparatorType.COMPARE)
+			this.stateManager.getDefaultState().with(DIRECTION, Direction.NORTH).with(POWERED, false).with(MODE, ComparatorBlock.ComparatorType.COMPARE)
 		);
 		this.blockEntity = true;
 	}
@@ -40,14 +47,15 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 		return CommonI18n.translate("item.comparator.name");
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.COMPARATOR;
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.COMPARATOR;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Items.COMPARATOR);
 	}
 
 	@Override
@@ -59,16 +67,16 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	protected BlockState getPoweredState(BlockState state) {
 		Boolean boolean_ = state.get(POWERED);
 		ComparatorBlock.ComparatorType comparatorType = state.get(MODE);
-		Direction direction = state.get(FACING);
-		return Blocks.POWERED_COMPARATOR.getDefaultState().with(FACING, direction).with(POWERED, boolean_).with(MODE, comparatorType);
+		Direction direction = state.get(DIRECTION);
+		return Blocks.POWERED_COMPARATOR.getDefaultState().with(DIRECTION, direction).with(POWERED, boolean_).with(MODE, comparatorType);
 	}
 
 	@Override
 	protected BlockState getUnpoweredState(BlockState state) {
 		Boolean boolean_ = state.get(POWERED);
 		ComparatorBlock.ComparatorType comparatorType = state.get(MODE);
-		Direction direction = state.get(FACING);
-		return Blocks.UNPOWERED_COMPARATOR.getDefaultState().with(FACING, direction).with(POWERED, boolean_).with(MODE, comparatorType);
+		Direction direction = state.get(DIRECTION);
+		return Blocks.UNPOWERED_COMPARATOR.getDefaultState().with(DIRECTION, direction).with(POWERED, boolean_).with(MODE, comparatorType);
 	}
 
 	@Override
@@ -104,17 +112,18 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	@Override
 	protected int getPower(World world, BlockPos pos, BlockState state) {
 		int i = super.getPower(world, pos, state);
-		Direction direction = state.get(FACING);
+		Direction direction = state.get(DIRECTION);
 		BlockPos blockPos = pos.offset(direction);
-		Block block = world.getBlockState(blockPos).getBlock();
-		if (block.hasComparatorOutput()) {
-			i = block.getComparatorOutput(world, blockPos);
-		} else if (i < 15 && block.isFullCube()) {
+		BlockState blockState = world.getBlockState(blockPos);
+		Block block = blockState.getBlock();
+		if (blockState.method_11736()) {
+			i = blockState.getComparatorOutput(world, blockPos);
+		} else if (i < 15 && blockState.method_11734()) {
 			blockPos = blockPos.offset(direction);
-			block = world.getBlockState(blockPos).getBlock();
-			if (block.hasComparatorOutput()) {
-				i = block.getComparatorOutput(world, blockPos);
-			} else if (block.getMaterial() == Material.AIR) {
+			blockState = world.getBlockState(blockPos);
+			if (blockState.method_11736()) {
+				i = blockState.getComparatorOutput(world, blockPos);
+			} else if (blockState.getMaterial() == Material.AIR) {
 				ItemFrameEntity itemFrameEntity = this.getAttachedItemFrame(world, direction, blockPos);
 				if (itemFrameEntity != null) {
 					i = itemFrameEntity.getComparatorPower();
@@ -125,12 +134,13 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 		return i;
 	}
 
+	@Nullable
 	private ItemFrameEntity getAttachedItemFrame(World world, Direction facing, BlockPos pos) {
 		List<ItemFrameEntity> list = world.getEntitiesInBox(
 			ItemFrameEntity.class,
 			new Box((double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), (double)(pos.getX() + 1), (double)(pos.getY() + 1), (double)(pos.getZ() + 1)),
 			new Predicate<Entity>() {
-				public boolean apply(Entity entity) {
+				public boolean apply(@Nullable Entity entity) {
 					return entity != null && entity.getHorizontalDirection() == facing;
 				}
 			}
@@ -139,21 +149,26 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		if (!player.abilities.allowModifyWorld) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		if (!playerEntity.abilities.allowModifyWorld) {
 			return false;
 		} else {
-			state = state.withDefaultValue(MODE);
-			world.playSound(
-				(double)pos.getX() + 0.5,
-				(double)pos.getY() + 0.5,
-				(double)pos.getZ() + 0.5,
-				"random.click",
-				0.3F,
-				state.get(MODE) == ComparatorBlock.ComparatorType.SUBTRACT ? 0.55F : 0.5F
-			);
-			world.setBlockState(pos, state, 2);
-			this.update(world, pos, state);
+			blockState = blockState.withDefaultValue(MODE);
+			float i = blockState.get(MODE) == ComparatorBlock.ComparatorType.SUBTRACT ? 0.55F : 0.5F;
+			world.method_11486(playerEntity, blockPos, Sounds.BLOCK_COMPARATOR_CLICK, SoundCategory.BLOCKS, 0.3F, i);
+			world.setBlockState(blockPos, blockState, 2);
+			this.update(world, blockPos, blockState);
 			return true;
 		}
 	}
@@ -220,10 +235,10 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
-	public boolean onEvent(World world, BlockPos pos, BlockState state, int id, int data) {
-		super.onEvent(world, pos, state, id, data);
+	public boolean onSyncedBlockEvent(BlockState state, World world, BlockPos pos, int type, int data) {
+		super.onSyncedBlockEvent(state, world, pos, type, data);
 		BlockEntity blockEntity = world.getBlockEntity(pos);
-		return blockEntity == null ? false : blockEntity.onBlockAction(id, data);
+		return blockEntity == null ? false : blockEntity.onBlockAction(type, data);
 	}
 
 	@Override
@@ -234,7 +249,7 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	@Override
 	public BlockState stateFromData(int data) {
 		return this.getDefaultState()
-			.with(FACING, Direction.fromHorizontal(data))
+			.with(DIRECTION, Direction.fromHorizontal(data))
 			.with(POWERED, (data & 8) > 0)
 			.with(MODE, (data & 4) > 0 ? ComparatorBlock.ComparatorType.SUBTRACT : ComparatorBlock.ComparatorType.COMPARE);
 	}
@@ -242,7 +257,7 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	@Override
 	public int getData(BlockState state) {
 		int i = 0;
-		i |= ((Direction)state.get(FACING)).getHorizontal();
+		i |= ((Direction)state.get(DIRECTION)).getHorizontal();
 		if ((Boolean)state.get(POWERED)) {
 			i |= 8;
 		}
@@ -255,14 +270,24 @@ public class ComparatorBlock extends AbstractRedstoneGateBlock implements BlockE
 	}
 
 	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(DIRECTION, rotation.rotate(state.get(DIRECTION)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(DIRECTION)));
+	}
+
+	@Override
 	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, MODE, POWERED);
+		return new StateManager(this, DIRECTION, MODE, POWERED);
 	}
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
 		return this.getDefaultState()
-			.with(FACING, entity.getHorizontalDirection().getOpposite())
+			.with(DIRECTION, entity.getHorizontalDirection().getOpposite())
 			.with(POWERED, false)
 			.with(MODE, ComparatorBlock.ComparatorType.COMPARE);
 	}

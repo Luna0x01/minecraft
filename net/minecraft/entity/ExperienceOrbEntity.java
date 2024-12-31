@@ -1,9 +1,14 @@
 package net.minecraft.entity;
 
 import net.minecraft.block.material.Material;
+import net.minecraft.client.sound.SoundCategory;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -68,11 +73,11 @@ public class ExperienceOrbEntity extends Entity {
 		this.prevY = this.y;
 		this.prevZ = this.z;
 		this.velocityY -= 0.03F;
-		if (this.world.getBlockState(new BlockPos(this)).getBlock().getMaterial() == Material.LAVA) {
+		if (this.world.getBlockState(new BlockPos(this)).getMaterial() == Material.LAVA) {
 			this.velocityY = 0.2F;
 			this.velocityX = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
 			this.velocityZ = (double)((this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
-			this.playSound("random.fizz", 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
+			this.playSound(Sounds.ENTITY_GENERIC_BURN, 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
 		}
 
 		this.pushOutOfBlocks(this.x, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0, this.z);
@@ -91,7 +96,7 @@ public class ExperienceOrbEntity extends Entity {
 
 		if (this.target != null) {
 			double e = (this.target.x - this.x) / d;
-			double f = (this.target.y + (double)this.target.getEyeHeight() - this.y) / d;
+			double f = (this.target.y + (double)this.target.getEyeHeight() / 2.0 - this.y) / d;
 			double g = (this.target.z - this.z) / d;
 			double h = Math.sqrt(e * e + f * f + g * g);
 			double i = 1.0 - h;
@@ -151,14 +156,14 @@ public class ExperienceOrbEntity extends Entity {
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
-		nbt.putShort("Health", (short)((byte)this.health));
+		nbt.putShort("Health", (short)this.health);
 		nbt.putShort("Age", (short)this.orbAge);
 		nbt.putShort("Value", (short)this.amount);
 	}
 
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
-		this.health = nbt.getShort("Health") & 255;
+		this.health = nbt.getShort("Health");
 		this.orbAge = nbt.getShort("Age");
 		this.amount = nbt.getShort("Value");
 	}
@@ -168,12 +173,40 @@ public class ExperienceOrbEntity extends Entity {
 		if (!this.world.isClient) {
 			if (this.pickupDelay == 0 && player.experiencePickUpDelay == 0) {
 				player.experiencePickUpDelay = 2;
-				this.world.playSound((Entity)player, "random.orb", 0.1F, 0.5F * ((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.8F));
+				this.world
+					.playSound(
+						null,
+						player.x,
+						player.y,
+						player.z,
+						Sounds.ENTITY_EXPERIENCE_ORB_TOUCH,
+						SoundCategory.PLAYERS,
+						0.1F,
+						0.5F * ((this.random.nextFloat() - this.random.nextFloat()) * 0.7F + 1.8F)
+					);
 				player.sendPickup(this, 1);
-				player.addExperience(this.amount);
+				ItemStack itemStack = EnchantmentHelper.chooseEquipmentWith(Enchantments.MENDING, player);
+				if (itemStack != null && itemStack.isDamaged()) {
+					int i = Math.min(this.getMendingRepairAmount(this.amount), itemStack.getDamage());
+					this.amount = this.amount - this.getMendingRepairCost(i);
+					itemStack.setDamage(itemStack.getDamage() - i);
+				}
+
+				if (this.amount > 0) {
+					player.addExperience(this.amount);
+				}
+
 				this.remove();
 			}
 		}
+	}
+
+	private int getMendingRepairCost(int repairAmount) {
+		return repairAmount / 2;
+	}
+
+	private int getMendingRepairAmount(int experienceAmount) {
+		return experienceAmount * 2;
 	}
 
 	public int getExperienceAmount() {

@@ -14,22 +14,22 @@ public class SpiderNavigation extends MobNavigation {
 	}
 
 	@Override
-	public Path findPathTo(BlockPos pos) {
-		this.targetPos = pos;
-		return super.findPathTo(pos);
+	public PathMinHeap method_13108(BlockPos blockPos) {
+		this.targetPos = blockPos;
+		return super.method_13108(blockPos);
 	}
 
 	@Override
-	public Path findPathTo(Entity entity) {
+	public PathMinHeap method_13109(Entity entity) {
 		this.targetPos = new BlockPos(entity);
-		return super.findPathTo(entity);
+		return super.method_13109(entity);
 	}
 
 	@Override
 	public boolean startMovingTo(Entity entity, double speed) {
-		Path path = this.findPathTo(entity);
-		if (path != null) {
-			return this.startMovingAlong(path, speed);
+		PathMinHeap pathMinHeap = this.method_13109(entity);
+		if (pathMinHeap != null) {
+			return this.method_13107(pathMinHeap, speed);
 		} else {
 			this.targetPos = new BlockPos(entity);
 			this.speed = speed;

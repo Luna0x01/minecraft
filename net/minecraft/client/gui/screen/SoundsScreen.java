@@ -3,12 +3,13 @@ package net.minecraft.client.gui.screen;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.OptionButtonWidget;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.client.sound.SoundManager;
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.MathHelper;
 
 public class SoundsScreen extends Screen {
@@ -30,7 +31,7 @@ public class SoundsScreen extends Screen {
 		this.buttons
 			.add(
 				new SoundsScreen.SoundButtonWidget(
-					SoundCategory.MASTER.getId(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), SoundCategory.MASTER, true
+					SoundCategory.MASTER.ordinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), SoundCategory.MASTER, true
 				)
 			);
 		i += 2;
@@ -39,12 +40,24 @@ public class SoundsScreen extends Screen {
 			if (soundCategory != SoundCategory.MASTER) {
 				this.buttons
 					.add(
-						new SoundsScreen.SoundButtonWidget(soundCategory.getId(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), soundCategory, false)
+						new SoundsScreen.SoundButtonWidget(
+							soundCategory.ordinal(), this.width / 2 - 155 + i % 2 * 160, this.height / 6 - 12 + 24 * (i >> 1), soundCategory, false
+						)
 					);
 				i++;
 			}
 		}
 
+		this.buttons
+			.add(
+				new OptionButtonWidget(
+					201,
+					this.width / 2 - 75,
+					this.height / 6 - 12 + 24 * (++i >> 1),
+					GameOptions.Option.SHOW_SUBTITLES,
+					this.options.getValueMessage(GameOptions.Option.SHOW_SUBTITLES)
+				)
+			);
 		this.buttons.add(new ButtonWidget(200, this.width / 2 - 100, this.height / 6 + 168, I18n.translate("gui.done")));
 	}
 
@@ -54,6 +67,10 @@ public class SoundsScreen extends Screen {
 			if (button.id == 200) {
 				this.client.options.save();
 				this.client.setScreen(this.parent);
+			} else if (button.id == 201) {
+				this.client.options.getBooleanValue(GameOptions.Option.SHOW_SUBTITLES, 1);
+				button.message = this.client.options.getValueMessage(GameOptions.Option.SHOW_SUBTITLES);
+				this.client.options.save();
 			}
 		}
 	}
@@ -128,13 +145,7 @@ public class SoundsScreen extends Screen {
 		@Override
 		public void mouseReleased(int mouseX, int mouseY) {
 			if (this.mouseButtonPressed) {
-				if (this.category == SoundCategory.MASTER) {
-					float var10000 = 1.0F;
-				} else {
-					SoundsScreen.this.options.getSoundVolume(this.category);
-				}
-
-				SoundsScreen.this.client.getSoundManager().play(PositionedSoundInstance.master(new Identifier("gui.button.press"), 1.0F));
+				SoundsScreen.this.client.getSoundManager().play(PositionedSoundInstance.method_12521(Sounds.UI_BUTTON_CLICK, 1.0F));
 			}
 
 			this.mouseButtonPressed = false;

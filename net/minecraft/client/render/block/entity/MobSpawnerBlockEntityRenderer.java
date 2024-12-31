@@ -15,16 +15,21 @@ public class MobSpawnerBlockEntityRenderer extends BlockEntityRenderer<MobSpawne
 	}
 
 	public static void renderEntity(SpawnerBlockEntityBehavior behavior, double x, double y, double z, float tickDelta) {
-		Entity entity = behavior.getRenderedEntity(behavior.getWorld());
+		Entity entity = behavior.method_11473();
 		if (entity != null) {
-			float f = 0.4375F;
+			float f = 0.53125F;
+			float g = Math.max(entity.width, entity.height);
+			if ((double)g > 1.0) {
+				f /= g;
+			}
+
 			GlStateManager.translate(0.0F, 0.4F, 0.0F);
 			GlStateManager.rotate((float)(behavior.method_8464() + (behavior.method_8463() - behavior.method_8464()) * (double)tickDelta) * 10.0F, 0.0F, 1.0F, 0.0F);
+			GlStateManager.translate(0.0F, -0.2F, 0.0F);
 			GlStateManager.rotate(-30.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.translate(0.0F, -0.4F, 0.0F);
 			GlStateManager.scale(f, f, f);
 			entity.refreshPositionAndAngles(x, y, z, 0.0F, 0.0F);
-			MinecraftClient.getInstance().getEntityRenderManager().render(entity, 0.0, 0.0, 0.0, 0.0F, tickDelta);
+			MinecraftClient.getInstance().getEntityRenderManager().method_12446(entity, 0.0, 0.0, 0.0, 0.0F, tickDelta, false);
 		}
 	}
 }

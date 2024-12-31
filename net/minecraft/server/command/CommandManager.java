@@ -4,6 +4,7 @@ import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.Command;
 import net.minecraft.command.CommandProvider;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.StopSoundCommand;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.command.BanCommand;
@@ -25,7 +26,10 @@ import net.minecraft.util.Formatting;
 import net.minecraft.world.CommandBlockExecutor;
 
 public class CommandManager extends CommandRegistry implements CommandProvider {
-	public CommandManager() {
+	private final MinecraftServer server;
+
+	public CommandManager(MinecraftServer minecraftServer) {
+		this.server = minecraftServer;
 		this.registerCommand(new TimeCommand());
 		this.registerCommand(new GameModeCommand());
 		this.registerCommand(new DifficultyCommand());
@@ -69,7 +73,8 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 		this.registerCommand(new WorldBorderCommand());
 		this.registerCommand(new TitleCommand());
 		this.registerCommand(new EntityDataCommand());
-		if (MinecraftServer.getServer().isDedicated()) {
+		this.registerCommand(new StopSoundCommand());
+		if (minecraftServer.isDedicated()) {
 			this.registerCommand(new OpCommand());
 			this.registerCommand(new DeOpCommand());
 			this.registerCommand(new StopCommand());
@@ -95,7 +100,7 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 	@Override
 	public void run(CommandSource sender, Command command, int permissionLevel, String label, Object... args) {
 		boolean bl = true;
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
+		MinecraftServer minecraftServer = this.server;
 		if (!sender.sendCommandFeedback()) {
 			bl = false;
 		}
@@ -105,9 +110,9 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 		text.getStyle().setItalic(true);
 		if (bl) {
 			for (PlayerEntity playerEntity : minecraftServer.getPlayerManager().getPlayers()) {
-				if (playerEntity != sender && minecraftServer.getPlayerManager().isOperator(playerEntity.getGameProfile()) && command.isAccessible(sender)) {
-					boolean bl2 = sender instanceof MinecraftServer && MinecraftServer.getServer().shouldBroadcastConsoleToIps();
-					boolean bl3 = sender instanceof Console && MinecraftServer.getServer().shouldBroadcastRconToOps();
+				if (playerEntity != sender && minecraftServer.getPlayerManager().isOperator(playerEntity.getGameProfile()) && command.method_3278(this.server, sender)) {
+					boolean bl2 = sender instanceof MinecraftServer && this.server.shouldBroadcastConsoleToIps();
+					boolean bl3 = sender instanceof Console && this.server.shouldBroadcastRconToOps();
 					if (bl2 || bl3 || !(sender instanceof Console) && !(sender instanceof MinecraftServer)) {
 						playerEntity.sendMessage(text);
 					}
@@ -127,5 +132,10 @@ public class CommandManager extends CommandRegistry implements CommandProvider {
 		if ((permissionLevel & 1) != 1 && bl4 || sender instanceof MinecraftServer) {
 			sender.sendMessage(new TranslatableText(label, args));
 		}
+	}
+
+	@Override
+	protected MinecraftServer getServer() {
+		return this.server;
 	}
 }

@@ -1,5 +1,6 @@
 package net.minecraft.entity.damage;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -8,6 +9,7 @@ import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.explosion.Explosion;
 
 public class DamageSource {
@@ -20,12 +22,14 @@ public class DamageSource {
 	public static DamageSource STARVE = new DamageSource("starve").setBypassesArmor().setUnblockable();
 	public static DamageSource CACTUS = new DamageSource("cactus");
 	public static DamageSource FALL = new DamageSource("fall").setBypassesArmor();
+	public static DamageSource FLY_INTO_WALL = new DamageSource("flyIntoWall").setBypassesArmor();
 	public static DamageSource OUT_OF_WORLD = new DamageSource("outOfWorld").setBypassesArmor().setOutOfWorld();
 	public static DamageSource GENERIC = new DamageSource("generic").setBypassesArmor();
 	public static DamageSource MAGIC = new DamageSource("magic").setBypassesArmor().setUsesMagic();
 	public static DamageSource WITHER = new DamageSource("wither").setBypassesArmor();
 	public static DamageSource ANVIL = new DamageSource("anvil");
 	public static DamageSource FALLING_BLOCK = new DamageSource("fallingBlock");
+	public static DamageSource DRAGON_BREATH = new DamageSource("dragonBreath").setBypassesArmor();
 	private boolean bypassesArmor;
 	private boolean outOfWorld;
 	private boolean unblockable;
@@ -41,25 +45,29 @@ public class DamageSource {
 		return new EntityDamageSource("mob", attacker);
 	}
 
+	public static DamageSource mobProjectile(Entity projectile, LivingEntity attacker) {
+		return new ProjectileDamageSource("mob", projectile, attacker);
+	}
+
 	public static DamageSource player(PlayerEntity attacker) {
 		return new EntityDamageSource("player", attacker);
 	}
 
-	public static DamageSource arrow(AbstractArrowEntity arrow, Entity attacker) {
+	public static DamageSource arrow(AbstractArrowEntity arrow, @Nullable Entity attacker) {
 		return new ProjectileDamageSource("arrow", arrow, attacker).setProjectile();
 	}
 
-	public static DamageSource fire(ExplosiveProjectileEntity projectile, Entity attacker) {
+	public static DamageSource fire(ExplosiveProjectileEntity projectile, @Nullable Entity attacker) {
 		return attacker == null
 			? new ProjectileDamageSource("onFire", projectile, projectile).setFire().setProjectile()
 			: new ProjectileDamageSource("fireball", projectile, attacker).setFire().setProjectile();
 	}
 
-	public static DamageSource thrownProjectile(Entity projectile, Entity attacker) {
+	public static DamageSource thrownProjectile(Entity projectile, @Nullable Entity attacker) {
 		return new ProjectileDamageSource("thrown", projectile, attacker).setProjectile();
 	}
 
-	public static DamageSource magic(Entity magic, Entity attacker) {
+	public static DamageSource magic(Entity magic, @Nullable Entity attacker) {
 		return new ProjectileDamageSource("indirectMagic", magic, attacker).setBypassesArmor().setUsesMagic();
 	}
 
@@ -67,9 +75,15 @@ public class DamageSource {
 		return new EntityDamageSource("thorns", attacker).setThorns().setUsesMagic();
 	}
 
-	public static DamageSource explosion(Explosion explosion) {
+	public static DamageSource explosion(@Nullable Explosion explosion) {
 		return explosion != null && explosion.getCausingEntity() != null
 			? new EntityDamageSource("explosion.player", explosion.getCausingEntity()).setScaledWithDifficulty().setExplosive()
+			: new DamageSource("explosion").setScaledWithDifficulty().setExplosive();
+	}
+
+	public static DamageSource explosion(@Nullable LivingEntity attacker) {
+		return attacker != null
+			? new EntityDamageSource("explosion.player", attacker).setScaledWithDifficulty().setExplosive()
 			: new DamageSource("explosion").setScaledWithDifficulty().setExplosive();
 	}
 
@@ -111,10 +125,12 @@ public class DamageSource {
 		this.name = string;
 	}
 
+	@Nullable
 	public Entity getSource() {
 		return this.getAttacker();
 	}
 
+	@Nullable
 	public Entity getAttacker() {
 		return null;
 	}
@@ -179,5 +195,10 @@ public class DamageSource {
 	public boolean isSourceCreativePlayer() {
 		Entity entity = this.getAttacker();
 		return entity instanceof PlayerEntity && ((PlayerEntity)entity).abilities.creativeMode;
+	}
+
+	@Nullable
+	public Vec3d getPosition() {
+		return null;
 	}
 }

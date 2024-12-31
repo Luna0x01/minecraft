@@ -1,6 +1,7 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import javax.annotation.Nullable;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.text.Text;
@@ -24,7 +25,7 @@ public class TitleS2CPacket implements Packet<ClientPlayPacketListener> {
 		this(TitleS2CPacket.Action.TIMES, null, i, j, k);
 	}
 
-	public TitleS2CPacket(TitleS2CPacket.Action action, Text text, int i, int j, int k) {
+	public TitleS2CPacket(TitleS2CPacket.Action action, @Nullable Text text, int i, int j, int k) {
 		this.action = action;
 		this.title = text;
 		this.fadeInTicks = i;
@@ -48,7 +49,7 @@ public class TitleS2CPacket implements Packet<ClientPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeEnum(this.action);
+		buf.writeEnumConstant(this.action);
 		if (this.action == TitleS2CPacket.Action.TITLE || this.action == TitleS2CPacket.Action.SUBTITLE) {
 			buf.writeText(this.title);
 		}

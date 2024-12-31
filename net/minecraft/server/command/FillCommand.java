@@ -1,7 +1,9 @@
 package net.minecraft.server.command;
 
 import com.google.common.collect.Lists;
+import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -15,6 +17,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtException;
 import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -35,14 +38,14 @@ public class FillCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 7) {
 			throw new IncorrectUsageException("commands.fill.usage");
 		} else {
-			source.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
-			BlockPos blockPos = getBlockPos(source, args, 0, false);
-			BlockPos blockPos2 = getBlockPos(source, args, 3, false);
-			Block block = AbstractCommand.getBlock(source, args[6]);
+			commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, 0);
+			BlockPos blockPos = getBlockPos(commandSource, args, 0, false);
+			BlockPos blockPos2 = getBlockPos(commandSource, args, 3, false);
+			Block block = AbstractCommand.getBlock(commandSource, args[6]);
 			int i = 0;
 			if (args.length >= 8) {
 				i = parseClampedInt(args[7], 0, 15);
@@ -58,10 +61,10 @@ public class FillCommand extends AbstractCommand {
 			if (j > 32768) {
 				throw new CommandException("commands.fill.tooManyBlocks", j, 32768);
 			} else if (blockPos3.getY() >= 0 && blockPos4.getY() < 256) {
-				World world = source.getWorld();
+				World world = commandSource.getWorld();
 
-				for (int k = blockPos3.getZ(); k < blockPos4.getZ() + 16; k += 16) {
-					for (int l = blockPos3.getX(); l < blockPos4.getX() + 16; l += 16) {
+				for (int k = blockPos3.getZ(); k <= blockPos4.getZ(); k += 16) {
+					for (int l = blockPos3.getX(); l <= blockPos4.getX(); l += 16) {
 						if (!world.blockExists(new BlockPos(l, blockPos4.getY() - blockPos3.getY(), k))) {
 							throw new CommandException("commands.fill.outOfWorld");
 						}
@@ -71,13 +74,13 @@ public class FillCommand extends AbstractCommand {
 				NbtCompound nbtCompound = new NbtCompound();
 				boolean bl = false;
 				if (args.length >= 10 && block.hasBlockEntity()) {
-					String string = method_4635(source, args, 9).asUnformattedString();
+					String string = method_4635(commandSource, args, 9).asUnformattedString();
 
 					try {
 						nbtCompound = StringNbtReader.parse(string);
 						bl = true;
-					} catch (NbtException var21) {
-						throw new CommandException("commands.fill.tagError", var21.getMessage());
+					} catch (NbtException var22) {
+						throw new CommandException("commands.fill.tagError", var22.getMessage());
 					}
 				}
 
@@ -98,7 +101,7 @@ public class FillCommand extends AbstractCommand {
 										}
 									} else if (args[8].equals("replace") && !block.hasBlockEntity()) {
 										if (args.length > 9) {
-											Block block2 = AbstractCommand.getBlock(source, args[9]);
+											Block block2 = AbstractCommand.getBlock(commandSource, args[9]);
 											if (world.getBlockState(blockPos5).getBlock() != block2) {
 												continue;
 											}
@@ -161,8 +164,8 @@ public class FillCommand extends AbstractCommand {
 				if (j <= 0) {
 					throw new CommandException("commands.fill.failed");
 				} else {
-					source.setStat(CommandStats.Type.AFFECTED_BLOCKS, j);
-					run(source, this, "commands.fill.success", new Object[]{j});
+					commandSource.setStat(CommandStats.Type.AFFECTED_BLOCKS, j);
+					run(commandSource, this, "commands.fill.success", new Object[]{j});
 				}
 			} else {
 				throw new CommandException("commands.fill.outOfWorld");
@@ -171,17 +174,17 @@ public class FillCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length > 0 && args.length <= 3) {
-			return method_10707(args, 0, pos);
-		} else if (args.length > 3 && args.length <= 6) {
-			return method_10707(args, 3, pos);
-		} else if (args.length == 7) {
-			return method_10708(args, Block.REGISTRY.keySet());
-		} else if (args.length == 9) {
-			return method_2894(args, new String[]{"replace", "destroy", "keep", "hollow", "outline"});
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length > 0 && strings.length <= 3) {
+			return method_10707(strings, 0, pos);
+		} else if (strings.length > 3 && strings.length <= 6) {
+			return method_10707(strings, 3, pos);
+		} else if (strings.length == 7) {
+			return method_10708(strings, Block.REGISTRY.getKeySet());
+		} else if (strings.length == 9) {
+			return method_2894(strings, new String[]{"replace", "destroy", "keep", "hollow", "outline"});
 		} else {
-			return args.length == 10 && "replace".equals(args[8]) ? method_10708(args, Block.REGISTRY.keySet()) : null;
+			return strings.length == 10 && "replace".equals(strings[8]) ? method_10708(strings, Block.REGISTRY.getKeySet()) : Collections.emptyList();
 		}
 	}
 }

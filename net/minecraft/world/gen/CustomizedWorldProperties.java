@@ -1,5 +1,6 @@
 package net.minecraft.world.gen;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -12,6 +13,7 @@ import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import net.minecraft.util.JsonHelper;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class CustomizedWorldProperties {
 	public final float coordinateScale;
@@ -175,6 +177,7 @@ public class CustomizedWorldProperties {
 	}
 
 	public static class Builder {
+		@VisibleForTesting
 		static final Gson GSON = new GsonBuilder().registerTypeAdapter(CustomizedWorldProperties.Builder.class, new CustomizedWorldProperties.Serializer()).create();
 		public float coordinateScale = 684.412F;
 		public float heightScale = 684.412F;
@@ -256,11 +259,11 @@ public class CustomizedWorldProperties {
 		public int lapisSpread = 16;
 
 		public static CustomizedWorldProperties.Builder fromJson(String json) {
-			if (json.length() == 0) {
+			if (json.isEmpty()) {
 				return new CustomizedWorldProperties.Builder();
 			} else {
 				try {
-					return (CustomizedWorldProperties.Builder)GSON.fromJson(json, CustomizedWorldProperties.Builder.class);
+					return JsonHelper.deserialize(GSON, json, CustomizedWorldProperties.Builder.class);
 				} catch (Exception var2) {
 					return new CustomizedWorldProperties.Builder();
 				}
@@ -645,10 +648,12 @@ public class CustomizedWorldProperties {
 				builder.lavaLakeChance = JsonHelper.getInt(jsonObject, "lavaLakeChance", builder.lavaLakeChance);
 				builder.useLavaOceans = JsonHelper.getBoolean(jsonObject, "useLavaOceans", builder.useLavaOceans);
 				builder.fixedBiome = JsonHelper.getInt(jsonObject, "fixedBiome", builder.fixedBiome);
-				if (builder.fixedBiome >= 38 || builder.fixedBiome < -1) {
+				if (builder.fixedBiome < 38 && builder.fixedBiome >= -1) {
+					if (builder.fixedBiome >= Biome.getBiomeIndex(Biomes.NETHER)) {
+						builder.fixedBiome += 2;
+					}
+				} else {
 					builder.fixedBiome = -1;
-				} else if (builder.fixedBiome >= Biome.HELL.id) {
-					builder.fixedBiome += 2;
 				}
 
 				builder.biomeSize = JsonHelper.getInt(jsonObject, "biomeSize", builder.biomeSize);

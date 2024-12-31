@@ -1,9 +1,11 @@
 package net.minecraft.world.level;
 
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRuleManager;
+import net.minecraft.world.dimension.DimensionType;
 
 public class ReadOnlyLevelProperties extends LevelProperties {
 	private final LevelProperties levelProperties;
@@ -13,12 +15,7 @@ public class ReadOnlyLevelProperties extends LevelProperties {
 	}
 
 	@Override
-	public NbtCompound toNbt() {
-		return this.levelProperties.toNbt();
-	}
-
-	@Override
-	public NbtCompound toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(@Nullable NbtCompound nbt) {
 		return this.levelProperties.toNbt(nbt);
 	}
 
@@ -208,5 +205,15 @@ public class ReadOnlyLevelProperties extends LevelProperties {
 
 	@Override
 	public void setDifficultyLocked(boolean difficultyLocked) {
+	}
+
+	@Override
+	public void method_11955(DimensionType dimensionType, NbtCompound nbtCompound) {
+		this.levelProperties.method_11955(dimensionType, nbtCompound);
+	}
+
+	@Override
+	public NbtCompound method_11954(DimensionType dimensionType) {
+		return this.levelProperties.method_11954(dimensionType);
 	}
 }

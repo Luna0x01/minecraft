@@ -2,6 +2,7 @@ package net.minecraft.world.chunk;
 
 import com.google.common.collect.Lists;
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -36,27 +37,21 @@ public class RegionFileFormat {
 
 			this.fileBuffer = new RandomAccessFile(file, "rw");
 			if (this.fileBuffer.length() < 4096L) {
-				for (int i = 0; i < 1024; i++) {
-					this.fileBuffer.writeInt(0);
-				}
-
-				for (int j = 0; j < 1024; j++) {
-					this.fileBuffer.writeInt(0);
-				}
-
+				this.fileBuffer.write(BYTES);
+				this.fileBuffer.write(BYTES);
 				this.field_4773 += 8192;
 			}
 
 			if ((this.fileBuffer.length() & 4095L) != 0L) {
-				for (int k = 0; (long)k < (this.fileBuffer.length() & 4095L); k++) {
+				for (int i = 0; (long)i < (this.fileBuffer.length() & 4095L); i++) {
 					this.fileBuffer.write(0);
 				}
 			}
 
-			int l = (int)this.fileBuffer.length() / 4096;
-			this.field_9956 = Lists.newArrayListWithCapacity(l);
+			int j = (int)this.fileBuffer.length() / 4096;
+			this.field_9956 = Lists.newArrayListWithCapacity(j);
 
-			for (int m = 0; m < l; m++) {
+			for (int k = 0; k < j; k++) {
 				this.field_9956.add(true);
 			}
 
@@ -64,19 +59,19 @@ public class RegionFileFormat {
 			this.field_9956.set(1, false);
 			this.fileBuffer.seek(0L);
 
-			for (int n = 0; n < 1024; n++) {
-				int o = this.fileBuffer.readInt();
-				this.sectorData[n] = o;
-				if (o != 0 && (o >> 8) + (o & 0xFF) <= this.field_9956.size()) {
-					for (int p = 0; p < (o & 0xFF); p++) {
-						this.field_9956.set((o >> 8) + p, false);
+			for (int l = 0; l < 1024; l++) {
+				int m = this.fileBuffer.readInt();
+				this.sectorData[l] = m;
+				if (m != 0 && (m >> 8) + (m & 0xFF) <= this.field_9956.size()) {
+					for (int n = 0; n < (m & 0xFF); n++) {
+						this.field_9956.set((m >> 8) + n, false);
 					}
 				}
 			}
 
-			for (int q = 0; q < 1024; q++) {
-				int r = this.fileBuffer.readInt();
-				this.saveTimes[q] = r;
+			for (int o = 0; o < 1024; o++) {
+				int p = this.fileBuffer.readInt();
+				this.saveTimes[o] = p;
 			}
 		} catch (IOException var6) {
 			var6.printStackTrace();
@@ -126,7 +121,9 @@ public class RegionFileFormat {
 	}
 
 	public DataOutputStream getChunkOutputStream(int chunkX, int chunkZ) {
-		return this.isOutsideRange(chunkX, chunkZ) ? null : new DataOutputStream(new DeflaterOutputStream(new RegionFileFormat.OutputStream(chunkX, chunkZ)));
+		return this.isOutsideRange(chunkX, chunkZ)
+			? null
+			: new DataOutputStream(new BufferedOutputStream(new DeflaterOutputStream(new RegionFileFormat.OutputStream(chunkX, chunkZ))));
 	}
 
 	protected synchronized void writeChunk(int chunkX, int chunkZ, byte[] bs, int i) {

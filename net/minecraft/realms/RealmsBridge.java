@@ -20,8 +20,10 @@ public class RealmsBridge extends RealmsScreen {
 			constructor.setAccessible(true);
 			Object object = constructor.newInstance(this);
 			MinecraftClient.getInstance().setScreen(((RealmsScreen)object).getProxy());
-		} catch (Exception var5) {
-			LOGGER.error("Realms module missing", var5);
+		} catch (ClassNotFoundException var5) {
+			LOGGER.error("Realms module missing");
+		} catch (Exception var6) {
+			LOGGER.error("Failed to load Realms module", var6);
 		}
 	}
 
@@ -33,10 +35,13 @@ public class RealmsBridge extends RealmsScreen {
 			constructor.setAccessible(true);
 			Object object = constructor.newInstance(this);
 			return ((RealmsScreen)object).getProxy();
-		} catch (Exception var5) {
-			LOGGER.error("Realms module missing", var5);
-			return null;
+		} catch (ClassNotFoundException var5) {
+			LOGGER.error("Realms module missing");
+		} catch (Exception var6) {
+			LOGGER.error("Failed to load Realms module", var6);
 		}
+
+		return null;
 	}
 
 	@Override

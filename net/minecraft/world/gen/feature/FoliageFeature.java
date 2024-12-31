@@ -13,7 +13,7 @@ public abstract class FoliageFeature extends Feature {
 	}
 
 	protected boolean isBlockReplaceable(Block block) {
-		Material material = block.getMaterial();
+		Material material = block.getDefaultState().getMaterial();
 		return material == Material.AIR
 			|| material == Material.FOLIAGE
 			|| block == Blocks.GRASS

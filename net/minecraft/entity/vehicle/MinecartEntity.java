@@ -1,6 +1,9 @@
 package net.minecraft.entity.vehicle;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 
 public class MinecartEntity extends AbstractMinecartEntity {
@@ -13,14 +16,14 @@ public class MinecartEntity extends AbstractMinecartEntity {
 	}
 
 	@Override
-	public boolean openInventory(PlayerEntity player) {
-		if (this.rider != null && this.rider instanceof PlayerEntity && this.rider != player) {
-			return true;
-		} else if (this.rider != null && this.rider != player) {
+	public boolean method_6100(PlayerEntity playerEntity, @Nullable ItemStack itemStack, Hand hand) {
+		if (playerEntity.isSneaking()) {
 			return false;
+		} else if (this.hasPassengers()) {
+			return true;
 		} else {
 			if (!this.world.isClient) {
-				player.startRiding(this);
+				playerEntity.ride(this);
 			}
 
 			return true;
@@ -30,8 +33,8 @@ public class MinecartEntity extends AbstractMinecartEntity {
 	@Override
 	public void onActivatorRail(int x, int y, int z, boolean powered) {
 		if (powered) {
-			if (this.rider != null) {
-				this.rider.startRiding(null);
+			if (this.hasPassengers()) {
+				this.removeAllPassengers();
 			}
 
 			if (this.getDamageWobbleTicks() == 0) {

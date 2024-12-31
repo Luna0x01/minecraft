@@ -1,5 +1,6 @@
 package net.minecraft.text;
 
+import net.minecraft.command.CommandSource;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
@@ -30,19 +31,22 @@ public class ScoreText extends BaseText {
 
 	@Override
 	public String computeValue() {
-		MinecraftServer minecraftServer = MinecraftServer.getServer();
+		return this.score;
+	}
+
+	public void method_12607(CommandSource commandSource) {
+		MinecraftServer minecraftServer = commandSource.getMinecraftServer();
 		if (minecraftServer != null && minecraftServer.hasGameDir() && ChatUtil.isEmpty(this.score)) {
 			Scoreboard scoreboard = minecraftServer.getWorld(0).getScoreboard();
 			ScoreboardObjective scoreboardObjective = scoreboard.getNullableObjective(this.objective);
 			if (scoreboard.playerHasObjective(this.name, scoreboardObjective)) {
 				ScoreboardPlayerScore scoreboardPlayerScore = scoreboard.getPlayerScore(this.name, scoreboardObjective);
 				this.setScore(String.format("%d", scoreboardPlayerScore.getScore()));
-			} else {
-				this.score = "";
+				return;
 			}
 		}
 
-		return this.score;
+		this.score = "";
 	}
 
 	public ScoreText copy() {

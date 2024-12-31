@@ -77,7 +77,7 @@ public abstract class ItemGroup {
 				EnchantmentTarget.FEET,
 				EnchantmentTarget.HEAD,
 				EnchantmentTarget.LEGS,
-				EnchantmentTarget.TORSO,
+				EnchantmentTarget.ARMOR_CHEST,
 				EnchantmentTarget.BOW,
 				EnchantmentTarget.WEAPON
 			}
@@ -211,12 +211,12 @@ public abstract class ItemGroup {
 	}
 
 	public void showBooks(List<ItemStack> stacks, EnchantmentTarget... targets) {
-		for (Enchantment enchantment : Enchantment.ALL_ENCHANTMENTS) {
+		for (Enchantment enchantment : Enchantment.REGISTRY) {
 			if (enchantment != null && enchantment.target != null) {
 				boolean bl = false;
 
-				for (int k = 0; k < targets.length && !bl; k++) {
-					if (enchantment.target == targets[k]) {
+				for (int i = 0; i < targets.length && !bl; i++) {
+					if (enchantment.target == targets[i]) {
 						bl = true;
 					}
 				}

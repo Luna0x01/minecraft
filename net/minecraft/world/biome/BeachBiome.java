@@ -3,8 +3,8 @@ package net.minecraft.world.biome;
 import net.minecraft.block.Blocks;
 
 public class BeachBiome extends Biome {
-	public BeachBiome(int i) {
-		super(i);
+	public BeachBiome(Biome.Settings settings) {
+		super(settings);
 		this.passiveEntries.clear();
 		this.topBlock = Blocks.SAND.getDefaultState();
 		this.baseBlock = Blocks.SAND.getDefaultState();

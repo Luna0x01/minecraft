@@ -10,8 +10,8 @@ public class ServerInfo {
 	public String playerCountLabel;
 	public String label;
 	public long ping;
-	public int protocolVersion = 47;
-	public String version = "1.8.9";
+	public int protocolVersion = 110;
+	public String version = "1.9.4";
 	public boolean online;
 	public String playerListSummary;
 	private ServerInfo.ResourcePackState resourcePackState = ServerInfo.ResourcePackState.PROMPT;

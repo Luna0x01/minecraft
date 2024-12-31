@@ -1,5 +1,6 @@
 package net.minecraft.screen;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.slot.Slot;
@@ -58,6 +59,7 @@ public class BeaconScreenHandler extends ScreenHandler {
 		return this.paymentInventory.canPlayerUseInv(player);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack transferSlot(PlayerEntity player, int invSlot) {
 		ItemStack itemStack = null;
@@ -109,7 +111,7 @@ public class BeaconScreenHandler extends ScreenHandler {
 		}
 
 		@Override
-		public boolean canInsert(ItemStack stack) {
+		public boolean canInsert(@Nullable ItemStack stack) {
 			return stack == null
 				? false
 				: stack.getItem() == Items.EMERALD || stack.getItem() == Items.DIAMOND || stack.getItem() == Items.GOLD_INGOT || stack.getItem() == Items.IRON_INGOT;

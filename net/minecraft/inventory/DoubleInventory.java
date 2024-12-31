@@ -1,5 +1,6 @@
 package net.minecraft.inventory;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.LockableScreenHandlerFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -62,6 +63,7 @@ public class DoubleInventory implements LockableScreenHandlerFactory {
 		return (Text)(this.hasCustomName() ? new LiteralText(this.getTranslationKey()) : new TranslatableText(this.getTranslationKey()));
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getInvStack(int slot) {
 		return slot >= this.mainInventory.getInvSize()
@@ -69,6 +71,7 @@ public class DoubleInventory implements LockableScreenHandlerFactory {
 			: this.mainInventory.getInvStack(slot);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack takeInvStack(int slot, int amount) {
 		return slot >= this.mainInventory.getInvSize()
@@ -76,6 +79,7 @@ public class DoubleInventory implements LockableScreenHandlerFactory {
 			: this.mainInventory.takeInvStack(slot, amount);
 	}
 
+	@Nullable
 	@Override
 	public ItemStack removeInvStack(int slot) {
 		return slot >= this.mainInventory.getInvSize()
@@ -84,7 +88,7 @@ public class DoubleInventory implements LockableScreenHandlerFactory {
 	}
 
 	@Override
-	public void setInvStack(int slot, ItemStack stack) {
+	public void setInvStack(int slot, @Nullable ItemStack stack) {
 		if (slot >= this.mainInventory.getInvSize()) {
 			this.secondaryInventory.setInvStack(slot - this.mainInventory.getInvSize(), stack);
 		} else {

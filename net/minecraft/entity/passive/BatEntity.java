@@ -1,17 +1,26 @@
 package net.minecraft.entity.passive;
 
 import java.util.Calendar;
-import net.minecraft.block.Block;
+import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.AmbientEntity;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class BatEntity extends AmbientEntity {
+	private static final TrackedData<Byte> field_14610 = DataTracker.registerData(BatEntity.class, TrackedDataHandlerRegistry.BYTE);
 	private BlockPos field_5365;
 
 	public BatEntity(World world) {
@@ -23,7 +32,7 @@ public class BatEntity extends AmbientEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(16, new Byte((byte)0));
+		this.dataTracker.startTracking(field_14610, (byte)0);
 	}
 
 	@Override
@@ -36,19 +45,20 @@ public class BatEntity extends AmbientEntity {
 		return super.getSoundPitch() * 0.95F;
 	}
 
+	@Nullable
 	@Override
-	protected String getAmbientSound() {
-		return this.isRoosting() && this.random.nextInt(4) != 0 ? null : "mob.bat.idle";
+	protected Sound ambientSound() {
+		return this.isRoosting() && this.random.nextInt(4) != 0 ? null : Sounds.ENTITY_BAT_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.bat.hurt";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_BAT_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.bat.death";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_BAT_DEATH;
 	}
 
 	@Override
@@ -71,15 +81,15 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	public boolean isRoosting() {
-		return (this.dataTracker.getByte(16) & 1) != 0;
+		return (this.dataTracker.get(field_14610) & 1) != 0;
 	}
 
 	public void setRoosting(boolean bl) {
-		byte b = this.dataTracker.getByte(16);
+		byte b = this.dataTracker.get(field_14610);
 		if (bl) {
-			this.dataTracker.setProperty(16, (byte)(b | 1));
+			this.dataTracker.set(field_14610, (byte)(b | 1));
 		} else {
-			this.dataTracker.setProperty(16, (byte)(b & -2));
+			this.dataTracker.set(field_14610, (byte)(b & -2));
 		}
 	}
 
@@ -100,17 +110,17 @@ public class BatEntity extends AmbientEntity {
 		BlockPos blockPos = new BlockPos(this);
 		BlockPos blockPos2 = blockPos.up();
 		if (this.isRoosting()) {
-			if (!this.world.getBlockState(blockPos2).getBlock().isFullCube()) {
+			if (!this.world.getBlockState(blockPos2).method_11734()) {
 				this.setRoosting(false);
-				this.world.syncWorldEvent(null, 1015, blockPos, 0);
+				this.world.syncWorldEvent(null, 1025, blockPos, 0);
 			} else {
 				if (this.random.nextInt(200) == 0) {
 					this.headYaw = (float)this.random.nextInt(360);
 				}
 
-				if (this.world.getClosestPlayer(this, 4.0) != null) {
+				if (this.world.method_11490(this, 4.0) != null) {
 					this.setRoosting(false);
-					this.world.syncWorldEvent(null, 1015, blockPos, 0);
+					this.world.syncWorldEvent(null, 1025, blockPos, 0);
 				}
 			}
 		} else {
@@ -134,11 +144,11 @@ public class BatEntity extends AmbientEntity {
 			this.velocityX = this.velocityX + (Math.signum(d) * 0.5 - this.velocityX) * 0.1F;
 			this.velocityY = this.velocityY + (Math.signum(e) * 0.7F - this.velocityY) * 0.1F;
 			this.velocityZ = this.velocityZ + (Math.signum(f) * 0.5 - this.velocityZ) * 0.1F;
-			float g = (float)(MathHelper.atan2(this.velocityZ, this.velocityX) * 180.0 / (float) Math.PI) - 90.0F;
+			float g = (float)(MathHelper.atan2(this.velocityZ, this.velocityX) * 180.0F / (float)Math.PI) - 90.0F;
 			float h = MathHelper.wrapDegrees(g - this.yaw);
 			this.forwardSpeed = 0.5F;
 			this.yaw += h;
-			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).getBlock().isFullCube()) {
+			if (this.random.nextInt(100) == 0 && this.world.getBlockState(blockPos2).method_11734()) {
 				this.setRoosting(true);
 			}
 		}
@@ -154,7 +164,7 @@ public class BatEntity extends AmbientEntity {
 	}
 
 	@Override
-	protected void fall(double heightDifference, boolean onGround, Block landedBlock, BlockPos landedPosition) {
+	protected void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPos) {
 	}
 
 	@Override
@@ -178,13 +188,13 @@ public class BatEntity extends AmbientEntity {
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
-		this.dataTracker.setProperty(16, nbt.getByte("BatFlags"));
+		this.dataTracker.set(field_14610, nbt.getByte("BatFlags"));
 	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		nbt.putByte("BatFlags", this.dataTracker.getByte(16));
+		nbt.putByte("BatFlags", this.dataTracker.get(field_14610));
 	}
 
 	@Override
@@ -212,5 +222,11 @@ public class BatEntity extends AmbientEntity {
 	@Override
 	public float getEyeHeight() {
 		return this.height / 2.0F;
+	}
+
+	@Nullable
+	@Override
+	protected Identifier getLootTableId() {
+		return LootTables.BAT_ENTITIE;
 	}
 }

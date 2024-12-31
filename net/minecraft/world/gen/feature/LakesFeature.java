@@ -67,7 +67,7 @@ public class LakesFeature extends Feature {
 									|| u > 0 && bls[(s * 16 + t) * 8 + (u - 1)]
 							);
 						if (bl) {
-							Material material = world.getBlockState(blockPos.add(s, u, t)).getBlock().getMaterial();
+							Material material = world.getBlockState(blockPos.add(s, u, t)).getMaterial();
 							if (u >= 4 && material.isFluid()) {
 								return false;
 							}
@@ -108,7 +108,7 @@ public class LakesFeature extends Feature {
 				}
 			}
 
-			if (this.block.getMaterial() == Material.LAVA) {
+			if (this.block.getDefaultState().getMaterial() == Material.LAVA) {
 				for (int ab = 0; ab < 16; ab++) {
 					for (int ac = 0; ac < 16; ac++) {
 						for (int ad = 0; ad < 8; ad++) {
@@ -121,7 +121,7 @@ public class LakesFeature extends Feature {
 										|| ad < 7 && bls[(ab * 16 + ac) * 8 + ad + 1]
 										|| ad > 0 && bls[(ab * 16 + ac) * 8 + (ad - 1)]
 								);
-							if (bl2 && (ad < 4 || random.nextInt(2) != 0) && world.getBlockState(blockPos.add(ab, ad, ac)).getBlock().getMaterial().isSolid()) {
+							if (bl2 && (ad < 4 || random.nextInt(2) != 0) && world.getBlockState(blockPos.add(ab, ad, ac)).getMaterial().isSolid()) {
 								world.setBlockState(blockPos.add(ab, ad, ac), Blocks.STONE.getDefaultState(), 2);
 							}
 						}
@@ -129,7 +129,7 @@ public class LakesFeature extends Feature {
 				}
 			}
 
-			if (this.block.getMaterial() == Material.WATER) {
+			if (this.block.getDefaultState().getMaterial() == Material.WATER) {
 				for (int ae = 0; ae < 16; ae++) {
 					for (int af = 0; af < 16; af++) {
 						int ag = 4;

@@ -2,6 +2,7 @@ package net.minecraft.block;
 
 import com.google.common.base.Predicate;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.advancement.AchievementsAndCriterions;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
@@ -22,6 +23,8 @@ import net.minecraft.predicate.block.BlockStatePredicate;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -31,23 +34,27 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 
 public class SkullBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing");
+	public static final DirectionProperty FACING = FacingBlock.FACING;
 	public static final BooleanProperty NO_DROP = BooleanProperty.of("nodrop");
 	private static final Predicate<CachedBlockPosition> IS_WITHER_SKULL_PREDICATE = new Predicate<CachedBlockPosition>() {
-		public boolean apply(CachedBlockPosition cachedBlockPosition) {
+		public boolean apply(@Nullable CachedBlockPosition cachedBlockPosition) {
 			return cachedBlockPosition.getBlockState() != null
 				&& cachedBlockPosition.getBlockState().getBlock() == Blocks.SKULL
 				&& cachedBlockPosition.getBlockEntity() instanceof SkullBlockEntity
 				&& ((SkullBlockEntity)cachedBlockPosition.getBlockEntity()).getSkullType() == 1;
 		}
 	};
+	protected static final Box field_12752 = new Box(0.25, 0.0, 0.25, 0.75, 0.5, 0.75);
+	protected static final Box field_12753 = new Box(0.25, 0.25, 0.5, 0.75, 0.75, 1.0);
+	protected static final Box field_12754 = new Box(0.25, 0.25, 0.0, 0.75, 0.75, 0.5);
+	protected static final Box field_12755 = new Box(0.5, 0.25, 0.25, 1.0, 0.75, 0.75);
+	protected static final Box field_12756 = new Box(0.0, 0.25, 0.25, 0.5, 0.75, 0.75);
 	private BlockPattern witherSkeletonDispenserPattern;
 	private BlockPattern witherSkeletonPattern;
 
 	protected SkullBlock() {
 		super(Material.DECORATION);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(NO_DROP, false));
-		this.setBoundingBox(0.25F, 0.0F, 0.25F, 0.75F, 0.5F, 0.75F);
 	}
 
 	@Override
@@ -56,40 +63,30 @@ public class SkullBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		switch ((Direction)view.getBlockState(pos).get(FACING)) {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((Direction)state.get(FACING)) {
 			case UP:
 			default:
-				this.setBoundingBox(0.25F, 0.0F, 0.25F, 0.75F, 0.5F, 0.75F);
-				break;
+				return field_12752;
 			case NORTH:
-				this.setBoundingBox(0.25F, 0.25F, 0.5F, 0.75F, 0.75F, 1.0F);
-				break;
+				return field_12753;
 			case SOUTH:
-				this.setBoundingBox(0.25F, 0.25F, 0.0F, 0.75F, 0.75F, 0.5F);
-				break;
+				return field_12754;
 			case WEST:
-				this.setBoundingBox(0.5F, 0.25F, 0.25F, 1.0F, 0.75F, 0.75F);
-				break;
+				return field_12755;
 			case EAST:
-				this.setBoundingBox(0.0F, 0.25F, 0.25F, 0.5F, 0.75F, 0.75F);
+				return field_12756;
 		}
-	}
-
-	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		this.setBoundingBox(world, pos);
-		return super.getCollisionBox(world, pos, state);
 	}
 
 	@Override
@@ -103,14 +100,14 @@ public class SkullBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.SKULL;
-	}
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		int i = 0;
+		BlockEntity blockEntity = world.getBlockEntity(blockPos);
+		if (blockEntity instanceof SkullBlockEntity) {
+			i = ((SkullBlockEntity)blockEntity).getSkullType();
+		}
 
-	@Override
-	public int getMeta(World world, BlockPos pos) {
-		BlockEntity blockEntity = world.getBlockEntity(pos);
-		return blockEntity instanceof SkullBlockEntity ? ((SkullBlockEntity)blockEntity).getSkullType() : super.getMeta(world, pos);
+		return new ItemStack(Items.SKULL, 1, i);
 	}
 
 	@Override
@@ -134,7 +131,7 @@ public class SkullBlock extends BlockWithEntity {
 				BlockEntity blockEntity = world.getBlockEntity(pos);
 				if (blockEntity instanceof SkullBlockEntity) {
 					SkullBlockEntity skullBlockEntity = (SkullBlockEntity)blockEntity;
-					ItemStack itemStack = new ItemStack(Items.SKULL, 1, this.getMeta(world, pos));
+					ItemStack itemStack = this.getItemStack(world, pos, state);
 					if (skullBlockEntity.getSkullType() == 3 && skullBlockEntity.getOwner() != null) {
 						itemStack.setNbt(new NbtCompound());
 						NbtCompound nbtCompound = new NbtCompound();
@@ -150,6 +147,7 @@ public class SkullBlock extends BlockWithEntity {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.SKULL;
@@ -191,7 +189,7 @@ public class SkullBlock extends BlockWithEntity {
 				witherEntity.bodyYaw = result.getForwards().getAxis() == Direction.Axis.X ? 0.0F : 90.0F;
 				witherEntity.onSummoned();
 
-				for (PlayerEntity playerEntity : world.getEntitiesInBox(PlayerEntity.class, witherEntity.getBoundingBox().expand(50.0, 50.0, 50.0))) {
+				for (PlayerEntity playerEntity : world.getEntitiesInBox(PlayerEntity.class, witherEntity.getBoundingBox().expand(50.0))) {
 					playerEntity.incrementStat(AchievementsAndCriterions.SPAWN_WITHER);
 				}
 
@@ -233,6 +231,16 @@ public class SkullBlock extends BlockWithEntity {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

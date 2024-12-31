@@ -3,9 +3,8 @@ package net.minecraft.item;
 import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffectStrings;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.world.World;
@@ -31,17 +30,12 @@ public class FishItem extends FoodItem {
 	}
 
 	@Override
-	public String getStatusEffectString(ItemStack stack) {
-		return FishItem.FishType.getByItemStack(stack) == FishItem.FishType.PUFFERFISH ? StatusEffectStrings.WATER_BREATHING : null;
-	}
-
-	@Override
 	protected void eat(ItemStack stack, World world, PlayerEntity player) {
 		FishItem.FishType fishType = FishItem.FishType.getByItemStack(stack);
 		if (fishType == FishItem.FishType.PUFFERFISH) {
-			player.addStatusEffect(new StatusEffectInstance(StatusEffect.POISON.id, 1200, 3));
-			player.addStatusEffect(new StatusEffectInstance(StatusEffect.HUNGER.id, 300, 2));
-			player.addStatusEffect(new StatusEffectInstance(StatusEffect.NAUSEA.id, 300, 1));
+			player.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 1200, 3));
+			player.addStatusEffect(new StatusEffectInstance(StatusEffects.HUNGER, 300, 2));
+			player.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 300, 1));
 		}
 
 		super.eat(stack, world, player);

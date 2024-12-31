@@ -80,7 +80,7 @@ public class BigTreeFeature extends FoliageFeature {
 			for (int k = -i; k <= i; k++) {
 				if (Math.pow((double)Math.abs(j) + 0.5, 2.0) + Math.pow((double)Math.abs(k) + 0.5, 2.0) <= (double)(radius * radius)) {
 					BlockPos blockPos2 = blockPos.add(j, 0, k);
-					Material material = this.world.getBlockState(blockPos2).getBlock().getMaterial();
+					Material material = this.world.getBlockState(blockPos2).getMaterial();
 					if (material == Material.AIR || material == Material.FOLIAGE) {
 						this.setBlockStateWithoutUpdatingNeighbors(this.world, blockPos2, blockState);
 					}

@@ -4,6 +4,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class WritableBookItem extends Item {
@@ -12,10 +15,10 @@ public class WritableBookItem extends Item {
 	}
 
 	@Override
-	public ItemStack onStartUse(ItemStack stack, World world, PlayerEntity player) {
-		player.openBookEditScreen(stack);
-		player.incrementStat(Stats.USED[Item.getRawId(this)]);
-		return stack;
+	public TypedActionResult<ItemStack> method_11373(ItemStack itemStack, World world, PlayerEntity playerEntity, Hand hand) {
+		playerEntity.method_3201(itemStack, hand);
+		playerEntity.incrementStat(Stats.used(this));
+		return new TypedActionResult<>(ActionResult.SUCCESS, itemStack);
 	}
 
 	public static boolean isValid(NbtCompound nbt) {

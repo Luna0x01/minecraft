@@ -41,7 +41,7 @@ public class Texts {
 			if (i + l > width) {
 				String string5 = textRenderer.trimToWidth(string3, width - i, false);
 				String string6 = string5.length() < string3.length() ? string3.substring(string5.length()) : null;
-				if (string6 != null && string6.length() > 0) {
+				if (string6 != null && !string6.isEmpty()) {
 					int m = string5.lastIndexOf(" ");
 					if (m >= 0 && textRenderer.getStringWidth(string3.substring(0, m)) > 0) {
 						string5 = string3.substring(0, m);

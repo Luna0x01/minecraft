@@ -2,7 +2,8 @@ package net.minecraft.client.sound;
 
 import java.util.Random;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.Identifier;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.MathHelper;
 
@@ -20,7 +21,7 @@ public class MusicTracker implements Tickable {
 	public void tick() {
 		MusicTracker.MusicType musicType = this.field_8172.getMusicType();
 		if (this.field_8173 != null) {
-			if (!musicType.getSoundIdentifier().equals(this.field_8173.getIdentifier())) {
+			if (!musicType.method_7086().getId().equals(this.field_8173.getIdentifier())) {
 				this.field_8172.getSoundManager().stop(this.field_8173);
 				this.timeUntilNextSong = MathHelper.nextInt(this.random, 0, musicType.getMinDelay() / 2);
 			}
@@ -31,13 +32,14 @@ public class MusicTracker implements Tickable {
 			}
 		}
 
+		this.timeUntilNextSong = Math.min(this.timeUntilNextSong, musicType.getMaxDelay());
 		if (this.field_8173 == null && this.timeUntilNextSong-- <= 0) {
 			this.play(musicType);
 		}
 	}
 
 	public void play(MusicTracker.MusicType musicType) {
-		this.field_8173 = PositionedSoundInstance.method_7051(musicType.getSoundIdentifier());
+		this.field_8173 = PositionedSoundInstance.method_12520(musicType.method_7086());
 		this.field_8172.getSoundManager().play(this.field_8173);
 		this.timeUntilNextSong = Integer.MAX_VALUE;
 	}
@@ -51,26 +53,26 @@ public class MusicTracker implements Tickable {
 	}
 
 	public static enum MusicType {
-		MENU(new Identifier("minecraft:music.menu"), 20, 600),
-		GAME(new Identifier("minecraft:music.game"), 12000, 24000),
-		CREATIVE(new Identifier("minecraft:music.game.creative"), 1200, 3600),
-		CREDITS(new Identifier("minecraft:music.game.end.credits"), Integer.MAX_VALUE, Integer.MAX_VALUE),
-		NETHER(new Identifier("minecraft:music.game.nether"), 1200, 3600),
-		END_BOSS(new Identifier("minecraft:music.game.end.dragon"), 0, 0),
-		END(new Identifier("minecraft:music.game.end"), 6000, 24000);
+		MENU(Sounds.MUSIC_MENU, 20, 600),
+		GAME(Sounds.MUSIC_GAME, 12000, 24000),
+		CREATIVE(Sounds.MUSIC_CREATIVE, 1200, 3600),
+		CREDITS(Sounds.MUSIC_CREDITS, Integer.MAX_VALUE, Integer.MAX_VALUE),
+		NETHER(Sounds.MUSIC_NETHER, 1200, 3600),
+		END_BOSS(Sounds.MUSIC_DRAGON, 0, 0),
+		END(Sounds.MUSIC_END, 6000, 24000);
 
-		private final Identifier sound;
+		private final Sound field_13698;
 		private final int minDelay;
 		private final int maxDelay;
 
-		private MusicType(Identifier identifier, int j, int k) {
-			this.sound = identifier;
+		private MusicType(Sound sound, int j, int k) {
+			this.field_13698 = sound;
 			this.minDelay = j;
 			this.maxDelay = k;
 		}
 
-		public Identifier getSoundIdentifier() {
-			return this.sound;
+		public Sound method_7086() {
+			return this.field_13698;
 		}
 
 		public int getMinDelay() {

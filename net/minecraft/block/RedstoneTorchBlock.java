@@ -5,8 +5,12 @@ import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
@@ -70,8 +74,8 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
-		return this.lit && state.get(FACING) != facing ? 15 : 0;
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return this.lit && state.get(FACING) != direction ? 15 : 0;
 	}
 
 	private boolean shouldNotBeLit(World world, BlockPos pos, BlockState state) {
@@ -96,13 +100,8 @@ public class RedstoneTorchBlock extends TorchBlock {
 			if (bl) {
 				world.setBlockState(pos, Blocks.UNLIT_REDSTONE_TORCH.getDefaultState().with(FACING, state.get(FACING)), 3);
 				if (this.isBurnedOut(world, pos, true)) {
-					world.playSound(
-						(double)((float)pos.getX() + 0.5F),
-						(double)((float)pos.getY() + 0.5F),
-						(double)((float)pos.getZ() + 0.5F),
-						"random.fizz",
-						0.5F,
-						2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F
+					world.method_11486(
+						null, pos, Sounds.BLOCK_REDSTONE_TORCH_BURNOUT, SoundCategory.BLOCKS, 0.5F, 2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F
 					);
 
 					for (int i = 0; i < 5; i++) {
@@ -121,35 +120,36 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (!this.neighborUpdate(world, pos, state)) {
-			if (this.lit == this.shouldNotBeLit(world, pos, state)) {
-				world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (!this.neighborUpdate(world, blockPos, blockState)) {
+			if (this.lit == this.shouldNotBeLit(world, blockPos, blockState)) {
+				world.createAndScheduleBlockTick(blockPos, this, this.getTickRate(world));
 			}
 		}
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
-		return facing == Direction.DOWN ? this.getWeakRedstonePower(view, pos, state, facing) : 0;
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return direction == Direction.DOWN ? state.getWeakRedstonePower(world, pos, direction) : 0;
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.REDSTONE_TORCH);
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (this.lit) {
-			double d = (double)pos.getX() + 0.5 + (rand.nextDouble() - 0.5) * 0.2;
-			double e = (double)pos.getY() + 0.7 + (rand.nextDouble() - 0.5) * 0.2;
-			double f = (double)pos.getZ() + 0.5 + (rand.nextDouble() - 0.5) * 0.2;
+			double d = (double)pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.2;
+			double e = (double)pos.getY() + 0.7 + (random.nextDouble() - 0.5) * 0.2;
+			double f = (double)pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.2;
 			Direction direction = state.get(FACING);
 			if (direction.getAxis().isHorizontal()) {
 				Direction direction2 = direction.getOpposite();
@@ -164,8 +164,8 @@ public class RedstoneTorchBlock extends TorchBlock {
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(Blocks.REDSTONE_TORCH);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Blocks.REDSTONE_TORCH);
 	}
 
 	@Override

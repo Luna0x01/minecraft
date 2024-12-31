@@ -2,20 +2,22 @@ package net.minecraft.block;
 
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -23,7 +25,7 @@ import net.minecraft.world.World;
 public class DoublePlantBlock extends PlantBlock implements Growable {
 	public static final EnumProperty<DoublePlantBlock.DoublePlantType> VARIANT = EnumProperty.of("variant", DoublePlantBlock.DoublePlantType.class);
 	public static final EnumProperty<DoublePlantBlock.HalfType> HALF = EnumProperty.of("half", DoublePlantBlock.HalfType.class);
-	public static final EnumProperty<Direction> FACING = FacingBlock.FACING;
+	public static final EnumProperty<Direction> FACING = HorizontalFacingBlock.DIRECTION;
 
 	public DoublePlantBlock() {
 		super(Material.REPLACEABLE_PLANT);
@@ -35,19 +37,18 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 				.with(FACING, Direction.NORTH)
 		);
 		this.setStrength(0.0F);
-		this.setSound(GRASS);
+		this.setBlockSoundGroup(BlockSoundGroup.field_12761);
 		this.setTranslationKey("doublePlant");
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return collisionBox;
 	}
 
-	public DoublePlantBlock.DoublePlantType getVariant(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
+	private DoublePlantBlock.DoublePlantType method_11606(BlockView blockView, BlockPos blockPos, BlockState blockState) {
 		if (blockState.getBlock() == this) {
-			blockState = this.getBlockState(blockState, view, pos);
+			blockState = blockState.getBlockState(blockView, blockPos);
 			return blockState.get(VARIANT);
 		} else {
 			return DoublePlantBlock.DoublePlantType.FERN;
@@ -60,12 +61,12 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public boolean isReplaceable(World world, BlockPos pos) {
-		BlockState blockState = world.getBlockState(pos);
+	public boolean method_8638(BlockView blockView, BlockPos blockPos) {
+		BlockState blockState = blockView.getBlockState(blockPos);
 		if (blockState.getBlock() != this) {
 			return true;
 		} else {
-			DoublePlantBlock.DoublePlantType doublePlantType = this.getBlockState(blockState, world, pos).get(VARIANT);
+			DoublePlantBlock.DoublePlantType doublePlantType = blockState.getBlockState(blockView, blockPos).get(VARIANT);
 			return doublePlantType == DoublePlantBlock.DoublePlantType.FERN || doublePlantType == DoublePlantBlock.DoublePlantType.GRASS;
 		}
 	}
@@ -101,6 +102,7 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		if (state.get(HALF) == DoublePlantBlock.HalfType.UPPER) {
@@ -124,14 +126,6 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 			: 0;
 	}
 
-	@Override
-	public int getBlockColor(BlockView view, BlockPos pos, int id) {
-		DoublePlantBlock.DoublePlantType doublePlantType = this.getVariant(view, pos);
-		return doublePlantType != DoublePlantBlock.DoublePlantType.GRASS && doublePlantType != DoublePlantBlock.DoublePlantType.FERN
-			? 16777215
-			: BiomeColors.getGrassColor(view, pos);
-	}
-
 	public void plantAt(World world, BlockPos pos, DoublePlantBlock.DoublePlantType type, int flags) {
 		world.setBlockState(pos, this.getDefaultState().with(HALF, DoublePlantBlock.HalfType.LOWER).with(VARIANT, type), flags);
 		world.setBlockState(pos.up(), this.getDefaultState().with(HALF, DoublePlantBlock.HalfType.UPPER), flags);
@@ -143,13 +137,13 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public void harvest(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be) {
+	public void method_8651(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, @Nullable ItemStack stack) {
 		if (world.isClient
-			|| player.getMainHandStack() == null
-			|| player.getMainHandStack().getItem() != Items.SHEARS
+			|| stack == null
+			|| stack.getItem() != Items.SHEARS
 			|| state.get(HALF) != DoublePlantBlock.HalfType.LOWER
 			|| !this.onBreak(world, pos, state, player)) {
-			super.harvest(world, player, pos, state, be);
+			super.method_8651(world, player, pos, state, blockEntity, stack);
 		}
 	}
 
@@ -176,7 +170,7 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 					world.setAir(pos.down());
 				}
 			}
-		} else if (player.abilities.creativeMode && world.getBlockState(pos.up()).getBlock() == this) {
+		} else if (world.getBlockState(pos.up()).getBlock() == this) {
 			world.setBlockState(pos.up(), Blocks.AIR.getDefaultState(), 2);
 		}
 
@@ -188,7 +182,7 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 		if (doublePlantType != DoublePlantBlock.DoublePlantType.FERN && doublePlantType != DoublePlantBlock.DoublePlantType.GRASS) {
 			return false;
 		} else {
-			player.incrementStat(Stats.BLOCK_STATS[Block.getIdByBlock(this)]);
+			player.incrementStat(Stats.mined(this));
 			int i = (doublePlantType == DoublePlantBlock.DoublePlantType.GRASS ? TallPlantBlock.GrassType.GRASS : TallPlantBlock.GrassType.FERN).getId();
 			onBlockBreak(world, pos, new ItemStack(Blocks.TALLGRASS, 2, i));
 			return true;
@@ -203,13 +197,13 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 	}
 
 	@Override
-	public int getMeta(World world, BlockPos pos) {
-		return this.getVariant(world, pos).getId();
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this, 1, this.method_11606(world, blockPos, blockState).getId());
 	}
 
 	@Override
 	public boolean canGrow(World world, BlockPos pos, BlockState state, boolean bl) {
-		DoublePlantBlock.DoublePlantType doublePlantType = this.getVariant(world, pos);
+		DoublePlantBlock.DoublePlantType doublePlantType = this.method_11606(world, pos, state);
 		return doublePlantType != DoublePlantBlock.DoublePlantType.GRASS && doublePlantType != DoublePlantBlock.DoublePlantType.FERN;
 	}
 
@@ -220,7 +214,7 @@ public class DoublePlantBlock extends PlantBlock implements Growable {
 
 	@Override
 	public void grow(World world, Random random, BlockPos pos, BlockState state) {
-		onBlockBreak(world, pos, new ItemStack(this, 1, this.getVariant(world, pos).getId()));
+		onBlockBreak(world, pos, new ItemStack(this, 1, this.method_11606(world, pos, state).getId()));
 	}
 
 	@Override

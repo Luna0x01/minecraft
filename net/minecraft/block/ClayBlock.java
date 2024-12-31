@@ -1,6 +1,7 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -12,6 +13,7 @@ public class ClayBlock extends Block {
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.CLAY_BALL;

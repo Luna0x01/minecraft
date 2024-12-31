@@ -1,6 +1,7 @@
 package net.minecraft.entity.ai.control;
 
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.MathHelper;
 
 public class BodyControl {
@@ -21,19 +22,21 @@ public class BodyControl {
 			this.lastHeadYaw = this.entity.headYaw;
 			this.activeTicks = 0;
 		} else {
-			float f = 75.0F;
-			if (Math.abs(this.entity.headYaw - this.lastHeadYaw) > 15.0F) {
-				this.activeTicks = 0;
-				this.lastHeadYaw = this.entity.headYaw;
-			} else {
-				this.activeTicks++;
-				int i = 10;
-				if (this.activeTicks > 10) {
-					f = Math.max(1.0F - (float)(this.activeTicks - 10) / 10.0F, 0.0F) * 75.0F;
+			if (this.entity.getPassengerList().isEmpty() || !(this.entity.getPassengerList().get(0) instanceof MobEntity)) {
+				float f = 75.0F;
+				if (Math.abs(this.entity.headYaw - this.lastHeadYaw) > 15.0F) {
+					this.activeTicks = 0;
+					this.lastHeadYaw = this.entity.headYaw;
+				} else {
+					this.activeTicks++;
+					int i = 10;
+					if (this.activeTicks > 10) {
+						f = Math.max(1.0F - (float)(this.activeTicks - 10) / 10.0F, 0.0F) * 75.0F;
+					}
 				}
-			}
 
-			this.entity.bodyYaw = this.clampAndWrapAngle(this.entity.headYaw, this.entity.bodyYaw, f);
+				this.entity.bodyYaw = this.clampAndWrapAngle(this.entity.headYaw, this.entity.bodyYaw, f);
+			}
 		}
 	}
 

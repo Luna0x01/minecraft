@@ -10,13 +10,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.client.ClientException;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.util.ProgressListener;
 import net.minecraft.world.AnvilWorldSaveHandler;
-import net.minecraft.world.LayeredBiomeSource;
 import net.minecraft.world.SaveHandler;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.class_2711;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.biome.SingletonBiomeSource;
 import net.minecraft.world.chunk.RegionFileFormat;
 import net.minecraft.world.chunk.RegionIo;
@@ -29,8 +30,8 @@ import org.apache.logging.log4j.Logger;
 public class AnvilLevelStorage extends LevelStorage {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	public AnvilLevelStorage(File file) {
-		super(file);
+	public AnvilLevelStorage(File file, DataFixerUpper dataFixerUpper) {
+		super(file, dataFixerUpper);
 	}
 
 	@Override
@@ -56,18 +57,7 @@ public class AnvilLevelStorage extends LevelStorage {
 						}
 
 						long l = 0L;
-						list.add(
-							new LevelSummary(
-								string,
-								string2,
-								levelProperties.getLastPlayed(),
-								l,
-								levelProperties.getGameMode(),
-								bl,
-								levelProperties.isHardcore(),
-								levelProperties.areCheatsEnabled()
-							)
-						);
+						list.add(new LevelSummary(levelProperties, string, string2, l, bl));
 					}
 				}
 			}
@@ -89,7 +79,7 @@ public class AnvilLevelStorage extends LevelStorage {
 
 	@Override
 	public SaveHandler createSaveHandler(String worldName, boolean createPlayerDataDir) {
-		return new AnvilWorldSaveHandler(this.file, worldName, createPlayerDataDir);
+		return new AnvilWorldSaveHandler(this.file, worldName, createPlayerDataDir, this.field_13098);
 	}
 
 	@Override
@@ -126,16 +116,16 @@ public class AnvilLevelStorage extends LevelStorage {
 		int i = list.size() + list2.size() + list3.size();
 		LOGGER.info("Total conversion count is " + i);
 		LevelProperties levelProperties = this.getLevelProperties(worldName);
-		LayeredBiomeSource layeredBiomeSource = null;
+		SingletonBiomeSource singletonBiomeSource = null;
 		if (levelProperties.getGeneratorType() == LevelGeneratorType.FLAT) {
-			layeredBiomeSource = new SingletonBiomeSource(Biome.PLAINS, 0.5F);
+			singletonBiomeSource = new class_2711(Biomes.PLAINS);
 		} else {
-			layeredBiomeSource = new LayeredBiomeSource(levelProperties.getSeed(), levelProperties.getGeneratorType(), levelProperties.getGeneratorOptions());
+			singletonBiomeSource = new SingletonBiomeSource(levelProperties);
 		}
 
-		this.convertRegions(new File(file, "region"), list, layeredBiomeSource, 0, i, progressListener);
-		this.convertRegions(new File(file2, "region"), list2, new SingletonBiomeSource(Biome.HELL, 0.0F), list.size(), i, progressListener);
-		this.convertRegions(new File(file3, "region"), list3, new SingletonBiomeSource(Biome.THE_END, 0.0F), list.size() + list2.size(), i, progressListener);
+		this.method_193(new File(file, "region"), list, singletonBiomeSource, 0, i, progressListener);
+		this.method_193(new File(file2, "region"), list2, new class_2711(Biomes.NETHER), list.size(), i, progressListener);
+		this.method_193(new File(file3, "region"), list3, new class_2711(Biomes.SKY), list.size() + list2.size(), i, progressListener);
 		levelProperties.setVersion(19133);
 		if (levelProperties.getGeneratorType() == LevelGeneratorType.DEFAULT_1_1) {
 			levelProperties.setLevelGeneratorType(LevelGeneratorType.DEFAULT);
@@ -164,19 +154,19 @@ public class AnvilLevelStorage extends LevelStorage {
 		}
 	}
 
-	private void convertRegions(File file, Iterable<File> baseFolder, LayeredBiomeSource biomeSource, int i, int j, ProgressListener progressListener) {
-		for (File file2 : baseFolder) {
-			this.convertRegion(file, file2, biomeSource, i, j, progressListener);
+	private void method_193(File file, Iterable<File> iterable, SingletonBiomeSource singletonBiomeSource, int i, int j, ProgressListener progressListener) {
+		for (File file2 : iterable) {
+			this.method_192(file, file2, singletonBiomeSource, i, j, progressListener);
 			i++;
 			int k = (int)Math.round(100.0 * (double)i / (double)j);
 			progressListener.setProgressPercentage(k);
 		}
 	}
 
-	private void convertRegion(File file, File baseFolder, LayeredBiomeSource biomeSource, int i, int j, ProgressListener progressListener) {
+	private void method_192(File file, File file2, SingletonBiomeSource singletonBiomeSource, int i, int j, ProgressListener progressListener) {
 		try {
-			String string = baseFolder.getName();
-			RegionFileFormat regionFileFormat = new RegionFileFormat(baseFolder);
+			String string = file2.getName();
+			RegionFileFormat regionFileFormat = new RegionFileFormat(file2);
 			RegionFileFormat regionFileFormat2 = new RegionFileFormat(new File(file, string.substring(0, string.length() - ".mcr".length()) + ".mca"));
 
 			for (int k = 0; k < 32; k++) {
@@ -193,7 +183,7 @@ public class AnvilLevelStorage extends LevelStorage {
 							NbtCompound nbtCompound3 = new NbtCompound();
 							NbtCompound nbtCompound4 = new NbtCompound();
 							nbtCompound3.put("Level", nbtCompound4);
-							AlphaChunkIo.convertAlphaChunk(alphaChunk, nbtCompound4, biomeSource);
+							AlphaChunkIo.method_3956(alphaChunk, nbtCompound4, singletonBiomeSource);
 							DataOutputStream dataOutputStream = regionFileFormat2.getChunkOutputStream(k, l);
 							NbtIo.write(nbtCompound3, dataOutputStream);
 							dataOutputStream.close();

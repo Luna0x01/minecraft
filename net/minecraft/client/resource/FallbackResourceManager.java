@@ -36,6 +36,7 @@ public class FallbackResourceManager implements ResourceManager {
 
 	@Override
 	public Resource getResource(Identifier id) throws IOException {
+		this.method_12498(id);
 		ResourcePack resourcePack = null;
 		Identifier identifier = method_5883(id);
 
@@ -63,8 +64,15 @@ public class FallbackResourceManager implements ResourceManager {
 		return (InputStream)(LOGGER.isDebugEnabled() ? new FallbackResourceManager.LeakedResourceStream(inputStream, id, pack.getName()) : inputStream);
 	}
 
+	private void method_12498(Identifier identifier) throws IOException {
+		if (identifier.getPath().contains("..")) {
+			throw new IOException("Invalid relative path to resource: " + identifier);
+		}
+	}
+
 	@Override
 	public List<Resource> getAllResources(Identifier id) throws IOException {
+		this.method_12498(id);
 		List<Resource> list = Lists.newArrayList();
 		Identifier identifier = method_5883(id);
 

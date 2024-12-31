@@ -86,7 +86,9 @@ public class MapRenderer {
 			float f = 0.0F;
 			MapRenderer.this.textureManager.bindTexture(this.currentTexture);
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(1, 771, 0, 1);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.ONE, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ZERO, GlStateManager.class_2866.ONE
+			);
 			GlStateManager.disableAlphaTest();
 			bufferBuilder.begin(7, VertexFormats.POSITION_TEXTURE);
 			bufferBuilder.vertex((double)((float)(i + 0) + f), (double)((float)(j + 128) - f), -0.01F).texture(0.0, 1.0).next();

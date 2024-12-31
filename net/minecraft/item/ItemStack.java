@@ -7,12 +7,16 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Random;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.enchantment.UnbreakingEnchantment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -25,17 +29,20 @@ import net.minecraft.stat.Stats;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.CommonI18n;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public final class ItemStack {
-	public static final DecimalFormat MODIFIER_FORMAT = new DecimalFormat("#.###");
+	public static final DecimalFormat MODIFIER_FORMAT = new DecimalFormat("#.##");
 	public int count;
 	public int pickupTick;
 	private Item item;
@@ -86,6 +93,7 @@ public final class ItemStack {
 	}
 
 	public ItemStack split(int amount) {
+		amount = Math.min(amount, this.count);
 		ItemStack itemStack = new ItemStack(this.item, amount, this.damage);
 		if (this.nbt != null) {
 			itemStack.nbt = (NbtCompound)this.nbt.copy();
@@ -99,25 +107,26 @@ public final class ItemStack {
 		return this.item;
 	}
 
-	public boolean use(PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		boolean bl = this.getItem().use(this, player, world, pos, direction, facingX, facingY, facingZ);
-		if (bl) {
-			player.incrementStat(Stats.USED[Item.getRawId(this.item)]);
+	public ActionResult use(PlayerEntity player, World world, BlockPos pos, Hand hand, Direction direction, float x, float y, float z) {
+		ActionResult actionResult = this.getItem().method_3355(this, player, world, pos, hand, direction, x, y, z);
+		if (actionResult == ActionResult.SUCCESS) {
+			player.incrementStat(Stats.used(this.item));
 		}
 
-		return bl;
+		return actionResult;
 	}
 
-	public float getMiningSpeedMultiplier(Block block) {
-		return this.getItem().getMiningSpeedMultiplier(this, block);
+	public float getBlockBreakingSpeed(BlockState state) {
+		return this.getItem().getBlockBreakingSpeed(this, state);
 	}
 
-	public ItemStack onStartUse(World world, PlayerEntity player) {
-		return this.getItem().onStartUse(this, world, player);
+	public TypedActionResult<ItemStack> method_11390(World world, PlayerEntity player, Hand hand) {
+		return this.getItem().method_11373(this, world, player, hand);
 	}
 
-	public ItemStack onFinishUse(World world, PlayerEntity player) {
-		return this.getItem().onFinishUse(this, world, player);
+	@Nullable
+	public ItemStack method_11388(World world, LivingEntity entity) {
+		return this.getItem().method_3367(this, world, entity);
 	}
 
 	public NbtCompound toNbt(NbtCompound nbt) {
@@ -133,12 +142,7 @@ public final class ItemStack {
 	}
 
 	public void writeNbt(NbtCompound nbt) {
-		if (nbt.contains("id", 8)) {
-			this.item = Item.getFromId(nbt.getString("id"));
-		} else {
-			this.item = Item.byRawId(nbt.getShort("id"));
-		}
-
+		this.item = Item.getFromId(nbt.getString("id"));
 		this.count = nbt.getByte("Count");
 		this.damage = nbt.getShort("Damage");
 		if (this.damage < 0) {
@@ -193,7 +197,7 @@ public final class ItemStack {
 	}
 
 	public int getMaxDamage() {
-		return this.item.getMaxDamage();
+		return this.item == null ? 0 : this.item.getMaxDamage();
 	}
 
 	public boolean damage(int amount, Random random) {
@@ -201,7 +205,7 @@ public final class ItemStack {
 			return false;
 		} else {
 			if (amount > 0) {
-				int i = EnchantmentHelper.getLevel(Enchantment.UNBREAKING.id, this);
+				int i = EnchantmentHelper.getLevel(Enchantments.UNBREAKING, this);
 				int j = 0;
 
 				for (int k = 0; i > 0 && k < amount; k++) {
@@ -229,10 +233,7 @@ public final class ItemStack {
 					this.count--;
 					if (entity instanceof PlayerEntity) {
 						PlayerEntity playerEntity = (PlayerEntity)entity;
-						playerEntity.incrementStat(Stats.BROKEN[Item.getRawId(this.item)]);
-						if (this.count == 0 && this.getItem() instanceof BowItem) {
-							playerEntity.removeSelectedSlotItem();
-						}
+						playerEntity.incrementStat(Stats.broke(this.item));
 					}
 
 					if (this.count < 0) {
@@ -248,23 +249,23 @@ public final class ItemStack {
 	public void onEntityHit(LivingEntity entity, PlayerEntity attacker) {
 		boolean bl = this.item.onEntityHit(this, entity, attacker);
 		if (bl) {
-			attacker.incrementStat(Stats.USED[Item.getRawId(this.item)]);
+			attacker.incrementStat(Stats.used(this.item));
 		}
 	}
 
-	public void onBlockBroken(World world, Block block, BlockPos pos, PlayerEntity player) {
-		boolean bl = this.item.onBlockBroken(this, world, block, pos, player);
+	public void method_11306(World world, BlockState blockState, BlockPos blockPos, PlayerEntity playerEntity) {
+		boolean bl = this.item.method_3356(this, world, blockState, blockPos, playerEntity);
 		if (bl) {
-			player.incrementStat(Stats.USED[Item.getRawId(this.item)]);
+			playerEntity.incrementStat(Stats.used(this.item));
 		}
 	}
 
-	public boolean isEffectiveOn(Block block) {
-		return this.item.isEffectiveOn(block);
+	public boolean method_11396(BlockState state) {
+		return this.item.method_3346(state);
 	}
 
-	public boolean canUseOnEntity(PlayerEntity player, LivingEntity entity) {
-		return this.item.canUseOnEntity(this, player, entity);
+	public boolean method_6329(PlayerEntity player, LivingEntity entity, Hand hand) {
+		return this.item.method_3353(this, player, entity, hand);
 	}
 
 	public ItemStack copy() {
@@ -276,7 +277,7 @@ public final class ItemStack {
 		return itemStack;
 	}
 
-	public static boolean equalsIgnoreDamage(ItemStack left, ItemStack right) {
+	public static boolean equalsIgnoreDamage(@Nullable ItemStack left, @Nullable ItemStack right) {
 		if (left == null && right == null) {
 			return true;
 		} else if (left == null || right == null) {
@@ -286,7 +287,7 @@ public final class ItemStack {
 		}
 	}
 
-	public static boolean equalsAll(ItemStack left, ItemStack right) {
+	public static boolean equalsAll(@Nullable ItemStack left, @Nullable ItemStack right) {
 		if (left == null && right == null) {
 			return true;
 		} else {
@@ -306,16 +307,28 @@ public final class ItemStack {
 		}
 	}
 
-	public static boolean equalsIgnoreNbt(ItemStack left, ItemStack right) {
-		if (left == null && right == null) {
+	public static boolean equalsIgnoreNbt(@Nullable ItemStack left, @Nullable ItemStack right) {
+		if (left == right) {
 			return true;
 		} else {
 			return left != null && right != null ? left.equalsIgnoreNbt(right) : false;
 		}
 	}
 
-	public boolean equalsIgnoreNbt(ItemStack stack) {
+	public static boolean equals(@Nullable ItemStack stack0, @Nullable ItemStack stack1) {
+		if (stack0 == stack1) {
+			return true;
+		} else {
+			return stack0 != null && stack1 != null ? stack0.equals(stack1) : false;
+		}
+	}
+
+	public boolean equalsIgnoreNbt(@Nullable ItemStack stack) {
 		return stack != null && this.item == stack.item && this.damage == stack.damage;
+	}
+
+	public boolean equals(@Nullable ItemStack other) {
+		return !this.isDamageable() ? this.equalsIgnoreNbt(other) : other != null && this.item == other.item;
 	}
 
 	public String getTranslationKey() {
@@ -335,16 +348,14 @@ public final class ItemStack {
 			this.pickupTick--;
 		}
 
-		this.item.inventoryTick(this, world, entity, slot, selected);
+		if (this.item != null) {
+			this.item.inventoryTick(this, world, entity, slot, selected);
+		}
 	}
 
 	public void onCraft(World world, PlayerEntity player, int amount) {
-		player.incrementStat(Stats.CRAFTING_STATS[Item.getRawId(this.item)], amount);
+		player.incrementStat(Stats.crafted(this.item), amount);
 		this.item.onCraft(this, world, player);
-	}
-
-	public boolean equalsAllClient(ItemStack stack) {
-		return this.equalsAll(stack);
 	}
 
 	public int getMaxUseTime() {
@@ -355,14 +366,15 @@ public final class ItemStack {
 		return this.getItem().getUseAction(this);
 	}
 
-	public void onUseStopped(World world, PlayerEntity player, int timeLeft) {
-		this.getItem().onUseStopped(this, world, player, timeLeft);
+	public void method_11389(World world, LivingEntity livingEntity, int i) {
+		this.getItem().method_3359(this, world, livingEntity, i);
 	}
 
 	public boolean hasNbt() {
 		return this.nbt != null;
 	}
 
+	@Nullable
 	public NbtCompound getNbt() {
 		return this.nbt;
 	}
@@ -445,7 +457,7 @@ public final class ItemStack {
 		string = string + Formatting.RESET;
 		if (advanced) {
 			String string2 = "";
-			if (string.length() > 0) {
+			if (!string.isEmpty()) {
 				string = string + " (";
 				string2 = ")";
 			}
@@ -477,8 +489,8 @@ public final class ItemStack {
 					for (int k = 0; k < nbtList.size(); k++) {
 						int l = nbtList.getCompound(k).getShort("id");
 						int m = nbtList.getCompound(k).getShort("lvl");
-						if (Enchantment.byRawId(l) != null) {
-							list.add(Enchantment.byRawId(l).getTranslatedName(m));
+						if (Enchantment.byIndex(l) != null) {
+							list.add(Enchantment.byIndex(l).getTranslatedName(m));
 						}
 					}
 				}
@@ -488,7 +500,7 @@ public final class ItemStack {
 				NbtCompound nbtCompound = this.nbt.getCompound("display");
 				if (nbtCompound.contains("color", 3)) {
 					if (advanced) {
-						list.add("Color: #" + Integer.toHexString(nbtCompound.getInt("color")).toUpperCase());
+						list.add("Color: #" + String.format("%06X", nbtCompound.getInt("color")));
 					} else {
 						list.add(Formatting.ITALIC + CommonI18n.translate("item.dyed"));
 					}
@@ -496,7 +508,7 @@ public final class ItemStack {
 
 				if (nbtCompound.getType("Lore") == 9) {
 					NbtList nbtList2 = nbtCompound.getList("Lore", 8);
-					if (nbtList2.size() > 0) {
+					if (!nbtList2.isEmpty()) {
 						for (int n = 0; n < nbtList2.size(); n++) {
 							list.add(Formatting.DARK_PURPLE + "" + Formatting.ITALIC + nbtList2.getString(n));
 						}
@@ -505,43 +517,63 @@ public final class ItemStack {
 			}
 		}
 
-		Multimap<String, AttributeModifier> multimap = this.getAttributes();
-		if (!multimap.isEmpty() && (j & 2) == 0) {
-			list.add("");
+		for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
+			Multimap<String, AttributeModifier> multimap = this.getAttributes(equipmentSlot);
+			if (!multimap.isEmpty() && (j & 2) == 0) {
+				list.add("");
+				list.add(CommonI18n.translate("item.modifiers." + equipmentSlot.getName()));
 
-			for (Entry<String, AttributeModifier> entry : multimap.entries()) {
-				AttributeModifier attributeModifier = (AttributeModifier)entry.getValue();
-				double d = attributeModifier.getAmount();
-				if (attributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_UUID) {
-					d += (double)EnchantmentHelper.getAttackDamage(this, EntityGroup.DEFAULT);
-				}
+				for (Entry<String, AttributeModifier> entry : multimap.entries()) {
+					AttributeModifier attributeModifier = (AttributeModifier)entry.getValue();
+					double d = attributeModifier.getAmount();
+					boolean bl = false;
+					if (attributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_UUID) {
+						d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE).getBaseValue();
+						d += (double)EnchantmentHelper.getAttackDamage(this, EntityGroup.DEFAULT);
+						bl = true;
+					} else if (attributeModifier.getId() == Item.ATTACK_SPEED_MODIFIER) {
+						d += player.initializeAttribute(EntityAttributes.GENERIC_ATTACK_SPEED).getBaseValue();
+						bl = true;
+					}
 
-				double f;
-				if (attributeModifier.getOperation() != 1 && attributeModifier.getOperation() != 2) {
-					f = d;
-				} else {
-					f = d * 100.0;
-				}
+					double f;
+					if (attributeModifier.getOperation() != 1 && attributeModifier.getOperation() != 2) {
+						f = d;
+					} else {
+						f = d * 100.0;
+					}
 
-				if (d > 0.0) {
-					list.add(
-						Formatting.BLUE
-							+ CommonI18n.translate(
-								"attribute.modifier.plus." + attributeModifier.getOperation(),
-								MODIFIER_FORMAT.format(f),
-								CommonI18n.translate("attribute.name." + (String)entry.getKey())
-							)
-					);
-				} else if (d < 0.0) {
-					f *= -1.0;
-					list.add(
-						Formatting.RED
-							+ CommonI18n.translate(
-								"attribute.modifier.take." + attributeModifier.getOperation(),
-								MODIFIER_FORMAT.format(f),
-								CommonI18n.translate("attribute.name." + (String)entry.getKey())
-							)
-					);
+					if (bl) {
+						list.add(
+							" "
+								+ CommonI18n.translate(
+									"attribute.modifier.equals." + attributeModifier.getOperation(),
+									MODIFIER_FORMAT.format(f),
+									CommonI18n.translate("attribute.name." + (String)entry.getKey())
+								)
+						);
+					} else if (d > 0.0) {
+						list.add(
+							Formatting.BLUE
+								+ " "
+								+ CommonI18n.translate(
+									"attribute.modifier.plus." + attributeModifier.getOperation(),
+									MODIFIER_FORMAT.format(f),
+									CommonI18n.translate("attribute.name." + (String)entry.getKey())
+								)
+						);
+					} else if (d < 0.0) {
+						f *= -1.0;
+						list.add(
+							Formatting.RED
+								+ " "
+								+ CommonI18n.translate(
+									"attribute.modifier.take." + attributeModifier.getOperation(),
+									MODIFIER_FORMAT.format(f),
+									CommonI18n.translate("attribute.name." + (String)entry.getKey())
+								)
+						);
+					}
 				}
 			}
 		}
@@ -552,12 +584,12 @@ public final class ItemStack {
 
 		if (this.hasNbt() && this.nbt.contains("CanDestroy", 9) && (j & 8) == 0) {
 			NbtList nbtList3 = this.nbt.getList("CanDestroy", 8);
-			if (nbtList3.size() > 0) {
+			if (!nbtList3.isEmpty()) {
 				list.add("");
 				list.add(Formatting.GRAY + CommonI18n.translate("item.canBreak"));
 
-				for (int o = 0; o < nbtList3.size(); o++) {
-					Block block = Block.get(nbtList3.getString(o));
+				for (int q = 0; q < nbtList3.size(); q++) {
+					Block block = Block.get(nbtList3.getString(q));
 					if (block != null) {
 						list.add(Formatting.DARK_GRAY + block.getTranslatedName());
 					} else {
@@ -569,12 +601,12 @@ public final class ItemStack {
 
 		if (this.hasNbt() && this.nbt.contains("CanPlaceOn", 9) && (j & 16) == 0) {
 			NbtList nbtList4 = this.nbt.getList("CanPlaceOn", 8);
-			if (nbtList4.size() > 0) {
+			if (!nbtList4.isEmpty()) {
 				list.add("");
 				list.add(Formatting.GRAY + CommonI18n.translate("item.canPlace"));
 
-				for (int p = 0; p < nbtList4.size(); p++) {
-					Block block2 = Block.get(nbtList4.getString(p));
+				for (int r = 0; r < nbtList4.size(); r++) {
+					Block block2 = Block.get(nbtList4.getString(r));
 					if (block2 != null) {
 						list.add(Formatting.DARK_GRAY + block2.getTranslatedName());
 					} else {
@@ -621,7 +653,7 @@ public final class ItemStack {
 
 		NbtList nbtList = this.nbt.getList("ench", 10);
 		NbtCompound nbtCompound = new NbtCompound();
-		nbtCompound.putShort("id", (short)enchantment.id);
+		nbtCompound.putShort("id", (short)Enchantment.getId(enchantment));
 		nbtCompound.putShort("lvl", (short)((byte)level));
 		nbtList.add(nbtCompound);
 	}
@@ -650,6 +682,7 @@ public final class ItemStack {
 		this.itemFrame = itemFrame;
 	}
 
+	@Nullable
 	public ItemFrameEntity getItemFrame() {
 		return this.itemFrame;
 	}
@@ -666,7 +699,7 @@ public final class ItemStack {
 		this.nbt.putInt("RepairCost", cost);
 	}
 
-	public Multimap<String, AttributeModifier> getAttributes() {
+	public Multimap<String, AttributeModifier> getAttributes(EquipmentSlot slot) {
 		Multimap<String, AttributeModifier> multimap;
 		if (this.hasNbt() && this.nbt.contains("AttributeModifiers", 9)) {
 			multimap = HashMultimap.create();
@@ -675,17 +708,40 @@ public final class ItemStack {
 			for (int i = 0; i < nbtList.size(); i++) {
 				NbtCompound nbtCompound = nbtList.getCompound(i);
 				AttributeModifier attributeModifier = EntityAttributes.fromNbt(nbtCompound);
-				if (attributeModifier != null && attributeModifier.getId().getLeastSignificantBits() != 0L && attributeModifier.getId().getMostSignificantBits() != 0L) {
+				if (attributeModifier != null
+					&& (!nbtCompound.contains("Slot", 8) || nbtCompound.getString("Slot").equals(slot.getName()))
+					&& attributeModifier.getId().getLeastSignificantBits() != 0L
+					&& attributeModifier.getId().getMostSignificantBits() != 0L) {
 					multimap.put(nbtCompound.getString("AttributeName"), attributeModifier);
 				}
 			}
 		} else {
-			multimap = this.getItem().getAttributeModifierMap();
+			multimap = this.getItem().method_6326(slot);
 		}
 
 		return multimap;
 	}
 
+	public void setAttribute(String attributeName, AttributeModifier modifier, EquipmentSlot slot) {
+		if (this.nbt == null) {
+			this.nbt = new NbtCompound();
+		}
+
+		if (!this.nbt.contains("AttributeModifiers", 9)) {
+			this.nbt.put("AttributeModifiers", new NbtList());
+		}
+
+		NbtList nbtList = this.nbt.getList("AttributeModifiers", 10);
+		NbtCompound nbtCompound = EntityAttributes.toNbt(modifier);
+		nbtCompound.putString("AttributeName", attributeName);
+		if (slot != null) {
+			nbtCompound.putString("Slot", slot.getName());
+		}
+
+		nbtList.add(nbtCompound);
+	}
+
+	@Deprecated
 	public void setItem(Item item) {
 		this.item = item;
 	}
@@ -698,8 +754,7 @@ public final class ItemStack {
 
 		Text text = new LiteralText("[").append(literalText).append("]");
 		if (this.item != null) {
-			NbtCompound nbtCompound = new NbtCompound();
-			this.toNbt(nbtCompound);
+			NbtCompound nbtCompound = this.toNbt(new NbtCompound());
 			text.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new LiteralText(nbtCompound.toString())));
 			text.getStyle().setFormatting(this.getRarity().formatting);
 		}

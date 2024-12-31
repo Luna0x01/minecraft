@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
@@ -25,6 +26,7 @@ public class PersistentStateManager {
 		this.readIdCounts();
 	}
 
+	@Nullable
 	public PersistentState getOrCreate(Class<? extends PersistentState> clazz, String name) {
 		PersistentState persistentState = (PersistentState)this.stateMap.get(name);
 		if (persistentState != null) {
@@ -84,15 +86,13 @@ public class PersistentStateManager {
 				File file = this.saveHandler.getDataFile(state.id);
 				if (file != null) {
 					NbtCompound nbtCompound = new NbtCompound();
-					state.toNbt(nbtCompound);
-					NbtCompound nbtCompound2 = new NbtCompound();
-					nbtCompound2.put("data", nbtCompound);
+					nbtCompound.put("data", state.toNbt(new NbtCompound()));
 					FileOutputStream fileOutputStream = new FileOutputStream(file);
-					NbtIo.writeCompressed(nbtCompound2, fileOutputStream);
+					NbtIo.writeCompressed(nbtCompound, fileOutputStream);
 					fileOutputStream.close();
 				}
-			} catch (Exception var6) {
-				var6.printStackTrace();
+			} catch (Exception var5) {
+				var5.printStackTrace();
 			}
 		}
 	}
@@ -119,8 +119,8 @@ public class PersistentStateManager {
 					}
 				}
 			}
-		} catch (Exception var10) {
-			var10.printStackTrace();
+		} catch (Exception var9) {
+			var9.printStackTrace();
 		}
 	}
 
@@ -142,16 +142,15 @@ public class PersistentStateManager {
 					NbtCompound nbtCompound = new NbtCompound();
 
 					for (String string : this.idCounts.keySet()) {
-						short s = (Short)this.idCounts.get(string);
-						nbtCompound.putShort(string, s);
+						nbtCompound.putShort(string, (Short)this.idCounts.get(string));
 					}
 
 					DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(file));
 					NbtIo.write(nbtCompound, dataOutputStream);
 					dataOutputStream.close();
 				}
-			} catch (Exception var8) {
-				var8.printStackTrace();
+			} catch (Exception var7) {
+				var7.printStackTrace();
 			}
 
 			return short_;

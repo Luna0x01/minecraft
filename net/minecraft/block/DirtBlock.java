@@ -47,9 +47,8 @@ public class DirtBlock extends Block {
 	}
 
 	@Override
-	public int getMeta(World world, BlockPos pos) {
-		BlockState blockState = world.getBlockState(pos);
-		return blockState.getBlock() != this ? 0 : ((DirtBlock.DirtType)blockState.get(VARIANT)).getId();
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(this, 1, ((DirtBlock.DirtType)blockState.get(VARIANT)).getId());
 	}
 
 	@Override

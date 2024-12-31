@@ -10,10 +10,9 @@ import net.minecraft.world.World;
 public class PlainsBiome extends Biome {
 	protected boolean field_7252;
 
-	protected PlainsBiome(int i) {
-		super(i);
-		this.setTemperatureAndDownfall(0.8F, 0.4F);
-		this.setHeight(PLAINS_HEIGHT);
+	protected PlainsBiome(boolean bl, Biome.Settings settings) {
+		super(settings);
+		this.field_7252 = bl;
 		this.passiveEntries.add(new Biome.SpawnEntry(HorseBaseEntity.class, 5, 2, 6));
 		this.biomeDecorator.treesPerChunk = -999;
 		this.biomeDecorator.flowersPerChunk = 4;
@@ -79,15 +78,5 @@ public class PlainsBiome extends Biome {
 		}
 
 		super.decorate(world, random, pos);
-	}
-
-	@Override
-	protected Biome getMutatedVariant(int id) {
-		PlainsBiome plainsBiome = new PlainsBiome(id);
-		plainsBiome.setName("Sunflower Plains");
-		plainsBiome.field_7252 = true;
-		plainsBiome.setSeedModifier(9286496);
-		plainsBiome.field_7203 = 14273354;
-		return plainsBiome;
 	}
 }

@@ -9,6 +9,8 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -38,7 +40,7 @@ public class MinecartItem extends Item {
 					g = 0.1;
 				}
 			} else {
-				if (blockState.getBlock().getMaterial() != Material.AIR || !AbstractRailBlock.isRail(world.getBlockState(blockPos.down()))) {
+				if (blockState.getMaterial() != Material.AIR || !AbstractRailBlock.isRail(world.getBlockState(blockPos.down()))) {
 					return this.behavior.dispense(pointer, stack);
 				}
 
@@ -78,9 +80,13 @@ public class MinecartItem extends Item {
 	}
 
 	@Override
-	public boolean use(ItemStack itemStack, PlayerEntity player, World world, BlockPos pos, Direction direction, float facingX, float facingY, float facingZ) {
-		BlockState blockState = world.getBlockState(pos);
-		if (AbstractRailBlock.isRail(blockState)) {
+	public ActionResult method_3355(
+		ItemStack itemStack, PlayerEntity playerEntity, World world, BlockPos blockPos, Hand hand, Direction direction, float f, float g, float h
+	) {
+		BlockState blockState = world.getBlockState(blockPos);
+		if (!AbstractRailBlock.isRail(blockState)) {
+			return ActionResult.FAIL;
+		} else {
 			if (!world.isClient) {
 				AbstractRailBlock.RailShapeType railShapeType = blockState.getBlock() instanceof AbstractRailBlock
 					? blockState.get(((AbstractRailBlock)blockState.getBlock()).getShapeProperty())
@@ -91,7 +97,7 @@ public class MinecartItem extends Item {
 				}
 
 				AbstractMinecartEntity abstractMinecartEntity = AbstractMinecartEntity.createMinecart(
-					world, (double)pos.getX() + 0.5, (double)pos.getY() + 0.0625 + d, (double)pos.getZ() + 0.5, this.minecartType
+					world, (double)blockPos.getX() + 0.5, (double)blockPos.getY() + 0.0625 + d, (double)blockPos.getZ() + 0.5, this.minecartType
 				);
 				if (itemStack.hasCustomName()) {
 					abstractMinecartEntity.setCustomName(itemStack.getCustomName());
@@ -101,9 +107,7 @@ public class MinecartItem extends Item {
 			}
 
 			itemStack.count--;
-			return true;
-		} else {
-			return false;
+			return ActionResult.SUCCESS;
 		}
 	}
 }

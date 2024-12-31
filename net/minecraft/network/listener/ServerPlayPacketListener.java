@@ -20,9 +20,13 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
 import net.minecraft.network.packet.c2s.play.ResourcePackStatusC2SPacket;
 import net.minecraft.network.packet.c2s.play.SpectatorTeleportC2SPacket;
+import net.minecraft.network.packet.c2s.play.SteerBoatC2SPacket;
+import net.minecraft.network.packet.c2s.play.SwingHandC2SPacket;
+import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
 import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
+import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
 
 public interface ServerPlayPacketListener extends PacketListener {
 	void onHandSwing(HandSwingC2SPacket packet);
@@ -67,7 +71,15 @@ public interface ServerPlayPacketListener extends PacketListener {
 
 	void onPlayerInteractBlock(PlayerInteractBlockC2SPacket packet);
 
+	void onSwingHand(SwingHandC2SPacket packet);
+
 	void onSpectatorTeleport(SpectatorTeleportC2SPacket packet);
 
 	void onResourcePackStatus(ResourcePackStatusC2SPacket packet);
+
+	void onSteerBoat(SteerBoatC2SPacket packet);
+
+	void onVehicleMove(VehicleMoveC2SPacket packet);
+
+	void onTeleportConfirm(TeleportConfirmC2SPacket packet);
 }

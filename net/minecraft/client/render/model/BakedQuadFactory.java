@@ -1,5 +1,6 @@
 package net.minecraft.client.render.model;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.render.model.json.ModelElementFace;
 import net.minecraft.client.render.model.json.ModelElementTexture;
 import net.minecraft.client.texture.Sprite;
@@ -13,6 +14,31 @@ import org.lwjgl.util.vector.Vector4f;
 public class BakedQuadFactory {
 	private static final float MIN_SCALE = 1.0F / (float)Math.cos((float) (Math.PI / 8)) - 1.0F;
 	private static final float MAX_SCALE = 1.0F / (float)Math.cos((float) (Math.PI / 4)) - 1.0F;
+	private static BakedQuadFactory.class_2873[] field_13555 = new BakedQuadFactory.class_2873[ModelRotation.values().length * Direction.values().length];
+	private static final BakedQuadFactory.class_2873 field_13556 = new BakedQuadFactory.class_2873() {
+		@Override
+		ModelElementTexture method_12366(float f, float g, float h, float i) {
+			return new ModelElementTexture(new float[]{f, g, h, i}, 0);
+		}
+	};
+	private static final BakedQuadFactory.class_2873 field_13557 = new BakedQuadFactory.class_2873() {
+		@Override
+		ModelElementTexture method_12366(float f, float g, float h, float i) {
+			return new ModelElementTexture(new float[]{i, 16.0F - f, g, 16.0F - h}, 270);
+		}
+	};
+	private static final BakedQuadFactory.class_2873 field_13558 = new BakedQuadFactory.class_2873() {
+		@Override
+		ModelElementTexture method_12366(float f, float g, float h, float i) {
+			return new ModelElementTexture(new float[]{16.0F - f, 16.0F - g, 16.0F - h, 16.0F - i}, 0);
+		}
+	};
+	private static final BakedQuadFactory.class_2873 field_13559 = new BakedQuadFactory.class_2873() {
+		@Override
+		ModelElementTexture method_12366(float f, float g, float h, float i) {
+			return new ModelElementTexture(new float[]{16.0F - g, h, 16.0F - i, f}, 90);
+		}
+	};
 
 	public BakedQuad bake(
 		Vector3f from,
@@ -21,37 +47,41 @@ public class BakedQuadFactory {
 		Sprite texture,
 		Direction side,
 		ModelRotation rotation,
-		net.minecraft.client.render.model.json.ModelRotation rotation2,
+		@Nullable net.minecraft.client.render.model.json.ModelRotation rotation2,
 		boolean lockUv,
 		boolean shade
 	) {
-		int[] is = this.packVertexData(face, texture, side, this.getPositionMatrix(from, to), rotation, rotation2, lockUv, shade);
-		Direction direction = decodeDirection(is);
+		ModelElementTexture modelElementTexture = face.textureReference;
 		if (lockUv) {
-			this.uvLock(is, direction, face.textureReference, texture);
+			modelElementTexture = this.method_12363(face.textureReference, side, rotation);
 		}
 
+		int[] is = this.method_10050(modelElementTexture, texture, side, this.getPositionMatrix(from, to), rotation, rotation2, shade);
+		Direction direction = decodeDirection(is);
 		if (rotation2 == null) {
 			this.encodeDirection(is, direction);
 		}
 
-		return new BakedQuad(is, face.tintIndex, direction);
+		return new BakedQuad(is, face.tintIndex, direction, texture);
 	}
 
-	private int[] packVertexData(
-		ModelElementFace face,
+	private ModelElementTexture method_12363(ModelElementTexture modelElementTexture, Direction direction, ModelRotation modelRotation) {
+		return field_13555[method_12364(modelRotation, direction)].method_12367(modelElementTexture);
+	}
+
+	private int[] method_10050(
+		ModelElementTexture modelElementTexture,
 		Sprite sprite,
-		Direction dir,
-		float[] matrix,
-		ModelRotation rotation1,
-		net.minecraft.client.render.model.json.ModelRotation rotation2,
-		boolean lockUv,
-		boolean shade
+		Direction direction,
+		float[] fs,
+		ModelRotation modelRotation,
+		@Nullable net.minecraft.client.render.model.json.ModelRotation modelRotation2,
+		boolean bl
 	) {
 		int[] is = new int[28];
 
 		for (int i = 0; i < 4; i++) {
-			this.packVertexData(is, i, dir, face, matrix, sprite, rotation1, rotation2, lockUv, shade);
+			this.method_10059(is, i, direction, modelElementTexture, fs, sprite, modelRotation, modelRotation2, bl);
 		}
 
 		return is;
@@ -91,25 +121,24 @@ public class BakedQuadFactory {
 		return fs;
 	}
 
-	private void packVertexData(
-		int[] vertices,
-		int cornerIndex,
+	private void method_10059(
+		int[] is,
+		int i,
 		Direction direction,
-		ModelElementFace face,
-		float[] positionMatrix,
+		ModelElementTexture modelElementTexture,
+		float[] fs,
 		Sprite sprite,
-		ModelRotation rotation,
-		net.minecraft.client.render.model.json.ModelRotation rotation2,
-		boolean lockUv,
-		boolean shade
+		ModelRotation modelRotation,
+		@Nullable net.minecraft.client.render.model.json.ModelRotation modelRotation2,
+		boolean bl
 	) {
-		Direction direction2 = rotation.rotate(direction);
-		int i = shade ? this.method_10051(direction2) : -1;
-		CubeFace.Corner corner = CubeFace.getFace(direction).getCorner(cornerIndex);
-		Vector3f vector3f = new Vector3f(positionMatrix[corner.sideX], positionMatrix[corner.sideY], positionMatrix[corner.sideZ]);
-		this.rotateVertex(vector3f, rotation2);
-		int j = this.transformVertex(vector3f, direction, cornerIndex, rotation, lockUv);
-		this.packVertexData(vertices, j, cornerIndex, vector3f, i, sprite, face.textureReference);
+		Direction direction2 = modelRotation.rotate(direction);
+		int j = bl ? this.method_10051(direction2) : -1;
+		CubeFace.Corner corner = CubeFace.getFace(direction).getCorner(i);
+		Vector3f vector3f = new Vector3f(fs[corner.sideX], fs[corner.sideY], fs[corner.sideZ]);
+		this.rotateVertex(vector3f, modelRotation2);
+		int k = this.method_10053(vector3f, direction, i, modelRotation);
+		this.packVertexData(is, k, i, vector3f, j, sprite, modelElementTexture);
 	}
 
 	private void packVertexData(int[] vertices, int cornerIndex1, int cornerIndex2, Vector3f position, int color, Sprite sprite, ModelElementTexture texture) {
@@ -122,7 +151,7 @@ public class BakedQuadFactory {
 		vertices[i + 4 + 1] = Float.floatToRawIntBits(sprite.getFrameV((double)texture.method_10001(cornerIndex2)));
 	}
 
-	private void rotateVertex(Vector3f vec, net.minecraft.client.render.model.json.ModelRotation rotation) {
+	private void rotateVertex(Vector3f vec, @Nullable net.minecraft.client.render.model.json.ModelRotation rotation) {
 		if (rotation != null) {
 			Matrix4f matrix4f = this.method_10048();
 			Vector3f vector3f = new Vector3f(0.0F, 0.0F, 0.0F);
@@ -156,12 +185,12 @@ public class BakedQuadFactory {
 		}
 	}
 
-	public int transformVertex(Vector3f vertex, Direction direction, int cornerIndex, ModelRotation rotation, boolean shade) {
-		if (rotation == ModelRotation.X0_Y0) {
-			return cornerIndex;
+	public int method_10053(Vector3f vector3f, Direction direction, int i, ModelRotation modelRotation) {
+		if (modelRotation == ModelRotation.X0_Y0) {
+			return i;
 		} else {
-			this.transformVertex(vertex, new Vector3f(0.5F, 0.5F, 0.5F), rotation.getMatrix(), new Vector3f(1.0F, 1.0F, 1.0F));
-			return rotation.rotate(direction, cornerIndex);
+			this.transformVertex(vector3f, new Vector3f(0.5F, 0.5F, 0.5F), modelRotation.getMatrix(), new Vector3f(1.0F, 1.0F, 1.0F));
+			return modelRotation.rotate(direction, i);
 		}
 	}
 
@@ -210,12 +239,6 @@ public class BakedQuadFactory {
 		}
 
 		return direction == null ? Direction.UP : direction;
-	}
-
-	public void uvLock(int[] rotationMatrix, Direction dir, ModelElementTexture texture, Sprite sprite) {
-		for (int i = 0; i < 4; i++) {
-			this.lockVertex(i, rotationMatrix, dir, texture, sprite);
-		}
 	}
 
 	private void encodeDirection(int[] data, Direction direction) {
@@ -284,53 +307,125 @@ public class BakedQuadFactory {
 		}
 	}
 
-	private void lockVertex(int index, int[] data, Direction direction, ModelElementTexture texture, Sprite sprite) {
-		int i = 7 * index;
-		float f = Float.intBitsToFloat(data[i]);
-		float g = Float.intBitsToFloat(data[i + 1]);
-		float h = Float.intBitsToFloat(data[i + 2]);
-		if (f < -0.1F || f >= 1.1F) {
-			f -= (float)MathHelper.floor(f);
+	private static void method_12365(ModelRotation modelRotation, Direction direction, BakedQuadFactory.class_2873 arg) {
+		field_13555[method_12364(modelRotation, direction)] = arg;
+	}
+
+	private static int method_12364(ModelRotation modelRotation, Direction direction) {
+		return ModelRotation.values().length * direction.ordinal() + modelRotation.ordinal();
+	}
+
+	static {
+		method_12365(ModelRotation.X0_Y0, Direction.DOWN, field_13556);
+		method_12365(ModelRotation.X0_Y0, Direction.EAST, field_13556);
+		method_12365(ModelRotation.X0_Y0, Direction.NORTH, field_13556);
+		method_12365(ModelRotation.X0_Y0, Direction.SOUTH, field_13556);
+		method_12365(ModelRotation.X0_Y0, Direction.UP, field_13556);
+		method_12365(ModelRotation.X0_Y0, Direction.WEST, field_13556);
+		method_12365(ModelRotation.X0_Y90, Direction.EAST, field_13556);
+		method_12365(ModelRotation.X0_Y90, Direction.NORTH, field_13556);
+		method_12365(ModelRotation.X0_Y90, Direction.SOUTH, field_13556);
+		method_12365(ModelRotation.X0_Y90, Direction.WEST, field_13556);
+		method_12365(ModelRotation.X0_Y180, Direction.EAST, field_13556);
+		method_12365(ModelRotation.X0_Y180, Direction.NORTH, field_13556);
+		method_12365(ModelRotation.X0_Y180, Direction.SOUTH, field_13556);
+		method_12365(ModelRotation.X0_Y180, Direction.WEST, field_13556);
+		method_12365(ModelRotation.X0_Y270, Direction.EAST, field_13556);
+		method_12365(ModelRotation.X0_Y270, Direction.NORTH, field_13556);
+		method_12365(ModelRotation.X0_Y270, Direction.SOUTH, field_13556);
+		method_12365(ModelRotation.X0_Y270, Direction.WEST, field_13556);
+		method_12365(ModelRotation.X90_Y0, Direction.DOWN, field_13556);
+		method_12365(ModelRotation.X90_Y0, Direction.SOUTH, field_13556);
+		method_12365(ModelRotation.X90_Y90, Direction.DOWN, field_13556);
+		method_12365(ModelRotation.X90_Y180, Direction.DOWN, field_13556);
+		method_12365(ModelRotation.X90_Y180, Direction.NORTH, field_13556);
+		method_12365(ModelRotation.X90_Y270, Direction.DOWN, field_13556);
+		method_12365(ModelRotation.X180_Y0, Direction.DOWN, field_13556);
+		method_12365(ModelRotation.X180_Y0, Direction.UP, field_13556);
+		method_12365(ModelRotation.X270_Y0, Direction.SOUTH, field_13556);
+		method_12365(ModelRotation.X270_Y0, Direction.UP, field_13556);
+		method_12365(ModelRotation.X270_Y90, Direction.UP, field_13556);
+		method_12365(ModelRotation.X270_Y180, Direction.NORTH, field_13556);
+		method_12365(ModelRotation.X270_Y180, Direction.UP, field_13556);
+		method_12365(ModelRotation.X270_Y270, Direction.UP, field_13556);
+		method_12365(ModelRotation.X0_Y270, Direction.UP, field_13557);
+		method_12365(ModelRotation.X0_Y90, Direction.DOWN, field_13557);
+		method_12365(ModelRotation.X90_Y0, Direction.WEST, field_13557);
+		method_12365(ModelRotation.X90_Y90, Direction.WEST, field_13557);
+		method_12365(ModelRotation.X90_Y180, Direction.WEST, field_13557);
+		method_12365(ModelRotation.X90_Y270, Direction.NORTH, field_13557);
+		method_12365(ModelRotation.X90_Y270, Direction.SOUTH, field_13557);
+		method_12365(ModelRotation.X90_Y270, Direction.WEST, field_13557);
+		method_12365(ModelRotation.X180_Y90, Direction.UP, field_13557);
+		method_12365(ModelRotation.X180_Y270, Direction.DOWN, field_13557);
+		method_12365(ModelRotation.X270_Y0, Direction.EAST, field_13557);
+		method_12365(ModelRotation.X270_Y90, Direction.EAST, field_13557);
+		method_12365(ModelRotation.X270_Y90, Direction.NORTH, field_13557);
+		method_12365(ModelRotation.X270_Y90, Direction.SOUTH, field_13557);
+		method_12365(ModelRotation.X270_Y180, Direction.EAST, field_13557);
+		method_12365(ModelRotation.X270_Y270, Direction.EAST, field_13557);
+		method_12365(ModelRotation.X0_Y180, Direction.DOWN, field_13558);
+		method_12365(ModelRotation.X0_Y180, Direction.UP, field_13558);
+		method_12365(ModelRotation.X90_Y0, Direction.NORTH, field_13558);
+		method_12365(ModelRotation.X90_Y0, Direction.UP, field_13558);
+		method_12365(ModelRotation.X90_Y90, Direction.UP, field_13558);
+		method_12365(ModelRotation.X90_Y180, Direction.SOUTH, field_13558);
+		method_12365(ModelRotation.X90_Y180, Direction.UP, field_13558);
+		method_12365(ModelRotation.X90_Y270, Direction.UP, field_13558);
+		method_12365(ModelRotation.X180_Y0, Direction.EAST, field_13558);
+		method_12365(ModelRotation.X180_Y0, Direction.NORTH, field_13558);
+		method_12365(ModelRotation.X180_Y0, Direction.SOUTH, field_13558);
+		method_12365(ModelRotation.X180_Y0, Direction.WEST, field_13558);
+		method_12365(ModelRotation.X180_Y90, Direction.EAST, field_13558);
+		method_12365(ModelRotation.X180_Y90, Direction.NORTH, field_13558);
+		method_12365(ModelRotation.X180_Y90, Direction.SOUTH, field_13558);
+		method_12365(ModelRotation.X180_Y90, Direction.WEST, field_13558);
+		method_12365(ModelRotation.X180_Y180, Direction.DOWN, field_13558);
+		method_12365(ModelRotation.X180_Y180, Direction.EAST, field_13558);
+		method_12365(ModelRotation.X180_Y180, Direction.NORTH, field_13558);
+		method_12365(ModelRotation.X180_Y180, Direction.SOUTH, field_13558);
+		method_12365(ModelRotation.X180_Y180, Direction.UP, field_13558);
+		method_12365(ModelRotation.X180_Y180, Direction.WEST, field_13558);
+		method_12365(ModelRotation.X180_Y270, Direction.EAST, field_13558);
+		method_12365(ModelRotation.X180_Y270, Direction.NORTH, field_13558);
+		method_12365(ModelRotation.X180_Y270, Direction.SOUTH, field_13558);
+		method_12365(ModelRotation.X180_Y270, Direction.WEST, field_13558);
+		method_12365(ModelRotation.X270_Y0, Direction.DOWN, field_13558);
+		method_12365(ModelRotation.X270_Y0, Direction.NORTH, field_13558);
+		method_12365(ModelRotation.X270_Y90, Direction.DOWN, field_13558);
+		method_12365(ModelRotation.X270_Y180, Direction.DOWN, field_13558);
+		method_12365(ModelRotation.X270_Y180, Direction.SOUTH, field_13558);
+		method_12365(ModelRotation.X270_Y270, Direction.DOWN, field_13558);
+		method_12365(ModelRotation.X0_Y90, Direction.UP, field_13559);
+		method_12365(ModelRotation.X0_Y270, Direction.DOWN, field_13559);
+		method_12365(ModelRotation.X90_Y0, Direction.EAST, field_13559);
+		method_12365(ModelRotation.X90_Y90, Direction.EAST, field_13559);
+		method_12365(ModelRotation.X90_Y90, Direction.NORTH, field_13559);
+		method_12365(ModelRotation.X90_Y90, Direction.SOUTH, field_13559);
+		method_12365(ModelRotation.X90_Y180, Direction.EAST, field_13559);
+		method_12365(ModelRotation.X90_Y270, Direction.EAST, field_13559);
+		method_12365(ModelRotation.X270_Y0, Direction.WEST, field_13559);
+		method_12365(ModelRotation.X180_Y90, Direction.DOWN, field_13559);
+		method_12365(ModelRotation.X180_Y270, Direction.UP, field_13559);
+		method_12365(ModelRotation.X270_Y90, Direction.WEST, field_13559);
+		method_12365(ModelRotation.X270_Y180, Direction.WEST, field_13559);
+		method_12365(ModelRotation.X270_Y270, Direction.NORTH, field_13559);
+		method_12365(ModelRotation.X270_Y270, Direction.SOUTH, field_13559);
+		method_12365(ModelRotation.X270_Y270, Direction.WEST, field_13559);
+	}
+
+	abstract static class class_2873 {
+		private class_2873() {
 		}
 
-		if (g < -0.1F || g >= 1.1F) {
-			g -= (float)MathHelper.floor(g);
+		public ModelElementTexture method_12367(ModelElementTexture modelElementTexture) {
+			float f = modelElementTexture.method_9999(modelElementTexture.getDirectionIndex(0));
+			float g = modelElementTexture.method_10001(modelElementTexture.getDirectionIndex(0));
+			float h = modelElementTexture.method_9999(modelElementTexture.getDirectionIndex(2));
+			float i = modelElementTexture.method_10001(modelElementTexture.getDirectionIndex(2));
+			return this.method_12366(f, g, h, i);
 		}
 
-		if (h < -0.1F || h >= 1.1F) {
-			h -= (float)MathHelper.floor(h);
-		}
-
-		float j = 0.0F;
-		float k = 0.0F;
-		switch (direction) {
-			case DOWN:
-				j = f * 16.0F;
-				k = (1.0F - h) * 16.0F;
-				break;
-			case UP:
-				j = f * 16.0F;
-				k = h * 16.0F;
-				break;
-			case NORTH:
-				j = (1.0F - f) * 16.0F;
-				k = (1.0F - g) * 16.0F;
-				break;
-			case SOUTH:
-				j = f * 16.0F;
-				k = (1.0F - g) * 16.0F;
-				break;
-			case WEST:
-				j = h * 16.0F;
-				k = (1.0F - g) * 16.0F;
-				break;
-			case EAST:
-				j = (1.0F - h) * 16.0F;
-				k = (1.0F - g) * 16.0F;
-		}
-
-		int l = texture.getDirectionIndex(index) * 7;
-		data[l + 4] = Float.floatToRawIntBits(sprite.getFrameU((double)j));
-		data[l + 4 + 1] = Float.floatToRawIntBits(sprite.getFrameV((double)k));
+		abstract ModelElementTexture method_12366(float f, float g, float h, float i);
 	}
 }

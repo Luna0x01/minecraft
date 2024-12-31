@@ -1,6 +1,7 @@
 package net.minecraft.server.command;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -28,17 +29,17 @@ public class MeCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length <= 0) {
 			throw new IncorrectUsageException("commands.me.usage");
 		} else {
-			Text text = method_8406(source, args, 0, !(source instanceof PlayerEntity));
-			MinecraftServer.getServer().getPlayerManager().sendToAll(new TranslatableText("chat.type.emote", source.getName(), text));
+			Text text = method_8406(commandSource, args, 0, !(commandSource instanceof PlayerEntity));
+			minecraftServer.getPlayerManager().sendToAll(new TranslatableText("chat.type.emote", commandSource.getName(), text));
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return method_2894(args, MinecraftServer.getServer().getPlayerNames());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return method_2894(strings, server.getPlayerNames());
 	}
 }

@@ -1,17 +1,22 @@
 package net.minecraft.block;
 
-import java.util.Arrays;
+import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.MaterialColor;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -23,14 +28,29 @@ import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 
 public class StairsBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
 	public static final EnumProperty<StairsBlock.Half> HALF = EnumProperty.of("half", StairsBlock.Half.class);
 	public static final EnumProperty<StairsBlock.Shape> SHAPE = EnumProperty.of("shape", StairsBlock.Shape.class);
-	private static final int[][] ignoredCornersByDirection = new int[][]{{4, 5}, {5, 7}, {6, 7}, {4, 6}, {0, 1}, {1, 3}, {2, 3}, {0, 2}};
+	protected static final Box field_12791 = new Box(0.0, 0.5, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12792 = new Box(0.0, 0.5, 0.0, 0.5, 1.0, 1.0);
+	protected static final Box field_12793 = new Box(0.5, 0.5, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12794 = new Box(0.0, 0.5, 0.0, 1.0, 1.0, 0.5);
+	protected static final Box field_12777 = new Box(0.0, 0.5, 0.5, 1.0, 1.0, 1.0);
+	protected static final Box field_12778 = new Box(0.0, 0.5, 0.0, 0.5, 1.0, 0.5);
+	protected static final Box field_12779 = new Box(0.5, 0.5, 0.0, 1.0, 1.0, 0.5);
+	protected static final Box field_12780 = new Box(0.0, 0.5, 0.5, 0.5, 1.0, 1.0);
+	protected static final Box field_12781 = new Box(0.5, 0.5, 0.5, 1.0, 1.0, 1.0);
+	protected static final Box field_12782 = new Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0);
+	protected static final Box field_12783 = new Box(0.0, 0.0, 0.0, 0.5, 0.5, 1.0);
+	protected static final Box field_12784 = new Box(0.5, 0.0, 0.0, 1.0, 0.5, 1.0);
+	protected static final Box field_12785 = new Box(0.0, 0.0, 0.0, 1.0, 0.5, 0.5);
+	protected static final Box field_12786 = new Box(0.0, 0.0, 0.5, 1.0, 0.5, 1.0);
+	protected static final Box field_12787 = new Box(0.0, 0.0, 0.0, 0.5, 0.5, 0.5);
+	protected static final Box field_12788 = new Box(0.5, 0.0, 0.0, 1.0, 0.5, 0.5);
+	protected static final Box field_12789 = new Box(0.0, 0.0, 0.5, 0.5, 0.5, 1.0);
+	protected static final Box field_12790 = new Box(0.5, 0.0, 0.5, 1.0, 0.5, 1.0);
 	private final Block block;
 	private final BlockState state;
-	private boolean isRayTraced;
-	private int rayTracePass;
 
 	protected StairsBlock(BlockState blockState) {
 		super(blockState.getBlock().material);
@@ -41,362 +61,96 @@ public class StairsBlock extends Block {
 		this.state = blockState;
 		this.setStrength(this.block.hardness);
 		this.setResistance(this.block.blastResistance / 3.0F);
-		this.setSound(this.block.sound);
+		this.setBlockSoundGroup(this.block.blockSoundGroup);
 		this.setOpacity(255);
 		this.setItemGroup(ItemGroup.BUILDING_BLOCKS);
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		if (this.isRayTraced) {
-			this.setBoundingBox(
-				0.5F * (float)(this.rayTracePass % 2),
-				0.5F * (float)(this.rayTracePass / 4 % 2),
-				0.5F * (float)(this.rayTracePass / 2 % 2),
-				0.5F + 0.5F * (float)(this.rayTracePass % 2),
-				0.5F + 0.5F * (float)(this.rayTracePass / 4 % 2),
-				0.5F + 0.5F * (float)(this.rayTracePass / 2 % 2)
-			);
-		} else {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+	public void appendCollisionBoxes(BlockState state, World world, BlockPos pos, Box entityBox, List<Box> boxes, @Nullable Entity entity) {
+		state = this.getBlockState(state, world, pos);
+
+		for (Box box : method_11634(state)) {
+			appendCollisionBoxes(pos, entityBox, boxes, box);
+		}
+	}
+
+	private static List<Box> method_11634(BlockState blockState) {
+		List<Box> list = Lists.newArrayList();
+		boolean bl = blockState.get(HALF) == StairsBlock.Half.TOP;
+		list.add(bl ? field_12791 : field_12782);
+		StairsBlock.Shape shape = blockState.get(SHAPE);
+		if (shape == StairsBlock.Shape.STRAIGHT || shape == StairsBlock.Shape.INNER_LEFT || shape == StairsBlock.Shape.INNER_RIGHT) {
+			list.add(method_11635(blockState));
+		}
+
+		if (shape != StairsBlock.Shape.STRAIGHT) {
+			list.add(method_11636(blockState));
+		}
+
+		return list;
+	}
+
+	private static Box method_11635(BlockState blockState) {
+		boolean bl = blockState.get(HALF) == StairsBlock.Half.TOP;
+		switch ((Direction)blockState.get(FACING)) {
+			case NORTH:
+			default:
+				return bl ? field_12785 : field_12794;
+			case SOUTH:
+				return bl ? field_12786 : field_12777;
+			case WEST:
+				return bl ? field_12783 : field_12792;
+			case EAST:
+				return bl ? field_12784 : field_12793;
+		}
+	}
+
+	private static Box method_11636(BlockState blockState) {
+		Direction direction = blockState.get(FACING);
+		Direction direction2;
+		switch ((StairsBlock.Shape)blockState.get(SHAPE)) {
+			case OUTER_LEFT:
+			default:
+				direction2 = direction;
+				break;
+			case OUTER_RIGHT:
+				direction2 = direction.rotateYClockwise();
+				break;
+			case INNER_RIGHT:
+				direction2 = direction.getOpposite();
+				break;
+			case INNER_LEFT:
+				direction2 = direction.rotateYCounterclockwise();
+		}
+
+		boolean bl = blockState.get(HALF) == StairsBlock.Half.TOP;
+		switch (direction2) {
+			case NORTH:
+			default:
+				return bl ? field_12787 : field_12778;
+			case SOUTH:
+				return bl ? field_12790 : field_12781;
+			case WEST:
+				return bl ? field_12789 : field_12780;
+			case EAST:
+				return bl ? field_12788 : field_12779;
 		}
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
-	public void setBaseBoundingBox(BlockView view, BlockPos pos) {
-		if (view.getBlockState(pos).get(HALF) == StairsBlock.Half.TOP) {
-			this.setBoundingBox(0.0F, 0.5F, 0.0F, 1.0F, 1.0F, 1.0F);
-		} else {
-			this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.5F, 1.0F);
-		}
-	}
-
-	public static boolean isStairs(Block block) {
-		return block instanceof StairsBlock;
-	}
-
-	public static boolean isSameStairs(BlockView view, BlockPos pos, BlockState state) {
-		BlockState blockState = view.getBlockState(pos);
-		Block block = blockState.getBlock();
-		return isStairs(block) && blockState.get(HALF) == state.get(HALF) && blockState.get(FACING) == state.get(FACING);
-	}
-
-	public int getOuterConnectDirection(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
-		Direction direction = blockState.get(FACING);
-		StairsBlock.Half half = blockState.get(HALF);
-		boolean bl = half == StairsBlock.Half.TOP;
-		if (direction == Direction.EAST) {
-			BlockState blockState2 = view.getBlockState(pos.east());
-			Block block = blockState2.getBlock();
-			if (isStairs(block) && half == blockState2.get(HALF)) {
-				Direction direction2 = blockState2.get(FACING);
-				if (direction2 == Direction.NORTH && !isSameStairs(view, pos.south(), blockState)) {
-					return bl ? 1 : 2;
-				}
-
-				if (direction2 == Direction.SOUTH && !isSameStairs(view, pos.north(), blockState)) {
-					return bl ? 2 : 1;
-				}
-			}
-		} else if (direction == Direction.WEST) {
-			BlockState blockState3 = view.getBlockState(pos.west());
-			Block block2 = blockState3.getBlock();
-			if (isStairs(block2) && half == blockState3.get(HALF)) {
-				Direction direction3 = blockState3.get(FACING);
-				if (direction3 == Direction.NORTH && !isSameStairs(view, pos.south(), blockState)) {
-					return bl ? 2 : 1;
-				}
-
-				if (direction3 == Direction.SOUTH && !isSameStairs(view, pos.north(), blockState)) {
-					return bl ? 1 : 2;
-				}
-			}
-		} else if (direction == Direction.SOUTH) {
-			BlockState blockState4 = view.getBlockState(pos.south());
-			Block block3 = blockState4.getBlock();
-			if (isStairs(block3) && half == blockState4.get(HALF)) {
-				Direction direction4 = blockState4.get(FACING);
-				if (direction4 == Direction.WEST && !isSameStairs(view, pos.east(), blockState)) {
-					return bl ? 2 : 1;
-				}
-
-				if (direction4 == Direction.EAST && !isSameStairs(view, pos.west(), blockState)) {
-					return bl ? 1 : 2;
-				}
-			}
-		} else if (direction == Direction.NORTH) {
-			BlockState blockState5 = view.getBlockState(pos.north());
-			Block block4 = blockState5.getBlock();
-			if (isStairs(block4) && half == blockState5.get(HALF)) {
-				Direction direction5 = blockState5.get(FACING);
-				if (direction5 == Direction.WEST && !isSameStairs(view, pos.east(), blockState)) {
-					return bl ? 1 : 2;
-				}
-
-				if (direction5 == Direction.EAST && !isSameStairs(view, pos.west(), blockState)) {
-					return bl ? 2 : 1;
-				}
-			}
-		}
-
-		return 0;
-	}
-
-	public int getInnerConnectDirection(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
-		Direction direction = blockState.get(FACING);
-		StairsBlock.Half half = blockState.get(HALF);
-		boolean bl = half == StairsBlock.Half.TOP;
-		if (direction == Direction.EAST) {
-			BlockState blockState2 = view.getBlockState(pos.west());
-			Block block = blockState2.getBlock();
-			if (isStairs(block) && half == blockState2.get(HALF)) {
-				Direction direction2 = blockState2.get(FACING);
-				if (direction2 == Direction.NORTH && !isSameStairs(view, pos.north(), blockState)) {
-					return bl ? 1 : 2;
-				}
-
-				if (direction2 == Direction.SOUTH && !isSameStairs(view, pos.south(), blockState)) {
-					return bl ? 2 : 1;
-				}
-			}
-		} else if (direction == Direction.WEST) {
-			BlockState blockState3 = view.getBlockState(pos.east());
-			Block block2 = blockState3.getBlock();
-			if (isStairs(block2) && half == blockState3.get(HALF)) {
-				Direction direction3 = blockState3.get(FACING);
-				if (direction3 == Direction.NORTH && !isSameStairs(view, pos.north(), blockState)) {
-					return bl ? 2 : 1;
-				}
-
-				if (direction3 == Direction.SOUTH && !isSameStairs(view, pos.south(), blockState)) {
-					return bl ? 1 : 2;
-				}
-			}
-		} else if (direction == Direction.SOUTH) {
-			BlockState blockState4 = view.getBlockState(pos.north());
-			Block block3 = blockState4.getBlock();
-			if (isStairs(block3) && half == blockState4.get(HALF)) {
-				Direction direction4 = blockState4.get(FACING);
-				if (direction4 == Direction.WEST && !isSameStairs(view, pos.west(), blockState)) {
-					return bl ? 2 : 1;
-				}
-
-				if (direction4 == Direction.EAST && !isSameStairs(view, pos.east(), blockState)) {
-					return bl ? 1 : 2;
-				}
-			}
-		} else if (direction == Direction.NORTH) {
-			BlockState blockState5 = view.getBlockState(pos.south());
-			Block block4 = blockState5.getBlock();
-			if (isStairs(block4) && half == blockState5.get(HALF)) {
-				Direction direction5 = blockState5.get(FACING);
-				if (direction5 == Direction.WEST && !isSameStairs(view, pos.west(), blockState)) {
-					return bl ? 1 : 2;
-				}
-
-				if (direction5 == Direction.EAST && !isSameStairs(view, pos.east(), blockState)) {
-					return bl ? 2 : 1;
-				}
-			}
-		}
-
-		return 0;
-	}
-
-	public boolean canConnectInner(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
-		Direction direction = blockState.get(FACING);
-		StairsBlock.Half half = blockState.get(HALF);
-		boolean bl = half == StairsBlock.Half.TOP;
-		float f = 0.5F;
-		float g = 1.0F;
-		if (bl) {
-			f = 0.0F;
-			g = 0.5F;
-		}
-
-		float h = 0.0F;
-		float i = 1.0F;
-		float j = 0.0F;
-		float k = 0.5F;
-		boolean bl2 = true;
-		if (direction == Direction.EAST) {
-			h = 0.5F;
-			k = 1.0F;
-			BlockState blockState2 = view.getBlockState(pos.east());
-			Block block = blockState2.getBlock();
-			if (isStairs(block) && half == blockState2.get(HALF)) {
-				Direction direction2 = blockState2.get(FACING);
-				if (direction2 == Direction.NORTH && !isSameStairs(view, pos.south(), blockState)) {
-					k = 0.5F;
-					bl2 = false;
-				} else if (direction2 == Direction.SOUTH && !isSameStairs(view, pos.north(), blockState)) {
-					j = 0.5F;
-					bl2 = false;
-				}
-			}
-		} else if (direction == Direction.WEST) {
-			i = 0.5F;
-			k = 1.0F;
-			BlockState blockState3 = view.getBlockState(pos.west());
-			Block block2 = blockState3.getBlock();
-			if (isStairs(block2) && half == blockState3.get(HALF)) {
-				Direction direction3 = blockState3.get(FACING);
-				if (direction3 == Direction.NORTH && !isSameStairs(view, pos.south(), blockState)) {
-					k = 0.5F;
-					bl2 = false;
-				} else if (direction3 == Direction.SOUTH && !isSameStairs(view, pos.north(), blockState)) {
-					j = 0.5F;
-					bl2 = false;
-				}
-			}
-		} else if (direction == Direction.SOUTH) {
-			j = 0.5F;
-			k = 1.0F;
-			BlockState blockState4 = view.getBlockState(pos.south());
-			Block block3 = blockState4.getBlock();
-			if (isStairs(block3) && half == blockState4.get(HALF)) {
-				Direction direction4 = blockState4.get(FACING);
-				if (direction4 == Direction.WEST && !isSameStairs(view, pos.east(), blockState)) {
-					i = 0.5F;
-					bl2 = false;
-				} else if (direction4 == Direction.EAST && !isSameStairs(view, pos.west(), blockState)) {
-					h = 0.5F;
-					bl2 = false;
-				}
-			}
-		} else if (direction == Direction.NORTH) {
-			BlockState blockState5 = view.getBlockState(pos.north());
-			Block block4 = blockState5.getBlock();
-			if (isStairs(block4) && half == blockState5.get(HALF)) {
-				Direction direction5 = blockState5.get(FACING);
-				if (direction5 == Direction.WEST && !isSameStairs(view, pos.east(), blockState)) {
-					i = 0.5F;
-					bl2 = false;
-				} else if (direction5 == Direction.EAST && !isSameStairs(view, pos.west(), blockState)) {
-					h = 0.5F;
-					bl2 = false;
-				}
-			}
-		}
-
-		this.setBoundingBox(h, f, j, i, g, k);
-		return bl2;
-	}
-
-	public boolean isConnectedInner(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
-		Direction direction = blockState.get(FACING);
-		StairsBlock.Half half = blockState.get(HALF);
-		boolean bl = half == StairsBlock.Half.TOP;
-		float f = 0.5F;
-		float g = 1.0F;
-		if (bl) {
-			f = 0.0F;
-			g = 0.5F;
-		}
-
-		float h = 0.0F;
-		float i = 0.5F;
-		float j = 0.5F;
-		float k = 1.0F;
-		boolean bl2 = false;
-		if (direction == Direction.EAST) {
-			BlockState blockState2 = view.getBlockState(pos.west());
-			Block block = blockState2.getBlock();
-			if (isStairs(block) && half == blockState2.get(HALF)) {
-				Direction direction2 = blockState2.get(FACING);
-				if (direction2 == Direction.NORTH && !isSameStairs(view, pos.north(), blockState)) {
-					j = 0.0F;
-					k = 0.5F;
-					bl2 = true;
-				} else if (direction2 == Direction.SOUTH && !isSameStairs(view, pos.south(), blockState)) {
-					j = 0.5F;
-					k = 1.0F;
-					bl2 = true;
-				}
-			}
-		} else if (direction == Direction.WEST) {
-			BlockState blockState3 = view.getBlockState(pos.east());
-			Block block2 = blockState3.getBlock();
-			if (isStairs(block2) && half == blockState3.get(HALF)) {
-				h = 0.5F;
-				i = 1.0F;
-				Direction direction3 = blockState3.get(FACING);
-				if (direction3 == Direction.NORTH && !isSameStairs(view, pos.north(), blockState)) {
-					j = 0.0F;
-					k = 0.5F;
-					bl2 = true;
-				} else if (direction3 == Direction.SOUTH && !isSameStairs(view, pos.south(), blockState)) {
-					j = 0.5F;
-					k = 1.0F;
-					bl2 = true;
-				}
-			}
-		} else if (direction == Direction.SOUTH) {
-			BlockState blockState4 = view.getBlockState(pos.north());
-			Block block3 = blockState4.getBlock();
-			if (isStairs(block3) && half == blockState4.get(HALF)) {
-				j = 0.0F;
-				k = 0.5F;
-				Direction direction4 = blockState4.get(FACING);
-				if (direction4 == Direction.WEST && !isSameStairs(view, pos.west(), blockState)) {
-					bl2 = true;
-				} else if (direction4 == Direction.EAST && !isSameStairs(view, pos.east(), blockState)) {
-					h = 0.5F;
-					i = 1.0F;
-					bl2 = true;
-				}
-			}
-		} else if (direction == Direction.NORTH) {
-			BlockState blockState5 = view.getBlockState(pos.south());
-			Block block4 = blockState5.getBlock();
-			if (isStairs(block4) && half == blockState5.get(HALF)) {
-				Direction direction5 = blockState5.get(FACING);
-				if (direction5 == Direction.WEST && !isSameStairs(view, pos.west(), blockState)) {
-					bl2 = true;
-				} else if (direction5 == Direction.EAST && !isSameStairs(view, pos.east(), blockState)) {
-					h = 0.5F;
-					i = 1.0F;
-					bl2 = true;
-				}
-			}
-		}
-
-		if (bl2) {
-			this.setBoundingBox(h, f, j, i, g, k);
-		}
-
-		return bl2;
-	}
-
 	@Override
-	public void appendCollisionBoxes(World world, BlockPos pos, BlockState state, Box box, List<Box> list, Entity entity) {
-		this.setBaseBoundingBox(world, pos);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		boolean bl = this.canConnectInner(world, pos);
-		super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		if (bl && this.isConnectedInner(world, pos)) {
-			super.appendCollisionBoxes(world, pos, state, box, list, entity);
-		}
-
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-	}
-
-	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
-		this.block.randomDisplayTick(world, pos, state, rand);
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		this.block.randomDisplayTick(state, world, pos, random);
 	}
 
 	@Override
@@ -410,8 +164,8 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public int getBrightness(BlockView blockView, BlockPos pos) {
-		return this.block.getBrightness(blockView, pos);
+	public int method_11564(BlockState state, BlockView view, BlockPos pos) {
+		return this.state.method_11712(view, pos);
 	}
 
 	@Override
@@ -430,8 +184,8 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public Box getSelectionBox(World world, BlockPos pos) {
-		return this.block.getSelectionBox(world, pos);
+	public Box method_11563(BlockState blockState, World world, BlockPos blockPos) {
+		return this.state.method_11722(world, blockPos);
 	}
 
 	@Override
@@ -456,7 +210,7 @@ public class StairsBlock extends Block {
 
 	@Override
 	public void onCreation(World world, BlockPos pos, BlockState state) {
-		this.neighborUpdate(world, pos, this.state, Blocks.AIR);
+		this.state.method_11707(world, pos, Blocks.AIR);
 		this.block.onCreation(world, pos, this.state);
 	}
 
@@ -476,13 +230,29 @@ public class StairsBlock extends Block {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		return this.block.onUse(world, pos, this.state, player, Direction.DOWN, 0.0F, 0.0F, 0.0F);
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		return this.block.method_421(world, blockPos, this.state, playerEntity, hand, itemStack, Direction.DOWN, 0.0F, 0.0F, 0.0F);
 	}
 
 	@Override
 	public void onDestroyedByExplosion(World world, BlockPos pos, Explosion explosion) {
 		this.block.onDestroyedByExplosion(world, pos, explosion);
+	}
+
+	@Override
+	public boolean method_11568(BlockState state) {
+		return state.get(HALF) == StairsBlock.Half.TOP;
 	}
 
 	@Override
@@ -499,32 +269,21 @@ public class StairsBlock extends Block {
 			: blockState.with(HALF, StairsBlock.Half.TOP);
 	}
 
+	@Nullable
 	@Override
-	public BlockHitResult rayTrace(World world, BlockPos pos, Vec3d start, Vec3d end) {
-		BlockHitResult[] blockHitResults = new BlockHitResult[8];
-		BlockState blockState = world.getBlockState(pos);
-		int i = ((Direction)blockState.get(FACING)).getHorizontal();
-		boolean bl = blockState.get(HALF) == StairsBlock.Half.TOP;
-		int[] is = ignoredCornersByDirection[i + (bl ? 4 : 0)];
-		this.isRayTraced = true;
+	public BlockHitResult method_414(BlockState blockState, World world, BlockPos blockPos, Vec3d vec3d, Vec3d vec3d2) {
+		List<BlockHitResult> list = Lists.newArrayList();
 
-		for (int j = 0; j < 8; j++) {
-			this.rayTracePass = j;
-			if (Arrays.binarySearch(is, j) < 0) {
-				blockHitResults[j] = super.rayTrace(world, pos, start, end);
-			}
-		}
-
-		for (int m : is) {
-			blockHitResults[m] = null;
+		for (Box box : method_11634(this.getBlockState(blockState, world, blockPos))) {
+			list.add(this.method_11559(blockPos, vec3d, vec3d2, box));
 		}
 
 		BlockHitResult blockHitResult = null;
 		double d = 0.0;
 
-		for (BlockHitResult blockHitResult2 : blockHitResults) {
+		for (BlockHitResult blockHitResult2 : list) {
 			if (blockHitResult2 != null) {
-				double e = blockHitResult2.pos.squaredDistanceTo(end);
+				double e = blockHitResult2.pos.squaredDistanceTo(vec3d2);
 				if (e > d) {
 					blockHitResult = blockHitResult2;
 					d = e;
@@ -553,31 +312,91 @@ public class StairsBlock extends Block {
 
 	@Override
 	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		if (this.canConnectInner(view, pos)) {
-			switch (this.getInnerConnectDirection(view, pos)) {
-				case 0:
-					state = state.with(SHAPE, StairsBlock.Shape.STRAIGHT);
-					break;
-				case 1:
-					state = state.with(SHAPE, StairsBlock.Shape.INNER_RIGHT);
-					break;
-				case 2:
-					state = state.with(SHAPE, StairsBlock.Shape.INNER_LEFT);
-			}
-		} else {
-			switch (this.getOuterConnectDirection(view, pos)) {
-				case 0:
-					state = state.with(SHAPE, StairsBlock.Shape.STRAIGHT);
-					break;
-				case 1:
-					state = state.with(SHAPE, StairsBlock.Shape.OUTER_RIGHT);
-					break;
-				case 2:
-					state = state.with(SHAPE, StairsBlock.Shape.OUTER_LEFT);
+		return state.with(SHAPE, method_11631(state, view, pos));
+	}
+
+	private static StairsBlock.Shape method_11631(BlockState blockState, BlockView blockView, BlockPos blockPos) {
+		Direction direction = blockState.get(FACING);
+		BlockState blockState2 = blockView.getBlockState(blockPos.offset(direction));
+		if (method_11633(blockState2) && blockState.get(HALF) == blockState2.get(HALF)) {
+			Direction direction2 = blockState2.get(FACING);
+			if (direction2.getAxis() != ((Direction)blockState.get(FACING)).getAxis() && method_11632(blockState, blockView, blockPos, direction2.getOpposite())) {
+				if (direction2 == direction.rotateYCounterclockwise()) {
+					return StairsBlock.Shape.OUTER_LEFT;
+				}
+
+				return StairsBlock.Shape.OUTER_RIGHT;
 			}
 		}
 
-		return state;
+		BlockState blockState3 = blockView.getBlockState(blockPos.offset(direction.getOpposite()));
+		if (method_11633(blockState3) && blockState.get(HALF) == blockState3.get(HALF)) {
+			Direction direction3 = blockState3.get(FACING);
+			if (direction3.getAxis() != ((Direction)blockState.get(FACING)).getAxis() && method_11632(blockState, blockView, blockPos, direction3)) {
+				if (direction3 == direction.rotateYCounterclockwise()) {
+					return StairsBlock.Shape.INNER_LEFT;
+				}
+
+				return StairsBlock.Shape.INNER_RIGHT;
+			}
+		}
+
+		return StairsBlock.Shape.STRAIGHT;
+	}
+
+	private static boolean method_11632(BlockState blockState, BlockView blockView, BlockPos blockPos, Direction direction) {
+		BlockState blockState2 = blockView.getBlockState(blockPos.offset(direction));
+		return !method_11633(blockState2) || blockState2.get(FACING) != blockState.get(FACING) || blockState2.get(HALF) != blockState.get(HALF);
+	}
+
+	public static boolean method_11633(BlockState blockState) {
+		return blockState.getBlock() instanceof StairsBlock;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		Direction direction = state.get(FACING);
+		StairsBlock.Shape shape = state.get(SHAPE);
+		switch (mirror) {
+			case LEFT_RIGHT:
+				if (direction.getAxis() == Direction.Axis.Z) {
+					switch (shape) {
+						case OUTER_LEFT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_RIGHT);
+						case OUTER_RIGHT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_LEFT);
+						case INNER_RIGHT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_LEFT);
+						case INNER_LEFT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_RIGHT);
+						default:
+							return state.withRotation(BlockRotation.CLOCKWISE_180);
+					}
+				}
+				break;
+			case FRONT_BACK:
+				if (direction.getAxis() == Direction.Axis.X) {
+					switch (shape) {
+						case OUTER_LEFT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_RIGHT);
+						case OUTER_RIGHT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.OUTER_LEFT);
+						case INNER_RIGHT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_RIGHT);
+						case INNER_LEFT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180).with(SHAPE, StairsBlock.Shape.INNER_LEFT);
+						case STRAIGHT:
+							return state.withRotation(BlockRotation.CLOCKWISE_180);
+					}
+				}
+		}
+
+		return super.withMirror(state, mirror);
 	}
 
 	@Override

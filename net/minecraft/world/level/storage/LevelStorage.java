@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.ClientException;
+import net.minecraft.datafixer.DataFixerUpper;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.util.ProgressListener;
@@ -18,8 +20,10 @@ import org.apache.logging.log4j.Logger;
 public class LevelStorage implements LevelStorageAccess {
 	private static final Logger lOGGER = LogManager.getLogger();
 	protected final File file;
+	protected final DataFixerUpper field_13098;
 
-	public LevelStorage(File file) {
+	public LevelStorage(File file, DataFixerUpper dataFixerUpper) {
+		this.field_13098 = dataFixerUpper;
 		if (!file.exists()) {
 			file.mkdirs();
 		}
@@ -40,18 +44,7 @@ public class LevelStorage implements LevelStorageAccess {
 			String string = "World" + (i + 1);
 			LevelProperties levelProperties = this.getLevelProperties(string);
 			if (levelProperties != null) {
-				list.add(
-					new LevelSummary(
-						string,
-						"",
-						levelProperties.getLastPlayed(),
-						levelProperties.getSizeOnDisk(),
-						levelProperties.getGameMode(),
-						false,
-						levelProperties.isHardcore(),
-						levelProperties.areCheatsEnabled()
-					)
-				);
+				list.add(new LevelSummary(levelProperties, string, "", levelProperties.getSizeOnDisk(), false));
 			}
 		}
 
@@ -70,26 +63,25 @@ public class LevelStorage implements LevelStorageAccess {
 		} else {
 			File file2 = new File(file, "level.dat");
 			if (file2.exists()) {
-				try {
-					NbtCompound nbtCompound = NbtIo.readCompressed(new FileInputStream(file2));
-					NbtCompound nbtCompound2 = nbtCompound.getCompound("Data");
-					return new LevelProperties(nbtCompound2);
-				} catch (Exception var7) {
-					lOGGER.error("Exception reading " + file2, var7);
+				LevelProperties levelProperties = method_11950(file2, this.field_13098);
+				if (levelProperties != null) {
+					return levelProperties;
 				}
 			}
 
 			file2 = new File(file, "level.dat_old");
-			if (file2.exists()) {
-				try {
-					NbtCompound nbtCompound3 = NbtIo.readCompressed(new FileInputStream(file2));
-					NbtCompound nbtCompound4 = nbtCompound3.getCompound("Data");
-					return new LevelProperties(nbtCompound4);
-				} catch (Exception var6) {
-					lOGGER.error("Exception reading " + file2, var6);
-				}
-			}
+			return file2.exists() ? method_11950(file2, this.field_13098) : null;
+		}
+	}
 
+	@Nullable
+	public static LevelProperties method_11950(File file, DataFixerUpper dataFixerUpper) {
+		try {
+			NbtCompound nbtCompound = NbtIo.readCompressed(new FileInputStream(file));
+			NbtCompound nbtCompound2 = nbtCompound.getCompound("Data");
+			return new LevelProperties(dataFixerUpper.update(LevelDataType.LEVEL, nbtCompound2));
+		} catch (Exception var4) {
+			lOGGER.error("Exception reading " + file, var4);
 			return null;
 		}
 	}
@@ -176,7 +168,7 @@ public class LevelStorage implements LevelStorageAccess {
 
 	@Override
 	public SaveHandler createSaveHandler(String worldName, boolean createPlayerDataDir) {
-		return new WorldSaveHandler(this.file, worldName, createPlayerDataDir);
+		return new WorldSaveHandler(this.file, worldName, createPlayerDataDir, this.field_13098);
 	}
 
 	@Override
@@ -198,5 +190,10 @@ public class LevelStorage implements LevelStorageAccess {
 	public boolean levelExists(String name) {
 		File file = new File(this.file, name);
 		return file.isDirectory();
+	}
+
+	@Override
+	public File method_11957(String string, String string2) {
+		return new File(new File(this.file, string), string2);
 	}
 }

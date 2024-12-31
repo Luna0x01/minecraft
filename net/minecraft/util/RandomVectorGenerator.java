@@ -1,29 +1,36 @@
 package net.minecraft.util;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.entity.ai.pathing.EntityNavigation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class RandomVectorGenerator {
-	private static Vec3d field_3660 = new Vec3d(0.0, 0.0, 0.0);
+	private static Vec3d field_3660 = Vec3d.ZERO;
 
+	@Nullable
 	public static Vec3d method_2799(PathAwareEntity mob, int i, int j) {
 		return method_2802(mob, i, j, null);
 	}
 
+	@Nullable
 	public static Vec3d method_2800(PathAwareEntity mob, int i, int j, Vec3d vec3d) {
 		field_3660 = vec3d.subtract(mob.x, mob.y, mob.z);
 		return method_2802(mob, i, j, field_3660);
 	}
 
+	@Nullable
 	public static Vec3d method_2801(PathAwareEntity mob, int i, int j, Vec3d vec3d) {
 		field_3660 = new Vec3d(mob.x, mob.y, mob.z).subtract(vec3d);
 		return method_2802(mob, i, j, field_3660);
 	}
 
-	private static Vec3d method_2802(PathAwareEntity mob, int i, int j, Vec3d vec3d) {
+	@Nullable
+	private static Vec3d method_2802(PathAwareEntity mob, int i, int j, @Nullable Vec3d vec3d) {
+		EntityNavigation entityNavigation = mob.getNavigation();
 		Random random = mob.getRandom();
 		boolean bl = false;
 		int k = 0;
@@ -64,7 +71,7 @@ public class RandomVectorGenerator {
 				p += MathHelper.floor(mob.y);
 				q += MathHelper.floor(mob.z);
 				BlockPos blockPos2 = new BlockPos(o, p, q);
-				if (!bl2 || mob.isInWalkTargetRange(blockPos2)) {
+				if ((!bl2 || mob.isInWalkTargetRange(blockPos2)) && entityNavigation.method_13110(blockPos2)) {
 					float g = mob.getPathfindingFavor(blockPos2);
 					if (g > f) {
 						f = g;

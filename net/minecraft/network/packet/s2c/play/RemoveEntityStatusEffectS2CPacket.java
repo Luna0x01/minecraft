@@ -1,44 +1,49 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
-import net.minecraft.entity.effect.StatusEffectInstance;
+import javax.annotation.Nullable;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.util.PacketByteBuf;
+import net.minecraft.world.World;
 
 public class RemoveEntityStatusEffectS2CPacket implements Packet<ClientPlayPacketListener> {
 	private int entityId;
-	private int effectId;
+	private StatusEffect effect;
 
 	public RemoveEntityStatusEffectS2CPacket() {
 	}
 
-	public RemoveEntityStatusEffectS2CPacket(int i, StatusEffectInstance statusEffectInstance) {
+	public RemoveEntityStatusEffectS2CPacket(int i, StatusEffect statusEffect) {
 		this.entityId = i;
-		this.effectId = statusEffectInstance.getEffectId();
+		this.effect = statusEffect;
 	}
 
 	@Override
 	public void read(PacketByteBuf buf) throws IOException {
 		this.entityId = buf.readVarInt();
-		this.effectId = buf.readUnsignedByte();
+		this.effect = StatusEffect.byIndex(buf.readUnsignedByte());
 	}
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
 		buf.writeVarInt(this.entityId);
-		buf.writeByte(this.effectId);
+		buf.writeByte(StatusEffect.getIndex(this.effect));
 	}
 
 	public void apply(ClientPlayPacketListener clientPlayPacketListener) {
 		clientPlayPacketListener.onRemoveEntityEffect(this);
 	}
 
-	public int getId() {
-		return this.entityId;
+	@Nullable
+	public Entity getEntity(World world) {
+		return world.getEntityById(this.entityId);
 	}
 
-	public int getEffectType() {
-		return this.effectId;
+	@Nullable
+	public StatusEffect getEffect() {
+		return this.effect;
 	}
 }

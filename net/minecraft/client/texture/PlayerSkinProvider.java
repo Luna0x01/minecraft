@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferedImageSkinProvider;
 import net.minecraft.client.render.DownloadedSkinParser;
@@ -46,7 +47,7 @@ public class PlayerSkinProvider {
 		return this.loadSkin(profileTexture, type, null);
 	}
 
-	public Identifier loadSkin(MinecraftProfileTexture profileTexture, Type type, PlayerSkinProvider.class_1890 callback) {
+	public Identifier loadSkin(MinecraftProfileTexture profileTexture, Type type, @Nullable PlayerSkinProvider.class_1890 callback) {
 		final Identifier identifier = new Identifier("skins/" + profileTexture.getHash());
 		Texture texture = this.field_8116.getTexture(identifier);
 		if (texture != null) {

@@ -10,6 +10,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ChatUtil;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +25,7 @@ public class ServerConfigHandler {
 
 	private static void lookupProfile(MinecraftServer server, Collection<String> bannedPlayers, ProfileLookupCallback callback) {
 		String[] strings = (String[])Iterators.toArray(Iterators.filter(bannedPlayers.iterator(), new Predicate<String>() {
-			public boolean apply(String string) {
+			public boolean apply(@Nullable String string) {
 				return !ChatUtil.isEmpty(string);
 			}
 		}), String.class);
@@ -39,10 +40,9 @@ public class ServerConfigHandler {
 		}
 	}
 
-	public static String getPlayerUuidByName(String name) {
-		if (!ChatUtil.isEmpty(name) && name.length() <= 16) {
-			final MinecraftServer minecraftServer = MinecraftServer.getServer();
-			GameProfile gameProfile = minecraftServer.getUserCache().findByName(name);
+	public static String method_8204(MinecraftServer minecraftServer, String string) {
+		if (!ChatUtil.isEmpty(string) && string.length() <= 16) {
+			GameProfile gameProfile = minecraftServer.getUserCache().findByName(string);
 			if (gameProfile != null && gameProfile.getId() != null) {
 				return gameProfile.getId().toString();
 			} else if (!minecraftServer.isSinglePlayer() && minecraftServer.isOnlineMode()) {
@@ -57,13 +57,13 @@ public class ServerConfigHandler {
 						ServerConfigHandler.LOGGER.warn("Could not lookup user whitelist entry for " + profile.getName(), exception);
 					}
 				};
-				lookupProfile(minecraftServer, Lists.newArrayList(new String[]{name}), profileLookupCallback);
-				return list.size() > 0 && ((GameProfile)list.get(0)).getId() != null ? ((GameProfile)list.get(0)).getId().toString() : "";
+				lookupProfile(minecraftServer, Lists.newArrayList(new String[]{string}), profileLookupCallback);
+				return !list.isEmpty() && ((GameProfile)list.get(0)).getId() != null ? ((GameProfile)list.get(0)).getId().toString() : "";
 			} else {
-				return PlayerEntity.getUuidFromProfile(new GameProfile(null, name)).toString();
+				return PlayerEntity.getUuidFromProfile(new GameProfile(null, string)).toString();
 			}
 		} else {
-			return name;
+			return string;
 		}
 	}
 }

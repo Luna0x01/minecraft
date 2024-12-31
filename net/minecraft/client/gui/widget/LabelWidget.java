@@ -54,7 +54,9 @@ public class LabelWidget extends DrawableHelper {
 	public void render(MinecraftClient client, int mouseX, int mouseY) {
 		if (this.visible) {
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			this.renderBorder(client, mouseX, mouseY);
 			int i = this.y + this.height / 2 + this.borderThickness / 2;
 			int j = i - this.texts.size() * 10 / 2;

@@ -1,44 +1,79 @@
 package net.minecraft.block;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.StringIdentifiable;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class TrapdoorBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
 	public static final BooleanProperty OPEN = BooleanProperty.of("open");
 	public static final EnumProperty<TrapdoorBlock.TrapdoorType> HALF = EnumProperty.of("half", TrapdoorBlock.TrapdoorType.class);
+	protected static final Box field_12811 = new Box(0.0, 0.0, 0.0, 0.1875, 1.0, 1.0);
+	protected static final Box field_12812 = new Box(0.8125, 0.0, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12813 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.1875);
+	protected static final Box field_12814 = new Box(0.0, 0.0, 0.8125, 1.0, 1.0, 1.0);
+	protected static final Box field_12809 = new Box(0.0, 0.0, 0.0, 1.0, 0.1875, 1.0);
+	protected static final Box field_12810 = new Box(0.0, 0.8125, 0.0, 1.0, 1.0, 1.0);
 
 	protected TrapdoorBlock(Material material) {
 		super(material);
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(OPEN, false).with(HALF, TrapdoorBlock.TrapdoorType.BOTTOM));
 		float f = 0.5F;
 		float g = 1.0F;
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
 		this.setItemGroup(ItemGroup.REDSTONE);
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		Box box;
+		if ((Boolean)state.get(OPEN)) {
+			switch ((Direction)state.get(FACING)) {
+				case NORTH:
+				default:
+					box = field_12814;
+					break;
+				case SOUTH:
+					box = field_12813;
+					break;
+				case WEST:
+					box = field_12812;
+					break;
+				case EAST:
+					box = field_12811;
+			}
+		} else if (state.get(HALF) == TrapdoorBlock.TrapdoorType.TOP) {
+			box = field_12810;
+		} else {
+			box = field_12809;
+		}
+
+		return box;
+	}
+
+	@Override
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -48,96 +83,50 @@ public class TrapdoorBlock extends Block {
 	}
 
 	@Override
-	public Box getSelectionBox(World world, BlockPos pos) {
-		this.setBoundingBox(world, pos);
-		return super.getSelectionBox(world, pos);
-	}
-
-	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		this.setBoundingBox(world, pos);
-		return super.getCollisionBox(world, pos, state);
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		this.setTrapdoorBoundingBox(view.getBlockState(pos));
-	}
-
-	@Override
-	public void setBlockItemBounds() {
-		float f = 0.1875F;
-		this.setBoundingBox(0.0F, 0.40625F, 0.0F, 1.0F, 0.59375F, 1.0F);
-	}
-
-	public void setTrapdoorBoundingBox(BlockState state) {
-		if (state.getBlock() == this) {
-			boolean bl = state.get(HALF) == TrapdoorBlock.TrapdoorType.TOP;
-			Boolean boolean_ = state.get(OPEN);
-			Direction direction = state.get(FACING);
-			float f = 0.1875F;
-			if (bl) {
-				this.setBoundingBox(0.0F, 0.8125F, 0.0F, 1.0F, 1.0F, 1.0F);
-			} else {
-				this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.1875F, 1.0F);
-			}
-
-			if (boolean_) {
-				if (direction == Direction.NORTH) {
-					this.setBoundingBox(0.0F, 0.0F, 0.8125F, 1.0F, 1.0F, 1.0F);
-				}
-
-				if (direction == Direction.SOUTH) {
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0.1875F);
-				}
-
-				if (direction == Direction.WEST) {
-					this.setBoundingBox(0.8125F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-				}
-
-				if (direction == Direction.EAST) {
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 0.1875F, 1.0F, 1.0F);
-				}
-			}
-		}
-	}
-
-	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (this.material == Material.IRON) {
 			return true;
 		} else {
-			state = state.withDefaultValue(OPEN);
-			world.setBlockState(pos, state, 2);
-			world.syncWorldEvent(player, state.get(OPEN) ? 1003 : 1006, pos, 0);
+			blockState = blockState.withDefaultValue(OPEN);
+			world.setBlockState(blockPos, blockState, 2);
+			this.method_11640(playerEntity, world, blockPos, (Boolean)blockState.get(OPEN));
 			return true;
 		}
 	}
 
-	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		if (!world.isClient) {
-			BlockPos blockPos = pos.offset(((Direction)state.get(FACING)).getOpposite());
-			if (!canBePlacedAdjacent(world.getBlockState(blockPos).getBlock())) {
-				world.setAir(pos);
-				this.dropAsItem(world, pos, state, 0);
-			} else {
-				boolean bl = world.isReceivingRedstonePower(pos);
-				if (bl || block.emitsRedstonePower()) {
-					boolean bl2 = (Boolean)state.get(OPEN);
-					if (bl2 != bl) {
-						world.setBlockState(pos, state.with(OPEN, bl), 2);
-						world.syncWorldEvent(null, bl ? 1003 : 1006, pos, 0);
-					}
-				}
-			}
+	protected void method_11640(@Nullable PlayerEntity playerEntity, World world, BlockPos blockPos, boolean bl) {
+		if (bl) {
+			int i = this.material == Material.IRON ? 1037 : 1007;
+			world.syncWorldEvent(playerEntity, i, blockPos, 0);
+		} else {
+			int j = this.material == Material.IRON ? 1036 : 1013;
+			world.syncWorldEvent(playerEntity, j, blockPos, 0);
 		}
 	}
 
 	@Override
-	public BlockHitResult rayTrace(World world, BlockPos pos, Vec3d start, Vec3d end) {
-		this.setBoundingBox(world, pos);
-		return super.rayTrace(world, pos, start, end);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		if (!world.isClient) {
+			boolean bl = world.isReceivingRedstonePower(blockPos);
+			if (bl || block.getDefaultState().emitsRedstonePower()) {
+				boolean bl2 = (Boolean)blockState.get(OPEN);
+				if (bl2 != bl) {
+					world.setBlockState(blockPos, blockState.with(OPEN, bl), 2);
+					this.method_11640(null, world, blockPos, bl);
+				}
+			}
+		}
 	}
 
 	@Override
@@ -146,6 +135,9 @@ public class TrapdoorBlock extends Block {
 		if (dir.getAxis().isHorizontal()) {
 			blockState = blockState.with(FACING, dir).with(OPEN, false);
 			blockState = blockState.with(HALF, y > 0.5F ? TrapdoorBlock.TrapdoorType.TOP : TrapdoorBlock.TrapdoorType.BOTTOM);
+		} else {
+			blockState = blockState.with(FACING, entity.getHorizontalDirection().getOpposite()).with(OPEN, false);
+			blockState = blockState.with(HALF, dir == Direction.UP ? TrapdoorBlock.TrapdoorType.BOTTOM : TrapdoorBlock.TrapdoorType.TOP);
 		}
 
 		return blockState;
@@ -153,7 +145,7 @@ public class TrapdoorBlock extends Block {
 
 	@Override
 	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return !direction.getAxis().isVertical() && canBePlacedAdjacent(world.getBlockState(pos.offset(direction.getOpposite())).getBlock());
+		return true;
 	}
 
 	protected static Direction getDirection(int data) {
@@ -184,10 +176,6 @@ public class TrapdoorBlock extends Block {
 		}
 	}
 
-	private static boolean canBePlacedAdjacent(Block block) {
-		return block.material.isOpaque() && block.renderAsNormalBlock() || block == Blocks.GLOWSTONE || block instanceof SlabBlock || block instanceof StairsBlock;
-	}
-
 	@Override
 	public RenderLayer getRenderLayerType() {
 		return RenderLayer.CUTOUT;
@@ -214,6 +202,16 @@ public class TrapdoorBlock extends Block {
 		}
 
 		return i;
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

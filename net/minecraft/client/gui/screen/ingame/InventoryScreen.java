@@ -1,5 +1,6 @@
 package net.minecraft.client.gui.screen.ingame;
 
+import com.google.common.collect.Ordering;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Collection;
 import net.minecraft.client.resource.language.I18n;
@@ -51,8 +52,8 @@ public abstract class InventoryScreen extends HandledScreen {
 				l = 132 / (collection.size() - 1);
 			}
 
-			for (StatusEffectInstance statusEffectInstance : this.client.player.getStatusEffectInstances()) {
-				StatusEffect statusEffect = StatusEffect.STATUS_EFFECTS[statusEffectInstance.getEffectId()];
+			for (StatusEffectInstance statusEffectInstance : Ordering.natural().sortedCopy(collection)) {
+				StatusEffect statusEffect = statusEffectInstance.getStatusEffect();
 				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				this.client.getTextureManager().bindTexture(INVENTORY_TEXTURE);
 				this.drawTexture(i, j, 0, 166, 140, 32);
@@ -71,7 +72,7 @@ public abstract class InventoryScreen extends HandledScreen {
 				}
 
 				this.textRenderer.drawWithShadow(string, (float)(i + 10 + 18), (float)(j + 6), 16777215);
-				String string2 = StatusEffect.getFormattedDuration(statusEffectInstance);
+				String string2 = StatusEffect.method_2436(statusEffectInstance, 1.0F);
 				this.textRenderer.drawWithShadow(string2, (float)(i + 10 + 18), (float)(j + 6 + 10), 8355711);
 				j += l;
 			}

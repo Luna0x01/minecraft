@@ -1,10 +1,11 @@
 package net.minecraft.entity.ai.goal;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.ai.pathing.MobNavigation;
-import net.minecraft.entity.ai.pathing.Path;
+import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.ai.pathing.PathNode;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
@@ -30,10 +31,10 @@ public abstract class DoorInteractGoal extends Goal {
 			return false;
 		} else {
 			MobNavigation mobNavigation = (MobNavigation)this.mob.getNavigation();
-			Path path = mobNavigation.getCurrentPath();
-			if (path != null && !path.isFinished() && mobNavigation.canEnterOpenDoors()) {
-				for (int i = 0; i < Math.min(path.getCurrentNode() + 2, path.getNodeCount()); i++) {
-					PathNode pathNode = path.getNode(i);
+			PathMinHeap pathMinHeap = mobNavigation.method_13113();
+			if (pathMinHeap != null && !pathMinHeap.method_11930() && mobNavigation.canEnterOpenDoors()) {
+				for (int i = 0; i < Math.min(pathMinHeap.method_11937() + 2, pathMinHeap.method_11936()); i++) {
+					PathNode pathNode = pathMinHeap.method_11925(i);
 					this.pos = new BlockPos(pathNode.posX, pathNode.posY + 1, pathNode.posZ);
 					if (!(this.mob.squaredDistanceTo((double)this.pos.getX(), this.mob.y, (double)this.pos.getZ()) > 2.25)) {
 						this.doorBlock = this.getDoorAt(this.pos);
@@ -75,7 +76,8 @@ public abstract class DoorInteractGoal extends Goal {
 	}
 
 	private DoorBlock getDoorAt(BlockPos pos) {
-		Block block = this.mob.world.getBlockState(pos).getBlock();
-		return block instanceof DoorBlock && block.getMaterial() == Material.WOOD ? (DoorBlock)block : null;
+		BlockState blockState = this.mob.world.getBlockState(pos);
+		Block block = blockState.getBlock();
+		return block instanceof DoorBlock && blockState.getMaterial() == Material.WOOD ? (DoorBlock)block : null;
 	}
 }

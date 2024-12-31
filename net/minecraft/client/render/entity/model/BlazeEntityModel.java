@@ -57,7 +57,7 @@ public class BlazeEntityModel extends EntityModel {
 			f++;
 		}
 
-		this.head.posY = age / (180.0F / (float)Math.PI);
-		this.head.posX = headPitch / (180.0F / (float)Math.PI);
+		this.head.posY = age * (float) (Math.PI / 180.0);
+		this.head.posX = headPitch * (float) (Math.PI / 180.0);
 	}
 }

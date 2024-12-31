@@ -9,6 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -78,6 +79,24 @@ public class QuartzBlock extends Block {
 	@Override
 	public int getData(BlockState state) {
 		return ((QuartzBlock.QuartzType)state.get(VARIANT)).getId();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		switch (rotation) {
+			case COUNTERCLOCKWISE_90:
+			case CLOCKWISE_90:
+				switch ((QuartzBlock.QuartzType)state.get(VARIANT)) {
+					case LINES_Y:
+						return state.with(VARIANT, QuartzBlock.QuartzType.LINES_Z);
+					case LINES_Z:
+						return state.with(VARIANT, QuartzBlock.QuartzType.LINES_Y);
+					default:
+						return state;
+				}
+			default:
+				return state;
+		}
 	}
 
 	@Override

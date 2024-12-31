@@ -2,9 +2,9 @@ package net.minecraft.entity.effect;
 
 import com.google.common.collect.Maps;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AbstractEntityAttributeContainer;
@@ -16,94 +16,11 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ChatUtil;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.SimpleRegistry;
 
 public class StatusEffect {
-	public static final StatusEffect[] STATUS_EFFECTS = new StatusEffect[32];
-	private static final Map<Identifier, StatusEffect> STATUS_EFFECTS_BY_ID = Maps.newHashMap();
-	public static final StatusEffect UNKNOWN = null;
-	public static final StatusEffect SPEED = new StatusEffect(1, new Identifier("speed"), false, 8171462)
-		.setTranslationKey("potion.moveSpeed")
-		.method_2440(0, 0)
-		.addAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED, "91AEAA56-376B-4498-935B-2F7F68070635", 0.2F, 2);
-	public static final StatusEffect SLOWNESS = new StatusEffect(2, new Identifier("slowness"), true, 5926017)
-		.setTranslationKey("potion.moveSlowdown")
-		.method_2440(1, 0)
-		.addAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED, "7107DE5E-7CE8-4030-940E-514C1F160890", -0.15F, 2);
-	public static final StatusEffect HASTE = new StatusEffect(3, new Identifier("haste"), false, 14270531)
-		.setTranslationKey("potion.digSpeed")
-		.method_2440(2, 0)
-		.method_2434(1.5);
-	public static final StatusEffect MINING_FATIGUE = new StatusEffect(4, new Identifier("mining_fatigue"), true, 4866583)
-		.setTranslationKey("potion.digSlowDown")
-		.method_2440(3, 0);
-	public static final StatusEffect STRENGTH = new CombatStatusEffect(5, new Identifier("strength"), false, 9643043)
-		.setTranslationKey("potion.damageBoost")
-		.method_2440(4, 0)
-		.addAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE, "648D7064-6A60-4F59-8ABE-C2C23A6DD7A9", 2.5, 2);
-	public static final StatusEffect INSTANT_HEALTH = new InstantStatusEffect(6, new Identifier("instant_health"), false, 16262179)
-		.setTranslationKey("potion.heal");
-	public static final StatusEffect INSTANT_DAMAGE = new InstantStatusEffect(7, new Identifier("instant_damage"), true, 4393481).setTranslationKey("potion.harm");
-	public static final StatusEffect JUMP_BOOST = new StatusEffect(8, new Identifier("jump_boost"), false, 2293580)
-		.setTranslationKey("potion.jump")
-		.method_2440(2, 1);
-	public static final StatusEffect NAUSEA = new StatusEffect(9, new Identifier("nausea"), true, 5578058)
-		.setTranslationKey("potion.confusion")
-		.method_2440(3, 1)
-		.method_2434(0.25);
-	public static final StatusEffect REGENERATION = new StatusEffect(10, new Identifier("regeneration"), false, 13458603)
-		.setTranslationKey("potion.regeneration")
-		.method_2440(7, 0)
-		.method_2434(0.25);
-	public static final StatusEffect RESISTANCE = new StatusEffect(11, new Identifier("resistance"), false, 10044730)
-		.setTranslationKey("potion.resistance")
-		.method_2440(6, 1);
-	public static final StatusEffect FIRE_RESISTANCE = new StatusEffect(12, new Identifier("fire_resistance"), false, 14981690)
-		.setTranslationKey("potion.fireResistance")
-		.method_2440(7, 1);
-	public static final StatusEffect WATER_BREATHING = new StatusEffect(13, new Identifier("water_breathing"), false, 3035801)
-		.setTranslationKey("potion.waterBreathing")
-		.method_2440(0, 2);
-	public static final StatusEffect INVISIBILITY = new StatusEffect(14, new Identifier("invisibility"), false, 8356754)
-		.setTranslationKey("potion.invisibility")
-		.method_2440(0, 1);
-	public static final StatusEffect BLINDNESS = new StatusEffect(15, new Identifier("blindness"), true, 2039587)
-		.setTranslationKey("potion.blindness")
-		.method_2440(5, 1)
-		.method_2434(0.25);
-	public static final StatusEffect NIGHTVISION = new StatusEffect(16, new Identifier("night_vision"), false, 2039713)
-		.setTranslationKey("potion.nightVision")
-		.method_2440(4, 1);
-	public static final StatusEffect HUNGER = new StatusEffect(17, new Identifier("hunger"), true, 5797459).setTranslationKey("potion.hunger").method_2440(1, 1);
-	public static final StatusEffect WEAKNESS = new CombatStatusEffect(18, new Identifier("weakness"), true, 4738376)
-		.setTranslationKey("potion.weakness")
-		.method_2440(5, 0)
-		.addAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE, "22653B89-116E-49DC-9B6B-9971489B5BE5", 2.0, 0);
-	public static final StatusEffect POISON = new StatusEffect(19, new Identifier("poison"), true, 5149489)
-		.setTranslationKey("potion.poison")
-		.method_2440(6, 0)
-		.method_2434(0.25);
-	public static final StatusEffect WITHER = new StatusEffect(20, new Identifier("wither"), true, 3484199)
-		.setTranslationKey("potion.wither")
-		.method_2440(1, 2)
-		.method_2434(0.25);
-	public static final StatusEffect HEALTH_BOOST = new HealthBoostStatusEffect(21, new Identifier("health_boost"), false, 16284963)
-		.setTranslationKey("potion.healthBoost")
-		.method_2440(2, 2)
-		.addAttribute(EntityAttributes.GENERIC_MAX_HEALTH, "5D6F0BA2-1186-46AC-B896-C61C5CEE99CC", 4.0, 0);
-	public static final StatusEffect ABSORPTION = new AbsorptionStatusEffect(22, new Identifier("absorption"), false, 2445989)
-		.setTranslationKey("potion.absorption")
-		.method_2440(2, 2);
-	public static final StatusEffect SATURATION = new InstantStatusEffect(23, new Identifier("saturation"), false, 16262179)
-		.setTranslationKey("potion.saturation");
-	public static final StatusEffect field_3189 = null;
-	public static final StatusEffect field_3150 = null;
-	public static final StatusEffect field_3151 = null;
-	public static final StatusEffect field_3152 = null;
-	public static final StatusEffect field_3153 = null;
-	public static final StatusEffect field_3154 = null;
-	public static final StatusEffect field_3155 = null;
-	public static final StatusEffect field_3156 = null;
-	public final int id;
+	public static final SimpleRegistry<Identifier, StatusEffect> REGISTRY = new SimpleRegistry<>();
 	private final Map<EntityAttribute, AttributeModifier> attributeModifiers = Maps.newHashMap();
 	private final boolean negative;
 	private final int color;
@@ -112,10 +29,21 @@ public class StatusEffect {
 	private double field_3161;
 	private boolean field_3162;
 
-	protected StatusEffect(int i, Identifier identifier, boolean bl, int j) {
-		this.id = i;
-		STATUS_EFFECTS[i] = this;
-		STATUS_EFFECTS_BY_ID.put(identifier, this);
+	@Nullable
+	public static StatusEffect byIndex(int index) {
+		return REGISTRY.getByRawId(index);
+	}
+
+	public static int getIndex(StatusEffect statusEffect) {
+		return REGISTRY.getRawId(statusEffect);
+	}
+
+	@Nullable
+	public static StatusEffect get(String id) {
+		return REGISTRY.get(new Identifier(id));
+	}
+
+	protected StatusEffect(boolean bl, int i) {
 		this.negative = bl;
 		if (bl) {
 			this.field_3161 = 0.5;
@@ -123,15 +51,7 @@ public class StatusEffect {
 			this.field_3161 = 1.0;
 		}
 
-		this.color = j;
-	}
-
-	public static StatusEffect get(String id) {
-		return (StatusEffect)STATUS_EFFECTS_BY_ID.get(new Identifier(id));
-	}
-
-	public static Set<Identifier> method_10923() {
-		return STATUS_EFFECTS_BY_ID.keySet();
+		this.color = i;
 	}
 
 	protected StatusEffect method_2440(int i, int j) {
@@ -139,29 +59,26 @@ public class StatusEffect {
 		return this;
 	}
 
-	public int getId() {
-		return this.id;
-	}
-
 	public void method_6087(LivingEntity livingEntity, int i) {
-		if (this.id == REGENERATION.id) {
+		if (this == StatusEffects.REGENERATION) {
 			if (livingEntity.getHealth() < livingEntity.getMaxHealth()) {
 				livingEntity.heal(1.0F);
 			}
-		} else if (this.id == POISON.id) {
+		} else if (this == StatusEffects.POISON) {
 			if (livingEntity.getHealth() > 1.0F) {
 				livingEntity.damage(DamageSource.MAGIC, 1.0F);
 			}
-		} else if (this.id == WITHER.id) {
+		} else if (this == StatusEffects.WITHER) {
 			livingEntity.damage(DamageSource.WITHER, 1.0F);
-		} else if (this.id == HUNGER.id && livingEntity instanceof PlayerEntity) {
+		} else if (this == StatusEffects.HUNGER && livingEntity instanceof PlayerEntity) {
 			((PlayerEntity)livingEntity).addExhaustion(0.025F * (float)(i + 1));
-		} else if (this.id == SATURATION.id && livingEntity instanceof PlayerEntity) {
+		} else if (this == StatusEffects.SATURATION && livingEntity instanceof PlayerEntity) {
 			if (!livingEntity.world.isClient) {
 				((PlayerEntity)livingEntity).getHungerManager().add(i + 1, 1.0F);
 			}
-		} else if ((this.id != INSTANT_HEALTH.id || livingEntity.isAffectedBySmite()) && (this.id != INSTANT_DAMAGE.id || !livingEntity.isAffectedBySmite())) {
-			if (this.id == INSTANT_DAMAGE.id && !livingEntity.isAffectedBySmite() || this.id == INSTANT_HEALTH.id && livingEntity.isAffectedBySmite()) {
+		} else if ((this != StatusEffects.INSTANT_HEALTH || livingEntity.isAffectedBySmite())
+			&& (this != StatusEffects.INSTANT_DAMAGE || !livingEntity.isAffectedBySmite())) {
+			if (this == StatusEffects.INSTANT_DAMAGE && !livingEntity.isAffectedBySmite() || this == StatusEffects.INSTANT_HEALTH && livingEntity.isAffectedBySmite()) {
 				livingEntity.damage(DamageSource.MAGIC, (float)(6 << i));
 			}
 		} else {
@@ -169,9 +86,11 @@ public class StatusEffect {
 		}
 	}
 
-	public void method_6088(Entity entity, Entity entity2, LivingEntity livingEntity, int i, double d) {
-		if ((this.id != INSTANT_HEALTH.id || livingEntity.isAffectedBySmite()) && (this.id != INSTANT_DAMAGE.id || !livingEntity.isAffectedBySmite())) {
-			if (this.id == INSTANT_DAMAGE.id && !livingEntity.isAffectedBySmite() || this.id == INSTANT_HEALTH.id && livingEntity.isAffectedBySmite()) {
+	public void method_6088(@Nullable Entity entity, @Nullable Entity entity2, LivingEntity livingEntity, int i, double d) {
+		if ((this != StatusEffects.INSTANT_HEALTH || livingEntity.isAffectedBySmite()) && (this != StatusEffects.INSTANT_DAMAGE || !livingEntity.isAffectedBySmite())
+			)
+		 {
+			if (this == StatusEffects.INSTANT_DAMAGE && !livingEntity.isAffectedBySmite() || this == StatusEffects.INSTANT_HEALTH && livingEntity.isAffectedBySmite()) {
 				int k = (int)(d * (double)(6 << i) + 0.5);
 				if (entity == null) {
 					livingEntity.damage(DamageSource.MAGIC, (float)k);
@@ -185,23 +104,23 @@ public class StatusEffect {
 		}
 	}
 
-	public boolean isInstant() {
-		return false;
-	}
-
 	public boolean canApplyUpdateEffect(int duration, int amplifier) {
-		if (this.id == REGENERATION.id) {
+		if (this == StatusEffects.REGENERATION) {
 			int i = 50 >> amplifier;
 			return i > 0 ? duration % i == 0 : true;
-		} else if (this.id == POISON.id) {
+		} else if (this == StatusEffects.POISON) {
 			int j = 25 >> amplifier;
 			return j > 0 ? duration % j == 0 : true;
-		} else if (this.id == WITHER.id) {
+		} else if (this == StatusEffects.WITHER) {
 			int k = 40 >> amplifier;
 			return k > 0 ? duration % k == 0 : true;
 		} else {
-			return this.id == HUNGER.id;
+			return this == StatusEffects.HUNGER;
 		}
+	}
+
+	public boolean isInstant() {
+		return false;
 	}
 
 	public StatusEffect setTranslationKey(String key) {
@@ -225,11 +144,11 @@ public class StatusEffect {
 		return this.negative;
 	}
 
-	public static String getFormattedDuration(StatusEffectInstance effect) {
-		if (effect.isPermanent()) {
+	public static String method_2436(StatusEffectInstance statusEffectInstance, float f) {
+		if (statusEffectInstance.isPermanent()) {
 			return "**:**";
 		} else {
-			int i = effect.getDuration();
+			int i = MathHelper.floor((float)statusEffectInstance.getDuration() * f);
 			return ChatUtil.ticksToString(i);
 		}
 	}
@@ -237,14 +156,6 @@ public class StatusEffect {
 	protected StatusEffect method_2434(double d) {
 		this.field_3161 = d;
 		return this;
-	}
-
-	public double method_2446() {
-		return this.field_3161;
-	}
-
-	public boolean method_2448() {
-		return this.field_3162;
 	}
 
 	public int getColor() {
@@ -287,5 +198,123 @@ public class StatusEffect {
 
 	public double adjustModifierAmount(int amplifier, AttributeModifier modifier) {
 		return modifier.getAmount() * (double)(amplifier + 1);
+	}
+
+	public boolean method_2448() {
+		return this.field_3162;
+	}
+
+	public StatusEffect method_12944() {
+		this.field_3162 = true;
+		return this;
+	}
+
+	public static void register() {
+		REGISTRY.add(
+			1,
+			new Identifier("speed"),
+			new StatusEffect(false, 8171462)
+				.setTranslationKey("effect.moveSpeed")
+				.method_2440(0, 0)
+				.addAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED, "91AEAA56-376B-4498-935B-2F7F68070635", 0.2F, 2)
+				.method_12944()
+		);
+		REGISTRY.add(
+			2,
+			new Identifier("slowness"),
+			new StatusEffect(true, 5926017)
+				.setTranslationKey("effect.moveSlowdown")
+				.method_2440(1, 0)
+				.addAttribute(EntityAttributes.GENERIC_MOVEMENT_SPEED, "7107DE5E-7CE8-4030-940E-514C1F160890", -0.15F, 2)
+		);
+		REGISTRY.add(
+			3,
+			new Identifier("haste"),
+			new StatusEffect(false, 14270531)
+				.setTranslationKey("effect.digSpeed")
+				.method_2440(2, 0)
+				.method_2434(1.5)
+				.method_12944()
+				.addAttribute(EntityAttributes.GENERIC_ATTACK_SPEED, "AF8B6E3F-3328-4C0A-AA36-5BA2BB9DBEF3", 0.1F, 2)
+		);
+		REGISTRY.add(
+			4,
+			new Identifier("mining_fatigue"),
+			new StatusEffect(true, 4866583)
+				.setTranslationKey("effect.digSlowDown")
+				.method_2440(3, 0)
+				.addAttribute(EntityAttributes.GENERIC_ATTACK_SPEED, "55FCED67-E92A-486E-9800-B47F202C4386", -0.1F, 2)
+		);
+		REGISTRY.add(
+			5,
+			new Identifier("strength"),
+			new CombatStatusEffect(false, 9643043, 3.0)
+				.setTranslationKey("effect.damageBoost")
+				.method_2440(4, 0)
+				.addAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE, "648D7064-6A60-4F59-8ABE-C2C23A6DD7A9", 0.0, 0)
+				.method_12944()
+		);
+		REGISTRY.add(6, new Identifier("instant_health"), new InstantStatusEffect(false, 16262179).setTranslationKey("effect.heal").method_12944());
+		REGISTRY.add(7, new Identifier("instant_damage"), new InstantStatusEffect(true, 4393481).setTranslationKey("effect.harm").method_12944());
+		REGISTRY.add(8, new Identifier("jump_boost"), new StatusEffect(false, 2293580).setTranslationKey("effect.jump").method_2440(2, 1).method_12944());
+		REGISTRY.add(9, new Identifier("nausea"), new StatusEffect(true, 5578058).setTranslationKey("effect.confusion").method_2440(3, 1).method_2434(0.25));
+		REGISTRY.add(
+			10,
+			new Identifier("regeneration"),
+			new StatusEffect(false, 13458603).setTranslationKey("effect.regeneration").method_2440(7, 0).method_2434(0.25).method_12944()
+		);
+		REGISTRY.add(11, new Identifier("resistance"), new StatusEffect(false, 10044730).setTranslationKey("effect.resistance").method_2440(6, 1).method_12944());
+		REGISTRY.add(
+			12, new Identifier("fire_resistance"), new StatusEffect(false, 14981690).setTranslationKey("effect.fireResistance").method_2440(7, 1).method_12944()
+		);
+		REGISTRY.add(
+			13, new Identifier("water_breathing"), new StatusEffect(false, 3035801).setTranslationKey("effect.waterBreathing").method_2440(0, 2).method_12944()
+		);
+		REGISTRY.add(14, new Identifier("invisibility"), new StatusEffect(false, 8356754).setTranslationKey("effect.invisibility").method_2440(0, 1).method_12944());
+		REGISTRY.add(15, new Identifier("blindness"), new StatusEffect(true, 2039587).setTranslationKey("effect.blindness").method_2440(5, 1).method_2434(0.25));
+		REGISTRY.add(16, new Identifier("night_vision"), new StatusEffect(false, 2039713).setTranslationKey("effect.nightVision").method_2440(4, 1).method_12944());
+		REGISTRY.add(17, new Identifier("hunger"), new StatusEffect(true, 5797459).setTranslationKey("effect.hunger").method_2440(1, 1));
+		REGISTRY.add(
+			18,
+			new Identifier("weakness"),
+			new CombatStatusEffect(true, 4738376, -4.0)
+				.setTranslationKey("effect.weakness")
+				.method_2440(5, 0)
+				.addAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE, "22653B89-116E-49DC-9B6B-9971489B5BE5", 0.0, 0)
+		);
+		REGISTRY.add(19, new Identifier("poison"), new StatusEffect(true, 5149489).setTranslationKey("effect.poison").method_2440(6, 0).method_2434(0.25));
+		REGISTRY.add(20, new Identifier("wither"), new StatusEffect(true, 3484199).setTranslationKey("effect.wither").method_2440(1, 2).method_2434(0.25));
+		REGISTRY.add(
+			21,
+			new Identifier("health_boost"),
+			new HealthBoostStatusEffect(false, 16284963)
+				.setTranslationKey("effect.healthBoost")
+				.method_2440(7, 2)
+				.addAttribute(EntityAttributes.GENERIC_MAX_HEALTH, "5D6F0BA2-1186-46AC-B896-C61C5CEE99CC", 4.0, 0)
+				.method_12944()
+		);
+		REGISTRY.add(
+			22, new Identifier("absorption"), new AbsorptionStatusEffect(false, 2445989).setTranslationKey("effect.absorption").method_2440(2, 2).method_12944()
+		);
+		REGISTRY.add(23, new Identifier("saturation"), new InstantStatusEffect(false, 16262179).setTranslationKey("effect.saturation").method_12944());
+		REGISTRY.add(24, new Identifier("glowing"), new StatusEffect(false, 9740385).setTranslationKey("effect.glowing").method_2440(4, 2));
+		REGISTRY.add(25, new Identifier("levitation"), new StatusEffect(true, 13565951).setTranslationKey("effect.levitation").method_2440(3, 2));
+		REGISTRY.add(
+			26,
+			new Identifier("luck"),
+			new StatusEffect(false, 3381504)
+				.setTranslationKey("effect.luck")
+				.method_2440(5, 2)
+				.method_12944()
+				.addAttribute(EntityAttributes.GENERIC_LUCK, "03C3C89D-7037-4B42-869F-B146BCB64D2E", 1.0, 0)
+		);
+		REGISTRY.add(
+			27,
+			new Identifier("unluck"),
+			new StatusEffect(true, 12624973)
+				.setTranslationKey("effect.unluck")
+				.method_2440(6, 2)
+				.addAttribute(EntityAttributes.GENERIC_LUCK, "CC5AF142-2BD2-4215-B636-2605AED11727", -1.0, 0)
+		);
 	}
 }

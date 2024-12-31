@@ -1,7 +1,9 @@
 package net.minecraft.world;
 
+import javax.annotation.concurrent.Immutable;
 import net.minecraft.util.math.MathHelper;
 
+@Immutable
 public class LocalDifficulty {
 	private final Difficulty difficulty;
 	private final float localDifficulty;

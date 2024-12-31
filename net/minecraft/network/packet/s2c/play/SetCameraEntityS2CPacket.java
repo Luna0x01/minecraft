@@ -1,6 +1,7 @@
 package net.minecraft.network.packet.s2c.play;
 
 import java.io.IOException;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
@@ -31,6 +32,7 @@ public class SetCameraEntityS2CPacket implements Packet<ClientPlayPacketListener
 		clientPlayPacketListener.onSetCameraEntity(this);
 	}
 
+	@Nullable
 	public Entity getEntity(World world) {
 		return world.getEntityById(this.id);
 	}

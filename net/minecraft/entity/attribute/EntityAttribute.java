@@ -1,5 +1,7 @@
 package net.minecraft.entity.attribute;
 
+import javax.annotation.Nullable;
+
 public interface EntityAttribute {
 	String getId();
 
@@ -9,5 +11,6 @@ public interface EntityAttribute {
 
 	boolean isTracked();
 
+	@Nullable
 	EntityAttribute getParent();
 }

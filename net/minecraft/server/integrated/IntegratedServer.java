@@ -2,9 +2,11 @@ package net.minecraft.server.integrated;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
+import com.mojang.authlib.GameProfileRepository;
+import com.mojang.authlib.minecraft.MinecraftSessionService;
+import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.MinecraftClient;
@@ -17,7 +19,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ServerWorldManager;
+import net.minecraft.util.UserCache;
 import net.minecraft.util.Util;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.snooper.Snooper;
 import net.minecraft.world.DemoServerWorld;
@@ -38,14 +42,25 @@ public class IntegratedServer extends MinecraftServer {
 	private boolean published;
 	private LanServerPinger pinger;
 
-	public IntegratedServer(MinecraftClient minecraftClient) {
-		super(minecraftClient.getNetworkProxy(), new File(minecraftClient.runDirectory, USER_CACHE_FILE.getName()));
-		this.client = minecraftClient;
-		this.levelInfo = null;
-	}
-
-	public IntegratedServer(MinecraftClient minecraftClient, String string, String string2, LevelInfo levelInfo) {
-		super(new File(minecraftClient.runDirectory, "saves"), minecraftClient.getNetworkProxy(), new File(minecraftClient.runDirectory, USER_CACHE_FILE.getName()));
+	public IntegratedServer(
+		MinecraftClient minecraftClient,
+		String string,
+		String string2,
+		LevelInfo levelInfo,
+		YggdrasilAuthenticationService yggdrasilAuthenticationService,
+		MinecraftSessionService minecraftSessionService,
+		GameProfileRepository gameProfileRepository,
+		UserCache userCache
+	) {
+		super(
+			new File(minecraftClient.runDirectory, "saves"),
+			minecraftClient.getNetworkProxy(),
+			minecraftClient.method_12142(),
+			yggdrasilAuthenticationService,
+			minecraftSessionService,
+			gameProfileRepository,
+			userCache
+		);
 		this.setUserName(minecraftClient.getSession().getUsername());
 		this.setLevelName(string);
 		this.setServerName(string2);
@@ -59,7 +74,7 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	protected CommandManager createCommandManager() {
-		return new IntegratedServerCommandManager();
+		return new IntegratedServerCommandManager(this);
 	}
 
 	@Override
@@ -111,7 +126,7 @@ public class IntegratedServer extends MinecraftServer {
 
 	@Override
 	protected boolean setupServer() throws IOException {
-		LOGGER.info("Starting integrated minecraft server version 1.8.9");
+		LOGGER.info("Starting integrated minecraft server version 1.9.4");
 		this.setOnlineMode(true);
 		this.setSpawnAnimals(true);
 		this.setSpawnNpcs(true);
@@ -197,6 +212,11 @@ public class IntegratedServer extends MinecraftServer {
 	}
 
 	@Override
+	protected void saveWorlds(boolean silent) {
+		super.saveWorlds(silent);
+	}
+
+	@Override
 	public File getRunDirectory() {
 		return this.client.runDirectory;
 	}
@@ -219,7 +239,7 @@ public class IntegratedServer extends MinecraftServer {
 	@Override
 	public CrashReport populateCrashReport(CrashReport report) {
 		report = super.populateCrashReport(report);
-		report.getSystemDetailsSection().add("Type", new Callable<String>() {
+		report.getSystemDetailsSection().add("Type", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return "Integrated Server (map_client.txt)";
 			}
@@ -227,7 +247,7 @@ public class IntegratedServer extends MinecraftServer {
 		report.getSystemDetailsSection()
 			.add(
 				"Is Modded",
-				new Callable<String>() {
+				new CrashCallable<String>() {
 					public String call() throws Exception {
 						String string = ClientBrandRetriever.getClientModName();
 						if (!string.equals("vanilla")) {
@@ -288,6 +308,7 @@ public class IntegratedServer extends MinecraftServer {
 			this.pinger.start();
 			this.getPlayerManager().setGameMode(gamemode);
 			this.getPlayerManager().setCheatsAllowed(cheatsAllowed);
+			this.client.player.method_12267(cheatsAllowed ? 4 : 0);
 			return i + "";
 		} catch (IOException var6) {
 			return null;
@@ -308,7 +329,7 @@ public class IntegratedServer extends MinecraftServer {
 		Futures.getUnchecked(this.submit(new Runnable() {
 			public void run() {
 				for (ServerPlayerEntity serverPlayerEntity : Lists.newArrayList(IntegratedServer.this.getPlayerManager().getPlayers())) {
-					IntegratedServer.this.getPlayerManager().remove(serverPlayerEntity);
+					IntegratedServer.this.getPlayerManager().method_12830(serverPlayerEntity);
 				}
 			}
 		}));
@@ -319,16 +340,13 @@ public class IntegratedServer extends MinecraftServer {
 		}
 	}
 
-	public void setIntegratedInstance() {
-		this.setInstance();
-	}
-
 	public boolean isPublished() {
 		return this.published;
 	}
 
 	@Override
 	public void setDefaultGameMode(LevelInfo.GameMode gamemode) {
+		super.setDefaultGameMode(gamemode);
 		this.getPlayerManager().setGameMode(gamemode);
 	}
 
@@ -340,5 +358,17 @@ public class IntegratedServer extends MinecraftServer {
 	@Override
 	public int getOpPermissionLevel() {
 		return 4;
+	}
+
+	public void method_12535() {
+		if (this.isOnThread()) {
+			this.worlds[0].method_11487().method_12004();
+		} else {
+			this.submit(new Runnable() {
+				public void run() {
+					IntegratedServer.this.method_12535();
+				}
+			});
+		}
 	}
 }

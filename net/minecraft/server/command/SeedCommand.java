@@ -10,8 +10,8 @@ import net.minecraft.world.World;
 
 public class SeedCommand extends AbstractCommand {
 	@Override
-	public boolean isAccessible(CommandSource source) {
-		return MinecraftServer.getServer().isSinglePlayer() || super.isAccessible(source);
+	public boolean method_3278(MinecraftServer server, CommandSource source) {
+		return server.isSinglePlayer() || super.method_3278(server, source);
 	}
 
 	@Override
@@ -30,8 +30,8 @@ public class SeedCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
-		World world = (World)(source instanceof PlayerEntity ? ((PlayerEntity)source).world : MinecraftServer.getServer().getWorld(0));
-		source.sendMessage(new TranslatableText("commands.seed.success", world.getSeed()));
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
+		World world = (World)(commandSource instanceof PlayerEntity ? ((PlayerEntity)commandSource).world : minecraftServer.getWorld(0));
+		commandSource.sendMessage(new TranslatableText("commands.seed.success", world.getSeed()));
 	}
 }

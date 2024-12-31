@@ -1,25 +1,31 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.FurnaceBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.ParticleType;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.sound.Sounds;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 public class FurnaceBlock extends BlockWithEntity {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
 	private final boolean isLit;
 	private static boolean keepInventory;
 
@@ -29,6 +35,7 @@ public class FurnaceBlock extends BlockWithEntity {
 		this.isLit = bl;
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Item.fromBlock(Blocks.FURNACE);
@@ -41,18 +48,18 @@ public class FurnaceBlock extends BlockWithEntity {
 
 	private void setDirection(World world, BlockPos pos, BlockState state) {
 		if (!world.isClient) {
-			Block block = world.getBlockState(pos.north()).getBlock();
-			Block block2 = world.getBlockState(pos.south()).getBlock();
-			Block block3 = world.getBlockState(pos.west()).getBlock();
-			Block block4 = world.getBlockState(pos.east()).getBlock();
+			BlockState blockState = world.getBlockState(pos.north());
+			BlockState blockState2 = world.getBlockState(pos.south());
+			BlockState blockState3 = world.getBlockState(pos.west());
+			BlockState blockState4 = world.getBlockState(pos.east());
 			Direction direction = state.get(FACING);
-			if (direction == Direction.NORTH && block.isFullBlock() && !block2.isFullBlock()) {
+			if (direction == Direction.NORTH && blockState.isFullBlock() && !blockState2.isFullBlock()) {
 				direction = Direction.SOUTH;
-			} else if (direction == Direction.SOUTH && block2.isFullBlock() && !block.isFullBlock()) {
+			} else if (direction == Direction.SOUTH && blockState2.isFullBlock() && !blockState.isFullBlock()) {
 				direction = Direction.NORTH;
-			} else if (direction == Direction.WEST && block3.isFullBlock() && !block4.isFullBlock()) {
+			} else if (direction == Direction.WEST && blockState3.isFullBlock() && !blockState4.isFullBlock()) {
 				direction = Direction.EAST;
-			} else if (direction == Direction.EAST && block4.isFullBlock() && !block3.isFullBlock()) {
+			} else if (direction == Direction.EAST && blockState4.isFullBlock() && !blockState3.isFullBlock()) {
 				direction = Direction.WEST;
 			}
 
@@ -61,14 +68,20 @@ public class FurnaceBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (this.isLit) {
 			Direction direction = state.get(FACING);
 			double d = (double)pos.getX() + 0.5;
-			double e = (double)pos.getY() + rand.nextDouble() * 6.0 / 16.0;
+			double e = (double)pos.getY() + random.nextDouble() * 6.0 / 16.0;
 			double f = (double)pos.getZ() + 0.5;
 			double g = 0.52;
-			double h = rand.nextDouble() * 0.6 - 0.3;
+			double h = random.nextDouble() * 0.6 - 0.3;
+			if (random.nextDouble() < 0.1) {
+				world.playSound(
+					(double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, Sounds.BLOCK_FURNACE_FIRE_CRACKLE, SoundCategory.BLOCKS, 1.0F, 1.0F, false
+				);
+			}
+
 			switch (direction) {
 				case WEST:
 					world.addParticle(ParticleType.SMOKE, d - g, e, f + h, 0.0, 0.0, 0.0);
@@ -90,14 +103,25 @@ public class FurnaceBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			if (blockEntity instanceof FurnaceBlockEntity) {
-				player.openInventory((FurnaceBlockEntity)blockEntity);
-				player.incrementStat(Stats.FURNACE_INTERACTION);
+				playerEntity.openInventory((FurnaceBlockEntity)blockEntity);
+				playerEntity.incrementStat(Stats.FURNACE_INTERACTION);
 			}
 
 			return true;
@@ -158,28 +182,23 @@ public class FurnaceBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasComparatorOutput() {
+	public boolean method_11577(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int getComparatorOutput(World world, BlockPos pos) {
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
 		return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(Blocks.FURNACE);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Blocks.FURNACE);
 	}
 
 	@Override
-	public int getBlockType() {
-		return 3;
-	}
-
-	@Override
-	public BlockState getRenderState(BlockState state) {
-		return this.getDefaultState().with(FACING, Direction.SOUTH);
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.MODEL;
 	}
 
 	@Override
@@ -195,6 +214,16 @@ public class FurnaceBlock extends BlockWithEntity {
 	@Override
 	public int getData(BlockState state) {
 		return ((Direction)state.get(FACING)).getId();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

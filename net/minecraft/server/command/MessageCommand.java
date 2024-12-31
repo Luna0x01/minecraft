@@ -2,6 +2,7 @@ package net.minecraft.server.command;
 
 import java.util.Arrays;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.command.AbstractCommand;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
@@ -36,28 +37,28 @@ public class MessageCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 2) {
 			throw new IncorrectUsageException("commands.message.usage");
 		} else {
-			PlayerEntity playerEntity = getPlayer(source, args[0]);
-			if (playerEntity == source) {
+			PlayerEntity playerEntity = method_4639(minecraftServer, commandSource, args[0]);
+			if (playerEntity == commandSource) {
 				throw new PlayerNotFoundException("commands.message.sameTarget");
 			} else {
-				Text text = method_8406(source, args, 1, !(source instanceof PlayerEntity));
-				TranslatableText translatableText = new TranslatableText("commands.message.display.incoming", source.getName(), text.copy());
+				Text text = method_8406(commandSource, args, 1, !(commandSource instanceof PlayerEntity));
+				TranslatableText translatableText = new TranslatableText("commands.message.display.incoming", commandSource.getName(), text.copy());
 				TranslatableText translatableText2 = new TranslatableText("commands.message.display.outgoing", playerEntity.getName(), text.copy());
 				translatableText.getStyle().setFormatting(Formatting.GRAY).setItalic(true);
 				translatableText2.getStyle().setFormatting(Formatting.GRAY).setItalic(true);
 				playerEntity.sendMessage(translatableText);
-				source.sendMessage(translatableText2);
+				commandSource.sendMessage(translatableText2);
 			}
 		}
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		return method_2894(args, MinecraftServer.getServer().getPlayerNames());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		return method_2894(strings, server.getPlayerNames());
 	}
 
 	@Override

@@ -2,14 +2,19 @@ package net.minecraft.block;
 
 import com.google.common.base.Objects;
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.itemgroup.ItemGroup;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -17,47 +22,61 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class TripwireHookBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
 	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
 	public static final BooleanProperty ATTACHED = BooleanProperty.of("attached");
-	public static final BooleanProperty SUSPENDED = BooleanProperty.of("suspended");
+	protected static final Box field_12819 = new Box(0.3125, 0.0, 0.625, 0.6875, 0.625, 1.0);
+	protected static final Box field_12820 = new Box(0.3125, 0.0, 0.0, 0.6875, 0.625, 0.375);
+	protected static final Box field_12821 = new Box(0.625, 0.0, 0.3125, 1.0, 0.625, 0.6875);
+	protected static final Box field_12822 = new Box(0.0, 0.0, 0.3125, 0.375, 0.625, 0.6875);
 
 	public TripwireHookBlock() {
 		super(Material.DECORATION);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(POWERED, false).with(ATTACHED, false).with(SUSPENDED, false));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(POWERED, false).with(ATTACHED, false));
 		this.setItemGroup(ItemGroup.REDSTONE);
 		this.setTickRandomly(true);
 	}
 
 	@Override
-	public BlockState getBlockState(BlockState state, BlockView view, BlockPos pos) {
-		return state.with(SUSPENDED, !World.isOpaque(view, pos.down()));
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((Direction)state.get(FACING)) {
+			case EAST:
+			default:
+				return field_12822;
+			case WEST:
+				return field_12821;
+			case SOUTH:
+				return field_12820;
+			case NORTH:
+				return field_12819;
+		}
+	}
+
+	@Nullable
+	@Override
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
-	}
-
-	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
 	public boolean canBePlacedAdjacent(World world, BlockPos pos, Direction direction) {
-		return direction.getAxis().isHorizontal() && world.getBlockState(pos.offset(direction.getOpposite())).getBlock().isFullCube();
+		return direction.getAxis().isHorizontal() && world.getBlockState(pos.offset(direction.getOpposite())).method_11734();
 	}
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
 		for (Direction direction : Direction.DirectionType.HORIZONTAL) {
-			if (world.getBlockState(pos.offset(direction)).getBlock().isFullCube()) {
+			if (world.getBlockState(pos.offset(direction)).method_11734()) {
 				return true;
 			}
 		}
@@ -67,7 +86,7 @@ public class TripwireHookBlock extends Block {
 
 	@Override
 	public BlockState getStateFromData(World world, BlockPos pos, Direction dir, float x, float y, float z, int id, LivingEntity entity) {
-		BlockState blockState = this.getDefaultState().with(POWERED, false).with(ATTACHED, false).with(SUSPENDED, false);
+		BlockState blockState = this.getDefaultState().with(POWERED, false).with(ATTACHED, false);
 		if (dir.getAxis().isHorizontal()) {
 			blockState = blockState.with(FACING, dir);
 		}
@@ -81,25 +100,26 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
 		if (block != this) {
-			if (this.canBePlacedAtPos(world, pos, state)) {
-				Direction direction = state.get(FACING);
-				if (!world.getBlockState(pos.offset(direction.getOpposite())).getBlock().isFullCube()) {
-					this.dropAsItem(world, pos, state, 0);
-					world.setAir(pos);
+			if (this.canBePlacedAtPos(world, blockPos, blockState)) {
+				Direction direction = blockState.get(FACING);
+				if (!world.getBlockState(blockPos.offset(direction.getOpposite())).method_11734()) {
+					this.dropAsItem(world, blockPos, blockState, 0);
+					world.setAir(blockPos);
 				}
 			}
 		}
 	}
 
-	public void update(World world, BlockPos pos, BlockState hookState, boolean beingRemoved, boolean updateNeighbors, int tripwireLength, BlockState otherState) {
+	public void update(
+		World world, BlockPos pos, BlockState hookState, boolean beingRemoved, boolean updateNeighbors, int tripwireLength, @Nullable BlockState otherState
+	) {
 		Direction direction = hookState.get(FACING);
 		boolean bl = (Boolean)hookState.get(ATTACHED);
 		boolean bl2 = (Boolean)hookState.get(POWERED);
-		boolean bl3 = !World.isOpaque(world, pos.down());
-		boolean bl4 = !beingRemoved;
-		boolean bl5 = false;
+		boolean bl3 = !beingRemoved;
+		boolean bl4 = false;
 		int i = 0;
 		BlockState[] blockStates = new BlockState[42];
 
@@ -115,37 +135,35 @@ public class TripwireHookBlock extends Block {
 
 			if (blockState.getBlock() != Blocks.TRIPWIRE && j != tripwireLength) {
 				blockStates[j] = null;
-				bl4 = false;
+				bl3 = false;
 			} else {
 				if (j == tripwireLength) {
 					blockState = (BlockState)Objects.firstNonNull(otherState, blockState);
 				}
 
-				boolean bl6 = !(Boolean)blockState.get(TripwireBlock.DISARMED);
-				boolean bl7 = (Boolean)blockState.get(TripwireBlock.POWERED);
-				boolean bl8 = (Boolean)blockState.get(TripwireBlock.SUSPENDED);
-				bl4 &= bl8 == bl3;
-				bl5 |= bl6 && bl7;
+				boolean bl5 = !(Boolean)blockState.get(TripwireBlock.DISARMED);
+				boolean bl6 = (Boolean)blockState.get(TripwireBlock.POWERED);
+				bl4 |= bl5 && bl6;
 				blockStates[j] = blockState;
 				if (j == tripwireLength) {
 					world.createAndScheduleBlockTick(pos, this, this.getTickRate(world));
-					bl4 &= bl6;
+					bl3 &= bl5;
 				}
 			}
 		}
 
-		bl4 &= i > 1;
-		bl5 &= bl4;
-		BlockState blockState2 = this.getDefaultState().with(ATTACHED, bl4).with(POWERED, bl5);
+		bl3 &= i > 1;
+		bl4 &= bl3;
+		BlockState blockState2 = this.getDefaultState().with(ATTACHED, bl3).with(POWERED, bl4);
 		if (i > 0) {
 			BlockPos blockPos2 = pos.offset(direction, i);
 			Direction direction2 = direction.getOpposite();
 			world.setBlockState(blockPos2, blockState2.with(FACING, direction2), 3);
 			this.updateNeighborsOnAxis(world, blockPos2, direction2);
-			this.playSound(world, blockPos2, bl4, bl5, bl, bl2);
+			this.method_11641(world, blockPos2, bl3, bl4, bl, bl2);
 		}
 
-		this.playSound(world, pos, bl4, bl5, bl, bl2);
+		this.method_11641(world, pos, bl3, bl4, bl, bl2);
 		if (!beingRemoved) {
 			world.setBlockState(pos, blockState2.with(FACING, direction), 3);
 			if (updateNeighbors) {
@@ -153,12 +171,12 @@ public class TripwireHookBlock extends Block {
 			}
 		}
 
-		if (bl != bl4) {
+		if (bl != bl3) {
 			for (int k = 1; k < i; k++) {
 				BlockPos blockPos3 = pos.offset(direction, k);
 				BlockState blockState3 = blockStates[k];
 				if (blockState3 != null && world.getBlockState(blockPos3).getBlock() != Blocks.AIR) {
-					world.setBlockState(blockPos3, blockState3.with(ATTACHED, bl4), 3);
+					world.setBlockState(blockPos3, blockState3.with(ATTACHED, bl3), 3);
 				}
 			}
 		}
@@ -173,17 +191,15 @@ public class TripwireHookBlock extends Block {
 		this.update(world, pos, state, false, true, -1, null);
 	}
 
-	private void playSound(World world, BlockPos pos, boolean attached, boolean on, boolean detached, boolean off) {
-		if (on && !off) {
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.1, (double)pos.getZ() + 0.5, "random.click", 0.4F, 0.6F);
-		} else if (!on && off) {
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.1, (double)pos.getZ() + 0.5, "random.click", 0.4F, 0.5F);
-		} else if (attached && !detached) {
-			world.playSound((double)pos.getX() + 0.5, (double)pos.getY() + 0.1, (double)pos.getZ() + 0.5, "random.click", 0.4F, 0.7F);
-		} else if (!attached && detached) {
-			world.playSound(
-				(double)pos.getX() + 0.5, (double)pos.getY() + 0.1, (double)pos.getZ() + 0.5, "random.bowhit", 0.4F, 1.2F / (world.random.nextFloat() * 0.2F + 0.9F)
-			);
+	private void method_11641(World world, BlockPos blockPos, boolean bl, boolean bl2, boolean bl3, boolean bl4) {
+		if (bl2 && !bl4) {
+			world.method_11486(null, blockPos, Sounds.BLOCK_TRIPWIRE_CLICK_ON, SoundCategory.BLOCKS, 0.4F, 0.6F);
+		} else if (!bl2 && bl4) {
+			world.method_11486(null, blockPos, Sounds.BLOCK_TRIPWIRE_CLICK_OFF, SoundCategory.BLOCKS, 0.4F, 0.5F);
+		} else if (bl && !bl3) {
+			world.method_11486(null, blockPos, Sounds.BLOCK_TRIPWIRE_ATTACH, SoundCategory.BLOCKS, 0.4F, 0.7F);
+		} else if (!bl && bl3) {
+			world.method_11486(null, blockPos, Sounds.BLOCK_TRIPWIRE_DETACH, SoundCategory.BLOCKS, 0.4F, 1.2F / (world.random.nextFloat() * 0.2F + 0.9F));
 		}
 	}
 
@@ -199,24 +215,6 @@ public class TripwireHookBlock extends Block {
 			return false;
 		} else {
 			return true;
-		}
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		float f = 0.1875F;
-		switch ((Direction)view.getBlockState(pos).get(FACING)) {
-			case EAST:
-				this.setBoundingBox(0.0F, 0.2F, 0.5F - f, f * 2.0F, 0.8F, 0.5F + f);
-				break;
-			case WEST:
-				this.setBoundingBox(1.0F - f * 2.0F, 0.2F, 0.5F - f, 1.0F, 0.8F, 0.5F + f);
-				break;
-			case SOUTH:
-				this.setBoundingBox(0.5F - f, 0.2F, 0.0F, 0.5F + f, 0.8F, f * 2.0F);
-				break;
-			case NORTH:
-				this.setBoundingBox(0.5F - f, 0.2F, 1.0F - f * 2.0F, 0.5F + f, 0.8F, 1.0F);
 		}
 	}
 
@@ -237,21 +235,21 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
-	public int getWeakRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		return state.get(POWERED) ? 15 : 0;
 	}
 
 	@Override
-	public int getStrongRedstonePower(BlockView view, BlockPos pos, BlockState state, Direction facing) {
+	public int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
 		if (!(Boolean)state.get(POWERED)) {
 			return 0;
 		} else {
-			return state.get(FACING) == facing ? 15 : 0;
+			return state.get(FACING) == direction ? 15 : 0;
 		}
 	}
 
 	@Override
-	public boolean emitsRedstonePower() {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
@@ -281,7 +279,17 @@ public class TripwireHookBlock extends Block {
 	}
 
 	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
+	}
+
+	@Override
 	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, POWERED, ATTACHED, SUSPENDED);
+		return new StateManager(this, FACING, POWERED, ATTACHED);
 	}
 }

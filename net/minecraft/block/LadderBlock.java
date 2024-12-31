@@ -6,6 +6,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.itemgroup.ItemGroup;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -13,7 +15,11 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class LadderBlock extends Block {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
+	protected static final Box field_12693 = new Box(0.0, 0.0, 0.0, 0.1875, 1.0, 1.0);
+	protected static final Box field_12694 = new Box(0.8125, 0.0, 0.0, 1.0, 1.0, 1.0);
+	protected static final Box field_12695 = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 0.1875);
+	protected static final Box field_12696 = new Box(0.0, 0.0, 0.8125, 1.0, 1.0, 1.0);
 
 	protected LadderBlock() {
 		super(Material.DECORATION);
@@ -22,57 +28,38 @@ public class LadderBlock extends Block {
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		this.setBoundingBox(world, pos);
-		return super.getCollisionBox(world, pos, state);
-	}
-
-	@Override
-	public Box getSelectionBox(World world, BlockPos pos) {
-		this.setBoundingBox(world, pos);
-		return super.getSelectionBox(world, pos);
-	}
-
-	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		BlockState blockState = view.getBlockState(pos);
-		if (blockState.getBlock() == this) {
-			float f = 0.125F;
-			switch ((Direction)blockState.get(FACING)) {
-				case NORTH:
-					this.setBoundingBox(0.0F, 0.0F, 1.0F - f, 1.0F, 1.0F, 1.0F);
-					break;
-				case SOUTH:
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, f);
-					break;
-				case WEST:
-					this.setBoundingBox(1.0F - f, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-					break;
-				case EAST:
-				default:
-					this.setBoundingBox(0.0F, 0.0F, 0.0F, f, 1.0F, 1.0F);
-			}
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((Direction)state.get(FACING)) {
+			case NORTH:
+				return field_12696;
+			case SOUTH:
+				return field_12695;
+			case WEST:
+				return field_12694;
+			case EAST:
+			default:
+				return field_12693;
 		}
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
 	@Override
 	public boolean canBePlacedAtPos(World world, BlockPos pos) {
-		if (world.getBlockState(pos.west()).getBlock().isFullCube()) {
+		if (world.getBlockState(pos.west()).method_11734()) {
 			return true;
-		} else if (world.getBlockState(pos.east()).getBlock().isFullCube()) {
+		} else if (world.getBlockState(pos.east()).method_11734()) {
 			return true;
 		} else {
-			return world.getBlockState(pos.north()).getBlock().isFullCube() ? true : world.getBlockState(pos.south()).getBlock().isFullCube();
+			return world.getBlockState(pos.north()).method_11734() ? true : world.getBlockState(pos.south()).method_11734();
 		}
 	}
 
@@ -92,18 +79,18 @@ public class LadderBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		Direction direction = state.get(FACING);
-		if (!this.isOppositeFull(world, pos, direction)) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		Direction direction = blockState.get(FACING);
+		if (!this.isOppositeFull(world, blockPos, direction)) {
+			this.dropAsItem(world, blockPos, blockState, 0);
+			world.setAir(blockPos);
 		}
 
-		super.neighborUpdate(world, pos, state, block);
+		super.method_8641(blockState, world, blockPos, block);
 	}
 
 	protected boolean isOppositeFull(World world, BlockPos pos, Direction dir) {
-		return world.getBlockState(pos.offset(dir.getOpposite())).getBlock().isFullCube();
+		return world.getBlockState(pos.offset(dir.getOpposite())).method_11734();
 	}
 
 	@Override
@@ -124,6 +111,16 @@ public class LadderBlock extends Block {
 	@Override
 	public int getData(BlockState state) {
 		return ((Direction)state.get(FACING)).getId();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

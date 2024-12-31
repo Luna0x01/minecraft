@@ -3,11 +3,16 @@ package net.minecraft.realms;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.mojang.authlib.GameProfile;
 import com.mojang.util.UUIDTypeAdapter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.net.Proxy;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.util.Session;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.world.level.LevelInfo;
 
 public class Realms {
@@ -91,5 +96,18 @@ public class Realms {
 
 	public static boolean inTitleScreen() {
 		return MinecraftClient.getInstance().currentScreen != null && MinecraftClient.getInstance().currentScreen instanceof TitleScreen;
+	}
+
+	public static void deletePlayerTag(File file) {
+		if (file.exists()) {
+			try {
+				NbtCompound nbtCompound = NbtIo.readCompressed(new FileInputStream(file));
+				NbtCompound nbtCompound2 = nbtCompound.getCompound("Data");
+				nbtCompound2.remove("Player");
+				NbtIo.writeCompressed(nbtCompound, new FileOutputStream(file));
+			} catch (Exception var3) {
+				var3.printStackTrace();
+			}
+		}
 	}
 }

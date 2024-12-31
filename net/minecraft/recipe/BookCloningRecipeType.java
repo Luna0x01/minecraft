@@ -1,5 +1,6 @@
 package net.minecraft.recipe;
 
+import javax.annotation.Nullable;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -35,6 +36,7 @@ public class BookCloningRecipeType implements RecipeType {
 		return itemStack != null && i > 0;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getResult(CraftingInventory inventory) {
 		int i = 0;
@@ -78,6 +80,7 @@ public class BookCloningRecipeType implements RecipeType {
 		return 9;
 	}
 
+	@Nullable
 	@Override
 	public ItemStack getOutput() {
 		return null;
@@ -90,7 +93,8 @@ public class BookCloningRecipeType implements RecipeType {
 		for (int i = 0; i < itemStacks.length; i++) {
 			ItemStack itemStack = inventory.getInvStack(i);
 			if (itemStack != null && itemStack.getItem() instanceof WrittenBookItem) {
-				itemStacks[i] = itemStack;
+				itemStacks[i] = itemStack.copy();
+				itemStacks[i].count = 1;
 				break;
 			}
 		}

@@ -3,17 +3,18 @@ package net.minecraft.entity.ai.goal;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.PathAwareEntity;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
-import net.minecraft.entity.ai.pathing.Path;
+import net.minecraft.entity.ai.pathing.PathMinHeap;
 import net.minecraft.entity.predicate.EntityPredicate;
 import net.minecraft.util.RandomVectorGenerator;
 import net.minecraft.util.math.Vec3d;
 
 public class FleeEntityGoal<T extends Entity> extends Goal {
 	private final Predicate<Entity> inclusionSelector = new Predicate<Entity>() {
-		public boolean apply(Entity entity) {
+		public boolean apply(@Nullable Entity entity) {
 			return entity.isAlive() && FleeEntityGoal.this.mob.getVisibilityCache().canSee(entity);
 		}
 	};
@@ -22,7 +23,7 @@ public class FleeEntityGoal<T extends Entity> extends Goal {
 	private double fastSpeed;
 	protected T targetEntity;
 	private float fleeDistance;
-	private Path fleePath;
+	private PathMinHeap field_14575;
 	private EntityNavigation fleeingEntityNavigation;
 	private Class<T> classToFleeFrom;
 	private Predicate<? super T> extraInclusionSelector;
@@ -49,7 +50,7 @@ public class FleeEntityGoal<T extends Entity> extends Goal {
 			.getEntitiesInBox(
 				this.classToFleeFrom,
 				this.mob.getBoundingBox().expand((double)this.fleeDistance, 3.0, (double)this.fleeDistance),
-				Predicates.and(new Predicate[]{EntityPredicate.EXCEPT_SPECTATOR, this.inclusionSelector, this.extraInclusionSelector})
+				Predicates.and(new Predicate[]{EntityPredicate.EXCEPT_CREATIVE_OR_SPECTATOR, this.inclusionSelector, this.extraInclusionSelector})
 			);
 		if (list.isEmpty()) {
 			return false;
@@ -61,8 +62,8 @@ public class FleeEntityGoal<T extends Entity> extends Goal {
 			} else if (this.targetEntity.squaredDistanceTo(vec3d.x, vec3d.y, vec3d.z) < this.targetEntity.squaredDistanceTo(this.mob)) {
 				return false;
 			} else {
-				this.fleePath = this.fleeingEntityNavigation.findPathTo(vec3d.x, vec3d.y, vec3d.z);
-				return this.fleePath == null ? false : this.fleePath.equalsEndPos(vec3d);
+				this.field_14575 = this.fleeingEntityNavigation.method_2772(vec3d.x, vec3d.y, vec3d.z);
+				return this.field_14575 == null ? false : this.field_14575.method_11932(vec3d);
 			}
 		}
 	}
@@ -74,7 +75,7 @@ public class FleeEntityGoal<T extends Entity> extends Goal {
 
 	@Override
 	public void start() {
-		this.fleeingEntityNavigation.startMovingAlong(this.fleePath, this.slowSpeed);
+		this.fleeingEntityNavigation.method_13107(this.field_14575, this.slowSpeed);
 	}
 
 	@Override

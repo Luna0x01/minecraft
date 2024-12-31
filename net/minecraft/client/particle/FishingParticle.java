@@ -12,7 +12,7 @@ public class FishingParticle extends Particle {
 		this.green = 1.0F;
 		this.blue = 1.0F;
 		this.setMiscTexture(19);
-		this.setBounds(0.01F, 0.01F);
+		this.method_12244(0.01F, 0.01F);
 		this.maxAge = (int)(8.0 / (Math.random() * 0.8 + 0.2));
 		this.gravityStrength = 0.0F;
 		this.velocityX = g;
@@ -21,21 +21,21 @@ public class FishingParticle extends Particle {
 	}
 
 	@Override
-	public void tick() {
-		this.prevX = this.x;
-		this.prevY = this.y;
-		this.prevZ = this.z;
+	public void method_12241() {
+		this.field_13425 = this.field_13428;
+		this.field_13426 = this.field_13429;
+		this.field_13427 = this.field_13430;
 		this.velocityY = this.velocityY - (double)this.gravityStrength;
-		this.move(this.velocityX, this.velocityY, this.velocityZ);
+		this.method_12242(this.velocityX, this.velocityY, this.velocityZ);
 		this.velocityX *= 0.98F;
 		this.velocityY *= 0.98F;
 		this.velocityZ *= 0.98F;
 		int i = 60 - this.maxAge;
 		float f = (float)i * 0.001F;
-		this.setBounds(f, f);
+		this.method_12244(f, f);
 		this.setMiscTexture(19 + i % 4);
 		if (this.maxAge-- <= 0) {
-			this.remove();
+			this.method_12251();
 		}
 	}
 

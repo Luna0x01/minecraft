@@ -1,15 +1,17 @@
 package net.minecraft.block.entity;
 
-import com.google.common.collect.Lists;
 import java.util.List;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 
 public class PistonBlockEntity extends BlockEntity implements Tickable {
 	private BlockState pushedBlock;
@@ -18,7 +20,6 @@ public class PistonBlockEntity extends BlockEntity implements Tickable {
 	private boolean source;
 	private float progress;
 	private float lastProgress;
-	private List<Entity> affectedEntities = Lists.newArrayList();
 
 	public PistonBlockEntity() {
 	}
@@ -60,58 +61,89 @@ public class PistonBlockEntity extends BlockEntity implements Tickable {
 	}
 
 	public float getRenderOffsetX(float progress) {
-		return this.extending
-			? (this.getAmountExtended(progress) - 1.0F) * (float)this.direction.getOffsetX()
-			: (1.0F - this.getAmountExtended(progress)) * (float)this.direction.getOffsetX();
+		return (float)this.direction.getOffsetX() * this.method_11703(this.getAmountExtended(progress));
 	}
 
 	public float getRenderOffsetY(float progress) {
-		return this.extending
-			? (this.getAmountExtended(progress) - 1.0F) * (float)this.direction.getOffsetY()
-			: (1.0F - this.getAmountExtended(progress)) * (float)this.direction.getOffsetY();
+		return (float)this.direction.getOffsetY() * this.method_11703(this.getAmountExtended(progress));
 	}
 
 	public float getRenderOffsetZ(float progress) {
-		return this.extending
-			? (this.getAmountExtended(progress) - 1.0F) * (float)this.direction.getOffsetZ()
-			: (1.0F - this.getAmountExtended(progress)) * (float)this.direction.getOffsetZ();
+		return (float)this.direction.getOffsetZ() * this.method_11703(this.getAmountExtended(progress));
 	}
 
-	private void pushEntities(float progress, float distance) {
-		if (this.extending) {
-			progress = 1.0F - progress;
-		} else {
-			progress--;
-		}
+	private float method_11703(float f) {
+		return this.extending ? f - 1.0F : 1.0F - f;
+	}
 
-		Box box = Blocks.PISTON_EXTENSION.getCollisionBox(this.world, this.pos, this.pushedBlock, progress, this.direction);
-		if (box != null) {
-			List<Entity> list = this.world.getEntitiesIn(null, box);
-			if (!list.isEmpty()) {
-				this.affectedEntities.addAll(list);
+	public Box method_11701(BlockView blockView, BlockPos blockPos) {
+		return this.method_11702(blockView, blockPos, this.progress).union(this.method_11702(blockView, blockPos, this.lastProgress));
+	}
 
-				for (Entity entity : this.affectedEntities) {
-					if (this.pushedBlock.getBlock() == Blocks.SLIME_BLOCK && this.extending) {
-						switch (this.direction.getAxis()) {
+	public Box method_11702(BlockView blockView, BlockPos blockPos, float f) {
+		f = this.method_11703(f);
+		return this.pushedBlock
+			.getCollisionBox(blockView, blockPos)
+			.offset((double)(f * (float)this.direction.getOffsetX()), (double)(f * (float)this.direction.getOffsetY()), (double)(f * (float)this.direction.getOffsetZ()));
+	}
+
+	private void method_11704() {
+		Box box = this.method_11701(this.world, this.pos).offset(this.pos);
+		List<Entity> list = this.world.getEntitiesIn(null, box);
+		if (!list.isEmpty()) {
+			Direction direction = this.extending ? this.direction : this.direction.getOpposite();
+
+			for (int i = 0; i < list.size(); i++) {
+				Entity entity = (Entity)list.get(i);
+				if (entity.getPistonBehavior() != PistonBehavior.IGNORE) {
+					if (this.pushedBlock.getBlock() == Blocks.SLIME_BLOCK) {
+						switch (direction.getAxis()) {
 							case X:
-								entity.velocityX = (double)this.direction.getOffsetX();
+								entity.velocityX = (double)direction.getOffsetX();
 								break;
 							case Y:
-								entity.velocityY = (double)this.direction.getOffsetY();
+								entity.velocityY = (double)direction.getOffsetY();
 								break;
 							case Z:
-								entity.velocityZ = (double)this.direction.getOffsetZ();
+								entity.velocityZ = (double)direction.getOffsetZ();
 						}
-					} else {
-						entity.move(
-							(double)(distance * (float)this.direction.getOffsetX()),
-							(double)(distance * (float)this.direction.getOffsetY()),
-							(double)(distance * (float)this.direction.getOffsetZ())
-						);
 					}
-				}
 
-				this.affectedEntities.clear();
+					double d = 0.0;
+					double e = 0.0;
+					double f = 0.0;
+					Box box2 = entity.getBoundingBox();
+					switch (direction.getAxis()) {
+						case X:
+							if (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+								d = box.maxX - box2.minX;
+							} else {
+								d = box2.maxX - box.minX;
+							}
+
+							d += 0.01;
+							break;
+						case Y:
+							if (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+								e = box.maxY - box2.minY;
+							} else {
+								e = box2.maxY - box.minY;
+							}
+
+							e += 0.01;
+							break;
+						case Z:
+							if (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+								f = box.maxZ - box2.minZ;
+							} else {
+								f = box2.maxZ - box.minZ;
+							}
+
+							f += 0.01;
+					}
+
+					entity.move(d * (double)direction.getOffsetX(), e * (double)direction.getOffsetY(), f * (double)direction.getOffsetZ());
+				}
 			}
 		}
 	}
@@ -132,7 +164,7 @@ public class PistonBlockEntity extends BlockEntity implements Tickable {
 	public void tick() {
 		this.lastProgress = this.progress;
 		if (this.lastProgress >= 1.0F) {
-			this.pushEntities(1.0F, 0.25F);
+			this.method_11704();
 			this.world.removeBlockEntity(this.pos);
 			this.markRemoved();
 			if (this.world.getBlockState(this.pos).getBlock() == Blocks.PISTON_EXTENSION) {
@@ -145,9 +177,7 @@ public class PistonBlockEntity extends BlockEntity implements Tickable {
 				this.progress = 1.0F;
 			}
 
-			if (this.extending) {
-				this.pushEntities(this.progress, this.progress - this.lastProgress + 0.0625F);
-			}
+			this.method_11704();
 		}
 	}
 
@@ -161,12 +191,13 @@ public class PistonBlockEntity extends BlockEntity implements Tickable {
 	}
 
 	@Override
-	public void toNbt(NbtCompound nbt) {
+	public NbtCompound toNbt(NbtCompound nbt) {
 		super.toNbt(nbt);
 		nbt.putInt("blockId", Block.getIdByBlock(this.pushedBlock.getBlock()));
 		nbt.putInt("blockData", this.pushedBlock.getBlock().getData(this.pushedBlock));
 		nbt.putInt("facing", this.direction.getId());
 		nbt.putFloat("progress", this.lastProgress);
 		nbt.putBoolean("extending", this.extending);
+		return nbt;
 	}
 }

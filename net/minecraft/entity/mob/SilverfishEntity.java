@@ -1,6 +1,7 @@
 package net.minecraft.entity.mob;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -16,7 +17,10 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.EntityDamageSource;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
+import net.minecraft.loot.LootTables;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -27,9 +31,13 @@ public class SilverfishEntity extends HostileEntity {
 	public SilverfishEntity(World world) {
 		super(world);
 		this.setBounds(0.4F, 0.3F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(3, this.callForHelpGoal = new SilverfishEntity.CallForHelpGoal(this));
-		this.goals.add(4, new MeleeAttackGoal(this, PlayerEntity.class, 1.0, false));
+		this.goals.add(4, new MeleeAttackGoal(this, 1.0, false));
 		this.goals.add(5, new SilverfishEntity.WanderAndInfestGoal(this));
 		this.attackGoals.add(1, new RevengeGoal(this, true));
 		this.attackGoals.add(2, new FollowTargetGoal(this, PlayerEntity.class, true));
@@ -59,18 +67,23 @@ public class SilverfishEntity extends HostileEntity {
 	}
 
 	@Override
-	protected String getAmbientSound() {
-		return "mob.silverfish.say";
+	protected Sound ambientSound() {
+		return Sounds.ENTITY_SILVERFISH_AMBIENT;
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.silverfish.hit";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_SILVERFISH_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.silverfish.kill";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_SILVERFISH_DEATH;
+	}
+
+	@Override
+	protected void playStepSound(BlockPos pos, Block block) {
+		this.playSound(Sounds.ENTITY_SILVERFISH_STEP, 0.15F, 1.0F);
 	}
 
 	@Override
@@ -78,7 +91,7 @@ public class SilverfishEntity extends HostileEntity {
 		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
-			if (source instanceof EntityDamageSource || source == DamageSource.MAGIC) {
+			if ((source instanceof EntityDamageSource || source == DamageSource.MAGIC) && this.callForHelpGoal != null) {
 				this.callForHelpGoal.onHurt();
 			}
 
@@ -86,14 +99,10 @@ public class SilverfishEntity extends HostileEntity {
 		}
 	}
 
+	@Nullable
 	@Override
-	protected void playStepSound(BlockPos pos, Block block) {
-		this.playSound("mob.silverfish.step", 0.15F, 1.0F);
-	}
-
-	@Override
-	protected Item getDefaultDrop() {
-		return null;
+	protected Identifier getLootTableId() {
+		return LootTables.SILVERFISH_ENTITIE;
 	}
 
 	@Override
@@ -115,7 +124,7 @@ public class SilverfishEntity extends HostileEntity {
 	@Override
 	public boolean canSpawn() {
 		if (super.canSpawn()) {
-			PlayerEntity playerEntity = this.world.getClosestPlayer(this, 5.0);
+			PlayerEntity playerEntity = this.world.method_11490(this, 5.0);
 			return playerEntity == null;
 		} else {
 			return false;
@@ -190,7 +199,9 @@ public class SilverfishEntity extends HostileEntity {
 
 		@Override
 		public boolean canStart() {
-			if (this.silverfish.getTarget() != null) {
+			if (!this.silverfish.world.getGameRules().getBoolean("mobGriefing")) {
+				return false;
+			} else if (this.silverfish.getTarget() != null) {
 				return false;
 			} else if (!this.silverfish.getNavigation().isIdle()) {
 				return false;

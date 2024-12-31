@@ -1,6 +1,9 @@
 package net.minecraft.entity.mob;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.loot.LootTables;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -26,5 +29,11 @@ public class GiantEntity extends HostileEntity {
 	@Override
 	public float getPathfindingFavor(BlockPos pos) {
 		return this.world.getBrightness(pos) - 0.5F;
+	}
+
+	@Nullable
+	@Override
+	protected Identifier getLootTableId() {
+		return LootTables.GIANT_ENTITIE;
 	}
 }

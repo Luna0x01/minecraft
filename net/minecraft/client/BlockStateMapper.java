@@ -10,6 +10,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.BlockStateIdentifierMapAccess;
 import net.minecraft.client.util.ModelIdentifier;
+import net.minecraft.util.Identifier;
 
 public class BlockStateMapper {
 	private Map<Block, BlockStateIdentifierMapAccess> blockMap = Maps.newIdentityHashMap();
@@ -27,11 +28,34 @@ public class BlockStateMapper {
 		Map<BlockState, ModelIdentifier> map = Maps.newIdentityHashMap();
 
 		for (Block block : Block.REGISTRY) {
-			if (!this.blocks.contains(block)) {
-				map.putAll(((BlockStateIdentifierMapAccess)Objects.firstNonNull(this.blockMap.get(block), new DefaultBlockStateMap())).addBlock(block));
-			}
+			map.putAll(this.method_12404(block));
 		}
 
 		return map;
+	}
+
+	public Set<Identifier> method_12403(Block block) {
+		if (this.blocks.contains(block)) {
+			return Collections.emptySet();
+		} else {
+			BlockStateIdentifierMapAccess blockStateIdentifierMapAccess = (BlockStateIdentifierMapAccess)this.blockMap.get(block);
+			if (blockStateIdentifierMapAccess == null) {
+				return Collections.singleton(Block.REGISTRY.getIdentifier(block));
+			} else {
+				Set<Identifier> set = Sets.newHashSet();
+
+				for (ModelIdentifier modelIdentifier : blockStateIdentifierMapAccess.addBlock(block).values()) {
+					set.add(new Identifier(modelIdentifier.getNamespace(), modelIdentifier.getPath()));
+				}
+
+				return set;
+			}
+		}
+	}
+
+	public Map<BlockState, ModelIdentifier> method_12404(Block block) {
+		return this.blocks.contains(block)
+			? Collections.emptyMap()
+			: ((BlockStateIdentifierMapAccess)Objects.firstNonNull(this.blockMap.get(block), new DefaultBlockStateMap())).addBlock(block);
 	}
 }

@@ -1,12 +1,15 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -14,26 +17,25 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class AbstractSignBlock extends BlockWithEntity {
+	protected static final Box field_12751 = new Box(0.25, 0.0, 0.25, 0.75, 1.0, 0.75);
+
 	protected AbstractSignBlock() {
 		super(Material.WOOD);
-		float f = 0.25F;
-		float g = 1.0F;
-		this.setBoundingBox(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, g, 0.5F + f);
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return null;
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12751;
+	}
+
+	@Nullable
+	@Override
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return EMPTY_BOX;
 	}
 
 	@Override
-	public Box getSelectionBox(World world, BlockPos pos) {
-		this.setBoundingBox(world, pos);
-		return super.getSelectionBox(world, pos);
-	}
-
-	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -43,7 +45,7 @@ public class AbstractSignBlock extends BlockWithEntity {
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
@@ -57,23 +59,35 @@ public class AbstractSignBlock extends BlockWithEntity {
 		return new SignBlockEntity();
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.SIGN;
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.SIGN;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Items.SIGN);
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
 		if (world.isClient) {
 			return true;
 		} else {
-			BlockEntity blockEntity = world.getBlockEntity(pos);
-			return blockEntity instanceof SignBlockEntity ? ((SignBlockEntity)blockEntity).onActivate(player) : false;
+			BlockEntity blockEntity = world.getBlockEntity(blockPos);
+			return blockEntity instanceof SignBlockEntity ? ((SignBlockEntity)blockEntity).onActivate(playerEntity) : false;
 		}
 	}
 

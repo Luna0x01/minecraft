@@ -1,5 +1,6 @@
 package net.minecraft.recipe;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.inventory.CraftingInventory;
@@ -48,6 +49,7 @@ public class BannerRecipeDispatcher {
 			return !bl ? false : this.method_8442(inventory) != null;
 		}
 
+		@Nullable
 		@Override
 		public ItemStack getResult(CraftingInventory inventory) {
 			ItemStack itemStack = null;
@@ -96,6 +98,7 @@ public class BannerRecipeDispatcher {
 			return 10;
 		}
 
+		@Nullable
 		@Override
 		public ItemStack getOutput() {
 			return null;
@@ -115,6 +118,7 @@ public class BannerRecipeDispatcher {
 			return itemStacks;
 		}
 
+		@Nullable
 		private BannerBlockEntity.BannerPattern method_8442(CraftingInventory inventory) {
 			for (BannerBlockEntity.BannerPattern bannerPattern : BannerBlockEntity.BannerPattern.values()) {
 				if (bannerPattern.isCraftable()) {
@@ -243,6 +247,7 @@ public class BannerRecipeDispatcher {
 			return itemStack != null && itemStack2 != null;
 		}
 
+		@Nullable
 		@Override
 		public ItemStack getResult(CraftingInventory inventory) {
 			for (int i = 0; i < inventory.getInvSize(); i++) {
@@ -262,6 +267,7 @@ public class BannerRecipeDispatcher {
 			return 2;
 		}
 
+		@Nullable
 		@Override
 		public ItemStack getOutput() {
 			return null;

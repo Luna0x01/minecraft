@@ -1,5 +1,6 @@
 package net.minecraft.entity.mob;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LightningBoltEntity;
 import net.minecraft.entity.ai.goal.CreeperIgniteGoal;
@@ -13,15 +14,26 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.loot.LootTables;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sound;
+import net.minecraft.sound.Sounds;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
 public class CreeperEntity extends HostileEntity {
+	private static final TrackedData<Integer> field_14745 = DataTracker.registerData(CreeperEntity.class, TrackedDataHandlerRegistry.INTEGER);
+	private static final TrackedData<Boolean> field_14746 = DataTracker.registerData(CreeperEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Boolean> field_14747 = DataTracker.registerData(CreeperEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private int lastFuseTime;
 	private int currentFuseTime;
 	private int fuseTime = 30;
@@ -30,6 +42,11 @@ public class CreeperEntity extends HostileEntity {
 
 	public CreeperEntity(World world) {
 		super(world);
+		this.setBounds(0.6F, 1.7F);
+	}
+
+	@Override
+	protected void initGoals() {
 		this.goals.add(1, new SwimGoal(this));
 		this.goals.add(2, new CreeperIgniteGoal(this));
 		this.goals.add(3, new FleeEntityGoal(this, OcelotEntity.class, 6.0F, 1.0, 1.2));
@@ -64,15 +81,15 @@ public class CreeperEntity extends HostileEntity {
 	@Override
 	protected void initDataTracker() {
 		super.initDataTracker();
-		this.dataTracker.track(16, (byte)-1);
-		this.dataTracker.track(17, (byte)0);
-		this.dataTracker.track(18, (byte)0);
+		this.dataTracker.startTracking(field_14745, -1);
+		this.dataTracker.startTracking(field_14746, false);
+		this.dataTracker.startTracking(field_14747, false);
 	}
 
 	@Override
 	public void writeCustomDataToNbt(NbtCompound nbt) {
 		super.writeCustomDataToNbt(nbt);
-		if (this.dataTracker.getByte(17) == 1) {
+		if (this.dataTracker.get(field_14746)) {
 			nbt.putBoolean("powered", true);
 		}
 
@@ -84,7 +101,7 @@ public class CreeperEntity extends HostileEntity {
 	@Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
 		super.readCustomDataFromNbt(nbt);
-		this.dataTracker.setProperty(17, (byte)(nbt.getBoolean("powered") ? 1 : 0));
+		this.dataTracker.set(field_14746, nbt.getBoolean("powered"));
 		if (nbt.contains("Fuse", 99)) {
 			this.fuseTime = nbt.getShort("Fuse");
 		}
@@ -108,7 +125,7 @@ public class CreeperEntity extends HostileEntity {
 
 			int i = this.getFuseSpeed();
 			if (i > 0 && this.currentFuseTime == 0) {
-				this.playSound("creeper.primed", 1.0F, 0.5F);
+				this.playSound(Sounds.ENTITY_CREEPER_PRIMED, 1.0F, 0.5F);
 			}
 
 			this.currentFuseTime += i;
@@ -126,29 +143,31 @@ public class CreeperEntity extends HostileEntity {
 	}
 
 	@Override
-	protected String getHurtSound() {
-		return "mob.creeper.say";
+	protected Sound method_13048() {
+		return Sounds.ENTITY_CREEPER_HURT;
 	}
 
 	@Override
-	protected String getDeathSound() {
-		return "mob.creeper.death";
+	protected Sound deathSound() {
+		return Sounds.ENTITY_CREEPER_DEATH;
 	}
 
 	@Override
 	public void onKilled(DamageSource source) {
 		super.onKilled(source);
-		if (source.getAttacker() instanceof SkeletonEntity) {
-			int i = Item.getRawId(Items.RECORD_13);
-			int j = Item.getRawId(Items.RECORD_WAIT);
-			int k = i + this.random.nextInt(j - i + 1);
-			this.dropItem(Item.byRawId(k), 1);
-		} else if (source.getAttacker() instanceof CreeperEntity
-			&& source.getAttacker() != this
-			&& ((CreeperEntity)source.getAttacker()).method_3074()
-			&& ((CreeperEntity)source.getAttacker()).shouldDropHead()) {
-			((CreeperEntity)source.getAttacker()).onHeadDropped();
-			this.dropItem(new ItemStack(Items.SKULL, 1, 4), 0.0F);
+		if (this.world.getGameRules().getBoolean("doMobLoot")) {
+			if (source.getAttacker() instanceof SkeletonEntity) {
+				int i = Item.getRawId(Items.RECORD_13);
+				int j = Item.getRawId(Items.RECORD_WAIT);
+				int k = i + this.random.nextInt(j - i + 1);
+				this.dropItem(Item.byRawId(k), 1);
+			} else if (source.getAttacker() instanceof CreeperEntity
+				&& source.getAttacker() != this
+				&& ((CreeperEntity)source.getAttacker()).method_3074()
+				&& ((CreeperEntity)source.getAttacker()).shouldDropHead()) {
+				((CreeperEntity)source.getAttacker()).onHeadDropped();
+				this.dropItem(new ItemStack(Items.SKULL, 1, 4), 0.0F);
+			}
 		}
 	}
 
@@ -158,38 +177,39 @@ public class CreeperEntity extends HostileEntity {
 	}
 
 	public boolean method_3074() {
-		return this.dataTracker.getByte(17) == 1;
+		return this.dataTracker.get(field_14746);
 	}
 
 	public float getClientFuseTime(float timeDelta) {
 		return ((float)this.lastFuseTime + (float)(this.currentFuseTime - this.lastFuseTime) * timeDelta) / (float)(this.fuseTime - 2);
 	}
 
+	@Nullable
 	@Override
-	protected Item getDefaultDrop() {
-		return Items.GUNPOWDER;
+	protected Identifier getLootTableId() {
+		return LootTables.CREEPER_ENTITIE;
 	}
 
 	public int getFuseSpeed() {
-		return this.dataTracker.getByte(16);
+		return this.dataTracker.get(field_14745);
 	}
 
 	public void setFuseSpeed(int value) {
-		this.dataTracker.setProperty(16, (byte)value);
+		this.dataTracker.set(field_14745, value);
 	}
 
 	@Override
 	public void onLightningStrike(LightningBoltEntity lightning) {
 		super.onLightningStrike(lightning);
-		this.dataTracker.setProperty(17, (byte)1);
+		this.dataTracker.set(field_14746, true);
 	}
 
 	@Override
-	protected boolean method_2537(PlayerEntity playerEntity) {
-		ItemStack itemStack = playerEntity.inventory.getMainHandStack();
+	protected boolean method_13079(PlayerEntity playerEntity, Hand hand, @Nullable ItemStack itemStack) {
 		if (itemStack != null && itemStack.getItem() == Items.FLINT_AND_STEEL) {
-			this.world.playSound(this.x + 0.5, this.y + 0.5, this.z + 0.5, "fire.ignite", 1.0F, this.random.nextFloat() * 0.4F + 0.8F);
-			playerEntity.swingHand();
+			this.world
+				.playSound(playerEntity, this.x, this.y, this.z, Sounds.ITEM_FLINTANDSTEEL_USE, this.getSoundCategory(), 1.0F, this.random.nextFloat() * 0.4F + 0.8F);
+			playerEntity.swingHand(hand);
 			if (!this.world.isClient) {
 				this.ignite();
 				itemStack.damage(1, playerEntity);
@@ -197,24 +217,25 @@ public class CreeperEntity extends HostileEntity {
 			}
 		}
 
-		return super.method_2537(playerEntity);
+		return super.method_13079(playerEntity, hand, itemStack);
 	}
 
 	private void explode() {
 		if (!this.world.isClient) {
 			boolean bl = this.world.getGameRules().getBoolean("mobGriefing");
 			float f = this.method_3074() ? 2.0F : 1.0F;
+			this.dead = true;
 			this.world.createExplosion(this, this.x, this.y, this.z, (float)this.explosionRadius * f, bl);
 			this.remove();
 		}
 	}
 
 	public boolean isIgnited() {
-		return this.dataTracker.getByte(18) != 0;
+		return this.dataTracker.get(field_14747);
 	}
 
 	public void ignite() {
-		this.dataTracker.setProperty(18, (byte)1);
+		this.dataTracker.set(field_14747, true);
 	}
 
 	public boolean shouldDropHead() {

@@ -2,8 +2,10 @@ package net.minecraft.block;
 
 import java.util.List;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.sound.Sounds;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
@@ -31,8 +33,26 @@ public class PressurePlateBlock extends AbstractPressurePlateBlock {
 	}
 
 	@Override
+	protected void method_11549(World world, BlockPos blockPos) {
+		if (this.material == Material.WOOD) {
+			world.method_11486(null, blockPos, Sounds.BLOCK_WOOD_PRESSUREPLATE_CLICK_ON, SoundCategory.BLOCKS, 0.3F, 0.8F);
+		} else {
+			world.method_11486(null, blockPos, Sounds.BLOCK_STONE_PRESSUREPLATE_CLICK_ON, SoundCategory.BLOCKS, 0.3F, 0.6F);
+		}
+	}
+
+	@Override
+	protected void method_11550(World world, BlockPos blockPos) {
+		if (this.material == Material.WOOD) {
+			world.method_11486(null, blockPos, Sounds.BLOCK_WOOD_PRESSUREPLATE_CLICK_OFF, SoundCategory.BLOCKS, 0.3F, 0.7F);
+		} else {
+			world.method_11486(null, blockPos, Sounds.BLOCK_STONE_PRESSUREPLATE_CLICK_OFF, SoundCategory.BLOCKS, 0.3F, 0.5F);
+		}
+	}
+
+	@Override
 	protected int getRedstoneOutput(World world, BlockPos pos) {
-		Box box = this.getPlateHitBox(pos);
+		Box box = BOX.offset(pos);
 		List<? extends Entity> list;
 		switch (this.rule) {
 			case ALL:

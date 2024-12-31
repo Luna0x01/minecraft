@@ -2,15 +2,15 @@ package net.minecraft.enchantment;
 
 import java.util.Random;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 
 public class ThornsEnchantment extends Enchantment {
-	public ThornsEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.TORSO);
+	public ThornsEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.ARMOR_CHEST, equipmentSlots);
 		this.setName("thorns");
 	}
 
@@ -37,11 +37,10 @@ public class ThornsEnchantment extends Enchantment {
 	@Override
 	public void onDamaged(LivingEntity livingEntity, Entity entity, int power) {
 		Random random = livingEntity.getRandom();
-		ItemStack itemStack = EnchantmentHelper.chooseEquipmentWith(Enchantment.THORNS, livingEntity);
+		ItemStack itemStack = EnchantmentHelper.chooseEquipmentWith(Enchantments.THORNS, livingEntity);
 		if (shouldDamageAttacker(power, random)) {
 			if (entity != null) {
 				entity.damage(DamageSource.thorns(livingEntity), (float)getDamageAmount(power, random));
-				entity.playSound("damage.thorns", 0.5F, 1.0F);
 			}
 
 			if (itemStack != null) {

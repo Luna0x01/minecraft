@@ -16,6 +16,12 @@ import net.minecraft.world.chunk.ChunkBlockStateStorage;
 import net.minecraft.world.gen.feature.FoliageFeature;
 
 public class MesaBiome extends Biome {
+	protected static final BlockState COARSE_DIRT = Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.COARSE_DIRT);
+	protected static final BlockState GRASS = Blocks.GRASS.getDefaultState();
+	protected static final BlockState TERRACOTTA = Blocks.TERRACOTTA.getDefaultState();
+	protected static final BlockState STAINED_TERRACOTTA = Blocks.STAINED_TERRACOTTA.getDefaultState();
+	protected static final BlockState ORANGE_TERRACOTTA = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.ORANGE);
+	protected static final BlockState RED_SAND = Blocks.SAND.getDefaultState().with(SandBlock.sandType, SandBlock.SandType.RED_SAND);
 	private BlockState[] layerBlocks;
 	private long seed;
 	private PerlinNoiseGenerator heightCutoffNoise;
@@ -24,15 +30,13 @@ public class MesaBiome extends Biome {
 	private boolean field_7249;
 	private boolean field_7250;
 
-	public MesaBiome(int i, boolean bl, boolean bl2) {
-		super(i);
+	public MesaBiome(boolean bl, boolean bl2, Biome.Settings settings) {
+		super(settings);
 		this.field_7249 = bl;
 		this.field_7250 = bl2;
-		this.method_3839();
-		this.setTemperatureAndDownfall(2.0F, 0.0F);
 		this.passiveEntries.clear();
-		this.topBlock = Blocks.SAND.getDefaultState().with(SandBlock.sandType, SandBlock.SandType.RED_SAND);
-		this.baseBlock = Blocks.STAINED_TERRACOTTA.getDefaultState();
+		this.topBlock = RED_SAND;
+		this.baseBlock = STAINED_TERRACOTTA;
 		this.biomeDecorator.treesPerChunk = -999;
 		this.biomeDecorator.deadBushesPerChunk = 20;
 		this.biomeDecorator.sugarcanePerChunk = 3;
@@ -46,7 +50,7 @@ public class MesaBiome extends Biome {
 
 	@Override
 	public FoliageFeature method_3822(Random random) {
-		return this.JUNGLE_TREE_FEATURE;
+		return JUNGLE_TREE_FEATURE;
 	}
 
 	@Override
@@ -98,7 +102,7 @@ public class MesaBiome extends Biome {
 		int n = i & 15;
 		int o = j & 15;
 		int p = world.getSeaLevel();
-		BlockState blockState = Blocks.STAINED_TERRACOTTA.getDefaultState();
+		BlockState blockState = STAINED_TERRACOTTA;
 		BlockState blockState2 = this.baseBlock;
 		int q = (int)(d / 3.0 + 3.0 + random.nextDouble() * 0.25);
 		boolean bl = Math.cos(d / 3.0 * Math.PI) > 0.0;
@@ -106,29 +110,29 @@ public class MesaBiome extends Biome {
 		boolean bl2 = false;
 
 		for (int s = 255; s >= 0; s--) {
-			if (chunkStorage.get(o, s, n).getBlock().getMaterial() == Material.AIR && s < (int)e) {
-				chunkStorage.set(o, s, n, Blocks.STONE.getDefaultState());
+			if (chunkStorage.get(o, s, n).getMaterial() == Material.AIR && s < (int)e) {
+				chunkStorage.set(o, s, n, stoneBlockState);
 			}
 
 			if (s <= random.nextInt(5)) {
-				chunkStorage.set(o, s, n, Blocks.BEDROCK.getDefaultState());
+				chunkStorage.set(o, s, n, bedrockBlockState);
 			} else {
 				BlockState blockState3 = chunkStorage.get(o, s, n);
-				if (blockState3.getBlock().getMaterial() == Material.AIR) {
+				if (blockState3.getMaterial() == Material.AIR) {
 					r = -1;
 				} else if (blockState3.getBlock() == Blocks.STONE) {
 					if (r == -1) {
 						bl2 = false;
 						if (q <= 0) {
-							blockState = null;
-							blockState2 = Blocks.STONE.getDefaultState();
+							blockState = airBlockState;
+							blockState2 = stoneBlockState;
 						} else if (s >= p - 4 && s <= p + 1) {
-							blockState = Blocks.STAINED_TERRACOTTA.getDefaultState();
+							blockState = STAINED_TERRACOTTA;
 							blockState2 = this.baseBlock;
 						}
 
-						if (s < p && (blockState == null || blockState.getBlock().getMaterial() == Material.AIR)) {
-							blockState = Blocks.WATER.getDefaultState();
+						if (s < p && (blockState == null || blockState.getMaterial() == Material.AIR)) {
+							blockState = waterBlockState;
 						}
 
 						r = q + Math.max(0, s - p);
@@ -137,9 +141,9 @@ public class MesaBiome extends Biome {
 								if (s > p + 3 + q) {
 									BlockState blockState4;
 									if (s < 64 || s > 127) {
-										blockState4 = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.ORANGE);
+										blockState4 = ORANGE_TERRACOTTA;
 									} else if (bl) {
-										blockState4 = Blocks.TERRACOTTA.getDefaultState();
+										blockState4 = TERRACOTTA;
 									} else {
 										blockState4 = this.calculateLayerBlockState(i, s, j);
 									}
@@ -150,23 +154,22 @@ public class MesaBiome extends Biome {
 									bl2 = true;
 								}
 							} else if (bl) {
-								chunkStorage.set(o, s, n, Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.COARSE_DIRT));
+								chunkStorage.set(o, s, n, COARSE_DIRT);
 							} else {
-								chunkStorage.set(o, s, n, Blocks.GRASS.getDefaultState());
+								chunkStorage.set(o, s, n, GRASS);
 							}
 						} else {
 							chunkStorage.set(o, s, n, blockState2);
 							if (blockState2.getBlock() == Blocks.STAINED_TERRACOTTA) {
-								chunkStorage.set(o, s, n, blockState2.getBlock().getDefaultState().with(WoolBlock.COLOR, DyeColor.ORANGE));
+								chunkStorage.set(o, s, n, ORANGE_TERRACOTTA);
 							}
 						}
 					} else if (r > 0) {
 						r--;
 						if (bl2) {
-							chunkStorage.set(o, s, n, Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.ORANGE));
+							chunkStorage.set(o, s, n, ORANGE_TERRACOTTA);
 						} else {
-							BlockState blockState7 = this.calculateLayerBlockState(i, s, j);
-							chunkStorage.set(o, s, n, blockState7);
+							chunkStorage.set(o, s, n, this.calculateLayerBlockState(i, s, j));
 						}
 					}
 				}
@@ -176,14 +179,14 @@ public class MesaBiome extends Biome {
 
 	private void initLayerBlocks(long seed) {
 		this.layerBlocks = new BlockState[64];
-		Arrays.fill(this.layerBlocks, Blocks.TERRACOTTA.getDefaultState());
+		Arrays.fill(this.layerBlocks, TERRACOTTA);
 		Random random = new Random(seed);
 		this.layerNoise = new PerlinNoiseGenerator(random, 1);
 
 		for (int i = 0; i < 64; i++) {
 			i += random.nextInt(5) + 1;
 			if (i < 64) {
-				this.layerBlocks[i] = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.ORANGE);
+				this.layerBlocks[i] = ORANGE_TERRACOTTA;
 			}
 		}
 
@@ -194,7 +197,7 @@ public class MesaBiome extends Biome {
 			int m = random.nextInt(64);
 
 			for (int n = 0; m + n < 64 && n < l; n++) {
-				this.layerBlocks[m + n] = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.YELLOW);
+				this.layerBlocks[m + n] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.YELLOW);
 			}
 		}
 
@@ -205,7 +208,7 @@ public class MesaBiome extends Biome {
 			int r = random.nextInt(64);
 
 			for (int s = 0; r + s < 64 && s < q; s++) {
-				this.layerBlocks[r + s] = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.BROWN);
+				this.layerBlocks[r + s] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.BROWN);
 			}
 		}
 
@@ -216,7 +219,7 @@ public class MesaBiome extends Biome {
 			int w = random.nextInt(64);
 
 			for (int x = 0; w + x < 64 && x < v; x++) {
-				this.layerBlocks[w + x] = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.RED);
+				this.layerBlocks[w + x] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.RED);
 			}
 		}
 
@@ -228,35 +231,20 @@ public class MesaBiome extends Biome {
 			z += random.nextInt(16) + 4;
 
 			for (int ac = 0; z + ac < 64 && ac < ab; ac++) {
-				this.layerBlocks[z + ac] = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.WHITE);
+				this.layerBlocks[z + ac] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.WHITE);
 				if (z + ac > 1 && random.nextBoolean()) {
-					this.layerBlocks[z + ac - 1] = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.SILVER);
+					this.layerBlocks[z + ac - 1] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.SILVER);
 				}
 
 				if (z + ac < 63 && random.nextBoolean()) {
-					this.layerBlocks[z + ac + 1] = Blocks.STAINED_TERRACOTTA.getDefaultState().with(WoolBlock.COLOR, DyeColor.SILVER);
+					this.layerBlocks[z + ac + 1] = STAINED_TERRACOTTA.with(WoolBlock.COLOR, DyeColor.SILVER);
 				}
 			}
 		}
 	}
 
 	private BlockState calculateLayerBlockState(int x, int y, int z) {
-		int i = (int)Math.round(this.layerNoise.noise((double)x * 1.0 / 512.0, (double)x * 1.0 / 512.0) * 2.0);
+		int i = (int)Math.round(this.layerNoise.noise((double)x / 512.0, (double)x / 512.0) * 2.0);
 		return this.layerBlocks[(y + i + 64) % 64];
-	}
-
-	@Override
-	protected Biome getMutatedVariant(int id) {
-		boolean bl = this.id == Biome.MESA.id;
-		MesaBiome mesaBiome = new MesaBiome(id, bl, this.field_7250);
-		if (!bl) {
-			mesaBiome.setHeight(HILLS_HEIGHT);
-			mesaBiome.setName(this.name + " M");
-		} else {
-			mesaBiome.setName(this.name + " (Bryce)");
-		}
-
-		mesaBiome.seedModifier(this.field_4661, true);
-		return mesaBiome;
 	}
 }

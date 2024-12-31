@@ -58,7 +58,9 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 	protected void renderSpectatorMenu(Window window, float height, int x, float y, SpectatorMenuState state) {
 		GlStateManager.enableRescaleNormal();
 		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, height);
 		this.client.getTextureManager().bindTexture(WIDGETS_TEXTURE);
 		this.drawTexture((float)(x - 91), y, 0, 0, 182, 22);
@@ -108,7 +110,9 @@ public class SpectatorHud extends DrawableHelper implements SpectatorMenuCloseCa
 				int k = window.getHeight() - 35;
 				GlStateManager.pushMatrix();
 				GlStateManager.enableBlend();
-				GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+				GlStateManager.method_12288(
+					GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+				);
 				this.client.textRenderer.drawWithShadow(string, (float)j, (float)k, 16777215 + (i << 24));
 				GlStateManager.disableBlend();
 				GlStateManager.popMatrix();

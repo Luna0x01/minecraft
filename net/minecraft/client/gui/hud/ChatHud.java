@@ -1,9 +1,12 @@
 package net.minecraft.client.gui.hud;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -17,6 +20,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ChatHud extends DrawableHelper {
+	private static final Splitter field_13307 = Splitter.on('\n');
+	private static final Joiner field_13308 = Joiner.on("\\n");
 	private static final Logger LOGGER = LogManager.getLogger();
 	private final MinecraftClient client;
 	private final List<String> messageHistory = Lists.newArrayList();
@@ -44,7 +49,7 @@ public class ChatHud extends DrawableHelper {
 				float g = this.getChatScale();
 				int l = MathHelper.ceil((float)this.getWidth() / g);
 				GlStateManager.pushMatrix();
-				GlStateManager.translate(2.0F, 20.0F, 0.0F);
+				GlStateManager.translate(2.0F, 8.0F, 0.0F);
 				GlStateManager.scale(g, g, 1.0F);
 
 				for (int m = 0; m + this.scrolledLines < this.visibleMessages.size() && m < i; m++) {
@@ -67,7 +72,7 @@ public class ChatHud extends DrawableHelper {
 							if (o > 3) {
 								int p = 0;
 								int q = -m * 9;
-								fill(p, q - 9, p + l + 4, q, o / 2 << 24);
+								fill(p - 2, q - 9, p + l + 4, q, o / 2 << 24);
 								String string = chatHudLine.getText().asFormattedString();
 								GlStateManager.enableBlend();
 								this.client.textRenderer.drawWithShadow(string, (float)p, (float)(q - 8), 16777215 + (o << 24));
@@ -110,7 +115,7 @@ public class ChatHud extends DrawableHelper {
 
 	public void addMessage(Text message, int messageId) {
 		this.addMessage(message, messageId, this.client.inGameHud.getTicks(), false);
-		LOGGER.info("[CHAT] " + message.asUnformattedString());
+		LOGGER.info("[CHAT] " + field_13308.join(field_13307.split(message.asUnformattedString())));
 	}
 
 	private void addMessage(Text message, int messageId, int timestamp, boolean ignoreLimit) {
@@ -182,6 +187,7 @@ public class ChatHud extends DrawableHelper {
 		}
 	}
 
+	@Nullable
 	public Text getTextAt(int x, int y) {
 		if (!this.isChatFocused()) {
 			return null;
@@ -189,8 +195,8 @@ public class ChatHud extends DrawableHelper {
 			Window window = new Window(this.client);
 			int i = window.getScaleFactor();
 			float f = this.getChatScale();
-			int j = x / i - 3;
-			int k = y / i - 27;
+			int j = x / i - 2;
+			int k = y / i - 40;
 			j = MathHelper.floor((float)j / f);
 			k = MathHelper.floor((float)k / f);
 			if (j >= 0 && k >= 0) {

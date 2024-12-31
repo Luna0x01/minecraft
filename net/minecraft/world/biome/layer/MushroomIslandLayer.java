@@ -2,6 +2,7 @@ package net.minecraft.world.biome.layer;
 
 import net.minecraft.util.collection.IntArrayCache;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 
 public class MushroomIslandLayer extends Layer {
 	public MushroomIslandLayer(long l, Layer layer) {
@@ -27,7 +28,7 @@ public class MushroomIslandLayer extends Layer {
 				int w = is[r + 1 + (q + 1) * o];
 				this.method_145((long)(r + i), (long)(q + j));
 				if (w == 0 && s == 0 && t == 0 && u == 0 && v == 0 && this.nextInt(100) == 0) {
-					js[r + q * k] = Biome.MUSHROOM_ISLAND.id;
+					js[r + q * k] = Biome.getBiomeIndex(Biomes.MUSHROOM_ISLAND);
 				} else {
 					js[r + q * k] = w;
 				}

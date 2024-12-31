@@ -2,51 +2,49 @@ package net.minecraft.block;
 
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class WallSignBlock extends AbstractSignBlock {
-	public static final DirectionProperty FACING = DirectionProperty.of("facing", Direction.DirectionType.HORIZONTAL);
+	public static final DirectionProperty FACING = HorizontalFacingBlock.DIRECTION;
+	protected static final Box field_12832 = new Box(0.0, 0.28125, 0.0, 0.125, 0.78125, 1.0);
+	protected static final Box field_12833 = new Box(0.875, 0.28125, 0.0, 1.0, 0.78125, 1.0);
+	protected static final Box field_12834 = new Box(0.0, 0.28125, 0.0, 1.0, 0.78125, 0.125);
+	protected static final Box field_12835 = new Box(0.0, 0.28125, 0.875, 1.0, 0.78125, 1.0);
 
 	public WallSignBlock() {
 		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
 	}
 
 	@Override
-	public void setBoundingBox(BlockView view, BlockPos pos) {
-		Direction direction = view.getBlockState(pos).get(FACING);
-		float f = 0.28125F;
-		float g = 0.78125F;
-		float h = 0.0F;
-		float i = 1.0F;
-		float j = 0.125F;
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
-		switch (direction) {
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		switch ((Direction)state.get(FACING)) {
 			case NORTH:
-				this.setBoundingBox(h, f, 1.0F - j, i, g, 1.0F);
-				break;
+			default:
+				return field_12835;
 			case SOUTH:
-				this.setBoundingBox(h, f, 0.0F, i, g, j);
-				break;
+				return field_12834;
 			case WEST:
-				this.setBoundingBox(1.0F - j, f, h, 1.0F, g, i);
-				break;
+				return field_12833;
 			case EAST:
-				this.setBoundingBox(0.0F, f, h, j, g, i);
+				return field_12832;
 		}
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		Direction direction = state.get(FACING);
-		if (!world.getBlockState(pos.offset(direction.getOpposite())).getBlock().getMaterial().isSolid()) {
-			this.dropAsItem(world, pos, state, 0);
-			world.setAir(pos);
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		Direction direction = blockState.get(FACING);
+		if (!world.getBlockState(blockPos.offset(direction.getOpposite())).getMaterial().isSolid()) {
+			this.dropAsItem(world, blockPos, blockState, 0);
+			world.setAir(blockPos);
 		}
 
-		super.neighborUpdate(world, pos, state, block);
+		super.method_8641(blockState, world, blockPos, block);
 	}
 
 	@Override
@@ -62,6 +60,16 @@ public class WallSignBlock extends AbstractSignBlock {
 	@Override
 	public int getData(BlockState state) {
 		return ((Direction)state.get(FACING)).getId();
+	}
+
+	@Override
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package net.minecraft.item;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
@@ -16,31 +17,32 @@ public class ShearsItem extends Item {
 	}
 
 	@Override
-	public boolean onBlockBroken(ItemStack stack, World world, Block block, BlockPos pos, LivingEntity entity) {
-		if (block.getMaterial() != Material.FOLIAGE
-			&& block != Blocks.COBWEB
-			&& block != Blocks.TALLGRASS
-			&& block != Blocks.VINE
-			&& block != Blocks.TRIPWIRE
-			&& block != Blocks.WOOL) {
-			return super.onBlockBroken(stack, world, block, pos, entity);
-		} else {
-			stack.damage(1, entity);
-			return true;
-		}
+	public boolean method_3356(ItemStack itemStack, World world, BlockState blockState, BlockPos blockPos, LivingEntity livingEntity) {
+		itemStack.damage(1, livingEntity);
+		Block block = blockState.getBlock();
+		return blockState.getMaterial() != Material.FOLIAGE
+				&& block != Blocks.COBWEB
+				&& block != Blocks.TALLGRASS
+				&& block != Blocks.VINE
+				&& block != Blocks.TRIPWIRE
+				&& block != Blocks.WOOL
+			? super.method_3356(itemStack, world, blockState, blockPos, livingEntity)
+			: true;
 	}
 
 	@Override
-	public boolean isEffectiveOn(Block block) {
+	public boolean method_3346(BlockState blockState) {
+		Block block = blockState.getBlock();
 		return block == Blocks.COBWEB || block == Blocks.REDSTONE_WIRE || block == Blocks.TRIPWIRE;
 	}
 
 	@Override
-	public float getMiningSpeedMultiplier(ItemStack stack, Block block) {
-		if (block == Blocks.COBWEB || block.getMaterial() == Material.FOLIAGE) {
+	public float getBlockBreakingSpeed(ItemStack stack, BlockState state) {
+		Block block = state.getBlock();
+		if (block == Blocks.COBWEB || state.getMaterial() == Material.FOLIAGE) {
 			return 15.0F;
 		} else {
-			return block == Blocks.WOOL ? 5.0F : super.getMiningSpeedMultiplier(stack, block);
+			return block == Blocks.WOOL ? 5.0F : super.getBlockBreakingSpeed(stack, state);
 		}
 	}
 }

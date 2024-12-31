@@ -1,5 +1,6 @@
 package net.minecraft.client.particle;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -22,31 +23,32 @@ public class BlockDustParticle extends Particle {
 		this.scale /= 2.0F;
 	}
 
-	public BlockDustParticle setBlockPos(BlockPos pos) {
-		this.pos = pos;
+	public BlockDustParticle method_12260(BlockPos blockPos) {
+		this.pos = blockPos;
 		if (this.state.getBlock() == Blocks.GRASS) {
 			return this;
 		} else {
-			int i = this.state.getBlock().getBlendColor(this.world, pos);
-			this.red *= (float)(i >> 16 & 0xFF) / 255.0F;
-			this.green *= (float)(i >> 8 & 0xFF) / 255.0F;
-			this.blue *= (float)(i & 0xFF) / 255.0F;
+			this.method_12261(blockPos);
 			return this;
 		}
 	}
 
-	public BlockDustParticle setBlockPosFromPosition() {
-		this.pos = new BlockPos(this.x, this.y, this.z);
+	public BlockDustParticle method_12262() {
+		this.pos = new BlockPos(this.field_13428, this.field_13429, this.field_13430);
 		Block block = this.state.getBlock();
 		if (block == Blocks.GRASS) {
 			return this;
 		} else {
-			int i = block.getColor(this.state);
-			this.red *= (float)(i >> 16 & 0xFF) / 255.0F;
-			this.green *= (float)(i >> 8 & 0xFF) / 255.0F;
-			this.blue *= (float)(i & 0xFF) / 255.0F;
+			this.method_12261(null);
 			return this;
 		}
+	}
+
+	protected void method_12261(@Nullable BlockPos blockPos) {
+		int i = MinecraftClient.getInstance().method_12144().method_12157(this.state, this.field_13424, blockPos, 0);
+		this.red *= (float)(i >> 16 & 0xFF) / 255.0F;
+		this.green *= (float)(i >> 8 & 0xFF) / 255.0F;
+		this.blue *= (float)(i & 0xFF) / 255.0F;
 	}
 
 	@Override
@@ -68,10 +70,10 @@ public class BlockDustParticle extends Particle {
 			n = this.sprite.getFrameV((double)((this.field_1726 + 1.0F) / 4.0F * 16.0F));
 		}
 
-		float p = (float)(this.prevX + (this.x - this.prevX) * (double)tickDelta - field_1722);
-		float q = (float)(this.prevY + (this.y - this.prevY) * (double)tickDelta - field_1723);
-		float r = (float)(this.prevZ + (this.z - this.prevZ) * (double)tickDelta - field_1724);
-		int s = this.getLightmapCoordinates(tickDelta);
+		float p = (float)(this.field_13425 + (this.field_13428 - this.field_13425) * (double)tickDelta - field_1722);
+		float q = (float)(this.field_13426 + (this.field_13429 - this.field_13426) * (double)tickDelta - field_1723);
+		float r = (float)(this.field_13427 + (this.field_13430 - this.field_13427) * (double)tickDelta - field_1724);
+		int s = this.method_12243(tickDelta);
 		int t = s >> 16 & 65535;
 		int u = s & 65535;
 		builder.vertex((double)(p - g * o - j * o), (double)(q - h * o), (double)(r - i * o - k * o))
@@ -97,11 +99,11 @@ public class BlockDustParticle extends Particle {
 	}
 
 	@Override
-	public int getLightmapCoordinates(float f) {
-		int i = super.getLightmapCoordinates(f);
+	public int method_12243(float f) {
+		int i = super.method_12243(f);
 		int j = 0;
-		if (this.world.blockExists(this.pos)) {
-			j = this.world.getLight(this.pos, 0);
+		if (this.field_13424.blockExists(this.pos)) {
+			j = this.field_13424.getLight(this.pos, 0);
 		}
 
 		return i == 0 ? j : i;
@@ -110,7 +112,7 @@ public class BlockDustParticle extends Particle {
 	public static class Factory implements ParticleFactory {
 		@Override
 		public Particle createParticle(int id, World world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, int... arr) {
-			return new BlockDustParticle(world, x, y, z, velocityX, velocityY, velocityZ, Block.getStateFromRawId(arr[0])).setBlockPosFromPosition();
+			return new BlockDustParticle(world, x, y, z, velocityX, velocityY, velocityZ, Block.getStateFromRawId(arr[0])).method_12262();
 		}
 	}
 }

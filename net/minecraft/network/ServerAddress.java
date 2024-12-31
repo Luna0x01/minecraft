@@ -16,7 +16,11 @@ public class ServerAddress {
 	}
 
 	public String getAddress() {
-		return IDN.toASCII(this.address);
+		try {
+			return IDN.toASCII(this.address);
+		} catch (IllegalArgumentException var2) {
+			return "";
+		}
 	}
 
 	public int getPort() {
@@ -33,7 +37,7 @@ public class ServerAddress {
 				if (i > 0) {
 					String string = address.substring(1, i);
 					String string2 = address.substring(i + 1).trim();
-					if (string2.startsWith(":") && string2.length() > 0) {
+					if (string2.startsWith(":") && !string2.isEmpty()) {
 						string2 = string2.substring(1);
 						strings = new String[]{string, string2};
 					} else {
@@ -62,7 +66,7 @@ public class ServerAddress {
 		try {
 			String string = "com.sun.jndi.dns.DnsContextFactory";
 			Class.forName("com.sun.jndi.dns.DnsContextFactory");
-			Hashtable hashtable = new Hashtable();
+			Hashtable<String, String> hashtable = new Hashtable();
 			hashtable.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
 			hashtable.put("java.naming.provider.url", "dns:");
 			hashtable.put("com.sun.jndi.dns.timeout.retries", "1");

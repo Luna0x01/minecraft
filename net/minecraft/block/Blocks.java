@@ -1,9 +1,13 @@
 package net.minecraft.block;
 
+import com.google.common.collect.Sets;
+import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.Bootstrap;
 import net.minecraft.util.Identifier;
 
 public class Blocks {
+	private static final Set<Block> field_12591;
 	public static final Block AIR;
 	public static final Block STONE;
 	public static final GrassBlock GRASS;
@@ -202,15 +206,38 @@ public class Blocks {
 	public static final Block RED_SANDSTONE_STAIRS;
 	public static final SlabBlock DOUBLE_STONE_SLAB2;
 	public static final SlabBlock STONE_SLAB2;
+	public static final Block END_ROD;
+	public static final Block CHORUS_PLANT;
+	public static final Block CHORUS_FLOWER;
+	public static final Block PURPUR_BLOCK;
+	public static final Block PURPUR_PILLAR;
+	public static final Block PURPUR_STAIRS;
+	public static final SlabBlock DOUBLE_PURPUR_SLAB;
+	public static final SlabBlock PURPUR_SLAB;
+	public static final Block END_BRICKS;
+	public static final Block BEETROOTS;
+	public static final Block GRASS_PATH;
+	public static final Block END_GATEWAY;
+	public static final Block REPEATING_COMMAND_BLOCK;
+	public static final Block CHAIN_COMMAND_BLOCK;
+	public static final Block FROSTED_ICE;
+	public static final Block STRUCTURE_BLOCK;
 
+	@Nullable
 	private static Block getById(String id) {
-		return Block.REGISTRY.get(new Identifier(id));
+		Block block = Block.REGISTRY.get(new Identifier(id));
+		if (!field_12591.add(block)) {
+			throw new IllegalStateException("Invalid Block requested: " + id);
+		} else {
+			return block;
+		}
 	}
 
 	static {
 		if (!Bootstrap.isInitialized()) {
 			throw new RuntimeException("Accessed Blocks before Bootstrap!");
 		} else {
+			field_12591 = Sets.newHashSet();
 			AIR = getById("air");
 			STONE = getById("stone");
 			GRASS = (GrassBlock)getById("grass");
@@ -409,6 +436,23 @@ public class Blocks {
 			RED_SANDSTONE_STAIRS = getById("red_sandstone_stairs");
 			DOUBLE_STONE_SLAB2 = (SlabBlock)getById("double_stone_slab2");
 			STONE_SLAB2 = (SlabBlock)getById("stone_slab2");
+			END_ROD = getById("end_rod");
+			CHORUS_PLANT = getById("chorus_plant");
+			CHORUS_FLOWER = getById("chorus_flower");
+			PURPUR_BLOCK = getById("purpur_block");
+			PURPUR_PILLAR = getById("purpur_pillar");
+			PURPUR_STAIRS = getById("purpur_stairs");
+			DOUBLE_PURPUR_SLAB = (SlabBlock)getById("purpur_double_slab");
+			PURPUR_SLAB = (SlabBlock)getById("purpur_slab");
+			END_BRICKS = getById("end_bricks");
+			BEETROOTS = getById("beetroots");
+			GRASS_PATH = getById("grass_path");
+			END_GATEWAY = getById("end_gateway");
+			REPEATING_COMMAND_BLOCK = getById("repeating_command_block");
+			CHAIN_COMMAND_BLOCK = getById("chain_command_block");
+			FROSTED_ICE = getById("frosted_ice");
+			STRUCTURE_BLOCK = getById("structure_block");
+			field_12591.clear();
 		}
 	}
 }

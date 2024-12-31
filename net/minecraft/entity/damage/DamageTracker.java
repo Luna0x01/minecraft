@@ -2,6 +2,7 @@ package net.minecraft.entity.damage;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -56,7 +57,7 @@ public class DamageTracker {
 	}
 
 	public Text getDeathMessage() {
-		if (this.recentDamage.size() == 0) {
+		if (this.recentDamage.isEmpty()) {
 			return new TranslatableText("death.attack.generic", this.entity.getName());
 		} else {
 			DamageRecord damageRecord = this.getBiggestFall();
@@ -70,14 +71,14 @@ public class DamageTracker {
 					text3 = new TranslatableText("death.fell.accident." + this.getFallDeathSuffix(damageRecord), this.entity.getName());
 				} else if (text2 != null && (text == null || !text2.equals(text))) {
 					Entity entity2 = damageRecord.getDamageSource().getAttacker();
-					ItemStack itemStack = entity2 instanceof LivingEntity ? ((LivingEntity)entity2).getStackInHand() : null;
+					ItemStack itemStack = entity2 instanceof LivingEntity ? ((LivingEntity)entity2).getMainHandStack() : null;
 					if (itemStack != null && itemStack.hasCustomName()) {
 						text3 = new TranslatableText("death.fell.assist.item", this.entity.getName(), text2, itemStack.toHoverableText());
 					} else {
 						text3 = new TranslatableText("death.fell.assist", this.entity.getName(), text2);
 					}
 				} else if (text != null) {
-					ItemStack itemStack2 = entity instanceof LivingEntity ? ((LivingEntity)entity).getStackInHand() : null;
+					ItemStack itemStack2 = entity instanceof LivingEntity ? ((LivingEntity)entity).getMainHandStack() : null;
 					if (itemStack2 != null && itemStack2.hasCustomName()) {
 						text3 = new TranslatableText("death.fell.finish.item", this.entity.getName(), text, itemStack2.toHoverableText());
 					} else {
@@ -94,6 +95,7 @@ public class DamageTracker {
 		}
 	}
 
+	@Nullable
 	public LivingEntity getLastAttacker() {
 		LivingEntity livingEntity = null;
 		PlayerEntity playerEntity = null;
@@ -115,36 +117,38 @@ public class DamageTracker {
 		return (LivingEntity)(playerEntity != null && g >= f / 3.0F ? playerEntity : livingEntity);
 	}
 
+	@Nullable
 	private DamageRecord getBiggestFall() {
 		DamageRecord damageRecord = null;
 		DamageRecord damageRecord2 = null;
-		int i = 0;
 		float f = 0.0F;
+		float g = 0.0F;
 
-		for (int j = 0; j < this.recentDamage.size(); j++) {
-			DamageRecord damageRecord3 = (DamageRecord)this.recentDamage.get(j);
-			DamageRecord damageRecord4 = j > 0 ? (DamageRecord)this.recentDamage.get(j - 1) : null;
+		for (int i = 0; i < this.recentDamage.size(); i++) {
+			DamageRecord damageRecord3 = (DamageRecord)this.recentDamage.get(i);
+			DamageRecord damageRecord4 = i > 0 ? (DamageRecord)this.recentDamage.get(i - 1) : null;
 			if ((damageRecord3.getDamageSource() == DamageSource.FALL || damageRecord3.getDamageSource() == DamageSource.OUT_OF_WORLD)
 				&& damageRecord3.getFallDistance() > 0.0F
-				&& (damageRecord == null || damageRecord3.getFallDistance() > f)) {
-				if (j > 0) {
+				&& (damageRecord == null || damageRecord3.getFallDistance() > g)) {
+				if (i > 0) {
 					damageRecord = damageRecord4;
 				} else {
 					damageRecord = damageRecord3;
 				}
 
-				f = damageRecord3.getFallDistance();
+				g = damageRecord3.getFallDistance();
 			}
 
-			if (damageRecord3.getFallDeathSuffix() != null && (damageRecord2 == null || damageRecord3.getDamage() > (float)i)) {
+			if (damageRecord3.getFallDeathSuffix() != null && (damageRecord2 == null || damageRecord3.getDamage() > f)) {
 				damageRecord2 = damageRecord3;
+				f = damageRecord3.getDamage();
 			}
 		}
 
-		if (f > 5.0F && damageRecord != null) {
+		if (g > 5.0F && damageRecord != null) {
 			return damageRecord;
 		} else {
-			return i > 5 && damageRecord2 != null ? damageRecord2 : null;
+			return f > 5.0F && damageRecord2 != null ? damageRecord2 : null;
 		}
 	}
 

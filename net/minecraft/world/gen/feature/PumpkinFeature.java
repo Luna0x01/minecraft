@@ -13,7 +13,9 @@ public class PumpkinFeature extends Feature {
 		for (int i = 0; i < 64; i++) {
 			BlockPos blockPos2 = blockPos.add(random.nextInt(8) - random.nextInt(8), random.nextInt(4) - random.nextInt(4), random.nextInt(8) - random.nextInt(8));
 			if (world.isAir(blockPos2) && world.getBlockState(blockPos2.down()).getBlock() == Blocks.GRASS && Blocks.PUMPKIN.canBePlacedAtPos(world, blockPos2)) {
-				world.setBlockState(blockPos2, Blocks.PUMPKIN.getDefaultState().with(PumpkinBlock.FACING, Direction.DirectionType.HORIZONTAL.getRandomDirection(random)), 2);
+				world.setBlockState(
+					blockPos2, Blocks.PUMPKIN.getDefaultState().with(PumpkinBlock.DIRECTION, Direction.DirectionType.HORIZONTAL.getRandomDirection(random)), 2
+				);
 			}
 		}
 

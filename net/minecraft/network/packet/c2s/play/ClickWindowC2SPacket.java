@@ -4,6 +4,7 @@ import java.io.IOException;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ServerPlayPacketListener;
+import net.minecraft.util.ItemAction;
 import net.minecraft.util.PacketByteBuf;
 
 public class ClickWindowC2SPacket implements Packet<ServerPlayPacketListener> {
@@ -12,18 +13,18 @@ public class ClickWindowC2SPacket implements Packet<ServerPlayPacketListener> {
 	private int button;
 	private short transactionId;
 	private ItemStack selectedStack;
-	private int actionType;
+	private ItemAction field_13798;
 
 	public ClickWindowC2SPacket() {
 	}
 
-	public ClickWindowC2SPacket(int i, int j, int k, int l, ItemStack itemStack, short s) {
+	public ClickWindowC2SPacket(int i, int j, int k, ItemAction itemAction, ItemStack itemStack, short s) {
 		this.syncId = i;
 		this.slot = j;
 		this.button = k;
 		this.selectedStack = itemStack != null ? itemStack.copy() : null;
 		this.transactionId = s;
-		this.actionType = l;
+		this.field_13798 = itemAction;
 	}
 
 	public void apply(ServerPlayPacketListener serverPlayPacketListener) {
@@ -36,7 +37,7 @@ public class ClickWindowC2SPacket implements Packet<ServerPlayPacketListener> {
 		this.slot = buf.readShort();
 		this.button = buf.readByte();
 		this.transactionId = buf.readShort();
-		this.actionType = buf.readByte();
+		this.field_13798 = buf.readEnumConstant(ItemAction.class);
 		this.selectedStack = buf.readItemStack();
 	}
 
@@ -46,7 +47,7 @@ public class ClickWindowC2SPacket implements Packet<ServerPlayPacketListener> {
 		buf.writeShort(this.slot);
 		buf.writeByte(this.button);
 		buf.writeShort(this.transactionId);
-		buf.writeByte(this.actionType);
+		buf.writeEnumConstant(this.field_13798);
 		buf.writeItemStack(this.selectedStack);
 	}
 
@@ -70,7 +71,7 @@ public class ClickWindowC2SPacket implements Packet<ServerPlayPacketListener> {
 		return this.selectedStack;
 	}
 
-	public int getActionType() {
-		return this.actionType;
+	public ItemAction method_7977() {
+		return this.field_13798;
 	}
 }

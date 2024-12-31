@@ -5,11 +5,14 @@ import com.google.common.base.Predicates;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -23,17 +26,18 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.client.render.item.HeldItemRenderer;
+import net.minecraft.client.sound.SoundCategory;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.GlAllocationUtils;
+import net.minecraft.client.util.ScreenshotUtils;
 import net.minecraft.client.util.SmoothUtil;
 import net.minecraft.client.util.Window;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.decoration.ItemFrameEntity;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.SpiderEntity;
@@ -44,7 +48,9 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
@@ -54,6 +60,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.level.LevelInfo;
@@ -61,7 +68,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.util.glu.Project;
 
@@ -95,6 +101,7 @@ public class GameRenderer implements ResourceReloadListener {
 	private boolean thickFog;
 	private boolean renderHand = true;
 	private boolean blockOutlineEnabled = true;
+	private long field_13463;
 	private long lastWindowFocusedTime = MinecraftClient.getTime();
 	private long lastWorldRenderNanoTime;
 	private final NativeImageBackedTexture lightmapTexture;
@@ -204,23 +211,6 @@ public class GameRenderer implements ResourceReloadListener {
 		}
 	}
 
-	public void superSecretSettings() {
-		if (GLX.shadersSupported) {
-			if (this.client.getCameraEntity() instanceof PlayerEntity) {
-				if (this.shader != null) {
-					this.shader.disable();
-				}
-
-				this.forcedShaderIndex = (this.forcedShaderIndex + 1) % (SHADERS_LOCATIONS.length + 1);
-				if (this.forcedShaderIndex != SHADER_COUNT) {
-					this.loadShader(SHADERS_LOCATIONS[this.forcedShaderIndex]);
-				} else {
-					this.shader = null;
-				}
-			}
-		}
-	}
-
 	private void loadShader(Identifier id) {
 		try {
 			this.shader = new ShaderEffect(this.client.getTextureManager(), this.resourceManager, this.client.getFramebuffer(), id);
@@ -287,13 +277,11 @@ public class GameRenderer implements ResourceReloadListener {
 		this.firstPersonRenderer.updateHeldItems();
 		this.tickRainSplashing();
 		this.lastSkyDarkness = this.skyDarkness;
-		if (BossBar.darkenSky) {
+		if (this.client.inGameHud.method_12167().method_12173()) {
 			this.skyDarkness += 0.05F;
 			if (this.skyDarkness > 1.0F) {
 				this.skyDarkness = 1.0F;
 			}
-
-			BossBar.darkenSky = false;
 		} else if (this.skyDarkness > 0.0F) {
 			this.skyDarkness -= 0.0125F;
 		}
@@ -351,8 +339,8 @@ public class GameRenderer implements ResourceReloadListener {
 						entity,
 						entity.getBoundingBox().stretch(vec3d2.x * d, vec3d2.y * d, vec3d2.z * d).expand((double)f, (double)f, (double)f),
 						Predicates.and(EntityPredicate.EXCEPT_SPECTATOR, new Predicate<Entity>() {
-							public boolean apply(Entity entity) {
-								return entity.collides();
+							public boolean apply(@Nullable Entity entity) {
+								return entity != null && entity.collides();
 							}
 						})
 					);
@@ -360,8 +348,7 @@ public class GameRenderer implements ResourceReloadListener {
 
 				for (int j = 0; j < list.size(); j++) {
 					Entity entity2 = (Entity)list.get(j);
-					float h = entity2.getTargetingMargin();
-					Box box = entity2.getBoundingBox().expand((double)h, (double)h, (double)h);
+					Box box = entity2.getBoundingBox().expand((double)entity2.getTargetingMargin());
 					BlockHitResult blockHitResult = box.method_585(vec3d, vec3d3);
 					if (box.contains(vec3d)) {
 						if (g >= 0.0) {
@@ -370,9 +357,9 @@ public class GameRenderer implements ResourceReloadListener {
 							g = 0.0;
 						}
 					} else if (blockHitResult != null) {
-						double k = vec3d.distanceTo(blockHitResult.pos);
-						if (k < g || g == 0.0) {
-							if (entity2 == entity.vehicle) {
+						double h = vec3d.distanceTo(blockHitResult.pos);
+						if (h < g || g == 0.0) {
+							if (entity2.getRootVehicle() == entity.getRootVehicle()) {
 								if (g == 0.0) {
 									this.targetedEntity = entity2;
 									vec3d4 = blockHitResult.pos;
@@ -380,7 +367,7 @@ public class GameRenderer implements ResourceReloadListener {
 							} else {
 								this.targetedEntity = entity2;
 								vec3d4 = blockHitResult.pos;
-								g = k;
+								g = h;
 							}
 						}
 					}
@@ -437,8 +424,8 @@ public class GameRenderer implements ResourceReloadListener {
 				f /= (1.0F - 500.0F / (g + 500.0F)) * 2.0F + 1.0F;
 			}
 
-			Block block = Camera.getSubmergedBlock(this.client.world, entity, tickDelta);
-			if (block.getMaterial() == Material.WATER) {
+			BlockState blockState = Camera.method_9371(this.client.world, entity, tickDelta);
+			if (blockState.getMaterial() == Material.WATER) {
 				f = f * 60.0F / 70.0F;
 			}
 
@@ -496,7 +483,7 @@ public class GameRenderer implements ResourceReloadListener {
 				BlockState blockState = this.client.world.getBlockState(blockPos);
 				Block block = blockState.getBlock();
 				if (block == Blocks.BED) {
-					int i = ((Direction)blockState.get(BedBlock.FACING)).getHorizontal();
+					int i = ((Direction)blockState.get(BedBlock.DIRECTION)).getHorizontal();
 					GlStateManager.rotate((float)(i * 90), 0.0F, 1.0F, 0.0F);
 				}
 
@@ -514,9 +501,9 @@ public class GameRenderer implements ResourceReloadListener {
 					k += 180.0F;
 				}
 
-				double l = (double)(-MathHelper.sin(j / 180.0F * (float) Math.PI) * MathHelper.cos(k / 180.0F * (float) Math.PI)) * h;
-				double m = (double)(MathHelper.cos(j / 180.0F * (float) Math.PI) * MathHelper.cos(k / 180.0F * (float) Math.PI)) * h;
-				double n = (double)(-MathHelper.sin(k / 180.0F * (float) Math.PI)) * h;
+				double l = (double)(-MathHelper.sin(j * (float) (Math.PI / 180.0)) * MathHelper.cos(k * (float) (Math.PI / 180.0))) * h;
+				double m = (double)(MathHelper.cos(j * (float) (Math.PI / 180.0)) * MathHelper.cos(k * (float) (Math.PI / 180.0))) * h;
+				double n = (double)(-MathHelper.sin(k * (float) (Math.PI / 180.0))) * h;
 
 				for (int o = 0; o < 8; o++) {
 					float p = (float)((o & 1) * 2 - 1);
@@ -547,7 +534,7 @@ public class GameRenderer implements ResourceReloadListener {
 				GlStateManager.rotate(k - entity.pitch, 1.0F, 0.0F, 0.0F);
 			}
 		} else {
-			GlStateManager.translate(0.0F, 0.0F, -0.1F);
+			GlStateManager.translate(0.0F, 0.0F, 0.05F);
 		}
 
 		if (!this.client.options.field_955) {
@@ -598,7 +585,7 @@ public class GameRenderer implements ResourceReloadListener {
 		float g = this.client.player.lastTimeInPortal + (this.client.player.timeInPortal - this.client.player.lastTimeInPortal) * tickDelta;
 		if (g > 0.0F) {
 			int i = 20;
-			if (this.client.player.hasStatusEffect(StatusEffect.NAUSEA)) {
+			if (this.client.player.hasStatusEffect(StatusEffects.NAUSEA)) {
 				i = 7;
 			}
 
@@ -686,10 +673,10 @@ public class GameRenderer implements ResourceReloadListener {
 		GlStateManager.translate(8.0F, 8.0F, 8.0F);
 		GlStateManager.matrixMode(5888);
 		this.client.getTextureManager().bindTexture(this.lightmapTextureId);
-		GL11.glTexParameteri(3553, 10241, 9729);
-		GL11.glTexParameteri(3553, 10240, 9729);
-		GL11.glTexParameteri(3553, 10242, 10496);
-		GL11.glTexParameteri(3553, 10243, 10496);
+		GlStateManager.method_12294(3553, 10241, 9729);
+		GlStateManager.method_12294(3553, 10240, 9729);
+		GlStateManager.method_12294(3553, 10242, 10496);
+		GlStateManager.method_12294(3553, 10243, 10496);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.enableTexture();
 		GlStateManager.activeTexture(GLX.textureUnit);
@@ -698,7 +685,7 @@ public class GameRenderer implements ResourceReloadListener {
 	private void tickLightmap() {
 		this.lastLightmapFlicker = (float)((double)this.lastLightmapFlicker + (Math.random() - Math.random()) * Math.random() * Math.random());
 		this.lastLightmapFlicker = (float)((double)this.lastLightmapFlicker * 0.9);
-		this.lightmapFlicker = this.lightmapFlicker + (this.lastLightmapFlicker - this.lightmapFlicker) * 1.0F;
+		this.lightmapFlicker = this.lightmapFlicker + (this.lastLightmapFlicker - this.lightmapFlicker);
 		this.lightmapDirty = true;
 	}
 
@@ -734,13 +721,13 @@ public class GameRenderer implements ResourceReloadListener {
 						s = s * (1.0F - t) + s * 0.6F * t;
 					}
 
-					if (world.dimension.getType() == 1) {
+					if (world.dimension.getDimensionType().getId() == 1) {
 						q = 0.22F + j * 0.75F;
 						r = 0.28F + o * 0.75F;
 						s = 0.25F + p * 0.75F;
 					}
 
-					if (this.client.player.hasStatusEffect(StatusEffect.NIGHTVISION)) {
+					if (this.client.player.hasStatusEffect(StatusEffects.NIGHT_VISION)) {
 						float u = this.getNightVisionStrength(this.client.player, tickDelta);
 						float v = 1.0F / q;
 						if (v > 1.0F / r) {
@@ -820,7 +807,7 @@ public class GameRenderer implements ResourceReloadListener {
 	}
 
 	private float getNightVisionStrength(LivingEntity entity, float tickDelta) {
-		int i = entity.getEffectInstance(StatusEffect.NIGHTVISION).getDuration();
+		int i = entity.getEffectInstance(StatusEffects.NIGHT_VISION).getDuration();
 		return i > 200 ? 1.0F : 0.7F + MathHelper.sin(((float)i - tickDelta) * (float) Math.PI * 0.2F) * 0.3F;
 	}
 
@@ -837,7 +824,7 @@ public class GameRenderer implements ResourceReloadListener {
 		this.client.profiler.push("mouse");
 		if (bl && MinecraftClient.IS_MAC && this.client.focused && !Mouse.isInsideWindow()) {
 			Mouse.setGrabbed(false);
-			Mouse.setCursorPosition(Display.getWidth() / 2, Display.getHeight() / 2);
+			Mouse.setCursorPosition(Display.getWidth() / 2, Display.getHeight() / 2 - 20);
 			Mouse.setGrabbed(true);
 		}
 
@@ -883,6 +870,13 @@ public class GameRenderer implements ResourceReloadListener {
 				long r = System.nanoTime() - nanoTime;
 				long s = Math.max((long)(1000000000 / q / 4) - r, 0L);
 				this.renderWorld(tickDelta, System.nanoTime() + s);
+				if (this.client.isInSingleplayer() && this.field_13463 < MinecraftClient.getTime() - 1000L) {
+					this.field_13463 = MinecraftClient.getTime();
+					if (!this.client.getServer().method_12837()) {
+						this.method_12268();
+					}
+				}
+
 				if (GLX.shadersSupported) {
 					this.client.worldRenderer.drawEntityOutlineFramebuffer();
 					if (this.shader != null && this.shadersEnabled) {
@@ -922,19 +916,19 @@ public class GameRenderer implements ResourceReloadListener {
 				} catch (Throwable var16) {
 					CrashReport crashReport = CrashReport.create(var16, "Rendering screen");
 					CrashReportSection crashReportSection = crashReport.addElement("Screen render details");
-					crashReportSection.add("Screen name", new Callable<String>() {
+					crashReportSection.add("Screen name", new CrashCallable<String>() {
 						public String call() throws Exception {
 							return GameRenderer.this.client.currentScreen.getClass().getCanonicalName();
 						}
 					});
-					crashReportSection.add("Mouse location", new Callable<String>() {
+					crashReportSection.add("Mouse location", new CrashCallable<String>() {
 						public String call() throws Exception {
 							return String.format("Scaled: (%d, %d). Absolute: (%d, %d)", n, o, Mouse.getX(), Mouse.getY());
 						}
 					});
 					crashReportSection.add(
 						"Screen size",
-						new Callable<String>() {
+						new CrashCallable<String>() {
 							public String call() throws Exception {
 								return String.format(
 									"Scaled: (%d, %d). Absolute: (%d, %d). Scale factor of %d",
@@ -953,9 +947,34 @@ public class GameRenderer implements ResourceReloadListener {
 		}
 	}
 
+	private void method_12268() {
+		if (this.client.worldRenderer.method_12338() > 10 && this.client.worldRenderer.method_12339() && !this.client.getServer().method_12837()) {
+			BufferedImage bufferedImage = ScreenshotUtils.method_12153(this.client.width, this.client.height, this.client.getFramebuffer());
+			int i = bufferedImage.getWidth();
+			int j = bufferedImage.getHeight();
+			int k = 0;
+			int l = 0;
+			if (i > j) {
+				k = (i - j) / 2;
+				i = j;
+			} else {
+				l = (j - i) / 2;
+			}
+
+			try {
+				BufferedImage bufferedImage2 = new BufferedImage(64, 64, 1);
+				Graphics graphics = bufferedImage2.createGraphics();
+				graphics.drawImage(bufferedImage, 0, 0, 64, 64, k, l, k + i, l + i, null);
+				graphics.dispose();
+				ImageIO.write(bufferedImage2, "png", this.client.getServer().method_12838());
+			} catch (IOException var8) {
+				LOGGER.warn("Couldn't save auto screenshot", var8);
+			}
+		}
+	}
+
 	public void renderStreamIndicator(float tickDelta) {
 		this.setupHudMatrixMode();
-		this.client.inGameHud.renderStreamIndicator(new Window(this.client));
 	}
 
 	private boolean shouldRenderBlockOutline() {
@@ -978,29 +997,6 @@ public class GameRenderer implements ResourceReloadListener {
 			}
 
 			return bl;
-		}
-	}
-
-	private void renderDebugCrosshair(float tickDelta) {
-		if (this.client.options.debugEnabled && !this.client.options.hudHidden && !this.client.player.getReducedDebugInfo() && !this.client.options.reducedDebugInfo) {
-			Entity entity = this.client.getCameraEntity();
-			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 1, 0);
-			GL11.glLineWidth(1.0F);
-			GlStateManager.disableTexture();
-			GlStateManager.depthMask(false);
-			GlStateManager.pushMatrix();
-			GlStateManager.matrixMode(5888);
-			GlStateManager.loadIdentity();
-			this.transformCamera(tickDelta);
-			GlStateManager.translate(0.0F, entity.getEyeHeight(), 0.0F);
-			WorldRenderer.drawBox(new Box(0.0, 0.0, 0.0, 0.005, 1.0E-4, 1.0E-4), 255, 0, 0, 255);
-			WorldRenderer.drawBox(new Box(0.0, 0.0, 0.0, 1.0E-4, 1.0E-4, 0.005), 0, 0, 255, 255);
-			WorldRenderer.drawBox(new Box(0.0, 0.0, 0.0, 1.0E-4, 0.0033, 1.0E-4), 0, 255, 0, 255);
-			GlStateManager.popMatrix();
-			GlStateManager.depthMask(true);
-			GlStateManager.enableTexture();
-			GlStateManager.disableBlend();
 		}
 	}
 
@@ -1105,31 +1101,21 @@ public class GameRenderer implements ResourceReloadListener {
 			worldRenderer.renderEntities(entity, cameraView, tickDelta);
 			DiffuseLighting.disable();
 			this.disableLightmap();
-			GlStateManager.matrixMode(5888);
-			GlStateManager.popMatrix();
-			GlStateManager.pushMatrix();
-			if (this.client.result != null && entity.isSubmergedIn(Material.WATER) && bl) {
-				PlayerEntity playerEntity = (PlayerEntity)entity;
-				GlStateManager.disableAlphaTest();
-				this.client.profiler.swap("outline");
-				worldRenderer.drawBlockOutline(playerEntity, this.client.result, 0, tickDelta);
-				GlStateManager.enableAlphaTest();
-			}
 		}
 
 		GlStateManager.matrixMode(5888);
 		GlStateManager.popMatrix();
 		if (bl && this.client.result != null && !entity.isSubmergedIn(Material.WATER)) {
-			PlayerEntity playerEntity2 = (PlayerEntity)entity;
+			PlayerEntity playerEntity = (PlayerEntity)entity;
 			GlStateManager.disableAlphaTest();
 			this.client.profiler.swap("outline");
-			worldRenderer.drawBlockOutline(playerEntity2, this.client.result, 0, tickDelta);
+			worldRenderer.drawBlockOutline(playerEntity, this.client.result, 0, tickDelta);
 			GlStateManager.enableAlphaTest();
 		}
 
 		this.client.profiler.swap("destroyProgress");
 		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 1, 1, 0);
+		GlStateManager.method_12288(GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO);
 		this.client.getTextureManager().getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pushFilter(false, false);
 		worldRenderer.drawBlockDamage(Tessellator.getInstance(), Tessellator.getInstance().getBuffer(), entity, tickDelta);
 		this.client.getTextureManager().getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEX).pop();
@@ -1153,7 +1139,9 @@ public class GameRenderer implements ResourceReloadListener {
 		worldRenderer.renderWorldBorder(entity, tickDelta);
 		GlStateManager.disableBlend();
 		GlStateManager.enableCull();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+		GlStateManager.method_12288(
+			GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+		);
 		GlStateManager.alphaFunc(516, 0.1F);
 		this.renderFog(0, tickDelta);
 		GlStateManager.enableBlend();
@@ -1176,7 +1164,6 @@ public class GameRenderer implements ResourceReloadListener {
 		if (this.renderHand) {
 			GlStateManager.clear(256);
 			this.renderHand(tickDelta, anaglyphFilter);
-			this.renderDebugCrosshair(tickDelta);
 		}
 	}
 
@@ -1228,28 +1215,28 @@ public class GameRenderer implements ResourceReloadListener {
 				BlockPos blockPos2 = world.method_8562(blockPos.add(this.random.nextInt(i) - this.random.nextInt(i), 0, this.random.nextInt(i) - this.random.nextInt(i)));
 				Biome biome = world.getBiome(blockPos2);
 				BlockPos blockPos3 = blockPos2.down();
-				Block block = world.getBlockState(blockPos3).getBlock();
+				BlockState blockState = world.getBlockState(blockPos3);
 				if (blockPos2.getY() <= blockPos.getY() + i && blockPos2.getY() >= blockPos.getY() - i && biome.method_3830() && biome.getTemperature(blockPos2) >= 0.15F) {
 					double h = this.random.nextDouble();
 					double m = this.random.nextDouble();
-					if (block.getMaterial() == Material.LAVA) {
+					Box box = blockState.getCollisionBox((BlockView)world, blockPos3);
+					if (blockState.getMaterial() == Material.LAVA) {
 						this.client
 							.world
 							.addParticle(
 								ParticleType.SMOKE,
 								(double)blockPos2.getX() + h,
-								(double)((float)blockPos2.getY() + 0.1F) - block.getMinY(),
+								(double)((float)blockPos2.getY() + 0.1F) - box.minY,
 								(double)blockPos2.getZ() + m,
 								0.0,
 								0.0,
 								0.0,
 								new int[0]
 							);
-					} else if (block.getMaterial() != Material.AIR) {
-						block.setBoundingBox(world, blockPos3);
+					} else if (blockState.getMaterial() != Material.AIR) {
 						if (this.random.nextInt(++j) == 0) {
 							d = (double)blockPos3.getX() + h;
-							e = (double)((float)blockPos3.getY() + 0.1F) + block.getMaxY() - 1.0;
+							e = (double)((float)blockPos3.getY() + 0.1F) + box.maxY - 1.0;
 							g = (double)blockPos3.getZ() + m;
 						}
 
@@ -1258,7 +1245,7 @@ public class GameRenderer implements ResourceReloadListener {
 							.addParticle(
 								ParticleType.WATER_DROP,
 								(double)blockPos3.getX() + h,
-								(double)((float)blockPos3.getY() + 0.1F) + block.getMaxY(),
+								(double)((float)blockPos3.getY() + 0.1F) + box.maxY,
 								(double)blockPos3.getZ() + m,
 								0.0,
 								0.0,
@@ -1272,9 +1259,9 @@ public class GameRenderer implements ResourceReloadListener {
 			if (j > 0 && this.random.nextInt(3) < this.weatherSoundAttempts++) {
 				this.weatherSoundAttempts = 0;
 				if (e > (double)(blockPos.getY() + 1) && world.method_8562(blockPos).getY() > MathHelper.floor((float)blockPos.getY())) {
-					this.client.world.playSound(d, e, g, "ambient.weather.rain", 0.1F, 0.5F, false);
+					this.client.world.playSound(d, e, g, Sounds.WEATHER_RAIN_ABOVE, SoundCategory.WEATHER, 0.1F, 0.5F, false);
 				} else {
-					this.client.world.playSound(d, e, g, "ambient.weather.rain", 0.2F, 1.0F, false);
+					this.client.world.playSound(d, e, g, Sounds.WEATHER_RAIN, SoundCategory.WEATHER, 0.2F, 1.0F, false);
 				}
 			}
 		}
@@ -1292,9 +1279,11 @@ public class GameRenderer implements ResourceReloadListener {
 			Tessellator tessellator = Tessellator.getInstance();
 			BufferBuilder bufferBuilder = tessellator.getBuffer();
 			GlStateManager.disableCull();
-			GL11.glNormal3f(0.0F, 1.0F, 0.0F);
+			GlStateManager.method_12272(0.0F, 1.0F, 0.0F);
 			GlStateManager.enableBlend();
-			GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+			GlStateManager.method_12288(
+				GlStateManager.class_2870.SRC_ALPHA, GlStateManager.class_2866.ONE_MINUS_SRC_ALPHA, GlStateManager.class_2870.ONE, GlStateManager.class_2866.ZERO
+			);
 			GlStateManager.alphaFunc(516, 0.1F);
 			double d = entity.prevTickX + (entity.x - entity.prevTickX) * (double)tickDelta;
 			double e = entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta;
@@ -1339,7 +1328,7 @@ public class GameRenderer implements ResourceReloadListener {
 							this.random.setSeed((long)(p * p * 3121 + p * 45238971 ^ o * o * 418711 + o * 13761));
 							mutable.setPosition(p, u, o);
 							float x = biome.getTemperature(mutable);
-							if (world.getBiomeSource().method_3852(x, t) >= 0.15F) {
+							if (world.method_3726().method_11533(x, t) >= 0.15F) {
 								if (n != 0) {
 									if (n >= 0) {
 										tessellator.draw();
@@ -1350,7 +1339,7 @@ public class GameRenderer implements ResourceReloadListener {
 									bufferBuilder.begin(7, VertexFormats.PARTICLE);
 								}
 
-								double y = ((double)(this.ticks + p * p * 3121 + p * 45238971 + o * o * 418711 + o * 13761 & 31) + (double)tickDelta)
+								double y = -((double)(this.ticks + p * p * 3121 + p * 45238971 + o * o * 418711 + o * 13761 & 31) + (double)tickDelta)
 									/ 32.0
 									* (3.0 + this.random.nextDouble());
 								double z = (double)((float)p + 0.5F) - entity.x;
@@ -1361,22 +1350,22 @@ public class GameRenderer implements ResourceReloadListener {
 								int ad = world.getLight(mutable, 0);
 								int ae = ad >> 16 & 65535;
 								int af = ad & 65535;
-								bufferBuilder.vertex((double)p - r + 0.5, (double)u, (double)o - s + 0.5)
+								bufferBuilder.vertex((double)p - r + 0.5, (double)v, (double)o - s + 0.5)
 									.texture(0.0, (double)u * 0.25 + y)
 									.color(1.0F, 1.0F, 1.0F, ac)
 									.texture2(ae, af)
 									.next();
-								bufferBuilder.vertex((double)p + r + 0.5, (double)u, (double)o + s + 0.5)
+								bufferBuilder.vertex((double)p + r + 0.5, (double)v, (double)o + s + 0.5)
 									.texture(1.0, (double)u * 0.25 + y)
 									.color(1.0F, 1.0F, 1.0F, ac)
 									.texture2(ae, af)
 									.next();
-								bufferBuilder.vertex((double)p + r + 0.5, (double)v, (double)o + s + 0.5)
+								bufferBuilder.vertex((double)p + r + 0.5, (double)u, (double)o + s + 0.5)
 									.texture(1.0, (double)v * 0.25 + y)
 									.color(1.0F, 1.0F, 1.0F, ac)
 									.texture2(ae, af)
 									.next();
-								bufferBuilder.vertex((double)p - r + 0.5, (double)v, (double)o - s + 0.5)
+								bufferBuilder.vertex((double)p - r + 0.5, (double)u, (double)o - s + 0.5)
 									.texture(0.0, (double)v * 0.25 + y)
 									.color(1.0F, 1.0F, 1.0F, ac)
 									.texture2(ae, af)
@@ -1392,7 +1381,7 @@ public class GameRenderer implements ResourceReloadListener {
 									bufferBuilder.begin(7, VertexFormats.PARTICLE);
 								}
 
-								double ag = (double)(((float)(this.ticks & 511) + tickDelta) / 512.0F);
+								double ag = (double)(-((float)(this.ticks & 511) + tickDelta) / 512.0F);
 								double ah = this.random.nextDouble() + (double)h * 0.01 * (double)((float)this.random.nextGaussian());
 								double ai = this.random.nextDouble() + (double)(h * (float)this.random.nextGaussian()) * 0.001;
 								double aj = (double)((float)p + 0.5F) - entity.x;
@@ -1403,22 +1392,22 @@ public class GameRenderer implements ResourceReloadListener {
 								int an = (world.getLight(mutable, 0) * 3 + 15728880) / 4;
 								int ao = an >> 16 & 65535;
 								int ap = an & 65535;
-								bufferBuilder.vertex((double)p - r + 0.5, (double)u, (double)o - s + 0.5)
+								bufferBuilder.vertex((double)p - r + 0.5, (double)v, (double)o - s + 0.5)
 									.texture(0.0 + ah, (double)u * 0.25 + ag + ai)
 									.color(1.0F, 1.0F, 1.0F, am)
 									.texture2(ao, ap)
 									.next();
-								bufferBuilder.vertex((double)p + r + 0.5, (double)u, (double)o + s + 0.5)
+								bufferBuilder.vertex((double)p + r + 0.5, (double)v, (double)o + s + 0.5)
 									.texture(1.0 + ah, (double)u * 0.25 + ag + ai)
 									.color(1.0F, 1.0F, 1.0F, am)
 									.texture2(ao, ap)
 									.next();
-								bufferBuilder.vertex((double)p + r + 0.5, (double)v, (double)o + s + 0.5)
+								bufferBuilder.vertex((double)p + r + 0.5, (double)u, (double)o + s + 0.5)
 									.texture(1.0 + ah, (double)v * 0.25 + ag + ai)
 									.color(1.0F, 1.0F, 1.0F, am)
 									.texture2(ao, ap)
 									.next();
-								bufferBuilder.vertex((double)p - r + 0.5, (double)v, (double)o - s + 0.5)
+								bufferBuilder.vertex((double)p - r + 0.5, (double)u, (double)o - s + 0.5)
 									.texture(0.0 + ah, (double)v * 0.25 + ag + ai)
 									.color(1.0F, 1.0F, 1.0F, am)
 									.texture2(ao, ap)
@@ -1504,22 +1493,25 @@ public class GameRenderer implements ResourceReloadListener {
 			this.fogBlue *= o;
 		}
 
-		Block block = Camera.getSubmergedBlock(this.client.world, entity, tickDelta);
+		BlockState blockState = Camera.method_9371(this.client.world, entity, tickDelta);
 		if (this.thickFog) {
 			Vec3d vec3d4 = world.getCloudColor(tickDelta);
 			this.fogRed = (float)vec3d4.x;
 			this.fogGreen = (float)vec3d4.y;
 			this.fogBlue = (float)vec3d4.z;
-		} else if (block.getMaterial() == Material.WATER) {
-			float p = (float)EnchantmentHelper.getRespiration(entity) * 0.2F;
-			if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffect.WATER_BREATHING)) {
-				p = p * 0.3F + 0.6F;
+		} else if (blockState.getMaterial() == Material.WATER) {
+			float p = 0.0F;
+			if (entity instanceof LivingEntity) {
+				p = (float)EnchantmentHelper.getRespiration((LivingEntity)entity) * 0.2F;
+				if (((LivingEntity)entity).hasStatusEffect(StatusEffects.WATER_BREATHING)) {
+					p = p * 0.3F + 0.6F;
+				}
 			}
 
 			this.fogRed = 0.02F + p;
 			this.fogGreen = 0.02F + p;
 			this.fogBlue = 0.2F + p;
-		} else if (block.getMaterial() == Material.LAVA) {
+		} else if (blockState.getMaterial() == Material.LAVA) {
 			this.fogRed = 0.6F;
 			this.fogGreen = 0.1F;
 			this.fogBlue = 0.0F;
@@ -1530,8 +1522,8 @@ public class GameRenderer implements ResourceReloadListener {
 		this.fogGreen *= q;
 		this.fogBlue *= q;
 		double e = (entity.prevTickY + (entity.y - entity.prevTickY) * (double)tickDelta) * world.dimension.method_3994();
-		if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffect.BLINDNESS)) {
-			int r = ((LivingEntity)entity).getEffectInstance(StatusEffect.BLINDNESS).getDuration();
+		if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffects.BLINDNESS)) {
+			int r = ((LivingEntity)entity).getEffectInstance(StatusEffects.BLINDNESS).getDuration();
 			if (r < 20) {
 				e *= (double)(1.0F - (float)r / 20.0F);
 			} else {
@@ -1557,7 +1549,7 @@ public class GameRenderer implements ResourceReloadListener {
 			this.fogBlue = this.fogBlue * (1.0F - s) + this.fogBlue * 0.6F * s;
 		}
 
-		if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffect.NIGHTVISION)) {
+		if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffects.NIGHT_VISION)) {
 			float t = this.getNightVisionStrength((LivingEntity)entity, tickDelta);
 			float u = 1.0F / this.fogRed;
 			if (u > 1.0F / this.fogGreen) {
@@ -1587,23 +1579,18 @@ public class GameRenderer implements ResourceReloadListener {
 
 	private void renderFog(int i, float tickDelta) {
 		Entity entity = this.client.getCameraEntity();
-		boolean bl = false;
-		if (entity instanceof PlayerEntity) {
-			bl = ((PlayerEntity)entity).abilities.creativeMode;
-		}
-
-		GL11.glFog(2918, this.updateFogColorBuffer(this.fogRed, this.fogGreen, this.fogBlue, 1.0F));
-		GL11.glNormal3f(0.0F, -1.0F, 0.0F);
+		GlStateManager.method_12298(2918, this.updateFogColorBuffer(this.fogRed, this.fogGreen, this.fogBlue, 1.0F));
+		GlStateManager.method_12272(0.0F, -1.0F, 0.0F);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		Block block = Camera.getSubmergedBlock(this.client.world, entity, tickDelta);
-		if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffect.BLINDNESS)) {
+		BlockState blockState = Camera.method_9371(this.client.world, entity, tickDelta);
+		if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffects.BLINDNESS)) {
 			float f = 5.0F;
-			int j = ((LivingEntity)entity).getEffectInstance(StatusEffect.BLINDNESS).getDuration();
+			int j = ((LivingEntity)entity).getEffectInstance(StatusEffects.BLINDNESS).getDuration();
 			if (j < 20) {
 				f = 5.0F + (this.viewDistance - 5.0F) * (1.0F - (float)j / 20.0F);
 			}
 
-			GlStateManager.fogMode(9729);
+			GlStateManager.method_12285(GlStateManager.class_2867.LINEAR);
 			if (i == -1) {
 				GlStateManager.fogStart(0.0F);
 				GlStateManager.fogEnd(f * 0.8F);
@@ -1613,24 +1600,28 @@ public class GameRenderer implements ResourceReloadListener {
 			}
 
 			if (GLContext.getCapabilities().GL_NV_fog_distance) {
-				GL11.glFogi(34138, 34139);
+				GlStateManager.method_12300(34138, 34139);
 			}
 		} else if (this.thickFog) {
-			GlStateManager.fogMode(2048);
+			GlStateManager.method_12285(GlStateManager.class_2867.EXP);
 			GlStateManager.fogDensity(0.1F);
-		} else if (block.getMaterial() == Material.WATER) {
-			GlStateManager.fogMode(2048);
-			if (entity instanceof LivingEntity && ((LivingEntity)entity).hasStatusEffect(StatusEffect.WATER_BREATHING)) {
-				GlStateManager.fogDensity(0.01F);
+		} else if (blockState.getMaterial() == Material.WATER) {
+			GlStateManager.method_12285(GlStateManager.class_2867.EXP);
+			if (entity instanceof LivingEntity) {
+				if (((LivingEntity)entity).hasStatusEffect(StatusEffects.WATER_BREATHING)) {
+					GlStateManager.fogDensity(0.01F);
+				} else {
+					GlStateManager.fogDensity(0.1F - (float)EnchantmentHelper.getRespiration((LivingEntity)entity) * 0.03F);
+				}
 			} else {
-				GlStateManager.fogDensity(0.1F - (float)EnchantmentHelper.getRespiration(entity) * 0.03F);
+				GlStateManager.fogDensity(0.1F);
 			}
-		} else if (block.getMaterial() == Material.LAVA) {
-			GlStateManager.fogMode(2048);
+		} else if (blockState.getMaterial() == Material.LAVA) {
+			GlStateManager.method_12285(GlStateManager.class_2867.EXP);
 			GlStateManager.fogDensity(2.0F);
 		} else {
 			float g = this.viewDistance;
-			GlStateManager.fogMode(9729);
+			GlStateManager.method_12285(GlStateManager.class_2867.LINEAR);
 			if (i == -1) {
 				GlStateManager.fogStart(0.0F);
 				GlStateManager.fogEnd(g);
@@ -1640,10 +1631,10 @@ public class GameRenderer implements ResourceReloadListener {
 			}
 
 			if (GLContext.getCapabilities().GL_NV_fog_distance) {
-				GL11.glFogi(34138, 34139);
+				GlStateManager.method_12300(34138, 34139);
 			}
 
-			if (this.client.world.dimension.isFogThick((int)entity.x, (int)entity.z)) {
+			if (this.client.world.dimension.isFogThick((int)entity.x, (int)entity.z) || this.client.inGameHud.method_12167().method_12174()) {
 				GlStateManager.fogStart(g * 0.05F);
 				GlStateManager.fogEnd(Math.min(g, 192.0F) * 0.5F);
 			}

@@ -1,10 +1,10 @@
 package net.minecraft.enchantment;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.entity.EquipmentSlot;
 
 public class FlameEnchantment extends Enchantment {
-	public FlameEnchantment(int i, Identifier identifier, int j) {
-		super(i, identifier, j, EnchantmentTarget.BOW);
+	public FlameEnchantment(Enchantment.Rarity rarity, EquipmentSlot... equipmentSlots) {
+		super(rarity, EnchantmentTarget.BOW, equipmentSlots);
 		this.setName("arrowFire");
 	}
 

@@ -9,7 +9,6 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.TextureOffset;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.util.GlAllocationUtils;
-import org.lwjgl.opengl.GL11;
 
 public class ModelPart {
 	public float textureWidth = 64.0F;
@@ -204,14 +203,14 @@ public class ModelPart {
 
 	private void compileList(float scale) {
 		this.glList = GlAllocationUtils.genLists(1);
-		GL11.glNewList(this.glList, 4864);
+		GlStateManager.method_12312(this.glList, 4864);
 		BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
 
 		for (int i = 0; i < this.cuboids.size(); i++) {
 			((ModelBox)this.cuboids.get(i)).draw(bufferBuilder, scale);
 		}
 
-		GL11.glEndList();
+		GlStateManager.method_12270();
 		this.compiledList = true;
 	}
 

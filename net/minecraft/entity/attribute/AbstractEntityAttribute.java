@@ -1,12 +1,14 @@
 package net.minecraft.entity.attribute;
 
+import javax.annotation.Nullable;
+
 public abstract class AbstractEntityAttribute implements EntityAttribute {
 	private final EntityAttribute field_11926;
 	private final String id;
 	private final double defaultValue;
 	private boolean tracked;
 
-	protected AbstractEntityAttribute(EntityAttribute entityAttribute, String string, double d) {
+	protected AbstractEntityAttribute(@Nullable EntityAttribute entityAttribute, String string, double d) {
 		this.field_11926 = entityAttribute;
 		this.id = string;
 		this.defaultValue = d;
@@ -35,6 +37,7 @@ public abstract class AbstractEntityAttribute implements EntityAttribute {
 		return this;
 	}
 
+	@Nullable
 	@Override
 	public EntityAttribute getParent() {
 		return this.field_11926;

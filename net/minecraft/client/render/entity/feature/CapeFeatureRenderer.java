@@ -4,6 +4,9 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.render.entity.PlayerModelPart;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.math.MathHelper;
 
 public class CapeFeatureRenderer implements FeatureRenderer<AbstractClientPlayerEntity> {
@@ -18,47 +21,50 @@ public class CapeFeatureRenderer implements FeatureRenderer<AbstractClientPlayer
 			&& !abstractClientPlayerEntity.isInvisible()
 			&& abstractClientPlayerEntity.isPartVisible(PlayerModelPart.CAPE)
 			&& abstractClientPlayerEntity.getSkinId() != null) {
-			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-			this.playerRenderer.bindTexture(abstractClientPlayerEntity.getSkinId());
-			GlStateManager.pushMatrix();
-			GlStateManager.translate(0.0F, 0.0F, 0.125F);
-			double d = abstractClientPlayerEntity.capeX
-				+ (abstractClientPlayerEntity.prevCapeX - abstractClientPlayerEntity.capeX) * (double)h
-				- (abstractClientPlayerEntity.prevX + (abstractClientPlayerEntity.x - abstractClientPlayerEntity.prevX) * (double)h);
-			double e = abstractClientPlayerEntity.capeY
-				+ (abstractClientPlayerEntity.prevCapeY - abstractClientPlayerEntity.capeY) * (double)h
-				- (abstractClientPlayerEntity.prevY + (abstractClientPlayerEntity.y - abstractClientPlayerEntity.prevY) * (double)h);
-			double m = abstractClientPlayerEntity.capeZ
-				+ (abstractClientPlayerEntity.prevCapeZ - abstractClientPlayerEntity.capeZ) * (double)h
-				- (abstractClientPlayerEntity.prevZ + (abstractClientPlayerEntity.z - abstractClientPlayerEntity.prevZ) * (double)h);
-			float n = abstractClientPlayerEntity.prevBodyYaw + (abstractClientPlayerEntity.bodyYaw - abstractClientPlayerEntity.prevBodyYaw) * h;
-			double o = (double)MathHelper.sin(n * (float) Math.PI / 180.0F);
-			double p = (double)(-MathHelper.cos(n * (float) Math.PI / 180.0F));
-			float q = (float)e * 10.0F;
-			q = MathHelper.clamp(q, -6.0F, 32.0F);
-			float r = (float)(d * o + m * p) * 100.0F;
-			float s = (float)(d * p - m * o) * 100.0F;
-			if (r < 0.0F) {
-				r = 0.0F;
-			}
+			ItemStack itemStack = abstractClientPlayerEntity.getStack(EquipmentSlot.CHEST);
+			if (itemStack == null || itemStack.getItem() != Items.ELYTRA) {
+				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+				this.playerRenderer.bindTexture(abstractClientPlayerEntity.getSkinId());
+				GlStateManager.pushMatrix();
+				GlStateManager.translate(0.0F, 0.0F, 0.125F);
+				double d = abstractClientPlayerEntity.capeX
+					+ (abstractClientPlayerEntity.prevCapeX - abstractClientPlayerEntity.capeX) * (double)h
+					- (abstractClientPlayerEntity.prevX + (abstractClientPlayerEntity.x - abstractClientPlayerEntity.prevX) * (double)h);
+				double e = abstractClientPlayerEntity.capeY
+					+ (abstractClientPlayerEntity.prevCapeY - abstractClientPlayerEntity.capeY) * (double)h
+					- (abstractClientPlayerEntity.prevY + (abstractClientPlayerEntity.y - abstractClientPlayerEntity.prevY) * (double)h);
+				double m = abstractClientPlayerEntity.capeZ
+					+ (abstractClientPlayerEntity.prevCapeZ - abstractClientPlayerEntity.capeZ) * (double)h
+					- (abstractClientPlayerEntity.prevZ + (abstractClientPlayerEntity.z - abstractClientPlayerEntity.prevZ) * (double)h);
+				float n = abstractClientPlayerEntity.prevBodyYaw + (abstractClientPlayerEntity.bodyYaw - abstractClientPlayerEntity.prevBodyYaw) * h;
+				double o = (double)MathHelper.sin(n * (float) (Math.PI / 180.0));
+				double p = (double)(-MathHelper.cos(n * (float) (Math.PI / 180.0)));
+				float q = (float)e * 10.0F;
+				q = MathHelper.clamp(q, -6.0F, 32.0F);
+				float r = (float)(d * o + m * p) * 100.0F;
+				float s = (float)(d * p - m * o) * 100.0F;
+				if (r < 0.0F) {
+					r = 0.0F;
+				}
 
-			float t = abstractClientPlayerEntity.prevStrideDistance + (abstractClientPlayerEntity.strideDistance - abstractClientPlayerEntity.prevStrideDistance) * h;
-			q += MathHelper.sin(
-					(abstractClientPlayerEntity.prevHorizontalSpeed + (abstractClientPlayerEntity.horizontalSpeed - abstractClientPlayerEntity.prevHorizontalSpeed) * h)
-						* 6.0F
-				)
-				* 32.0F
-				* t;
-			if (abstractClientPlayerEntity.isSneaking()) {
-				q += 25.0F;
-			}
+				float t = abstractClientPlayerEntity.prevStrideDistance + (abstractClientPlayerEntity.strideDistance - abstractClientPlayerEntity.prevStrideDistance) * h;
+				q += MathHelper.sin(
+						(abstractClientPlayerEntity.prevHorizontalSpeed + (abstractClientPlayerEntity.horizontalSpeed - abstractClientPlayerEntity.prevHorizontalSpeed) * h)
+							* 6.0F
+					)
+					* 32.0F
+					* t;
+				if (abstractClientPlayerEntity.isSneaking()) {
+					q += 25.0F;
+				}
 
-			GlStateManager.rotate(6.0F + r / 2.0F + q, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotate(s / 2.0F, 0.0F, 0.0F, 1.0F);
-			GlStateManager.rotate(-s / 2.0F, 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-			this.playerRenderer.getModel().renderCape(0.0625F);
-			GlStateManager.popMatrix();
+				GlStateManager.rotate(6.0F + r / 2.0F + q, 1.0F, 0.0F, 0.0F);
+				GlStateManager.rotate(s / 2.0F, 0.0F, 0.0F, 1.0F);
+				GlStateManager.rotate(-s / 2.0F, 0.0F, 1.0F, 0.0F);
+				GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+				this.playerRenderer.getModel().renderCape(0.0625F);
+				GlStateManager.popMatrix();
+			}
 		}
 	}
 

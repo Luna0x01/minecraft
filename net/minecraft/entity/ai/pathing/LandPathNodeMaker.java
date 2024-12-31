@@ -1,241 +1,372 @@
 package net.minecraft.entity.ai.pathing;
 
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
+import javax.annotation.Nullable;
 import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.FenceBlock;
 import net.minecraft.block.FenceGateBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 
-public class LandPathNodeMaker extends PathNodeMaker {
-	private boolean canEnterOpenDoors;
-	private boolean canOpenDoors;
-	private boolean field_10243;
-	private boolean canSwim;
-	private boolean field_10245;
+public class LandPathNodeMaker extends class_2771 {
+	private float field_13093;
 
 	@Override
-	public void init(BlockView blockView, Entity entity) {
-		super.init(blockView, entity);
-		this.field_10245 = this.field_10243;
+	public void method_11915(BlockView blockView, MobEntity mobEntity) {
+		super.method_11915(blockView, mobEntity);
+		this.field_13093 = mobEntity.method_13075(LandType.WATER);
 	}
 
 	@Override
-	public void clear() {
-		super.clear();
-		this.field_10243 = this.field_10245;
+	public void method_11910() {
+		this.field_13076.method_13076(LandType.WATER, this.field_13093);
+		super.method_11910();
 	}
 
 	@Override
-	public PathNode getStart(Entity entity) {
+	public PathNode method_11918() {
 		int i;
-		if (this.canSwim && entity.isTouchingWater()) {
-			i = (int)entity.getBoundingBox().minY;
-			BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(entity.x), i, MathHelper.floor(entity.z));
+		if (this.method_11923() && this.field_13076.isTouchingWater()) {
+			i = (int)this.field_13076.getBoundingBox().minY;
+			BlockPos.Mutable mutable = new BlockPos.Mutable(MathHelper.floor(this.field_13076.x), i, MathHelper.floor(this.field_13076.z));
 
-			for (Block block = this.blockView.getBlockState(mutable).getBlock();
+			for (Block block = this.field_13075.getBlockState(mutable).getBlock();
 				block == Blocks.FLOWING_WATER || block == Blocks.WATER;
-				block = this.blockView.getBlockState(mutable).getBlock()
+				block = this.field_13075.getBlockState(mutable).getBlock()
 			) {
-				mutable.setPosition(MathHelper.floor(entity.x), ++i, MathHelper.floor(entity.z));
+				mutable.setPosition(MathHelper.floor(this.field_13076.x), ++i, MathHelper.floor(this.field_13076.z));
+			}
+		} else if (!this.field_13076.onGround) {
+			BlockPos blockPos = new BlockPos(this.field_13076);
+
+			while (
+				(
+						this.field_13075.getBlockState(blockPos).getMaterial() == Material.AIR
+							|| this.field_13075.getBlockState(blockPos).getBlock().blocksMovement(this.field_13075, blockPos)
+					)
+					&& blockPos.getY() > 0
+			) {
+				blockPos = blockPos.down();
 			}
 
-			this.field_10243 = false;
+			i = blockPos.up().getY();
 		} else {
-			i = MathHelper.floor(entity.getBoundingBox().minY + 0.5);
+			i = MathHelper.floor(this.field_13076.getBoundingBox().minY + 0.5);
 		}
 
-		return this.getNode(MathHelper.floor(entity.getBoundingBox().minX), i, MathHelper.floor(entity.getBoundingBox().minZ));
+		BlockPos blockPos2 = new BlockPos(this.field_13076);
+		LandType landType = this.method_11947(this.field_13076, blockPos2.getX(), i, blockPos2.getZ());
+		if (this.field_13076.method_13075(landType) < 0.0F) {
+			Set<BlockPos> set = new HashSet();
+			set.add(new BlockPos(this.field_13076.getBoundingBox().minX, (double)i, this.field_13076.getBoundingBox().minZ));
+			set.add(new BlockPos(this.field_13076.getBoundingBox().minX, (double)i, this.field_13076.getBoundingBox().maxZ));
+			set.add(new BlockPos(this.field_13076.getBoundingBox().maxX, (double)i, this.field_13076.getBoundingBox().minZ));
+			set.add(new BlockPos(this.field_13076.getBoundingBox().maxX, (double)i, this.field_13076.getBoundingBox().maxZ));
+
+			for (BlockPos blockPos3 : set) {
+				LandType landType2 = this.method_11948(this.field_13076, blockPos3);
+				if (this.field_13076.method_13075(landType2) >= 0.0F) {
+					return this.method_11912(blockPos3.getX(), blockPos3.getY(), blockPos3.getZ());
+				}
+			}
+		}
+
+		return this.method_11912(blockPos2.getX(), i, blockPos2.getZ());
 	}
 
 	@Override
-	public PathNode getNode(Entity entity, double x, double y, double z) {
-		return this.getNode(MathHelper.floor(x - (double)(entity.width / 2.0F)), MathHelper.floor(y), MathHelper.floor(z - (double)(entity.width / 2.0F)));
+	public PathNode method_11911(double d, double e, double f) {
+		return this.method_11912(
+			MathHelper.floor(d - (double)(this.field_13076.width / 2.0F)), MathHelper.floor(e), MathHelper.floor(f - (double)(this.field_13076.width / 2.0F))
+		);
 	}
 
 	@Override
-	public int getSuccessors(PathNode[] nodes, Entity entity, PathNode currentNode, PathNode endNode, float maxDistance) {
+	public int method_11917(PathNode[] pathNodes, PathNode pathNode, PathNode pathNode2, float f) {
 		int i = 0;
 		int j = 0;
-		if (this.getNodeType(entity, currentNode.posX, currentNode.posY + 1, currentNode.posZ) == 1) {
-			j = 1;
+		LandType landType = this.method_11947(this.field_13076, pathNode.posX, pathNode.posY + 1, pathNode.posZ);
+		if (this.field_13076.method_13075(landType) >= 0.0F) {
+			j = MathHelper.floor(Math.max(1.0F, this.field_13076.stepHeight));
 		}
 
-		PathNode pathNode = this.getPathNode(entity, currentNode.posX, currentNode.posY, currentNode.posZ + 1, j);
-		PathNode pathNode2 = this.getPathNode(entity, currentNode.posX - 1, currentNode.posY, currentNode.posZ, j);
-		PathNode pathNode3 = this.getPathNode(entity, currentNode.posX + 1, currentNode.posY, currentNode.posZ, j);
-		PathNode pathNode4 = this.getPathNode(entity, currentNode.posX, currentNode.posY, currentNode.posZ - 1, j);
-		if (pathNode != null && !pathNode.visited && pathNode.getDistance(endNode) < maxDistance) {
-			nodes[i++] = pathNode;
+		BlockPos blockPos = new BlockPos(pathNode.posX, pathNode.posY, pathNode.posZ).down();
+		double d = (double)pathNode.posY - (1.0 - this.field_13075.getBlockState(blockPos).getCollisionBox(this.field_13075, blockPos).maxY);
+		PathNode pathNode3 = this.method_11946(pathNode.posX, pathNode.posY, pathNode.posZ + 1, j, d, Direction.SOUTH);
+		PathNode pathNode4 = this.method_11946(pathNode.posX - 1, pathNode.posY, pathNode.posZ, j, d, Direction.WEST);
+		PathNode pathNode5 = this.method_11946(pathNode.posX + 1, pathNode.posY, pathNode.posZ, j, d, Direction.EAST);
+		PathNode pathNode6 = this.method_11946(pathNode.posX, pathNode.posY, pathNode.posZ - 1, j, d, Direction.NORTH);
+		if (pathNode3 != null && !pathNode3.visited && pathNode3.getDistance(pathNode2) < f) {
+			pathNodes[i++] = pathNode3;
 		}
 
-		if (pathNode2 != null && !pathNode2.visited && pathNode2.getDistance(endNode) < maxDistance) {
-			nodes[i++] = pathNode2;
+		if (pathNode4 != null && !pathNode4.visited && pathNode4.getDistance(pathNode2) < f) {
+			pathNodes[i++] = pathNode4;
 		}
 
-		if (pathNode3 != null && !pathNode3.visited && pathNode3.getDistance(endNode) < maxDistance) {
-			nodes[i++] = pathNode3;
+		if (pathNode5 != null && !pathNode5.visited && pathNode5.getDistance(pathNode2) < f) {
+			pathNodes[i++] = pathNode5;
 		}
 
-		if (pathNode4 != null && !pathNode4.visited && pathNode4.getDistance(endNode) < maxDistance) {
-			nodes[i++] = pathNode4;
+		if (pathNode6 != null && !pathNode6.visited && pathNode6.getDistance(pathNode2) < f) {
+			pathNodes[i++] = pathNode6;
+		}
+
+		boolean bl = pathNode6 == null || pathNode6.field_13074 == LandType.OPEN || pathNode6.field_13073 != 0.0F;
+		boolean bl2 = pathNode3 == null || pathNode3.field_13074 == LandType.OPEN || pathNode3.field_13073 != 0.0F;
+		boolean bl3 = pathNode5 == null || pathNode5.field_13074 == LandType.OPEN || pathNode5.field_13073 != 0.0F;
+		boolean bl4 = pathNode4 == null || pathNode4.field_13074 == LandType.OPEN || pathNode4.field_13073 != 0.0F;
+		if (bl && bl4) {
+			PathNode pathNode7 = this.method_11946(pathNode.posX - 1, pathNode.posY, pathNode.posZ - 1, j, d, Direction.NORTH);
+			if (pathNode7 != null && !pathNode7.visited && pathNode7.getDistance(pathNode2) < f) {
+				pathNodes[i++] = pathNode7;
+			}
+		}
+
+		if (bl && bl3) {
+			PathNode pathNode8 = this.method_11946(pathNode.posX + 1, pathNode.posY, pathNode.posZ - 1, j, d, Direction.NORTH);
+			if (pathNode8 != null && !pathNode8.visited && pathNode8.getDistance(pathNode2) < f) {
+				pathNodes[i++] = pathNode8;
+			}
+		}
+
+		if (bl2 && bl4) {
+			PathNode pathNode9 = this.method_11946(pathNode.posX - 1, pathNode.posY, pathNode.posZ + 1, j, d, Direction.SOUTH);
+			if (pathNode9 != null && !pathNode9.visited && pathNode9.getDistance(pathNode2) < f) {
+				pathNodes[i++] = pathNode9;
+			}
+		}
+
+		if (bl2 && bl3) {
+			PathNode pathNode10 = this.method_11946(pathNode.posX + 1, pathNode.posY, pathNode.posZ + 1, j, d, Direction.SOUTH);
+			if (pathNode10 != null && !pathNode10.visited && pathNode10.getDistance(pathNode2) < f) {
+				pathNodes[i++] = pathNode10;
+			}
 		}
 
 		return i;
 	}
 
-	private PathNode getPathNode(Entity entity, int x, int y, int z, int maxYStep) {
+	@Nullable
+	private PathNode method_11946(int i, int j, int k, int l, double d, Direction direction) {
 		PathNode pathNode = null;
-		int i = this.getNodeType(entity, x, y, z);
-		if (i == 2) {
-			return this.getNode(x, y, z);
+		BlockPos blockPos = new BlockPos(i, j, k);
+		BlockPos blockPos2 = blockPos.down();
+		double e = (double)j - (1.0 - this.field_13075.getBlockState(blockPos2).getCollisionBox(this.field_13075, blockPos2).maxY);
+		if (e - d > 1.0) {
+			return null;
 		} else {
-			if (i == 1) {
-				pathNode = this.getNode(x, y, z);
+			LandType landType = this.method_11947(this.field_13076, i, j, k);
+			float f = this.field_13076.method_13075(landType);
+			double g = (double)this.field_13076.width / 2.0;
+			if (f >= 0.0F) {
+				pathNode = this.method_11912(i, j, k);
+				pathNode.field_13074 = landType;
+				pathNode.field_13073 = Math.max(pathNode.field_13073, f);
 			}
 
-			if (pathNode == null && maxYStep > 0 && i != -3 && i != -4 && this.getNodeType(entity, x, y + maxYStep, z) == 1) {
-				pathNode = this.getNode(x, y + maxYStep, z);
-				y += maxYStep;
-			}
-
-			if (pathNode != null) {
-				int j = 0;
-
-				int k;
-				for (k = 0; y > 0; pathNode = this.getNode(x, y, z)) {
-					k = this.getNodeType(entity, x, y - 1, z);
-					if (this.field_10243 && k == -1) {
-						return null;
-					}
-
-					if (k != 1) {
-						break;
-					}
-
-					if (j++ >= entity.getSafeFallDistance()) {
-						return null;
-					}
-
-					if (--y <= 0) {
-						return null;
+			if (landType == LandType.WALKABLE) {
+				return pathNode;
+			} else {
+				if (pathNode == null && l > 0 && landType != LandType.FENCE && landType != LandType.TRAPDOOR) {
+					pathNode = this.method_11946(i, j + 1, k, l - 1, d, direction);
+					if (pathNode != null && (pathNode.field_13074 == LandType.OPEN || pathNode.field_13074 == LandType.WALKABLE)) {
+						double h = (double)(i - direction.getOffsetX()) + 0.5;
+						double m = (double)(k - direction.getOffsetZ()) + 0.5;
+						Box box = new Box(h - g, (double)j + 0.001, m - g, h + g, (double)((float)j + this.field_13076.height), m + g);
+						Box box2 = this.field_13075.getBlockState(blockPos).getCollisionBox(this.field_13075, blockPos);
+						Box box3 = box.stretch(0.0, box2.maxY - 0.002, 0.0);
+						if (this.field_13076.world.method_11488(box3)) {
+							pathNode = null;
+						}
 					}
 				}
 
-				if (k == -2) {
-					return null;
-				}
-			}
+				if (landType == LandType.OPEN) {
+					Box box4 = new Box(
+						(double)i - g + 0.5, (double)j + 0.001, (double)k - g + 0.5, (double)i + g + 0.5, (double)((float)j + this.field_13076.height), (double)k + g + 0.5
+					);
+					if (this.field_13076.world.method_11488(box4)) {
+						return null;
+					}
 
-			return pathNode;
+					if (this.field_13076.width >= 1.0F) {
+						LandType landType2 = this.method_11947(this.field_13076, i, j - 1, k);
+						if (landType2 == LandType.BLOCKED) {
+							pathNode = this.method_11912(i, j, k);
+							pathNode.field_13074 = LandType.WALKABLE;
+							pathNode.field_13073 = Math.max(pathNode.field_13073, f);
+							return pathNode;
+						}
+					}
+
+					int n = 0;
+
+					while (j > 0 && landType == LandType.OPEN) {
+						j--;
+						if (n++ >= this.field_13076.getSafeFallDistance()) {
+							return null;
+						}
+
+						landType = this.method_11947(this.field_13076, i, j, k);
+						f = this.field_13076.method_13075(landType);
+						if (landType != LandType.OPEN && f >= 0.0F) {
+							pathNode = this.method_11912(i, j, k);
+							pathNode.field_13074 = landType;
+							pathNode.field_13073 = Math.max(pathNode.field_13073, f);
+							break;
+						}
+
+						if (f < 0.0F) {
+							return null;
+						}
+					}
+				}
+
+				return pathNode;
+			}
 		}
 	}
 
-	private int getNodeType(Entity entity, int x, int y, int z) {
-		return getNodeType(
-			this.blockView,
-			entity,
-			x,
-			y,
-			z,
-			this.entityBlockXSize,
-			this.entityBlockYSize,
-			this.entityBlockZSize,
-			this.field_10243,
-			this.canOpenDoors,
-			this.canEnterOpenDoors
-		);
-	}
+	@Override
+	public LandType method_11914(BlockView blockView, int i, int j, int k, MobEntity mobEntity, int l, int m, int n, boolean bl, boolean bl2) {
+		EnumSet<LandType> enumSet = EnumSet.noneOf(LandType.class);
+		LandType landType = LandType.BLOCKED;
+		double d = (double)mobEntity.width / 2.0;
+		BlockPos blockPos = new BlockPos(mobEntity);
 
-	public static int getNodeType(
-		BlockView blockView, Entity entity, int x, int y, int z, int sizeX, int sizeY, int sizeZ, boolean bl, boolean canOpenDoors, boolean canEnterOpenDoors
-	) {
-		boolean bl2 = false;
-		BlockPos blockPos = new BlockPos(entity);
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
-
-		for (int i = x; i < x + sizeX; i++) {
-			for (int j = y; j < y + sizeY; j++) {
-				for (int k = z; k < z + sizeZ; k++) {
-					mutable.setPosition(i, j, k);
-					Block block = blockView.getBlockState(mutable).getBlock();
-					if (block.getMaterial() != Material.AIR) {
-						if (block == Blocks.TRAPDOOR || block == Blocks.IRON_TRAPDOOR) {
-							bl2 = true;
-						} else if (block != Blocks.FLOWING_WATER && block != Blocks.WATER) {
-							if (!canEnterOpenDoors && block instanceof DoorBlock && block.getMaterial() == Material.WOOD) {
-								return 0;
-							}
-						} else {
-							if (bl) {
-								return -1;
-							}
-
-							bl2 = true;
-						}
-
-						if (entity.world.getBlockState(mutable).getBlock() instanceof AbstractRailBlock) {
-							if (!(entity.world.getBlockState(blockPos).getBlock() instanceof AbstractRailBlock)
-								&& !(entity.world.getBlockState(blockPos.down()).getBlock() instanceof AbstractRailBlock)) {
-								return -3;
-							}
-						} else if (!block.blocksMovement(blockView, mutable) && (!canOpenDoors || !(block instanceof DoorBlock) || block.getMaterial() != Material.WOOD)) {
-							if (block instanceof FenceBlock || block instanceof FenceGateBlock || block instanceof WallBlock) {
-								return -3;
-							}
-
-							if (block == Blocks.TRAPDOOR || block == Blocks.IRON_TRAPDOOR) {
-								return -4;
-							}
-
-							Material material = block.getMaterial();
-							if (material != Material.LAVA) {
-								return 0;
-							}
-
-							if (!entity.isTouchingLava()) {
-								return -2;
-							}
-						}
+		for (int o = 0; o < l; o++) {
+			for (int p = 0; p < m; p++) {
+				for (int q = 0; q < n; q++) {
+					int r = o + i;
+					int s = p + j;
+					int t = q + k;
+					LandType landType2 = this.method_11913(blockView, r, s, t);
+					if (landType2 == LandType.DOOR_WOOD_CLOSED && bl && bl2) {
+						landType2 = LandType.WALKABLE;
 					}
+
+					if (landType2 == LandType.DOOR_OPEN && !bl2) {
+						landType2 = LandType.BLOCKED;
+					}
+
+					if (landType2 == LandType.RAIL
+						&& !(blockView.getBlockState(blockPos).getBlock() instanceof AbstractRailBlock)
+						&& !(blockView.getBlockState(blockPos.down()).getBlock() instanceof AbstractRailBlock)) {
+						landType2 = LandType.FENCE;
+					}
+
+					if (o == 0 && p == 0 && q == 0) {
+						landType = landType2;
+					}
+
+					enumSet.add(landType2);
 				}
 			}
 		}
 
-		return bl2 ? 2 : 1;
+		if (enumSet.contains(LandType.FENCE)) {
+			return LandType.FENCE;
+		} else {
+			LandType landType3 = LandType.BLOCKED;
+
+			for (LandType landType4 : enumSet) {
+				if (mobEntity.method_13075(landType4) < 0.0F) {
+					return landType4;
+				}
+
+				if (mobEntity.method_13075(landType4) >= mobEntity.method_13075(landType3)) {
+					landType3 = landType4;
+				}
+			}
+
+			return landType == LandType.OPEN && mobEntity.method_13075(landType3) == 0.0F ? LandType.OPEN : landType3;
+		}
 	}
 
-	public void setCanEnterOpenDoors(boolean value) {
-		this.canEnterOpenDoors = value;
+	private LandType method_11948(MobEntity mobEntity, BlockPos blockPos) {
+		return this.method_11947(mobEntity, blockPos.getX(), blockPos.getY(), blockPos.getZ());
 	}
 
-	public void setCanOpenDoors(boolean value) {
-		this.canOpenDoors = value;
+	private LandType method_11947(MobEntity mobEntity, int i, int j, int k) {
+		return this.method_11914(this.field_13075, i, j, k, mobEntity, this.field_13078, this.field_13079, this.field_13080, this.method_11922(), this.method_11920());
 	}
 
-	public void method_9300(boolean value) {
-		this.field_10243 = value;
+	@Override
+	public LandType method_11913(BlockView blockView, int i, int j, int k) {
+		LandType landType = this.method_11949(blockView, i, j, k);
+		if (landType == LandType.OPEN && j >= 1) {
+			LandType landType2 = this.method_11949(blockView, i, j - 1, k);
+			landType = landType2 != LandType.WALKABLE && landType2 != LandType.OPEN && landType2 != LandType.WATER && landType2 != LandType.LAVA
+				? LandType.WALKABLE
+				: LandType.OPEN;
+		}
+
+		BlockPos.Pooled pooled = BlockPos.Pooled.get();
+		if (landType == LandType.WALKABLE) {
+			for (int l = -1; l <= 1; l++) {
+				for (int m = -1; m <= 1; m++) {
+					if (l != 0 || m != 0) {
+						Block block = blockView.getBlockState(pooled.setPosition(l + i, j, m + k)).getBlock();
+						if (block == Blocks.CACTUS) {
+							landType = LandType.DANGER_CACTUS;
+						} else if (block == Blocks.FIRE) {
+							landType = LandType.DANGER_FIRE;
+						}
+					}
+				}
+			}
+		}
+
+		pooled.method_12576();
+		return landType;
 	}
 
-	public void setCanSwim(boolean value) {
-		this.canSwim = value;
-	}
-
-	public boolean canEnterOpenDoors() {
-		return this.canEnterOpenDoors;
-	}
-
-	public boolean canSwim() {
-		return this.canSwim;
-	}
-
-	public boolean method_9303() {
-		return this.field_10243;
+	private LandType method_11949(BlockView blockView, int i, int j, int k) {
+		BlockPos blockPos = new BlockPos(i, j, k);
+		BlockState blockState = blockView.getBlockState(blockPos);
+		Block block = blockState.getBlock();
+		Material material = blockState.getMaterial();
+		if (material == Material.AIR) {
+			return LandType.OPEN;
+		} else if (block == Blocks.TRAPDOOR || block == Blocks.IRON_TRAPDOOR || block == Blocks.LILY_PAD) {
+			return LandType.TRAPDOOR;
+		} else if (block == Blocks.FIRE) {
+			return LandType.DAMAGE_FIRE;
+		} else if (block == Blocks.CACTUS) {
+			return LandType.DAMAGE_CACTUS;
+		} else if (block instanceof DoorBlock && material == Material.WOOD && !(Boolean)blockState.get(DoorBlock.OPEN)) {
+			return LandType.DOOR_WOOD_CLOSED;
+		} else if (block instanceof DoorBlock && material == Material.IRON && !(Boolean)blockState.get(DoorBlock.OPEN)) {
+			return LandType.DOOR_IRON_CLOSED;
+		} else if (block instanceof DoorBlock && (Boolean)blockState.get(DoorBlock.OPEN)) {
+			return LandType.DOOR_OPEN;
+		} else if (block instanceof AbstractRailBlock) {
+			return LandType.RAIL;
+		} else if (!(block instanceof FenceBlock)
+			&& !(block instanceof WallBlock)
+			&& (!(block instanceof FenceGateBlock) || (Boolean)blockState.get(FenceGateBlock.OPEN))) {
+			if (material == Material.WATER) {
+				return LandType.WATER;
+			} else if (material == Material.LAVA) {
+				return LandType.LAVA;
+			} else {
+				return block.blocksMovement(blockView, blockPos) ? LandType.OPEN : LandType.BLOCKED;
+			}
+		} else {
+			return LandType.FENCE;
+		}
 	}
 }

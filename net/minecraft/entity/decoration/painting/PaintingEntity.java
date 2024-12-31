@@ -2,12 +2,14 @@ package net.minecraft.entity.decoration.painting;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.AbstractDecorationEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.sound.Sounds;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -85,8 +87,9 @@ public class PaintingEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
-	public void onBreak(Entity entity) {
+	public void onBreak(@Nullable Entity entity) {
 		if (this.world.getGameRules().getBoolean("doEntityDrops")) {
+			this.playSound(Sounds.ENTITY_PAINTING_BREAK, 1.0F, 1.0F);
 			if (entity instanceof PlayerEntity) {
 				PlayerEntity playerEntity = (PlayerEntity)entity;
 				if (playerEntity.abilities.creativeMode) {
@@ -99,9 +102,13 @@ public class PaintingEntity extends AbstractDecorationEntity {
 	}
 
 	@Override
+	public void onPlace() {
+		this.playSound(Sounds.ENTITY_PAINTING_PLACE, 1.0F, 1.0F);
+	}
+
+	@Override
 	public void refreshPositionAndAngles(double x, double y, double z, float yaw, float pitch) {
-		BlockPos blockPos = this.pos.add(x - this.x, y - this.y, z - this.z);
-		this.updatePosition((double)blockPos.getX(), (double)blockPos.getY(), (double)blockPos.getZ());
+		this.updatePosition(x, y, z);
 	}
 
 	@Override

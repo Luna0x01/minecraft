@@ -22,7 +22,7 @@ public class ClientStatusC2SPacket implements Packet<ServerPlayPacketListener> {
 
 	@Override
 	public void write(PacketByteBuf buf) throws IOException {
-		buf.writeEnum(this.mode);
+		buf.writeEnumConstant(this.mode);
 	}
 
 	public void apply(ServerPlayPacketListener serverPlayPacketListener) {

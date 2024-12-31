@@ -24,5 +24,6 @@ public class CombatItemRecipeDispatcher {
 
 		recipes.registerShapedRecipe(new ItemStack(Items.BOW, 1), " #X", "# X", " #X", 'X', Items.STRING, '#', Items.STICK);
 		recipes.registerShapedRecipe(new ItemStack(Items.ARROW, 4), "X", "#", "Y", 'Y', Items.FEATHER, 'X', Items.FLINT, '#', Items.STICK);
+		recipes.registerShapedRecipe(new ItemStack(Items.SPECTRAL_ARROW, 2), " # ", "#X#", " # ", 'X', Items.ARROW, '#', Items.GLOWSTONE_DUST);
 	}
 }

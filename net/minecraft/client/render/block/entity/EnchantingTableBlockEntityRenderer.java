@@ -26,7 +26,7 @@ public class EnchantingTableBlockEntityRenderer extends BlockEntityRenderer<Ench
 		}
 
 		float k = enchantingTableBlockEntity.openBookAnglePrev + j * g;
-		GlStateManager.rotate(-k * 180.0F / (float) Math.PI, 0.0F, 1.0F, 0.0F);
+		GlStateManager.rotate(-k * (180.0F / (float)Math.PI), 0.0F, 1.0F, 0.0F);
 		GlStateManager.rotate(80.0F, 0.0F, 0.0F, 1.0F);
 		this.bindTexture(BOOK_TEXTURE);
 		float l = enchantingTableBlockEntity.pageAngle + (enchantingTableBlockEntity.nextPageAngle - enchantingTableBlockEntity.pageAngle) * g + 0.25F;

@@ -33,8 +33,8 @@ public class JungleBiome extends Biome {
 		.with(Leaves1Block.VARIANT, PlanksBlock.WoodType.OAK)
 		.with(LeavesBlock.CHECK_DECAY, false);
 
-	public JungleBiome(int i, boolean bl) {
-		super(i);
+	public JungleBiome(boolean bl, Biome.Settings settings) {
+		super(settings);
 		this.field_7243 = bl;
 		if (bl) {
 			this.biomeDecorator.treesPerChunk = 2;
@@ -54,7 +54,7 @@ public class JungleBiome extends Biome {
 	@Override
 	public FoliageFeature method_3822(Random random) {
 		if (random.nextInt(10) == 0) {
-			return this.field_4631;
+			return field_4631;
 		} else if (random.nextInt(2) == 0) {
 			return new JungleBushFeature(JUNGLE_LOGS, OAK_LEAVES);
 		} else {

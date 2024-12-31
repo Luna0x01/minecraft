@@ -56,7 +56,7 @@ public class Profiler {
 
 	public List<Profiler.Section> getData(String location) {
 		if (!this.enabled) {
-			return null;
+			return Collections.emptyList();
 		} else {
 			String string = location;
 			long l = this.profilingLocationTimes.containsKey("root") ? (Long)this.profilingLocationTimes.get("root") : 0L;

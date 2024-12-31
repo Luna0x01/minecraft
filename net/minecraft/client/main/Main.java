@@ -17,10 +17,10 @@ import joptsimple.OptionSpec;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
 import net.minecraft.client.util.Session;
+import net.minecraft.util.JsonHelper;
 
 public class Main {
 	public static void main(String[] args) {
-		System.setProperty("java.net.preferIPv4Stack", "true");
 		OptionParser optionParser = new OptionParser();
 		optionParser.allowsUnrecognizedOptions();
 		optionParser.accepts("demo");
@@ -45,9 +45,10 @@ public class Main {
 		OptionSpec<String> optionSpec17 = optionParser.accepts("profileProperties").withRequiredArg().defaultsTo("{}", new String[0]);
 		OptionSpec<String> optionSpec18 = optionParser.accepts("assetIndex").withRequiredArg();
 		OptionSpec<String> optionSpec19 = optionParser.accepts("userType").withRequiredArg().defaultsTo("legacy", new String[0]);
-		OptionSpec<String> optionSpec20 = optionParser.nonOptions();
+		OptionSpec<String> optionSpec20 = optionParser.accepts("versionType").withRequiredArg().defaultsTo("release", new String[0]);
+		OptionSpec<String> optionSpec21 = optionParser.nonOptions();
 		OptionSet optionSet = optionParser.parse(args);
-		List<String> list = optionSet.valuesOf(optionSpec20);
+		List<String> list = optionSet.valuesOf(optionSpec21);
 		if (!list.isEmpty()) {
 			System.out.println("Completely ignored arguments: " + list);
 		}
@@ -57,7 +58,7 @@ public class Main {
 		if (string != null) {
 			try {
 				proxy = new Proxy(Type.SOCKS, new InetSocketAddress(string, (Integer)optionSet.valueOf(optionSpec7)));
-			} catch (Exception var46) {
+			} catch (Exception var48) {
 			}
 		}
 
@@ -78,22 +79,23 @@ public class Main {
 		boolean bl3 = optionSet.has("demo");
 		String string4 = (String)optionSet.valueOf(optionSpec13);
 		Gson gson = new GsonBuilder().registerTypeAdapter(PropertyMap.class, new Serializer()).create();
-		PropertyMap propertyMap = (PropertyMap)gson.fromJson((String)optionSet.valueOf(optionSpec16), PropertyMap.class);
-		PropertyMap propertyMap2 = (PropertyMap)gson.fromJson((String)optionSet.valueOf(optionSpec17), PropertyMap.class);
+		PropertyMap propertyMap = JsonHelper.deserialize(gson, (String)optionSet.valueOf(optionSpec16), PropertyMap.class);
+		PropertyMap propertyMap2 = JsonHelper.deserialize(gson, (String)optionSet.valueOf(optionSpec17), PropertyMap.class);
+		String string5 = (String)optionSet.valueOf(optionSpec20);
 		File file = (File)optionSet.valueOf(optionSpec3);
 		File file2 = optionSet.has(optionSpec4) ? (File)optionSet.valueOf(optionSpec4) : new File(file, "assets/");
 		File file3 = optionSet.has(optionSpec5) ? (File)optionSet.valueOf(optionSpec5) : new File(file, "resourcepacks/");
-		String string5 = optionSet.has(optionSpec11) ? (String)optionSpec11.value(optionSet) : (String)optionSpec10.value(optionSet);
-		String string6 = optionSet.has(optionSpec18) ? (String)optionSpec18.value(optionSet) : null;
-		String string7 = (String)optionSet.valueOf(optionSpec);
+		String string6 = optionSet.has(optionSpec11) ? (String)optionSpec11.value(optionSet) : (String)optionSpec10.value(optionSet);
+		String string7 = optionSet.has(optionSpec18) ? (String)optionSpec18.value(optionSet) : null;
+		String string8 = (String)optionSet.valueOf(optionSpec);
 		Integer integer = (Integer)optionSet.valueOf(optionSpec2);
-		Session session = new Session((String)optionSpec10.value(optionSet), string5, (String)optionSpec12.value(optionSet), (String)optionSpec19.value(optionSet));
+		Session session = new Session((String)optionSpec10.value(optionSet), string6, (String)optionSpec12.value(optionSet), (String)optionSpec19.value(optionSet));
 		RunArgs runArgs = new RunArgs(
 			new RunArgs.Args(session, propertyMap, propertyMap2, proxy),
 			new RunArgs.WindowInformation(i, j, bl, bl2),
-			new RunArgs.Directories(file, file3, file2, string6),
-			new RunArgs.Game(bl3, string4),
-			new RunArgs.AutoConnect(string7, integer)
+			new RunArgs.Directories(file, file3, file2, string7),
+			new RunArgs.Game(bl3, string4, string5),
+			new RunArgs.AutoConnect(string8, integer)
 		);
 		Runtime.getRuntime().addShutdownHook(new Thread("Client Shutdown Thread") {
 			public void run() {

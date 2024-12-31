@@ -3,6 +3,7 @@ package net.minecraft.client.render.entity.model;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.HorseType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
 import net.minecraft.util.math.MathHelper;
@@ -192,14 +193,14 @@ public class HorseBaseEntityModel extends EntityModel {
 	@Override
 	public void render(Entity entity, float handSwing, float handSwingAmount, float tickDelta, float age, float headPitch, float scale) {
 		HorseBaseEntity horseBaseEntity = (HorseBaseEntity)entity;
-		int i = horseBaseEntity.getType();
+		HorseType horseType = horseBaseEntity.method_13129();
 		float f = horseBaseEntity.method_6289(0.0F);
 		boolean bl = horseBaseEntity.method_6237();
 		boolean bl2 = bl && horseBaseEntity.isSaddled();
 		boolean bl3 = bl && horseBaseEntity.hasChest();
-		boolean bl4 = i == 1 || i == 2;
+		boolean bl4 = horseType.method_13149();
 		float g = horseBaseEntity.method_6256();
-		boolean bl5 = horseBaseEntity.rider != null;
+		boolean bl5 = horseBaseEntity.hasPassengers();
 		if (bl2) {
 			this.field_6423.render(scale);
 			this.field_6404.render(scale);
@@ -306,7 +307,7 @@ public class HorseBaseEntityModel extends EntityModel {
 		float g = this.method_5705(entity.prevHeadYaw, entity.headYaw, tickDelta);
 		float h = entity.prevPitch + (entity.pitch - entity.prevPitch) * tickDelta;
 		float i = g - f;
-		float j = h / (180.0F / (float)Math.PI);
+		float j = h * (float) (Math.PI / 180.0);
 		if (i > 20.0F) {
 			i = 20.0F;
 		}
@@ -326,7 +327,7 @@ public class HorseBaseEntityModel extends EntityModel {
 		float n = horseBaseEntity.getEatingAnimationProgress(tickDelta);
 		boolean bl = horseBaseEntity.field_6897 != 0;
 		boolean bl2 = horseBaseEntity.isSaddled();
-		boolean bl3 = horseBaseEntity.rider != null;
+		boolean bl3 = horseBaseEntity.hasPassengers();
 		float o = (float)entity.ticksAlive + tickDelta;
 		float p = MathHelper.cos(limbAngle * 0.6662F + (float) Math.PI);
 		float q = p * 0.8F * limbDistance;
@@ -338,16 +339,16 @@ public class HorseBaseEntityModel extends EntityModel {
 		this.field_6403.pivotZ = 10.0F;
 		this.torso.posX = 0.0F;
 		this.field_6415.posX = (float) (Math.PI / 6) + j;
-		this.field_6415.posY = i / (180.0F / (float)Math.PI);
+		this.field_6415.posY = i * (float) (Math.PI / 180.0);
 		this.field_6415.posX = l * ((float) (Math.PI / 12) + j) + k * 2.18166F + (1.0F - Math.max(l, k)) * this.field_6415.posX;
-		this.field_6415.posY = l * i / (180.0F / (float)Math.PI) + (1.0F - Math.max(l, k)) * this.field_6415.posY;
+		this.field_6415.posY = l * i * (float) (Math.PI / 180.0) + (1.0F - Math.max(l, k)) * this.field_6415.posY;
 		this.field_6415.pivotY = l * -6.0F + k * 11.0F + (1.0F - Math.max(l, k)) * this.field_6415.pivotY;
 		this.field_6415.pivotZ = l * -1.0F + k * -10.0F + (1.0F - Math.max(l, k)) * this.field_6415.pivotZ;
 		this.head.pivotY = l * 9.0F + m * this.head.pivotY;
 		this.field_6427.pivotZ = l * 18.0F + m * this.field_6427.pivotZ;
 		this.field_6403.pivotY = l * 5.5F + m * this.field_6403.pivotY;
 		this.field_6403.pivotZ = l * 15.0F + m * this.field_6403.pivotZ;
-		this.torso.posX = l * -45.0F / (180.0F / (float)Math.PI) + m * this.torso.posX;
+		this.torso.posX = l * -45.0F * (float) (Math.PI / 180.0) + m * this.torso.posX;
 		this.field_6418.pivotY = this.field_6415.pivotY;
 		this.field_6419.pivotY = this.field_6415.pivotY;
 		this.field_6420.pivotY = this.field_6415.pivotY;
@@ -361,16 +362,16 @@ public class HorseBaseEntityModel extends EntityModel {
 		this.field_6420.pivotZ = this.field_6415.pivotZ;
 		this.field_6421.pivotZ = this.field_6415.pivotZ;
 		this.field_6422.pivotZ = this.field_6415.pivotZ;
-		this.field_6416.pivotZ = 0.02F - n * 1.0F;
-		this.field_6417.pivotZ = 0.0F + n * 1.0F;
+		this.field_6416.pivotZ = 0.02F - n;
+		this.field_6417.pivotZ = n;
 		this.field_6424.pivotZ = this.field_6415.pivotZ;
 		this.field_6418.posX = this.field_6415.posX;
 		this.field_6419.posX = this.field_6415.posX;
 		this.field_6420.posX = this.field_6415.posX;
 		this.field_6421.posX = this.field_6415.posX;
 		this.field_6422.posX = this.field_6415.posX;
-		this.field_6416.posX = 0.0F - 0.09424778F * n;
-		this.field_6417.posX = 0.0F + (float) (Math.PI / 20) * n;
+		this.field_6416.posX = -0.09424778F * n;
+		this.field_6417.posX = (float) (Math.PI / 20) * n;
 		this.field_6424.posX = this.field_6415.posX;
 		this.field_6418.posY = this.field_6415.posY;
 		this.field_6419.posY = this.field_6415.posY;

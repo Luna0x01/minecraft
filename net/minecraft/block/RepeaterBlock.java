@@ -1,14 +1,19 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.client.particle.ParticleType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.CommonI18n;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
@@ -20,7 +25,7 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 
 	protected RepeaterBlock(boolean bl) {
 		super(bl);
-		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(DELAY, 1).with(LOCKED, false));
+		this.setDefaultState(this.stateManager.getDefaultState().with(DIRECTION, Direction.NORTH).with(DELAY, 1).with(LOCKED, false));
 	}
 
 	@Override
@@ -34,11 +39,32 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	}
 
 	@Override
-	public boolean onUse(World world, BlockPos pos, BlockState state, PlayerEntity player, Direction direction, float posX, float posY, float posZ) {
-		if (!player.abilities.allowModifyWorld) {
+	public BlockState withRotation(BlockState state, BlockRotation rotation) {
+		return state.with(DIRECTION, rotation.rotate(state.get(DIRECTION)));
+	}
+
+	@Override
+	public BlockState withMirror(BlockState state, BlockMirror mirror) {
+		return state.withRotation(mirror.getRotation(state.get(DIRECTION)));
+	}
+
+	@Override
+	public boolean method_421(
+		World world,
+		BlockPos blockPos,
+		BlockState blockState,
+		PlayerEntity playerEntity,
+		Hand hand,
+		@Nullable ItemStack itemStack,
+		Direction direction,
+		float f,
+		float g,
+		float h
+	) {
+		if (!playerEntity.abilities.allowModifyWorld) {
 			return false;
 		} else {
-			world.setBlockState(pos, state.withDefaultValue(DELAY), 3);
+			world.setBlockState(blockPos, blockState.withDefaultValue(DELAY), 3);
 			return true;
 		}
 	}
@@ -52,26 +78,27 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	protected BlockState getPoweredState(BlockState state) {
 		Integer integer = state.get(DELAY);
 		Boolean boolean_ = state.get(LOCKED);
-		Direction direction = state.get(FACING);
-		return Blocks.POWERED_REPEATER.getDefaultState().with(FACING, direction).with(DELAY, integer).with(LOCKED, boolean_);
+		Direction direction = state.get(DIRECTION);
+		return Blocks.POWERED_REPEATER.getDefaultState().with(DIRECTION, direction).with(DELAY, integer).with(LOCKED, boolean_);
 	}
 
 	@Override
 	protected BlockState getUnpoweredState(BlockState state) {
 		Integer integer = state.get(DELAY);
 		Boolean boolean_ = state.get(LOCKED);
-		Direction direction = state.get(FACING);
-		return Blocks.UNPOWERED_REPEATER.getDefaultState().with(FACING, direction).with(DELAY, integer).with(LOCKED, boolean_);
+		Direction direction = state.get(DIRECTION);
+		return Blocks.UNPOWERED_REPEATER.getDefaultState().with(DIRECTION, direction).with(DELAY, integer).with(LOCKED, boolean_);
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Items.REPEATER;
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Items.REPEATER;
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Items.REPEATER);
 	}
 
 	@Override
@@ -80,19 +107,19 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 	}
 
 	@Override
-	protected boolean emitsRedstonePower(Block block) {
-		return isRedstoneGate(block);
+	protected boolean stateEmitRedstonePower(BlockState state) {
+		return isRedstoneGateBlock(state);
 	}
 
 	@Override
-	public void randomDisplayTick(World world, BlockPos pos, BlockState state, Random rand) {
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (this.powered) {
-			Direction direction = state.get(FACING);
-			double d = (double)((float)pos.getX() + 0.5F) + (double)(rand.nextFloat() - 0.5F) * 0.2;
-			double e = (double)((float)pos.getY() + 0.4F) + (double)(rand.nextFloat() - 0.5F) * 0.2;
-			double f = (double)((float)pos.getZ() + 0.5F) + (double)(rand.nextFloat() - 0.5F) * 0.2;
+			Direction direction = state.get(DIRECTION);
+			double d = (double)((float)pos.getX() + 0.5F) + (double)(random.nextFloat() - 0.5F) * 0.2;
+			double e = (double)((float)pos.getY() + 0.4F) + (double)(random.nextFloat() - 0.5F) * 0.2;
+			double f = (double)((float)pos.getZ() + 0.5F) + (double)(random.nextFloat() - 0.5F) * 0.2;
 			float g = -5.0F;
-			if (rand.nextBoolean()) {
+			if (random.nextBoolean()) {
 				g = (float)((Integer)state.get(DELAY) * 2 - 1);
 			}
 
@@ -111,18 +138,18 @@ public class RepeaterBlock extends AbstractRedstoneGateBlock {
 
 	@Override
 	public BlockState stateFromData(int data) {
-		return this.getDefaultState().with(FACING, Direction.fromHorizontal(data)).with(LOCKED, false).with(DELAY, 1 + (data >> 2));
+		return this.getDefaultState().with(DIRECTION, Direction.fromHorizontal(data)).with(LOCKED, false).with(DELAY, 1 + (data >> 2));
 	}
 
 	@Override
 	public int getData(BlockState state) {
 		int i = 0;
-		i |= ((Direction)state.get(FACING)).getHorizontal();
+		i |= ((Direction)state.get(DIRECTION)).getHorizontal();
 		return i | (Integer)state.get(DELAY) - 1 << 2;
 	}
 
 	@Override
 	protected StateManager appendProperties() {
-		return new StateManager(this, FACING, DELAY, LOCKED);
+		return new StateManager(this, DIRECTION, DELAY, LOCKED);
 	}
 }

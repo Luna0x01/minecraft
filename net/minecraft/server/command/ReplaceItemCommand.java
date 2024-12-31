@@ -1,8 +1,10 @@
 package net.minecraft.server.command;
 
 import com.google.common.collect.Maps;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -13,6 +15,7 @@ import net.minecraft.command.CommandStats;
 import net.minecraft.command.IncorrectUsageException;
 import net.minecraft.command.InvalidNumberException;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
@@ -42,7 +45,7 @@ public class ReplaceItemCommand extends AbstractCommand {
 	}
 
 	@Override
-	public void execute(CommandSource source, String[] args) throws CommandException {
+	public void method_3279(MinecraftServer minecraftServer, CommandSource commandSource, String[] args) throws CommandException {
 		if (args.length < 1) {
 			throw new IncorrectUsageException("commands.replaceitem.usage");
 		} else {
@@ -72,14 +75,15 @@ public class ReplaceItemCommand extends AbstractCommand {
 				i = 2;
 			}
 
+			String string = args[i];
 			int k = this.method_9549(args[i++]);
 
 			Item item;
 			try {
-				item = getItem(source, args[i]);
-			} catch (InvalidNumberException var15) {
+				item = getItem(commandSource, args[i]);
+			} catch (InvalidNumberException var17) {
 				if (Block.get(args[i]) != Blocks.AIR) {
-					throw var15;
+					throw var17;
 				}
 
 				item = null;
@@ -90,12 +94,12 @@ public class ReplaceItemCommand extends AbstractCommand {
 			int m = args.length > i ? parseInt(args[i++]) : 0;
 			ItemStack itemStack = new ItemStack(item, l, m);
 			if (args.length > i) {
-				String string = method_4635(source, args, i).asUnformattedString();
+				String string2 = method_4635(commandSource, args, i).asUnformattedString();
 
 				try {
-					itemStack.setNbt(StringNbtReader.parse(string));
-				} catch (NbtException var14) {
-					throw new CommandException("commands.replaceitem.tagError", var14.getMessage());
+					itemStack.setNbt(StringNbtReader.parse(string2));
+				} catch (NbtException var16) {
+					throw new CommandException("commands.replaceitem.tagError", var16.getMessage());
 				}
 			}
 
@@ -104,9 +108,9 @@ public class ReplaceItemCommand extends AbstractCommand {
 			}
 
 			if (bl) {
-				source.setStat(CommandStats.Type.AFFECTED_ITEMS, 0);
-				BlockPos blockPos = getBlockPos(source, args, 1, false);
-				World world = source.getWorld();
+				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, 0);
+				BlockPos blockPos = getBlockPos(commandSource, args, 1, false);
+				World world = commandSource.getWorld();
 				BlockEntity blockEntity = world.getBlockEntity(blockPos);
 				if (blockEntity == null || !(blockEntity instanceof Inventory)) {
 					throw new CommandException("commands.replaceitem.noContainer", blockPos.getX(), blockPos.getY(), blockPos.getZ());
@@ -117,14 +121,14 @@ public class ReplaceItemCommand extends AbstractCommand {
 					inventory.setInvStack(k, itemStack);
 				}
 			} else {
-				Entity entity = getEntity(source, args[1]);
-				source.setStat(CommandStats.Type.AFFECTED_ITEMS, 0);
+				Entity entity = method_10711(minecraftServer, commandSource, args[1]);
+				commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, 0);
 				if (entity instanceof PlayerEntity) {
 					((PlayerEntity)entity).playerScreenHandler.sendContentUpdates();
 				}
 
 				if (!entity.equip(k, itemStack)) {
-					throw new CommandException("commands.replaceitem.failed", k, l, itemStack == null ? "Air" : itemStack.toHoverableText());
+					throw new CommandException("commands.replaceitem.failed", string, l, itemStack == null ? "Air" : itemStack.toHoverableText());
 				}
 
 				if (entity instanceof PlayerEntity) {
@@ -132,8 +136,8 @@ public class ReplaceItemCommand extends AbstractCommand {
 				}
 			}
 
-			source.setStat(CommandStats.Type.AFFECTED_ITEMS, l);
-			run(source, this, "commands.replaceitem.success", new Object[]{k, l, itemStack == null ? "Air" : itemStack.toHoverableText()});
+			commandSource.setStat(CommandStats.Type.AFFECTED_ITEMS, l);
+			run(commandSource, this, "commands.replaceitem.success", new Object[]{string, l, itemStack == null ? "Air" : itemStack.toHoverableText()});
 		}
 	}
 
@@ -146,22 +150,20 @@ public class ReplaceItemCommand extends AbstractCommand {
 	}
 
 	@Override
-	public List<String> getAutoCompleteHints(CommandSource source, String[] args, BlockPos pos) {
-		if (args.length == 1) {
-			return method_2894(args, new String[]{"entity", "block"});
-		} else if (args.length == 2 && args[0].equals("entity")) {
-			return method_2894(args, this.method_9548());
-		} else if (args.length >= 2 && args.length <= 4 && args[0].equals("block")) {
-			return method_10707(args, 1, pos);
-		} else if ((args.length != 3 || !args[0].equals("entity")) && (args.length != 5 || !args[0].equals("block"))) {
-			return (args.length != 4 || !args[0].equals("entity")) && (args.length != 6 || !args[0].equals("block")) ? null : method_10708(args, Item.REGISTRY.keySet());
+	public List<String> method_10738(MinecraftServer server, CommandSource source, String[] strings, @Nullable BlockPos pos) {
+		if (strings.length == 1) {
+			return method_2894(strings, new String[]{"entity", "block"});
+		} else if (strings.length == 2 && strings[0].equals("entity")) {
+			return method_2894(strings, server.getPlayerNames());
+		} else if (strings.length >= 2 && strings.length <= 4 && strings[0].equals("block")) {
+			return method_10707(strings, 1, pos);
+		} else if ((strings.length != 3 || !strings[0].equals("entity")) && (strings.length != 5 || !strings[0].equals("block"))) {
+			return (strings.length != 4 || !strings[0].equals("entity")) && (strings.length != 6 || !strings[0].equals("block"))
+				? Collections.emptyList()
+				: method_10708(strings, Item.REGISTRY.getKeySet());
 		} else {
-			return method_10708(args, field_10417.keySet());
+			return method_10708(strings, field_10417.keySet());
 		}
-	}
-
-	protected String[] method_9548() {
-		return MinecraftServer.getServer().getPlayerNames();
 	}
 
 	@Override
@@ -194,11 +196,13 @@ public class ReplaceItemCommand extends AbstractCommand {
 			field_10417.put("slot.horse." + n, 500 + n);
 		}
 
-		field_10417.put("slot.weapon", 99);
-		field_10417.put("slot.armor.head", 103);
-		field_10417.put("slot.armor.chest", 102);
-		field_10417.put("slot.armor.legs", 101);
-		field_10417.put("slot.armor.feet", 100);
+		field_10417.put("slot.weapon", 98);
+		field_10417.put("slot.weapon.mainhand", 98);
+		field_10417.put("slot.weapon.offhand", 99);
+		field_10417.put("slot.armor.head", 100 + EquipmentSlot.HEAD.method_13032());
+		field_10417.put("slot.armor.chest", 100 + EquipmentSlot.CHEST.method_13032());
+		field_10417.put("slot.armor.legs", 100 + EquipmentSlot.LEGS.method_13032());
+		field_10417.put("slot.armor.feet", 100 + EquipmentSlot.FEET.method_13032());
 		field_10417.put("slot.horse.saddle", 400);
 		field_10417.put("slot.horse.armor", 401);
 		field_10417.put("slot.horse.chest", 499);

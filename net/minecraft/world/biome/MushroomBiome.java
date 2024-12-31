@@ -4,8 +4,8 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.passive.MooshroomEntity;
 
 public class MushroomBiome extends Biome {
-	public MushroomBiome(int i) {
-		super(i);
+	public MushroomBiome(Biome.Settings settings) {
+		super(settings);
 		this.biomeDecorator.treesPerChunk = -100;
 		this.biomeDecorator.flowersPerChunk = -100;
 		this.biomeDecorator.grassPerChunk = -100;

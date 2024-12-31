@@ -1,8 +1,5 @@
 package net.minecraft.scoreboard;
 
-import java.util.List;
-import net.minecraft.entity.player.PlayerEntity;
-
 public class GenericScoreboardCriteria implements ScoreboardCriterion {
 	private final String name;
 
@@ -14,11 +11,6 @@ public class GenericScoreboardCriteria implements ScoreboardCriterion {
 	@Override
 	public String getName() {
 		return this.name;
-	}
-
-	@Override
-	public int method_4918(List<PlayerEntity> players) {
-		return 0;
 	}
 
 	@Override

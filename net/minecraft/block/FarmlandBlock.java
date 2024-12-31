@@ -1,11 +1,13 @@
 package net.minecraft.block;
 
 import java.util.Random;
+import javax.annotation.Nullable;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
@@ -16,27 +18,33 @@ import net.minecraft.world.World;
 
 public class FarmlandBlock extends Block {
 	public static final IntProperty MOISTURE = IntProperty.of("moisture", 0, 7);
+	protected static final Box field_12663 = new Box(0.0, 0.0, 0.0, 1.0, 0.9375, 1.0);
 
 	protected FarmlandBlock() {
 		super(Material.DIRT);
 		this.setDefaultState(this.stateManager.getDefaultState().with(MOISTURE, 0));
 		this.setTickRandomly(true);
-		this.setBoundingBox(0.0F, 0.0F, 0.0F, 1.0F, 0.9375F, 1.0F);
 		this.setOpacity(255);
 	}
 
 	@Override
-	public Box getCollisionBox(World world, BlockPos pos, BlockState state) {
-		return new Box((double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), (double)(pos.getX() + 1), (double)(pos.getY() + 1), (double)(pos.getZ() + 1));
+	public Box getCollisionBox(BlockState state, BlockView view, BlockPos pos) {
+		return field_12663;
+	}
+
+	@Nullable
+	@Override
+	public Box getCollisionBox(BlockState state, World world, BlockPos pos) {
+		return collisionBox;
 	}
 
 	@Override
-	public boolean hasTransparency() {
+	public boolean isFullBoundsCubeForCulling(BlockState blockState) {
 		return false;
 	}
 
 	@Override
-	public boolean renderAsNormalBlock() {
+	public boolean method_11562(BlockState state) {
 		return false;
 	}
 
@@ -56,17 +64,15 @@ public class FarmlandBlock extends Block {
 
 	@Override
 	public void onLandedUpon(World world, BlockPos pos, Entity entity, float distance) {
-		if (entity instanceof LivingEntity) {
-			if (!world.isClient && world.random.nextFloat() < distance - 0.5F) {
-				if (!(entity instanceof PlayerEntity) && !world.getGameRules().getBoolean("mobGriefing")) {
-					return;
-				}
-
-				world.setBlockState(pos, Blocks.DIRT.getDefaultState());
-			}
-
-			super.onLandedUpon(world, pos, entity, distance);
+		if (!world.isClient
+			&& world.random.nextFloat() < distance - 0.5F
+			&& entity instanceof LivingEntity
+			&& (entity instanceof PlayerEntity || world.getGameRules().getBoolean("mobGriefing"))
+			&& entity.width * entity.width * entity.height > 0.512F) {
+			world.setBlockState(pos, Blocks.DIRT.getDefaultState());
 		}
+
+		super.onLandedUpon(world, pos, entity, distance);
 	}
 
 	private boolean hasCrop(World world, BlockPos pos) {
@@ -76,7 +82,7 @@ public class FarmlandBlock extends Block {
 
 	private boolean isWatered(World world, BlockPos pos) {
 		for (BlockPos.Mutable mutable : BlockPos.mutableIterate(pos.add(-4, 0, -4), pos.add(4, 1, 4))) {
-			if (world.getBlockState(mutable).getBlock().getMaterial() == Material.WATER) {
+			if (world.getBlockState(mutable).getMaterial() == Material.WATER) {
 				return true;
 			}
 		}
@@ -85,37 +91,39 @@ public class FarmlandBlock extends Block {
 	}
 
 	@Override
-	public void neighborUpdate(World world, BlockPos pos, BlockState state, Block block) {
-		super.neighborUpdate(world, pos, state, block);
-		if (world.getBlockState(pos.up()).getBlock().getMaterial().isSolid()) {
-			world.setBlockState(pos, Blocks.DIRT.getDefaultState());
+	public void method_8641(BlockState blockState, World world, BlockPos blockPos, Block block) {
+		super.method_8641(blockState, world, blockPos, block);
+		if (world.getBlockState(blockPos.up()).getMaterial().isSolid()) {
+			world.setBlockState(blockPos, Blocks.DIRT.getDefaultState());
 		}
 	}
 
 	@Override
-	public boolean isSideInvisible(BlockView view, BlockPos pos, Direction facing) {
-		switch (facing) {
+	public boolean method_8654(BlockState state, BlockView view, BlockPos pos, Direction direction) {
+		switch (direction) {
 			case UP:
 				return true;
 			case NORTH:
 			case SOUTH:
 			case WEST:
 			case EAST:
-				Block block = view.getBlockState(pos).getBlock();
-				return !block.hasTransparency() && block != Blocks.FARMLAND;
+				BlockState blockState = view.getBlockState(pos.offset(direction));
+				Block block = blockState.getBlock();
+				return !blockState.isFullBoundsCubeForCulling() && block != Blocks.FARMLAND && block != Blocks.GRASS_PATH;
 			default:
-				return super.isSideInvisible(view, pos, facing);
+				return super.method_8654(state, view, pos, direction);
 		}
 	}
 
+	@Nullable
 	@Override
 	public Item getDropItem(BlockState state, Random random, int id) {
 		return Blocks.DIRT.getDropItem(Blocks.DIRT.getDefaultState().with(DirtBlock.VARIANT, DirtBlock.DirtType.DIRT), random, id);
 	}
 
 	@Override
-	public Item getPickItem(World world, BlockPos pos) {
-		return Item.fromBlock(Blocks.DIRT);
+	public ItemStack getItemStack(World world, BlockPos blockPos, BlockState blockState) {
+		return new ItemStack(Blocks.DIRT);
 	}
 
 	@Override

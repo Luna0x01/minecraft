@@ -1,7 +1,9 @@
 package net.minecraft.entity.passive;
 
+import javax.annotation.Nullable;
 import net.minecraft.entity.EntityCategoryProvider;
 import net.minecraft.entity.PathAwareEntity;
+import net.minecraft.sound.Sound;
 import net.minecraft.world.World;
 
 public abstract class GolemEntity extends PathAwareEntity implements EntityCategoryProvider {
@@ -13,19 +15,22 @@ public abstract class GolemEntity extends PathAwareEntity implements EntityCateg
 	public void handleFallDamage(float fallDistance, float damageMultiplier) {
 	}
 
+	@Nullable
 	@Override
-	protected String getAmbientSound() {
-		return "none";
+	protected Sound ambientSound() {
+		return null;
 	}
 
+	@Nullable
 	@Override
-	protected String getHurtSound() {
-		return "none";
+	protected Sound method_13048() {
+		return null;
 	}
 
+	@Nullable
 	@Override
-	protected String getDeathSound() {
-		return "none";
+	protected Sound deathSound() {
+		return null;
 	}
 
 	@Override

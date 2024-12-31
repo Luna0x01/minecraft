@@ -1,5 +1,6 @@
 package net.minecraft.world;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
@@ -8,6 +9,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.level.LevelGeneratorType;
 
 public interface BlockView {
+	@Nullable
 	BlockEntity getBlockEntity(BlockPos pos);
 
 	int getLight(BlockPos pos, int minBlockLight);

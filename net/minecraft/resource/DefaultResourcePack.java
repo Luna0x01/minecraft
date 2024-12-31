@@ -7,8 +7,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
+import net.minecraft.client.resource.AssetsIndex;
 import net.minecraft.client.resource.ResourceMetadataProvider;
 import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.util.Identifier;
@@ -16,10 +17,10 @@ import net.minecraft.util.MetadataSerializer;
 
 public class DefaultResourcePack implements ResourcePack {
 	public static final Set<String> NAMESPACES = ImmutableSet.of("minecraft", "realms");
-	private final Map<String, File> assetsIndex;
+	private final AssetsIndex assetsIndex;
 
-	public DefaultResourcePack(Map<String, File> map) {
-		this.assetsIndex = map;
+	public DefaultResourcePack(AssetsIndex assetsIndex) {
+		this.assetsIndex = assetsIndex;
 	}
 
 	@Override
@@ -37,8 +38,9 @@ public class DefaultResourcePack implements ResourcePack {
 		}
 	}
 
+	@Nullable
 	public InputStream openFile(Identifier id) throws FileNotFoundException {
-		File file = (File)this.assetsIndex.get(id.toString());
+		File file = this.assetsIndex.method_12496(id);
 		return file != null && file.isFile() ? new FileInputStream(file) : null;
 	}
 
@@ -48,7 +50,7 @@ public class DefaultResourcePack implements ResourcePack {
 
 	@Override
 	public boolean contains(Identifier id) {
-		return this.openClassLoader(id) != null || this.assetsIndex.containsKey(id.toString());
+		return this.openClassLoader(id) != null || this.assetsIndex.method_12497(id);
 	}
 
 	@Override
@@ -59,7 +61,7 @@ public class DefaultResourcePack implements ResourcePack {
 	@Override
 	public <T extends ResourceMetadataProvider> T parseMetadata(MetadataSerializer serializer, String key) throws IOException {
 		try {
-			InputStream inputStream = new FileInputStream((File)this.assetsIndex.get("pack.mcmeta"));
+			InputStream inputStream = new FileInputStream(this.assetsIndex.method_12495());
 			return AbstractFileResourcePack.parseMetadata(serializer, inputStream, key);
 		} catch (RuntimeException var4) {
 			return null;

@@ -1,14 +1,23 @@
 package net.minecraft.world.level;
 
-import java.util.concurrent.Callable;
+import com.google.common.collect.Maps;
+import java.util.Map;
+import java.util.Map.Entry;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.crash.CrashCallable;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRuleManager;
+import net.minecraft.world.dimension.DimensionType;
 
 public class LevelProperties {
+	private String field_13100;
+	private int field_13101;
+	private boolean field_13102;
 	public static final Difficulty NORMAL_DIFFICULTY = Difficulty.NORMAL;
 	private long seed;
 	private LevelGeneratorType levelGeneratorType = LevelGeneratorType.DEFAULT;
@@ -45,12 +54,20 @@ public class LevelProperties {
 	private double borderDamagePerBlock = 0.2;
 	private int borderWarningBlocks = 5;
 	private int borderWarningTime = 15;
+	private final Map<DimensionType, NbtCompound> field_13099 = Maps.newEnumMap(DimensionType.class);
 	private GameRuleManager gameRules = new GameRuleManager();
 
 	protected LevelProperties() {
 	}
 
 	public LevelProperties(NbtCompound nbtCompound) {
+		if (nbtCompound.contains("Version", 10)) {
+			NbtCompound nbtCompound2 = nbtCompound.getCompound("Version");
+			this.field_13100 = nbtCompound2.getString("Name");
+			this.field_13101 = nbtCompound2.getInt("Id");
+			this.field_13102 = nbtCompound2.getBoolean("Snapshot");
+		}
+
 		this.seed = nbtCompound.getLong("RandomSeed");
 		if (nbtCompound.contains("generatorName", 8)) {
 			String string = nbtCompound.getString("generatorName");
@@ -162,6 +179,14 @@ public class LevelProperties {
 		if (nbtCompound.contains("BorderWarningTime", 99)) {
 			this.borderWarningTime = nbtCompound.getInt("BorderWarningTime");
 		}
+
+		if (nbtCompound.contains("DimensionData", 10)) {
+			NbtCompound nbtCompound3 = nbtCompound.getCompound("DimensionData");
+
+			for (String string2 : nbtCompound3.getKeys()) {
+				this.field_13099.put(DimensionType.fromId(Integer.parseInt(string2)), nbtCompound3.getCompound(string2));
+			}
+		}
 	}
 
 	public LevelProperties(LevelInfo levelInfo, String string) {
@@ -219,19 +244,23 @@ public class LevelProperties {
 		this.borderWarningBlocks = levelProperties.borderWarningBlocks;
 	}
 
-	public NbtCompound toNbt() {
-		NbtCompound nbtCompound = new NbtCompound();
-		this.putNbt(nbtCompound, this.playerNbt);
-		return nbtCompound;
-	}
+	public NbtCompound toNbt(@Nullable NbtCompound nbt) {
+		if (nbt == null) {
+			nbt = this.playerNbt;
+		}
 
-	public NbtCompound toNbt(NbtCompound nbt) {
 		NbtCompound nbtCompound = new NbtCompound();
 		this.putNbt(nbtCompound, nbt);
 		return nbtCompound;
 	}
 
 	private void putNbt(NbtCompound worldNbt, NbtCompound playerData) {
+		NbtCompound nbtCompound = new NbtCompound();
+		nbtCompound.putString("Name", "1.9.4");
+		nbtCompound.putInt("Id", 184);
+		nbtCompound.putBoolean("Snapshot", false);
+		worldNbt.put("Version", nbtCompound);
+		worldNbt.putInt("DataVersion", 184);
 		worldNbt.putLong("RandomSeed", this.seed);
 		worldNbt.putString("generatorName", this.levelGeneratorType.getName());
 		worldNbt.putInt("generatorVersion", this.levelGeneratorType.getVersion());
@@ -270,6 +299,13 @@ public class LevelProperties {
 
 		worldNbt.putBoolean("DifficultyLocked", this.difficultyLocked);
 		worldNbt.put("GameRules", this.gameRules.getNbt());
+		NbtCompound nbtCompound2 = new NbtCompound();
+
+		for (Entry<DimensionType, NbtCompound> entry : this.field_13099.entrySet()) {
+			nbtCompound2.put(String.valueOf(((DimensionType)entry.getKey()).getId()), (NbtElement)entry.getValue());
+		}
+
+		worldNbt.put("DimensionData", nbtCompound2);
 		if (playerData != null) {
 			worldNbt.put("Player", playerData);
 		}
@@ -426,7 +462,7 @@ public class LevelProperties {
 	}
 
 	public String getGeneratorOptions() {
-		return this.generatorOptions;
+		return this.generatorOptions == null ? "" : this.generatorOptions;
 	}
 
 	public boolean areCheatsEnabled() {
@@ -538,14 +574,14 @@ public class LevelProperties {
 	}
 
 	public void addToCrashReport(CrashReportSection section) {
-		section.add("Level seed", new Callable<String>() {
+		section.add("Level seed", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return String.valueOf(LevelProperties.this.getSeed());
 			}
 		});
 		section.add(
 			"Level generator",
-			new Callable<String>() {
+			new CrashCallable<String>() {
 				public String call() throws Exception {
 					return String.format(
 						"ID %02d - %s, ver %d. Features enabled: %b",
@@ -557,32 +593,27 @@ public class LevelProperties {
 				}
 			}
 		);
-		section.add("Level generator options", new Callable<String>() {
+		section.add("Level generator options", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return LevelProperties.this.generatorOptions;
 			}
 		});
-		section.add(
-			"Level spawn location",
-			new Callable<String>() {
-				public String call() throws Exception {
-					return CrashReportSection.createPositionString(
-						(double)LevelProperties.this.spawnX, (double)LevelProperties.this.spawnY, (double)LevelProperties.this.spawnZ
-					);
-				}
+		section.add("Level spawn location", new CrashCallable<String>() {
+			public String call() throws Exception {
+				return CrashReportSection.createPositionString(LevelProperties.this.spawnX, LevelProperties.this.spawnY, LevelProperties.this.spawnZ);
 			}
-		);
-		section.add("Level time", new Callable<String>() {
+		});
+		section.add("Level time", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return String.format("%d game time, %d day time", LevelProperties.this.time, LevelProperties.this.timeOfDay);
 			}
 		});
-		section.add("Level dimension", new Callable<String>() {
+		section.add("Level dimension", new CrashCallable<String>() {
 			public String call() throws Exception {
 				return String.valueOf(LevelProperties.this.dimension);
 			}
 		});
-		section.add("Level storage version", new Callable<String>() {
+		section.add("Level storage version", new CrashCallable<String>() {
 			public String call() throws Exception {
 				String string = "Unknown?";
 
@@ -602,7 +633,7 @@ public class LevelProperties {
 		});
 		section.add(
 			"Level weather",
-			new Callable<String>() {
+			new CrashCallable<String>() {
 				public String call() throws Exception {
 					return String.format(
 						"Rain time: %d (now: %b), thunder time: %d (now: %b)",
@@ -616,7 +647,7 @@ public class LevelProperties {
 		);
 		section.add(
 			"Level game mode",
-			new Callable<String>() {
+			new CrashCallable<String>() {
 				public String call() throws Exception {
 					return String.format(
 						"Game mode: %s (ID %d). Hardcore: %b. Cheats: %b",
@@ -628,5 +659,26 @@ public class LevelProperties {
 				}
 			}
 		);
+	}
+
+	public NbtCompound method_11954(DimensionType dimensionType) {
+		NbtCompound nbtCompound = (NbtCompound)this.field_13099.get(dimensionType);
+		return nbtCompound == null ? new NbtCompound() : nbtCompound;
+	}
+
+	public void method_11955(DimensionType dimensionType, NbtCompound nbtCompound) {
+		this.field_13099.put(dimensionType, nbtCompound);
+	}
+
+	public int method_11951() {
+		return this.field_13101;
+	}
+
+	public boolean method_11952() {
+		return this.field_13102;
+	}
+
+	public String method_11953() {
+		return this.field_13100;
 	}
 }
